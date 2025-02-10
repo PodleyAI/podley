@@ -92,15 +92,17 @@
       "name": "@ellmers/ai",
       "version": "0.0.1",
       "dependencies": {
-        "@ellmers/task-graph": "workspace:packages/task-graph",
+        "@ellmers/job-queue": "workspace:*",
+        "@ellmers/task-graph": "workspace:*",
       },
     },
     "packages/ai-provider": {
       "name": "@ellmers/ai-provider",
       "version": "0.0.1",
       "dependencies": {
-        "@ellmers/ai": "workspace:packages/ai",
-        "@ellmers/task-graph": "workspace:packages/task-graph",
+        "@ellmers/ai": "workspace:*",
+        "@ellmers/job-queue": "workspace:*",
+        "@ellmers/task-graph": "workspace:*",
       },
     },
     "packages/job-queue": {
@@ -112,12 +114,16 @@
       "version": "0.0.1",
       "dependencies": {
         "@ellmers/ai": "workspace:packages/ai",
+        "@ellmers/job-queue": "workspace:packages/job-queue",
         "@ellmers/task-graph": "workspace:packages/task-graph",
       },
     },
     "packages/task-graph": {
       "name": "@ellmers/task-graph",
       "version": "0.0.1",
+      "dependencies": {
+        "@ellmers/job-queue": "workspace:*",
+      },
     },
     "packages/tasks": {
       "name": "@ellmers/tasks",
@@ -132,8 +138,10 @@
       "dependencies": {
         "@ellmers/ai": "workspace:packages/ai",
         "@ellmers/ai-provider": "workspace:packages/ai-provider",
+        "@ellmers/job-queue": "workspace:packages/job-queue",
         "@ellmers/storage": "workspace:packages/storage",
         "@ellmers/task-graph": "workspace:packages/task-graph",
+        "@ellmers/tasks": "workspace:packages/tasks",
       },
     },
   },

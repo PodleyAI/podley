@@ -26,6 +26,7 @@
     "dist"
   ],
   "dependencies": {
-    "@ellmers/task-graph": "workspace:packages/task-graph"
+    "@ellmers/task-graph": "workspace:*",
+    "@ellmers/job-queue": "workspace:*"
   }
 }

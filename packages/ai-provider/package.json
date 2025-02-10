@@ -30,7 +30,8 @@
     "dist"
   ],
   "dependencies": {
-    "@ellmers/task-graph": "workspace:packages/task-graph",
-    "@ellmers/ai": "workspace:packages/ai"
+    "@ellmers/task-graph": "workspace:*",
+    "@ellmers/ai": "workspace:*",
+    "@ellmers/job-queue": "workspace:*"
   }
 }
