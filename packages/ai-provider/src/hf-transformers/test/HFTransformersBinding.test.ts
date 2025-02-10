@@ -35,6 +35,7 @@ describe("HFTransformersBinding", () => {
 
       registerHuggingfaceLocalTasks();
       setGlobalModelRepository(new InMemoryModelRepository());
+
       await getGlobalModelRepository().addModel({
         name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
         url: "Xenova/LaMini-Flan-T5-783M",
