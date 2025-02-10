@@ -10,9 +10,7 @@
     "rootDir": "./src",
     "paths": {
       "#/*": ["./src/*"],
-      "@ellmers/task-graph": ["../task-graph/src"],
-      "@ellmers/job-queue": ["../job-queue/src"]
+      "@ellmers/task-graph": ["../task-graph/src"]
     }
-  },
-  "references": [{ "path": "../task-graph" }, { "path": "../job-queue" }]
+  }
 }

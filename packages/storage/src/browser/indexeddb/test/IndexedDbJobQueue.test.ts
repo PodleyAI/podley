@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import "fake-indexeddb/auto";
-import { TaskOutput, TaskInput } from "ellmers-core";
+import { TaskOutput, TaskInput } from "@ellmers/task-graph";
 import { IndexedDbJobQueue } from "../IndexedDbJobQueue";
 import { InMemoryRateLimiter } from "../../inmemory/InMemoryRateLimiter";
 import { runGenericJobQueueTests, TestJob } from "../../../test/genericJobQueueTests";
