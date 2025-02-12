@@ -120,7 +120,6 @@ export enum QueueMode {
 
 /**
  * Base class for implementing job queues with different storage backends.
- * Provides task-graph functionality for job management, execution, and monitoring.
  */
 export abstract class JobQueue<Input, Output> {
   protected running: boolean = false;
