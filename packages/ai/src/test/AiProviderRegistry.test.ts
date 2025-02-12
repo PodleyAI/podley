@@ -12,9 +12,8 @@ import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
   sleep,
-} from "ellmers-core";
-import { InMemoryJobQueue } from "../../../storage/src/browser/inmemory/InMemoryJobQueue";
-import { InMemoryRateLimiter } from "../../../storage/src/browser/inmemory/InMemoryRateLimiter";
+} from "@ellmers/task-graph";
+import { InMemoryJobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
 
 // Constants for testing
 const TEST_PROVIDER = "test-provider";

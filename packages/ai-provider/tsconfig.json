@@ -7,12 +7,6 @@
     "composite": true,
     "outDir": "./dist",
     "baseUrl": "./src",
-    "rootDir": "./src",
-    "paths": {
-      "#/*": ["./src/*"],
-      "ellmers-core": ["../core/src"],
-      "ellmers-ai": ["../ai/src"]
-    }
-  },
-  "references": [{ "path": "../core" }, { "path": "../ai" }]
+    "rootDir": "./src"
+  }
 }

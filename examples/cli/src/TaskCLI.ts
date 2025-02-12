@@ -8,9 +8,8 @@
 import { Command } from "commander";
 import { runTask } from "./TaskStreamToListr2";
 import "@huggingface/transformers";
-import { TaskGraph, JsonTask, TaskGraphBuilder, JsonTaskItem } from "ellmers-core";
-import { DownloadModelTask, getGlobalModelRepository } from "ellmers-ai";
-import "ellmers-task";
+import { TaskGraph, JsonTask, TaskGraphBuilder, JsonTaskItem } from "@ellmers/task-graph";
+import { DownloadModelTask, getGlobalModelRepository } from "@ellmers/ai";
 
 export function AddBaseCommands(program: Command) {
   program

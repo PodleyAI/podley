@@ -7,19 +7,39 @@
 
 import { afterAll, describe, expect, it } from "bun:test";
 import {
-  ConcurrencyLimiter,
   getTaskQueueRegistry,
   setTaskQueueRegistry,
   TaskGraphBuilder,
   TaskInput,
   TaskOutput,
-} from "ellmers-core";
-import { AiProviderJob, getGlobalModelRepository, setGlobalModelRepository } from "ellmers-ai";
-import { InMemoryJobQueue, InMemoryModelRepository } from "ellmers-storage/inmemory";
-import { getDatabase, SqliteJobQueue } from "ellmers-storage/bun/sqlite";
+} from "@ellmers/task-graph";
+import { AiProviderJob, getGlobalModelRepository, setGlobalModelRepository } from "@ellmers/ai";
+import { InMemoryModelRepository } from "@ellmers/ai";
+import { SqliteJobQueue } from "@ellmers/job-queue";
 import { registerHuggingfaceLocalTasks } from "../bindings/registerTasks";
 import { sleep } from "bun";
 import { LOCAL_ONNX_TRANSFORMERJS } from "../model/ONNXTransformerJsModel";
+import { ConcurrencyLimiter, InMemoryJobQueue } from "@ellmers/job-queue";
+
+const wrapper = function () {
+  if (process["isBun"]) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require("bun:sqlite").Database;
+  }
+
+  return require("better-sqlite3");
+};
+
+const module = wrapper();
+
+let db: any;
+
+export function getDatabase(name = ":memory:"): any {
+  if (!db) {
+    db = new module(name);
+  }
+  return db;
+}
 
 describe("HFTransformersBinding", () => {
   describe("InMemoryJobQueue", () => {
@@ -35,6 +55,7 @@ describe("HFTransformersBinding", () => {
 
       registerHuggingfaceLocalTasks();
       setGlobalModelRepository(new InMemoryModelRepository());
+
       await getGlobalModelRepository().addModel({
         name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
         url: "Xenova/LaMini-Flan-T5-783M",

@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import EventEmitter from "eventemitter3";
-import { DefaultValueType, IKVRepository } from "ellmers-core";
+import { DefaultValueType, type KVRepository } from "@ellmers/storage";
 import { Model, ModelPrimaryKey } from "./Model";
 
 /**
@@ -60,12 +60,12 @@ export abstract class ModelRepository {
   /**
    * Repository for storing and managing Model instances
    */
-  abstract modelKvRepository: IKVRepository<ModelPrimaryKey, DefaultValueType>;
+  abstract modelKvRepository: KVRepository<ModelPrimaryKey, DefaultValueType>;
 
   /**
    * Repository for managing relationships between tasks and models
    */
-  abstract task2ModelKvRepository: IKVRepository<Task2ModelPrimaryKey, Task2ModelDetail>;
+  abstract task2ModelKvRepository: KVRepository<Task2ModelPrimaryKey, Task2ModelDetail>;
 
   /** Event emitter for repository events */
   private events = new EventEmitter<ModelEvents>();

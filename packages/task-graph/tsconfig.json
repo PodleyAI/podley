@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["src/**/*"],
+  "files": ["src/browser.ts"],
+  "exclude": ["**/*.test.ts", "dist"],
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist",
+    "baseUrl": "./src",
+    "rootDir": "./src",
+    "paths": {
+      "#/*": ["./src/*"]
+    }
+  }
+}
