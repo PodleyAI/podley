@@ -93,6 +93,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@ellmers/job-queue": "workspace:*",
+        "@ellmers/storage": "workspace:*",
         "@ellmers/task-graph": "workspace:*",
       },
     },
@@ -102,6 +103,7 @@
       "dependencies": {
         "@ellmers/ai": "workspace:*",
         "@ellmers/job-queue": "workspace:*",
+        "@ellmers/storage": "workspace:*",
         "@ellmers/task-graph": "workspace:*",
       },
     },

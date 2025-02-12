@@ -6,6 +6,7 @@ tsconfig.tsbuildinfo
 dist
 .nx/cache
 *.d.ts
+*.d.ts.map
 storybook-static/
 packages/cli-web/
 packages/cli-sec/
