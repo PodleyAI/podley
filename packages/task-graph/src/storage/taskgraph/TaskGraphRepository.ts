@@ -6,10 +6,10 @@
 //    *******************************************************************************
 
 import EventEmitter from "eventemitter3";
+import type { KVRepository } from "@ellmers/storage";
 import { DataFlow, TaskGraph, TaskGraphItemJson, TaskGraphJson } from "../../task/base/TaskGraph";
 import { CompoundTask } from "../../task/base/Task";
 import { TaskRegistry } from "../../task/base/TaskRegistry";
-import { IKVRepository } from "../base/IKVRepository";
 
 /**
  * Events that can be emitted by the TaskGraphRepository
@@ -22,8 +22,8 @@ export type TaskGraphEvents = "graph_saved" | "graph_retrieved" | "graph_cleared
  */
 export abstract class TaskGraphRepository {
   public type = "TaskGraphRepository";
-  abstract kvRepository: IKVRepository;
-  private events = new EventEmitter<TaskGraphEvents>();
+  abstract kvRepository: KVRepository;
+  protected events = new EventEmitter<TaskGraphEvents>();
 
   /**
    * Registers an event listener for the specified event

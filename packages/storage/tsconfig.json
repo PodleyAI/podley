@@ -1,25 +1,12 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src/**/*"],
-  "files": [
-    "src/browser/indexeddb/index.ts",
-    "src/node/sqlite/index.ts",
-    "src/bun/sqlite/index.ts",
-    "src/node/filesystem/index.ts",
-    "src/node/postgres/index.ts"
-  ],
-  "exclude": ["**/*.test.ts", "dist"],
+  "files": ["./src/browser.ts", "./src/node.ts", "./src/bun.ts"],
+  "exclude": ["**/*.test.ts", "test", "dist"],
   "compilerOptions": {
     "composite": true,
     "outDir": "./dist",
     "baseUrl": "./src",
-    "rootDir": "./src",
-    "paths": {
-      "#/*": ["./src/*"],
-      "@ellmers/task-graph": ["../task-graph/src"],
-      "@ellmers/ai": ["../ai/src"],
-      "@ellmers/job-queue": ["../job-queue/src"]
-    }
-  },
-  "references": [{ "path": "../task-graph" }, { "path": "../ai" }, { "path": "../job-queue" }]
+    "rootDir": "./src"
+  }
 }

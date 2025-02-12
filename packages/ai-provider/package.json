@@ -32,6 +32,7 @@
   "dependencies": {
     "@ellmers/task-graph": "workspace:*",
     "@ellmers/ai": "workspace:*",
-    "@ellmers/job-queue": "workspace:*"
+    "@ellmers/job-queue": "workspace:*",
+    "@ellmers/storage": "workspace:*"
   }
 }
