@@ -5,51 +5,28 @@
   "description": "Ellmers is a tool for building and running DAG pipelines of AI tasks.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
-    "watch-browser": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --external @ellmers/job-queue --external @ellmers/task-graph --external @ellmers/ai --outdir ./dist --entry-naming \"browser/[dir]/[name].[ext]\" ./src/browser/*/index.ts",
-    "watch-node": "bun build --watch --no-clear-screen --target=node --sourcemap=external --external @ellmers/job-queue --external @ellmers/task-graph --external @ellmers/ai --outdir ./dist --entry-naming \"node/[dir]/[name].[ext]\" ./src/node/*/index.ts",
-    "watch-bun": "bun build --watch --no-clear-screen --target=bun --sourcemap=external --external @ellmers/job-queue --external @ellmers/task-graph --external @ellmers/ai --outdir ./dist --entry-naming \"bun/[dir]/[name].[ext]\" ./src/bun/*/index.ts",
+    "watch-browser": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --outdir ./dist ./src/browser.ts",
+    "watch-node": "bun build --watch --no-clear-screen --target=node --sourcemap=external --outdir ./dist ./src/node.ts",
+    "watch-bun": "bun build --watch --no-clear-screen --target=bun --sourcemap=external --outdir ./dist ./src/bun.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
     "build": "bun run build-clean && bun run build-types && bun run build-browser && bun run build-node && bun run build-bun",
     "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
-    "build-browser": "bun build --target=browser --sourcemap=external --external @ellmers/job-queue --external @ellmers/task-graph --external @ellmers/ai --outdir ./dist --entry-naming \"browser/[dir]/[name].[ext]\" ./src/browser/*/index.ts",
-    "build-node": "bun build --target=node --sourcemap=external --external @ellmers/job-queue --external @ellmers/task-graph --external @ellmers/ai --outdir ./dist --entry-naming \"node/[dir]/[name].[ext]\" ./src/node/*/index.ts",
-    "build-bun": "bun build --target=bun --sourcemap=external --external @ellmers/job-queue --external @ellmers/task-graph --external @ellmers/ai --outdir ./dist --entry-naming \"bun/[dir]/[name].[ext]\" ./src/bun/*/index.ts",
+    "build-browser": "bun build --target=browser --sourcemap=external --outdir ./dist ./src/browser.ts",
+    "build-node": "bun build --target=node --sourcemap=external --outdir ./dist ./src/node.ts",
+    "build-bun": "bun build --target=bun --sourcemap=external --outdir ./dist ./src/bun.ts",
     "build-types": "tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "bun test"
   },
   "exports": {
-    "./inmemory": {
-      "import": "./dist/browser/inmemory/index.js",
-      "types": "./dist/browser/inmemory/index.d.ts"
-    },
-    "./browser/indexeddb": {
-      "import": "./dist/browser/indexeddb/index.js",
-      "types": "./dist/browser/indexeddb/index.d.ts"
-    },
-    "./node/sqlite": {
-      "import": "./dist/node/sqlite/index.js",
-      "types": "./dist/node/sqlite/index.d.ts"
-    },
-    "./bun/sqlite": {
-      "import": "./dist/bun/sqlite/index.js",
-      "types": "./dist/bun/sqlite/index.d.ts"
-    },
-    "./node/filesystem": {
-      "import": "./dist/node/filesystem/index.js",
-      "types": "./dist/node/filesystem/index.d.ts"
-    },
-    "./node/postgres": {
-      "import": "./dist/node/postgres/index.js",
-      "types": "./dist/node/postgres/index.d.ts"
+    ".": {
+      "types": "./dist/bun.d.ts",
+      "browser": "./dist/browser.js",
+      "node": "./dist/node.js",
+      "bun": "./dist/bun.js"
     }
   },
   "files": [
     "dist"
-  ],
-  "dependencies": {
-    "@ellmers/task-graph": "workspace:*",
-    "@ellmers/ai": "workspace:*",
-    "@ellmers/job-queue": "workspace:*"
-  }
+  ]
 }

@@ -1,16 +1,12 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src/**/*"],
-  "files": ["src/index.ts"],
+  "files": ["src/browser.ts", "src/node.ts", "src/bun.ts"],
   "exclude": ["**/*.test.ts", "dist"],
   "compilerOptions": {
     "composite": true,
     "outDir": "./dist",
     "baseUrl": "./src",
-    "rootDir": "./src",
-    "paths": {
-      "#/*": ["./src/*"],
-      "@ellmers/task-graph": ["../task-graph/src"]
-    }
+    "rootDir": "./src"
   }
 }

@@ -19,13 +19,32 @@ import {
   AiProviderJob,
   setGlobalModelRepository,
 } from "@ellmers/ai";
-import { InMemoryJobQueue, InMemoryModelRepository } from "@ellmers/storage/inmemory";
-import { SqliteJobQueue } from "../../../../storage/dist/bun/sqlite";
+import { InMemoryModelRepository } from "@ellmers/ai";
+import { SqliteJobQueue } from "@ellmers/job-queue";
 import { registerMediaPipeTfJsLocalTasks } from "../bindings/registerTasks";
 import { sleep } from "@ellmers/task-graph";
 import { MEDIA_PIPE_TFJS_MODEL } from "../model/MediaPipeModel";
-import { getDatabase } from "../../../../storage/src/util/db_sqlite";
-import { ConcurrencyLimiter } from "@ellmers/job-queue";
+import { InMemoryJobQueue, ConcurrencyLimiter } from "@ellmers/job-queue";
+
+const wrapper = function () {
+  if (process["isBun"]) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require("bun:sqlite").Database;
+  }
+
+  return require("better-sqlite3");
+};
+
+const module = wrapper();
+
+let db: any;
+
+export function getDatabase(name = ":memory:"): any {
+  if (!db) {
+    db = new module(name);
+  }
+  return db;
+}
 
 describe("TfMediaPipeBinding", () => {
   describe("InMemoryJobQueue", () => {

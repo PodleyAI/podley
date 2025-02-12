@@ -19,15 +19,12 @@ import {
   getTaskQueueRegistry,
 } from "@ellmers/task-graph";
 import { ConcurrencyLimiter } from "@ellmers/job-queue";
-import {
-  IndexedDbTaskGraphRepository,
-  IndexedDbTaskOutputRepository,
-} from "@ellmers/storage/browser/indexeddb";
+import { IndexedDbTaskGraphRepository, IndexedDbTaskOutputRepository } from "@ellmers/task-graph";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
 import { QueuesStatus } from "./QueueStatus";
 import { OutputRepositoryStatus } from "./OutputRepositoryStatus";
 import { GraphStoreStatus } from "./GraphStoreStatus";
-import { InMemoryJobQueue } from "@ellmers/storage/inmemory";
+import { InMemoryJobQueue, IndexedDbJobQueue } from "@ellmers/job-queue";
 import {
   LOCAL_ONNX_TRANSFORMERJS,
   registerHuggingfaceLocalTasks,
@@ -40,7 +37,6 @@ import { registerMediaPipeTfJsLocalModels } from "@ellmers/test";
 import { registerHuggingfaceLocalModels } from "@ellmers/test";
 import { env } from "@huggingface/transformers";
 import { AiProviderJob } from "@ellmers/ai";
-import { IndexedDbJobQueue } from "@ellmers/storage/browser/indexeddb";
 
 env.backends.onnx.wasm.proxy = true;
 

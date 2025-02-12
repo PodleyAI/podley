@@ -10,7 +10,6 @@ import { runTask } from "./TaskStreamToListr2";
 import "@huggingface/transformers";
 import { TaskGraph, JsonTask, TaskGraphBuilder, JsonTaskItem } from "@ellmers/task-graph";
 import { DownloadModelTask, getGlobalModelRepository } from "@ellmers/ai";
-import "../../../packages/tasks/dist";
 
 export function AddBaseCommands(program: Command) {
   program

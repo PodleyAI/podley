@@ -16,25 +16,8 @@
 
     /* Linting */
 
-    "noFallthroughCasesInSwitch": true,
-
-    "paths": {
-      "@ellmers/task-graph": ["../../packages/task-graph/src"],
-      "@ellmers/ai-provider": ["../../packages/ai-provider/src"],
-      "@ellmers/storage": ["../../packages/storage/src"],
-      "@ellmers/tasks": ["../../packages/tasks/src"],
-      "@ellmers/test": ["../../packages/test/src"],
-      "@ellmers/ai": ["../../packages/ai/src"]
-    }
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  "exclude": ["dist"],
-  "references": [
-    { "path": "../../packages/task-graph" },
-    { "path": "../../packages/tasks" },
-    { "path": "../../packages/ai-provider" },
-    { "path": "../../packages/storage" },
-    { "path": "../../packages/test" },
-    { "path": "../../packages/ai" }
-  ]
+  "exclude": ["dist"]
 }

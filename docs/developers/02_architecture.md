@@ -32,7 +32,7 @@ The system is composed of several different systems, several of which that can b
 
 ## Storage
 
-- **QueueRepository**: The QueueRepository is responsible for storing the tasks that are waiting to be run. There are implementations for in-memory, indexeddb in the browser, filesystem, sqlite, postgres, etc.
+- **TaskGraphRepository**: The TaskGraphRepository is responsible for storing the task graphs that are waiting to be run. There are implementations for in-memory, indexeddb in the browser, filesystem, sqlite, postgres, etc.
 - **TaskOutputRepository**: The TaskOutputRepository is responsible for storing the output of tasks. It can be added to a TaskRunner to provide cacheing of intermediate steps. There are implementations for in-memory, indexeddb in the browser, filesystem, sqlite, postgres, etc. You can create your own to say, only cache the last 10 runs of a task, or cache everything but runs of a task that had a certain input, like a specific model etc.
 
 ## Source Data
