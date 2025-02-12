@@ -18,13 +18,14 @@
 - [Appendix](#appendix)
   - [Source](#source)
     - [`docs/`](#docs)
-    - [`packages/task-graph`](#packages/task-graph)
-    - [`packages/ai`](#packages/ai)
-    - [`packages/storage`](#packages/storage)
-    - [`packages/ai-provider`](#packages/ai-provider)
-    - [`examples/cli`](#examples/cli)
-    - [`examples/web`](#examples/web)
-    - [`examples/ngraph`](#examples/ngraph)
+    - [`packages/storage`](#packagesstorage)
+    - [`packages/job-queue`](#packagesjob-queue)
+    - [`packages/task-graph`](#packagestask-graph)
+    - [`packages/ai`](#packagesai)
+    - [`packages/ai-provider`](#packagesai-provider)
+    - [`examples/cli`](#examplescli)
+    - [`examples/web`](#examplesweb)
+    - [`examples/ngraph`](#examplesngraph)
 
 # Developer Getting Started
 
@@ -466,17 +467,21 @@ runner.run();
 
 You are here.
 
-### `packages/task-graph`
-
-This is the main library code.
-
 ### `packages/storage`
 
-Storage for queues, caches, etc.
+Simple KV storage with multiple backends.
+
+### `packages/job-queue`
+
+This is a simple job queue implementation with a concurrency limiters and multiple backends.
+
+### `packages/task-graph`
+
+This is the main task handling library, with tasks, compound tasks, data flows, etc. Is uses the job queue for long running tasks, and it has ways to cache results using the storage layer.
 
 ### `packages/ai`
 
-These are the LLM tasks, models, etc.
+These are the LLM tasks, models, etc. These tasks are agnostic to the provider and thus are like abstract versions. AI Proivders contribute the concrete implementations. Which implmentation is used is determined by the model repository.
 
 ### `packages/ai-provider`
 
