@@ -10,7 +10,6 @@ import { readFile, writeFile, rm, readdir } from "node:fs/promises";
 import { mkdirSync } from "node:fs";
 import { glob } from "glob";
 import {
-  KVRepository,
   BaseValueSchema,
   BasePrimaryKeySchema,
   BasicKeyType,
@@ -18,7 +17,8 @@ import {
   DefaultValueSchema,
   DefaultPrimaryKeyType,
   DefaultPrimaryKeySchema,
-} from "./KVRepository";
+} from "./IKVRepository";
+import { KVRepository } from "./KVRepository";
 /**
  * A key-value repository implementation that uses the filesystem for storage.
  * Each key-value pair is stored as a separate JSON file in the specified directory.

@@ -6,16 +6,16 @@
 //    *******************************************************************************
 
 import {
-  KVRepository,
-  BaseValueSchema,
-  BasicKeyType,
   BasePrimaryKeySchema,
-  DefaultValueType,
-  DefaultValueSchema,
-  DefaultPrimaryKeyType,
+  BaseValueSchema,
   DefaultPrimaryKeySchema,
+  DefaultPrimaryKeyType,
+  DefaultValueSchema,
+  DefaultValueType,
+  BasicKeyType,
   BasicValueType,
-} from "./KVRepository";
+} from "./IKVRepository";
+import { KVRepository } from "./KVRepository";
 
 // BaseKVRepository is a key-value store that uses SQLite and Postgres use as common code
 
@@ -44,10 +44,10 @@ export abstract class BaseSqlKVRepository<
    * @param searchable - Array of columns to make searchable
    */
   constructor(
-    public table: string = "kv_store",
+    protected readonly table: string = "kv_store",
     primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    protected searchable: Array<keyof Combined> = []
+    searchable: Array<keyof Combined> = []
   ) {
     super(primaryKeySchema, valueSchema, searchable);
     this.validateTableAndSchema();
@@ -63,11 +63,11 @@ export abstract class BaseSqlKVRepository<
    * Generates the SQL column definitions for primary key fields
    * @returns SQL string containing primary key column definitions
    */
-  protected constructPrimaryKeyColumns(): string {
+  protected constructPrimaryKeyColumns($delimiter: string = ""): string {
     const cols = Object.entries(this.primaryKeySchema)
       .map(([key, type]) => {
         const sqlType = this.mapTypeToSQL(type);
-        return `\`${key}\` ${sqlType} NOT NULL`;
+        return `${$delimiter}${key}${$delimiter} ${sqlType} NOT NULL`;
       })
       .join(", ");
     return cols;
@@ -77,11 +77,11 @@ export abstract class BaseSqlKVRepository<
    * Generates the SQL column definitions for value fields
    * @returns SQL string containing value column definitions
    */
-  protected constructValueColumns(): string {
+  protected constructValueColumns($delimiter: string = ""): string {
     const cols = Object.entries(this.valueSchema)
       .map(([key, type]) => {
         const sqlType = this.mapTypeToSQL(type);
-        return `\`${key}\` ${sqlType} NULL`;
+        return `${$delimiter}${key}${$delimiter} ${sqlType} NULL`;
       })
       .join(", ");
     return cols;
@@ -91,16 +91,16 @@ export abstract class BaseSqlKVRepository<
    * Returns a comma-separated list of primary key column names
    * @returns Formatted string of primary key column names
    */
-  protected primaryKeyColumnList(): string {
-    return "`" + this.primaryKeyColumns().join("`, `") + "`";
+  protected primaryKeyColumnList($delimiter: string = ""): string {
+    return $delimiter + this.primaryKeyColumns().join(`${$delimiter}, ${$delimiter}`) + $delimiter;
   }
 
   /**
    * Returns a comma-separated list of value column names
    * @returns Formatted string of value column names
    */
-  protected valueColumnList(): string {
-    return "`" + this.valueColumns().join("`, `") + "`";
+  protected valueColumnList($delimiter: string = ""): string {
+    return $delimiter + this.valueColumns().join(`${$delimiter}, ${$delimiter}`) + $delimiter;
   }
 
   /**

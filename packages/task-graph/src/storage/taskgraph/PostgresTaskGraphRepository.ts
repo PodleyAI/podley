@@ -7,6 +7,7 @@
 
 import { TaskGraphRepository } from "./TaskGraphRepository";
 import { PostgresKVRepository } from "@ellmers/storage";
+import type { Pool } from "pg";
 
 /**
  * PostgreSQL implementation of a task graph repository.
@@ -15,8 +16,8 @@ import { PostgresKVRepository } from "@ellmers/storage";
 export class PostgresTaskGraphRepository extends TaskGraphRepository {
   kvRepository: PostgresKVRepository;
   public type = "PostgresTaskGraphRepository" as const;
-  constructor(connectionString: string) {
+  constructor(db: Pool) {
     super();
-    this.kvRepository = new PostgresKVRepository(connectionString, "task_graphs");
+    this.kvRepository = new PostgresKVRepository(db, "task_graphs");
   }
 }

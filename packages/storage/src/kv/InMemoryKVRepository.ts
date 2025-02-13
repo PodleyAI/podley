@@ -6,7 +6,6 @@
 //    *******************************************************************************
 
 import {
-  KVRepository,
   BaseValueSchema,
   BasePrimaryKeySchema,
   BasicKeyType,
@@ -14,9 +13,9 @@ import {
   DefaultValueSchema,
   DefaultPrimaryKeyType,
   DefaultPrimaryKeySchema,
-} from "./KVRepository";
+} from "./IKVRepository";
 import { makeFingerprint } from "../util/Misc";
-
+import { KVRepository } from "./KVRepository";
 /**
  * A generic in-memory key-value repository implementation.
  * Provides a simple, non-persistent storage solution suitable for testing and caching scenarios.

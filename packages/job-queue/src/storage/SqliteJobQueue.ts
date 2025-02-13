@@ -75,9 +75,20 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
     job.queue = this;
 
     const AddQuery = `
-      INSERT INTO job_queue(queue, fingerprint, input, runAfter, deadlineAt, maxRetries, jobRunId, progress, progressMessage, progressDetails)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        RETURNING id`;
+      INSERT INTO job_queue(
+        queue, 
+        fingerprint, 
+        input, 
+        runAfter, 
+        deadlineAt, 
+        maxRetries, 
+        jobRunId, 
+        progress, 
+        progressMessage, 
+        progressDetails
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING id`;
 
     const stmt = this.db.prepare<
       { id: string },
@@ -190,31 +201,24 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @returns The next job or undefined if no job is available
    */
   public async next() {
-    let id: string | undefined;
-    {
-      const PendingJobIDQuery = `
-      SELECT id
-        FROM job_queue
-        WHERE queue = $1
-        AND status = $2
-        AND runAfter <= CURRENT_TIMESTAMP
-        LIMIT 1`;
-      const stmt = this.db.prepare(PendingJobIDQuery);
-      const result = stmt.get(this.queue, JobStatus.PENDING) as any;
-      if (!result) return undefined;
-      id = result.id;
-    }
-    if (id) {
-      const UpdateQuery = `
+    const stmt = this.db.prepare<any, [JobStatus, string, JobStatus]>(
+      `
       UPDATE job_queue 
-        SET status = ?
-        WHERE id = ? AND queue = ?
-        RETURNING *`;
-      const stmt = this.db.prepare(UpdateQuery);
-      const result = stmt.get(JobStatus.PROCESSING, id, this.queue) as Job<Input, Output>;
-      const job = this.createNewJob(result);
-      return job;
-    }
+      SET status = $1, lastRanAt = CURRENT_TIMESTAMP
+      WHERE id = (
+        SELECT id 
+        FROM job_queue 
+        WHERE queue = $2 
+        AND status = $3 
+        AND runAfter <= CURRENT_TIMESTAMP 
+        ORDER BY runAfter ASC 
+        LIMIT 1
+      )
+      RETURNING *`
+    );
+    const result = stmt.get(JobStatus.PROCESSING, this.queue, JobStatus.PENDING);
+
+    return result?.id ? this.createNewJob(result) : undefined;
   }
 
   /**
@@ -285,8 +289,8 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
               error = ?, 
               errorCode = ?, 
               status = ?, 
-              progress = ?, 
               runAfter = ?, 
+              progress = ?, 
               progressMessage = "", 
               progressDetails = NULL, 
               lastRanAt = CURRENT_TIMESTAMP, 
@@ -296,8 +300,8 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         error.message,
         error.name,
         job.status,
-        job.progress,
         job.runAfter.toISOString(),
+        job.progress,
         id,
         this.queue,
       ];

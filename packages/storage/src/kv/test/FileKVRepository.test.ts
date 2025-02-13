@@ -5,11 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, expect, it, beforeEach, afterEach } from "bun:test";
+import { describe, beforeEach, afterEach } from "bun:test";
 import { rmdirSync } from "fs";
 import { FileKVRepository } from "../FileKVRepository";
-import { BasePrimaryKeySchema, BaseValueSchema } from "../KVRepository";
-
+import { BasePrimaryKeySchema, BaseValueSchema } from "../IKVRepository";
+import { runGenericKVRepositoryTests } from "./genericKVRepositoryTests";
 type PrimaryKey = {
   name: string;
   type: string;
@@ -37,60 +37,8 @@ describe("FileKVRepository", () => {
     repository.deleteAll();
   });
 
-  describe("with default schemas (key and value)", () => {
-    let repository: FileKVRepository;
-
-    beforeEach(() => {
-      repository = new FileKVRepository(testDir);
-    });
-
-    it("should store and retrieve values for a key", async () => {
-      const key = "key";
-      const value = "value";
-      await repository.put(key, value);
-      const output = await repository.get(key);
-
-      expect(output).toEqual(value);
-    });
-    it("should get undefined for a key that doesn't exist", async () => {
-      const key = "key";
-      const value = "value";
-      await repository.put(key, value);
-      const output = await repository.get("not-a-key");
-
-      expect(output == undefined).toEqual(true);
-    });
-  });
-
-  describe("with complex schemas", () => {
-    let repository: FileKVRepository<PrimaryKey, Value>;
-
-    beforeEach(async () => {
-      repository = new FileKVRepository<PrimaryKey, Value>(testDir, PrimaryKeySchema, ValueSchema);
-    });
-    afterEach(async () => {
-      // await repository.deleteAll();
-    });
-
-    it("should store and retrieve values for a key", async () => {
-      const key = { name: "key", type: "string" };
-      const value = { option: "value", success: true };
-      await repository.putKeyValue(key, value);
-      const output = await repository.getKeyValue(key);
-
-      expect(output?.option).toEqual("value");
-      expect(!!output?.success).toEqual(true); // TODO need some conversion to boolean from 1
-
-      await repository.delete(key);
-
-      const output2 = await repository.getKeyValue(key);
-      expect(output2 == undefined).toEqual(true);
-    });
-    it("should get undefined for a key that doesn't exist", async () => {
-      const key = { name: "key-unknown", type: "string" };
-      const output = await repository.getKeyValue(key);
-
-      expect(output == undefined).toEqual(true);
-    });
-  });
+  runGenericKVRepositoryTests(
+    async () => new FileKVRepository(testDir),
+    async () => new FileKVRepository<PrimaryKey, Value>(testDir, PrimaryKeySchema, ValueSchema)
+  );
 });

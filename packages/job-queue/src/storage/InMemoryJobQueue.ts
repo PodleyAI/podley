@@ -113,7 +113,8 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @returns A promise that resolves to the number of jobs.
    */
   public async size(status = JobStatus.PENDING): Promise<number> {
-    return this.jobQueue.filter((j) => j.status === status).length;
+    return this.jobQueue.filter((j) => j.status === status && j.runAfter.getTime() <= Date.now())
+      .length;
   }
 
   /**

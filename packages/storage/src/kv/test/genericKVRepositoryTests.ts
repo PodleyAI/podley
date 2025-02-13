@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { BaseValueSchema, BasePrimaryKeySchema, KVRepository } from "@ellmers/storage";
+import { BaseValueSchema, BasePrimaryKeySchema, IKVRepository } from "../IKVRepository";
 
 export type PrimaryKey = {
   name: string;
@@ -21,11 +21,11 @@ export const PrimaryKeySchema: BasePrimaryKeySchema = { name: "string", type: "s
 export const ValueSchema: BaseValueSchema = { option: "string", success: "boolean" } as const;
 
 export function runGenericKVRepositoryTests(
-  createRepository: () => Promise<KVRepository>,
-  createComplexRepository: () => Promise<KVRepository<PrimaryKey, Value>>
+  createRepository: () => Promise<IKVRepository>,
+  createComplexRepository: () => Promise<IKVRepository<PrimaryKey, Value>>
 ) {
   describe("with default schemas (key and value)", () => {
-    let repository: KVRepository;
+    let repository: IKVRepository;
 
     beforeEach(async () => {
       repository = await createRepository();
@@ -51,7 +51,7 @@ export function runGenericKVRepositoryTests(
   });
 
   describe("with complex schemas", () => {
-    let repository: KVRepository<PrimaryKey, Value>;
+    let repository: IKVRepository<PrimaryKey, Value>;
 
     beforeEach(async () => {
       repository = await createComplexRepository();

@@ -5,8 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { Pool } from "pg";
 import { ILimiter } from "../job/ILimiter";
-import { Sql } from "postgres";
 
 /**
  * PostgreSQL implementation of a rate limiter.
@@ -16,28 +16,44 @@ export class PostgresRateLimiter implements ILimiter {
   private readonly windowSizeInMilliseconds: number;
 
   constructor(
-    protected readonly sql: Sql,
+    protected readonly db: Pool,
     private readonly queueName: string,
-    private readonly maxAttempts: number,
+    private readonly maxExecutions: number,
     windowSizeInMinutes: number
   ) {
     this.windowSizeInMilliseconds = windowSizeInMinutes * 60 * 1000;
+    this.dbPromise = this.ensureTableExists();
   }
 
-  public ensureTableExists() {
-    this.sql`
-      CREATE TABLE IF NOT EXISTS job_rate_limit (
-        id bigint SERIAL NOT NULL,
-        queue_name text NOT NULL,
-        attempted_at timestamp with time zone DEFAULT now(),
-        next_available_at timestamp with time zone DEFAULT now()
-      );
-    `;
-    return this;
+  private dbPromise: Promise<void>;
+
+  public async ensureTableExists() {
+    await this.db.query(`
+      CREATE TABLE IF NOT EXISTS job_queue_execution_tracking (
+        id SERIAL PRIMARY KEY,
+        queue_name TEXT NOT NULL,
+        executed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    await this.db.query(`
+      CREATE TABLE IF NOT EXISTS job_queue_next_available (
+        queue_name TEXT PRIMARY KEY,
+        next_available_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
   }
 
+  /**
+   * Clears all rate limit entries for this queue.
+   */
   async clear(): Promise<void> {
-    await this.sql`DELETE FROM job_rate_limit`;
+    await this.dbPromise;
+    await this.db.query(`DELETE FROM job_queue_execution_tracking WHERE queue_name = $1`, [
+      this.queueName,
+    ]);
+    await this.db.query(`DELETE FROM job_queue_next_available WHERE queue_name = $1`, [
+      this.queueName,
+    ]);
   }
 
   /**
@@ -45,33 +61,37 @@ export class PostgresRateLimiter implements ILimiter {
    * @returns True if the job can proceed, false otherwise
    */
   async canProceed(): Promise<boolean> {
-    const now = new Date();
-    const attemptedAtThreshold = new Date(now.getTime() - this.windowSizeInMilliseconds);
+    await this.dbPromise;
+    const nextAvailableResult = await this.db.query(
+      `
+      SELECT next_available_at
+      FROM job_queue_next_available
+      WHERE queue_name = $1
+    `,
+      [this.queueName]
+    );
+    const nextAvailableTime = nextAvailableResult.rows[0]?.next_available_at;
+
+    if (nextAvailableTime && new Date(nextAvailableTime).getTime() > Date.now()) {
+      return false;
+    }
 
     // Retrieve the largest next_available_at and count of attempts in the window
-    const result = await this.sql`
+    const result = await this.db.query(
+      `
       SELECT 
-        COUNT(*) AS attempt_count,
-        MAX(next_available_at) AS latest_next_available_at
-      FROM job_rate_limit
-      WHERE queue_name = ${this.queueName}
-        AND attempted_at > ${attemptedAtThreshold}
-    `;
+        COUNT(*) AS attempt_count
+      FROM job_queue_execution_tracking
+      WHERE 
+        queue_name = $1
+        AND executed_at > $2
+    `,
+      [this.queueName, new Date(Date.now() - this.windowSizeInMilliseconds).toISOString()]
+    );
 
-    const { attempt_count, latest_next_available_at } = result[0];
-    const attemptCount = parseInt(attempt_count, 10);
+    const attemptCount = result.rows[0]?.attempt_count;
 
-    if (attemptCount >= this.maxAttempts) {
-      // If the number of attempts exceeds or equals the max attempts, we should not proceed.
-      return false;
-    }
-
-    // If latest_next_available_at is set and in the future, compare it to the current time to decide if we can proceed
-    if (latest_next_available_at && new Date(latest_next_available_at) > now) {
-      return false;
-    }
-
-    return true;
+    return attemptCount < this.maxExecutions;
   }
 
   /**
@@ -79,15 +99,18 @@ export class PostgresRateLimiter implements ILimiter {
    * @returns The ID of the added job
    */
   async recordJobStart(): Promise<void> {
-    // Record a new job attempt
-    await this.sql`
-      INSERT INTO job_rate_limit (queue_name)
-      VALUES (${this.queueName})
-    `;
+    await this.dbPromise;
+    await this.db.query(
+      `
+      INSERT INTO job_queue_execution_tracking (queue_name)
+      VALUES ($1)
+    `,
+      [this.queueName]
+    );
   }
 
   async recordJobCompletion(): Promise<void> {
-    // Optional for rate limiting: Cleanup or track completions if needed
+    // Implementation can be no-op as completion doesn't affect rate limiting
   }
 
   /**
@@ -95,21 +118,44 @@ export class PostgresRateLimiter implements ILimiter {
    * @returns The next available time
    */
   async getNextAvailableTime(): Promise<Date> {
+    await this.dbPromise;
     // Query for the earliest job attempt within the window that reaches the limit
-    const result = await this.sql`
-      SELECT attempted_at
-      FROM job_rate_limit
-      WHERE queue_name = ${this.queueName}
-      ORDER BY attempted_at DESC
-      LIMIT 1 OFFSET ${this.maxAttempts - 1}
-    `;
+    const result = await this.db.query(
+      `
+      SELECT executed_at
+      FROM job_queue_execution_tracking
+      WHERE queue_name = $1
+      ORDER BY executed_at ASC
+      LIMIT 1 OFFSET $2
+    `,
+      [this.queueName, this.maxExecutions - 1]
+    );
 
-    if (result.length > 0) {
-      const earliestAttemptWithinLimit = result[0].attempted_at;
-      return new Date(earliestAttemptWithinLimit.getTime() + this.windowSizeInMilliseconds);
-    } else {
-      return new Date();
+    const oldestExecution = result.rows[0];
+    let rateLimitedTime = new Date();
+    if (oldestExecution) {
+      rateLimitedTime = new Date(oldestExecution.executed_at);
+      rateLimitedTime.setMinutes(
+        rateLimitedTime.getMinutes() + this.windowSizeInMilliseconds / 60000
+      );
     }
+
+    // Get the next available time set externally, if any
+    const nextAvailableResult = await this.db.query(
+      `
+      SELECT next_available_at
+      FROM job_queue_next_available
+      WHERE queue_name = $1
+    `,
+      [this.queueName]
+    );
+
+    let nextAvailableTime = new Date();
+    if (nextAvailableResult?.rows[0]?.next_available_at) {
+      nextAvailableTime = new Date(nextAvailableResult.rows[0].next_available_at);
+    }
+
+    return nextAvailableTime > rateLimitedTime ? nextAvailableTime : rateLimitedTime;
   }
 
   /**
@@ -117,12 +163,16 @@ export class PostgresRateLimiter implements ILimiter {
    * @param date - The new next available time
    */
   async setNextAvailableTime(date: Date): Promise<void> {
+    await this.dbPromise;
     // Update the next available time for the specific queue. If no entry exists, insert a new one.
-    await this.sql`
-      INSERT INTO job_rate_limit (queue_name, next_available_at)
-      VALUES (${this.queueName}, ${date})
+    await this.db.query(
+      `
+      INSERT INTO job_queue_next_available (queue_name, next_available_at)
+      VALUES ($1, $2)
       ON CONFLICT (queue_name)
       DO UPDATE SET next_available_at = EXCLUDED.next_available_at;
-    `;
+    `,
+      [this.queueName, date.toISOString()]
+    );
   }
 }
