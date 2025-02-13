@@ -9,6 +9,7 @@ import EventEmitter from "eventemitter3";
 import { ILimiter } from "./ILimiter";
 import { Job, JobStatus } from "./Job";
 import { sleep } from "../util/Misc";
+import { IJobQueue } from "./IJobQueue";
 
 export abstract class JobError extends Error {
   public abstract retryable: boolean;
@@ -121,7 +122,7 @@ export enum QueueMode {
 /**
  * Base class for implementing job queues with different storage backends.
  */
-export abstract class JobQueue<Input, Output> {
+export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output> {
   protected running: boolean = false;
   protected stats: JobQueueStats;
   protected events: EventEmitter<JobQueueEvents<Input, Output>> = new EventEmitter();
@@ -178,17 +179,7 @@ export abstract class JobQueue<Input, Output> {
   /**
    * Peeks at the next job from the queue
    */
-  public abstract peek(num: number): Promise<Array<Job<Input, Output>>>;
-
-  /**
-   * Gets the jobs that are currently processing
-   */
-  public abstract processing(): Promise<Array<Job<Input, Output>>>;
-
-  /**
-   * Gets the jobs that are currently aborting
-   */
-  public abstract aborting(): Promise<Array<Job<Input, Output>>>;
+  public abstract peek(status?: JobStatus, num?: number): Promise<Array<Job<Input, Output>>>;
 
   /**
    * Gets the size of the queue
@@ -524,7 +515,7 @@ export abstract class JobQueue<Input, Output> {
    * @param results - The job data from the database
    * @returns A new Job instance with populated properties
    */
-  public createNewJob(results: any, parseIO = true): Job<Input, Output> {
+  protected createNewJob(results: any, parseIO = true): Job<Input, Output> {
     const job = new this.jobClass({
       ...results,
       input: (parseIO ? JSON.parse(results.input) : results.input) as Input,

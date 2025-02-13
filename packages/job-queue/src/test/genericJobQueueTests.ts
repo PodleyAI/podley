@@ -220,7 +220,7 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
     expect(await jobQueue.size()).toBe(4);
     await jobQueue.start();
     await sleep(5);
-    const processingJobs = await jobQueue.processing();
+    const processingJobs = await jobQueue.peek(JobStatus.PROCESSING);
     expect(processingJobs.length).toBeGreaterThan(0);
     await jobQueue.abortJobRun(jobRunId1);
     await sleep(5);

@@ -64,7 +64,12 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
     this.dbPromise = ensureIndexedDbTable(this.tableName, "id", expectedIndexes);
   }
 
-  async add(job: Job<Input, Output>): Promise<unknown> {
+  /**
+   * Adds a job to the queue.
+   * @param job - The job to add to the queue.
+   * @returns A promise that resolves to the job id.
+   */
+  public async add(job: Job<Input, Output>): Promise<unknown> {
     job.id = job.id ?? nanoid();
     job.jobRunId = job.jobRunId ?? nanoid();
     job.queueName = this.queue;
@@ -105,6 +110,11 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
     });
   }
 
+  /**
+   * Retrieves a job from the queue by its id.
+   * @param id - The id of the job to retrieve.
+   * @returns A promise that resolves to the job or undefined if the job is not found.
+   */
   async get(id: unknown): Promise<Job<Input, Output> | undefined> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readonly");
@@ -118,61 +128,51 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
     });
   }
 
-  async peek(num: number = 100): Promise<Job<Input, Output>[]> {
+  /**
+   * Retrieves a slice of jobs from the queue.
+   * @param status - The status of the jobs to retrieve.
+   * @param num - The number of jobs to retrieve.
+   * @returns A promise that resolves to an array of jobs.
+   */
+  public async peek(
+    status: JobStatus = JobStatus.PENDING,
+    num: number = 100
+  ): Promise<Job<Input, Output>[]> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
     const index = store.index("status_runAfter");
-    const request = index.getAll(IDBKeyRange.only([JobStatus.PENDING]), num);
 
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        const ret: Array<Job<Input, Output>> = [];
-        for (const job of request.result || []) ret.push(this.createNewJob(job, false));
-        resolve(ret);
+      const ret: Array<Job<Input, Output>> = [];
+      const cursorRequest = index.openCursor(
+        IDBKeyRange.bound(
+          [status, new Date(0)], // Lower bound: status with earliest possible date
+          [status, new Date(8640000000000000)] // Upper bound: status with latest possible date
+        ),
+        "prev" // Use reverse direction to get descending order
+      );
+
+      cursorRequest.onsuccess = (e) => {
+        const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+        if (!cursor || ret.length >= num) {
+          resolve(ret);
+          return;
+        }
+        ret.push(this.createNewJob(cursor.value, false));
+        cursor.continue();
       };
-      request.onerror = () => reject(request.error);
+
+      cursorRequest.onerror = () => reject(cursorRequest.error);
       tx.onerror = () => reject(tx.error);
     });
   }
 
-  async processing(): Promise<Job<Input, Output>[]> {
-    const db = await this.dbPromise;
-    const tx = db.transaction(this.tableName, "readonly");
-    const store = tx.objectStore(this.tableName);
-    const index = store.index("status");
-    const request = index.getAll(IDBKeyRange.only(JobStatus.PROCESSING));
-
-    return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        const ret: Array<Job<Input, Output>> = [];
-        for (const job of request.result || []) ret.push(this.createNewJob(job, false));
-        resolve(ret);
-      };
-      request.onerror = () => reject(request.error);
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-
-  async aborting(): Promise<Job<Input, Output>[]> {
-    const db = await this.dbPromise;
-    const tx = db.transaction(this.tableName, "readonly");
-    const store = tx.objectStore(this.tableName);
-    const index = store.index("status");
-    const request = index.getAll(IDBKeyRange.only(JobStatus.ABORTING));
-
-    return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        const ret: Array<Job<Input, Output>> = [];
-        for (const job of request.result || []) ret.push(this.createNewJob(job, false));
-        resolve(ret);
-      };
-      request.onerror = () => reject(request.error);
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-
-  async next(): Promise<Job<Input, Output> | undefined> {
+  /**
+   * Retrieves the next job from the queue.
+   * @returns A promise that resolves to the next job or undefined if the queue is empty.
+   */
+  public async next(): Promise<Job<Input, Output> | undefined> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
@@ -225,7 +225,7 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * Retrieves the number of jobs in the queue.
    * Returns the count of jobs in the queue.
    */
-  async size(status = JobStatus.PENDING): Promise<number> {
+  public async size(status = JobStatus.PENDING): Promise<number> {
     const db = await this.dbPromise;
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.tableName, "readonly");
@@ -244,7 +244,7 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * Uses enhanced error handling to update the job's status.
    * If a retryable error occurred, the job's retry count is incremented and its runAfter updated.
    */
-  async complete(id: unknown, output?: Output, error?: JobError): Promise<void> {
+  public async complete(id: unknown, output?: Output, error?: JobError): Promise<void> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
@@ -331,6 +331,11 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
     });
   }
 
+  /**
+   * Retrieves all jobs by their jobRunId.
+   * @param jobRunId - The jobRunId of the jobs to retrieve.
+   * @returns A promise that resolves to an array of jobs.
+   */
   async getJobsByRunId(jobRunId: string): Promise<Job<Input, Output>[]> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readonly");

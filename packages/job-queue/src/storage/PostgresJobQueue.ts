@@ -126,52 +126,18 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @param num - Maximum number of jobs to return
    * @returns An array of jobs
    */
-  public async peek(num: number = 100) {
+  public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
     num = Number(num) || 100; // TS does not validate, so ensure it is a number
     return await this.sql.begin(async (sql) => {
       const result = await sql`
       SELECT id, fingerprint, queue, status, deadlineAt, input, retries, maxRetries, runAfter, lastRanAt, createdAt, error, jobRunId
         FROM job_queue
         WHERE queue = ${this.queue}
-        AND status = 'NEW'
+        AND status = ${status}
         AND runAfter > NOW()
         ORDER BY runAfter ASC
         LIMIT ${num}
         FOR UPDATE SKIP LOCKED`;
-      if (!result) return [];
-      const ret = result[0].rows.map((r: any) => this.createNewJob(r));
-      return ret;
-    });
-  }
-
-  /**
-   * Retrieves all jobs currently being processed.
-   * @returns An array of jobs
-   */
-  public async processing() {
-    return await this.sql.begin(async (sql) => {
-      const result = await sql`
-      SELECT id, fingerprint, queue, status, deadlineAt, input, retries, maxRetries, runAfter, lastRanAt, createdAt, error, jobRunId
-        FROM job_queue
-        WHERE queue = ${this.queue}
-        AND status = 'PROCESSING'`;
-      if (!result) return [];
-      const ret = result[0].rows.map((r: any) => this.createNewJob(r));
-      return ret;
-    });
-  }
-
-  /**
-   * Retrieves all jobs currently being aborted.
-   * @returns An array of jobs
-   */
-  public async aborting() {
-    return await this.sql.begin(async (sql) => {
-      const result = await sql`
-      SELECT id, fingerprint, queue, status, deadlineAt, input, retries, maxRetries, runAfter, lastRanAt, createdAt, error, jobRunId  
-        FROM job_queue
-        WHERE queue = ${this.queue}
-        AND status = 'ABORTING'`;
       if (!result) return [];
       const ret = result[0].rows.map((r: any) => this.createNewJob(r));
       return ret;

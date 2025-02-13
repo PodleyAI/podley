@@ -68,25 +68,28 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
     return job.id;
   }
 
+  /**
+   * Retrieves a job from the queue by its id.
+   * @param id - The id of the job to retrieve.
+   * @returns A promise that resolves to the job or undefined if the job is not found.
+   */
   public async get(id: unknown) {
     const result = this.jobQueue.find((j) => j.id === id);
     return result ? this.createNewJob(result, false) : undefined;
   }
 
-  public async peek(num: number) {
+  /**
+   * Retrieves a slice of jobs from the queue.
+   * @param status - The status of the jobs to retrieve.
+   * @param num - The number of jobs to retrieve.
+   * @returns A promise that resolves to an array of jobs.
+   */
+  public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
     num = Number(num) || 100;
-    return this.jobQueue.slice(0, num).map((j) => this.createNewJob(j, false));
-  }
-
-  public async processing() {
     return this.jobQueue
-      .filter((job) => job.status === JobStatus.PROCESSING)
-      .map((j) => this.createNewJob(j, false));
-  }
-
-  public async aborting() {
-    return this.jobQueue
-      .filter((job) => job.status === JobStatus.ABORTING)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .filter((j) => j.status === status)
+      .slice(0, num)
       .map((j) => this.createNewJob(j, false));
   }
 
@@ -104,12 +107,21 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
     }
   }
 
+  /**
+   * Retrieves the size of the queue for a given status
+   * @param status - The status of the jobs to retrieve.
+   * @returns A promise that resolves to the number of jobs.
+   */
   public async size(status = JobStatus.PENDING): Promise<number> {
     return this.jobQueue.filter((j) => j.status === status).length;
   }
 
   /**
-   * Implements the abstract saveProgress method from JobQueue
+   * Saves the progress of a job
+   * @param jobId - The id of the job to save the progress for.
+   * @param progress - The progress of the job.
+   * @param message - The message of the job.
+   * @param details - The details of the job.
    */
   protected async saveProgress(
     jobId: unknown,
@@ -178,6 +190,10 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
     }
   }
 
+  /**
+   * Aborts a job
+   * @param jobId - The id of the job to abort.
+   */
   public async abort(jobId: unknown) {
     const job = this.jobQueue.find((j) => j.id === jobId);
     if (job) {
@@ -186,12 +202,20 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
     this.abortJob(jobId);
   }
 
+  /**
+   * Retrieves all jobs by their jobRunId.
+   * @param jobRunId - The jobRunId of the jobs to retrieve.
+   * @returns A promise that resolves to an array of jobs.
+   */
   public async getJobsByRunId(jobRunId: string): Promise<Array<Job<Input, Output>>> {
     return this.jobQueue
       .filter((job) => job.jobRunId === jobRunId)
       .map((j) => this.createNewJob(j, false));
   }
 
+  /**
+   * Deletes all jobs from the queue.
+   */
   public async deleteAll() {
     this.jobQueue = [];
   }
@@ -199,6 +223,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
   /**
    * Looks up cached output for a given and input
    * Uses input fingerprinting for efficient matching
+   * @param input - The input to look up the cached output for.
    * @returns The cached output or null if not found
    */
   public async outputForInput(input: Input) {

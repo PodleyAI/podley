@@ -134,53 +134,18 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @param num - Maximum number of jobs to return
    * @returns An array of jobs
    */
-  public async peek(num: number = 100) {
+  public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
     num = Number(num) || 100; // TS does not validate, so ensure it is a number since we put directly in SQL string
     const FutureJobQuery = `
-      SELECT *
+      SELECT * 
         FROM job_queue
         WHERE queue = $1
         AND status = $2
-        AND runAfter > CURRENT_TIMESTAMP
         ORDER BY runAfter ASC
         LIMIT ${num}`;
     const stmt = this.db.prepare(FutureJobQuery);
     const ret: Array<Job<Input, Output>> = [];
-    const result = stmt.all(this.queue, JobStatus.PENDING) as any[];
-    for (const job of result || []) ret.push(this.createNewJob(job));
-    return ret;
-  }
-
-  /**
-   * Retrieves all jobs currently being processed.
-   * @returns An array of jobs
-   */
-  public async processing() {
-    const ProcessingQuery = `
-      SELECT *
-        FROM job_queue
-        WHERE queue = $1
-        AND status = $2`;
-    const stmt = this.db.prepare(ProcessingQuery);
-    const result = stmt.all(this.queue, JobStatus.PROCESSING) as any[];
-    const ret: Array<Job<Input, Output>> = [];
-    for (const job of result || []) ret.push(this.createNewJob(job));
-    return ret;
-  }
-
-  /**
-   * Retrieves all jobs currently being processed.
-   * @returns An array of jobs
-   */
-  public async aborting() {
-    const AbortingQuery = `
-      SELECT *
-        FROM job_queue
-        WHERE queue = $1
-        AND status = $2`;
-    const stmt = this.db.prepare(AbortingQuery);
-    const result = stmt.all(this.queue, JobStatus.ABORTING) as any[];
-    const ret: Array<Job<Input, Output>> = [];
+    const result = stmt.all(this.queue, status) as any[];
     for (const job of result || []) ret.push(this.createNewJob(job));
     return ret;
   }
