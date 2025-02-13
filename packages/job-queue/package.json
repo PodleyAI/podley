@@ -20,6 +20,7 @@
   },
   "exports": {
     ".": {
+      "browser": "./dist/browser.js",
       "bun": "./dist/bun.js",
       "node": "./dist/node.js",
       "types": "./dist/bun.d.ts",
