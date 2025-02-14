@@ -45,6 +45,6 @@ export class IndexedDbModelRepository extends ModelRepository {
       Task2ModelDetail,
       typeof Task2ModelPrimaryKeySchema,
       typeof Task2ModelDetailSchema
-    >("task2models", Task2ModelPrimaryKeySchema, Task2ModelDetailSchema, ["model"]);
+    >(tableTask2Models, Task2ModelPrimaryKeySchema, Task2ModelDetailSchema, ["model"]);
   }
 }
