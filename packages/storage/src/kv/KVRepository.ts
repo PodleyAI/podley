@@ -7,28 +7,20 @@
 
 import EventEmitter from "eventemitter3";
 import { makeFingerprint } from "../util/Misc";
-
-/**
- * Type definitions for key-value repository events
- */
-export type KVEvents = "put" | "get" | "search" | "delete" | "clearall";
-
-/**
- * Schema definitions for primary keys and values
- */
-export type BasicKeyType = string | number | bigint;
-export type BasicValueType = string | number | bigint | boolean | null;
-export type BasePrimaryKeySchema = Record<string, "string" | "number" | "boolean" | "bigint">;
-export type BaseValueSchema = Record<string, "string" | "number" | "boolean" | "bigint">;
-
-/**
- * Default schema types for simple string key-value pairs
- */
-export type DefaultPrimaryKeyType = { key: string };
-export const DefaultPrimaryKeySchema: BasePrimaryKeySchema = { key: "string" } as const;
-
-export type DefaultValueType = { value: string };
-export const DefaultValueSchema: BaseValueSchema = { value: "string" } as const;
+import {
+  IKVRepository,
+  BasicKeyType,
+  BasicValueType,
+  BasePrimaryKeySchema,
+  BaseValueSchema,
+  DefaultPrimaryKeySchema,
+  DefaultPrimaryKeyType,
+  DefaultValueSchema,
+  DefaultValueType,
+  KVEvents,
+  KVEventName,
+  KVEventListener,
+} from "./IKVRepository";
 
 /**
  * Abstract base class for key-value storage repositories.
@@ -48,25 +40,17 @@ export abstract class KVRepository<
   PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
   ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
   Combined extends Record<string, any> = Key & Value,
-> {
+> implements IKVRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined>
+{
   // KV repository event emitter
   private events = new EventEmitter<KVEvents>();
-  on(
-    name: EventEmitter.EventNames<KVEvents>,
-    fn: EventEmitter.EventListener<KVEvents, EventEmitter.EventNames<KVEvents>>
-  ) {
+  on(name: KVEventName, fn: KVEventListener) {
     this.events.on.call(this.events, name, fn);
   }
-  off(
-    name: EventEmitter.EventNames<KVEvents>,
-    fn: EventEmitter.EventListener<KVEvents, EventEmitter.EventNames<KVEvents>>
-  ) {
+  off(name: KVEventName, fn: KVEventListener) {
     this.events.off.call(this.events, name, fn);
   }
-  emit(
-    name: EventEmitter.EventNames<KVEvents>,
-    ...args: Parameters<EventEmitter.EventListener<KVEvents, EventEmitter.EventNames<KVEvents>>>
-  ) {
+  emit(name: KVEventName, ...args: Parameters<KVEventListener>) {
     this.events.emit.call(this.events, name, ...args);
   }
   /**

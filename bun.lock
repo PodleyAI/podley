@@ -4,12 +4,9 @@
     "": {
       "name": "ellmers",
       "dependencies": {
-        "@huggingface/transformers": "^3.3.3",
-        "@mediapipe/tasks-text": "^0.10.21",
         "@sroussey/typescript-graph": "^0.3.14",
         "@types/better-sqlite3": "^7.6.12",
         "@types/pg": "^8.11.11",
-        "better-sqlite3": "^11.8.1",
         "bun-types": "^1.2.2",
         "chalk": "^5.4.1",
         "commander": "=11.1.0",
@@ -18,13 +15,13 @@
         "listr2": "^8.2.5",
         "nanoid": "^5.0.9",
         "pg": "^8.13.2",
-        "postgres": "^3.4.5",
         "reflect-metadata": "^0.2.2",
         "rxjs": "^7.8.1",
         "storybook": "^8.5.5",
         "uuid": "^11.0.5",
       },
       "devDependencies": {
+        "@electric-sql/pglite": "^0.2.17",
         "@typescript-eslint/eslint-plugin": "^8.24.0",
         "@typescript-eslint/parser": "^8.24.0",
         "concurrently": "^8.2.2",
@@ -36,6 +33,11 @@
         "globals": "^15.14.0",
         "prettier": "^3.5.0",
         "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "@huggingface/transformers": "^3.3.3",
+        "@mediapipe/tasks-text": "^0.10.21",
+        "better-sqlite3": "^11.8.1",
       },
     },
     "examples/cli": {
@@ -213,6 +215,8 @@
     "@codemirror/theme-one-dark": ["@codemirror/theme-one-dark@6.1.2", "", { "dependencies": { "@codemirror/language": "^6.0.0", "@codemirror/state": "^6.0.0", "@codemirror/view": "^6.0.0", "@lezer/highlight": "^1.0.0" } }, "sha512-F+sH0X16j/qFLMAfbciKTxVOwkdAS336b7AXTKOZhy8BR3eH/RelsnLgLFINrpST63mmN2OuwUt0W2ndUgYwUA=="],
 
     "@codemirror/view": ["@codemirror/view@6.36.2", "", { "dependencies": { "@codemirror/state": "^6.5.0", "style-mod": "^4.1.0", "w3c-keyname": "^2.2.4" } }, "sha512-DZ6ONbs8qdJK0fdN7AB82CgI6tYXf4HWk1wSVa0+9bhVznCuuvhQtX8bFBoy3dv8rZSQqUd8GvhVAcielcidrA=="],
+
+    "@electric-sql/pglite": ["@electric-sql/pglite@0.2.17", "", {}, "sha512-qEpKRT2oUaWDH6tjRxLHjdzMqRUGYDnGZlKrnL4dJ77JVMcP2Hpo3NYnOSPKdZdeec57B6QPprCUFg0picx5Pw=="],
 
     "@ellmers/ai": ["@ellmers/ai@workspace:packages/ai"],
 
@@ -1115,8 +1119,6 @@
     "postcss-selector-parser": ["postcss-selector-parser@6.1.2", "", { "dependencies": { "cssesc": "^3.0.0", "util-deprecate": "^1.0.2" } }, "sha512-Q8qQfPiZ+THO/3ZrOrO0cJJKfpYCagtMUkXbnEfmgUjwXg6z/WBeOyS9APBBPCTSiDV+s4SwQGu8yFsiMRIudg=="],
 
     "postcss-value-parser": ["postcss-value-parser@4.2.0", "", {}, "sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ=="],
-
-    "postgres": ["postgres@3.4.5", "", {}, "sha512-cDWgoah1Gez9rN3H4165peY9qfpEo+SA61oQv65O3cRUE1pOEoJWwddwcqKE8XZYjbblOJlYDlLV4h67HrEVDg=="],
 
     "postgres-array": ["postgres-array@3.0.2", "", {}, "sha512-6faShkdFugNQCLwucjPcY5ARoW1SlbnrZjmGl0IrrqewpvxvhSLHimCVzqeuULCbG0fQv7Dtk1yDbG3xv7Veog=="],
 

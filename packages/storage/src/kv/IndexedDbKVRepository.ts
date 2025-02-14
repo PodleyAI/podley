@@ -7,7 +7,6 @@
 
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
 import {
-  KVRepository,
   BaseValueSchema,
   BasePrimaryKeySchema,
   BasicKeyType,
@@ -15,8 +14,8 @@ import {
   DefaultValueSchema,
   DefaultPrimaryKeyType,
   DefaultPrimaryKeySchema,
-} from "./KVRepository";
-
+} from "./IKVRepository";
+import { KVRepository } from "./KVRepository";
 /**
  * A key-value repository implementation using IndexedDB for browser-based storage.
  *
@@ -47,7 +46,7 @@ export class IndexedDbKVRepository<
     public table: string = "kv_store",
     primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    protected searchable: Array<keyof Combined> = []
+    searchable: Array<keyof Combined> = []
   ) {
     super(primaryKeySchema, valueSchema, searchable);
     const pkColumns = super.primaryKeyColumns() as string[];

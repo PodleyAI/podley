@@ -23,10 +23,10 @@
   "exports": {
     ".": {
       "browser": "./dist/browser.js",
+      "bun": "./dist/bun.js",
       "types": "./dist/bun.d.ts",
       "import": "./dist/node.js",
-      "node": "./dist/node.js",
-      "bun": "./dist/bun.js"
+      "node": "./dist/node.js"
     }
   },
   "files": [

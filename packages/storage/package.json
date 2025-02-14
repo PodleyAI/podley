@@ -20,10 +20,10 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/bun.d.ts",
       "browser": "./dist/browser.js",
-      "node": "./dist/node.js",
-      "bun": "./dist/bun.js"
+      "bun": "./dist/bun.js",
+      "types": "./dist/bun.d.ts",
+      "node": "./dist/node.js"
     }
   },
   "files": [

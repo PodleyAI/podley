@@ -148,7 +148,7 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
       const cursorRequest = index.openCursor(
         IDBKeyRange.bound(
           [status, new Date(0)], // Lower bound: status with earliest possible date
-          [status, new Date(8640000000000000)] // Upper bound: status with latest possible date
+          [status, new Date()] // Upper bound: status with latest possible date
         ),
         "prev" // Use reverse direction to get descending order
       );

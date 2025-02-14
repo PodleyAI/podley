@@ -24,11 +24,7 @@ export class SqliteRateLimiter implements ILimiter {
     this.queueName = queueName;
     this.maxExecutions = maxExecutions;
     this.windowSizeInMilliseconds = windowSizeInMinutes * 60 * 1000;
-  }
-
-  async clear() {
-    this.db.exec("DELETE FROM job_queue_execution_tracking");
-    this.db.exec("DELETE FROM job_queue_next_available");
+    this.ensureTableExists();
   }
 
   public ensureTableExists() {
@@ -37,17 +33,33 @@ export class SqliteRateLimiter implements ILimiter {
         id INTEGER PRIMARY KEY,
         queue_name TEXT NOT NULL,
         executed_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
+      )
     `);
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS job_queue_next_available (
         queue_name TEXT PRIMARY KEY,
         next_available_at TEXT
-      );
-      
+      )
     `);
     return this;
   }
+
+  /**
+   * Clears all rate limit entries for this queue.
+   */
+  async clear() {
+    this.db
+      .prepare("DELETE FROM job_queue_execution_tracking WHERE queue_name = ?")
+      .run(this.queueName);
+    this.db
+      .prepare("DELETE FROM job_queue_next_available WHERE queue_name = ?")
+      .run(this.queueName);
+  }
+
+  /**
+   * Checks if a job can proceed based on rate limiting rules.
+   * @returns True if the job can proceed, false otherwise
+   */
   async canProceed(): Promise<boolean> {
     const nextAvailableTimeStmt = this.db.prepare(`
       SELECT next_available_at
@@ -65,20 +77,28 @@ export class SqliteRateLimiter implements ILimiter {
     }
 
     const thresholdTime = toSQLiteTimestamp(new Date(Date.now() - this.windowSizeInMilliseconds));
-    const stmt = this.db.prepare<[queue: string, executedAt: string]>(`
-      SELECT COUNT(*) AS count
-      FROM job_queue_execution_tracking
-      WHERE queue_name = ? AND executed_at > ?`);
-    const result = stmt.get(this.queueName, thresholdTime!) as { count: number };
+    const result = this.db
+      .prepare<[queue: string, executedAt: string]>(
+        `SELECT COUNT(*) AS attempt_count
+          FROM job_queue_execution_tracking
+          WHERE queue_name = ? AND executed_at > ?`
+      )
+      .get(this.queueName, thresholdTime!) as { attempt_count: number };
 
-    return result.count < this.maxExecutions;
+    return result.attempt_count < this.maxExecutions;
   }
 
+  /**
+   * Records a new job attempt.
+   * @returns The ID of the added job
+   */
   async recordJobStart(): Promise<void> {
-    const stmt = this.db.prepare(`
-      INSERT INTO job_queue_execution_tracking (queue_name)
-      VALUES (?)`);
-    stmt.get(this.queueName);
+    const stmt = this.db
+      .prepare(
+        `INSERT INTO job_queue_execution_tracking (queue_name)
+          VALUES (?)`
+      )
+      .run(this.queueName);
   }
 
   async recordJobCompletion(): Promise<void> {

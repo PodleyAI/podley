@@ -7,5 +7,5 @@ export * from "./source/DocumentConverterMarkdown";
 export * from "./provider/AiProviderRegistry";
 
 export * from "./model/storage/InMemoryModelRepository";
-export * from "./model/storage/IndexedDbModelRepository";
 export * from "./model/storage/SqliteModelRepository";
+export * from "./model/storage/PostgresModelRepository";

@@ -12,8 +12,7 @@
     // "**/build": true,
     "**/storybook-static": true,
     "**/*.tsbuildinfo": true,
-    "**/node_modules": true,
-    "**/dist": true
+    "**/node_modules": true
   },
   "search.exclude": {
     "**/dist": true,

@@ -14,7 +14,7 @@ import {
   DefaultValueSchema,
   DefaultPrimaryKeyType,
   DefaultPrimaryKeySchema,
-} from "./KVRepository";
+} from "./IKVRepository";
 import { BaseSqlKVRepository } from "./BaseSqlKVRepository";
 
 // SqliteKVRepository is a key-value store that uses SQLite as the backend for

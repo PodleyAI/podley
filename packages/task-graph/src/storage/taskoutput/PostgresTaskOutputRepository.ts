@@ -11,7 +11,7 @@ import {
   TaskOutputRepository,
 } from "./TaskOutputRepository";
 import { DefaultValueType, PostgresKVRepository } from "@ellmers/storage";
-
+import type { Pool } from "pg";
 /**
  * PostgreSQL implementation of a task output repository.
  * Provides storage and retrieval for task outputs using PostgreSQL.
@@ -23,12 +23,12 @@ export class PostgresTaskOutputRepository extends TaskOutputRepository {
     typeof TaskOutputPrimaryKeySchema
   >;
   public type = "PostgresTaskOutputRepository" as const;
-  constructor(connectionString: string) {
+  constructor(db: Pool) {
     super();
     this.kvRepository = new PostgresKVRepository<
       TaskOutputPrimaryKey,
       DefaultValueType,
       typeof TaskOutputPrimaryKeySchema
-    >(connectionString, "task_outputs", TaskOutputPrimaryKeySchema);
+    >(db, "task_outputs", TaskOutputPrimaryKeySchema);
   }
 }

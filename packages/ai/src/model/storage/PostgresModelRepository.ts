@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, IndexedDbKVRepository } from "@ellmers/storage";
+import { DefaultValueType, PostgresKVRepository } from "@ellmers/storage";
 import {
   Task2ModelDetailSchema,
   Task2ModelPrimaryKeySchema,
@@ -14,37 +14,42 @@ import {
   ModelRepository,
 } from "../ModelRepository";
 import { ModelPrimaryKey, ModelPrimaryKeySchema } from "../Model";
+import { Pool } from "pg";
 
 /**
- * IndexedDB implementation of a model repository.
- * Provides storage and retrieval for models and task-to-model mappings.
+ * PostgreSQL implementation of a model repository.
+ * Provides storage and retrieval for models and task-to-model mappings using PostgreSQL.
  */
-export class IndexedDbModelRepository extends ModelRepository {
-  modelKvRepository: IndexedDbKVRepository<
+export class PostgresModelRepository extends ModelRepository {
+  public type = "PostgresModelRepository" as const;
+  modelKvRepository: PostgresKVRepository<
     ModelPrimaryKey,
     DefaultValueType,
     typeof ModelPrimaryKeySchema
   >;
-  task2ModelKvRepository: IndexedDbKVRepository<
+  task2ModelKvRepository: PostgresKVRepository<
     Task2ModelPrimaryKey,
     Task2ModelDetail,
     typeof Task2ModelPrimaryKeySchema,
     typeof Task2ModelDetailSchema
   >;
-  public type = "IndexedDbModelRepository" as const;
 
-  constructor(tableModels: string = "models", tableTask2Models: string = "task2models") {
+  constructor(
+    db: Pool,
+    tableModels: string = "aimodel",
+    tableTask2Models: string = "aitask2aimodel"
+  ) {
     super();
-    this.modelKvRepository = new IndexedDbKVRepository<
+    this.modelKvRepository = new PostgresKVRepository<
       ModelPrimaryKey,
       DefaultValueType,
       typeof ModelPrimaryKeySchema
-    >(tableModels, ModelPrimaryKeySchema);
-    this.task2ModelKvRepository = new IndexedDbKVRepository<
+    >(db, tableModels, ModelPrimaryKeySchema);
+    this.task2ModelKvRepository = new PostgresKVRepository<
       Task2ModelPrimaryKey,
       Task2ModelDetail,
       typeof Task2ModelPrimaryKeySchema,
       typeof Task2ModelDetailSchema
-    >(tableTask2Models, Task2ModelPrimaryKeySchema, Task2ModelDetailSchema, ["model"]);
+    >(db, tableTask2Models, Task2ModelPrimaryKeySchema, Task2ModelDetailSchema);
   }
 }

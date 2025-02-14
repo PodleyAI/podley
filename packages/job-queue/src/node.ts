@@ -13,5 +13,3 @@ export * from "./storage/SqliteRateLimiter";
 
 export * from "./storage/PostgresJobQueue";
 export * from "./storage/PostgresRateLimiter";
-
-export * from "./storage/IndexedDbJobQueue";
