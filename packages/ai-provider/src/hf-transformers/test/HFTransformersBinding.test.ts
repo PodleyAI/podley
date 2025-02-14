@@ -69,7 +69,7 @@ describe("HFTransformersBinding", () => {
         "onnx:Xenova/LaMini-Flan-T5-783M:q8"
       );
       await getGlobalModelRepository().connectTaskToModel(
-        "TextRewritingTask",
+        "TextRewriterTask",
         "onnx:Xenova/LaMini-Flan-T5-783M:q8"
       );
 
@@ -105,7 +105,7 @@ describe("HFTransformersBinding", () => {
         "onnx:Xenova/LaMini-Flan-T5-783M:q8"
       );
       await getGlobalModelRepository().connectTaskToModel(
-        "TextRewritingTask",
+        "TextRewriterTask",
         "onnx:Xenova/LaMini-Flan-T5-783M:q8"
       );
       const jobQueue = new SqliteJobQueue<TaskInput, TaskOutput>(

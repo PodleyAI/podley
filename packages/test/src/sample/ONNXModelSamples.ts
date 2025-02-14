@@ -169,7 +169,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       pipeline: "text2text-generation",
       url: "Xenova/LaMini-Flan-T5-783M",
     },
-    ["TextGenerationTask"]
+    ["TextGenerationTask", "TextRewriterTask"]
   );
 
   await addONNXModel(

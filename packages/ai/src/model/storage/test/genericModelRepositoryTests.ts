@@ -36,7 +36,7 @@ export const runGenericModelRepositoryTests = (
       "onnx:Xenova/LaMini-Flan-T5-783M:q8"
     );
     await getGlobalModelRepository().connectTaskToModel(
-      "TextRewritingTask",
+      "TextRewriterTask",
       "onnx:Xenova/LaMini-Flan-T5-783M:q8"
     );
     const tasks = await getGlobalModelRepository().findTasksByModel(
