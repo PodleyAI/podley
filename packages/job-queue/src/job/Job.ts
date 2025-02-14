@@ -103,7 +103,7 @@ export class Job<Input, Output> implements JobDetails<Input, Output> {
     this.progressMessage = progressMessage;
     this.progressDetails = progressDetails;
   }
-  execute(signal: AbortSignal): Promise<Output> {
+  async execute(signal: AbortSignal): Promise<Output> {
     throw new Error("Method not implemented.");
   }
   public async updateProgress(

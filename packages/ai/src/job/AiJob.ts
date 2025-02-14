@@ -19,7 +19,10 @@ export class AiJob<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
 > extends Job<AiProviderInput<Input>, Output> {
-  execute(signal: AbortSignal): Promise<Output> {
+  /**
+   * Executes the job using the provided function.
+   */
+  async execute(signal: AbortSignal): Promise<Output> {
     if (signal?.aborted || this.status === JobStatus.ABORTING) {
       throw new AbortSignalJobError("Abort signal aborted before execution of job");
     }
@@ -32,6 +35,7 @@ export class AiJob<
         `No run function found for task type ${this.input.taskType} and model provider ${this.input.modelProvider}`
       );
     }
-    return fn(this, this.input.taskInput, signal) as Promise<Output>;
+    const result = await fn(this, this.input.taskInput, signal);
+    return result;
   }
 }
