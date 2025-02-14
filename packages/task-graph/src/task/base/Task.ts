@@ -9,7 +9,7 @@ import { EventEmitter } from "eventemitter3";
 import { nanoid } from "nanoid";
 import { TaskGraph, TaskGraphItemJson } from "./TaskGraph";
 import { TaskGraphRunner } from "./TaskGraphRunner";
-import type { JsonTaskItem } from "../JsonTask";
+
 import { TaskOutputRepository } from "../../storage/taskoutput/TaskOutputRepository";
 
 export enum TaskStatus {
@@ -19,6 +19,31 @@ export enum TaskStatus {
   ABORTING = "ABORTING",
   FAILED = "FAILED",
 }
+
+/**
+ * Represents a single task item in the JSON configuration.
+ * This structure defines how tasks should be configured in JSON format.
+ */
+export type JsonTaskItem = {
+  id: unknown; // Unique identifier for the task
+  type: string; // Type of task to create
+  name?: string; // Optional display name for the task
+  input?: TaskInput; // Input configuration for the task
+  dependencies?: {
+    // Defines data flow between tasks
+    [x: string]: // Input parameter name
+    | {
+          id: unknown; // ID of the source task
+          output: string; // Output parameter name from source task
+        }
+      | {
+          id: unknown;
+          output: string;
+        }[];
+  };
+  provenance?: TaskInput; // Optional metadata about task origin
+  subtasks?: JsonTaskItem[]; // Nested tasks for compound operations
+};
 
 /**
  * TaskEvents

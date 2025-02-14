@@ -5,9 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { OutputTask } from "./base/OutputTask";
-import { TaskGraphBuilder, TaskGraphBuilderHelper } from "./base/TaskGraphBuilder";
-import { TaskRegistry } from "./base/TaskRegistry";
+import {
+  TaskGraphBuilder,
+  TaskGraphBuilderHelper,
+  TaskRegistry,
+  OutputTask,
+} from "@ellmers/task-graph";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
@@ -75,7 +78,7 @@ export const DebugLog = (input: DebugLogTaskInput) => {
   return new DebugLogTask({ input }).run();
 };
 
-declare module "./base/TaskGraphBuilder" {
+declare module "@ellmers/task-graph" {
   interface TaskGraphBuilder {
     DebugLog: TaskGraphBuilderHelper<DebugLogTaskInput>;
   }

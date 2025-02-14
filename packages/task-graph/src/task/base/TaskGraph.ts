@@ -7,8 +7,7 @@
 
 import { DirectedAcyclicGraph } from "@sroussey/typescript-graph";
 import { TaskIdType, TaskInput, TaskOutput } from "./Task";
-import { Task, TaskStream } from "./Task";
-import type { JsonTaskItem } from "../JsonTask";
+import { Task, TaskStream, type JsonTaskItem } from "./Task";
 
 export type DataFlowIdType = string;
 

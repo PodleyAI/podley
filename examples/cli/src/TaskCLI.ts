@@ -8,9 +8,9 @@
 import { Command } from "commander";
 import { runTask } from "./TaskStreamToListr2";
 import "@huggingface/transformers";
-import { TaskGraph, JsonTask, TaskGraphBuilder, JsonTaskItem } from "@ellmers/task-graph";
+import { TaskGraph, TaskGraphBuilder, JsonTaskItem } from "@ellmers/task-graph";
 import { DownloadModelTask, getGlobalModelRepository } from "@ellmers/ai";
-
+import { JsonTask } from "@ellmers/tasks";
 export function AddBaseCommands(program: Command) {
   program
     .command("download")

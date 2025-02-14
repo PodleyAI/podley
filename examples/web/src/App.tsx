@@ -7,8 +7,8 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
+import { JsonTask } from "@ellmers/tasks";
 import {
-  JsonTask,
   JsonTaskItem,
   TaskGraph,
   TaskGraphBuilder,

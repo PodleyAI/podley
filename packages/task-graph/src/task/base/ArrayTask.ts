@@ -5,7 +5,6 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { JsonTaskItem } from "../JsonTask";
 import {
   CompoundTask,
   TaskInput,
@@ -16,6 +15,7 @@ import {
   RegenerativeCompoundTask,
   TaskInputDefinition,
   TaskOutputDefinition,
+  JsonTaskItem,
 } from "./Task";
 import { TaskGraph } from "./TaskGraph";
 import { TaskRegistry } from "./TaskRegistry";

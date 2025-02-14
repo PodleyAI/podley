@@ -18,11 +18,11 @@
     "dist"
   ],
   "dependencies": {
-    "@ellmers/task-graph": "workspace:packages/task-graph",
-    "@ellmers/ai": "workspace:packages/ai",
-    "@ellmers/storage": "workspace:packages/storage",
-    "@ellmers/ai-provider": "workspace:packages/ai-provider",
-    "@ellmers/tasks": "workspace:packages/tasks",
-    "@ellmers/test": "workspace:packages/test"
+    "@ellmers/task-graph": "workspace:*",
+    "@ellmers/ai": "workspace:*",
+    "@ellmers/storage": "workspace:*",
+    "@ellmers/ai-provider": "workspace:*",
+    "@ellmers/tasks": "workspace:*",
+    "@ellmers/test": "workspace:*"
   }
 }

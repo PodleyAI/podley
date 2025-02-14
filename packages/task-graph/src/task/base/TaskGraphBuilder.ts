@@ -13,12 +13,12 @@ import {
   CompoundTask,
   SingleTask,
   TaskBase,
-  TaskInput,
-  TaskInputDefinition,
-  TaskOutputDefinition,
+  type TaskInput,
+  type TaskInputDefinition,
+  type TaskOutputDefinition,
+  type JsonTaskItem,
 } from "./Task";
 import { TaskOutputRepository } from "../../storage/taskoutput/TaskOutputRepository";
-import { JsonTaskItem } from "../JsonTask";
 
 export type TaskGraphBuilderHelper<I extends TaskInput> = (input?: Partial<I>) => TaskGraphBuilder;
 

@@ -5,35 +5,17 @@
 // //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 // //    *******************************************************************************
 
-import { CompoundTask, RegenerativeCompoundTask, TaskConfig, TaskInput } from "./base/Task";
-import { DataFlow, TaskGraph } from "./base/TaskGraph";
-import { TaskGraphBuilder, TaskGraphBuilderHelper } from "./base/TaskGraphBuilder";
-import { TaskRegistry } from "./base/TaskRegistry";
-
-/**
- * Represents a single task item in the JSON configuration.
- * This structure defines how tasks should be configured in JSON format.
- */
-export type JsonTaskItem = {
-  id: unknown; // Unique identifier for the task
-  type: string; // Type of task to create
-  name?: string; // Optional display name for the task
-  input?: TaskInput; // Input configuration for the task
-  dependencies?: {
-    // Defines data flow between tasks
-    [x: string]: // Input parameter name
-    | {
-          id: unknown; // ID of the source task
-          output: string; // Output parameter name from source task
-        }
-      | {
-          id: unknown;
-          output: string;
-        }[];
-  };
-  provenance?: TaskInput; // Optional metadata about task origin
-  subtasks?: JsonTaskItem[]; // Nested tasks for compound operations
-};
+import {
+  CompoundTask,
+  RegenerativeCompoundTask,
+  TaskConfig,
+  JsonTaskItem,
+  DataFlow,
+  TaskGraph,
+  TaskGraphBuilder,
+  TaskGraphBuilderHelper,
+  TaskRegistry,
+} from "@ellmers/task-graph";
 
 type JsonTaskInput = {
   json: string;
@@ -178,7 +160,7 @@ export const Json = (input: JsonTaskInput) => {
 };
 
 // Add Json task builder to TaskGraphBuilder interface
-declare module "./base/TaskGraphBuilder" {
+declare module "@ellmers/task-graph" {
   interface TaskGraphBuilder {
     Json: TaskGraphBuilderHelper<JsonTaskInput>;
   }

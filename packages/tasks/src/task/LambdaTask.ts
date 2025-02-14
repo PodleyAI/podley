@@ -5,9 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { SingleTask, TaskConfig, TaskOutput } from "./base/Task";
-import { TaskGraphBuilder, TaskGraphBuilderHelper } from "./base/TaskGraphBuilder";
-import { TaskRegistry } from "./base/TaskRegistry";
+import {
+  SingleTask,
+  TaskConfig,
+  TaskOutput,
+  TaskGraphBuilder,
+  TaskGraphBuilderHelper,
+  TaskRegistry,
+} from "@ellmers/task-graph";
 
 /**
  * Type definitions for LambdaTask input and output
@@ -102,7 +107,7 @@ export const Lambda = (input: LambdaTaskInput) => {
 };
 
 // Add Lambda task builder to TaskGraphBuilder interface
-declare module "./base/TaskGraphBuilder" {
+declare module "@ellmers/task-graph" {
   interface TaskGraphBuilder {
     Lambda: TaskGraphBuilderHelper<LambdaTaskInput>;
   }
