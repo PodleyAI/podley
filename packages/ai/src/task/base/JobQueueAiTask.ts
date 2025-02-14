@@ -79,7 +79,7 @@ export class JobQueueAiTask extends JobQueueTask {
       case "model":
         return typeof item == "string" && !!(await modelRepo.findByName(item));
     }
-    if (valueType.endsWith("_model")) {
+    if (valueType.startsWith("model_")) {
       const tasks = await modelRepo.findTasksByModel(item);
       return !!tasks?.includes((this.constructor as typeof JobQueueAiTask).type);
     }
