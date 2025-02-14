@@ -8,7 +8,7 @@
     "watch-hf-transformers": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist/hf-transformers ./src/hf-transformers/index.ts",
     "watch-tf-mediapipe": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist/tf-mediapipe ./src/tf-mediapipe/index.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
-    "build": "bun run build-clean && bun run build-types && bun run build-hf-transformers && bun run build-tf-mediapipe",
+    "build": "bun run build-clean && bun run build-hf-transformers && bun run build-tf-mediapipe && bun run build-types",
     "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
     "build-hf-transformers": "bun build --sourcemap=external --packages=external --outdir ./dist/hf-transformers ./src/hf-transformers/index.ts",
     "build-tf-mediapipe": "bun build --sourcemap=external --packages=external --outdir ./dist/tf-mediapipe ./src/tf-mediapipe/index.ts",

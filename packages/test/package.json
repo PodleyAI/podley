@@ -7,7 +7,7 @@
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-code": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --packages=external --outdir ./dist/ ./src/index.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
-    "build": "bun run build-clean && bun run build-types && bun run build-code",
+    "build": "bun run build-clean && bun run build-code && bun run build-types",
     "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
     "build-code": "bun build --target=browser --sourcemap=external --packages=external --outdir ./dist/ ./src/index.ts",
     "build-types": "tsc",
