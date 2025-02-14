@@ -326,7 +326,7 @@ There is a JSONTask that can be used to build a graph. This is useful for saving
     "dependencies": {
       "model": {
         "id": "1",
-        "output": "generation_model"
+        "output": "model_generation"
       }
     }
   },

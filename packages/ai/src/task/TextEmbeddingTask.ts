@@ -15,12 +15,12 @@ import {
   TaskGraphBuilderHelper,
 } from "@ellmers/task-graph";
 import { JobQueueAiTask } from "./base/JobQueueAiTask";
-import { AnyNumberArray, embedding_model } from "./base/TaskIOTypes";
+import { AnyNumberArray, model_embedding } from "./base/TaskIOTypes";
 import { ElVector } from "./base/TaskIOTypes";
 
 export type TextEmbeddingTaskInput = {
   text: string;
-  model: embedding_model;
+  model: model_embedding;
 };
 export type TextEmbeddingTaskOutput = {
   vector: ElVector<AnyNumberArray>;
@@ -43,7 +43,7 @@ export class TextEmbeddingTask extends JobQueueAiTask {
     {
       id: "model",
       name: "Model",
-      valueType: "embedding_model",
+      valueType: "model_embedding",
     },
   ] as const;
   public static outputs = [{ id: "vector", name: "Embedding", valueType: "vector" }] as const;

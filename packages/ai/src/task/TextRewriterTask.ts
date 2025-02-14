@@ -15,12 +15,12 @@ import {
   TaskGraphBuilderHelper,
 } from "@ellmers/task-graph";
 import { JobQueueAiTask } from "./base/JobQueueAiTask";
-import { rewriting_model } from "./base/TaskIOTypes";
+import { model_rewriting } from "./base/TaskIOTypes";
 
 export type TextRewriterTaskInput = {
   text: string;
   prompt: string;
-  model: rewriting_model;
+  model: model_rewriting;
 };
 export type TextRewriterTaskOutput = {
   text: string;
@@ -45,7 +45,7 @@ export class TextRewriterTask extends JobQueueAiTask {
     {
       id: "model",
       name: "Model",
-      valueType: "generation_model",
+      valueType: "model_rewriting",
     },
   ] as const;
   public static outputs = [{ id: "text", name: "Text", valueType: "text" }] as const;

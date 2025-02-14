@@ -15,11 +15,11 @@ import {
   JobQueueTaskConfig,
 } from "@ellmers/task-graph";
 import { JobQueueAiTask } from "./base/JobQueueAiTask";
-import { summarization_model } from "./base/TaskIOTypes";
+import { model_summarization } from "./base/TaskIOTypes";
 
 export type TextSummaryTaskInput = {
   text: string;
-  model: summarization_model;
+  model: model_summarization;
 };
 export type TextSummaryTaskOutput = {
   text: string;
@@ -39,7 +39,7 @@ export class TextSummaryTask extends JobQueueAiTask {
     {
       id: "model",
       name: "Model",
-      valueType: "summarization_model",
+      valueType: "model_summarization",
     },
   ] as const;
   public static outputs = [{ id: "text", name: "Text", valueType: "text" }] as const;

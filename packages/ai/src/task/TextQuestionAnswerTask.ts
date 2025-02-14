@@ -15,11 +15,11 @@ import {
   TaskGraphBuilderHelper,
 } from "@ellmers/task-graph";
 import { JobQueueAiTask } from "./base/JobQueueAiTask";
-import { question_answering_model } from "./base/TaskIOTypes";
+import { model_question_answering } from "./base/TaskIOTypes";
 export type TextQuestionAnswerTaskInput = {
   context: string;
   question: string;
-  model: question_answering_model;
+  model: model_question_answering;
 };
 export type TextQuestionAnswerTaskOutput = {
   text: string;
@@ -43,7 +43,7 @@ export class TextQuestionAnswerTask extends JobQueueAiTask {
     {
       id: "model",
       name: "Model",
-      valueType: "text_question_answering_model",
+      valueType: "text_model_question_answering",
     },
   ] as const;
   public static outputs = [{ id: "text", name: "Answer", valueType: "text" }] as const;

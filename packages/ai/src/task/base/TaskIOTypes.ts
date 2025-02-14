@@ -19,31 +19,47 @@ export type AnyNumberArray =
   | BigInt64Array
   | BigUint64Array;
 
+function isNormalized(vec: AnyNumberArray, tolerance = 1e-6): boolean {
+  const values =
+    vec instanceof BigInt64Array || vec instanceof BigUint64Array
+      ? Array.from(vec, (n) => Number(n))
+      : Array.from(vec);
+  const normSquared = values.reduce((acc, val) => acc + val * val, 0);
+  return Math.abs(normSquared - 1) < tolerance;
+}
+
 export class ElVector<T extends AnyNumberArray = AnyNumberArray> {
-  normalized: boolean;
+  private _normalized: boolean | undefined;
   vector: T;
-  constructor(vector: T, normalized: boolean) {
+  constructor(vector: T, normalized?: boolean) {
     this.vector = vector;
-    this.normalized = normalized;
+    this._normalized = normalized;
+  }
+  get normalized(): boolean | undefined {
+    if (this._normalized === undefined) {
+      if (this.vector.length === 0) return undefined;
+      this._normalized = isNormalized(this.vector);
+    }
+    return this._normalized;
   }
 }
 
-export type embedding_model = string;
-export type generation_model = string;
-export type question_answering_model = string;
-export type rewriting_model = string;
-export type classification_model = string;
-export type summarization_model = string;
-export type translation_model = string;
+export type model_embedding = string;
+export type model_generation = string;
+export type model_question_answering = string;
+export type model_rewriting = string;
+export type model_classification = string;
+export type model_summarization = string;
+export type model_translation = string;
 export type language = string;
 
 export type model =
-  | embedding_model
-  | generation_model
-  | question_answering_model
-  | rewriting_model
-  | classification_model
-  | summarization_model
-  | translation_model
-  | generation_model
-  | embedding_model;
+  | model_embedding
+  | model_generation
+  | model_question_answering
+  | model_rewriting
+  | model_classification
+  | model_summarization
+  | model_translation
+  | model_generation
+  | model_embedding;

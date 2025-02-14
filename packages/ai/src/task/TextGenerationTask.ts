@@ -15,11 +15,11 @@ import {
   TaskGraphBuilderHelper,
 } from "@ellmers/task-graph";
 import { JobQueueAiTask } from "./base/JobQueueAiTask";
-import { generation_model } from "./base/TaskIOTypes";
+import { model_generation } from "./base/TaskIOTypes";
 
 export type TextGenerationTaskInput = {
   prompt: string;
-  model: generation_model;
+  model: model_generation;
 };
 export type TextGenerationTaskOutput = {
   text: string;
@@ -38,7 +38,7 @@ export class TextGenerationTask extends JobQueueAiTask {
     {
       id: "model",
       name: "Model",
-      valueType: "generation_model",
+      valueType: "model_generation",
     },
   ] as const;
   public static outputs = [{ id: "text", name: "Text", valueType: "text" }] as const;

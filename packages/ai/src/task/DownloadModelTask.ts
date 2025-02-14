@@ -18,12 +18,14 @@ import {
 import { getGlobalModelRepository } from "../model/ModelRegistry";
 import { JobQueueAiTask } from "./base/JobQueueAiTask";
 import {
-  embedding_model,
-  generation_model,
+  model_embedding,
+  model_generation,
   model,
-  question_answering_model,
-  summarization_model,
-  translation_model,
+  model_question_answering,
+  model_summarization,
+  model_translation,
+  model_classification,
+  model_rewriting,
 } from "./base/TaskIOTypes";
 
 export type DownloadModelTaskInput = {
@@ -33,11 +35,13 @@ export type DownloadModelTaskOutput = {
   model: model;
   dimensions: number;
   normalize: boolean;
-  embedding_model: embedding_model;
-  generation_model: generation_model;
-  summarization_model: summarization_model;
-  question_answering_model: question_answering_model;
-  translation_model: translation_model;
+  model_embedding: model_embedding;
+  model_generation: model_generation;
+  model_summarization: model_summarization;
+  model_question_answering: model_question_answering;
+  model_rewriting: model_rewriting;
+  model_translation: model_translation;
+  model_classification: model_classification;
 };
 
 export class DownloadModelTask extends JobQueueAiTask {
@@ -65,29 +69,39 @@ export class DownloadModelTask extends JobQueueAiTask {
       valueType: "boolean",
     },
     {
-      id: "embedding_model",
+      id: "model_embedding",
       name: "",
-      valueType: "embedding_model",
+      valueType: "model_embedding",
     },
     {
-      id: "generation_model",
+      id: "model_generation",
       name: "",
-      valueType: "generation_model",
+      valueType: "model_generation",
     },
     {
-      id: "summarization_model",
+      id: "model_summarization",
       name: "",
-      valueType: "summarization_model",
+      valueType: "model_summarization",
     },
     {
-      id: "question_answering_model",
+      id: "model_question_answering",
       name: "",
-      valueType: "question_answering_model",
+      valueType: "model_question_answering",
     },
     {
-      id: "translation_model",
+      id: "model_rewriting",
       name: "",
-      valueType: "translation_model",
+      valueType: "model_rewriting",
+    },
+    {
+      id: "model_translation",
+      name: "",
+      valueType: "model_translation",
+    },
+    {
+      id: "model_classification",
+      name: "",
+      valueType: "model_classification",
     },
   ] as const;
   static sideeffects = true;
@@ -108,19 +122,25 @@ export class DownloadModelTask extends JobQueueAiTask {
       this.runOutputData.dimensions = model.usingDimensions!;
       this.runOutputData.normalize = model.normalize!;
       if (tasks.includes("TextEmbeddingTask")) {
-        this.runOutputData.embedding_model = model.name;
+        this.runOutputData.model_embedding = model.name;
       }
       if (tasks.includes("TextGenerationTask")) {
-        this.runOutputData.generation_model = model.name;
+        this.runOutputData.model_generation = model.name;
       }
       if (tasks.includes("TextSummaryTask")) {
-        this.runOutputData.summarization_model = model.name;
+        this.runOutputData.model_summarization = model.name;
       }
       if (tasks.includes("TextQuestionAnswerTask")) {
-        this.runOutputData.question_answering_model = model.name;
+        this.runOutputData.model_question_answering = model.name;
       }
       if (tasks.includes("TextTranslationTask")) {
-        this.runOutputData.translation_model = model.name;
+        this.runOutputData.model_translation = model.name;
+      }
+      if (tasks.includes("TextRewriterTask")) {
+        this.runOutputData.model_rewriting = model.name;
+      }
+      if (tasks.includes("TextClassificationTask")) {
+        this.runOutputData.model_classification = model.name;
       }
     }
     return this.runOutputData;

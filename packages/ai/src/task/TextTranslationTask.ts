@@ -15,11 +15,11 @@ import { JobQueueTaskConfig } from "@ellmers/task-graph";
 import { TaskGraphBuilder, TaskGraphBuilderHelper } from "@ellmers/task-graph";
 import { JobQueueAiTask } from "./base/JobQueueAiTask";
 import { language } from "./base/TaskIOTypes";
-import { translation_model } from "./base/TaskIOTypes";
+import { model_translation } from "./base/TaskIOTypes";
 
 export type TextTranslationTaskInput = {
   text: string;
-  model: translation_model;
+  model: model_translation;
   source_lang: language;
   target_lang: language;
 };
@@ -41,7 +41,7 @@ export class TextTranslationTask extends JobQueueAiTask {
     {
       id: "model",
       name: "Model",
-      valueType: "translation_model",
+      valueType: "model_translation",
     },
     {
       id: "source_lang",
