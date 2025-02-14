@@ -78,7 +78,7 @@ type StatusFile = StatusFileBookends | StatusFileProgress;
 type StatusRun = StatusRunReady | StatusRunUpdate | StatusRunComplete;
 export type CallbackStatus = StatusFile | StatusRun;
 
-const pipelines = new Map<Model, any>();
+const pipelines = new Map<string, any>();
 
 /**
  *
@@ -90,9 +90,9 @@ const pipelines = new Map<Model, any>();
  * @param options
  */
 const getPipeline = async (job: AiProviderJob, model: Model, options: any = {}) => {
-  if (!pipelines.has(model)) {
+  if (!pipelines.has(model.name)) {
     pipelines.set(
-      model,
+      model.name,
       pipeline(model.pipeline as PipelineType, model.url, {
         dtype: (model.quantization as QUANTIZATION_DATA_TYPES) || "q8",
         session_options: options?.session_options,
@@ -104,7 +104,7 @@ const getPipeline = async (job: AiProviderJob, model: Model, options: any = {}) 
       })
     );
   }
-  return await pipelines.get(model);
+  return await pipelines.get(model.name);
 };
 
 function downloadProgressCallback(job: AiProviderJob) {
@@ -136,7 +136,10 @@ export async function HuggingFaceLocal_DownloadRun(
   runInputData: DownloadModelTaskInput,
   signal?: AbortSignal
 ) {
-  const model = (await getGlobalModelRepository().findByName(runInputData.model))!;
+  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  if (!model) {
+    throw `Model ${runInputData.model} not found`;
+  }
   await getPipeline(job, model);
   return {
     model: model.name,
@@ -155,7 +158,10 @@ export async function HuggingFaceLocal_EmbeddingRun(
   runInputData: TextEmbeddingTaskInput,
   signal?: AbortSignal
 ): Promise<TextEmbeddingTaskOutput> {
-  const model = (await getGlobalModelRepository().findByName(runInputData.model))!;
+  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  if (!model) {
+    throw `Model ${runInputData.model} not found`;
+  }
   const generateEmbedding: FeatureExtractionPipeline = await getPipeline(job, model);
 
   const hfVector = await generateEmbedding(runInputData.text, {
@@ -185,7 +191,10 @@ export async function HuggingFaceLocal_TextGenerationRun(
   runInputData: TextGenerationTaskInput,
   signal?: AbortSignal
 ): Promise<TextGenerationTaskOutput> {
-  const model = (await getGlobalModelRepository().findByName(runInputData.model))!;
+  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  if (!model) {
+    throw `Model ${runInputData.model} not found`;
+  }
 
   const generateText: TextGenerationPipeline = await getPipeline(job, model);
 
@@ -222,7 +231,10 @@ export async function HuggingFaceLocal_TextTranslationRun(
   runInputData: TextTranslationTaskInput,
   signal?: AbortSignal
 ): Promise<Partial<TextTranslationTaskOutput>> {
-  const model = (await getGlobalModelRepository().findByName(runInputData.model))!;
+  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  if (!model) {
+    throw `Model ${runInputData.model} not found`;
+  }
 
   const translate: TranslationPipeline = await getPipeline(job, model);
 
@@ -255,7 +267,10 @@ export async function HuggingFaceLocal_TextRewriterRun(
   runInputData: TextRewriterTaskInput,
   signal?: AbortSignal
 ): Promise<TextRewriterTaskOutput> {
-  const model = (await getGlobalModelRepository().findByName(runInputData.model))!;
+  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  if (!model) {
+    throw `Model ${runInputData.model} not found`;
+  }
 
   const generateText: TextGenerationPipeline = await getPipeline(job, model);
   const streamer = new TextStreamer(generateText.tokenizer, {
@@ -295,7 +310,10 @@ export async function HuggingFaceLocal_TextSummaryRun(
   runInputData: TextSummaryTaskInput,
   signal?: AbortSignal
 ): Promise<TextSummaryTaskOutput> {
-  const model = (await getGlobalModelRepository().findByName(runInputData.model))!;
+  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  if (!model) {
+    throw `Model ${runInputData.model} not found`;
+  }
 
   const generateSummary: SummarizationPipeline = await getPipeline(job, model);
   const streamer = new TextStreamer(generateSummary.tokenizer, {
@@ -325,7 +343,10 @@ export async function HuggingFaceLocal_TextQuestionAnswerRun(
   runInputData: TextQuestionAnswerTaskInput,
   signal?: AbortSignal
 ): Promise<TextQuestionAnswerTaskOutput> {
-  const model = (await getGlobalModelRepository().findByName(runInputData.model))!;
+  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  if (!model) {
+    throw `Model ${runInputData.model} not found`;
+  }
 
   const generateAnswer: QuestionAnsweringPipeline = await getPipeline(job, model);
   const streamer = new TextStreamer(generateAnswer.tokenizer, {
