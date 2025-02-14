@@ -19,8 +19,11 @@ import {
   type TranslationPipeline,
   type TranslationSingle,
   TextStreamer,
+  // @ts-ignore temporary "fix"
+  type PretrainedModelOptions,
 } from "@huggingface/transformers";
 import { ElVector, getGlobalModelRepository } from "@ellmers/ai";
+import { PermanentJobError } from "@ellmers/job-queue";
 import type {
   DownloadModelTaskInput,
   TextEmbeddingTaskInput,
@@ -140,7 +143,7 @@ export async function HuggingFaceLocal_DownloadRun(
   if (!model) {
     throw `Model ${runInputData.model} not found`;
   }
-  await getPipeline(job, model);
+  await getPipeline(job, model, { abort_signal: signal });
   return {
     model: model.name,
     dimensions: model.nativeDimensions || 0,
@@ -162,11 +165,19 @@ export async function HuggingFaceLocal_EmbeddingRun(
   if (!model) {
     throw `Model ${runInputData.model} not found`;
   }
-  const generateEmbedding: FeatureExtractionPipeline = await getPipeline(job, model);
-
+  if (signal?.aborted) {
+    throw new PermanentJobError("Embedding run aborted");
+  }
+  const generateEmbedding: FeatureExtractionPipeline = await getPipeline(job, model, {
+    abort_signal: signal,
+  });
+  if (signal?.aborted) {
+    throw new PermanentJobError("Embedding run aborted");
+  }
   const hfVector = await generateEmbedding(runInputData.text, {
     pooling: "mean",
     normalize: model.normalize,
+    ...(signal ? { abort_signal: signal } : {}),
   });
 
   if (hfVector.size !== model.nativeDimensions) {
@@ -195,13 +206,20 @@ export async function HuggingFaceLocal_TextGenerationRun(
   if (!model) {
     throw `Model ${runInputData.model} not found`;
   }
-
-  const generateText: TextGenerationPipeline = await getPipeline(job, model);
-
+  if (signal?.aborted) {
+    throw new PermanentJobError("Text generation run aborted");
+  }
+  const generateText: TextGenerationPipeline = await getPipeline(job, model, {
+    abort_signal: signal,
+  });
+  if (signal?.aborted) {
+    throw new PermanentJobError("Text generation run aborted");
+  }
   const streamer = new TextStreamer(generateText.tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
     callback_function: generateProgressCallback(job),
+    ...(signal ? { abort_signal: signal } : {}),
   });
 
   let results = await generateText(runInputData.prompt, {
@@ -235,13 +253,20 @@ export async function HuggingFaceLocal_TextTranslationRun(
   if (!model) {
     throw `Model ${runInputData.model} not found`;
   }
-
-  const translate: TranslationPipeline = await getPipeline(job, model);
-
+  if (signal?.aborted) {
+    throw new PermanentJobError("Text translation run aborted");
+  }
+  const translate: TranslationPipeline = await getPipeline(job, model, {
+    abort_signal: signal,
+  });
+  if (signal?.aborted) {
+    throw new PermanentJobError("Text translation run aborted");
+  }
   const streamer = new TextStreamer(translate.tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
     callback_function: generateProgressCallback(job),
+    ...(signal ? { abort_signal: signal } : {}),
   });
 
   let results = await translate(runInputData.text, {
@@ -271,18 +296,27 @@ export async function HuggingFaceLocal_TextRewriterRun(
   if (!model) {
     throw `Model ${runInputData.model} not found`;
   }
-
-  const generateText: TextGenerationPipeline = await getPipeline(job, model);
+  if (signal?.aborted) {
+    throw new PermanentJobError("Text rewriter run aborted");
+  }
+  const generateText: TextGenerationPipeline = await getPipeline(job, model, {
+    abort_signal: signal,
+  });
+  if (signal?.aborted) {
+    throw new PermanentJobError("Text rewriter run aborted");
+  }
   const streamer = new TextStreamer(generateText.tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
     callback_function: generateProgressCallback(job),
+    ...(signal ? { abort_signal: signal } : {}),
   });
 
   // This lib doesn't support this kind of rewriting with a separate prompt vs text
   const promptedtext = (runInputData.prompt ? runInputData.prompt + "\n" : "") + runInputData.text;
   let results = await generateText(promptedtext, {
     streamer,
+    ...(signal ? { abort_signal: signal } : {}),
   } as any);
   if (!Array.isArray(results)) {
     results = [results];
@@ -314,12 +348,20 @@ export async function HuggingFaceLocal_TextSummaryRun(
   if (!model) {
     throw `Model ${runInputData.model} not found`;
   }
-
-  const generateSummary: SummarizationPipeline = await getPipeline(job, model);
+  if (signal?.aborted) {
+    throw new PermanentJobError("Text summary run aborted");
+  }
+  const generateSummary: SummarizationPipeline = await getPipeline(job, model, {
+    abort_signal: signal,
+  });
+  if (signal?.aborted) {
+    throw new PermanentJobError("Text summary run aborted");
+  }
   const streamer = new TextStreamer(generateSummary.tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
     callback_function: generateProgressCallback(job),
+    ...(signal ? { abort_signal: signal } : {}),
   });
 
   let results = await generateSummary(runInputData.text, {
@@ -347,12 +389,20 @@ export async function HuggingFaceLocal_TextQuestionAnswerRun(
   if (!model) {
     throw `Model ${runInputData.model} not found`;
   }
-
-  const generateAnswer: QuestionAnsweringPipeline = await getPipeline(job, model);
+  if (signal?.aborted) {
+    throw new PermanentJobError("Text question answer run aborted");
+  }
+  const generateAnswer: QuestionAnsweringPipeline = await getPipeline(job, model, {
+    abort_signal: signal,
+  });
+  if (signal?.aborted) {
+    throw new PermanentJobError("Text question answer run aborted");
+  }
   const streamer = new TextStreamer(generateAnswer.tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
     callback_function: generateProgressCallback(job),
+    ...(signal ? { abort_signal: signal } : {}),
   });
 
   let results = await generateAnswer(runInputData.question, runInputData.context, {

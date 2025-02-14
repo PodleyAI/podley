@@ -120,7 +120,6 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
     ) as { id: string } | undefined;
 
     job.id = result?.id;
-    this.createAbortController(job.id);
     return result?.id;
   }
 
@@ -173,8 +172,9 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         SET status = $1
         WHERE id = $2 AND queue = $3`;
     const stmt = this.db.prepare(AbortQuery);
-    stmt.run(JobStatus.ABORTING, jobId, this.queue);
+    const result = stmt.run(JobStatus.ABORTING, jobId, this.queue);
     this.abortJob(jobId);
+    return result.changes > 0 ? true : false;
   }
 
   /**

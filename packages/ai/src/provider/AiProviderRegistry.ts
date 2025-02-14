@@ -23,7 +23,7 @@ export type AiProviderRunFn<
  */
 export class AiProviderRegistry {
   // Relaxing the generics using `any` allows us to register specialized run functions.
-  runFnRegistry: Record<string, Record<string, AiProviderRunFn<any, any>>> = {};
+  runFnRegistry: Record<string, Record<string, AiProviderRunFn>> = {};
 
   /**
    * Registers a task execution function for a specific task type and model provider
@@ -40,8 +40,14 @@ export class AiProviderRegistry {
    * Retrieves the direct execution function for a task type and model
    * Bypasses the job queue system for immediate execution
    */
-  getDirectRunFn(taskType: string, modelProvider: string) {
-    return this.runFnRegistry[taskType]?.[modelProvider];
+  getDirectRunFn<Input extends TaskInput = TaskInput, Output extends TaskOutput = TaskOutput>(
+    taskType: string,
+    modelProvider: string
+  ) {
+    return this.runFnRegistry[taskType]?.[modelProvider] as unknown as AiProviderRunFn<
+      Input,
+      Output
+    >;
   }
 }
 

@@ -129,7 +129,6 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
     const result = await this.db.query(sql, params);
     if (!result) throw new Error("Failed to add to queue");
     job.id = result.rows[0].id;
-    this.createAbortController(job.id);
     return job.id;
   }
 
@@ -380,7 +379,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
    */
   public async abort(jobId: number) {
     await this.dbPromise;
-    await this.db.query(
+    const result = await this.db.query(
       `
       UPDATE job_queue 
       SET status = 'ABORTING' 
@@ -388,6 +387,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
       [jobId, this.queue]
     );
     this.abortJob(jobId);
+    return result.rowCount ? true : false;
   }
 
   /**

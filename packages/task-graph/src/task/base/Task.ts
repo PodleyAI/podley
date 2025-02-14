@@ -181,6 +181,11 @@ export abstract class TaskBase {
       this.status = TaskStatus.FAILED;
       this.error = error;
     });
+    this.on("abort", (err) => {
+      this.progress = 100;
+      this.status = TaskStatus.ABORTING;
+      this.error = err || "Task aborted by run time";
+    });
   }
   /**
    * The defaults for the task. If no overrides at run time, then this would be equal to the
@@ -337,6 +342,9 @@ export abstract class TaskBase {
     if (!(await this.validateInputData(this.runInputData))) {
       throw new Error("Invalid input data");
     }
+    if (this.status === TaskStatus.ABORTING) {
+      throw new Error("Task aborted by run time");
+    }
     this.emit("start");
     const result = await this.runReactive();
     this.runOutputData = result;
@@ -377,6 +385,7 @@ export abstract class TaskBase {
    * @returns A promise that resolves when the task is aborted
    */
   async abort(): Promise<void> {
+    this.status = TaskStatus.ABORTING;
     this.emit("abort");
   }
 }
@@ -437,9 +446,17 @@ export class CompoundTask extends TaskBase implements ITaskCompound {
     repository?: TaskOutputRepository
   ): Promise<TaskOutput> {
     if (!this.validateInputData(this.runInputData)) throw new Error("Invalid input data");
+    if (this.status === TaskStatus.ABORTING) {
+      throw new Error("Task aborted by run time");
+    }
     this.emit("start");
     const runner = new TaskGraphRunner(this.subGraph, repository);
-    this.runOutputData.outputs = await runner.runGraph(nodeProvenance);
+    try {
+      this.runOutputData.outputs = await runner.runGraph(nodeProvenance);
+    } catch (err) {
+      this.emit("error", err);
+      throw err;
+    }
     this.emit("complete");
     return this.runOutputData;
   }
@@ -447,6 +464,13 @@ export class CompoundTask extends TaskBase implements ITaskCompound {
     const runner = new TaskGraphRunner(this.subGraph);
     this.runOutputData.outputs = await runner.runGraphReactive();
     return this.runOutputData;
+  }
+
+  async abort() {
+    super.abort();
+    this.subGraph.getNodes().forEach((node) => {
+      node.abort();
+    });
   }
 
   /**

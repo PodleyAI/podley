@@ -80,8 +80,6 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
     job.progressDetails = null;
     job.queue = this;
 
-    this.createAbortController(job.id);
-
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
@@ -147,7 +145,7 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
       const ret: Array<Job<Input, Output>> = [];
       const cursorRequest = index.openCursor(
         IDBKeyRange.bound(
-          [status, new Date(0)], // Lower bound: status with earliest possible date
+          [status, 0], // Lower bound: status with earliest possible date
           [status, new Date()] // Upper bound: status with latest possible date
         ),
         "prev" // Use reverse direction to get descending order
@@ -304,7 +302,7 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * the job's execute() method (if it supports an AbortSignal parameter)
    * can clean up and exit.
    */
-  public async abort(jobId: unknown): Promise<void> {
+  public async abort(jobId: unknown): Promise<boolean> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
@@ -314,7 +312,7 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
       request.onsuccess = () => {
         const job = request.result;
         if (!job) {
-          reject(new Error(`Job ${jobId} not found`));
+          resolve(false);
           return;
         }
 
@@ -322,7 +320,7 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
         const updateRequest = store.put(job);
         updateRequest.onsuccess = () => {
           this.abortJob(jobId);
-          resolve();
+          resolve(true);
         };
         updateRequest.onerror = () => reject(updateRequest.error);
       };

@@ -159,56 +159,80 @@ export class TaskGraphRunner {
     return results;
   }
 
+  private running = false;
+
   /**
    * Runs the task graph
    * @param parentProvenance The provenance input for the task graph
    * @returns The output of the task graph
    */
   public async runGraph(parentProvenance: TaskInput = {}) {
+    this.aborting = false;
     const taskRunId = nanoid();
     this.dag.getNodes().forEach((node) => {
       if (node.config) {
         // @ts-ignore
         node.config.currentJobRunId = taskRunId;
       }
+      node.status = TaskStatus.PENDING;
       node.resetInputData();
     });
+    this.running = true;
     this.provenanceInput = new Map();
     const sortedNodes = this.dag.topologicallySortedNodes();
     this.assignLayers(sortedNodes);
 
     let results: TaskOutput[] = [];
     for (const [layerNumber, nodes] of this.layers.entries()) {
-      const settledResults = await Promise.allSettled(
-        nodes.map((node) =>
-          this.runTaskWithProvenance(node, layerNumber === 0 ? parentProvenance : {})
-        )
-      );
-
-      for (const result of settledResults) {
-        if (result.status === "rejected") {
-          // Abort tasks that support aborting by calling their abort method
-          await Promise.all(
-            this.dag.getNodes().map(async (node: Task) => {
-              if ([TaskStatus.PROCESSING].includes(node.status)) {
-                await node.abort();
-              }
-              if ([TaskStatus.PENDING].includes(node.status)) {
-                node.emit("error", "Aborted");
-              }
-            })
-          );
-          throw new Error(
-            `Task graph aborted due to error in layer ${layerNumber}: ${result.reason}`
-          );
-        }
+      if (!this.running) {
+        throw new Error("Task graph runner stopped unexpectedly");
       }
+      if (this.aborting) {
+        nodes.forEach((node) => {});
+      } else {
+        const settledResults = await Promise.allSettled(
+          nodes.map((node) =>
+            this.runTaskWithProvenance(node, layerNumber === 0 ? parentProvenance : {})
+          )
+        );
 
-      results = settledResults
-        .filter((r): r is PromiseFulfilledResult<TaskOutput> => r.status === "fulfilled") //ts
-        .map((r) => r.value);
+        for (const result of settledResults) {
+          if (result.status === "rejected") {
+            // Abort tasks that support aborting by calling their abort method
+            await this.abort();
+            throw new Error(
+              `Task graph aborted due to error in layer ${layerNumber}: ${result.reason}`
+            );
+          }
+        }
+
+        results = settledResults
+          .filter((r): r is PromiseFulfilledResult<TaskOutput> => r.status === "fulfilled") //ts
+          .map((r) => r.value);
+      }
     }
+    this.running = false;
+    this.aborting = false;
     return results;
+  }
+
+  private aborting = false;
+  /**
+   * Aborts the task graph
+   */
+  public async abort() {
+    await Promise.all(
+      this.dag.getNodes().map(async (task: Task) => {
+        console.log("aborting task", task.config.id, task.status, task);
+        if ([TaskStatus.PROCESSING, TaskStatus.PENDING].includes(task.status)) {
+          if (task.status === TaskStatus.PENDING) {
+            task.emit("complete");
+          }
+          await task.abort();
+        }
+      })
+    );
+    this.aborting = true;
   }
 
   /**

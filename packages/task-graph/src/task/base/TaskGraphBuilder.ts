@@ -95,8 +95,7 @@ export function TaskGraphBuilderHelper<I extends TaskInput>(
   return result;
 }
 
-type BuilderEvents = GraphEvents | "changed" | "reset" | "error" | "start" | "complete";
-
+type BuilderEvents = GraphEvents | "changed" | "reset" | "error" | "start" | "complete" | "abort";
 /**
  * Class for building and managing a task graph
  * Provides methods for adding tasks, connecting outputs to inputs, and running the task graph
@@ -174,6 +173,15 @@ export class TaskGraphBuilder {
       this.emit("error", error);
       throw error;
     }
+  }
+
+  /**
+   * Aborts the task graph
+   */
+  async abort() {
+    this.emit("abort");
+    await this._runner.abort();
+    this.emit("complete");
   }
 
   /**

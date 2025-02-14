@@ -29,7 +29,7 @@ import {
 } from "@ellmers/ai-provider/tf-mediapipe";
 import { registerMediaPipeTfJsLocalModels, registerHuggingfaceLocalModels } from "@ellmers/test";
 import { env } from "@huggingface/transformers";
-import { AiProviderJob } from "@ellmers/ai";
+import { AiJob } from "@ellmers/ai";
 
 import { RunGraphFlow } from "./RunGraphFlow";
 import { JsonEditor } from "./JsonEditor";
@@ -47,7 +47,7 @@ queueRegistry.registerQueue(
   new InMemoryJobQueue<TaskInput, TaskOutput>(
     LOCAL_ONNX_TRANSFORMERJS,
     new ConcurrencyLimiter(1, 10),
-    AiProviderJob<TaskInput, TaskOutput>
+    AiJob<TaskInput, TaskOutput>
   )
 );
 
@@ -56,7 +56,7 @@ queueRegistry.registerQueue(
   new InMemoryJobQueue<TaskInput, TaskOutput>(
     MEDIA_PIPE_TFJS_MODEL,
     new ConcurrencyLimiter(1, 10),
-    AiProviderJob<TaskInput, TaskOutput>
+    AiJob<TaskInput, TaskOutput>
   )
 );
 
@@ -123,6 +123,7 @@ window["builder"] = builder;
 
 export const App = () => {
   const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [isAborting, setIsAborting] = useState<boolean>(false);
   const [graph, setGraph] = useState<TaskGraph>(builder.graph);
   const [jsonData, setJsonData] = useState<string>(initialJson);
 
@@ -153,14 +154,20 @@ export const App = () => {
     }
     function complete() {
       setIsRunning(false);
+      setIsAborting(false);
+    }
+    function abort() {
+      setIsAborting(true);
     }
     builder.on("start", start);
     builder.on("complete", complete);
     builder.on("error", complete);
+    builder.on("abort", abort);
     return () => {
       builder.off("start", start);
       builder.off("complete", complete);
       builder.off("error", complete);
+      builder.off("abort", abort);
     };
   }, []);
 
@@ -185,7 +192,9 @@ export const App = () => {
               json={jsonData}
               onJsonChange={setNewJson}
               run={() => builder.run()}
+              stop={() => builder.abort()}
               running={isRunning}
+              aborting={isAborting}
             />
           </ResizablePanel>
           <ResizableHandle />

@@ -41,7 +41,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * Returns a filtered and sorted list of pending jobs that are ready to run
    * Sorts by creation time to maintain FIFO order
    */
-  private reorderedQueue() {
+  private pendingQueue() {
     return this.jobQueue
       .filter((job) => job.status === JobStatus.PENDING)
       .filter((job) => job.runAfter.getTime() <= Date.now())
@@ -63,7 +63,6 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
     job.progressDetails = null;
     job.queue = this;
 
-    this.createAbortController(job.id);
     this.jobQueue.push(job);
     return job.id;
   }
@@ -98,7 +97,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * Updates the job status to PROCESSING before returning
    */
   public async next() {
-    const top = this.reorderedQueue();
+    const top = this.pendingQueue();
 
     const job = top[0];
     if (job) {
@@ -201,6 +200,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
       job.status = JobStatus.ABORTING;
     }
     this.abortJob(jobId);
+    return job ? true : false;
   }
 
   /**
