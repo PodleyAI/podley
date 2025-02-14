@@ -7,8 +7,6 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
-import { RunGraphFlow } from "./RunGraphFlow";
-import { JsonEditor } from "./JsonEditor";
 import {
   JsonTask,
   JsonTaskItem,
@@ -17,14 +15,10 @@ import {
   TaskInput,
   TaskOutput,
   getTaskQueueRegistry,
+  IndexedDbTaskGraphRepository,
+  IndexedDbTaskOutputRepository,
 } from "@ellmers/task-graph";
-import { ConcurrencyLimiter } from "@ellmers/job-queue";
-import { IndexedDbTaskGraphRepository, IndexedDbTaskOutputRepository } from "@ellmers/task-graph";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
-import { QueuesStatus } from "./QueueStatus";
-import { OutputRepositoryStatus } from "./OutputRepositoryStatus";
-import { GraphStoreStatus } from "./GraphStoreStatus";
-import { InMemoryJobQueue, IndexedDbJobQueue } from "@ellmers/job-queue";
+import { InMemoryJobQueue, ConcurrencyLimiter } from "@ellmers/job-queue";
 import {
   LOCAL_ONNX_TRANSFORMERJS,
   registerHuggingfaceLocalTasks,
@@ -33,10 +27,16 @@ import {
   MEDIA_PIPE_TFJS_MODEL,
   registerMediaPipeTfJsLocalTasks,
 } from "@ellmers/ai-provider/tf-mediapipe";
-import { registerMediaPipeTfJsLocalModels } from "@ellmers/test";
-import { registerHuggingfaceLocalModels } from "@ellmers/test";
+import { registerMediaPipeTfJsLocalModels, registerHuggingfaceLocalModels } from "@ellmers/test";
 import { env } from "@huggingface/transformers";
 import { AiProviderJob } from "@ellmers/ai";
+
+import { RunGraphFlow } from "./RunGraphFlow";
+import { JsonEditor } from "./JsonEditor";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
+import { QueuesStatus } from "./QueueStatus";
+import { OutputRepositoryStatus } from "./OutputRepositoryStatus";
+import { GraphStoreStatus } from "./GraphStoreStatus";
 
 env.backends.onnx.wasm.proxy = true;
 

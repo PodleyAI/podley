@@ -17,6 +17,17 @@ export default defineConfig({
         manualChunks: {
           "huggingface-transformers": ["@huggingface/transformers"],
           "tf-mediapipe": ["@mediapipe/tasks-text"],
+          ellmers: [
+            "@ellmers/ai",
+            "@ellmers/ai-provider/hf-transformers",
+            "@ellmers/ai-provider/tf-mediapipe",
+            "@ellmers/job-queue",
+            "@ellmers/storage",
+            "@ellmers/task-graph",
+            "@ellmers/tasks",
+            "@ellmers/test",
+          ],
+          misc: ["nanoid", "reflect-metadata", "eventemitter3"],
           react: [
             "react",
             "react-dom",
