@@ -16,7 +16,7 @@ import {
   JobQueueTaskConfig,
 } from "@ellmers/task-graph";
 import { getGlobalModelRepository } from "../model/ModelRegistry";
-import { JobQueueAiTask } from "./base/JobQueueAiTask";
+import { AiTask } from "./base/AiTask";
 import {
   model_embedding,
   model_generation,
@@ -44,7 +44,7 @@ export type DownloadModelTaskOutput = {
   model_classification: model_classification;
 };
 
-export class DownloadModelTask extends JobQueueAiTask {
+export class DownloadModelTask extends AiTask {
   public static inputs = [
     {
       id: "model",

@@ -22,11 +22,11 @@ import { getGlobalModelRepository } from "../../model/ModelRegistry";
  * A base class for AI related tasks that run in a job queue.
  * Extends the JobQueueTask class to provide LLM-specific functionality.
  */
-export class JobQueueAiTask extends JobQueueTask {
-  static readonly type: string = "JobQueueAiTask";
+export class AiTask extends JobQueueTask {
+  static readonly type: string = "AiTask";
 
   /**
-   * Creates a new JobQueueAiTask instance
+   * Creates a new AiTask instance
    * @param config - Configuration object for the task
    */
   constructor(config: JobQueueTaskConfig = {}) {
@@ -81,7 +81,7 @@ export class JobQueueAiTask extends JobQueueTask {
     }
     if (valueType.startsWith("model_")) {
       const tasks = await modelRepo.findTasksByModel(item);
-      return !!tasks?.includes((this.constructor as typeof JobQueueAiTask).type);
+      return !!tasks?.includes((this.constructor as typeof AiTask).type);
     }
 
     return super.validateItem(valueType, item);

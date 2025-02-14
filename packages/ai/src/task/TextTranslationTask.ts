@@ -13,7 +13,7 @@ import {
 import { TaskRegistry } from "@ellmers/task-graph";
 import { JobQueueTaskConfig } from "@ellmers/task-graph";
 import { TaskGraphBuilder, TaskGraphBuilderHelper } from "@ellmers/task-graph";
-import { JobQueueAiTask } from "./base/JobQueueAiTask";
+import { AiTask } from "./base/AiTask";
 import { language } from "./base/TaskIOTypes";
 import { model_translation } from "./base/TaskIOTypes";
 
@@ -31,7 +31,7 @@ export type TextTranslationTaskOutput = {
 /**
  * This generates text from a prompt
  */
-export class TextTranslationTask extends JobQueueAiTask {
+export class TextTranslationTask extends AiTask {
   public static inputs = [
     {
       id: "text",

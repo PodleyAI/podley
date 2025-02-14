@@ -159,33 +159,33 @@ classDiagram
     SimpleTask <|-- JobQueueTask
     style JobQueueTask type:abstract,stroke-dasharray: 5 5
 
-    class JobQueueAiTask{
+    class AiTask{
       string model
     }
-    <<abstract>> JobQueueAiTask
-    JobQueueTask <|-- JobQueueAiTask
-    style JobQueueAiTask type:abstract,stroke-dasharray: 5 5
+    <<abstract>> AiTask
+    JobQueueTask <|-- AiTask
+    style AiTask type:abstract,stroke-dasharray: 5 5
 
 
 
   class DownloadModelTask{
     run() model
   }
-  JobQueueAiTask <|-- DownloadModelTask
+  AiTask <|-- DownloadModelTask
   style DownloadModelTask type:model,stroke-width:2px
 
   class TextEmbeddingTask{
     string text
     run() vector
   }
-  JobQueueAiTask <|-- TextEmbeddingTask
+  AiTask <|-- TextEmbeddingTask
   style TextEmbeddingTask type:model,stroke-width:2px
 
   class TextGenerationTask{
     string prompt
     run() text
   }
-  JobQueueAiTask <|-- TextGenerationTask
+  AiTask <|-- TextGenerationTask
   style TextGenerationTask type:model,stroke-width:2px
 
   class TextQuestionAnswerTask{
@@ -193,7 +193,7 @@ classDiagram
     string context
     run() answer
   }
-  JobQueueAiTask <|-- TextQuestionAnswerTask
+  AiTask <|-- TextQuestionAnswerTask
   style TextQuestionAnswerTask type:model,stroke-width:2px
 
   class TextRewriterTask{
@@ -201,14 +201,14 @@ classDiagram
     string text
     run() text
   }
-  JobQueueAiTask <|-- TextRewriterTask
+  AiTask <|-- TextRewriterTask
   style TextRewriterTask type:model,stroke-width:2px
 
   class TextSummaryTask{
     string text
     run() text
   }
-  JobQueueAiTask <|-- TextSummaryTask
+  AiTask <|-- TextSummaryTask
   style TextSummaryTask type:model,stroke-width:2px
 
   class TextTranslationTask{
@@ -217,7 +217,7 @@ classDiagram
     string target
     run() text
   }
-  JobQueueAiTask <|-- TextTranslationTask
+  AiTask <|-- TextTranslationTask
   style TextTranslationTask type:model,stroke-width:2px
 
   class DebugLogTask{

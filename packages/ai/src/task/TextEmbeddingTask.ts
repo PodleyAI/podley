@@ -14,7 +14,7 @@ import {
   TaskGraphBuilder,
   TaskGraphBuilderHelper,
 } from "@ellmers/task-graph";
-import { JobQueueAiTask } from "./base/JobQueueAiTask";
+import { AiTask } from "./base/AiTask";
 import { AnyNumberArray, model_embedding } from "./base/TaskIOTypes";
 import { ElVector } from "./base/TaskIOTypes";
 
@@ -31,9 +31,9 @@ export type TextEmbeddingTaskOutput = {
  * Embeddings are numerical representations of text that capture semantic meaning,
  * useful for similarity comparisons and semantic search.
  *
- * @extends JobQueueAiTask
+ * @extends AiTask
  */
-export class TextEmbeddingTask extends JobQueueAiTask {
+export class TextEmbeddingTask extends AiTask {
   public static inputs = [
     {
       id: "text",

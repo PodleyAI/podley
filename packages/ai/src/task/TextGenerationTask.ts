@@ -14,7 +14,7 @@ import {
   TaskGraphBuilder,
   TaskGraphBuilderHelper,
 } from "@ellmers/task-graph";
-import { JobQueueAiTask } from "./base/JobQueueAiTask";
+import { AiTask } from "./base/AiTask";
 import { model_generation } from "./base/TaskIOTypes";
 
 export type TextGenerationTaskInput = {
@@ -28,7 +28,7 @@ export type TextGenerationTaskOutput = {
 /**
  * This generates text from a prompt
  */
-export class TextGenerationTask extends JobQueueAiTask {
+export class TextGenerationTask extends AiTask {
   public static inputs = [
     {
       id: "prompt",

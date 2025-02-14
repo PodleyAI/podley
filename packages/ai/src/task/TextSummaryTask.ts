@@ -14,7 +14,7 @@ import {
   arrayTaskFactory,
   JobQueueTaskConfig,
 } from "@ellmers/task-graph";
-import { JobQueueAiTask } from "./base/JobQueueAiTask";
+import { AiTask } from "./base/AiTask";
 import { model_summarization } from "./base/TaskIOTypes";
 
 export type TextSummaryTaskInput = {
@@ -29,7 +29,7 @@ export type TextSummaryTaskOutput = {
  * This summarizes a piece of text
  */
 
-export class TextSummaryTask extends JobQueueAiTask {
+export class TextSummaryTask extends AiTask {
   public static inputs = [
     {
       id: "text",
