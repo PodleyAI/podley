@@ -204,7 +204,7 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
   /**
    * Aborts a job
    */
-  public abstract abort(jobId: unknown): Promise<void>;
+  public abstract abort(jobId: unknown): Promise<boolean>;
 
   /**
    * Gets the jobs by job run id
@@ -239,7 +239,7 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
    * Executes a job with the provided abort signal.
    * Can be overridden by implementations to add custom execution logic.
    */
-  public async executeJob(job: Job<Input, Output>, signal?: AbortSignal): Promise<Output> {
+  public async executeJob(job: Job<Input, Output>, signal: AbortSignal): Promise<Output> {
     if (!job) throw new Error("Cannot execute null or undefined job");
     return await job.execute(signal);
   }
@@ -274,8 +274,6 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
     if (controller) {
       controller.abort();
       this.events.emit("job_aborting", this.queue, jobId);
-    } else {
-      console.error(`Job ${jobId} not found in activeJobSignals`);
     }
   }
 
@@ -293,6 +291,13 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
   }
 
   /**
+   * Deletes an abort controller for a job
+   */
+  protected deleteAbortController(jobId: unknown): void {
+    this.activeJobSignals.delete(jobId);
+  }
+
+  /**
    * Processes a job and handles its lifecycle including retries and error handling
    */
   protected async processJob(job: Job<Input, Output>): Promise<void> {
@@ -305,10 +310,7 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
       await this.limiter.recordJobStart();
       this.emitStatsUpdate();
 
-      const abortController = this.activeJobSignals.get(job.id);
-      if (!abortController) {
-        throw new Error(`Abort controller for job ${job.id} not found`);
-      }
+      const abortController = this.createAbortController(job.id);
       this.events.emit("job_start", this.queue, job.id);
       const output = await this.executeJob(job, abortController.signal);
       await this.complete(job.id, output);
@@ -332,7 +334,7 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
       await this.complete(job.id, undefined, error);
     } finally {
       await this.limiter.recordJobCompletion();
-      this.activeJobSignals.delete(job.id);
+      this.deleteAbortController(job.id);
       this.emitStatsUpdate();
     }
   }
@@ -342,16 +344,16 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
    */
   protected async validateJobState(job: Job<Input, Output>): Promise<void> {
     if (job.status === JobStatus.COMPLETED) {
-      throw new Error(`Job ${job.id} is already completed`);
+      throw new PermanentJobError(`Job ${job.id} is already completed`);
     }
     if (job.status === JobStatus.FAILED) {
-      throw new Error(`Job ${job.id} has failed`);
+      throw new PermanentJobError(`Job ${job.id} has failed`);
     }
     if (job.status === JobStatus.ABORTING) {
-      throw new Error(`Job ${job.id} is being aborted`);
+      throw new AbortSignalJobError(`Job ${job.id} is being aborted`);
     }
     if (job.deadlineAt && job.deadlineAt < new Date()) {
-      throw new Error(`Job ${job.id} has exceeded its deadline`);
+      throw new PermanentJobError(`Job ${job.id} has exceeded its deadline`);
     }
   }
 
@@ -405,6 +407,9 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
       this.stats.completedJobs++;
       this.events.emit("job_complete", this.queue, jobId, output!);
       promises.forEach(({ resolve }) => resolve(output!));
+    } else if (status === JobStatus.ABORTING) {
+      this.events.emit("job_aborting", this.queue, jobId);
+      promises.forEach(({ reject }) => reject(new AbortSignalJobError("Job aborted onCompleted")));
     }
 
     this.activeJobPromises.delete(jobId);
@@ -440,14 +445,8 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
       throw new Error(`Job ${jobId} not found`);
     }
 
-    if (job.status === JobStatus.COMPLETED) {
-      throw new Error(`Job ${jobId} is already completed`);
-    }
-    if (job.status === JobStatus.FAILED) {
-      throw new Error(`Job ${jobId} has already failed`);
-    }
-    if (job.status === JobStatus.ABORTING) {
-      throw new Error(`Job ${jobId} is being aborted`);
+    if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.ABORTING].includes(job.status)) {
+      return;
     }
 
     // Validate progress value

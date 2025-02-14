@@ -13,7 +13,7 @@ export interface IJobQueue<Input, Output> {
   add(job: Job<Input, Output>): Promise<unknown>;
   get(id: unknown): Promise<Job<Input, Output> | undefined>;
   waitFor(jobId: unknown): Promise<Output>;
-  abort(jobId: unknown): Promise<void>;
+  abort(jobId: unknown): Promise<boolean>;
 
   peek(status?: JobStatus, num?: number): Promise<Job<Input, Output>[]>;
   size(status?: JobStatus): Promise<number>;

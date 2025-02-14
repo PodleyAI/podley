@@ -19,10 +19,19 @@ interface PopupProps {
   json: string;
   onJsonChange: (json: string) => void;
   running: boolean;
+  aborting: boolean;
   run: () => void;
+  stop: () => void;
 }
 
-export const JsonEditor: React.FC<PopupProps> = ({ json, onJsonChange, run, running }) => {
+export const JsonEditor: React.FC<PopupProps> = ({
+  json,
+  onJsonChange,
+  run,
+  stop,
+  running,
+  aborting,
+}) => {
   const [code, setCode] = useState<string>(json);
   const [isValidJSON, setIsValidJSON] = useState<boolean>(true);
 
@@ -66,13 +75,24 @@ export const JsonEditor: React.FC<PopupProps> = ({ json, onJsonChange, run, runn
           readOnly={running}
         />
       </div>
-      <button
-        disabled={!isValidJSON || running}
-        onClick={run}
-        className="bg-black text-white p-2 rounded-md hover:bg-gray-900 disabled:opacity-50 disabled:bg-gray-950 disabled:cursor-not-allowed"
-      >
-        RUN
-      </button>
+      {!running && (
+        <button
+          disabled={!isValidJSON}
+          onClick={run}
+          className="bg-black text-white p-2 rounded-md hover:bg-gray-900 disabled:opacity-50 disabled:bg-gray-950 disabled:cursor-not-allowed"
+        >
+          RUN
+        </button>
+      )}
+      {running && (
+        <button
+          disabled={aborting}
+          onClick={stop}
+          className="bg-black text-white p-2 rounded-md hover:bg-gray-900 disabled:opacity-50 disabled:bg-gray-950 disabled:cursor-not-allowed"
+        >
+          STOP
+        </button>
+      )}
     </div>
   );
 };

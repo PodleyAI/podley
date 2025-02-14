@@ -15,7 +15,7 @@ import {
   JobQueueTaskConfig,
   type TaskOutput,
 } from "@ellmers/task-graph";
-import { AiProviderJob } from "../../provider/AiProviderRegistry";
+import { AiJob } from "../../job/AiJob";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
 
 /**
@@ -54,7 +54,7 @@ export class AiTask extends JobQueueTask {
       throw new Error(`JobQueueTaskTask: No queue for model ${model.provider}`);
     }
     this.config.queue = queue.queue;
-    const job = new AiProviderJob({
+    const job = new AiJob({
       queueName: queue.queue,
       jobRunId: this.config.currentJobRunId, // could be undefined
       input: {

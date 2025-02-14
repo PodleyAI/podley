@@ -13,7 +13,7 @@ import {
   TaskInput,
   TaskOutput,
 } from "@ellmers/task-graph";
-import { AiProviderJob, getGlobalModelRepository, setGlobalModelRepository } from "@ellmers/ai";
+import { AiJob, getGlobalModelRepository, setGlobalModelRepository } from "@ellmers/ai";
 import { InMemoryModelRepository } from "@ellmers/ai";
 import { SqliteJobQueue } from "@ellmers/job-queue";
 import { registerHuggingfaceLocalTasks } from "../bindings/registerTasks";
@@ -48,7 +48,7 @@ describe("HFTransformersBinding", () => {
       const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
         LOCAL_ONNX_TRANSFORMERJS,
         new ConcurrencyLimiter(1, 10),
-        AiProviderJob<TaskInput, TaskOutput>,
+        AiJob<TaskInput, TaskOutput>,
         10
       );
       queueRegistry.registerQueue(jobQueue);
@@ -112,7 +112,7 @@ describe("HFTransformersBinding", () => {
         getDatabase(":memory:"),
         LOCAL_ONNX_TRANSFORMERJS,
         new ConcurrencyLimiter(1, 10),
-        AiProviderJob<TaskInput, TaskOutput>,
+        AiJob<TaskInput, TaskOutput>,
         10
       );
       jobQueue.ensureTableExists();

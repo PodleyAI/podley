@@ -13,12 +13,7 @@ import {
   TaskInput,
   TaskOutput,
 } from "@ellmers/task-graph";
-import {
-  getGlobalModelRepository,
-  Model,
-  AiProviderJob,
-  setGlobalModelRepository,
-} from "@ellmers/ai";
+import { getGlobalModelRepository, Model, AiJob, setGlobalModelRepository } from "@ellmers/ai";
 import { InMemoryModelRepository } from "@ellmers/ai";
 import { SqliteJobQueue } from "@ellmers/job-queue";
 import { registerMediaPipeTfJsLocalTasks } from "../bindings/registerTasks";
@@ -53,7 +48,7 @@ describe("TfMediaPipeBinding", () => {
       const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
         MEDIA_PIPE_TFJS_MODEL,
         new ConcurrencyLimiter(1, 10),
-        AiProviderJob<TaskInput, TaskOutput>,
+        AiJob<TaskInput, TaskOutput>,
         10
       );
       queueRegistry.registerQueue(jobQueue);
@@ -112,7 +107,7 @@ describe("TfMediaPipeBinding", () => {
         getDatabase(":memory:"),
         MEDIA_PIPE_TFJS_MODEL,
         new ConcurrencyLimiter(1, 10),
-        AiProviderJob<TaskInput, TaskOutput>,
+        AiJob<TaskInput, TaskOutput>,
         10
       );
       jobQueue.ensureTableExists();

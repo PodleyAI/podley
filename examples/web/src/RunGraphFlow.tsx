@@ -160,6 +160,9 @@ function listenToTask(
   const taskId = task.config.id;
   task.on("start", () => {
     updateNodeData(taskId, { active: true, progress: 1, progressText: "" }, setNodes);
+    setTimeout(() => {
+      doNodeLayout(setNodes, setEdges);
+    }, 16);
   });
   task.on("complete", () => {
     const progressText = task.runOutputData?.text ?? task.runOutputData?.model;
@@ -172,6 +175,9 @@ function listenToTask(
       },
       setNodes
     );
+    setTimeout(() => {
+      doNodeLayout(setNodes, setEdges);
+    }, 16);
   });
   task.on("error", (text) => {
     updateNodeData(
@@ -179,11 +185,21 @@ function listenToTask(
       { active: false, progress: 100, progressText: "Error: " + text },
       setNodes
     );
+    setTimeout(() => {
+      doNodeLayout(setNodes, setEdges);
+    }, 16);
   });
   task.on("abort", (text) => {
     updateNodeData(taskId, { active: false, progress: 100, progressText: "Aborting" }, setNodes);
+    setTimeout(() => {
+      doNodeLayout(setNodes, setEdges);
+    }, 16);
   });
   task.on("progress", (progress: number, progressText: string, details: any) => {
+    if (details?.text) {
+      details.text = (task.runOutputData?.text ?? "") + details.text;
+      task.runOutputData.text = details.text;
+    }
     updateNodeData(
       taskId,
       {
@@ -193,6 +209,9 @@ function listenToTask(
       },
       setNodes
     );
+    setTimeout(() => {
+      doNodeLayout(setNodes, setEdges);
+    }, 16);
   });
 
   if (task.isCompound) {
