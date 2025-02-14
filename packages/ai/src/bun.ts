@@ -1,3 +1,4 @@
+export * from "./job/AiJob";
 export * from "./task";
 export * from "./model/Model";
 export * from "./model/ModelRegistry";

@@ -36,7 +36,7 @@ import type {
   TextTranslationTaskInput,
   TextTranslationTaskOutput,
   Model,
-  AiProviderJob,
+  AiJob,
 } from "@ellmers/ai";
 import { QUANTIZATION_DATA_TYPES } from "../model/ONNXTransformerJsModel";
 
@@ -85,29 +85,29 @@ const pipelines = new Map<string, any>();
  * This is a helper function to get a pipeline for a model and assign a
  * progress callback to the task.
  *
- * @param task
- * @param model
- * @param options
+ * @param job - The job that is running the task
+ * @param model - The model to get the pipeline for
+ * @param options - The options to pass to the pipeline
  */
-const getPipeline = async (job: AiProviderJob, model: Model, options: any = {}) => {
+const getPipeline = async (job: AiJob, model: Model, options: PretrainedModelOptions = {}) => {
   if (!pipelines.has(model.name)) {
     pipelines.set(
       model.name,
       pipeline(model.pipeline as PipelineType, model.url, {
         dtype: (model.quantization as QUANTIZATION_DATA_TYPES) || "q8",
-        session_options: options?.session_options,
         progress_callback: downloadProgressCallback(job),
         ...(model.use_external_data_format
           ? { use_external_data_format: model.use_external_data_format }
           : {}),
         ...(model.device && IS_WEBGPU_AVAILABLE ? { device: model.device as any } : {}),
+        ...options,
       })
     );
   }
   return await pipelines.get(model.name);
 };
 
-function downloadProgressCallback(job: AiProviderJob) {
+function downloadProgressCallback(job: AiJob) {
   return (status: CallbackStatus) => {
     const progress = status.status === "progress" ? Math.round(status.progress) : 0;
     if (status.status === "progress") {
@@ -116,7 +116,7 @@ function downloadProgressCallback(job: AiProviderJob) {
   };
 }
 
-function generateProgressCallback(job: AiProviderJob) {
+function generateProgressCallback(job: AiJob) {
   let count = 0;
   return (text: string) => {
     count++;
@@ -132,7 +132,7 @@ function generateProgressCallback(job: AiProviderJob) {
  */
 
 export async function HuggingFaceLocal_DownloadRun(
-  job: AiProviderJob,
+  job: AiJob,
   runInputData: DownloadModelTaskInput,
   signal?: AbortSignal
 ) {
@@ -154,7 +154,7 @@ export async function HuggingFaceLocal_DownloadRun(
  * Model pipeline must be "feature-extraction"
  */
 export async function HuggingFaceLocal_EmbeddingRun(
-  job: AiProviderJob,
+  job: AiJob,
   runInputData: TextEmbeddingTaskInput,
   signal?: AbortSignal
 ): Promise<TextEmbeddingTaskOutput> {
@@ -187,7 +187,7 @@ export async function HuggingFaceLocal_EmbeddingRun(
  * Model pipeline must be "text-generation" or "text2text-generation"
  */
 export async function HuggingFaceLocal_TextGenerationRun(
-  job: AiProviderJob,
+  job: AiJob,
   runInputData: TextGenerationTaskInput,
   signal?: AbortSignal
 ): Promise<TextGenerationTaskOutput> {
@@ -227,7 +227,7 @@ export async function HuggingFaceLocal_TextGenerationRun(
  * Model pipeline must be "translation"
  */
 export async function HuggingFaceLocal_TextTranslationRun(
-  job: AiProviderJob,
+  job: AiJob,
   runInputData: TextTranslationTaskInput,
   signal?: AbortSignal
 ): Promise<Partial<TextTranslationTaskOutput>> {
@@ -263,7 +263,7 @@ export async function HuggingFaceLocal_TextTranslationRun(
  * Model pipeline must be "text-generation" or "text2text-generation"
  */
 export async function HuggingFaceLocal_TextRewriterRun(
-  job: AiProviderJob,
+  job: AiJob,
   runInputData: TextRewriterTaskInput,
   signal?: AbortSignal
 ): Promise<TextRewriterTaskOutput> {
@@ -306,7 +306,7 @@ export async function HuggingFaceLocal_TextRewriterRun(
  */
 
 export async function HuggingFaceLocal_TextSummaryRun(
-  job: AiProviderJob,
+  job: AiJob,
   runInputData: TextSummaryTaskInput,
   signal?: AbortSignal
 ): Promise<TextSummaryTaskOutput> {
@@ -339,7 +339,7 @@ export async function HuggingFaceLocal_TextSummaryRun(
  * Model pipeline must be "question-answering"
  */
 export async function HuggingFaceLocal_TextQuestionAnswerRun(
-  job: AiProviderJob,
+  job: AiJob,
   runInputData: TextQuestionAnswerTaskInput,
   signal?: AbortSignal
 ): Promise<TextQuestionAnswerTaskOutput> {

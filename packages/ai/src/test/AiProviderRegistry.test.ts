@@ -1,10 +1,10 @@
 import { expect, test, describe, beforeEach, afterEach, afterAll, mock } from "bun:test";
 import {
   AiProviderRegistry,
-  AiProviderJob,
   getAiProviderRegistry,
   setAiProviderRegistry,
 } from "../provider/AiProviderRegistry";
+import { AiJob } from "../job/AiJob";
 import {
   TaskInput,
   TaskOutput,
@@ -20,7 +20,7 @@ const TEST_PROVIDER = "test-provider";
 
 describe("AiProviderRegistry", () => {
   // Create a mock run function that reports progress
-  const mockLongRunningRunFn = async (job: AiProviderJob, input: TaskInput) => {
+  const mockLongRunningRunFn = async (job: AiJob, input: TaskInput) => {
     const jobQueue = job.queue!;
     await jobQueue.updateProgress(job.id, 25, "25% complete");
     await sleep(2);
@@ -32,11 +32,11 @@ describe("AiProviderRegistry", () => {
     return { result: "success with progress" };
   };
 
-  let queue = new InMemoryJobQueue(TEST_PROVIDER, new InMemoryRateLimiter(4, 1), AiProviderJob);
+  let queue = new InMemoryJobQueue(TEST_PROVIDER, new InMemoryRateLimiter(4, 1), AiJob);
   let aiProviderRegistry: AiProviderRegistry;
 
   beforeEach(() => {
-    queue = new InMemoryJobQueue(TEST_PROVIDER, new InMemoryRateLimiter(4, 1), AiProviderJob);
+    queue = new InMemoryJobQueue(TEST_PROVIDER, new InMemoryRateLimiter(4, 1), AiJob);
     setTaskQueueRegistry(new TaskQueueRegistry<TaskInput, TaskOutput>());
     const taskQueueRegistry = getTaskQueueRegistry();
     taskQueueRegistry.registerQueue(queue);
@@ -193,12 +193,12 @@ describe("AiProviderRegistry", () => {
     });
   });
 
-  describe("AiProviderJob", () => {
+  describe("AiJob", () => {
     test("should execute registered function with correct parameters", async () => {
       const mockRunFn = mock(() => Promise.resolve({ result: "success" }));
       aiProviderRegistry.registerRunFn("text-generation", TEST_PROVIDER, mockRunFn);
 
-      const job = new AiProviderJob({
+      const job = new AiJob({
         queueName: TEST_PROVIDER,
         input: {
           taskType: "text-generation",

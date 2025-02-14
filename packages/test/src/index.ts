@@ -15,7 +15,7 @@ import {
 } from "@ellmers/ai-provider/tf-mediapipe";
 import { TaskInput, TaskOutput, getTaskQueueRegistry } from "@ellmers/task-graph";
 import { InMemoryJobQueue } from "@ellmers/job-queue";
-import { AiProviderJob } from "@ellmers/ai";
+import { AiJob } from "@ellmers/ai";
 import { ConcurrencyLimiter } from "@ellmers/job-queue";
 export * from "./sample/MediaPipeModelSamples";
 export * from "./sample/ONNXModelSamples";
@@ -25,7 +25,7 @@ export async function registerHuggingfaceLocalTasksInMemory() {
   const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
     LOCAL_ONNX_TRANSFORMERJS,
     new ConcurrencyLimiter(1, 10),
-    AiProviderJob,
+    AiJob,
     10
   );
   getTaskQueueRegistry().registerQueue(jobQueue);
@@ -37,7 +37,7 @@ export async function registerMediaPipeTfJsLocalInMemory() {
   const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
     MEDIA_PIPE_TFJS_MODEL,
     new ConcurrencyLimiter(1, 10),
-    AiProviderJob,
+    AiJob,
     10
   );
   getTaskQueueRegistry().registerQueue(jobQueue);

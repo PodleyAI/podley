@@ -11,14 +11,14 @@ import {
   TextEmbeddingTaskInput,
   getGlobalModelRepository,
   ElVector,
-  AiProviderJob,
+  AiJob,
 } from "@ellmers/ai";
 
 /**
  * This is a task that downloads and caches a MediaPipe TFJS model.
  */
 export async function MediaPipeTfJsLocal_Download(
-  job: AiProviderJob,
+  job: AiJob,
   runInputData: DownloadModelTaskInput,
   signal?: AbortSignal
 ) {
@@ -44,7 +44,7 @@ export async function MediaPipeTfJsLocal_Download(
  * using a MediaPipe TFJS model.
  */
 export async function MediaPipeTfJsLocal_Embedding(
-  job: AiProviderJob,
+  job: AiJob,
   runInputData: TextEmbeddingTaskInput,
   signal?: AbortSignal
 ) {

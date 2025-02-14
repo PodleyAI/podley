@@ -5,53 +5,16 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Job } from "@ellmers/job-queue";
 import { TaskInput, TaskOutput } from "@ellmers/task-graph";
+import { AiJob } from "../job/AiJob";
 
 /**
- * Input data for the AiProviderJob
- */
-interface AiProviderInput<Input extends TaskInput = TaskInput> {
-  taskType: string;
-  modelProvider: string;
-  taskInput: Input;
-}
-
-/**
- * Type for the run function for the AiProviderJob
+ * Type for the run function for the AiJob
  */
 export type AiProviderRunFn<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
-> = (
-  job: AiProviderJob<Input, Output>,
-  runInputData: Input,
-  signal?: AbortSignal
-) => Promise<Output>;
-
-/**
- * Extends the base Job class to provide custom execution functionality
- * through a provided function.
- */
-export class AiProviderJob<
-  Input extends TaskInput = TaskInput,
-  Output extends TaskOutput = TaskOutput,
-> extends Job<AiProviderInput<Input>, Output> {
-  execute(signal?: AbortSignal): Promise<Output> {
-    const fn =
-      getAiProviderRegistry().runFnRegistry[this.input.taskType]?.[this.input.modelProvider];
-    if (!fn) {
-      throw new Error(
-        `No run function found for task type ${this.input.taskType} and model provider ${this.input.modelProvider}`
-      );
-    }
-    return fn(
-      this as unknown as AiProviderJob<Input, Output>,
-      this.input.taskInput,
-      signal
-    ) as Promise<Output>;
-  }
-}
+> = (job: AiJob<Input, Output>, runInputData: Input, signal?: AbortSignal) => Promise<Output>;
 
 /**
  * Registry that manages provider-specific task execution functions and job queues.
