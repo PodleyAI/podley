@@ -33,7 +33,7 @@
     "@types/pg": "^8.11.11",
     "bun-types": "^1.2.2",
     "chalk": "^5.4.1",
-    "commander": "=11.1.0",
+    "commander": "^13.1.0",
     "eventemitter3": "^5.0.1",
     "listr2": "^8.2.5",
     "nanoid": "^5.0.9",
