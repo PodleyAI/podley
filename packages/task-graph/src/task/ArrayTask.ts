@@ -17,7 +17,7 @@ import {
   TaskOutputDefinition,
   JsonTaskItem,
 } from "./Task";
-import { TaskGraph } from "./TaskGraph";
+import { TaskGraph } from "../task-graph/TaskGraph";
 import { TaskRegistry } from "./TaskRegistry";
 
 // Type utilities for array transformations

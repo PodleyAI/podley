@@ -18,8 +18,8 @@ import {
   type TaskInputDefinition,
   type TaskOutputDefinition,
   type JsonTaskItem,
-} from "./Task";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+} from "../task/Task";
+import type { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 
 export type TaskGraphBuilderHelper<I extends TaskInput> = (input?: Partial<I>) => TaskGraphBuilder;
 

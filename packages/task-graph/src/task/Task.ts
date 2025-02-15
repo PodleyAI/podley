@@ -7,8 +7,8 @@
 
 import { EventEmitter } from "eventemitter3";
 import { nanoid } from "nanoid";
-import { TaskGraph, TaskGraphItemJson } from "./TaskGraph";
-import { TaskGraphRunner } from "./TaskGraphRunner";
+import { TaskGraph, TaskGraphItemJson } from "../task-graph/TaskGraph";
+import { TaskGraphRunner } from "../task-graph/TaskGraphRunner";
 
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 

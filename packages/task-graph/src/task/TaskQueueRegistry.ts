@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { JobQueue } from "@ellmers/job-queue";
-import { TaskInput, TaskOutput } from "./base/Task";
+import { TaskInput, TaskOutput } from "./Task";
 
 let taskQueueRegistry: TaskQueueRegistry<TaskInput, TaskOutput> | null = null;
 

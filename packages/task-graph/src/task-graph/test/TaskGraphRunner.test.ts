@@ -7,7 +7,7 @@
 
 import { describe, expect, it, beforeEach, spyOn } from "bun:test";
 import { TaskGraphRunner } from "../TaskGraphRunner";
-import { Task, SingleTask, TaskOutput } from "../Task";
+import { Task, SingleTask, TaskOutput } from "../../task/Task";
 import { DataFlow } from "../DataFlow";
 import { TaskGraph } from "../TaskGraph";
 

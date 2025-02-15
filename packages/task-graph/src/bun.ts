@@ -5,7 +5,17 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./task/index";
+export * from "./task/Task";
+export * from "./task-graph/DataFlow";
+export * from "./task/TaskRegistry";
+export * from "./task-graph/TaskGraph";
+export * from "./task-graph/TaskGraphRunner";
+export * from "./task-graph/TaskGraphBuilder";
+export * from "./task/ArrayTask";
+export * from "./task/OutputTask";
+export * from "./task/JobQueueTask";
+export * from "./task/TaskQueueRegistry";
+
 export * from "./storage/taskoutput/TaskOutputRepository";
 export * from "./storage/taskgraph/TaskGraphRepository";
 export * from "./util/Misc";

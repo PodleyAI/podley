@@ -11,8 +11,8 @@ import { FileTaskGraphRepository } from "../FileTaskGraphRepository";
 import { TaskOutput } from "../../../task/Task";
 import { SingleTask } from "../../../task/Task";
 import { TaskRegistry } from "../../../task/TaskRegistry";
-import { DataFlow } from "../../../task/DataFlow";
-import { TaskGraph } from "../../../task/TaskGraph";
+import { DataFlow } from "../../../task-graph/DataFlow";
+import { TaskGraph } from "../../../task-graph/TaskGraph";
 
 class TestTask extends SingleTask {
   static readonly type = "TestTask";

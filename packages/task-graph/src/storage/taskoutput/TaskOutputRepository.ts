@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import EventEmitter from "eventemitter3";
-import { TaskInput, TaskOutput } from "../../task/base/Task";
+import { TaskInput, TaskOutput } from "../../task/Task";
 import { DefaultValueType, type KVRepository } from "@ellmers/storage";
 import { makeFingerprint } from "../../util/Misc";
 
