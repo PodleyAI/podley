@@ -1,12 +1,15 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src/**/*"],
-  "files": ["./src/browser.ts", "./src/node.ts", "./src/bun.ts"],
-  "exclude": ["**/*.test.ts", "test", "dist"],
+  "files": ["./src/bun.ts"],
+  "exclude": ["dist"],
   "compilerOptions": {
     "composite": true,
     "outDir": "./dist",
     "baseUrl": "./src",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "paths": {
+      "/*": ["./*"]
+    }
   }
 }

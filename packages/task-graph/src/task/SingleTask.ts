@@ -5,16 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { SingleTask } from "./SingleTask";
-import { CompoundTask } from "./CompoundTask";
+import type { ITaskSimple, TaskTypeName } from "./Task";
+import { TaskBase } from "./TaskBase";
 
-const all = new Map<string, typeof SingleTask | typeof CompoundTask>();
+/**
+ * Represents a single task, which is a basic unit of work in the task graph
+ */
 
-const registerTask = (baseClass: typeof SingleTask | typeof CompoundTask) => {
-  all.set(baseClass.type, baseClass);
-};
-
-export const TaskRegistry = {
-  registerTask,
-  all,
-};
+export class SingleTask extends TaskBase implements ITaskSimple {
+  static readonly type: TaskTypeName = "SingleTask";
+  readonly isCompound = false;
+}

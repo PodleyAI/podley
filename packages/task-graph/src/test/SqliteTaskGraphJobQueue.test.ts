@@ -5,13 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { SqliteJobQueue } from "@ellmers/job-queue";
-import { runGenericTaskGraphJobQueueTests } from "./genericTaskGraphJobQueueTests";
-import { TestJob } from "./genericTaskGraphJobQueueTests";
+import { ConcurrencyLimiter, SqliteJobQueue } from "@ellmers/job-queue";
 import { Database } from "bun:sqlite";
-import { nanoid } from "nanoid";
 import { describe } from "bun:test";
-import { ConcurrencyLimiter } from "@ellmers/job-queue";
+import { nanoid } from "nanoid";
+import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 
 describe("SqliteTaskGraphJobQueue", () => {
   runGenericTaskGraphJobQueueTests(async () => {

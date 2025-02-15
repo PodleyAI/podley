@@ -6,6 +6,9 @@
 //    *******************************************************************************
 
 export * from "./task/Task";
+export * from "./task/TaskBase";
+export * from "./task/SingleTask";
+export * from "./task/CompoundTask";
 export * from "./task-graph/DataFlow";
 export * from "./task/TaskRegistry";
 export * from "./task-graph/TaskGraph";

@@ -5,19 +5,18 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { TaskGraph } from "/task-graph/TaskGraph";
 import {
-  CompoundTask,
   TaskInput,
   TaskConfig,
   TaskOutput,
   TaskTypeName,
-  SingleTask,
-  RegenerativeCompoundTask,
   TaskInputDefinition,
   TaskOutputDefinition,
   JsonTaskItem,
 } from "./Task";
-import { TaskGraph } from "../task-graph/TaskGraph";
+import { SingleTask } from "./SingleTask";
+import { CompoundTask, RegenerativeCompoundTask } from "./CompoundTask";
 import { TaskRegistry } from "./TaskRegistry";
 
 // Type utilities for array transformations

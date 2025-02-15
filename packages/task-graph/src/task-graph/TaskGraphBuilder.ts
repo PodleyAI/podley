@@ -5,21 +5,21 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import EventEmitter from "eventemitter3";
 import { GraphEvents } from "@sroussey/typescript-graph";
-import { DataFlow } from "./DataFlow";
-import { TaskGraph, TaskGraphJson } from "./TaskGraph";
-import { TaskGraphRunner } from "./TaskGraphRunner";
+import type { TaskOutputRepository } from "/storage/taskoutput/TaskOutputRepository";
+import { CompoundTask } from "/task/CompoundTask";
+import { SingleTask } from "/task/SingleTask";
 import {
-  CompoundTask,
-  SingleTask,
-  TaskBase,
+  type JsonTaskItem,
   type TaskInput,
   type TaskInputDefinition,
   type TaskOutputDefinition,
-  type JsonTaskItem,
-} from "../task/Task";
-import type { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+} from "/task/Task";
+import { TaskBase } from "/task/TaskBase";
+import EventEmitter from "eventemitter3";
+import { DataFlow } from "./DataFlow";
+import { TaskGraph, TaskGraphJson } from "./TaskGraph";
+import { TaskGraphRunner } from "./TaskGraphRunner";
 
 export type TaskGraphBuilderHelper<I extends TaskInput> = (input?: Partial<I>) => TaskGraphBuilder;
 

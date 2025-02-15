@@ -9,7 +9,7 @@
     "baseUrl": "./src",
     "rootDir": "./src",
     "paths": {
-      "#/*": ["./src/*"]
+      "/*": ["./*"]
     }
   }
 }

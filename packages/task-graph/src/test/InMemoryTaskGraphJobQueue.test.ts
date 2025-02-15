@@ -5,10 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { InMemoryJobQueue, ConcurrencyLimiter } from "@ellmers/job-queue";
-import { runGenericTaskGraphJobQueueTests } from "./genericTaskGraphJobQueueTests";
-import { TestJob } from "./genericTaskGraphJobQueueTests";
+import { ConcurrencyLimiter, InMemoryJobQueue } from "@ellmers/job-queue";
 import { describe } from "bun:test";
+import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 
 describe("InMemoryTaskGraphJobQueue", () => {
   runGenericTaskGraphJobQueueTests(

@@ -6,7 +6,8 @@
 //    *******************************************************************************
 
 import { getTaskQueueRegistry } from "./TaskQueueRegistry";
-import { SingleTask, TaskConfig, TaskOutput } from "./Task";
+import { TaskConfig, TaskOutput } from "./Task";
+import { SingleTask } from "./SingleTask";
 
 /**
  * Configuration interface for job queue tasks

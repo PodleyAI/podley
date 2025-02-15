@@ -7,10 +7,9 @@
 
 import "fake-indexeddb/auto";
 import { IndexedDbJobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
-import { runGenericTaskGraphJobQueueTests } from "./genericTaskGraphJobQueueTests";
-import { TestJob } from "./genericTaskGraphJobQueueTests";
-import { nanoid } from "nanoid";
 import { describe } from "bun:test";
+import { nanoid } from "nanoid";
+import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 
 describe("IndexedDbTaskGraphJobQueue", () => {
   runGenericTaskGraphJobQueueTests(

@@ -7,6 +7,9 @@
     "composite": true,
     "outDir": "./dist",
     "baseUrl": "./src",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "paths": {
+      "/*": ["./*"]
+    }
   }
 }

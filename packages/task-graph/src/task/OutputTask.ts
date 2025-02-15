@@ -5,7 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { SingleTask, TaskInput } from "./Task";
+import { TaskInput } from "./Task";
+import { SingleTask } from "./SingleTask";
 
 /**
  * Output tasks have side effects, and so need to always run and not be cached

@@ -20,7 +20,7 @@
     "build:examples": "bun run bun run build:cli && bun run build:web",
     "build:cli": "cd examples/cli && bun run build",
     "build:web": "cd examples/web && bun run build",
-    "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist packages/*/src/**/*\\.d\\.ts packages/*/src/**/*\\.map examples/*/node_modules examples/*/dist examples/*/src/**/*\\.d\\.ts examples/*/src/**/*\\.map",
+    "clean": "rm -rf node_modules packages/*/node_modules packages/*/*tsbuildinfo packages/*/dist packages/*/src/**/*\\.d\\.ts packages/*/src/**/*\\.map examples/*/node_modules examples/*/dist examples/*/src/**/*\\.d\\.ts examples/*/src/**/*\\.map",
     "watch:packages": "concurrently --kill-others -c 'auto' -n task-graph,task,storage,ai,provider,test 'cd packages/task-graph && bun run watch' 'cd packages/tasks && bun run watch' 'cd packages/storage && bun run watch' 'cd packages/ai && bun run watch' 'cd packages/ai-provider && bun run watch' 'cd packages/test && bun run watch'",
     "docs": "typedoc",
     "format": "eslint --fix && prettier \"{packages,examples}/*/src/**/*.{js,ts,tsx,json}\" --check --write",
