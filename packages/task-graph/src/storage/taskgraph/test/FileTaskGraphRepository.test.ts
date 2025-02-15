@@ -8,10 +8,11 @@
 import { describe, expect, it, beforeEach } from "bun:test";
 import { rmdirSync } from "fs";
 import { FileTaskGraphRepository } from "../FileTaskGraphRepository";
-import { TaskOutput } from "../../../task/base/Task";
-import { SingleTask } from "../../../task/base/Task";
-import { TaskRegistry } from "../../../task/base/TaskRegistry";
-import { DataFlow, TaskGraph } from "../../../task/base/TaskGraph";
+import { TaskOutput } from "../../../task/Task";
+import { SingleTask } from "../../../task/Task";
+import { TaskRegistry } from "../../../task/TaskRegistry";
+import { DataFlow } from "../../../task/DataFlow";
+import { TaskGraph } from "../../../task/TaskGraph";
 
 class TestTask extends SingleTask {
   static readonly type = "TestTask";

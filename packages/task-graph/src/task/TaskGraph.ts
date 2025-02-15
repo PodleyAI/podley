@@ -6,36 +6,8 @@
 //    *******************************************************************************
 
 import { DirectedAcyclicGraph } from "@sroussey/typescript-graph";
-import { TaskIdType, TaskInput, TaskOutput } from "./Task";
-import { Task, TaskStream, type JsonTaskItem } from "./Task";
-
-export type DataFlowIdType = string;
-
-/**
- * Represents a data flow between two tasks, indicating how one task's output is used as input for another task
- */
-export class DataFlow {
-  constructor(
-    public sourceTaskId: TaskIdType,
-    public sourceTaskOutputId: string,
-    public targetTaskId: TaskIdType,
-    public targetTaskInputId: string
-  ) {}
-  get id(): string {
-    return `${this.sourceTaskId}.${this.sourceTaskOutputId} -> ${this.targetTaskId}.${this.targetTaskInputId}`;
-  }
-  public value: TaskOutput = {};
-  public provenance: TaskInput = {};
-
-  toJSON(): DataFlowJson {
-    return {
-      sourceTaskId: this.sourceTaskId,
-      sourceTaskOutputId: this.sourceTaskOutputId,
-      targetTaskId: this.targetTaskId,
-      targetTaskInputId: this.targetTaskInputId,
-    };
-  }
-}
+import { Task, TaskIdType, TaskInput, JsonTaskItem, TaskStream } from "./Task";
+import { DataFlow, DataFlowIdType, DataFlowJson } from "./DataFlow";
 
 /**
  * Represents a task graph item, which can be a task or a subgraph
@@ -52,13 +24,6 @@ export type TaskGraphItemJson = {
 export type TaskGraphJson = {
   nodes: TaskGraphItemJson[];
   edges: DataFlowJson[];
-};
-
-export type DataFlowJson = {
-  sourceTaskId: unknown;
-  sourceTaskOutputId: string;
-  targetTaskId: unknown;
-  targetTaskInputId: string;
 };
 
 /**

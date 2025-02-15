@@ -10,7 +10,7 @@ import { nanoid } from "nanoid";
 import { TaskGraph, TaskGraphItemJson } from "./TaskGraph";
 import { TaskGraphRunner } from "./TaskGraphRunner";
 
-import { TaskOutputRepository } from "../../storage/taskoutput/TaskOutputRepository";
+import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 
 export enum TaskStatus {
   PENDING = "NEW",

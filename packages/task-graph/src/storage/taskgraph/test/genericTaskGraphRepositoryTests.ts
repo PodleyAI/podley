@@ -7,9 +7,10 @@
 
 import { expect, it, beforeEach } from "bun:test";
 import { TaskGraphRepository } from "../TaskGraphRepository";
-import { DataFlow, TaskGraph } from "../../../task/base/TaskGraph";
-import { TaskRegistry } from "../../../task/base/TaskRegistry";
-import { SingleTask, TaskOutput } from "../../../task/base/Task";
+import { DataFlow } from "../../../task/DataFlow";
+import { TaskGraph } from "../../../task/TaskGraph";
+import { TaskRegistry } from "../../../task/TaskRegistry";
+import { SingleTask, TaskOutput } from "../../../task/Task";
 
 class TestTask extends SingleTask {
   static readonly type = "TestTask";

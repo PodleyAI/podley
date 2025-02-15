@@ -6,14 +6,11 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach, spyOn } from "bun:test";
-import { TaskGraphRunner } from "../base/TaskGraphRunner";
-import { Task, SingleTask, TaskOutput } from "../base/Task";
-import { DataFlow, TaskGraph } from "../base/TaskGraph";
-import {
-  ConvertAllToArrays,
-  ConvertSomeToOptionalArray,
-  arrayTaskFactory,
-} from "../base/ArrayTask";
+import { TaskGraphRunner } from "../TaskGraphRunner";
+import { Task, SingleTask, TaskOutput } from "../Task";
+import { DataFlow } from "../DataFlow";
+import { TaskGraph } from "../TaskGraph";
+import { ConvertAllToArrays, ConvertSomeToOptionalArray, arrayTaskFactory } from "../ArrayTask";
 
 type TestSquareTaskInput = {
   input: number;

@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskOutputRepository } from "../../storage/taskoutput/TaskOutputRepository";
+import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskInput, Task, TaskOutput, TaskStatus } from "./Task";
 import { TaskGraph } from "./TaskGraph";
 import { nanoid } from "nanoid";

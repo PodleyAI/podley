@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Command } from "commander";
+import type { Command } from "commander";
 import { runTask } from "./TaskStreamToListr2";
 import "@huggingface/transformers";
 import { TaskGraph, TaskGraphBuilder, JsonTaskItem } from "@ellmers/task-graph";

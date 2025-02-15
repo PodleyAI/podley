@@ -7,9 +7,10 @@
 
 import EventEmitter from "eventemitter3";
 import type { KVRepository } from "@ellmers/storage";
-import { DataFlow, TaskGraph, TaskGraphItemJson, TaskGraphJson } from "../../task/base/TaskGraph";
-import { CompoundTask } from "../../task/base/Task";
-import { TaskRegistry } from "../../task/base/TaskRegistry";
+import { DataFlow } from "../../task/DataFlow";
+import { TaskGraph, TaskGraphItemJson, TaskGraphJson } from "../../task/TaskGraph";
+import { CompoundTask } from "../../task/Task";
+import { TaskRegistry } from "../../task/TaskRegistry";
 
 /**
  * Events that can be emitted by the TaskGraphRepository
