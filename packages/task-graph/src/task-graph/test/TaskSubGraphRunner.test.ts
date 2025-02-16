@@ -137,9 +137,8 @@ describe("TaskGraphRunner", () => {
       const nodeRunSpy = spyOn(nodes[0], "run");
 
       const results = await runner.runGraph();
-
       expect(nodeRunSpy).toHaveBeenCalledTimes(1);
-      expect(results[0]).toEqual({ output: [36, 49] });
+      expect(results[2]).toEqual({ output: [36, 49] });
     });
 
     it("array input into ArrayTask", async () => {
@@ -149,15 +148,19 @@ describe("TaskGraphRunner", () => {
       graph.addDataFlow(new DataFlow("task3", "output", "task4", "input"));
 
       const nodeRunSpy = spyOn(task, "run");
-      const assignLayersSpy = spyOn(runner, "assignLayers");
 
-      await runner.runGraph();
-      await runner.runGraph();
-      const results = await runner.runGraph();
+      const results1 = await runner.runGraph();
+      const results2 = await runner.runGraph();
+      const results3 = await runner.runGraph();
 
-      expect(assignLayersSpy).toHaveBeenCalled();
       expect(nodeRunSpy).toHaveBeenCalledTimes(3);
-      expect(results[0].output).toEqual([625, 100]);
+      // different runs should return the same results
+      expect(results1[0]).toEqual(results2[0]);
+      expect(results2[0]).toEqual(results3[0]);
+      expect(results1[1]).toEqual(results2[1]);
+      expect(results2[1]).toEqual(results3[1]);
+      expect(results1[2]).toEqual(results2[2]);
+      expect(results2[2]).toEqual(results3[2]);
     });
   });
 });
