@@ -167,7 +167,12 @@ export abstract class TaskBase {
         }
 
         if (isArray) {
-          const newitems = [...(this.runInputData[input.id] || [])];
+          // Initialize newitems as an empty array if runInputData[input.id] is not an array
+          const existingItems = Array.isArray(this.runInputData[input.id])
+            ? this.runInputData[input.id]
+            : [];
+          const newitems = [...existingItems];
+
           const overrideItem = overrides[input.id];
           if (Array.isArray(overrideItem)) {
             newitems.push(...(overrideItem as any[]));

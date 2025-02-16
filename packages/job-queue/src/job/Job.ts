@@ -8,7 +8,7 @@
 import type { JobQueue } from "./JobQueue";
 
 export enum JobStatus {
-  PENDING = "NEW",
+  PENDING = "PENDING",
   PROCESSING = "PROCESSING",
   COMPLETED = "COMPLETED",
   ABORTING = "ABORTING",

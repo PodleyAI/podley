@@ -35,7 +35,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         fingerprint text NOT NULL,
         queue text NOT NULL,
         jobRunId text NOT NULL,
-        status TEXT NOT NULL default 'NEW',
+        status TEXT NOT NULL default 'PENDING',
         input TEXT NOT NULL,
         output TEXT,
         retries INTEGER default 0,

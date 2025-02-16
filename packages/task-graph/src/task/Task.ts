@@ -12,7 +12,7 @@ import type { SingleTask } from "./SingleTask";
 import { TaskBase } from "./TaskBase";
 
 export enum TaskStatus {
-  PENDING = "NEW",
+  PENDING = "PENDING",
   PROCESSING = "PROCESSING",
   COMPLETED = "COMPLETED",
   ABORTING = "ABORTING",

@@ -49,7 +49,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
       fingerprint text NOT NULL,
       queue text NOT NULL,
       jobRunId text NOT NULL,
-      status job_status NOT NULL default 'NEW',
+      status job_status NOT NULL default 'PENDING',
       input jsonb NOT NULL,
       output jsonb,
       retries integer default 0,
