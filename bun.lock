@@ -147,6 +147,10 @@
         "@ellmers/tasks": "workspace:packages/tasks",
       },
     },
+    "packages/util": {
+      "name": "@ellmers/util",
+      "version": "0.0.1",
+    },
   },
   "trustedDependencies": [
     "better-sqlite3",
@@ -233,6 +237,8 @@
     "@ellmers/tasks": ["@ellmers/tasks@workspace:packages/tasks"],
 
     "@ellmers/test": ["@ellmers/test@workspace:packages/test"],
+
+    "@ellmers/util": ["@ellmers/util@workspace:packages/util"],
 
     "@ellmers/web": ["@ellmers/web@workspace:examples/web"],
 

@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import EventEmitter from "eventemitter3";
-import { makeFingerprint } from "../util/Misc";
+import { makeFingerprint } from "@ellmers/util";
 import {
   IKVRepository,
   BasicKeyType,

@@ -5,8 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { makeFingerprint } from "../util/Misc";
 import { nanoid } from "nanoid";
+import { makeFingerprint } from "@ellmers/util";
 import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
 import { Job, JobStatus } from "../job/Job";
 import { ILimiter } from "../job/ILimiter";

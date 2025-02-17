@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import type { Database } from "better-sqlite3";
+import { toSQLiteTimestamp } from "@ellmers/util";
 import { ILimiter } from "../job/ILimiter";
-import { toSQLiteTimestamp } from "../util/Misc";
 
 /**
  * SQLite implementation of a rate limiter.

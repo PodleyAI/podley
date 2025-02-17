@@ -153,6 +153,7 @@ describe("TaskGraphRunner", () => {
 
       expect(assignLayersSpy).toHaveBeenCalled();
       expect(nodeRunSpy).toHaveBeenCalledTimes(3);
+      console.log(results);
       expect(results[0].output).toEqual([625, 100]);
     });
   });

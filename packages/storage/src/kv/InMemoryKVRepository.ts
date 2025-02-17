@@ -5,6 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { makeFingerprint } from "@ellmers/util";
 import {
   BaseValueSchema,
   BasePrimaryKeySchema,
@@ -14,8 +15,8 @@ import {
   DefaultPrimaryKeyType,
   DefaultPrimaryKeySchema,
 } from "./IKVRepository";
-import { makeFingerprint } from "../util/Misc";
 import { KVRepository } from "./KVRepository";
+
 /**
  * A generic in-memory key-value repository implementation.
  * Provides a simple, non-persistent storage solution suitable for testing and caching scenarios.

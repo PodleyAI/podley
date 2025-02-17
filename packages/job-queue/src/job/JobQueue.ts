@@ -6,9 +6,9 @@
 //    *******************************************************************************
 
 import EventEmitter from "eventemitter3";
+import { sleep } from "@ellmers/util";
 import { ILimiter } from "./ILimiter";
 import { Job, JobStatus } from "./Job";
-import { sleep } from "../util/Misc";
 import { IJobQueue } from "./IJobQueue";
 
 export abstract class JobError extends Error {
@@ -122,7 +122,7 @@ export enum QueueMode {
 /**
  * Base class for implementing job queues with different storage backends.
  */
-export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output> {
+export abstract class JobQueue<Input, Output> {
   protected running: boolean = false;
   protected stats: JobQueueStats;
   protected events: EventEmitter<JobQueueEvents<Input, Output>> = new EventEmitter();
@@ -146,7 +146,7 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
   constructor(
     public readonly queue: string,
     protected limiter: ILimiter,
-    public jobClass: typeof Job<Input, Output> = Job<Input, Output>,
+    public readonly jobClass: typeof Job<Input, Output> = Job<Input, Output>,
     protected waitDurationInMilliseconds: number
   ) {
     this.stats = {
@@ -263,6 +263,7 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
   ): void {
     this.events.off(event, listener);
   }
+
   /**
    * Aborts a running job (if supported).
    * This method will signal the corresponding AbortController so that
@@ -623,7 +624,7 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
   /**
    * Starts the job queue based on its operating mode
    */
-  public async start(mode: QueueMode = QueueMode.BOTH): Promise<this> {
+  public async start(mode: QueueMode = QueueMode.BOTH): Promise<IJobQueue<Input, Output>> {
     if (this.running) {
       return this;
     }
@@ -648,7 +649,7 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
   /**
    * Stops the job queue and aborts all active jobs
    */
-  public async stop(): Promise<this> {
+  public async stop(): Promise<IJobQueue<Input, Output>> {
     if (this.running === false) return this;
     this.running = false;
 
@@ -677,7 +678,7 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
   /**
    * Clears all jobs and resets queue state
    */
-  public async clear(): Promise<this> {
+  public async clear(): Promise<IJobQueue<Input, Output>> {
     await this.deleteAll();
     this.activeJobSignals.clear();
     this.activeJobPromises.clear();
@@ -699,9 +700,10 @@ export abstract class JobQueue<Input, Output> implements IJobQueue<Input, Output
   /**
    * Restarts the job queue
    */
-  public async restart(): Promise<this> {
+  public async restart(): Promise<IJobQueue<Input, Output>> {
     await this.stop();
     await this.clear();
-    return this.start();
+    await this.start();
+    return this;
   }
 }

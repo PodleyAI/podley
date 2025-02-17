@@ -7,10 +7,9 @@
 
 import type { Database } from "bun:sqlite";
 import { nanoid } from "nanoid";
-
+import { makeFingerprint, toSQLiteTimestamp } from "@ellmers/util";
 import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
 import { Job, JobStatus } from "../job/Job";
-import { makeFingerprint, toSQLiteTimestamp } from "../util/Misc";
 import { ILimiter } from "../job/ILimiter";
 
 /**

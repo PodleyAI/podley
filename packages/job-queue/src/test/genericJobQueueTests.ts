@@ -6,10 +6,9 @@
 //    *******************************************************************************
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { sleep } from "@ellmers/util";
 import { AbortSignalJobError, JobQueue } from "../job/JobQueue";
 import { Job, JobStatus } from "../job/Job";
-
-import { sleep } from "../util/Misc";
 
 export interface TInput {
   [key: string]: any;

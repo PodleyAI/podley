@@ -6,9 +6,9 @@
 //    *******************************************************************************
 
 import EventEmitter from "eventemitter3";
-import { TaskInput, TaskOutput } from "../../task/Task";
 import { DefaultValueType, type KVRepository } from "@ellmers/storage";
-import { makeFingerprint } from "../../util/Misc";
+import { makeFingerprint } from "@ellmers/util";
+import { TaskInput, TaskOutput } from "../../task/Task";
 
 export type TaskOutputEvents = "output_saved" | "output_retrieved" | "output_cleared";
 

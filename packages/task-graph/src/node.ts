@@ -21,7 +21,6 @@ export * from "./task/TaskQueueRegistry";
 
 export * from "./storage/taskoutput/TaskOutputRepository";
 export * from "./storage/taskgraph/TaskGraphRepository";
-export * from "./util/Misc";
 
 export * from "./storage/taskgraph/InMemoryTaskGraphRepository";
 export * from "./storage/taskgraph/FileTaskGraphRepository";

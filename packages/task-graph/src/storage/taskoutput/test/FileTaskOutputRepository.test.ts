@@ -7,7 +7,7 @@
 
 import { describe, expect, it, beforeEach } from "bun:test";
 import { FileTaskOutputRepository } from "../FileTaskOutputRepository";
-import { TaskInput, TaskOutput } from "@ellmers/task-graph";
+import { TaskInput, TaskOutput } from "../../../task/Task";
 import { rmdirSync } from "node:fs";
 
 describe("FileTaskOutputRepository", () => {

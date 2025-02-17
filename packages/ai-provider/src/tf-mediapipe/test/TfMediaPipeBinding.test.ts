@@ -17,7 +17,7 @@ import { getGlobalModelRepository, Model, AiJob, setGlobalModelRepository } from
 import { InMemoryModelRepository } from "@ellmers/ai";
 import { SqliteJobQueue } from "@ellmers/job-queue";
 import { registerMediaPipeTfJsLocalTasks } from "../bindings/registerTasks";
-import { sleep } from "@ellmers/task-graph";
+import { sleep } from "@ellmers/util";
 import { MEDIA_PIPE_TFJS_MODEL } from "../model/MediaPipeModel";
 import { InMemoryJobQueue, ConcurrencyLimiter } from "@ellmers/job-queue";
 

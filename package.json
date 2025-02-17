@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "build": "bun run build:packages && bun run build:examples",
-    "build:packages": "bun run build:storage && bun run build:job-queue && bun run build:task-graph && bun run build:ai && bun run build:task && bun run build:ai-provider && bun run build:test",
+    "build:packages": "bun run build:util && bun run build:storage && bun run build:job-queue && bun run build:task-graph && bun run build:ai && bun run build:task && bun run build:ai-provider && bun run build:test",
+    "build:util": "cd packages/util && bun run build",
     "build:job-queue": "cd packages/job-queue && bun run build",
     "build:task-graph": "cd packages/task-graph && bun run build",
     "build:ai": "cd packages/ai && bun run build",
@@ -21,7 +22,7 @@
     "build:cli": "cd examples/cli && bun run build",
     "build:web": "cd examples/web && bun run build",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/*tsbuildinfo packages/*/dist packages/*/src/**/*\\.d\\.ts packages/*/src/**/*\\.map examples/*/node_modules examples/*/dist examples/*/src/**/*\\.d\\.ts examples/*/src/**/*\\.map",
-    "watch:packages": "concurrently --kill-others -c 'auto' -n task-graph,task,storage,ai,provider,test 'cd packages/task-graph && bun run watch' 'cd packages/tasks && bun run watch' 'cd packages/storage && bun run watch' 'cd packages/ai && bun run watch' 'cd packages/ai-provider && bun run watch' 'cd packages/test && bun run watch'",
+    "watch:packages": "concurrently --kill-others -c 'auto' -n util,task-graph,task,storage,ai,provider,test 'cd packages/util && bun run watch' 'cd packages/task-graph && bun run watch' 'cd packages/tasks && bun run watch' 'cd packages/storage && bun run watch' 'cd packages/ai && bun run watch' 'cd packages/ai-provider && bun run watch' 'cd packages/test && bun run watch'",
     "docs": "typedoc",
     "format": "eslint --fix && prettier \"{packages,examples}/*/src/**/*.{js,ts,tsx,json}\" --check --write",
     "release": "bun run build && bun publish",

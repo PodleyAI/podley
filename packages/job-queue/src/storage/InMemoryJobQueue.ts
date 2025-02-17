@@ -6,12 +6,10 @@
 //    *******************************************************************************
 
 import { nanoid } from "nanoid";
+import { makeFingerprint, sleep } from "@ellmers/util";
 import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
 import { Job, JobStatus } from "../job/Job";
 import { ILimiter } from "../job/ILimiter";
-import { makeFingerprint } from "../util/Misc";
-import { sleep } from "../util/Misc";
-
 /**
  * In-memory implementation of a job queue that manages asynchronous tasks.
  * Supports job scheduling, status tracking, and result caching.
