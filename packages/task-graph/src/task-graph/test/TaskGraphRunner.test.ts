@@ -6,11 +6,11 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach, spyOn } from "bun:test";
-import { Task, TaskOutput } from "/task/Task";
-import { SingleTask } from "/task/SingleTask";
-import { TaskGraphRunner } from "/task-graph/TaskGraphRunner";
-import { DataFlow } from "/task-graph/DataFlow";
-import { TaskGraph } from "/task-graph/TaskGraph";
+import { Task, TaskOutput } from "../../task/Task";
+import { SingleTask } from "../../task/SingleTask";
+import { TaskGraphRunner } from "../../task-graph/TaskGraphRunner";
+import { DataFlow } from "../../task-graph/DataFlow";
+import { TaskGraph } from "../../task-graph/TaskGraph";
 
 class TestTask extends SingleTask {
   static readonly type = "TestTask";

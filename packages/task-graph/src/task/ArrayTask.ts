@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskGraph } from "/task-graph/TaskGraph";
+import { TaskGraph } from "../task-graph/TaskGraph";
 import {
   TaskInput,
   TaskConfig,

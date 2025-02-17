@@ -5,18 +5,18 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import EventEmitter from "eventemitter3";
 import { GraphEvents } from "@sroussey/typescript-graph";
-import type { TaskOutputRepository } from "/storage/taskoutput/TaskOutputRepository";
-import { CompoundTask } from "/task/CompoundTask";
-import { SingleTask } from "/task/SingleTask";
+import type { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { CompoundTask } from "../task/CompoundTask";
+import { SingleTask } from "../task/SingleTask";
 import {
   type JsonTaskItem,
   type TaskInput,
   type TaskInputDefinition,
   type TaskOutputDefinition,
-} from "/task/Task";
-import { TaskBase } from "/task/TaskBase";
-import EventEmitter from "eventemitter3";
+} from "../task/Task";
+import { TaskBase } from "../task/TaskBase";
 import { DataFlow } from "./DataFlow";
 import { TaskGraph, TaskGraphJson } from "./TaskGraph";
 import { TaskGraphRunner } from "./TaskGraphRunner";

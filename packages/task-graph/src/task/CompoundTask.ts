@@ -5,9 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskOutputRepository } from "/storage/taskoutput/TaskOutputRepository";
-import { TaskGraph, type TaskGraphItemJson } from "/task-graph/TaskGraph";
-import { TaskGraphRunner } from "/task-graph/TaskGraphRunner";
+import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskGraph, type TaskGraphItemJson } from "../task-graph/TaskGraph";
+import { TaskGraphRunner } from "../task-graph/TaskGraphRunner";
 import {
   type ITaskCompound,
   type TaskTypeName,

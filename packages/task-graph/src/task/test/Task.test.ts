@@ -8,7 +8,7 @@
 import { describe, expect, it } from "bun:test";
 import { SingleTask } from "../SingleTask";
 import { CompoundTask } from "../CompoundTask";
-import { TaskGraph } from "/task-graph/TaskGraph";
+import { TaskGraph } from "../../task-graph/TaskGraph";
 
 type TestTaskInput = {
   key: string;
