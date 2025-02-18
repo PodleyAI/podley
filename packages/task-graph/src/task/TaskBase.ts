@@ -93,34 +93,31 @@ export abstract class TaskBase {
       },
       rest
     );
-    // setup the events
-    this.setupEvents();
+    Object.defineProperty(this, "events", { enumerable: false }); // in case it is serialized
   }
 
-  public setupEvents() {
-    Object.defineProperty(this, "events", { enumerable: false }); // in case it is serialized
-    this.on("start", () => {
-      this.startedAt = new Date();
-      this.progress = 0;
-      this.status = TaskStatus.PROCESSING;
-    });
-    this.on("complete", () => {
-      this.completedAt = new Date();
-      this.progress = 100;
-      this.status = TaskStatus.COMPLETED;
-    });
-    this.on("error", (error) => {
-      this.completedAt = new Date();
-      this.progress = 100;
-      this.status = TaskStatus.FAILED;
-      this.error = error || "Task failed";
-    });
-    this.on("abort", (error) => {
-      this.progress = 100;
-      this.status = TaskStatus.ABORTING;
-      this.error = error || "Task aborted by run time";
-    });
+  public handleStart() {
+    this.startedAt = new Date();
+    this.progress = 0;
+    this.status = TaskStatus.PROCESSING;
+    this.events.emit("start");
   }
+
+  public handleComplete() {
+    this.completedAt = new Date();
+    this.progress = 100;
+    this.status = TaskStatus.COMPLETED;
+    this.events.emit("complete");
+  }
+
+  public handleError(err: any) {
+    this.completedAt = new Date();
+    this.progress = 100;
+    this.status = TaskStatus.FAILED;
+    this.error = err?.message || "Task failed";
+    this.events.emit("error", this.error!);
+  }
+
   /**
    * The defaults for the task. If no overrides at run time, then this would be equal to the
    * input
@@ -284,11 +281,19 @@ export abstract class TaskBase {
     if (this.status === TaskStatus.ABORTING) {
       throw new Error("Task aborted by run time");
     }
-    this.events.emit("start");
-    const result = await this.runReactive();
-    this.runOutputData = result;
-    this.events.emit("complete");
-    return result;
+
+    this.handleStart();
+
+    try {
+      const result = await this.runReactive();
+      this.runOutputData = result;
+
+      this.handleComplete();
+      return result;
+    } catch (err: any) {
+      this.handleError(err);
+      throw err;
+    }
   }
   /**
    * Runs the task reactively
@@ -324,7 +329,9 @@ export abstract class TaskBase {
    * @returns A promise that resolves when the task is aborted
    */
   async abort(): Promise<void> {
+    this.progress = 100;
     this.status = TaskStatus.ABORTING;
-    this.events.emit("abort", "Task aborted by run time");
+    this.error = "Task aborted by run time";
+    this.events.emit("abort", this.error);
   }
 }
