@@ -24,6 +24,7 @@ export class TaskGraphRunner {
   public provenanceInput: Map<unknown, TaskInput>;
 
   private running = false;
+  private reactiveRunning = false;
   private aborting = false;
 
   /**
@@ -135,6 +136,9 @@ export class TaskGraphRunner {
     if (this.running) {
       throw new Error("Graph is already running");
     }
+    if (this.reactiveRunning) {
+      throw new Error("Graph is already running reactively");
+    }
 
     this.running = true;
     this.aborting = false;
@@ -229,13 +233,16 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    */
   public async runGraphReactive() {
-    if (this.running) {
-      throw new Error("Graph is already running");
+    if (this.reactiveRunning) {
+      throw new Error("Graph is already running reactively");
+    }
+    this.reactiveRunning = true;
+
+    if (!this.running) {
+      this.resetGraph(this.dag);
+      this.aborting = false;
     }
 
-    this.running = true;
-    this.aborting = false;
-    this.resetGraph(this.dag);
     this.reactiveScheduler.reset();
 
     const results: TaskOutput[] = [];
@@ -243,11 +250,14 @@ export class TaskGraphRunner {
     try {
       for await (const task of this.reactiveScheduler.tasks()) {
         if (this.aborting) break;
-        this.copyInputFromEdgesToNode(task);
-        const taskResult = await task.runReactive();
-        this.pushOutputFromNodeToEdges(task, taskResult);
-        if (this.dag.getTargetDataFlows(task.config.id).length === 0) {
-          results.push(taskResult);
+        if (task.status === TaskStatus.PENDING) {
+          task.resetInputData();
+          this.copyInputFromEdgesToNode(task);
+          const taskResult = await task.runReactive();
+          this.pushOutputFromNodeToEdges(task, taskResult);
+          if (this.dag.getTargetDataFlows(task.config.id).length === 0) {
+            results.push(taskResult);
+          }
         }
       }
 
@@ -258,7 +268,7 @@ export class TaskGraphRunner {
       await this.abort();
       throw error;
     } finally {
-      this.running = false;
+      this.reactiveRunning = false;
     }
     return results;
   }
