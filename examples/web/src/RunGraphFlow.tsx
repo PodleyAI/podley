@@ -284,6 +284,7 @@ function listenToTask(
     task.events.on("complete", handleStatusChange);
     task.events.on("error", handleStatusChange);
     task.events.on("abort", handleStatusChange);
+    // @ts-ignore
     task.events.on("progress", handleProgress);
     // Add cleanup function
     cleanupFns.push(() => {
@@ -291,6 +292,7 @@ function listenToTask(
       task.events.off("complete", handleStatusChange);
       task.events.off("error", handleStatusChange);
       task.events.off("abort", handleStatusChange);
+      // @ts-ignore
       task.events.off("progress", handleProgress);
     });
   }
