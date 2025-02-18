@@ -27,7 +27,7 @@ export default defineConfig({
             "@ellmers/tasks",
             "@ellmers/test",
           ],
-          misc: ["nanoid", "reflect-metadata", "eventemitter3"],
+          misc: ["nanoid", "eventemitter3"],
           react: [
             "react",
             "react-dom",
