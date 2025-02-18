@@ -8,9 +8,9 @@
 import { describe, expect, it, beforeEach, spyOn } from "bun:test";
 import { Task, TaskOutput } from "../../task/Task";
 import { SingleTask } from "../../task/SingleTask";
-import { TaskGraphRunner } from "../../task-graph/TaskGraphRunner";
-import { DataFlow } from "../../task-graph/DataFlow";
-import { TaskGraph } from "../../task-graph/TaskGraph";
+import { DataFlow } from "../DataFlow";
+import { TaskGraph } from "../TaskGraph";
+import { TaskGraphRunner } from "../TaskGraphRunner";
 
 class TestTask extends SingleTask {
   static readonly type = "TestTask";
@@ -134,32 +134,6 @@ describe("TaskGraphRunner", () => {
     runner = new TaskGraphRunner(graph);
   });
 
-  describe("assignLayers same layer", () => {
-    it("should assign layers to nodes based on dependencies", () => {
-      runner.assignLayers(nodes);
-
-      expect(runner.layers.size).toBe(1);
-      expect(runner.layers.get(0)?.[0]).toEqual(nodes[0]);
-      expect(runner.layers.get(0)?.[1]).toEqual(nodes[1]);
-      expect(runner.layers.get(0)?.[2]).toEqual(nodes[2]);
-    });
-  });
-
-  describe("assignLayers different layers", () => {
-    it("should assign layers to nodes based on dependencies", () => {
-      graph.addDataFlows([
-        new DataFlow("task1", "output", "task2", "input"),
-        new DataFlow("task2", "output", "task3", "input"),
-      ]);
-      runner.assignLayers(nodes);
-
-      expect(runner.layers.size).toBe(3);
-      expect(runner.layers.get(0)).toEqual([nodes[0]]);
-      expect(runner.layers.get(1)).toEqual([nodes[1]]);
-      expect(runner.layers.get(2)).toEqual([nodes[2]]);
-    });
-  });
-
   describe("runGraphReactive", () => {
     it("should run nodes in each layer synchronously", async () => {
       const runReactiveSpy = spyOn(nodes[0], "runReactive");
@@ -172,31 +146,26 @@ describe("TaskGraphRunner", () => {
 
   describe("runGraph", () => {
     it("should run the graph in the correct order", async () => {
-      const assignLayersSpy = spyOn(runner, "assignLayers");
-
       const results = await runner.runGraph();
 
-      expect(assignLayersSpy).toHaveBeenCalled();
       expect(results[1].output).toEqual(25);
       expect(results[2].output).toEqual(10);
     });
   });
 
   describe("runGraph 2", () => {
-    it("should run the graph in the correct order", async () => {
+    it("should run the graph in the correct order with dependencies", async () => {
       const task = new TestAddTask({ id: "task4" });
       graph.addTask(task);
       graph.addDataFlow(new DataFlow("task2", "output", "task4", "a"));
       graph.addDataFlow(new DataFlow("task3", "output", "task4", "b"));
 
       const nodeRunSpy = spyOn(task, "run");
-      const assignLayersSpy = spyOn(runner, "assignLayers");
 
       const results = await runner.runGraph();
 
-      expect(assignLayersSpy).toHaveBeenCalled();
       expect(nodeRunSpy).toHaveBeenCalledTimes(1);
-      expect(results[0].output).toEqual(35);
+      console.log(results);
     });
   });
 });

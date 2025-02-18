@@ -8,7 +8,9 @@
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskInput, Task, TaskOutput, TaskStatus } from "../task/Task";
 import { TaskGraph } from "./TaskGraph";
+import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
 import { nanoid } from "nanoid";
+import { CompoundTask } from "../task/CompoundTask";
 
 /**
  * Class for running a task graph
@@ -16,63 +18,29 @@ import { nanoid } from "nanoid";
  */
 export class TaskGraphRunner {
   /**
-   * Map of layers, where each layer contains an array of tasks
-   * @type {Map<number, Task[]>}
-   */
-  public layers: Map<number, Task[]>;
-
-  /**
    * Map of provenance input for each task
    * @type {Map<unknown, TaskInput>}
    */
   public provenanceInput: Map<unknown, TaskInput>;
 
+  private running = false;
+  private reactiveRunning = false;
+  private aborting = false;
+
   /**
    * Constructor for TaskGraphRunner
    * @param dag The task graph to run
    * @param repository The task output repository to use for caching task outputs
+   * @param processScheduler The scheduler to use for task execution
+   * @param reactiveScheduler The scheduler to use for reactive task execution
    */
   constructor(
     public dag: TaskGraph,
-    public repository?: TaskOutputRepository
+    public repository?: TaskOutputRepository,
+    public processScheduler = new DependencyBasedScheduler(dag),
+    public reactiveScheduler = new TopologicalScheduler(dag)
   ) {
-    this.layers = new Map();
     this.provenanceInput = new Map();
-  }
-
-  /**
-   * Assigns layers to tasks based on their dependencies. Each layer is a set of tasks
-   * that can be run in parallel as a set, the next layer is run after the previous layer has completed.
-   * @param sortedNodes The topologically sorted list of tasks
-   */
-  public assignLayers(sortedNodes: Task[]) {
-    this.layers = new Map();
-    const nodeToLayer = new Map<unknown, number>();
-
-    sortedNodes.forEach((node, _index) => {
-      let maxLayer = -1;
-
-      // Get all incoming edges (dependencies) of the node
-      const incomingEdges = this.dag.inEdges(node.config.id).map(([from]) => from);
-
-      incomingEdges.forEach((from) => {
-        // Find the layer of the dependency
-        const layer = nodeToLayer.get(from);
-        if (layer !== undefined) {
-          maxLayer = Math.max(maxLayer, layer);
-        }
-      });
-
-      // Assign the node to the next layer after the maximum layer of its dependencies
-      const assignedLayer = maxLayer + 1;
-      nodeToLayer.set(node.config.id, assignedLayer);
-
-      if (!this.layers.has(assignedLayer)) {
-        this.layers.set(assignedLayer, []);
-      }
-
-      this.layers.get(assignedLayer)?.push(node);
-    });
   }
 
   private copyInputFromEdgesToNode(node: Task) {
@@ -159,64 +127,89 @@ export class TaskGraphRunner {
     return results;
   }
 
-  private running = false;
-
   /**
    * Runs the task graph
    * @param parentProvenance The provenance input for the task graph
-   * @returns The output of the task graph
+   * @returns A promise that resolves when all tasks are complete
    */
   public async runGraph(parentProvenance: TaskInput = {}) {
+    if (this.running) {
+      throw new Error("Graph is already running");
+    }
+    if (this.reactiveRunning) {
+      throw new Error("Graph is already running reactively");
+    }
+
+    this.running = true;
     this.aborting = false;
+    this.resetGraph(this.dag);
+    this.processScheduler.reset();
+
+    const inProgressTasks = new Map<unknown, Promise<TaskOutput>>();
+    const results: TaskOutput[] = [];
+
+    try {
+      for await (const task of this.processScheduler.tasks()) {
+        if (this.aborting) break;
+
+        // Start task execution without awaiting
+        const taskPromise = this.runTaskWithProvenance(task, parentProvenance);
+        inProgressTasks.set(task.config.id, taskPromise);
+
+        // Set up completion handler
+        taskPromise.then(
+          (taskResult) => {
+            this.processScheduler.onTaskCompleted(task.config.id);
+            inProgressTasks.delete(task.config.id);
+            if (this.dag.getTargetDataFlows(task.config.id).length === 0) {
+              results.push(taskResult);
+            }
+          },
+          async (error) => {
+            await this.abort();
+            throw error;
+          }
+        );
+      }
+
+      // Wait for all tasks to complete
+      await Promise.all(Array.from(inProgressTasks.values()));
+
+      if (this.aborting) {
+        throw new Error("Graph execution was aborted");
+      }
+    } catch (error) {
+      await this.abort();
+      throw error;
+    } finally {
+      this.running = false;
+    }
+    return results;
+  }
+
+  /**
+   * Resets the task graph, recursively
+   * @param dag The task graph to reset
+   */
+  private resetGraph(dag: TaskGraph) {
     const taskRunId = nanoid();
-    this.dag.getNodes().forEach((node) => {
+    dag.getNodes().forEach((node) => {
       if (node.config) {
         // @ts-ignore
         node.config.currentJobRunId = taskRunId;
       }
       node.status = TaskStatus.PENDING;
       node.resetInputData();
-    });
-    this.running = true;
-    this.provenanceInput = new Map();
-    const sortedNodes = this.dag.topologicallySortedNodes();
-    this.assignLayers(sortedNodes);
-
-    let results: TaskOutput[] = [];
-    for (const [layerNumber, nodes] of this.layers.entries()) {
-      if (!this.running) {
-        throw new Error("Task graph runner stopped unexpectedly");
-      }
-      if (this.aborting) {
-        nodes.forEach((node) => {});
-      } else {
-        const settledResults = await Promise.allSettled(
-          nodes.map((node) =>
-            this.runTaskWithProvenance(node, layerNumber === 0 ? parentProvenance : {})
-          )
-        );
-
-        for (const result of settledResults) {
-          if (result.status === "rejected") {
-            // Abort tasks that support aborting by calling their abort method
-            await this.abort();
-            throw new Error(
-              `Task graph aborted due to error in layer ${layerNumber}: ${result.reason}`
-            );
-          }
+      node.runOutputData = {};
+      if (node.isCompound) {
+        const subGraph = (node as CompoundTask).subGraph;
+        if (subGraph) {
+          this.resetGraph(subGraph);
         }
-
-        results = settledResults
-          .filter((r): r is PromiseFulfilledResult<TaskOutput> => r.status === "fulfilled") //ts
-          .map((r) => r.value);
       }
-    }
-    this.running = false;
-    this.aborting = false;
-    return results;
+    });
   }
 
-  private aborting = false;
   /**
    * Aborts the task graph
    */
@@ -237,32 +230,46 @@ export class TaskGraphRunner {
 
   /**
    * Runs the task graph in a reactive manner
-   * @returns The output of the task graph
-   */
-  private async runTasksReactive() {
-    let results: TaskOutput[] = [];
-    for (const [_layerNumber, nodes] of this.layers.entries()) {
-      const settledResults = await Promise.allSettled(
-        nodes.map(async (node) => {
-          this.copyInputFromEdgesToNode(node);
-          const results = await node.runReactive();
-          this.pushOutputFromNodeToEdges(node, results);
-          return results;
-        })
-      );
-      results = settledResults.map((r) => (r.status === "fulfilled" ? r.value : {}));
-    }
-    return results;
-  }
-
-  /**
-   * Runs the task graph in a reactive manner
-   * @returns The output of the task graph
+   * @returns A promise that resolves when all tasks are complete
    */
   public async runGraphReactive() {
-    this.dag.getNodes().forEach((node) => node.resetInputData());
-    const sortedNodes = this.dag.topologicallySortedNodes();
-    this.assignLayers(sortedNodes);
-    return await this.runTasksReactive();
+    if (this.reactiveRunning) {
+      throw new Error("Graph is already running reactively");
+    }
+    this.reactiveRunning = true;
+
+    if (!this.running) {
+      this.resetGraph(this.dag);
+      this.aborting = false;
+    }
+
+    this.reactiveScheduler.reset();
+
+    const results: TaskOutput[] = [];
+
+    try {
+      for await (const task of this.reactiveScheduler.tasks()) {
+        if (this.aborting) break;
+        if (task.status === TaskStatus.PENDING) {
+          task.resetInputData();
+          this.copyInputFromEdgesToNode(task);
+          const taskResult = await task.runReactive();
+          this.pushOutputFromNodeToEdges(task, taskResult);
+          if (this.dag.getTargetDataFlows(task.config.id).length === 0) {
+            results.push(taskResult);
+          }
+        }
+      }
+
+      if (this.aborting) {
+        throw new Error("Graph execution was aborted");
+      }
+    } catch (error) {
+      await this.abort();
+      throw error;
+    } finally {
+      this.reactiveRunning = false;
+    }
+    return results;
   }
 }
