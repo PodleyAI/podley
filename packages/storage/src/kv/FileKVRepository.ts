@@ -70,7 +70,7 @@ export class FileKVRepository<
     } catch (error) {
       console.error("Error writing file", filePath, error);
     }
-    this.emit("put", key);
+    this.events.emit("put", key, value);
   }
 
   /**
@@ -84,10 +84,10 @@ export class FileKVRepository<
     try {
       const data = await readFile(filePath, "utf-8");
       const value = JSON.parse(data) as Value;
-      this.emit("get", key, value);
+      this.events.emit("get", key, value);
       return value;
     } catch (error) {
-      // console.info("Error getting file (may not exist)", filePath);
+      this.events.emit("get", key, undefined);
       return undefined; // File not found or read error
     }
   }
@@ -104,7 +104,7 @@ export class FileKVRepository<
     } catch (error) {
       // console.error("Error deleting file", filePath, error);
     }
-    this.emit("delete", key);
+    this.events.emit("delete", key);
   }
 
   /**
@@ -144,7 +144,7 @@ export class FileKVRepository<
   async deleteAll(): Promise<void> {
     // Delete all files in the folder ending in .json
     await rm(this.folderPath, { recursive: true, force: true });
-    this.emit("clearall");
+    this.events.emit("clearall");
   }
 
   /**

@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import EventEmitter from "eventemitter3";
+import { EventEmitter } from "@ellmers/util";
 import { makeFingerprint } from "@ellmers/util";
 import {
   IKVRepository,
@@ -17,9 +17,10 @@ import {
   DefaultPrimaryKeyType,
   DefaultValueSchema,
   DefaultValueType,
-  KVEvents,
   KVEventName,
   KVEventListener,
+  KVEventListeners,
+  KVEventParameters,
 } from "./IKVRepository";
 
 /**
@@ -40,19 +41,61 @@ export abstract class KVRepository<
   PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
   ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
   Combined extends Record<string, any> = Key & Value,
-> implements IKVRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined>
+> implements IKVRepository<Key, Value, Combined>
 {
   // KV repository event emitter
-  private events = new EventEmitter<KVEvents>();
-  on(name: KVEventName, fn: KVEventListener) {
-    this.events.on.call(this.events, name, fn);
+  protected events = new EventEmitter<KVEventListeners<Key, Value, Combined>>();
+
+  /**
+   * Adds an event listener for a specific event
+   * @param name The name of the event to listen for
+   * @param fn The callback function to execute when the event occurs
+   */
+  on<Event extends KVEventName>(name: Event, fn: KVEventListener<Event, Key, Value, Combined>) {
+    this.events.on(name, fn);
   }
-  off(name: KVEventName, fn: KVEventListener) {
-    this.events.off.call(this.events, name, fn);
+
+  /**
+   * Removes an event listener for a specific event
+   * @param name The name of the event to remove the listener from
+   * @param fn The callback function to remove
+   */
+  off<Event extends KVEventName>(name: Event, fn: KVEventListener<Event, Key, Value, Combined>) {
+    this.events.off(name, fn);
   }
-  emit(name: KVEventName, ...args: Parameters<KVEventListener>) {
-    this.events.emit.call(this.events, name, ...args);
+
+  /**
+   * Adds an event listener that will only be called once
+   * @param name The name of the event to listen for
+   * @param fn The callback function to execute when the event occurs
+   */
+  once<Event extends KVEventName>(name: Event, fn: KVEventListener<Event, Key, Value, Combined>) {
+    this.events.once(name, fn);
   }
+
+  /**
+   * Emits an event with the specified name and arguments
+   * @param name The name of the event to emit
+   * @param args The arguments to pass to the event listeners
+   */
+  emit<Event extends KVEventName>(
+    name: Event,
+    ...args: KVEventParameters<Event, Key, Value, Combined>
+  ): void {
+    this.events.emit(name, ...args);
+  }
+
+  /**
+   * Returns when the event was emitted (promise form of once)
+   * @param name The name of the event to check
+   * @returns true if the event has listeners, false otherwise
+   */
+  emitted<Event extends KVEventName>(
+    name: Event
+  ): Promise<KVEventParameters<Event, Key, Value, Combined>> {
+    return this.events.emitted(name) as Promise<KVEventParameters<Event, Key, Value, Combined>>;
+  }
+
   /**
    * Indexes for primary key and value columns which are _only_ populated if the
    * key or value schema has a single field.

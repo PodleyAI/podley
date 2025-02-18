@@ -5,29 +5,36 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import EventEmitter from "eventemitter3";
+import { EventEmitter, EventParameters } from "@ellmers/util";
 import { DefaultValueType, type KVRepository } from "@ellmers/storage";
 import { Model, ModelPrimaryKey } from "./Model";
 
 /**
  * Events that can be emitted by the ModelRepository
- * @typedef {string} ModelEvents
  */
-export type ModelEvents =
-  | "model_added"
-  | "model_removed"
-  | "task_model_connected"
-  | "task_model_disconnected"
-  | "model_updated";
+
+export type ModelEventListeners = {
+  model_added: (model: Model) => void;
+  model_removed: (model: Model) => void;
+  task_model_connected: (task: string, model: string) => void;
+  task_model_disconnected: (task: string, model: string) => void;
+  model_updated: (model: Model) => void;
+};
+
+export type ModelEvents = keyof ModelEventListeners;
+
+export type ModelEventListener<Event extends ModelEvents> = ModelEventListeners[Event];
+
+export type ModelEventParameters<Event extends ModelEvents> = EventParameters<
+  ModelEventListeners,
+  Event
+>;
 
 /**
  * Represents the primary key structure for mapping tasks to models
- * @interface Task2ModelPrimaryKey
  */
 export type Task2ModelPrimaryKey = {
-  /** The task identifier */
   task: string;
-  /** The model name identifier */
   model: string;
 };
 
@@ -68,15 +75,15 @@ export abstract class ModelRepository {
   abstract task2ModelKvRepository: KVRepository<Task2ModelPrimaryKey, Task2ModelDetail>;
 
   /** Event emitter for repository events */
-  private events = new EventEmitter<ModelEvents>();
+  protected events = new EventEmitter<ModelEventListeners>();
 
   /**
    * Registers an event listener for the specified event
    * @param name - The event name to listen for
    * @param fn - The callback function to execute when the event occurs
    */
-  on(name: ModelEvents, fn: (...args: any[]) => void) {
-    this.events.on.call(this.events, name, fn);
+  on<Event extends ModelEvents>(name: Event, fn: ModelEventListener<Event>) {
+    this.events.on(name, fn);
   }
 
   /**
@@ -84,17 +91,26 @@ export abstract class ModelRepository {
    * @param name - The event name to stop listening for
    * @param fn - The callback function to remove
    */
-  off(name: ModelEvents, fn: (...args: any[]) => void) {
-    this.events.off.call(this.events, name, fn);
+  off<Event extends ModelEvents>(name: Event, fn: ModelEventListener<Event>) {
+    this.events.off(name, fn);
   }
 
   /**
-   * Emits an event with the specified name and arguments
-   * @param name - The event name to emit
-   * @param args - Arguments to pass to the event listeners
+   * Adds an event listener that will only be called once
+   * @param name - The event name to listen for
+   * @param fn - The callback function to execute when the event occurs
    */
-  emit(name: ModelEvents, ...args: any[]) {
-    this.events.emit.call(this.events, name, ...args);
+  once<Event extends ModelEvents>(name: Event, fn: ModelEventListener<Event>) {
+    this.events.once(name, fn);
+  }
+
+  /**
+   * Returns when the event was emitted (promise form of once)
+   * @param name - The event name to check
+   * @returns a promise that resolves to the event listener parameters
+   */
+  emitted<Event extends ModelEvents>(name: Event) {
+    return this.events.emitted(name);
   }
 
   /**
@@ -106,7 +122,7 @@ export abstract class ModelRepository {
       { name: model.name },
       { value: JSON.stringify(model) }
     );
-    this.emit("model_added", model);
+    this.events.emit("model_added", model);
   }
 
   /**
@@ -166,7 +182,7 @@ export abstract class ModelRepository {
    */
   async connectTaskToModel(task: string, model: string) {
     await this.task2ModelKvRepository.putKeyValue({ task, model }, { details: null });
-    this.emit("task_model_connected", task, model);
+    this.events.emit("task_model_connected", task, model);
   }
 
   /**

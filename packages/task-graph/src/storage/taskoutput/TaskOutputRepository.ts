@@ -5,17 +5,32 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import EventEmitter from "eventemitter3";
+import { EventEmitter, EventParameters } from "@ellmers/util";
 import { DefaultValueType, type KVRepository } from "@ellmers/storage";
 import { makeFingerprint } from "@ellmers/util";
 import { TaskInput, TaskOutput } from "../../task/Task";
 
-export type TaskOutputEvents = "output_saved" | "output_retrieved" | "output_cleared";
+export type TaskOutputEventListeners = {
+  output_saved: (taskType: string) => void;
+  output_retrieved: (taskType: string) => void;
+  output_cleared: () => void;
+};
+
+export type TaskOutputEvents = keyof TaskOutputEventListeners;
+
+export type TaskOutputEventListener<Event extends TaskOutputEvents> =
+  TaskOutputEventListeners[Event];
+
+export type TaskOutputEventParameters<Event extends TaskOutputEvents> = EventParameters<
+  TaskOutputEventListeners,
+  Event
+>;
 
 export type TaskOutputPrimaryKey = {
   key: string;
   taskType: string;
 };
+
 export const TaskOutputPrimaryKeySchema = {
   key: "string",
   taskType: "string",
@@ -28,15 +43,15 @@ export const TaskOutputPrimaryKeySchema = {
 export abstract class TaskOutputRepository {
   public type = "TaskOutputRepository";
   abstract kvRepository: KVRepository<TaskOutputPrimaryKey, DefaultValueType>;
-  protected events = new EventEmitter<TaskOutputEvents>();
+  protected events = new EventEmitter<TaskOutputEventListeners>();
 
   /**
    * Registers an event listener for a specific event
    * @param name The event name to listen for
    * @param fn The callback function to execute when the event occurs
    */
-  on(name: TaskOutputEvents, fn: (...args: any[]) => void) {
-    this.events.on.call(this.events, name, fn);
+  on<Event extends TaskOutputEvents>(name: Event, fn: TaskOutputEventListener<Event>) {
+    this.events.on(name, fn);
   }
 
   /**
@@ -44,17 +59,17 @@ export abstract class TaskOutputRepository {
    * @param name The event name to stop listening for
    * @param fn The callback function to remove
    */
-  off(name: TaskOutputEvents, fn: (...args: any[]) => void) {
-    this.events.off.call(this.events, name, fn);
+  off<Event extends TaskOutputEvents>(name: Event, fn: TaskOutputEventListener<Event>) {
+    this.events.off(name, fn);
   }
 
   /**
-   * Emits an event with the given arguments
-   * @param name The event name to emit
-   * @param args Additional arguments to pass to the event listeners
+   * Returns a promise that resolves when the event is emitted
+   * @param name The event name to listen for
+   * @returns a promise that resolves to the event parameters
    */
-  emit(name: TaskOutputEvents, ...args: any[]) {
-    this.events.emit.call(this.events, name, ...args);
+  emitted<Event extends TaskOutputEvents>(name: Event) {
+    return this.events.emitted(name) as Promise<TaskOutputEventParameters<Event>>;
   }
 
   /**
@@ -67,7 +82,7 @@ export abstract class TaskOutputRepository {
     const key = await makeFingerprint(inputs);
     const value = JSON.stringify(output);
     await this.kvRepository.putKeyValue({ key, taskType }, { value: value });
-    this.emit("output_saved", taskType);
+    this.events.emit("output_saved", taskType);
   }
 
   /**
@@ -79,7 +94,7 @@ export abstract class TaskOutputRepository {
   async getOutput(taskType: string, inputs: TaskInput): Promise<TaskOutput | undefined> {
     const key = await makeFingerprint(inputs);
     const output = await this.kvRepository.getKeyValue({ key, taskType });
-    this.emit("output_retrieved", taskType);
+    this.events.emit("output_retrieved", taskType);
     return output ? (JSON.parse(output["value"]) as TaskOutput) : undefined;
   }
 
@@ -89,7 +104,7 @@ export abstract class TaskOutputRepository {
    */
   async clear(): Promise<void> {
     await this.kvRepository.deleteAll();
-    this.emit("output_cleared");
+    this.events.emit("output_cleared");
   }
 
   /**

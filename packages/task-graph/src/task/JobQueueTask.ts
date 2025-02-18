@@ -6,8 +6,9 @@
 //    *******************************************************************************
 
 import { getTaskQueueRegistry } from "./TaskQueueRegistry";
-import { TaskConfig, TaskOutput } from "./Task";
+import { TaskConfig, TaskOutput, TaskEventListeners } from "./Task";
 import { SingleTask } from "./SingleTask";
+import { EventEmitter } from "@ellmers/util";
 
 /**
  * Configuration interface for job queue tasks
@@ -26,11 +27,20 @@ interface JobQueueTaskWithIdsConfig extends JobQueueTaskConfig {
 }
 
 /**
+ * Event listeners for job queue tasks
+ */
+export type JobQueueTaskEventListeners = Omit<TaskEventListeners, "progress"> & {
+  progress: (progress: number, message: string, details: Record<string, any> | null) => void;
+};
+
+/**
  * Base class for job queue tasks
  */
 export abstract class JobQueueTask extends SingleTask {
   static readonly type: string = "JobQueueTask";
   declare config: JobQueueTaskWithIdsConfig;
+  public events = new EventEmitter<JobQueueTaskEventListeners>();
+
   constructor(config: JobQueueTaskConfig) {
     super(config);
   }
@@ -39,7 +49,7 @@ export abstract class JobQueueTask extends SingleTask {
     if (!this.validateInputData(this.runInputData)) {
       throw new Error("Invalid input data");
     }
-    this.emit("start");
+    this.events.emit("start");
     this.runOutputData = {};
 
     try {
@@ -55,18 +65,18 @@ export abstract class JobQueueTask extends SingleTask {
       this.config.currentJobId = jobId;
 
       const cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
-        this.emit("progress", progress, message, details);
+        this.events.emit("progress", progress, message, details);
       });
       this.runOutputData = await queue.waitFor(jobId);
       cleanup();
     } catch (err) {
-      this.emit("error", err instanceof Error ? err.message : String(err));
+      this.events.emit("error", err instanceof Error ? err.message : String(err));
       console.error(err);
       throw err;
     }
     this.runOutputData ??= {};
     this.runOutputData = await this.runReactive();
-    this.emit("complete");
+    this.events.emit("complete");
     return this.runOutputData;
   }
 

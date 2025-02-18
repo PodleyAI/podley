@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import EventEmitter from "eventemitter3";
+import { EventEmitter, EventParameters } from "@ellmers/util";
 import { GraphEvents } from "@sroussey/typescript-graph";
 import type { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { CompoundTask } from "../task/CompoundTask";
@@ -96,7 +96,24 @@ export function TaskGraphBuilderHelper<I extends TaskInput>(
   return result;
 }
 
-type BuilderEvents = GraphEvents | "changed" | "reset" | "error" | "start" | "complete" | "abort";
+export type BuilderEventListeners = {
+  changed: (id: unknown) => void;
+  reset: () => void;
+  error: (error: string) => void;
+  start: () => void;
+  complete: () => void;
+  abort: (error: string) => void;
+};
+
+export type BuilderEvents = keyof BuilderEventListeners;
+
+export type BuilderEventListener<Event extends BuilderEvents> = BuilderEventListeners[Event];
+
+export type BuilderEventParameters<Event extends BuilderEvents> = EventParameters<
+  BuilderEventListeners,
+  Event
+>;
+
 /**
  * Class for building and managing a task graph
  * Provides methods for adding tasks, connecting outputs to inputs, and running the task graph
@@ -120,15 +137,18 @@ export class TaskGraphBuilder {
     this.events.emit("reset");
   }
 
-  events = new EventEmitter<BuilderEvents>();
-  on(name: BuilderEvents, fn: (...args: any[]) => void) {
-    this.events.on.call(this.events, name, fn);
+  events = new EventEmitter<BuilderEventListeners>();
+  on<Event extends BuilderEvents>(name: Event, fn: BuilderEventListener<Event>) {
+    this.events.on(name, fn);
   }
-  off(name: BuilderEvents, fn: (...args: any[]) => void) {
-    this.events.off.call(this.events, name, fn);
+  off<Event extends BuilderEvents>(name: Event, fn: BuilderEventListener<Event>) {
+    this.events.off(name, fn);
   }
-  emit(name: BuilderEvents, ...args: any[]) {
-    this.events.emit.call(this.events, name, ...args);
+  once<Event extends BuilderEvents>(name: Event, fn: BuilderEventListener<Event>) {
+    this.events.once(name, fn);
+  }
+  emitted<Event extends BuilderEvents>(name: Event) {
+    return this.events.emitted(name) as Promise<BuilderEventParameters<Event>>;
   }
 
   constructor(repository?: TaskOutputRepository) {
@@ -139,7 +159,7 @@ export class TaskGraphBuilder {
   }
 
   _onChanged(id: unknown) {
-    this.emit("changed", id);
+    this.events.emit("changed", id);
   }
 
   setupEvents() {
@@ -165,13 +185,13 @@ export class TaskGraphBuilder {
    * @returns The output of the task graph
    */
   async run() {
-    this.emit("start");
+    this.events.emit("start");
     try {
       const out = await this._runner.runGraph();
-      this.emit("complete");
+      this.events.emit("complete");
       return out;
     } catch (error) {
-      this.emit("error", error);
+      this.events.emit("error", String(error));
       throw error;
     }
   }
@@ -180,9 +200,9 @@ export class TaskGraphBuilder {
    * Aborts the task graph
    */
   async abort() {
-    this.emit("abort");
+    this.events.emit("abort", "Task aborted by run time");
     await this._runner.abort();
-    this.emit("complete");
+    this.events.emit("complete");
   }
 
   /**
@@ -263,7 +283,7 @@ export class TaskGraphBuilder {
     this._dataFlows = [];
     this._error = "";
     this.setupEvents();
-    this.events.emit("changed");
+    this.events.emit("changed", undefined);
     this.events.emit("reset");
     return this;
   }

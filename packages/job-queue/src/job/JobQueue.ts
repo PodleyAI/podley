@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import EventEmitter from "eventemitter3";
+import { EventEmitter, EventParameters } from "@ellmers/util";
 import { sleep } from "@ellmers/util";
 import { ILimiter } from "./ILimiter";
 import { Job, JobStatus } from "./Job";
@@ -58,24 +58,35 @@ export class AbortSignalJobError extends PermanentJobError {
 /**
  * Events that can be emitted by the JobQueue
  */
-export interface JobQueueEvents<Input, Output> {
-  queue_start: [queueName: string];
-  queue_stop: [queueName: string];
-  job_start: [queueName: string, jobId: unknown];
-  job_aborting: [queueName: string, jobId: unknown];
-  job_complete: [queueName: string, jobId: unknown, output: Output];
-  job_error: [queueName: string, jobId: unknown, error: string];
-  job_retry: [queueName: string, jobId: unknown, retryDate: Date];
-  queue_stats_update: [queueName: string, stats: JobQueueStats];
-  job_progress: [
+export type JobQueueEventListeners<Input, Output> = {
+  queue_start: (queueName: string) => void;
+  queue_stop: (queueName: string) => void;
+  job_start: (queueName: string, jobId: unknown) => void;
+  job_aborting: (queueName: string, jobId: unknown) => void;
+  job_complete: (queueName: string, jobId: unknown, output: Output) => void;
+  job_error: (queueName: string, jobId: unknown, error: string) => void;
+  job_retry: (queueName: string, jobId: unknown, retryDate: Date) => void;
+  queue_stats_update: (queueName: string, stats: JobQueueStats) => void;
+  job_progress: (
     queueName: string,
     jobId: unknown,
     progress: number,
     message: string,
-    details: Record<string, any> | null,
-  ];
-}
+    details: Record<string, any> | null
+  ) => void;
+};
 
+export type JobQueueEvents = keyof JobQueueEventListeners<any, any>;
+
+export type JobQueueEventListener<Event extends JobQueueEvents> = JobQueueEventListeners<
+  any,
+  any
+>[Event];
+
+export type JobQueueEventParameters<Event extends JobQueueEvents, Input, Output> = EventParameters<
+  JobQueueEventListeners<Input, Output>,
+  Event
+>;
 /**
  * Type for progress event listener callback
  */
@@ -125,7 +136,7 @@ export enum QueueMode {
 export abstract class JobQueue<Input, Output> {
   protected running: boolean = false;
   protected stats: JobQueueStats;
-  protected events: EventEmitter<JobQueueEvents<Input, Output>> = new EventEmitter();
+  protected events = new EventEmitter<JobQueueEventListeners<Input, Output>>();
   protected activeJobSignals: Map<unknown, AbortController> = new Map();
   protected activeJobPromises: Map<
     unknown,
@@ -247,9 +258,9 @@ export abstract class JobQueue<Input, Output> {
   /**
    * Registers an event listener for job queue events
    */
-  public on<K extends keyof JobQueueEvents<Input, Output>>(
-    event: K,
-    listener: (...args: JobQueueEvents<Input, Output>[K]) => void
+  public on<Event extends JobQueueEvents>(
+    event: Event,
+    listener: JobQueueEventListener<Event>
   ): void {
     this.events.on(event, listener);
   }
@@ -257,11 +268,30 @@ export abstract class JobQueue<Input, Output> {
   /**
    * Removes an event listener for job queue events
    */
-  public off<K extends keyof JobQueueEvents<Input, Output>>(
-    event: K,
-    listener?: (...args: JobQueueEvents<Input, Output>[K]) => void
+  public off<Event extends JobQueueEvents>(
+    event: Event,
+    listener: JobQueueEventListener<Event>
   ): void {
     this.events.off(event, listener);
+  }
+
+  /**
+   * Adds an event listener for job queue events that will be called only once
+   */
+  public once<Event extends JobQueueEvents>(
+    event: Event,
+    listener: JobQueueEventListener<Event>
+  ): void {
+    this.events.once(event, listener);
+  }
+
+  /**
+   * Returns a promise that resolves when the event is emitted
+   */
+  public emitted<Event extends JobQueueEvents>(
+    event: Event
+  ): Promise<JobQueueEventParameters<Event, Input, Output>> {
+    return this.events.emitted(event) as Promise<JobQueueEventParameters<Event, Input, Output>>;
   }
 
   /**
