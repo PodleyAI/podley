@@ -10,7 +10,7 @@ import { TaskInput, Task, TaskOutput, TaskStatus } from "../task/Task";
 import { TaskGraph } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
 import { nanoid } from "nanoid";
-import { CompoundTask } from "../task/CompoundTask";
+import { CompoundTask, RegenerativeCompoundTask } from "../task/CompoundTask";
 
 /**
  * Class for running a task graph
@@ -203,6 +203,9 @@ export class TaskGraphRunner {
       node.runOutputData = {};
       if (node.isCompound) {
         const subGraph = (node as CompoundTask).subGraph;
+        if (node instanceof RegenerativeCompoundTask) {
+          node.regenerateGraph();
+        }
         if (subGraph) {
           this.resetGraph(subGraph);
         }

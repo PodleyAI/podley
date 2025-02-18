@@ -14,8 +14,11 @@ export type TurboNodeData = {
   icon?: ReactNode;
   subline?: string;
   active?: boolean;
-  progress?: number;
-  progressText?: string;
+  progressItems?: {
+    id: string;
+    text: string;
+    progress: number;
+  }[];
 };
 
 export const SingleNode = ({ data }: NodeProps<Node<TurboNodeData>>) => {
@@ -33,10 +36,12 @@ export const SingleNode = ({ data }: NodeProps<Node<TurboNodeData>>) => {
           <Handle type="target" position={Position.Left} />
           <Handle type="source" position={Position.Right} />
           <div className="progress">
-            {data.progress !== undefined && (
-              <div className="bar" style={{ width: `${data.progress}%` }} />
-            )}
-            <div className="subline">{data.progressText}</div>
+            {data.progressItems?.map((item) => (
+              <React.Fragment key={item.id}>
+                <div className="bar" style={{ width: `${item.progress}%` }} />
+                <div className="subline">{item.text}</div>
+              </React.Fragment>
+            ))}
           </div>
         </div>
       </div>
@@ -62,10 +67,12 @@ export const CompoundNode = ({ data }: NodeProps<Node<TurboNodeData>>) => {
           <Handle type="target" position={Position.Left} />
           <Handle type="source" position={Position.Right} />
           <div className="progress">
-            {data.progress !== undefined && (
-              <div className="bar" style={{ width: `${data.progress}%` }} />
-            )}
-            {data.progressText}
+            {data.progressItems?.map((item) => (
+              <React.Fragment key={item.id}>
+                <div className="bar" style={{ width: `${item.progress}%` }} />
+                <div className="subline">{item.text}</div>
+              </React.Fragment>
+            ))}
           </div>
         </div>
       </div>
