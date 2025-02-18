@@ -5,11 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskGraph } from "../task-graph/TaskGraph";
+import { EventParameters } from "@ellmers/util";
+import type { TaskGraph } from "../task-graph/TaskGraph";
 
 import type { CompoundTask } from "./CompoundTask";
 import type { SingleTask } from "./SingleTask";
-import { TaskBase } from "./TaskBase";
+import type { TaskBase } from "./TaskBase";
 
 export enum TaskStatus {
   PENDING = "PENDING",
@@ -49,7 +50,24 @@ export type JsonTaskItem = {
  *
  * There is no job queue at the moement.
  */
-export type TaskEvents = "start" | "complete" | "abort" | "error" | "progress" | "regenerate";
+
+export type TaskEventListeners = {
+  start: () => void;
+  complete: () => void;
+  abort: (error: string) => void;
+  error: (error: string) => void;
+  progress: (progress: number) => void;
+  regenerate: () => void;
+};
+
+export type TaskEvents = keyof TaskEventListeners;
+
+export type TaskEventListener<Event extends TaskEvents> = TaskEventListeners[Event];
+
+export type TaskEventParameters<Event extends TaskEvents> = EventParameters<
+  TaskEventListeners,
+  Event
+>;
 
 export interface TaskInput {
   [key: string]: any;

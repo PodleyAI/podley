@@ -79,9 +79,11 @@ export class IndexedDbKVRepository<
       const transaction = db.transaction(this.table, "readwrite");
       const store = transaction.objectStore(this.table);
       const request = store.put(record);
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        reject(request.error);
+      };
       request.onsuccess = () => {
-        this.emit("put", key);
+        this.events.emit("put", key, value);
         resolve();
       };
     });
@@ -115,12 +117,13 @@ export class IndexedDbKVRepository<
       const request = store.get(this.getIndexedKey(key));
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
-        this.emit("get", key);
         if (!request.result) {
+          this.events.emit("get", key, undefined);
           resolve(undefined);
           return;
         }
         const { value } = this.separateKeyValueFromCombined(request.result);
+        this.events.emit("get", key, value);
         resolve(value);
       };
     });
@@ -199,7 +202,7 @@ export class IndexedDbKVRepository<
       const request = store.delete(this.getIndexedKey(key));
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
-        this.emit("delete", key);
+        this.events.emit("delete", key);
         resolve();
       };
     });
@@ -218,7 +221,7 @@ export class IndexedDbKVRepository<
       const request = store.clear();
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
-        this.emit("clearall");
+        this.events.emit("clearall");
         resolve();
       };
     });

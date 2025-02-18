@@ -106,7 +106,7 @@ export class TaskGraphRunner {
       results = await this.repository?.getOutput((task.constructor as any).type, task.runInputData);
       if (results) {
         task.emit("start");
-        task.emit("progress", 100, Object.values(results)[0]);
+        task.emit("progress", 100);
         task.runOutputData = results;
         await task.runReactive();
         task.emit("complete");

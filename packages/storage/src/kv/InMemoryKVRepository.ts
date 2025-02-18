@@ -60,7 +60,7 @@ export class InMemoryKVRepository<
   async putKeyValue(key: Key, value: Value): Promise<void> {
     const id = await makeFingerprint(key);
     this.values.set(id, Object.assign({}, key, value) as Combined);
-    this.emit("put", id);
+    this.events.emit("put", id, value);
   }
 
   /**
@@ -75,8 +75,8 @@ export class InMemoryKVRepository<
     if (out === undefined) {
       return undefined;
     }
-    this.emit("get", id, out);
     const { value } = this.separateKeyValueFromCombined(out);
+    this.events.emit("get", id, value);
     return value;
   }
 
@@ -91,10 +91,11 @@ export class InMemoryKVRepository<
     if (search.length !== 1) {
       throw new Error("Search must be a single key");
     }
-    this.emit("search", key);
-    return Array.from(this.values.entries())
+    const results = Array.from(this.values.entries())
       .filter(([_fingerprint, value]) => value[search[0]] === key[search[0]])
       .map(([_id, value]) => value);
+    this.events.emit("search", key, results);
+    return results;
   }
 
   /**
@@ -105,7 +106,7 @@ export class InMemoryKVRepository<
   async deleteKeyValue(key: Key): Promise<void> {
     const id = await makeFingerprint(key);
     this.values.delete(id);
-    this.emit("delete", id);
+    this.events.emit("delete", id);
   }
 
   /**
@@ -114,7 +115,7 @@ export class InMemoryKVRepository<
    */
   async deleteAll(): Promise<void> {
     this.values.clear();
-    this.emit("clearall");
+    this.events.emit("clearall");
   }
 
   /**

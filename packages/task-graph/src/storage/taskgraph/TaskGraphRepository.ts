@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import EventEmitter from "eventemitter3";
+import { EventEmitter, EventParameters } from "@ellmers/util";
 import type { KVRepository } from "@ellmers/storage";
 import { DataFlow } from "../../task-graph/DataFlow";
 import { TaskGraph, TaskGraphItemJson, TaskGraphJson } from "../../task-graph/TaskGraph";
@@ -15,7 +15,20 @@ import { TaskRegistry } from "../../task/TaskRegistry";
 /**
  * Events that can be emitted by the TaskGraphRepository
  */
-export type TaskGraphEvents = "graph_saved" | "graph_retrieved" | "graph_cleared";
+export type TaskGraphEvents = keyof TaskGraphEventListeners;
+
+export type TaskGraphEventListeners = {
+  graph_saved: (key: string) => void;
+  graph_retrieved: (key: string) => void;
+  graph_cleared: () => void;
+};
+
+export type TaskGraphEventListener<Event extends TaskGraphEvents> = TaskGraphEventListeners[Event];
+
+export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParameters<
+  TaskGraphEventListeners,
+  Event
+>;
 
 /**
  * Abstract repository class for managing task graphs persistence and retrieval.
@@ -24,15 +37,15 @@ export type TaskGraphEvents = "graph_saved" | "graph_retrieved" | "graph_cleared
 export abstract class TaskGraphRepository {
   public type = "TaskGraphRepository";
   abstract kvRepository: KVRepository;
-  protected events = new EventEmitter<TaskGraphEvents>();
+  protected events = new EventEmitter<TaskGraphEventListeners>();
 
   /**
    * Registers an event listener for the specified event
    * @param name The event name to listen for
    * @param fn The callback function to execute when the event occurs
    */
-  on(name: TaskGraphEvents, fn: (...args: any[]) => void) {
-    this.events.on.call(this.events, name, fn);
+  on<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
+    this.events.on(name, fn);
   }
 
   /**
@@ -40,17 +53,26 @@ export abstract class TaskGraphRepository {
    * @param name The event name to stop listening for
    * @param fn The callback function to remove
    */
-  off(name: TaskGraphEvents, fn: (...args: any[]) => void) {
-    this.events.off.call(this.events, name, fn);
+  off<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
+    this.events.off(name, fn);
   }
 
   /**
-   * Emits an event with the given arguments
-   * @param name The event name to emit
-   * @param args Additional arguments to pass to the event listeners
+   * Adds an event listener that will only be called once
+   * @param name The event name to listen for
+   * @param fn The callback function to execute when the event occurs
    */
-  emit(name: TaskGraphEvents, ...args: any[]) {
-    this.events.emit.call(this.events, name, ...args);
+  once<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
+    this.events.once(name, fn);
+  }
+
+  /**
+   * Returns when the event was emitted (promise form of once)
+   * @param name The event name to check
+   * @returns true if the event has listeners, false otherwise
+   */
+  emitted<Event extends TaskGraphEvents>(name: Event) {
+    return this.events.emitted(name) as Promise<TaskGraphEventParameters<Event>>;
   }
 
   /**
@@ -115,7 +137,7 @@ export abstract class TaskGraphRepository {
   async saveTaskGraph(key: string, output: TaskGraph): Promise<void> {
     const value = JSON.stringify(output.toJSON());
     await this.kvRepository.put(key, value);
-    this.emit("graph_saved", key);
+    this.events.emit("graph_saved", key);
   }
 
   /**
@@ -133,7 +155,7 @@ export abstract class TaskGraphRepository {
 
     const graph = this.createSubGraph(jsonObj);
 
-    this.emit("graph_retrieved", key);
+    this.events.emit("graph_retrieved", key);
     return graph;
   }
 
@@ -143,7 +165,7 @@ export abstract class TaskGraphRepository {
    */
   async clear(): Promise<void> {
     await this.kvRepository.deleteAll();
-    this.emit("graph_cleared");
+    this.events.emit("graph_cleared");
   }
 
   /**

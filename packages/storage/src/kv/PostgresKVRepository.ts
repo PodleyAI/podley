@@ -147,7 +147,7 @@ export class PostgresKVRepository<
     const valueParams = this.getValueAsOrderedArray(value);
     const params = [...primaryKeyParams, ...valueParams];
     await this.db.query(sql, params);
-    this.emit("put", key);
+    this.events.emit("put", key, value);
   }
 
   /**
@@ -167,12 +167,14 @@ export class PostgresKVRepository<
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const result = await this.db.query(sql, params);
 
+    let val: Value | undefined;
     if (result.rows.length > 0) {
-      this.emit("get", key);
-      return result.rows[0] as Value;
+      val = result.rows[0] as Value;
     } else {
-      return undefined;
+      val = undefined;
     }
+    this.events.emit("get", key, val);
+    return val;
   }
 
   /**
@@ -196,9 +198,10 @@ export class PostgresKVRepository<
     `;
     const result = await this.db.query<Combined, any[]>(sql, [key[search[0]]]);
     if (result.rows.length > 0) {
-      this.emit("search");
+      this.events.emit("search", key, result.rows);
       return result.rows;
     } else {
+      this.events.emit("search", key, undefined);
       return undefined;
     }
   }
@@ -217,7 +220,7 @@ export class PostgresKVRepository<
 
     const params = this.getPrimaryKeyAsOrderedArray(key);
     await this.db.query(`DELETE FROM "${this.table}" WHERE ${whereClauses}`, params);
-    this.emit("delete", key);
+    this.events.emit("delete", key);
   }
 
   /**
@@ -238,7 +241,7 @@ export class PostgresKVRepository<
   async deleteAll(): Promise<void> {
     await this.dbPromise;
     await this.db.query(`DELETE FROM "${this.table}"`);
-    this.emit("clearall");
+    this.events.emit("clearall");
   }
 
   /**

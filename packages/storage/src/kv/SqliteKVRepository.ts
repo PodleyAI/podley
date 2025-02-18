@@ -128,7 +128,7 @@ export class SqliteKVRepository<
 
     const result = stmt.run(...params);
 
-    this.emit("put", key);
+    this.events.emit("put", key, value);
   }
 
   /**
@@ -149,9 +149,10 @@ export class SqliteKVRepository<
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const value = stmt.get(...params);
     if (value) {
-      this.emit("get", key, value);
+      this.events.emit("get", key, value);
       return value;
     } else {
+      this.events.emit("get", key, undefined);
       return undefined;
     }
   }
@@ -177,9 +178,10 @@ export class SqliteKVRepository<
     const stmt = this.db.prepare<Combined, any[]>(sql);
     const value = stmt.all(key[search[0]]);
     if (value) {
-      this.emit("search");
+      this.events.emit("search", key, value);
       return value;
     } else {
+      this.events.emit("search", key, undefined);
       return undefined;
     }
   }
@@ -196,7 +198,7 @@ export class SqliteKVRepository<
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const stmt = this.db.prepare(`DELETE FROM ${this.table} WHERE ${whereClauses}`);
     stmt.run(...params);
-    this.emit("delete", key);
+    this.events.emit("delete", key);
   }
 
   /**
@@ -216,7 +218,7 @@ export class SqliteKVRepository<
    */
   async deleteAll(): Promise<void> {
     this.db.exec(`DELETE FROM ${this.table}`);
-    this.emit("clearall");
+    this.events.emit("clearall");
   }
 
   /**

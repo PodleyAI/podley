@@ -1,4 +1,4 @@
-import EventEmitter from "eventemitter3";
+import { EventEmitter, EventParameters } from "@ellmers/util";
 
 //    *******************************************************************************
 //    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
@@ -6,12 +6,29 @@ import EventEmitter from "eventemitter3";
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
+
 /**
  * Type definitions for key-value repository events
  */
-export type KVEvents = "put" | "get" | "search" | "delete" | "clearall";
-export type KVEventName = EventEmitter.EventNames<KVEvents>;
-export type KVEventListener = EventEmitter.EventListener<KVEvents, KVEventName>;
+export type KVEventListeners<Key, Value, Combined> = {
+  put: (key: unknown, value: Value) => void;
+  get: (key: unknown, value: Value | undefined) => void;
+  search: (key: Partial<Combined>, results: Combined[] | undefined) => void;
+  delete: (key: unknown) => void;
+  clearall: () => void;
+};
+
+export type KVEventName = keyof KVEventListeners<any, any, any>;
+export type KVEventListener<Event extends KVEventName, Key, Value, Combined> = KVEventListeners<
+  Key,
+  Value,
+  Combined
+>[Event];
+
+export type KVEventParameters<Event extends KVEventName, Key, Value, Combined> = EventParameters<
+  KVEventListeners<Key, Value, Combined>,
+  Event
+>;
 
 /**
  * Schema definitions for primary keys and values
@@ -44,8 +61,6 @@ export const DefaultValueSchema: BaseValueSchema = { value: "string" } as const;
 export interface IKVRepository<
   Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
   Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
   Combined extends Record<string, any> = Key & Value,
 > {
   // Core methods
@@ -57,9 +72,25 @@ export interface IKVRepository<
   size(): Promise<number>;
 
   // Event handling methods
-  on(name: KVEventName, fn: KVEventListener): void;
-  off(name: KVEventName, fn: KVEventListener): void;
-  emit(name: KVEventName, ...args: Parameters<KVEventListener>): void;
+  on<Event extends KVEventName>(
+    name: Event,
+    fn: KVEventListener<Event, Key, Value, Combined>
+  ): void;
+  off<Event extends KVEventName>(
+    name: Event,
+    fn: KVEventListener<Event, Key, Value, Combined>
+  ): void;
+  emit<Event extends KVEventName>(
+    name: Event,
+    ...args: KVEventParameters<Event, Key, Value, Combined>
+  ): void;
+  once<Event extends KVEventName>(
+    name: Event,
+    fn: KVEventListener<Event, Key, Value, Combined>
+  ): void;
+  emitted<Event extends KVEventName>(
+    name: Event
+  ): Promise<KVEventParameters<Event, Key, Value, Combined>>;
 
   // Convenience methods
   put(key: BasicKeyType, value: BasicValueType): Promise<void>;

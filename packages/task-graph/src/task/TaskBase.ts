@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter } from "eventemitter3";
+import { EventEmitter } from "@ellmers/util";
 import { nanoid } from "nanoid";
 import {
   TaskStatus,
@@ -18,6 +18,9 @@ import {
   type TaskInput,
   type TaskOutput,
   type JsonTaskItem,
+  type TaskEventListener,
+  type TaskEventParameters,
+  type TaskEventListeners,
 } from "./Task";
 
 /**
@@ -37,14 +40,20 @@ export abstract class TaskBase {
     return ((this.constructor as typeof TaskBase).outputs as TaskOutputDefinition[]) ?? [];
   }
 
-  events = new EventEmitter<TaskEvents>();
-  on(name: TaskEvents, fn: (...args: any[]) => void) {
+  public events = new EventEmitter<TaskEventListeners>();
+  public on<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>) {
     this.events.on(name, fn);
   }
-  off(name: TaskEvents, fn: (...args: any[]) => void) {
+  public off<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>) {
     this.events.off(name, fn);
   }
-  emit(name: TaskEvents, ...args: any[]) {
+  public once<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>) {
+    this.events.once(name, fn);
+  }
+  public emitted<Event extends TaskEvents>(name: Event) {
+    return this.events.emitted(name) as Promise<TaskEventParameters<Event>>;
+  }
+  public emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>) {
     this.events.emit(name, ...args);
   }
 
@@ -104,12 +113,12 @@ export abstract class TaskBase {
       this.completedAt = new Date();
       this.progress = 100;
       this.status = TaskStatus.FAILED;
-      this.error = error;
+      this.error = error || "Task failed";
     });
-    this.on("abort", (err) => {
+    this.on("abort", (error) => {
       this.progress = 100;
       this.status = TaskStatus.ABORTING;
-      this.error = err || "Task aborted by run time";
+      this.error = error || "Task aborted by run time";
     });
   }
   /**
@@ -275,10 +284,10 @@ export abstract class TaskBase {
     if (this.status === TaskStatus.ABORTING) {
       throw new Error("Task aborted by run time");
     }
-    this.emit("start");
+    this.events.emit("start");
     const result = await this.runReactive();
     this.runOutputData = result;
-    this.emit("complete");
+    this.events.emit("complete");
     return result;
   }
   /**
@@ -316,6 +325,6 @@ export abstract class TaskBase {
    */
   async abort(): Promise<void> {
     this.status = TaskStatus.ABORTING;
-    this.emit("abort");
+    this.events.emit("abort", "Task aborted by run time");
   }
 }

@@ -68,15 +68,15 @@ export class CompoundTask extends TaskBase implements ITaskCompound {
     if (this.status === TaskStatus.ABORTING) {
       throw new Error("Task aborted by run time");
     }
-    this.emit("start");
+    this.events.emit("start");
     const runner = new TaskGraphRunner(this.subGraph, repository);
     try {
       this.runOutputData.outputs = await runner.runGraph(nodeProvenance);
     } catch (err) {
-      this.emit("error", err);
+      this.events.emit("error", String(err));
       throw err;
     }
-    this.emit("complete");
+    this.events.emit("complete");
     return this.runOutputData;
   }
   async runReactive(): Promise<TaskOutput> {
@@ -114,11 +114,11 @@ export class CompoundTask extends TaskBase implements ITaskCompound {
  * Represents a regenerative compound task, which is a task that contains other tasks and can regenerate its subtasks
  */
 export class RegenerativeCompoundTask extends CompoundTask {
-  static readonly type: TaskTypeName = "CompoundTask";
+  static readonly type: TaskTypeName = "RegenerativeCompoundTask";
   /**
    * Emits a "regenerate" event when the subtask graph is regenerated
    */
   public regenerateGraph() {
-    this.emit("regenerate", this.subGraph);
+    this.events.emit("regenerate");
   }
 }

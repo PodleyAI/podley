@@ -113,7 +113,6 @@ builder.on("reset", () => {
 });
 taskGraphRepo.on("graph_cleared", () => {
   resetGraph();
-  builder.emit("reset");
 });
 const initialJsonObj: JsonTaskItem[] = builder.toDependencyJSON();
 const initialJson = JSON.stringify(initialJsonObj, null, 2);
