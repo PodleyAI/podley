@@ -17,6 +17,7 @@ export class OutputTask extends SingleTask {
   static readonly sideeffects = true;
   async run(provenance: TaskInput = {}) {
     this.provenance = provenance;
-    return super.run();
+    const result = await super.run();
+    return result;
   }
 }

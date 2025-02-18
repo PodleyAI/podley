@@ -64,21 +64,27 @@ export class CompoundTask extends TaskBase implements ITaskCompound {
     nodeProvenance: TaskInput = {},
     repository?: TaskOutputRepository
   ): Promise<TaskOutput> {
-    if (!this.validateInputData(this.runInputData)) throw new Error("Invalid input data");
     if (this.status === TaskStatus.ABORTING) {
       throw new Error("Task aborted by run time");
     }
-    this.events.emit("start");
-    const runner = new TaskGraphRunner(this.subGraph, repository);
+
+    this.handleStart();
+
     try {
+      if (!(await this.validateInputData(this.runInputData))) {
+        throw new Error("Invalid input data");
+      }
+      const runner = new TaskGraphRunner(this.subGraph, repository);
       this.runOutputData.outputs = await runner.runGraph(nodeProvenance);
-    } catch (err) {
-      this.events.emit("error", String(err));
+
+      this.handleComplete();
+      return this.runOutputData;
+    } catch (err: any) {
+      this.handleError(err);
       throw err;
     }
-    this.events.emit("complete");
-    return this.runOutputData;
   }
+
   async runReactive(): Promise<TaskOutput> {
     const runner = new TaskGraphRunner(this.subGraph);
     this.runOutputData.outputs = await runner.runGraphReactive();

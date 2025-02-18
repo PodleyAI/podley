@@ -105,11 +105,10 @@ export class TaskGraphRunner {
     if (shouldUseRepository) {
       results = await this.repository?.getOutput((task.constructor as any).type, task.runInputData);
       if (results) {
-        task.emit("start");
-        task.emit("progress", 100);
+        task.handleStart();
         task.runOutputData = results;
         await task.runReactive();
-        task.emit("complete");
+        task.handleComplete();
       }
     }
     if (!results) {
@@ -222,7 +221,7 @@ export class TaskGraphRunner {
         console.log("aborting task", task.config.id, task.status, task);
         if ([TaskStatus.PROCESSING, TaskStatus.PENDING].includes(task.status)) {
           if (task.status === TaskStatus.PENDING) {
-            task.emit("complete");
+            task.handleError(new Error("Task aborted"));
           }
           await task.abort();
         }

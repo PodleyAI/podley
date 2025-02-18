@@ -20,7 +20,7 @@ import {
 import { TurboNodeData, SingleNode, CompoundNode } from "./TurboNode";
 import TurboEdge from "./TurboEdge";
 import { FiFileText, FiClipboard, FiDownload, FiUpload } from "react-icons/fi";
-import { Task, TaskGraph } from "@ellmers/task-graph";
+import { Task, TaskGraph, TaskStatus } from "@ellmers/task-graph";
 import { GraphPipelineCenteredLayout, GraphPipelineLayout, computeLayout } from "./layout";
 
 import "@xyflow/react/dist/base.css";
@@ -151,19 +151,110 @@ function updateNodeData(
   });
 }
 
-// TODO: unlisten to tasks
 function listenToTask(
   task: Task,
   setNodes: Dispatch<SetStateAction<Node<TurboNodeData>[]>>,
   setEdges: Dispatch<SetStateAction<Edge[]>>
 ) {
-  const taskId = task.config.id;
+  const cleanupFns: (() => void)[] = [];
+  let progressItems: Array<{ id: string; text: string; progress: number }> = [];
+
+  const handleStatusChange = (...args: any[]) => {
+    console.log("Status changed", task.config.id, task.status, task.runOutputData, args);
+    if (task.status === TaskStatus.PROCESSING) {
+      progressItems = [{ id: "text", text: "STARTING", progress: 1 }];
+    } else if (task.status === TaskStatus.COMPLETED) {
+      progressItems =
+        progressItems.length > 0
+          ? progressItems.map((item) => ({
+              id: item.id,
+              text: item.id === "text" ? (task.runOutputData?.text ?? "COMPLETED") : item.text,
+              progress: 100,
+            }))
+          : [{ id: "text", text: task.runOutputData?.text ?? "COMPLETED", progress: 100 }];
+    } else if (task.status === TaskStatus.FAILED) {
+      progressItems = [{ id: "text", text: "Error: " + task.error, progress: 100 }];
+    } else if (task.status === TaskStatus.ABORTING) {
+      progressItems = [{ id: "text", text: "Aborting", progress: 100 }];
+    }
+
+    updateNodeData(
+      task.config.id,
+      {
+        active: task.status === TaskStatus.PROCESSING,
+        progressItems,
+      },
+      setNodes
+    );
+
+    // Trigger layout update when status changes
+    setTimeout(() => {
+      doNodeLayout(setNodes, setEdges);
+    }, 16);
+  };
+
+  const handleProgress = (progress: number, progressText: string, details: any) => {
+    if (progressText === "Downloading model") {
+      // Remove the start item
+      progressItems = progressItems.filter((item) => item.id !== "text");
+
+      const itemId = details.model || details.file;
+      // Find existing progress item or create new one
+      const existingItemIndex = progressItems.findIndex((item) => item.id === itemId);
+
+      if (existingItemIndex >= 0) {
+        // Update existing item
+        progressItems[existingItemIndex] = {
+          ...progressItems[existingItemIndex],
+          progress,
+          text: itemId,
+          id: itemId,
+        };
+      } else {
+        // Add new item
+        progressItems.push({
+          id: itemId,
+          progress,
+          text: itemId,
+        });
+      }
+    } else if (details?.text) {
+      details.text = (task.runOutputData?.text ?? "") + details.text;
+      task.runOutputData.text = details.text;
+      progressItems = [
+        {
+          id: "text",
+          text: "ST" + details?.text || progressText,
+          progress,
+        },
+      ];
+    }
+
+    updateNodeData(
+      task.config.id,
+      {
+        active: true,
+        progressItems,
+      },
+      setNodes
+    );
+
+    // Trigger layout update when progress changes
+    setTimeout(() => {
+      doNodeLayout(setNodes, setEdges);
+    }, 16);
+  };
 
   if (task.isCompound) {
-    listenToGraphTasks(task.subGraph, setNodes, setEdges);
-    task.on("regenerate", () => {
-      // console.log("Node regenerated", taskId);
-      setNodes((nodes: Node<TurboNodeData>[]) => {
+    const subTasks = task.subGraph.getNodes();
+    for (const subTask of subTasks) {
+      const subCleanupFns = listenToTask(subTask, setNodes, setEdges);
+      cleanupFns.push(...subCleanupFns);
+    }
+
+    // Listen for regeneration of compound tasks
+    task.events.on("regenerate", () => {
+      setNodes((nodes) => {
         const children = convertGraphToNodes(task.subGraph).map(
           (n) =>
             ({
@@ -174,108 +265,39 @@ function listenToTask(
               connectable: false,
             }) as Node<TurboNodeData>
         );
-        listenToGraphTasks(task.subGraph, setNodes, setEdges);
         let returnNodes = nodes.filter((n) => n.parentId !== task.config.id); // remove old children
         returnNodes = [...returnNodes, ...children]; // add new children
-        returnNodes = sortNodes(returnNodes); // sort all nodes (parent, children, parent, children, ...)
+        returnNodes = sortNodes(returnNodes); // sort all nodes
         return returnNodes;
+      });
+
+      // Set up listeners for new subtasks
+      const newCleanupFns = listenToGraphTasks(task.subGraph, setNodes, setEdges);
+      cleanupFns.push(...newCleanupFns);
+      cleanupFns.push(() => {
+        task.events.off("regenerate", () => {});
       });
     });
   } else {
-    let progressItems = [];
-    task.on("start", () => {
-      progressItems = [{ id: "text", text: "STARTING", progress: 1 }];
-      updateNodeData(taskId, { active: true, progressItems }, setNodes);
-      setTimeout(() => {
-        doNodeLayout(setNodes, setEdges);
-      }, 16);
-    });
-    task.on("complete", () => {
-      (progressItems =
-        progressItems.length > 0
-          ? progressItems.map((item) => ({
-              id: item.id,
-              text: item.id === "text" ? (task.runOutputData?.text ?? "COMPLETED") : item.text,
-              progress: 100,
-            }))
-          : [{ id: "text", text: task.runOutputData?.text, progress: 100 }]),
-        updateNodeData(
-          taskId,
-          {
-            active: false,
-            progressItems,
-          },
-          setNodes
-        );
-      setTimeout(() => {
-        doNodeLayout(setNodes, setEdges);
-      }, 16);
-    });
-    task.on("error", (text) => {
-      progressItems = [{ id: "text", text: "Error: " + text, progress: 100 }];
-      updateNodeData(taskId, { active: false, progressItems }, setNodes);
-      setTimeout(() => {
-        doNodeLayout(setNodes, setEdges);
-      }, 16);
-    });
-    task.on("abort", (text) => {
-      progressItems = [{ id: "text", text: "Aborting", progress: 100 }];
-      updateNodeData(taskId, { active: false, progressItems }, setNodes);
-      setTimeout(() => {
-        doNodeLayout(setNodes, setEdges);
-      }, 16);
-    });
+    // Register event handlers
+    task.events.on("start", handleStatusChange);
+    task.events.on("complete", handleStatusChange);
+    task.events.on("error", handleStatusChange);
+    task.events.on("abort", handleStatusChange);
     // @ts-ignore
-    task.on("progress", (progress: number, progressText: string, details: any) => {
-      if (progressText === "Downloading model") {
-        // Remove the start item
-        progressItems = progressItems.filter((item: any) => item.id !== "text");
-
-        const itemId = details.model || details.file;
-        // Find existing progress item or create new one
-        const existingItemIndex = progressItems.findIndex((item: any) => item.id === itemId);
-
-        if (existingItemIndex >= 0) {
-          // Update existing item
-          progressItems[existingItemIndex] = {
-            ...progressItems[existingItemIndex],
-            progress,
-            text: itemId,
-            id: itemId,
-          };
-        } else {
-          // Add new item
-          progressItems.push({
-            id: itemId,
-            progress,
-            text: itemId,
-          });
-        }
-      } else if (details?.text) {
-        details.text = (task.runOutputData?.text ?? "") + details.text;
-        task.runOutputData.text = details.text;
-        progressItems = [
-          {
-            id: "text",
-            text: details?.text || progressText,
-            progress,
-          },
-        ];
-      }
-
-      updateNodeData(
-        taskId,
-        {
-          active: true,
-          progressItems,
-        },
-        setNodes
-      );
-      setTimeout(() => {
-        doNodeLayout(setNodes, setEdges);
-      }, 16);
+    task.events.on("progress", handleProgress);
+    // Add cleanup function
+    cleanupFns.push(() => {
+      task.events.off("start", handleStatusChange);
+      task.events.off("complete", handleStatusChange);
+      task.events.off("error", handleStatusChange);
+      task.events.off("abort", handleStatusChange);
+      // @ts-ignore
+      task.events.off("progress", handleProgress);
     });
   }
+
+  return cleanupFns;
 }
 
 function listenToGraphTasks(
@@ -283,10 +305,13 @@ function listenToGraphTasks(
   setNodes: Dispatch<SetStateAction<Node<TurboNodeData>[]>>,
   setEdges: Dispatch<SetStateAction<Edge[]>>
 ) {
+  const cleanupFns: (() => void)[] = [];
   const nodes = graph.getNodes();
   for (const node of nodes) {
-    listenToTask(node, setNodes, setEdges);
+    const taskCleanupFns = listenToTask(node, setNodes, setEdges);
+    cleanupFns.push(...taskCleanupFns);
   }
+  return cleanupFns;
 }
 
 const nodeTypes = {
@@ -309,46 +334,60 @@ export const RunGraphFlow: React.FC<{
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<TurboNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const graphRef = useRef<TaskGraph | null>(null);
+  const cleanupRef = useRef<(() => void)[]>([]);
 
   const shouldLayout = useNodesInitialized() && !nodes.some((n) => !n.measured);
   const { fitView } = useReactFlow();
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     if (shouldLayout) {
       doNodeLayout(setNodes, setEdges);
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         fitView();
       }, 5);
     }
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [shouldLayout, setNodes, setEdges, fitView]);
 
   useEffect(() => {
     if (graph !== graphRef.current) {
+      // Cleanup previous listeners
+      cleanupRef.current.forEach((cleanup) => cleanup());
+      cleanupRef.current = [];
+
       graphRef.current = graph;
       console.log("Graph changed", graph);
       const nodes = sortNodes(convertGraphToNodes(graph));
       setNodes(
-        nodes.map((n) => {
-          return {
-            ...n,
-            style: { opacity: 0 },
-          };
-        })
+        nodes.map((n) => ({
+          ...n,
+          style: { opacity: 0 },
+        }))
       );
 
       setEdges(
-        graph.getEdges().map(([source, target, edge]) => {
-          return {
-            id: edge.id,
-            source: source as string,
-            target: target as string,
-            style: { opacity: 0 },
-          };
-        })
+        graph.getEdges().map(([source, target, edge]) => ({
+          id: edge.id,
+          source: source as string,
+          target: target as string,
+          style: { opacity: 0 },
+        }))
       );
-      listenToGraphTasks(graph, setNodes, setEdges);
+
+      const newCleanupFns = listenToGraphTasks(graph, setNodes, setEdges);
+      cleanupRef.current = newCleanupFns;
     }
-  }, [graph, setNodes, setEdges, graphRef.current]);
+
+    return () => {
+      cleanupRef.current.forEach((cleanup) => cleanup());
+      cleanupRef.current = [];
+    };
+  }, [graph, setNodes, setEdges]);
 
   // const onConnect = useCallback(
   //   (params: any) => setEdges((els) => addEdge(params, els)),

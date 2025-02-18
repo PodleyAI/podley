@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { getTaskQueueRegistry } from "./TaskQueueRegistry";
-import { TaskConfig, TaskOutput, TaskEventListeners } from "./Task";
+import { TaskConfig, TaskOutput, TaskEventListeners, TaskStatus } from "./Task";
 import { SingleTask } from "./SingleTask";
 import { EventEmitter } from "@ellmers/util";
 
@@ -46,13 +46,17 @@ export abstract class JobQueueTask extends SingleTask {
   }
 
   async run(): Promise<TaskOutput> {
-    if (!this.validateInputData(this.runInputData)) {
-      throw new Error("Invalid input data");
+    if (this.status === TaskStatus.ABORTING) {
+      throw new Error("Task aborted by run time");
     }
-    this.events.emit("start");
+
+    this.handleStart();
     this.runOutputData = {};
 
     try {
+      if (!(await this.validateInputData(this.runInputData))) {
+        throw new Error("Invalid input data");
+      }
       const job = await this.createJob();
 
       const queue = getTaskQueueRegistry().getQueue(this.config.queue!);
@@ -69,15 +73,17 @@ export abstract class JobQueueTask extends SingleTask {
       });
       this.runOutputData = await queue.waitFor(jobId);
       cleanup();
-    } catch (err) {
-      this.events.emit("error", err instanceof Error ? err.message : String(err));
+
+      this.runOutputData ??= {};
+      this.runOutputData = await this.runReactive();
+
+      this.handleComplete();
+      return this.runOutputData;
+    } catch (err: any) {
+      this.handleError(err);
       console.error(err);
       throw err;
     }
-    this.runOutputData ??= {};
-    this.runOutputData = await this.runReactive();
-    this.events.emit("complete");
-    return this.runOutputData;
   }
 
   /**
