@@ -83,8 +83,8 @@
 .gradient:before {
   content: "";
   position: absolute;
-  padding-bottom: calc(100% * 1.41421356237);
-  width: calc(100% * 1.41421356237);
+  padding-bottom: calc(100% * 2.41421356237);
+  width: calc(100% * 2.41421356237);
   background: conic-gradient(
     from -160deg at 50% 50%,
     #e92a67 0deg,
