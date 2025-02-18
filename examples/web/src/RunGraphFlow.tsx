@@ -158,54 +158,88 @@ function listenToTask(
   setEdges: Dispatch<SetStateAction<Edge[]>>
 ) {
   const taskId = task.config.id;
+  let progressItems = [];
   task.on("start", () => {
-    updateNodeData(taskId, { active: true, progress: 1, progressText: "" }, setNodes);
+    progressItems = [{ id: "text", text: "", progress: 1 }];
+    updateNodeData(taskId, { active: true, progressItems }, setNodes);
     setTimeout(() => {
       doNodeLayout(setNodes, setEdges);
     }, 16);
   });
   task.on("complete", () => {
-    const progressText = task.runOutputData?.text ?? task.runOutputData?.model;
-    updateNodeData(
-      taskId,
-      {
-        active: false,
-        progress: 100,
-        progressText: Array.isArray(progressText) ? "" : progressText,
-      },
-      setNodes
-    );
+    (progressItems =
+      progressItems.length > 0
+        ? progressItems.map((item) => ({
+            id: item.id,
+            text: item.id === "text" ? task.runOutputData?.text : item.text,
+            progress: 100,
+          }))
+        : [{ id: "text", text: task.runOutputData?.text, progress: 100 }]),
+      updateNodeData(
+        taskId,
+        {
+          active: false,
+          progressItems,
+        },
+        setNodes
+      );
     setTimeout(() => {
       doNodeLayout(setNodes, setEdges);
     }, 16);
   });
   task.on("error", (text) => {
-    updateNodeData(
-      taskId,
-      { active: false, progress: 100, progressText: "Error: " + text },
-      setNodes
-    );
+    progressItems = [{ id: "text", text: "Error: " + text, progress: 100 }];
+    updateNodeData(taskId, { active: false, progressItems }, setNodes);
     setTimeout(() => {
       doNodeLayout(setNodes, setEdges);
     }, 16);
   });
   task.on("abort", (text) => {
-    updateNodeData(taskId, { active: false, progress: 100, progressText: "Aborting" }, setNodes);
+    progressItems = [{ id: "text", text: "Aborting", progress: 100 }];
+    updateNodeData(taskId, { active: false, progressItems }, setNodes);
     setTimeout(() => {
       doNodeLayout(setNodes, setEdges);
     }, 16);
   });
   task.on("progress", (progress: number, progressText: string, details: any) => {
-    if (details?.text) {
+    if (progressText === "Downloading model") {
+      const itemId = details.model || details.file;
+      // Find existing progress item or create new one
+      const existingItemIndex = progressItems.findIndex((item: any) => item.id === itemId);
+
+      if (existingItemIndex >= 0) {
+        // Update existing item
+        progressItems[existingItemIndex] = {
+          ...progressItems[existingItemIndex],
+          progress,
+          text: itemId,
+          id: itemId,
+        };
+      } else {
+        // Add new item
+        progressItems.push({
+          id: itemId,
+          progress,
+          text: itemId,
+        });
+      }
+    } else if (details?.text) {
       details.text = (task.runOutputData?.text ?? "") + details.text;
       task.runOutputData.text = details.text;
+      progressItems = [
+        {
+          id: "text",
+          text: details?.text || progressText,
+          progress,
+        },
+      ];
     }
+
     updateNodeData(
       taskId,
       {
         active: true,
-        progress,
-        progressText: details ? details.file || details.text || details.model : progressText,
+        progressItems,
       },
       setNodes
     );
