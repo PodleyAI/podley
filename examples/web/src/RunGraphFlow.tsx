@@ -225,6 +225,7 @@ function listenToTask(
         doNodeLayout(setNodes, setEdges);
       }, 16);
     });
+    // @ts-ignore
     task.on("progress", (progress: number, progressText: string, details: any) => {
       if (progressText === "Downloading model") {
         // Remove the start item
