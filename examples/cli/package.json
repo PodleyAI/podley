@@ -23,6 +23,11 @@
     "@ellmers/storage": "workspace:*",
     "@ellmers/ai-provider": "workspace:*",
     "@ellmers/tasks": "workspace:*",
-    "@ellmers/test": "workspace:*"
+    "@ellmers/test": "workspace:*",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "eventemitter3": "^5.0.1",
+    "listr2": "^8.2.5",
+    "rxjs": "^7.8.1"
   }
 }
