@@ -118,4 +118,3 @@ export type TaskIdType = TaskBase["config"]["id"];
 // ===============================================================================
 
 export type Task = SingleTask | CompoundTask;
-export type TaskStream = Task[];

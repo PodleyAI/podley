@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { DirectedAcyclicGraph } from "@sroussey/typescript-graph";
-import { Task, TaskIdType, TaskInput, JsonTaskItem, TaskStream } from "../task/Task";
+import { Task, TaskIdType, TaskInput, JsonTaskItem } from "../task/TaskTypes";
 import { DataFlow, DataFlowIdType, DataFlowJson } from "./DataFlow";
 
 /**
@@ -195,16 +195,12 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
 /**
  * Super simple helper if you know the input and output handles, and there is only one each
  *
- * @param tasks TaskStream
+ * @param tasks Task[]
  * @param inputHandle  TaskIdType
  * @param outputHandle TaskIdType
  * @returns
  */
-function serialGraphEdges(
-  tasks: TaskStream,
-  inputHandle: string,
-  outputHandle: string
-): DataFlow[] {
+function serialGraphEdges(tasks: Task[], inputHandle: string, outputHandle: string): DataFlow[] {
   const edges: DataFlow[] = [];
   for (let i = 0; i < tasks.length - 1; i++) {
     edges.push(new DataFlow(tasks[i].config.id, inputHandle, tasks[i + 1].config.id, outputHandle));
@@ -215,16 +211,12 @@ function serialGraphEdges(
 /**
  * Super simple helper if you know the input and output handles, and there is only one each
  *
- * @param tasks TaskStream
+ * @param tasks Task[]
  * @param inputHandle  TaskIdType
  * @param outputHandle TaskIdType
  * @returns
  */
-export function serialGraph(
-  tasks: TaskStream,
-  inputHandle: string,
-  outputHandle: string
-): TaskGraph {
+export function serialGraph(tasks: Task[], inputHandle: string, outputHandle: string): TaskGraph {
   const graph = new TaskGraph();
   graph.addTasks(tasks);
   graph.addDataFlows(serialGraphEdges(tasks, inputHandle, outputHandle));

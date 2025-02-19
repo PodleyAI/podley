@@ -10,7 +10,7 @@ import { TaskGraphRepository } from "../TaskGraphRepository";
 import { DataFlow } from "../../../task-graph/DataFlow";
 import { TaskGraph } from "../../../task-graph/TaskGraph";
 import { TaskRegistry } from "../../../task/TaskRegistry";
-import { TaskOutput } from "../../../task/Task";
+import { TaskOutput } from "../../../task/TaskTypes";
 import { SingleTask } from "../../../task/SingleTask";
 
 class TestTask extends SingleTask {

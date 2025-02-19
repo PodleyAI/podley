@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
-import { TaskInput, Task, TaskOutput, TaskStatus } from "../task/Task";
+import { TaskInput, Task, TaskOutput, TaskStatus } from "../task/TaskTypes";
 import { TaskGraph } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
 import { nanoid } from "nanoid";

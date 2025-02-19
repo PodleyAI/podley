@@ -8,26 +8,28 @@
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskGraph, type TaskGraphItemJson } from "../task-graph/TaskGraph";
 import { TaskGraphRunner } from "../task-graph/TaskGraphRunner";
+import type { ICompoundTask } from "./ITask";
 import {
-  type ITaskCompound,
   type TaskTypeName,
   type TaskOutput,
   type TaskInput,
   TaskStatus,
   type JsonTaskItem,
-} from "./Task";
+} from "./TaskTypes";
 import { TaskBase } from "./TaskBase";
 
 /**
- * Represents a compound task, which is a task that contains other tasks
+ * Represents a compound task, which is a task that contains other tasks.
+ * This is the base class for all compound tasks that manage subtasks.
  */
-
-export class CompoundTask extends TaskBase implements ITaskCompound {
+export class CompoundTask extends TaskBase implements ICompoundTask {
   static readonly type: TaskTypeName = "CompoundTask";
 
   declare runOutputData: TaskOutput;
   readonly isCompound = true;
-  _subGraph: TaskGraph | null = null;
+
+  public _subGraph: TaskGraph | null = null;
+
   /**
    * Sets the subtask graph for the compound task
    * @param subGraph The subtask graph to set

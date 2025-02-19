@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { getTaskQueueRegistry } from "./TaskQueueRegistry";
-import { TaskConfig, TaskOutput, TaskEventListeners, TaskStatus } from "./Task";
+import { TaskConfig, TaskOutput, TaskEventListeners, TaskStatus } from "./TaskTypes";
 import { SingleTask } from "./SingleTask";
 import { EventEmitter } from "@ellmers/util";
 

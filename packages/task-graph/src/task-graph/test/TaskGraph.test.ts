@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { Task, TaskOutput } from "../../task/Task";
+import { Task, TaskOutput } from "../../task/TaskTypes";
 import { SingleTask } from "../../task/SingleTask";
 import { DataFlow } from "../../task-graph/DataFlow";
 import { TaskGraph, serialGraph } from "../../task-graph/TaskGraph";

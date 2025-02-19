@@ -14,7 +14,7 @@ import {
   TaskInputDefinition,
   TaskOutputDefinition,
   JsonTaskItem,
-} from "./Task";
+} from "./TaskTypes";
 import { SingleTask } from "./SingleTask";
 import { CompoundTask, RegenerativeCompoundTask } from "./CompoundTask";
 import { TaskRegistry } from "./TaskRegistry";

@@ -1,5 +1,3 @@
-import { TaskInput, TaskOutput } from "../task/Task";
-
 //    *******************************************************************************
 //    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
 //    *                                                                             *
@@ -7,7 +5,7 @@ import { TaskInput, TaskOutput } from "../task/Task";
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskIdType } from "../task/Task";
+import { TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
 
 export type DataFlowIdType = string;
 

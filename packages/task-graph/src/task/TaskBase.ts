@@ -7,13 +7,13 @@
 
 import { EventEmitter } from "@ellmers/util";
 import { nanoid } from "nanoid";
+import type { ITask } from "./ITask";
 import {
   TaskStatus,
   type TaskTypeName,
   type TaskInputDefinition,
   type TaskOutputDefinition,
   type TaskEvents,
-  type IConfig,
   type TaskConfig,
   type TaskInput,
   type TaskOutput,
@@ -21,7 +21,7 @@ import {
   type TaskEventListener,
   type TaskEventParameters,
   type TaskEventListeners,
-} from "./Task";
+} from "./TaskTypes";
 
 /**
  * Base class for all tasks
