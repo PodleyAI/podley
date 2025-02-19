@@ -8,7 +8,7 @@
 import { EventEmitter, EventParameters } from "@ellmers/util";
 import { DefaultValueType, type KVRepository } from "@ellmers/storage";
 import { makeFingerprint } from "@ellmers/util";
-import { TaskInput, TaskOutput } from "../../task/Task";
+import { TaskInput, TaskOutput } from "../../task/TaskTypes";
 
 export type TaskOutputEventListeners = {
   output_saved: (taskType: string) => void;

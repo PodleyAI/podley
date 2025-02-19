@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./task/Task";
+export * from "./task/TaskTypes";
 export * from "./task/TaskBase";
 export * from "./task/SingleTask";
 export * from "./task/CompoundTask";

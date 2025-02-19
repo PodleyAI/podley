@@ -7,13 +7,13 @@
 
 import { EventEmitter } from "@ellmers/util";
 import { nanoid } from "nanoid";
+import type { ITask } from "./ITask";
 import {
   TaskStatus,
   type TaskTypeName,
   type TaskInputDefinition,
   type TaskOutputDefinition,
   type TaskEvents,
-  type IConfig,
   type TaskConfig,
   type TaskInput,
   type TaskOutput,
@@ -21,49 +21,25 @@ import {
   type TaskEventListener,
   type TaskEventParameters,
   type TaskEventListeners,
-} from "./Task";
+  type IConfig,
+} from "./TaskTypes";
 
 /**
- * Base class for all tasks
+ * Base class for all tasks that implements the ITask interface
  */
-
-export abstract class TaskBase {
-  // information about the task that should be overriden by the subclasses
+export abstract class TaskBase implements ITask {
+  // Static properties that should be overridden by subclasses
   static readonly type: TaskTypeName = "TaskBase";
   static readonly category: string = "Hidden";
   static readonly sideeffects: boolean = false;
 
-  get inputs(): TaskInputDefinition[] {
-    return ((this.constructor as typeof TaskBase).inputs as TaskInputDefinition[]) ?? [];
-  }
-  get outputs(): TaskOutputDefinition[] {
-    return ((this.constructor as typeof TaskBase).outputs as TaskOutputDefinition[]) ?? [];
-  }
+  // Instance properties from static
+  // readonly type: TaskTypeName = (this.constructor as typeof TaskBase).type;
+  // readonly category: string = (this.constructor as typeof TaskBase).category;
+  // readonly sideeffects: boolean = (this.constructor as typeof TaskBase).sideeffects;
 
-  public events = new EventEmitter<TaskEventListeners>();
-  public on<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>) {
-    this.events.on(name, fn);
-  }
-  public off<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>) {
-    this.events.off(name, fn);
-  }
-  public once<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>) {
-    this.events.once(name, fn);
-  }
-  public emitted<Event extends TaskEvents>(name: Event) {
-    return this.events.emitted(name) as Promise<TaskEventParameters<Event>>;
-  }
-  public emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>) {
-    this.events.emit(name, ...args);
-  }
-
-  /**
-   * Does this task have subtasks?
-   */
+  // Instance properties
   abstract readonly isCompound: boolean;
-  /**
-   * Configuration for the task, might include things like name and id for the database
-   */
   config: IConfig;
   status: TaskStatus = TaskStatus.PENDING;
   progress: number = 0;
@@ -72,8 +48,11 @@ export abstract class TaskBase {
   completedAt?: Date;
   error?: string;
 
+  // Event handling
+  public readonly events = new EventEmitter<TaskEventListeners>();
+
   constructor(config: TaskConfig = {}) {
-    // pull out input data from the config
+    // Extract input data from config
     const { input = {}, ...rest } = config;
     const inputDefaults = this.inputs.reduce<Record<string, any>>((acc, cur) => {
       if (cur.defaultValue !== undefined) {
@@ -84,7 +63,7 @@ export abstract class TaskBase {
     this.defaults = Object.assign(inputDefaults, input);
     this.resetInputData();
 
-    // setup the configuration
+    // Setup configuration
     const name = new.target.type || new.target.name;
     this.config = Object.assign(
       {
@@ -93,31 +72,43 @@ export abstract class TaskBase {
       },
       rest
     );
-    Object.defineProperty(this, "events", { enumerable: false }); // in case it is serialized
+    Object.defineProperty(this, "events", { enumerable: false }); // Prevent serialization
   }
 
-  public handleStart() {
-    this.startedAt = new Date();
-    this.progress = 0;
-    this.status = TaskStatus.PROCESSING;
-    this.events.emit("start");
+  // Input/Output definitions
+  public static inputs: readonly TaskInputDefinition[];
+  public static outputs: readonly TaskOutputDefinition[];
+
+  get inputs(): TaskInputDefinition[] {
+    return ((this.constructor as typeof TaskBase).inputs as TaskInputDefinition[]) ?? [];
   }
 
-  public handleComplete() {
-    this.completedAt = new Date();
-    this.progress = 100;
-    this.status = TaskStatus.COMPLETED;
-    this.events.emit("complete");
+  get outputs(): TaskOutputDefinition[] {
+    return ((this.constructor as typeof TaskBase).outputs as TaskOutputDefinition[]) ?? [];
   }
 
-  public handleError(err: any) {
-    this.completedAt = new Date();
-    this.progress = 100;
-    this.status = TaskStatus.FAILED;
-    this.error = err?.message || "Task failed";
-    this.events.emit("error", this.error!);
+  // Event handling methods
+  public on<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void {
+    this.events.on(name, fn);
   }
 
+  public off<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void {
+    this.events.off(name, fn);
+  }
+
+  public once<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void {
+    this.events.once(name, fn);
+  }
+
+  public emitted<Event extends TaskEvents>(name: Event): Promise<TaskEventParameters<Event>> {
+    return this.events.emitted(name) as Promise<TaskEventParameters<Event>>;
+  }
+
+  public emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>): void {
+    this.events.emit(name, ...args);
+  }
+
+  // Runtime data
   /**
    * The defaults for the task. If no overrides at run time, then this would be equal to the
    * input
@@ -134,19 +125,39 @@ export abstract class TaskBase {
    */
   runOutputData: TaskOutput = {};
 
-  public static inputs: readonly TaskInputDefinition[];
-  public static outputs: readonly TaskOutputDefinition[];
+  // Core task methods
+  public handleStart(): void {
+    if (this.status === TaskStatus.PROCESSING) return;
+    // this.runOutputData = {};
+    this.startedAt = new Date();
+    this.progress = 0;
+    this.status = TaskStatus.PROCESSING;
+    this.events.emit("start");
+  }
 
-  /**
-   *
-   * @returns TaskInput Values that are used by the task runner, usually for storing results
-   */
-  getProvenance(): TaskInput {
+  public handleComplete(): void {
+    if (this.status === TaskStatus.COMPLETED) return;
+    this.completedAt = new Date();
+    this.progress = 100;
+    this.status = TaskStatus.COMPLETED;
+    this.events.emit("complete");
+  }
+
+  public handleError(err: any): void {
+    if (this.status === TaskStatus.FAILED) return;
+    this.completedAt = new Date();
+    this.progress = 100;
+    this.status = TaskStatus.FAILED;
+    this.error = err?.message || "Task failed";
+    this.events.emit("error", err?.message || "Task failed");
+  }
+
+  public getProvenance(): TaskInput {
     return this.config.provenance ?? {};
   }
 
-  resetInputData() {
-    // Use deep clone to avoid state leakage.
+  public resetInputData(): void {
+    // Use deep clone to avoid state leakage
     if (typeof structuredClone === "function") {
       this.runInputData = structuredClone(this.defaults);
     } else {
@@ -161,7 +172,7 @@ export abstract class TaskBase {
    * @param overrides
    * @returns
    */
-  addInputData<T extends TaskInput>(overrides: Partial<T> | undefined) {
+  public addInputData<T extends TaskInput>(overrides: Partial<T> | undefined): ITask {
     for (const input of this.inputs) {
       if (overrides?.[input.id] !== undefined) {
         let isArray = input.isArray;
@@ -173,7 +184,6 @@ export abstract class TaskBase {
         }
 
         if (isArray) {
-          // Initialize newitems as an empty array if runInputData[input.id] is not an array
           const existingItems = Array.isArray(this.runInputData[input.id])
             ? this.runInputData[input.id]
             : [];
@@ -202,7 +212,7 @@ export abstract class TaskBase {
    * @param item The item to validate
    * @returns True if the item is valid, false otherwise
    */
-  async validateItem(valueType: string, item: any) {
+  async validateItem(valueType: string, item: any): Promise<boolean> {
     switch (valueType) {
       case "any":
         return true;
@@ -226,7 +236,10 @@ export abstract class TaskBase {
    * @param inputId The id of the input to validate
    * @returns True if the input is valid, false otherwise
    */
-  async validateInputItem(input: Partial<TaskInput>, inputId: keyof TaskInput) {
+  public async validateInputItem(
+    input: Partial<TaskInput>,
+    inputId: keyof TaskInput
+  ): Promise<boolean> {
     const classRef = this.constructor as typeof TaskBase;
     const inputdef = this.inputs.find((def) => def.id === inputId);
     if (!inputdef) {
@@ -234,7 +247,6 @@ export abstract class TaskBase {
     }
     if (typeof input !== "object") return false;
     if (inputdef.defaultValue !== undefined && input[inputId] === undefined) {
-      // if there is no default value, that implies the value is required
       console.warn(
         `No default value for '${inputId}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
       );
@@ -245,7 +257,6 @@ export abstract class TaskBase {
     if (inputdef.isArray && !Array.isArray(input[inputId])) {
       input[inputId] = [input[inputId]];
     }
-
     const inputlist: any[] = inputdef.isArray ? input[inputId] : [input[inputId]];
 
     // Rewritten using Promise.all for asynchronous validation
@@ -261,7 +272,7 @@ export abstract class TaskBase {
    * @param input The input to validate
    * @returns True if the input is valid, false otherwise
    */
-  async validateInputData(input: Partial<TaskInput>) {
+  public async validateInputData(input: Partial<TaskInput>): Promise<boolean> {
     for (const inputdef of this.inputs) {
       if ((await this.validateInputItem(input, inputdef.id)) === false) {
         return false;
@@ -270,44 +281,18 @@ export abstract class TaskBase {
     return true;
   }
 
-  /**
-   * Runs the task
-   * @returns The output of the task
-   */
-  async run(): Promise<TaskOutput> {
-    if (!(await this.validateInputData(this.runInputData))) {
-      throw new Error("Invalid input data");
-    }
-    if (this.status === TaskStatus.ABORTING) {
-      throw new Error("Task aborted by run time");
-    }
-
-    this.handleStart();
-
-    try {
-      const result = await this.runReactive();
-      this.runOutputData = result;
-
-      this.handleComplete();
-      return result;
-    } catch (err: any) {
-      this.handleError(err);
-      throw err;
-    }
-  }
+  public abstract run(): Promise<TaskOutput>;
   /**
    * Runs the task reactively
    * @returns The output of the task
    */
-  async runReactive(): Promise<TaskOutput> {
-    return this.runOutputData;
-  }
+  public abstract runReactive(): Promise<TaskOutput>;
 
   /**
    * Converts the task to a JSON format suitable for dependency tracking
    * @returns The task in JSON format
    */
-  toJSON(): JsonTaskItem {
+  public toJSON(): JsonTaskItem {
     const p = this.getProvenance();
     return {
       id: this.config.id,
@@ -328,7 +313,8 @@ export abstract class TaskBase {
    * Aborts the task
    * @returns A promise that resolves when the task is aborted
    */
-  async abort(): Promise<void> {
+  public async abort(): Promise<void> {
+    // if (this.status !== TaskStatus.PROCESSING) return;
     this.progress = 100;
     this.status = TaskStatus.ABORTING;
     this.error = "Task aborted by run time";

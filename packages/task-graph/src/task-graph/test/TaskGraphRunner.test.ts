@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach, spyOn } from "bun:test";
-import { Task, TaskOutput } from "../../task/Task";
+import { Task, TaskOutput } from "../../task/TaskTypes";
 import { SingleTask } from "../../task/SingleTask";
 import { DataFlow } from "../DataFlow";
 import { TaskGraph } from "../TaskGraph";
@@ -147,7 +147,7 @@ describe("TaskGraphRunner", () => {
   describe("runGraph", () => {
     it("should run the graph in the correct order", async () => {
       const results = await runner.runGraph();
-
+      console.log(results);
       expect(results[1].output).toEqual(25);
       expect(results[2].output).toEqual(10);
     });

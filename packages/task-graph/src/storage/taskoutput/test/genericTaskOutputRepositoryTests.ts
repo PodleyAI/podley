@@ -7,7 +7,7 @@
 
 import { expect, it, beforeEach } from "bun:test";
 import { TaskOutputRepository } from "../TaskOutputRepository";
-import { TaskInput, TaskOutput } from "../../../task/Task";
+import { TaskInput, TaskOutput } from "../../../task/TaskTypes";
 
 export function runGenericTaskOutputRepositoryTests(
   createRepository: () => Promise<TaskOutputRepository>

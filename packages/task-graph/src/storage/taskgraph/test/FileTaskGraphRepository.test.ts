@@ -8,7 +8,7 @@
 import { describe, expect, it, beforeEach } from "bun:test";
 import { rmdirSync } from "fs";
 import { FileTaskGraphRepository } from "../FileTaskGraphRepository";
-import { TaskOutput } from "../../../task/Task";
+import { TaskOutput } from "../../../task/TaskTypes";
 import { SingleTask } from "../../../task/SingleTask";
 import { TaskRegistry } from "../../../task/TaskRegistry";
 import { DataFlow } from "../../../task-graph/DataFlow";

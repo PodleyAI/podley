@@ -15,7 +15,7 @@ import {
   type TaskInput,
   type TaskInputDefinition,
   type TaskOutputDefinition,
-} from "../task/Task";
+} from "../task/TaskTypes";
 import { TaskBase } from "../task/TaskBase";
 import { DataFlow } from "./DataFlow";
 import { TaskGraph, TaskGraphJson } from "./TaskGraph";
