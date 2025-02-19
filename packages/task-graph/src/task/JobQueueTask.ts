@@ -46,14 +46,13 @@ export abstract class JobQueueTask extends SingleTask {
   }
 
   async run(): Promise<TaskOutput> {
-    if (this.status === TaskStatus.ABORTING) {
-      throw new Error("Task aborted by run time");
-    }
-
     this.handleStart();
-    this.runOutputData = {};
 
     try {
+      if (this.status === TaskStatus.ABORTING) {
+        throw new Error("Task aborted by run time");
+      }
+
       if (!(await this.validateInputData(this.runInputData))) {
         throw new Error("Invalid input data");
       }
