@@ -9,31 +9,69 @@ import {
   TaskGraphBuilder,
   TaskGraphBuilderHelper,
   TaskRegistry,
-  SingleTask,
-  TaskStatus,
+  JobQueueTask,
+  JobQueueTaskConfig,
 } from "@ellmers/task-graph";
+import { Job } from "@ellmers/job-queue";
 
 export type url = string;
 export type FetchTaskInput = {
-  url: url;
+  url?: url;
   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   headers?: Record<string, string>;
   body?: string;
   response_type?: "json" | "text" | "blob" | "arraybuffer";
+  queueName?: string;
 };
 export type FetchTaskOutput = {
-  output: any;
+  output?: any;
 };
+
+/**
+ * Extends the base Job class to provide custom execution functionality
+ * through a provided function.
+ */
+export class FetchJob extends Job<FetchTaskInput, FetchTaskOutput> {
+  constructor(
+    config: JobQueueTaskConfig & { input: FetchTaskInput } = { input: {} as FetchTaskInput }
+  ) {
+    super(config);
+  }
+  static readonly type: string = "FetchJob";
+  /**
+   * Executes the job using the provided function.
+   */
+  async execute(signal: AbortSignal): Promise<FetchTaskOutput> {
+    let result: any = null;
+
+    const response = await fetch(this.input.url!, {
+      method: this.input.method,
+      headers: this.input.headers,
+      body: this.input.body,
+      signal: signal,
+    });
+
+    if (this.input.response_type === "json") {
+      result = await response.json();
+    } else if (this.input.response_type === "text") {
+      result = await response.text();
+    } else if (this.input.response_type === "blob") {
+      result = await response.blob();
+    } else if (this.input.response_type === "arraybuffer") {
+      result = await response.arrayBuffer();
+    }
+    return { output: result };
+  }
+}
 
 /**
  * FetchTask provides a task for fetching data from a URL.
  */
-export class FetchTask extends SingleTask {
+export class FetchTask extends JobQueueTask {
   static readonly type: string = "FetchTask";
   static readonly category = "Output";
   declare runInputData: FetchTaskInput;
   declare runOutputData: FetchTaskOutput;
-  private abortController: AbortController | undefined;
   public static inputs = [
     {
       id: "url",
@@ -56,7 +94,7 @@ export class FetchTask extends SingleTask {
     {
       id: "body",
       name: "Body",
-      valueType: "string",
+      valueType: "text",
       optional: true,
     },
     {
@@ -66,58 +104,23 @@ export class FetchTask extends SingleTask {
       optional: true,
       defaultValue: "json",
     },
+    {
+      id: "queueName",
+      name: "Queue Name",
+      valueType: "text",
+      optional: true,
+    },
   ] as const;
   public static outputs = [{ id: "output", name: "Output", valueType: "any" }] as const;
-  async run(): Promise<FetchTaskOutput> {
-    this.handleStart();
 
-    try {
-      if (!(await this.validateInputData(this.runInputData))) {
-        throw new Error("Invalid input data");
-      }
-      if (this.status === TaskStatus.ABORTING) {
-        throw new Error("Task aborted by run time");
-      }
-      this.abortController = new AbortController();
-      const response = await fetch(this.runInputData.url, {
-        method: this.runInputData.method,
-        headers: this.runInputData.headers,
-        body: this.runInputData.body,
-        signal: this.abortController.signal,
-      });
-
-      if (this.runInputData.response_type === "json") {
-        this.runOutputData.output = await response.json();
-      } else if (this.runInputData.response_type === "text") {
-        this.runOutputData.output = await response.text();
-      } else if (this.runInputData.response_type === "blob") {
-        this.runOutputData.output = await response.blob();
-      } else if (this.runInputData.response_type === "arraybuffer") {
-        this.runOutputData.output = await response.arrayBuffer();
-      }
-
-      this.runOutputData = await this.runReactive();
-
-      this.handleComplete();
-      return this.runOutputData;
-    } catch (err: any) {
-      this.handleError(err);
-      throw err;
-    } finally {
-      // Clean up the abort controller
-      this.abortController = undefined;
-    }
-  }
-
-  public async abort() {
-    if (this.abortController && !this.abortController.signal.aborted) {
-      this.abortController.abort();
-    }
-    await super.abort();
+  constructor(config: JobQueueTaskConfig & { input?: FetchTaskInput } = {}) {
+    config.queueName = config.input?.queueName ?? config.queueName;
+    super(config);
+    this.jobClass = FetchJob;
   }
 
   async runReactive(): Promise<FetchTaskOutput> {
-    return this.runOutputData ?? {};
+    return this.runOutputData ?? { output: null };
   }
 
   async validateItem(valueType: string, item: any) {

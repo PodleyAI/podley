@@ -14,6 +14,7 @@ import {
   JobQueueTask,
   JobQueueTaskConfig,
   type TaskOutput,
+  type TaskInput,
 } from "@ellmers/task-graph";
 import { AiJob } from "../../job/AiJob";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
@@ -24,7 +25,6 @@ import { getGlobalModelRepository } from "../../model/ModelRegistry";
  */
 export class AiTask extends JobQueueTask {
   static readonly type: string = "AiTask";
-
   /**
    * Creates a new AiTask instance
    * @param config - Configuration object for the task
@@ -34,6 +34,7 @@ export class AiTask extends JobQueueTask {
       config.input?.model ? " with model " + config.input?.model : ""
     }`;
     super(config);
+    this.jobClass = AiJob<TaskInput, TaskOutput>;
   }
 
   /**
