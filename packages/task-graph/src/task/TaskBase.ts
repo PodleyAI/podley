@@ -21,6 +21,7 @@ import {
   type TaskEventListener,
   type TaskEventParameters,
   type TaskEventListeners,
+  type IConfig,
 } from "./TaskTypes";
 
 /**

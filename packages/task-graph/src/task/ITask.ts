@@ -19,11 +19,6 @@ import type {
  * Core interface that all tasks must implement
  */
 export interface ITask {
-  // Static properties that should be implemented
-  readonly type: TaskTypeName;
-  readonly category: string;
-  readonly sideeffects: boolean;
-
   // Instance properties
   readonly isCompound: boolean;
   readonly config: TaskConfig;

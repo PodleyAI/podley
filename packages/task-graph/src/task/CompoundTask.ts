@@ -24,6 +24,8 @@ import { TaskBase } from "./TaskBase";
  */
 export class CompoundTask extends TaskBase implements ICompoundTask {
   static readonly type: TaskTypeName = "CompoundTask";
+  static readonly category: string = "Hidden";
+  static readonly sideeffects: boolean = false;
 
   declare runOutputData: TaskOutput;
   readonly isCompound = true;
