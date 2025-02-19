@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import type { ISimpleTask } from "./ITask";
-import type { TaskOutput, TaskTypeName } from "./TaskTypes";
+import { type TaskOutput, type TaskTypeName, TaskStatus } from "./TaskTypes";
 import { TaskBase } from "./TaskBase";
 
 /**
@@ -15,5 +15,40 @@ import { TaskBase } from "./TaskBase";
  */
 export class SingleTask extends TaskBase implements ISimpleTask {
   static readonly type: TaskTypeName = "SingleTask";
+
   readonly isCompound = false;
+
+  /**
+   * Default implementation of run that just returns the current output data.
+   * Subclasses should override this to provide actual task functionality.
+   */
+  async run(): Promise<TaskOutput> {
+    this.handleStart();
+
+    try {
+      if (!(await this.validateInputData(this.runInputData))) {
+        throw new Error("Invalid input data");
+      }
+      if (this.status === TaskStatus.ABORTING) {
+        throw new Error("Task aborted by run time");
+      }
+
+      this.runOutputData = await this.runReactive();
+
+      this.handleComplete();
+      return this.runOutputData;
+    } catch (err: any) {
+      this.handleError(err);
+      throw err;
+    }
+  }
+
+  /**
+   * Default implementation of runReactive that just returns the current output data.
+   * Subclasses should override this to provide actual reactive functionality.
+   */
+  public async runReactive(): Promise<TaskOutput> {
+    this.runOutputData ??= {};
+    return this.runOutputData;
+  }
 }
