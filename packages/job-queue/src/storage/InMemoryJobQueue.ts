@@ -53,7 +53,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
   public async add(job: Job<Input, Output>) {
     job.id = job.id ?? nanoid();
     job.jobRunId = job.jobRunId ?? nanoid();
-    job.queueName = this.queue;
+    job.queueName = this.queueName;
     job.fingerprint = await makeFingerprint(job.input);
     job.status = JobStatus.PENDING;
     job.progress = 0;

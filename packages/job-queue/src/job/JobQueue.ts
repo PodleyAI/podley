@@ -155,7 +155,7 @@ export abstract class JobQueue<Input, Output> {
   > = new Map();
 
   constructor(
-    public readonly queue: string,
+    public readonly queueName: string,
     protected limiter: ILimiter,
     public readonly jobClass: typeof Job<Input, Output> = Job<Input, Output>,
     protected waitDurationInMilliseconds: number
@@ -304,7 +304,7 @@ export abstract class JobQueue<Input, Output> {
     const controller = this.activeJobSignals.get(jobId);
     if (controller) {
       controller.abort();
-      this.events.emit("job_aborting", this.queue, jobId);
+      this.events.emit("job_aborting", this.queueName, jobId);
     }
   }
 
@@ -342,7 +342,7 @@ export abstract class JobQueue<Input, Output> {
       this.emitStatsUpdate();
 
       const abortController = this.createAbortController(job.id);
-      this.events.emit("job_start", this.queue, job.id);
+      this.events.emit("job_start", this.queueName, job.id);
       const output = await this.executeJob(job, abortController.signal);
       await this.complete(job.id, output);
 
@@ -352,13 +352,13 @@ export abstract class JobQueue<Input, Output> {
       const error = this.normalizeError(err);
 
       if (error instanceof AbortSignalJobError) {
-        this.events.emit("job_aborting", this.queue, job.id);
+        this.events.emit("job_aborting", this.queueName, job.id);
         this.stats.abortedJobs++;
       } else if (error instanceof RetryableJobError) {
-        this.events.emit("job_retry", this.queue, job.id, error.retryDate);
+        this.events.emit("job_retry", this.queueName, job.id, error.retryDate);
         this.stats.retriedJobs++;
       } else {
-        this.events.emit("job_error", this.queue, job.id, error.message);
+        this.events.emit("job_error", this.queueName, job.id, error.message);
         this.stats.failedJobs++;
       }
 
@@ -416,7 +416,7 @@ export abstract class JobQueue<Input, Output> {
    */
   protected emitStatsUpdate(): void {
     this.stats.lastUpdateTime = new Date();
-    this.events.emit("queue_stats_update", this.queue, { ...this.stats });
+    this.events.emit("queue_stats_update", this.queueName, { ...this.stats });
   }
 
   /**
@@ -432,14 +432,14 @@ export abstract class JobQueue<Input, Output> {
 
     if (status === JobStatus.FAILED) {
       this.stats.failedJobs++;
-      this.events.emit("job_error", this.queue, jobId, `${error!.name}: ${error!.message}`);
+      this.events.emit("job_error", this.queueName, jobId, `${error!.name}: ${error!.message}`);
       promises.forEach(({ reject }) => reject(error!));
     } else if (status === JobStatus.COMPLETED) {
       this.stats.completedJobs++;
-      this.events.emit("job_complete", this.queue, jobId, output!);
+      this.events.emit("job_complete", this.queueName, jobId, output!);
       promises.forEach(({ resolve }) => resolve(output!));
     } else if (status === JobStatus.ABORTING) {
-      this.events.emit("job_aborting", this.queue, jobId);
+      this.events.emit("job_aborting", this.queueName, jobId);
       promises.forEach(({ reject }) => reject(new AbortSignalJobError("Job aborted onCompleted")));
     }
 
@@ -490,7 +490,7 @@ export abstract class JobQueue<Input, Output> {
     await this.saveProgress(jobId, progress, message, details ?? null);
 
     // Emit the general event
-    this.events.emit("job_progress", this.queue, jobId, progress, message, details);
+    this.events.emit("job_progress", this.queueName, jobId, progress, message, details);
 
     // Notify job-specific listeners
     const listeners = this.jobProgressListeners.get(jobId);
@@ -626,7 +626,7 @@ export abstract class JobQueue<Input, Output> {
             // Emit progress event
             this.events.emit(
               "job_progress",
-              this.queue,
+              this.queueName,
               jobId,
               currentProgress.progress,
               currentProgress.message,
@@ -661,7 +661,7 @@ export abstract class JobQueue<Input, Output> {
     this.mode = mode;
 
     this.running = true;
-    this.events.emit("queue_start", this.queue);
+    this.events.emit("queue_start", this.queueName);
 
     // Start job processing if in SERVER or BOTH mode
     if (this.mode !== QueueMode.CLIENT) {
@@ -701,7 +701,7 @@ export abstract class JobQueue<Input, Output> {
     // Wait for abort operations to settle
     await sleep(sleepTime);
 
-    this.events.emit("queue_stop", this.queue);
+    this.events.emit("queue_stop", this.queueName);
     return this;
   }
 

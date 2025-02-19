@@ -72,7 +72,7 @@ describe("TfMediaPipeBinding", () => {
 
       const queue = queueRegistry.getQueue(MEDIA_PIPE_TFJS_MODEL);
       expect(queue).toBeDefined();
-      expect(queue?.queue).toEqual(MEDIA_PIPE_TFJS_MODEL);
+      expect(queue?.queueName).toEqual(MEDIA_PIPE_TFJS_MODEL);
 
       const builder = new TaskGraphBuilder();
       builder.DownloadModel({
@@ -116,7 +116,7 @@ describe("TfMediaPipeBinding", () => {
       getTaskQueueRegistry().registerQueue(jobQueue);
       const queue = getTaskQueueRegistry().getQueue(MEDIA_PIPE_TFJS_MODEL);
       expect(queue).toBeDefined();
-      expect(queue?.queue).toEqual(MEDIA_PIPE_TFJS_MODEL);
+      expect(queue?.queueName).toEqual(MEDIA_PIPE_TFJS_MODEL);
 
       const builder = new TaskGraphBuilder();
       builder.DownloadModel({

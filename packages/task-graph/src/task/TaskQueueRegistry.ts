@@ -17,7 +17,7 @@ export class TaskQueueRegistry<Input, Output> {
    * These methods help control the execution flow of tasks across all providers
    */
   registerQueue(jobQueue: JobQueue<Input, Output>) {
-    this.queues.set(jobQueue.queue, jobQueue);
+    this.queues.set(jobQueue.queueName, jobQueue);
   }
 
   getQueue(queue: string) {

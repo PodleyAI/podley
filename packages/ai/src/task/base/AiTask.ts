@@ -53,9 +53,9 @@ export class AiTask extends JobQueueTask {
     if (!queue) {
       throw new Error(`JobQueueTaskTask: No queue for model ${model.provider}`);
     }
-    this.config.queue = queue.queue;
+    this.config.queueName = queue.queueName;
     const job = new AiJob({
-      queueName: queue.queue,
+      queueName: queue.queueName,
       jobRunId: this.config.currentJobRunId, // could be undefined
       input: {
         taskType: runtype,

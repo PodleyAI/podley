@@ -14,7 +14,7 @@ import { EventEmitter } from "@ellmers/util";
  * Configuration interface for job queue tasks
  */
 export interface JobQueueTaskConfig extends TaskConfig {
-  queue?: string;
+  queueName?: string;
   currentJobId?: unknown;
   currentJobRunId?: string;
 }
@@ -58,7 +58,7 @@ export abstract class JobQueueTask extends SingleTask {
       }
       const job = await this.createJob();
 
-      const queue = getTaskQueueRegistry().getQueue(this.config.queue!);
+      const queue = getTaskQueueRegistry().getQueue(this.config.queueName!);
       if (!queue) {
         throw new Error("Queue not found");
       }
@@ -97,12 +97,12 @@ export abstract class JobQueueTask extends SingleTask {
    * @returns Promise<Job> - The created job
    */
   async createJob() {
-    const queue = getTaskQueueRegistry().getQueue(this.config.queue!);
+    const queue = getTaskQueueRegistry().getQueue(this.config.queueName!);
     if (!queue) {
       throw new Error("Queue not found");
     }
     const job = new queue.jobClass({
-      queueName: queue.queue,
+      queueName: queue.queueName,
       jobRunId: this.config.currentJobRunId, // could be undefined
       input: this.runInputData,
     });
@@ -114,8 +114,8 @@ export abstract class JobQueueTask extends SingleTask {
    * @returns A promise that resolves when the task is aborted
    */
   async abort(): Promise<void> {
-    if (this.config.queue) {
-      const queue = getTaskQueueRegistry().getQueue(this.config.queue);
+    if (this.config.queueName) {
+      const queue = getTaskQueueRegistry().getQueue(this.config.queueName);
       if (queue) {
         await queue.abort(this.config.currentJobId);
       }

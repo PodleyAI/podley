@@ -90,7 +90,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
    */
   public async add(job: Job<Input, Output>) {
     await this.dbPromise;
-    job.queueName = this.queue;
+    job.queueName = this.queueName;
     job.jobRunId = job.jobRunId ?? nanoid();
     const fingerprint = await makeFingerprint(job.input);
     job.progress = 0;
@@ -115,7 +115,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
         ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
       RETURNING id`;
     const params = [
-      this.queue,
+      this.queueName,
       fingerprint,
       JSON.stringify(job.input),
       job.createdAt.toISOString(),
@@ -186,7 +186,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
         ORDER BY runAfter ASC
         LIMIT $3
         FOR UPDATE SKIP LOCKED`,
-      [this.queue, status, num]
+      [this.queueName, status, num]
     );
     if (!result) return [];
     const ret = result.rows.map((r) => this.createNewJob(r, false));
@@ -214,7 +214,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
         LIMIT 1
       )
       RETURNING *`,
-      [JobStatus.PROCESSING, this.queue, JobStatus.PENDING]
+      [JobStatus.PROCESSING, this.queueName, JobStatus.PENDING]
     );
 
     return result?.rows?.[0]?.id ? this.createNewJob(result.rows[0], false) : undefined;
@@ -234,7 +234,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
         WHERE queue = $1
         AND status = $2
         AND runAfter <= NOW()`,
-      [this.queue, status]
+      [this.queueName, status]
     );
     if (!result) return 0;
     return parseInt(result.rows[0].count, 10);
@@ -305,7 +305,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
           job.runAfter.toISOString(),
           job.progress,
           id,
-          this.queue,
+          this.queueName,
         ]
       );
     } else {
@@ -329,7 +329,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
           job.status,
           job.progress,
           id,
-          this.queue,
+          this.queueName,
         ]
       );
     }
@@ -348,7 +348,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
       `
       DELETE FROM job_queue
         WHERE queue = $1`,
-      [this.queue]
+      [this.queueName]
     );
   }
 
@@ -365,7 +365,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
       SELECT output
         FROM job_queue
         WHERE fingerprint = $1 AND queue = $2 AND status = 'COMPLETED'`,
-      [fingerprint, this.queue]
+      [fingerprint, this.queueName]
     );
     if (!result) return null;
     return result.rows[0].output;
@@ -384,7 +384,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
       UPDATE job_queue 
       SET status = 'ABORTING' 
       WHERE id = $1 AND queue = $2`,
-      [jobId, this.queue]
+      [jobId, this.queueName]
     );
     this.abortJob(jobId);
     return result.rowCount ? true : false;
@@ -400,7 +400,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
     const result = await this.db.query(
       `
       SELECT * FROM job_queue WHERE jobRunId = $1 AND queue = $2`,
-      [jobRunId, this.queue]
+      [jobRunId, this.queueName]
     );
     if (!result) return [];
     return result.rows.map((r: any) => this.createNewJob(r, false));
@@ -423,7 +423,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
           progressMessage = $2,
           progressDetails = $3::jsonb
       WHERE id = $4 AND queue = $5`,
-      [progress, message, details as any, jobId as number, this.queue]
+      [progress, message, details as any, jobId as number, this.queueName]
     );
   }
 }

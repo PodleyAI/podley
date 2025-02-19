@@ -71,7 +71,7 @@ describe("HFTransformersBinding", () => {
 
       const queue = queueRegistry.getQueue(LOCAL_ONNX_TRANSFORMERJS);
       expect(queue).toBeDefined();
-      expect(queue!.queue).toEqual(LOCAL_ONNX_TRANSFORMERJS);
+      expect(queue!.queueName).toEqual(LOCAL_ONNX_TRANSFORMERJS);
 
       const builder = new TaskGraphBuilder();
       builder.DownloadModel({
@@ -114,7 +114,7 @@ describe("HFTransformersBinding", () => {
       getTaskQueueRegistry().registerQueue(jobQueue);
       const queue = getTaskQueueRegistry().getQueue(LOCAL_ONNX_TRANSFORMERJS);
       expect(queue).toBeDefined();
-      expect(queue?.queue).toEqual(LOCAL_ONNX_TRANSFORMERJS);
+      expect(queue?.queueName).toEqual(LOCAL_ONNX_TRANSFORMERJS);
 
       const builder = new TaskGraphBuilder();
       builder.DownloadModel({

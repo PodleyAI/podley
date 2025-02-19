@@ -64,7 +64,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @returns The ID of the added job
    */
   public async add(job: Job<Input, Output>) {
-    job.queueName = this.queue;
+    job.queueName = this.queueName;
     const fingerprint = await makeFingerprint(job.input);
     job.fingerprint = fingerprint;
     job.jobRunId = job.jobRunId ?? nanoid();
@@ -107,7 +107,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
     >(AddQuery);
 
     const result = stmt.get(
-      this.queue,
+      this.queueName,
       fingerprint,
       JSON.stringify(job.input),
       toSQLiteTimestamp(job.runAfter),
@@ -135,7 +135,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         WHERE id = $1 AND queue = $2
         LIMIT 1`;
     const stmt = this.db.prepare<Job<Input, Output>, [id: string, queue: string]>(JobQuery);
-    const result = stmt.get(id, this.queue) as any;
+    const result = stmt.get(id, this.queueName) as any;
     return result ? this.createNewJob(result) : undefined;
   }
 
@@ -155,7 +155,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         LIMIT ${num}`;
     const stmt = this.db.prepare(FutureJobQuery);
     const ret: Array<Job<Input, Output>> = [];
-    const result = stmt.all(this.queue, status) as any[];
+    const result = stmt.all(this.queueName, status) as any[];
     for (const job of result || []) ret.push(this.createNewJob(job));
     return ret;
   }
@@ -172,7 +172,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         SET status = $1
         WHERE id = $2 AND queue = $3`;
     const stmt = this.db.prepare(AbortQuery);
-    const result = stmt.run(JobStatus.ABORTING, jobId, this.queue);
+    const result = stmt.run(JobStatus.ABORTING, jobId, this.queueName);
     this.abortJob(jobId);
     return result.changes > 0 ? true : false;
   }
@@ -188,7 +188,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         FROM job_queue
         WHERE jobRunId = $1 AND queue = $2`;
     const stmt = this.db.prepare(JobsByRunIdQuery);
-    const result = stmt.all(jobRunId, this.queue) as any[];
+    const result = stmt.all(jobRunId, this.queueName) as any[];
     const ret: Array<Job<Input, Output>> = [];
     for (const job of result || []) ret.push(this.createNewJob(job));
     return ret;
@@ -216,7 +216,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
       )
       RETURNING *`
     );
-    const result = stmt.get(JobStatus.PROCESSING, this.queue, JobStatus.PENDING);
+    const result = stmt.get(JobStatus.PROCESSING, this.queueName, JobStatus.PENDING);
 
     return result?.id ? this.createNewJob(result) : undefined;
   }
@@ -233,7 +233,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         WHERE queue = $1
         AND status = $2`;
     const stmt = this.db.prepare<{ count: number }, [queue: string, status: string]>(sizeQuery);
-    const result = stmt.get(this.queue, status) as any;
+    const result = stmt.get(this.queueName, status) as any;
     return result.count;
   }
 
@@ -303,7 +303,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         job.runAfter.toISOString(),
         job.progress,
         id,
-        this.queue,
+        this.queueName,
       ];
     } else {
       updateQuery = `
@@ -326,7 +326,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         job.status,
         job.progress,
         id,
-        this.queue,
+        this.queueName,
       ];
     }
     this.db.exec(updateQuery, params);
@@ -340,7 +340,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
       DELETE FROM job_queue
         WHERE queue = ?`;
     const stmt = this.db.prepare(ClearQuery);
-    stmt.run(this.queue);
+    stmt.run(this.queueName);
     await this.limiter.clear();
   }
 
@@ -356,7 +356,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         FROM job_queue
         WHERE queue = ? AND fingerprint = ? AND status = ?`;
     const stmt = this.db.prepare(OutputQuery);
-    const result = stmt.get(this.queue, fingerprint, JobStatus.COMPLETED) as
+    const result = stmt.get(this.queueName, fingerprint, JobStatus.COMPLETED) as
       | {
           output: string;
         }
@@ -381,6 +381,6 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         WHERE id = ? AND queue = ?`;
 
     const stmt = this.db.prepare(UpdateProgressQuery);
-    stmt.run(progress, message, JSON.stringify(details), String(jobId), this.queue);
+    stmt.run(progress, message, JSON.stringify(details), String(jobId), this.queueName);
   }
 }

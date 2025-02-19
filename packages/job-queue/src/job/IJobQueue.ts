@@ -9,7 +9,7 @@ import { Job, JobStatus } from "./Job";
 import { JobError, JobQueueStats, JobProgressListener, QueueMode } from "./JobQueue";
 
 export interface IJobQueue<Input, Output> {
-  queue: string;
+  queueName: string;
   add(job: Job<Input, Output>): Promise<unknown>;
   get(id: unknown): Promise<Job<Input, Output> | undefined>;
   waitFor(jobId: unknown): Promise<Output>;
