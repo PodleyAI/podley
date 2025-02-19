@@ -99,11 +99,12 @@ export class CompoundTask extends TaskBase implements ICompoundTask {
     return this.runOutputData;
   }
 
-  async abort() {
-    super.abort();
-    this.subGraph.getNodes().forEach((node) => {
-      node.abort();
-    });
+  /**
+   * Aborts the compound task and all its subtasks
+   */
+  public async abort(): Promise<void> {
+    await super.abort();
+    await Promise.all(this.subGraph.getNodes().map((node) => node.abort()));
   }
 
   /**
