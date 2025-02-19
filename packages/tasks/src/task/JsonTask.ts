@@ -15,6 +15,8 @@ import {
   TaskGraphBuilder,
   TaskGraphBuilderHelper,
   TaskRegistry,
+  TaskInputDefinition,
+  TaskOutputDefinition,
 } from "@ellmers/task-graph";
 
 type JsonTaskInput = {
@@ -29,7 +31,7 @@ type JsonTaskOutput = {
  * It allows dynamic creation of task networks by parsing JSON definitions of tasks and their relationships.
  */
 export class JsonTask extends RegenerativeCompoundTask {
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "json",
       name: "JSON",
@@ -37,7 +39,7 @@ export class JsonTask extends RegenerativeCompoundTask {
     },
   ] as const;
 
-  public static outputs = [
+  public static outputs: TaskOutputDefinition[] = [
     {
       id: "output",
       name: "Output",

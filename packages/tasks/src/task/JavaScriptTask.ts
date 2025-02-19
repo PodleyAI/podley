@@ -13,6 +13,8 @@ import {
   TaskGraphBuilder,
   TaskGraphBuilderHelper,
   TaskRegistry,
+  TaskInputDefinition,
+  TaskOutputDefinition,
 } from "@ellmers/task-graph";
 
 export type JavaScriptTaskInput = {
@@ -28,7 +30,7 @@ export class JavaScriptTask extends SingleTask {
   static readonly category = "Utility";
   declare runInputData: JavaScriptTaskInput;
   declare runOutputData: TaskOutput;
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "code",
       name: "Code",
@@ -40,7 +42,7 @@ export class JavaScriptTask extends SingleTask {
       valueType: "any",
     },
   ] as const;
-  public static outputs = [
+  public static outputs: TaskOutputDefinition[] = [
     {
       id: "output",
       name: "Output",

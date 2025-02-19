@@ -12,6 +12,8 @@ import {
   SingleTask,
   TaskOutput,
   TaskConfig,
+  TaskInputDefinition,
+  TaskOutputDefinition,
 } from "@ellmers/task-graph";
 import { AnyNumberArray, ElVector } from "./base/TaskIOTypes";
 
@@ -35,7 +37,7 @@ export class SimilarityTask extends SingleTask {
   static readonly type = "SimilarityTask";
   declare runInputData: SimilarityTaskInput;
   declare runOutputData: TaskOutput;
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "input",
       name: "Inputs",
@@ -60,7 +62,7 @@ export class SimilarityTask extends SingleTask {
       defaultValue: "cosine",
     },
   ] as const;
-  public static outputs = [
+  public static outputs: TaskOutputDefinition[] = [
     {
       id: "output",
       name: "Ranked Outputs",

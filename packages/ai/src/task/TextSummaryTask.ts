@@ -11,6 +11,8 @@ import {
   TaskRegistry,
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
+  TaskInputDefinition,
+  TaskOutputDefinition,
   arrayTaskFactory,
   JobQueueTaskConfig,
 } from "@ellmers/task-graph";
@@ -30,7 +32,7 @@ export type TextSummaryTaskOutput = {
  */
 
 export class TextSummaryTask extends AiTask {
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "text",
       name: "Text",
@@ -42,7 +44,9 @@ export class TextSummaryTask extends AiTask {
       valueType: "model_summarization",
     },
   ] as const;
-  public static outputs = [{ id: "text", name: "Text", valueType: "text" }] as const;
+  public static outputs: TaskOutputDefinition[] = [
+    { id: "text", name: "Text", valueType: "text" },
+  ] as const;
   constructor(config: JobQueueTaskConfig & { input?: TextSummaryTaskInput } = {}) {
     super(config);
   }

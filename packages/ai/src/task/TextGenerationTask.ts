@@ -8,6 +8,8 @@
 import {
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
+  TaskInputDefinition,
+  TaskOutputDefinition,
   arrayTaskFactory,
   TaskRegistry,
   JobQueueTaskConfig,
@@ -29,7 +31,7 @@ export type TextGenerationTaskOutput = {
  * This generates text from a prompt
  */
 export class TextGenerationTask extends AiTask {
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "prompt",
       name: "Prompt",
@@ -41,7 +43,9 @@ export class TextGenerationTask extends AiTask {
       valueType: "model_generation",
     },
   ] as const;
-  public static outputs = [{ id: "text", name: "Text", valueType: "text" }] as const;
+  public static outputs: TaskOutputDefinition[] = [
+    { id: "text", name: "Text", valueType: "text" },
+  ] as const;
   constructor(config: JobQueueTaskConfig & { input?: TextGenerationTaskInput } = {}) {
     super(config);
   }

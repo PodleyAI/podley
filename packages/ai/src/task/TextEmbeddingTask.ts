@@ -8,6 +8,8 @@
 import {
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
+  TaskInputDefinition,
+  TaskOutputDefinition,
   arrayTaskFactory,
   TaskRegistry,
   JobQueueTaskConfig,
@@ -34,7 +36,7 @@ export type TextEmbeddingTaskOutput = {
  * @extends AiTask
  */
 export class TextEmbeddingTask extends AiTask {
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "text",
       name: "Text",
@@ -46,7 +48,9 @@ export class TextEmbeddingTask extends AiTask {
       valueType: "model_embedding",
     },
   ] as const;
-  public static outputs = [{ id: "vector", name: "Embedding", valueType: "vector" }] as const;
+  public static outputs: TaskOutputDefinition[] = [
+    { id: "vector", name: "Embedding", valueType: "vector" },
+  ] as const;
   constructor(config: JobQueueTaskConfig & { input?: TextEmbeddingTaskInput } = {}) {
     super(config);
   }

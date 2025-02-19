@@ -8,6 +8,8 @@
 import {
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
+  TaskInputDefinition,
+  TaskOutputDefinition,
   arrayTaskFactory,
   TaskRegistry,
   JobQueueTaskConfig,
@@ -31,7 +33,7 @@ export type TextRewriterTaskOutput = {
  */
 
 export class TextRewriterTask extends AiTask {
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "text",
       name: "Text",
@@ -48,7 +50,9 @@ export class TextRewriterTask extends AiTask {
       valueType: "model_rewriting",
     },
   ] as const;
-  public static outputs = [{ id: "text", name: "Text", valueType: "text" }] as const;
+  public static outputs: TaskOutputDefinition[] = [
+    { id: "text", name: "Text", valueType: "text" },
+  ] as const;
   constructor(config: JobQueueTaskConfig & { input?: TextRewriterTaskInput } = {}) {
     super(config);
   }

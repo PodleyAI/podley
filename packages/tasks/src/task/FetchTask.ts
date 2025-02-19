@@ -11,6 +11,8 @@ import {
   TaskRegistry,
   JobQueueTask,
   JobQueueTaskConfig,
+  TaskInputDefinition,
+  TaskOutputDefinition,
 } from "@ellmers/task-graph";
 import { Job } from "@ellmers/job-queue";
 
@@ -43,7 +45,6 @@ export class FetchJob extends Job<FetchTaskInput, FetchTaskOutput> {
    */
   async execute(signal: AbortSignal): Promise<FetchTaskOutput> {
     let result: any = null;
-
     const response = await fetch(this.input.url!, {
       method: this.input.method,
       headers: this.input.headers,
@@ -72,7 +73,7 @@ export class FetchTask extends JobQueueTask {
   static readonly category = "Output";
   declare runInputData: FetchTaskInput;
   declare runOutputData: FetchTaskOutput;
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "url",
       name: "URL",
@@ -82,36 +83,36 @@ export class FetchTask extends JobQueueTask {
       id: "method",
       name: "Method",
       valueType: "method",
-      optional: true,
       defaultValue: "GET",
     },
     {
       id: "headers",
       name: "Headers",
       valueType: "record_string_string",
-      optional: true,
+      defaultValue: undefined,
     },
     {
       id: "body",
       name: "Body",
       valueType: "text",
-      optional: true,
+      defaultValue: undefined,
     },
     {
       id: "response_type",
       name: "Response Type",
       valueType: "response_type",
-      optional: true,
       defaultValue: "json",
     },
     {
       id: "queueName",
       name: "Queue Name",
       valueType: "text",
-      optional: true,
+      defaultValue: undefined,
     },
   ] as const;
-  public static outputs = [{ id: "output", name: "Output", valueType: "any" }] as const;
+  public static outputs: TaskOutputDefinition[] = [
+    { id: "output", name: "Output", valueType: "any" },
+  ] as const;
 
   constructor(config: JobQueueTaskConfig & { input?: FetchTaskInput } = {}) {
     config.queueName = config.input?.queueName ?? config.queueName;
@@ -144,7 +145,7 @@ export class FetchTask extends JobQueueTask {
         Object.keys(item).every((key) => typeof key === "string" && typeof item[key] === "string")
       );
     }
-    return super.validateItem(valueType, item);
+    return await super.validateItem(valueType, item);
   }
 }
 

@@ -12,6 +12,9 @@ import {
   TaskGraphBuilder,
   TaskGraphBuilderHelper,
   TaskRegistry,
+  TaskInput,
+  TaskInputDefinition,
+  TaskOutputDefinition,
 } from "@ellmers/task-graph";
 
 /**
@@ -42,7 +45,7 @@ export class LambdaTask extends SingleTask {
    * - fn: The function to execute
    * - input: Optional input data to pass to the function
    */
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "fn",
       name: "Function",
@@ -60,7 +63,7 @@ export class LambdaTask extends SingleTask {
    * Output definition for LambdaTask
    * The output will be whatever the provided function returns
    */
-  public static outputs = [
+  public static outputs: TaskOutputDefinition[] = [
     {
       id: "output",
       name: "Output",

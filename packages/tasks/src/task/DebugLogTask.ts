@@ -10,6 +10,8 @@ import {
   TaskGraphBuilderHelper,
   TaskRegistry,
   OutputTask,
+  TaskInputDefinition,
+  TaskOutputDefinition,
 } from "@ellmers/task-graph";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
@@ -39,7 +41,7 @@ export class DebugLogTask extends OutputTask {
   static readonly category = "Output";
   declare runInputData: DebugLogTaskInput;
   declare runOutputData: DebugLogTaskOutput;
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "message",
       name: "Input",
@@ -52,7 +54,9 @@ export class DebugLogTask extends OutputTask {
       defaultValue: "info",
     },
   ] as const;
-  public static outputs = [{ id: "output", name: "Output", valueType: "any" }] as const;
+  public static outputs: TaskOutputDefinition[] = [
+    { id: "output", name: "Output", valueType: "any" },
+  ] as const;
   async runReactive() {
     const level = this.runInputData.level || "log";
     if (level == "dir") {

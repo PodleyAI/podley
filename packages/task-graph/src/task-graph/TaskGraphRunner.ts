@@ -218,7 +218,7 @@ export class TaskGraphRunner {
   public async abort() {
     await Promise.all(
       this.dag.getNodes().map(async (task: Task) => {
-        console.log("aborting task", task.config.id, task.status, task);
+        console.log("aborting task", task.config.id, task.status);
         if ([TaskStatus.PROCESSING, TaskStatus.PENDING].includes(task.status)) {
           if (task.status === TaskStatus.PENDING) {
             task.handleError(new Error("Task aborted"));

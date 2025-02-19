@@ -14,6 +14,8 @@ import {
   arrayTaskFactory,
   TaskOutput,
   JobQueueTaskConfig,
+  TaskInputDefinition,
+  TaskOutputDefinition,
 } from "@ellmers/task-graph";
 import { getGlobalModelRepository } from "../model/ModelRegistry";
 import { AiTask } from "./base/AiTask";
@@ -45,14 +47,14 @@ export type DownloadModelTaskOutput = {
 };
 
 export class DownloadModelTask extends AiTask {
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "model",
       name: "Model",
       valueType: "model",
     },
   ] as const;
-  public static outputs = [
+  public static outputs: TaskOutputDefinition[] = [
     {
       id: "model",
       name: "Model",

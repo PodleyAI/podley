@@ -8,6 +8,8 @@
 import {
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
+  TaskInputDefinition,
+  TaskOutputDefinition,
   arrayTaskFactory,
   TaskRegistry,
   JobQueueTaskConfig,
@@ -29,7 +31,7 @@ export type TextQuestionAnswerTaskOutput = {
  * This is a special case of text generation that takes a context and a question
  */
 export class TextQuestionAnswerTask extends AiTask {
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "context",
       name: "Context",
@@ -46,7 +48,9 @@ export class TextQuestionAnswerTask extends AiTask {
       valueType: "text_model_question_answering",
     },
   ] as const;
-  public static outputs = [{ id: "text", name: "Answer", valueType: "text" }] as const;
+  public static outputs: TaskOutputDefinition[] = [
+    { id: "text", name: "Answer", valueType: "text" },
+  ] as const;
   constructor(config: JobQueueTaskConfig & { input?: TextQuestionAnswerTaskInput } = {}) {
     super(config);
   }

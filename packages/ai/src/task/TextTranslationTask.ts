@@ -8,6 +8,8 @@
 import {
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
+  TaskInputDefinition,
+  TaskOutputDefinition,
   arrayTaskFactory,
 } from "@ellmers/task-graph";
 import { TaskRegistry } from "@ellmers/task-graph";
@@ -32,7 +34,7 @@ export type TextTranslationTaskOutput = {
  * This generates text from a prompt
  */
 export class TextTranslationTask extends AiTask {
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "text",
       name: "Text",
@@ -54,7 +56,7 @@ export class TextTranslationTask extends AiTask {
       valueType: "language",
     },
   ] as const;
-  public static outputs = [
+  public static outputs: TaskOutputDefinition[] = [
     { id: "text", name: "Text", valueType: "text" },
     {
       id: "target_lang",

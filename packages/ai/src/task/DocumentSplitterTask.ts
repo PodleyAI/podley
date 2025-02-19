@@ -9,6 +9,8 @@ import {
   SingleTask,
   TaskGraphBuilder,
   TaskGraphBuilderHelper,
+  TaskInputDefinition,
+  TaskOutputDefinition,
   TaskRegistry,
 } from "@ellmers/task-graph";
 import { Document, DocumentFragment } from "../source/Document";
@@ -25,7 +27,7 @@ export class DocumentSplitterTask extends SingleTask {
   static readonly category = "Input";
   declare runInputData: DocumentSplitterTaskInput;
   declare runOutputData: DocumentSplitterTaskOutput;
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "parser",
       name: "Kind",
@@ -44,7 +46,7 @@ export class DocumentSplitterTask extends SingleTask {
     //   defaultValue: "tree",
     // },
   ] as const;
-  public static outputs = [
+  public static outputs: TaskOutputDefinition[] = [
     {
       id: "texts",
       name: "Texts",
