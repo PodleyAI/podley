@@ -114,7 +114,7 @@ function downloadProgressCallback(job: AiJob) {
   return (status: CallbackStatus) => {
     const progress = status.status === "progress" ? Math.round(status.progress) : 0;
     if (status.status === "progress") {
-      job.updateProgress(progress, "Downloading model", { file: status.file });
+      job.updateProgress(progress, "Downloading model", { file: status.file, progress });
     }
   };
 }

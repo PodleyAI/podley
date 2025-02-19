@@ -147,7 +147,6 @@ describe("TaskGraphRunner", () => {
   describe("runGraph", () => {
     it("should run the graph in the correct order", async () => {
       const results = await runner.runGraph();
-      console.log(results);
       expect(results[1].output).toEqual(25);
       expect(results[2].output).toEqual(10);
     });
@@ -165,7 +164,6 @@ describe("TaskGraphRunner", () => {
       const results = await runner.runGraph();
 
       expect(nodeRunSpy).toHaveBeenCalledTimes(1);
-      console.log(results);
     });
   });
 });

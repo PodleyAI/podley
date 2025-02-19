@@ -22,11 +22,11 @@ describe("AiProviderRegistry", () => {
   const mockLongRunningRunFn = async (job: AiJob, input: TaskInput) => {
     const jobQueue = job.queue!;
     await jobQueue.updateProgress(job.id, 25, "25% complete");
-    await sleep(2);
+    await sleep(0);
     await jobQueue.updateProgress(job.id, 50, "50% complete");
-    await sleep(2);
+    await sleep(0);
     await jobQueue.updateProgress(job.id, 75, "75% complete");
-    await sleep(2);
+    await sleep(0);
     await jobQueue.updateProgress(job.id, 100, "100% complete");
     return { result: "success with progress" };
   };

@@ -111,6 +111,29 @@ export class DownloadModelTask extends AiTask {
   constructor(config: JobQueueTaskConfig & { input?: DownloadModelTaskInput } = {}) {
     super(config);
   }
+  public files: { file: string; progress: number }[] = [];
+  handleProgress(
+    progress: number,
+    message: string,
+    details: { file?: string; progress: number; text?: number }
+  ): void {
+    if (details.file) {
+      const file = this.files.find((f) => f.file === details.file);
+      if (file) {
+        file.progress = details.progress;
+      } else {
+        this.files.push({ file: details.file, progress: details.progress });
+      }
+      this.progress = this.files.reduce((acc, f) => acc + f.progress, 0) / this.files.length;
+    } else {
+      this.progress = progress;
+    }
+    this.events.emit("progress", this.progress, message, details);
+  }
+  handleStart(): void {
+    this.files = [];
+    super.handleStart();
+  }
   async runReactive(): Promise<TaskOutput> {
     const model = await getGlobalModelRepository().findByName(this.runInputData.model);
     if (model) {

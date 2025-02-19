@@ -198,7 +198,8 @@ function listenToTask(
       // Remove the start item
       progressItems = progressItems.filter((item) => item.id !== "text");
 
-      const itemId = details.model || details.file;
+      const itemId = details.file;
+      const itemProgress = details.progress;
       // Find existing progress item or create new one
       const existingItemIndex = progressItems.findIndex((item) => item.id === itemId);
 
@@ -206,7 +207,7 @@ function listenToTask(
         // Update existing item
         progressItems[existingItemIndex] = {
           ...progressItems[existingItemIndex],
-          progress,
+          progress: itemProgress,
           text: itemId,
           id: itemId,
         };
@@ -214,7 +215,7 @@ function listenToTask(
         // Add new item
         progressItems.push({
           id: itemId,
-          progress,
+          progress: itemProgress,
           text: itemId,
         });
       }
@@ -224,7 +225,7 @@ function listenToTask(
       progressItems = [
         {
           id: "text",
-          text: "ST" + details?.text || progressText,
+          text: details?.text || progressText,
           progress,
         },
       ];

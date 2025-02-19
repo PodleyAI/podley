@@ -152,6 +152,11 @@ export abstract class TaskBase implements ITask {
     this.events.emit("error", err?.message || "Task failed");
   }
 
+  public handleProgress(progress: number, ...args: any[]): void {
+    this.progress = progress;
+    this.events.emit("progress", progress);
+  }
+
   public getProvenance(): TaskInput {
     return this.config.provenance ?? {};
   }

@@ -9,13 +9,14 @@ import { Listr, ListrTask, PRESET_TIMER } from "listr2";
 import { Observable } from "rxjs";
 import {
   TaskStatus,
-  sleep,
   TaskGraph,
   TaskGraphRunner,
   type Task,
   CompoundTask,
 } from "@ellmers/task-graph";
+import { sleep } from "@ellmers/util";
 import { createBar } from "./TaskHelper";
+import { DownloadModelTask } from "@ellmers/ai";
 
 const options = {
   exitOnError: true,
@@ -46,9 +47,10 @@ export async function runTask(dag: TaskGraph) {
 
 export function mapTaskGraphToListrTasks(runner: TaskGraphRunner): ListrTask[] {
   const sortedNodes = runner.dag.topologicallySortedNodes();
-  runner.assignLayers(sortedNodes);
-  const children = runner.layers.get(0);
-  const listrTasks = children?.map((task) => {
+  const rootNodes = sortedNodes.filter(
+    (task: Task) => runner.dag.getSourceTasks(task.config.id).length === 0
+  );
+  const listrTasks = rootNodes.map((task: Task) => {
     return mapTaskNodeToListrTask(task, runner) ?? [];
   });
   return listrTasks?.flat() ?? [];
@@ -76,13 +78,49 @@ function mapSimpleTaskNodeToListrTask(task: Task): ListrTask {
       return new Observable((observer) => {
         const start = Date.now();
         let lastUpdate = start;
-        task.on("progress", (progress: any, file: string) => {
-          const timeSinceLast = Date.now() - lastUpdate;
-          const timeSinceStart = Date.now() - start;
-          if (timeSinceLast > 250 || timeSinceStart > 100) {
-            observer.next(createBar(progress / 100 || 0, 30) + " " + (file || ""));
+        task.on(
+          "progress",
+          // @ts-ignore
+          (
+            progress: number,
+            message: string,
+            details = {
+              file: "",
+              text: "",
+              progress: 0,
+            }
+          ) => {
+            const timeSinceLast = Date.now() - lastUpdate;
+            const timeSinceStart = Date.now() - start;
+            let msg = "";
+            if (message === "Downloading model") {
+              const dl = task as DownloadModelTask;
+              const files = dl.files;
+              const file = files.find((f) => f.file === details.file);
+              if (file) {
+                file.progress = details.progress;
+              } else {
+                files.push({ file: details.file, progress: details.progress });
+              }
+              const progress = files.reduce((acc, f) => acc + f.progress, 0) / files.length;
+              msg = createBar(progress / 100 || 0, 30);
+              msg +=
+                "\n" +
+                files
+                  .map((f) => createBar(f.progress / 100 || 0, 30) + " " + (f.file || ""))
+                  .join("\n");
+            } else {
+              msg = createBar(progress / 100 || 0, 30);
+            }
+            if (timeSinceLast > 250 || timeSinceStart > 100) {
+              observer.next(msg);
+              if (timeSinceStart > 1000) {
+                console.error("=======\n\n" + msg + "\n\n=======", task);
+                process.exit(0);
+              }
+            }
           }
-        });
+        );
         task.on("complete", () => {
           observer.complete();
         });

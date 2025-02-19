@@ -68,7 +68,7 @@ export abstract class JobQueueTask extends SingleTask {
       this.config.currentJobId = jobId;
 
       const cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
-        this.events.emit("progress", progress, message, details);
+        this.handleProgress(progress, message, details);
       });
       this.runOutputData = await queue.waitFor(jobId);
       cleanup();
@@ -83,6 +83,13 @@ export abstract class JobQueueTask extends SingleTask {
       console.error(err);
       throw err;
     }
+  }
+
+  handleProgress(progress: number, ...args: any[]): void {
+    this.progress = progress;
+    const message = args.shift();
+    const details = args.shift();
+    this.events.emit("progress", progress, message, details);
   }
 
   /**
