@@ -33,6 +33,7 @@ export class FetchTask extends SingleTask {
   static readonly category = "Output";
   declare runInputData: FetchTaskInput;
   declare runOutputData: FetchTaskOutput;
+  private abortController: AbortController | undefined;
   public static inputs = [
     {
       id: "url",
@@ -77,11 +78,12 @@ export class FetchTask extends SingleTask {
       if (this.status === TaskStatus.ABORTING) {
         throw new Error("Task aborted by run time");
       }
-
+      this.abortController = new AbortController();
       const response = await fetch(this.runInputData.url, {
         method: this.runInputData.method,
         headers: this.runInputData.headers,
         body: this.runInputData.body,
+        signal: this.abortController.signal,
       });
 
       if (this.runInputData.response_type === "json") {
@@ -101,7 +103,17 @@ export class FetchTask extends SingleTask {
     } catch (err: any) {
       this.handleError(err);
       throw err;
+    } finally {
+      // Clean up the abort controller
+      this.abortController = undefined;
     }
+  }
+
+  public async abort() {
+    if (this.abortController && !this.abortController.signal.aborted) {
+      this.abortController.abort();
+    }
+    await super.abort();
   }
 
   async runReactive(): Promise<FetchTaskOutput> {
