@@ -25,6 +25,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
     waitDurationInMilliseconds = 100
   ) {
     super(queue, limiter, jobClass, waitDurationInMilliseconds);
+    this.ensureTableExists();
   }
 
   public ensureTableExists() {

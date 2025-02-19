@@ -25,7 +25,6 @@ export class TestJob extends Job<TInput, TOutput> {
 
     if (this.input.taskType === "long_running") {
       return new Promise<TOutput>((resolve, reject) => {
-        // Add abort listener immediately
         signal.addEventListener(
           "abort",
           () => {
@@ -47,13 +46,13 @@ export class TestJob extends Job<TInput, TOutput> {
 
         try {
           // Simulate progress updates
-          await sleep(2);
+          await sleep(0);
           await this.updateProgress(25, "Starting task");
-          await sleep(2);
+          await sleep(0);
           await this.updateProgress(50, "Halfway there");
-          await sleep(2);
+          await sleep(0);
           await this.updateProgress(75, "Almost done", { stage: "final" });
-          await sleep(2);
+          await sleep(0);
           resolve({ result: "completed with progress" });
         } catch (error) {
           reject(error);
@@ -81,7 +80,6 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
   describe("Basics", () => {
     it("should complete a job in the queue", async () => {
       const id = await jobQueue.add(new TestJob({ input: { taskType: "task1", data: "input1" } }));
-      await sleep(100);
       await jobQueue.complete(id, { result: "success" });
       const job = await jobQueue.get(id);
       expect(job?.status).toBe(JobStatus.COMPLETED);
@@ -141,7 +139,6 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
       );
       await jobQueue.start();
       await jobQueue.waitFor(last);
-      await sleep(1);
       await jobQueue.stop();
       const job4 = await jobQueue.get(last);
       expect(job4?.status).toBe(JobStatus.COMPLETED);
@@ -177,7 +174,7 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
       const job = new TestJob({
         input: { taskType: "long_running", data: "input101" },
       });
-      await jobQueue.add(job);
+      const jobId = await jobQueue.add(job);
       let abortEventTriggered = false;
       jobQueue.on("job_aborting", (qn: any, jobId: any) => {
         if (jobId === job.id) {
@@ -196,6 +193,8 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
         message: "Aborted via signal",
       });
       expect(abortEventTriggered).toBe(true);
+      const finalJob = await jobQueue.get(jobId);
+      expect(finalJob?.status).toBeOneOf([JobStatus.FAILED, JobStatus.ABORTING]);
     });
 
     it("should abort all jobs in a job run while leaving other jobs unaffected", async () => {
@@ -279,7 +278,6 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
 
       // Wait for job completion
       await jobQueue.waitFor(jobId);
-      await sleep(1); // Give more time for events to settle
 
       // Verify progress events
       expect(progressEvents.length).toBe(3); // Should have 3 unique progress updates
@@ -332,7 +330,6 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
 
       // Wait for job completion
       await jobQueue.waitFor(jobId);
-      await sleep(2);
 
       // Clean up listener
       cleanup();
@@ -401,7 +398,6 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
 
       // Wait for all jobs to complete
       await Promise.all(jobs.map((jobId) => jobQueue.waitFor(jobId)));
-      await sleep(2);
 
       // Clean up listeners
       cleanups.forEach((cleanup) => cleanup());
@@ -443,7 +439,6 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
     });
 
     it("should respect rate limits over time", async () => {
-      const startTime = Date.now();
       const jobs = [];
 
       // Add a burst of jobs
@@ -456,7 +451,6 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
       }
 
       await jobQueue.start();
-      await sleep(1);
 
       // Check that some jobs are still pending due to rate limiting
       const pendingAfterBurst = await jobQueue.peek(JobStatus.PENDING);
@@ -489,7 +483,6 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
       }
 
       await jobQueue.start();
-      await sleep(1);
 
       // Check processing jobs of each type
       const allProcessing = await jobQueue.peek(JobStatus.PROCESSING);
@@ -505,22 +498,21 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
 
     it("should recover rate limits after pause", async () => {
       // Add a single quick job to test rate limiting
-      const job = new TestJob({
+      const initialJob = new TestJob({
         input: { taskType: "other", data: "test_job" },
       });
-      const jobId = await jobQueue.add(job);
+      const initialJobId = await jobQueue.add(initialJob);
 
       // Start queue and wait for job to complete
       await jobQueue.start();
-      await jobQueue.waitFor(jobId);
+      await jobQueue.waitFor(initialJobId);
 
       // Verify first job completed
-      const firstJob = await jobQueue.get(jobId);
-      expect(firstJob?.status).toBe(JobStatus.COMPLETED);
+      const firstJobResult = await jobQueue.get(initialJobId);
+      expect(firstJobResult?.status).toBe(JobStatus.COMPLETED);
 
-      // Stop queue and wait a bit
+      // Stop queue
       await jobQueue.stop();
-      await sleep(1);
 
       // Add another job after pause
       const newJob = new TestJob({
@@ -536,7 +528,7 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
         await Promise.race([
           jobQueue.waitFor(newJobId),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout waiting for job")), 200)
+            setTimeout(() => reject(new Error("Timeout waiting for job")), 20)
           ),
         ]);
 

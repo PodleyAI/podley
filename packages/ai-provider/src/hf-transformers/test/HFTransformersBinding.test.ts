@@ -56,26 +56,22 @@ describe("HFTransformersBinding", () => {
       registerHuggingfaceLocalTasks();
       setGlobalModelRepository(new InMemoryModelRepository());
 
-      await getGlobalModelRepository().addModel({
+      const model = {
         name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
         url: "Xenova/LaMini-Flan-T5-783M",
         availableOnBrowser: true,
         availableOnServer: true,
         provider: LOCAL_ONNX_TRANSFORMERJS,
         pipeline: "text2text-generation",
-      });
-      await getGlobalModelRepository().connectTaskToModel(
-        "TextGenerationTask",
-        "onnx:Xenova/LaMini-Flan-T5-783M:q8"
-      );
-      await getGlobalModelRepository().connectTaskToModel(
-        "TextRewriterTask",
-        "onnx:Xenova/LaMini-Flan-T5-783M:q8"
-      );
+      };
+
+      await getGlobalModelRepository().addModel(model);
+      await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
+      await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
 
       const queue = queueRegistry.getQueue(LOCAL_ONNX_TRANSFORMERJS);
       expect(queue).toBeDefined();
-      expect(queue?.queue).toEqual(LOCAL_ONNX_TRANSFORMERJS);
+      expect(queue!.queue).toEqual(LOCAL_ONNX_TRANSFORMERJS);
 
       const builder = new TaskGraphBuilder();
       builder.DownloadModel({
@@ -84,6 +80,7 @@ describe("HFTransformersBinding", () => {
       builder.run();
       await sleep(1);
       expect(await queue?.size()).toEqual(1);
+      builder.reset();
       await queue?.clear();
     });
   });
@@ -92,22 +89,20 @@ describe("HFTransformersBinding", () => {
     it("Should have an item queued", async () => {
       registerHuggingfaceLocalTasks();
       setGlobalModelRepository(new InMemoryModelRepository());
-      await getGlobalModelRepository().addModel({
+
+      const model = {
         name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
         url: "Xenova/LaMini-Flan-T5-783M",
         availableOnBrowser: true,
         availableOnServer: true,
         provider: LOCAL_ONNX_TRANSFORMERJS,
         pipeline: "text2text-generation",
-      });
-      await getGlobalModelRepository().connectTaskToModel(
-        "TextGenerationTask",
-        "onnx:Xenova/LaMini-Flan-T5-783M:q8"
-      );
-      await getGlobalModelRepository().connectTaskToModel(
-        "TextRewriterTask",
-        "onnx:Xenova/LaMini-Flan-T5-783M:q8"
-      );
+      };
+
+      await getGlobalModelRepository().addModel(model);
+      await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
+      await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
+
       const jobQueue = new SqliteJobQueue<TaskInput, TaskOutput>(
         getDatabase(":memory:"),
         LOCAL_ONNX_TRANSFORMERJS,
@@ -115,7 +110,7 @@ describe("HFTransformersBinding", () => {
         AiJob<TaskInput, TaskOutput>,
         10
       );
-      jobQueue.ensureTableExists();
+
       getTaskQueueRegistry().registerQueue(jobQueue);
       const queue = getTaskQueueRegistry().getQueue(LOCAL_ONNX_TRANSFORMERJS);
       expect(queue).toBeDefined();

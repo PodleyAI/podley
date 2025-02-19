@@ -43,7 +43,7 @@ export function getDatabase(name = ":memory:"): any {
 
 describe("TfMediaPipeBinding", () => {
   describe("InMemoryJobQueue", () => {
-    it("should not fail", async () => {
+    it("should initialize without errors", async () => {
       const queueRegistry = getTaskQueueRegistry();
       const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
         MEDIA_PIPE_TFJS_MODEL,
@@ -85,6 +85,7 @@ describe("TfMediaPipeBinding", () => {
       await queue?.clear();
     });
   });
+
   describe("SqliteJobQueue", () => {
     it("should not fail", async () => {
       registerMediaPipeTfJsLocalTasks();
@@ -97,8 +98,8 @@ describe("TfMediaPipeBinding", () => {
         availableOnServer: false,
         provider: MEDIA_PIPE_TFJS_MODEL,
       };
-      getGlobalModelRepository().addModel(universal_sentence_encoder);
-      getGlobalModelRepository().connectTaskToModel(
+      await getGlobalModelRepository().addModel(universal_sentence_encoder);
+      await getGlobalModelRepository().connectTaskToModel(
         "TextEmbeddingTask",
         universal_sentence_encoder.name
       );
