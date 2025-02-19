@@ -51,6 +51,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * Generates an ID and fingerprint if not provided
    */
   public async add(job: Job<Input, Output>) {
+    await sleep(0);
     job.id = job.id ?? nanoid();
     job.jobRunId = job.jobRunId ?? nanoid();
     job.queueName = this.queueName;
@@ -71,6 +72,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @returns A promise that resolves to the job or undefined if the job is not found.
    */
   public async get(id: unknown) {
+    await sleep(0);
     const result = this.jobQueue.find((j) => j.id === id);
     return result ? this.createNewJob(result, false) : undefined;
   }
@@ -82,6 +84,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @returns A promise that resolves to an array of jobs.
    */
   public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
+    await sleep(0);
     num = Number(num) || 100;
     return this.jobQueue
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
@@ -95,6 +98,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * Updates the job status to PROCESSING before returning
    */
   public async next() {
+    await sleep(0);
     const top = this.pendingQueue();
 
     const job = top[0];
@@ -110,6 +114,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @returns A promise that resolves to the number of jobs.
    */
   public async size(status = JobStatus.PENDING): Promise<number> {
+    await sleep(0);
     return this.jobQueue.filter((j) => j.status === status && j.runAfter.getTime() <= Date.now())
       .length;
   }
@@ -135,6 +140,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
     job.progress = progress;
     job.progressMessage = message;
     job.progressDetails = details;
+    await sleep(0);
   }
 
   /**
@@ -193,6 +199,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @param jobId - The id of the job to abort.
    */
   public async abort(jobId: unknown) {
+    await sleep(0);
     const job = this.jobQueue.find((j) => j.id === jobId);
     if (job) {
       job.status = JobStatus.ABORTING;
@@ -207,6 +214,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @returns A promise that resolves to an array of jobs.
    */
   public async getJobsByRunId(jobRunId: string): Promise<Array<Job<Input, Output>>> {
+    await sleep(0);
     return this.jobQueue
       .filter((job) => job.jobRunId === jobRunId)
       .map((j) => this.createNewJob(j, false));
@@ -216,6 +224,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * Deletes all jobs from the queue.
    */
   public async deleteAll() {
+    await sleep(0);
     this.jobQueue = [];
   }
 
@@ -226,6 +235,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @returns The cached output or null if not found
    */
   public async outputForInput(input: Input) {
+    await sleep(0);
     const fingerprint = await makeFingerprint(input);
     return (
       this.jobQueue.find((j) => j.fingerprint === fingerprint && j.status === JobStatus.COMPLETED)

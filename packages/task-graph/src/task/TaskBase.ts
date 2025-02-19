@@ -322,7 +322,7 @@ export abstract class TaskBase implements ITask {
     // if (this.status !== TaskStatus.PROCESSING) return;
     this.progress = 100;
     this.status = TaskStatus.ABORTING;
-    this.error = "Task aborted by run time";
+    this.error = "Task aborting by run time";
     this.events.emit("abort", this.error);
   }
 }

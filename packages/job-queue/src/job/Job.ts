@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import type { JobQueue } from "./JobQueue";
+import type { JobProgressListener, JobQueue } from "./JobQueue";
 
 export enum JobStatus {
   PENDING = "PENDING",
@@ -106,6 +106,9 @@ export class Job<Input, Output> implements JobDetails<Input, Output> {
   async execute(signal: AbortSignal): Promise<Output> {
     throw new Error("Method not implemented.");
   }
+
+  private progressListeners: Set<JobProgressListener> = new Set();
+
   public async updateProgress(
     progress: number,
     message: string = "",
@@ -114,6 +117,28 @@ export class Job<Input, Output> implements JobDetails<Input, Output> {
     this.progress = progress;
     this.progressMessage = message;
     this.progressDetails = details;
+
+    // Notify direct listeners
+    for (const listener of this.progressListeners) {
+      listener(progress, message, details);
+    }
+
     await this.queue?.updateProgress(this.id, progress, message, details);
+  }
+
+  /**
+   * Adds a progress listener for this job
+   *
+   * Only used if run directly (not via a queue)
+   *
+   * @param listener - The callback function to be called when progress updates occur
+   * @returns A cleanup function to remove the listener
+   */
+  public onJobProgress(listener: JobProgressListener): () => void {
+    this.progressListeners.add(listener);
+
+    return () => {
+      this.progressListeners.delete(listener);
+    };
   }
 }
