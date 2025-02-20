@@ -51,7 +51,7 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 function collectPropertyValues<T extends object>(input: T[]): { [K in keyof T]?: T[K][] } {
   const output: { [K in keyof T]?: T[K][] } = {};
 
-  input.forEach((item) => {
+  (input || []).forEach((item) => {
     (Object.keys(item) as Array<keyof T>).forEach((key) => {
       const value = item[key];
       if (output[key]) {
@@ -232,18 +232,6 @@ export function arrayTaskFactory<
      */
     async runReactive(): Promise<PluralOutputType> {
       const runDataOut = await super.runReactive();
-      this.runOutputData = collectPropertyValues<SingleOutputType>(
-        runDataOut.outputs
-      ) as PluralOutputType;
-      return this.runOutputData;
-    }
-
-    /**
-     * Runs the task synchronously, collecting outputs from all child tasks into arrays
-     * @returns Combined output with arrays of values from all child tasks
-     */
-    async run(...args: any[]): Promise<PluralOutputType> {
-      const runDataOut = await super.run(...args);
       this.runOutputData = collectPropertyValues<SingleOutputType>(
         runDataOut.outputs
       ) as PluralOutputType;

@@ -47,6 +47,11 @@ class TestSquareTask extends SingleTask {
   }
 }
 
+export const TestSquareMultiInputTask = arrayTaskFactory<
+  ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
+  ConvertAllToArrays<TestSquareTaskOutput>
+>(TestSquareTask, ["input"]);
+
 type TestDoubleTaskInput = {
   input: number;
 };
@@ -76,45 +81,6 @@ class TestDoubleTask extends SingleTask {
     return { output: this.runInputData.input * 2 };
   }
 }
-
-type TestAddTaskInput = {
-  input: number[];
-};
-type TestAddTaskOutput = {
-  output: number;
-};
-class TestAddTask extends SingleTask {
-  static readonly type = "TestAddTask";
-  declare runInputData: TestAddTaskInput;
-  declare runOutputData: TestAddTaskOutput;
-  static inputs = [
-    {
-      id: "input",
-      name: "Input",
-      valueType: "number",
-      isArray: true,
-      defaultValue: [0],
-    },
-  ] as const;
-  static outputs = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
-  async runReactive(): Promise<TestAddTaskOutput> {
-    const inputs = Array.isArray(this.runInputData.input)
-      ? this.runInputData.input
-      : [this.runInputData.input ?? 0];
-    return { output: inputs.reduce((acc, cur) => acc + cur, 0) };
-  }
-}
-
-export const TestSquareMultiInputTask = arrayTaskFactory<
-  ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>
->(TestSquareTask, ["input"]);
 
 describe("TaskGraphRunner", () => {
   let runner: TaskGraphRunner;
