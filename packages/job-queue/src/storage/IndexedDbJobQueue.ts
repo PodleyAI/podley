@@ -196,7 +196,7 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
         }
 
         job.status = JobStatus.PROCESSING;
-        job.processingStarted = now;
+        job.lastRanAt = now;
 
         try {
           const updateRequest = store.put(job);
@@ -241,7 +241,7 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * Uses enhanced error handling to update the job's status.
    * If a retryable error occurred, the job's retry count is incremented and its runAfter updated.
    */
-  public async complete(id: unknown, output?: Output, error?: JobError): Promise<void> {
+  public async complete(id: unknown, output: Output, error?: JobError): Promise<void> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
@@ -254,32 +254,8 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
           reject(new Error(`Job ${id} not found`));
           return;
         }
-        if (error) {
-          job.error = error.message;
-          job.errorCode = error.name;
-          job.retries = (job.retries || 0) + 1;
-          if (error instanceof RetryableJobError) {
-            if (job.retries >= job.maxRetries) {
-              job.status = JobStatus.FAILED;
-              job.completedAt = new Date();
-            } else {
-              job.status = JobStatus.PENDING;
-              job.runAfter = error.retryDate;
-            }
-          } else if (error instanceof PermanentJobError) {
-            job.status = JobStatus.FAILED;
-            job.completedAt = new Date();
-          } else {
-            job.status = JobStatus.FAILED;
-            job.completedAt = new Date();
-          }
-        } else {
-          job.status = JobStatus.COMPLETED;
-          job.output = output;
-          job.error = null;
-          job.errorCode = null;
-          job.completedAt = new Date();
-        }
+
+        this.updateJobAfterExecution(job, error, output);
 
         const updateRequest = store.put(job);
         updateRequest.onsuccess = async () => {
@@ -423,6 +399,9 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
     });
   }
 
+  /**
+   * Deletes a job by its ID
+   */
   protected async deleteJob(jobId: unknown): Promise<void> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");

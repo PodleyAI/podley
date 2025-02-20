@@ -102,6 +102,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
     const job = top[0];
     if (job) {
       job.status = JobStatus.PROCESSING;
+      job.lastRanAt = new Date();
       return this.createNewJob(job, false);
     }
   }
@@ -155,37 +156,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
       throw new Error(`Job ${id} not found`);
     }
 
-    job.progress = 100;
-    job.progressMessage = "";
-    job.progressDetails = null;
-
-    if (error) {
-      job.error = error.message;
-      job.errorCode = error.name;
-      if (error instanceof RetryableJobError) {
-        job.retries++;
-        if (job.retries >= job.maxRetries) {
-          job.status = JobStatus.FAILED;
-          job.completedAt = new Date();
-        } else {
-          job.status = JobStatus.PENDING;
-          job.runAfter = error.retryDate;
-          job.progress = 0;
-        }
-      } else if (error instanceof PermanentJobError) {
-        job.status = JobStatus.FAILED;
-        job.completedAt = new Date();
-      } else {
-        job.status = JobStatus.FAILED;
-        job.completedAt = new Date();
-      }
-    } else {
-      job.status = JobStatus.COMPLETED;
-      job.completedAt = new Date();
-      job.output = output;
-      job.error = null;
-      job.errorCode = null;
-    }
+    this.updateJobAfterExecution(job, error, output);
 
     if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
       await this.onCompleted(job.id, job.status, output, error);
@@ -241,11 +212,11 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
     );
   }
 
-  protected async deleteJob(jobId: unknown): Promise<void> {
+  /**
+   * Deletes a job by its ID
+   */
+  protected async deleteJob(id: unknown): Promise<void> {
     await sleep(0);
-    const jobIndex = this.jobQueue.findIndex((job) => job.id === jobId);
-    if (jobIndex !== -1) {
-      this.jobQueue.splice(jobIndex, 1);
-    }
+    this.jobQueue = this.jobQueue.filter((job) => job.id !== id);
   }
 }

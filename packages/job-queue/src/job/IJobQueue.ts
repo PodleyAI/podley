@@ -15,9 +15,15 @@ import { JobError, JobQueueStats, JobProgressListener } from "./JobQueue";
 
 export interface JobQueueOptions {
   /**
-   * Whether to automatically delete jobs when they complete successfully
+   * Time in milliseconds after which completed jobs should be deleted
+   * Set to 0 to delete immediately, undefined to never delete
    */
-  deleteCompletedJobs?: boolean;
+  deleteAfterCompletionMs?: number;
+  /**
+   * Time in milliseconds after which failed jobs should be deleted
+   * Set to 0 to delete immediately, undefined to never delete
+   */
+  deleteAfterErrorMs?: number;
   /**
    * How often to check for new jobs in milliseconds
    */

@@ -32,6 +32,7 @@ export interface JobDetails<Input, Output> {
   deadlineAt?: Date | string | null;
   lastRanAt?: Date | string | null;
   runAfter?: Date | string | null;
+  completedAt?: Date | string | null;
   retries?: number;
   progress?: number;
   progressMessage?: string;
@@ -42,9 +43,9 @@ export class Job<Input, Output> implements JobDetails<Input, Output> {
   public id: unknown;
   public jobRunId: string | undefined;
   public queueName: string | undefined;
-  public readonly input: Input;
-  public readonly maxRetries: number;
-  public readonly createdAt: Date;
+  public input: Input;
+  public maxRetries: number;
+  public createdAt: Date;
   public fingerprint: string | undefined;
   public status: JobStatus = JobStatus.PENDING;
   public runAfter: Date;
@@ -53,7 +54,6 @@ export class Job<Input, Output> implements JobDetails<Input, Output> {
   public lastRanAt: Date | null = null;
   public completedAt: Date | null = null;
   public deadlineAt: Date | null = null;
-  public abortedAt: Date | null = null;
   public error: string | null = null;
   public errorCode: string | null = null;
   public progress: number = 0;
@@ -71,6 +71,7 @@ export class Job<Input, Output> implements JobDetails<Input, Output> {
     output = null,
     maxRetries = 10,
     createdAt = new Date(),
+    completedAt = null,
     status = JobStatus.PENDING,
     deadlineAt = null,
     retries = 0,
@@ -84,18 +85,20 @@ export class Job<Input, Output> implements JobDetails<Input, Output> {
     if (typeof lastRanAt === "string") lastRanAt = new Date(lastRanAt);
     if (typeof createdAt === "string") createdAt = new Date(createdAt);
     if (typeof deadlineAt === "string") deadlineAt = new Date(deadlineAt);
+    if (typeof completedAt === "string") completedAt = new Date(completedAt);
 
     this.id = id;
     this.fingerprint = fingerprint;
     this.queueName = queueName;
     this.input = input;
     this.maxRetries = maxRetries;
-    this.createdAt = createdAt;
-    this.runAfter = runAfter ?? createdAt;
+    this.createdAt = createdAt ?? new Date();
+    this.runAfter = runAfter ?? createdAt ?? new Date();
     this.status = status;
     this.deadlineAt = deadlineAt;
     this.retries = retries;
     this.lastRanAt = lastRanAt;
+    this.completedAt = completedAt;
     this.output = output;
     this.error = error;
     this.jobRunId = jobRunId;

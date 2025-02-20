@@ -17,7 +17,7 @@ import { Pool } from "pg";
 const db = new PGlite() as unknown as Pool;
 
 function createPostgresJobQueue() {
-  const queueName = `sqlite_test_queue_${nanoid()}`;
+  const queueName = `postgres_test_queue_${nanoid()}`;
   return new PostgresJobQueue(db, queueName, TestJob, {
     limiter: new PostgresRateLimiter(db, queueName, 4, 1),
     waitDurationInMilliseconds: 1,
