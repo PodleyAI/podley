@@ -238,6 +238,18 @@ export function arrayTaskFactory<
       return this.runOutputData;
     }
 
+    /**
+     * Runs the task synchronously, collecting outputs from all child tasks into arrays
+     * @returns Combined output with arrays of values from all child tasks
+     */
+    async run(...args: any[]): Promise<PluralOutputType> {
+      const runDataOut = await super.run(...args);
+      this.runOutputData = collectPropertyValues<SingleOutputType>(
+        runDataOut.outputs
+      ) as PluralOutputType;
+      return this.runOutputData;
+    }
+
     toJSON(): JsonTaskItem {
       const { subgraph, ...result } = super.toJSON();
       return result;
