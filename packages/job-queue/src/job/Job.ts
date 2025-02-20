@@ -15,8 +15,9 @@ export enum JobStatus {
   FAILED = "FAILED",
 }
 
-// ===============================================================================
-
+/**
+ * Details about a job that reflect the structure in the database.
+ */
 export interface JobDetails<Input, Output> {
   id?: unknown;
   jobRunId?: string;
@@ -39,6 +40,12 @@ export interface JobDetails<Input, Output> {
   progressDetails?: Record<string, any> | null;
 }
 
+/**
+ * A job that can be executed by a JobQueue.
+ *
+ * @template Input - The type of the job's input
+ * @template Output - The type of the job's output
+ */
 export class Job<Input, Output> implements JobDetails<Input, Output> {
   public id: unknown;
   public jobRunId: string | undefined;
@@ -112,6 +119,12 @@ export class Job<Input, Output> implements JobDetails<Input, Output> {
 
   private progressListeners: Set<JobProgressListener> = new Set();
 
+  /**
+   * Update the job's progress
+   * @param progress - Progress value between 0 and 100
+   * @param message - Optional progress message
+   * @param details - Optional progress details
+   */
   public async updateProgress(
     progress: number,
     message: string = "",
