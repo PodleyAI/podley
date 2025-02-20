@@ -7,7 +7,7 @@
 
 import "fake-indexeddb/auto";
 import { nanoid } from "nanoid";
-import { afterAll, describe } from "bun:test";
+import { afterEach, describe } from "bun:test";
 import { IndexedDbKVRepository } from "../IndexedDbKVRepository";
 import {
   PrimaryKey,
@@ -20,16 +20,18 @@ import {
 describe("IndexedDbKVRepository", () => {
   const dbName = `idx_test_${nanoid()}`;
 
-  afterAll(async () => {
-    // Properly clean up the databases
-    await new Promise<void>((resolve) => {
-      const req = indexedDB.deleteDatabase(`${dbName}_simple`);
-      resolve();
-    });
-    await new Promise<void>((resolve) => {
-      const req = indexedDB.deleteDatabase(`${dbName}_complex`);
-      resolve();
-    });
+  // Clean up after each test
+  afterEach(async () => {
+    // Close any open connections first
+    const closeRequest = indexedDB.open(`${dbName}_simple`);
+    closeRequest.onsuccess = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      db.close();
+    };
+
+    // Delete the test databases
+    indexedDB.deleteDatabase(`${dbName}_simple`);
+    indexedDB.deleteDatabase(`${dbName}_complex`);
   });
 
   runGenericKVRepositoryTests(

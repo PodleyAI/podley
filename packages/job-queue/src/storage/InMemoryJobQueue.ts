@@ -7,7 +7,7 @@
 
 import { nanoid } from "nanoid";
 import { makeFingerprint, sleep } from "@ellmers/util";
-import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
+import { JobError, JobQueue } from "../job/JobQueue";
 import { JobQueueOptions } from "job/IJobQueue";
 import { Job, JobStatus } from "../job/Job";
 /**

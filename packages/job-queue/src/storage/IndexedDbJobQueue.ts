@@ -8,7 +8,7 @@
 import { nanoid } from "nanoid";
 import { makeFingerprint } from "@ellmers/util";
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "@ellmers/storage";
-import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
+import { JobError, JobQueue } from "../job/JobQueue";
 import { JobQueueOptions } from "job/IJobQueue";
 import { Job, JobStatus } from "../job/Job";
 
@@ -23,8 +23,7 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
     tableNamePrefix: string,
     queue: string,
     jobClass: typeof Job<Input, Output> = Job<Input, Output>,
-    options: JobQueueOptions,
-    public version: number = 1
+    options: JobQueueOptions
   ) {
     super(queue, jobClass, options);
     this.tableName = `${tableNamePrefix}_${queue}`;

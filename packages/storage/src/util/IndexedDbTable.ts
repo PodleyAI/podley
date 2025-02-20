@@ -22,81 +22,116 @@ export function ensureIndexedDbTable(
   expectedIndexes: ExpectedIndexDefinition[] = []
 ): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const dbRequest = indexedDB.open(tableName);
-    dbRequest.onerror = () => {
-      reject(dbRequest.error);
+    // First try to open without version to check existing structure
+    const checkRequest = indexedDB.open(tableName);
+
+    checkRequest.onerror = () => {
+      reject(checkRequest.error);
     };
 
-    dbRequest.onsuccess = () => {
-      const db = dbRequest.result;
-      let needsUpgrade = false;
+    checkRequest.onsuccess = () => {
+      const db = checkRequest.result;
+      let needsReset = false;
+
+      // Check if table structure matches expected
       if (!db.objectStoreNames.contains(tableName)) {
-        needsUpgrade = true;
-      } else if (expectedIndexes && expectedIndexes.length > 0) {
-        // Open a readonly transaction to inspect the store's indexes.
-        const transaction = db.transaction(tableName, "readonly");
-        const store = transaction.objectStore(tableName);
-        for (const expectedIdx of expectedIndexes) {
-          if (!store.indexNames.contains(expectedIdx.name)) {
-            needsUpgrade = true;
-            break;
-          } else {
-            const existingIdx = store.index(expectedIdx.name);
-            // Compare keyPath.
-            const expectedKeyPath = Array.isArray(expectedIdx.keyPath)
-              ? expectedIdx.keyPath.join(",")
-              : String(expectedIdx.keyPath);
-            const actualKeyPath = Array.isArray(existingIdx.keyPath)
-              ? existingIdx.keyPath.join(",")
-              : String(existingIdx.keyPath);
-            if (expectedKeyPath !== actualKeyPath) {
-              needsUpgrade = true;
-              break;
-            }
-            // Compare the unique flag.
-            const expectedUnique = expectedIdx.options?.unique ?? false;
-            if (existingIdx.unique !== expectedUnique) {
-              needsUpgrade = true;
-              break;
-            }
-            // Compare the multiEntry flag.
-            const expectedMultiEntry = expectedIdx.options?.multiEntry ?? false;
-            if (existingIdx.multiEntry !== expectedMultiEntry) {
-              needsUpgrade = true;
-              break;
-            }
-          }
-        }
-      }
-      if (!needsUpgrade) {
-        resolve(db);
-        return;
-      }
-      // Upgrade/creation is needed.
-      const currentVersion = db.version;
-      db.close();
-      const newDbRequest = indexedDB.open(tableName, currentVersion + 1);
-      newDbRequest.onupgradeneeded = (event) => {
-        const upgradedDb = newDbRequest.result;
-        let store: IDBObjectStore;
-        if (!upgradedDb.objectStoreNames.contains(tableName)) {
-          store = upgradedDb.createObjectStore(tableName, { keyPath: primaryKey });
-        } else {
-          store = newDbRequest.transaction!.objectStore(tableName);
-        }
+        needsReset = true;
+      } else {
+        try {
+          const transaction = db.transaction(tableName, "readonly");
+          const store = transaction.objectStore(tableName);
 
-        for (const expectedIdx of expectedIndexes) {
-          if (!store.indexNames.contains(expectedIdx.name)) {
-            store.createIndex(expectedIdx.name, expectedIdx.keyPath, expectedIdx.options);
+          // Check primary key
+          const actualKeyPath = store.keyPath;
+          const expectedKeyPath = Array.isArray(primaryKey) ? primaryKey : primaryKey;
+          if (JSON.stringify(actualKeyPath) !== JSON.stringify(expectedKeyPath)) {
+            needsReset = true;
           }
+
+          // Check indexes
+          if (!needsReset && expectedIndexes.length > 0) {
+            for (const expectedIdx of expectedIndexes) {
+              if (!store.indexNames.contains(expectedIdx.name)) {
+                needsReset = true;
+                break;
+              }
+              const existingIdx = store.index(expectedIdx.name);
+
+              // Compare keyPath
+              const expectedKeyPath = Array.isArray(expectedIdx.keyPath)
+                ? expectedIdx.keyPath
+                : [expectedIdx.keyPath];
+              const actualKeyPath = Array.isArray(existingIdx.keyPath)
+                ? existingIdx.keyPath
+                : [existingIdx.keyPath];
+              if (JSON.stringify(expectedKeyPath) !== JSON.stringify(actualKeyPath)) {
+                needsReset = true;
+                break;
+              }
+
+              // Compare options
+              if (
+                existingIdx.unique !== (expectedIdx.options?.unique ?? false) ||
+                existingIdx.multiEntry !== (expectedIdx.options?.multiEntry ?? false)
+              ) {
+                needsReset = true;
+                break;
+              }
+            }
+          }
+        } catch (err) {
+          needsReset = true;
+        }
+      }
+
+      // Close existing connections before any reset
+      db.close();
+
+      if (needsReset) {
+        // Delete the existing database
+        const deleteRequest = indexedDB.deleteDatabase(tableName);
+        deleteRequest.onerror = () => {
+          reject(deleteRequest.error);
+        };
+        deleteRequest.onsuccess = () => {
+          // Wait a small amount of time to ensure cleanup is complete
+          setTimeout(() => {
+            // Create new database with correct structure
+            createNewDatabase();
+          }, 50);
+        };
+      } else {
+        // Structure is correct, reopen with same version
+        const reopenRequest = indexedDB.open(tableName);
+        reopenRequest.onerror = () => {
+          reject(reopenRequest.error);
+        };
+        reopenRequest.onsuccess = () => {
+          resolve(reopenRequest.result);
+        };
+      }
+    };
+
+    function createNewDatabase() {
+      const request = indexedDB.open(tableName, 1);
+
+      request.onupgradeneeded = (event) => {
+        const db = request.result;
+        const store = db.createObjectStore(tableName, { keyPath: primaryKey });
+
+        // Create all indexes
+        for (const idx of expectedIndexes) {
+          store.createIndex(idx.name, idx.keyPath, idx.options);
         }
       };
-      newDbRequest.onsuccess = () => {
-        resolve(newDbRequest.result);
+
+      request.onsuccess = () => {
+        resolve(request.result);
       };
-      newDbRequest.onerror = () => {
-        reject(newDbRequest.error);
+
+      request.onerror = () => {
+        reject(request.error);
       };
-    };
+    }
   });
 }
