@@ -5,12 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
-
+import { describe, test, expect } from "bun:test";
 import { Lambda, LambdaTask } from "../task/LambdaTask";
 import { TaskGraph } from "@ellmers/task-graph";
 import { TaskGraphRunner } from "@ellmers/task-graph";
 import { TaskGraphBuilder } from "@ellmers/task-graph";
+
 describe("LambdaTask", () => {
   test("in command mode", async () => {
     const results = await Lambda({
@@ -23,23 +23,20 @@ describe("LambdaTask", () => {
 
   test("in task mode", async () => {
     const task = new LambdaTask({
-      input: {
-        fn: async () => {
-          return { output: "Hello, world!" };
-        },
+      fn: async () => {
+        return { output: "Hello, world!" };
       },
     });
     const results = await task.run();
     expect(results).toEqual({ output: "Hello, world!" });
   });
+
   test("in task graph mode", async () => {
     const graph = new TaskGraph();
     graph.addTask(
       new LambdaTask({
-        input: {
-          fn: async () => {
-            return { output: "Hello, world!" };
-          },
+        fn: async () => {
+          return { output: "Hello, world!" };
         },
       })
     );
@@ -47,6 +44,7 @@ describe("LambdaTask", () => {
     const results = await runner.runGraph();
     expect(results[0]).toEqual({ output: "Hello, world!" });
   });
+
   test("in task builder mode", async () => {
     const builder = new TaskGraphBuilder();
     builder.Lambda({
@@ -57,10 +55,11 @@ describe("LambdaTask", () => {
     const results = await builder.run();
     expect(results[0]).toEqual({ output: "Hello, world!" });
   });
+
   test("in task builder mode with input", async () => {
     const builder = new TaskGraphBuilder();
     builder.Lambda({
-      fn: async ({ input }) => {
+      fn: async (input) => {
         return { output: input.a + input.b };
       },
       input: {
@@ -71,14 +70,14 @@ describe("LambdaTask", () => {
     const results = await builder.run();
     expect(results[0]).toEqual({ output: 3 });
   });
+
   test("with updateProgress", async () => {
     const graph = new TaskGraph();
     const task = new LambdaTask({
-      input: {
-        fn: async ({ updateProgress }) => {
-          updateProgress(0.5, "Halfway there");
-          return { output: "Hello, world!" };
-        },
+      id: "lambda",
+      fn: async (input, updateProgress) => {
+        updateProgress(0.5, "Halfway there");
+        return { output: "Hello, world!" };
       },
     });
     graph.addTask(task);

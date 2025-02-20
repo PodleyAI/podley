@@ -15,24 +15,16 @@ import {
   TaskInput,
   TaskInputDefinition,
   TaskOutputDefinition,
+  IConfig,
 } from "@ellmers/task-graph";
 
-/**
- * Type definitions for LambdaTask input and output
- * These types are generated from the static input/output definitions
- */
-export type LambdaTaskInput = {
-  fn: (param: {
-    input: TaskInput;
-    updateProgress: (progress: number, message: string) => void;
-  }) => Promise<LambdaTaskOutput>;
-  name?: string;
+type LambdaTaskConfig = Partial<IConfig> & {
+  fn: (
+    input: TaskInput,
+    updateProgress: (progress: number, message: string) => void
+  ) => Promise<TaskOutput>;
   input?: TaskInput;
 };
-export type LambdaTaskOutput = {
-  output: any;
-};
-
 /**
  * LambdaTask provides a way to execute arbitrary functions within the task framework
  * It wraps a provided function and its input into a task that can be integrated
@@ -40,9 +32,10 @@ export type LambdaTaskOutput = {
  */
 export class LambdaTask extends SingleTask {
   static readonly type = "LambdaTask";
-  declare runInputData: LambdaTaskInput;
-  declare defaults: Partial<LambdaTaskInput>;
+  declare runInputData: TaskInput;
+  declare defaults: Partial<TaskInput>;
   declare runOutputData: TaskOutput;
+  declare config: LambdaTaskConfig & IConfig;
 
   /**
    * Input definition for LambdaTask
@@ -51,21 +44,9 @@ export class LambdaTask extends SingleTask {
    */
   public static inputs: TaskInputDefinition[] = [
     {
-      id: "fn",
-      name: "Function",
-      valueType: "function", // Expects a callable function
-    },
-    {
       id: "input",
       name: "Input",
       valueType: "any", // Can accept any type of input
-    },
-    {
-      id: "name",
-      name: "Name",
-      valueType: "string",
-      defaultValue: "Lambda fn",
-      optional: true,
     },
   ] as const;
 
@@ -81,8 +62,13 @@ export class LambdaTask extends SingleTask {
     },
   ] as const;
 
-  constructor(config: TaskConfig & { input?: LambdaTaskInput } = {}) {
-    config.name = config.input?.name || config.name || "Lambda";
+  constructor(config: LambdaTaskConfig) {
+    if (config.input?.fn) {
+      config.fn = config.input.fn;
+      delete config.input.fn;
+      config.input = config.input.input;
+      delete config?.input?.input;
+    }
     super(config);
   }
 
@@ -91,32 +77,19 @@ export class LambdaTask extends SingleTask {
    * Throws an error if no function is provided or if the provided value is not callable
    */
   async runReactive() {
-    if (!this.runInputData.fn) {
+    if (!this.config.fn) {
       throw new Error("No runner provided");
     }
-    if (typeof this.runInputData.fn === "function") {
+    if (typeof this.config.fn === "function") {
       const updateProgress = (progress: number, message: string) => {
         this.handleProgress(progress, message);
       };
-      const result = await this.runInputData.fn({
-        input: this.runInputData.input ?? {},
-        updateProgress,
-      });
+      const result = await this.config.fn(this.runInputData ?? {}, updateProgress);
       this.runOutputData.output = result.output;
     } else {
       console.error("error", "Runner is not a function");
     }
     return this.runOutputData;
-  }
-
-  public resetInputData(): void {
-    // Use deep clone to avoid state leakage
-    const { fn, ...rest } = this.defaults;
-    // @ts-ignore
-    this.defaults = rest;
-    super.resetInputData();
-    this.defaults.fn = fn;
-    this.runInputData.fn = fn!;
   }
 }
 
@@ -124,23 +97,17 @@ export class LambdaTask extends SingleTask {
 TaskRegistry.registerTask(LambdaTask);
 
 /**
- * Helper function to create and configure a LambdaTask instance
- */
-const LambdaBuilder = (input: LambdaTaskInput) => {
-  return new LambdaTask({ input });
-};
-
-/**
  * Convenience function to create and run a LambdaTask
  */
-export const Lambda = (input: LambdaTaskInput) => {
-  return LambdaBuilder(input).run();
+export const Lambda = (config: LambdaTaskConfig) => {
+  const task = new LambdaTask(config);
+  return task.run();
 };
 
 // Add Lambda task builder to TaskGraphBuilder interface
 declare module "@ellmers/task-graph" {
   interface TaskGraphBuilder {
-    Lambda: TaskGraphBuilderHelper<LambdaTaskInput>;
+    Lambda: TaskGraphBuilderHelper<LambdaTaskConfig>;
   }
 }
 
