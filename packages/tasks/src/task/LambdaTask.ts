@@ -7,7 +7,6 @@
 
 import {
   SingleTask,
-  TaskConfig,
   TaskOutput,
   TaskGraphBuilder,
   TaskGraphBuilderHelper,
@@ -16,13 +15,15 @@ import {
   TaskInputDefinition,
   TaskOutputDefinition,
   IConfig,
+  TaskStatus,
 } from "@ellmers/task-graph";
 
 type LambdaTaskConfig = Partial<IConfig> & {
-  fn: (
+  run?: (
     input: TaskInput,
     updateProgress: (progress: number, message: string) => void
   ) => Promise<TaskOutput>;
+  runReactive?: (input: TaskInput) => Promise<TaskOutput>;
   input?: TaskInput;
 };
 /**
@@ -63,13 +64,57 @@ export class LambdaTask extends SingleTask {
   ] as const;
 
   constructor(config: LambdaTaskConfig) {
-    if (config.input?.fn) {
-      config.fn = config.input.fn;
-      delete config.input.fn;
+    if (config.input?.run || config.input?.runReactive) {
+      config.run = config.input.run;
+      delete config.input.run;
+      config.runReactive = config.input.runReactive;
+      delete config.input.runReactive;
       config.input = config.input.input;
       delete config?.input?.input;
     }
     super(config);
+  }
+
+  resetInputData() {
+    if (this.runInputData?.run || this.runInputData?.runReactive) {
+      this.config.run = this.runInputData.run;
+      delete this.runInputData.run;
+      this.config.runReactive = this.runInputData.runReactive;
+      delete this.runInputData.runReactive;
+      this.runInputData = this.runInputData.input;
+      delete this.runInputData?.input;
+    }
+    super.resetInputData();
+  }
+
+  /**
+   * Default implementation of run that just returns the current output data.
+   * Subclasses should override this to provide actual task functionality.
+   */
+  async run(): Promise<TaskOutput> {
+    this.handleStart();
+
+    try {
+      if (!(await this.validateInputData(this.runInputData))) {
+        throw new Error("Invalid input data");
+      }
+      if (this.status === TaskStatus.ABORTING) {
+        throw new Error("Task aborted by run time");
+      }
+      if (typeof this.config.run === "function") {
+        let updateProgress = (progress: number, message: string) => {
+          this.handleProgress(progress, message);
+        };
+        this.runOutputData = await this.config.run(this.runInputData ?? {}, updateProgress);
+      }
+      this.runOutputData = await this.runReactive();
+
+      this.handleComplete();
+      return this.runOutputData;
+    } catch (err: any) {
+      this.handleError(err);
+      throw err;
+    }
   }
 
   /**
@@ -77,19 +122,11 @@ export class LambdaTask extends SingleTask {
    * Throws an error if no function is provided or if the provided value is not callable
    */
   async runReactive() {
-    if (!this.config.fn) {
-      throw new Error("No runner provided");
-    }
-    if (typeof this.config.fn === "function") {
-      const updateProgress = (progress: number, message: string) => {
-        this.handleProgress(progress, message);
-      };
-      const result = await this.config.fn(this.runInputData ?? {}, updateProgress);
+    if (typeof this.config.runReactive === "function") {
+      const result = await this.config.runReactive(this.runInputData ?? {});
       this.runOutputData = result;
-    } else {
-      console.error("error", "Runner is not a function");
     }
-    return this.runOutputData;
+    return super.runReactive();
   }
 }
 

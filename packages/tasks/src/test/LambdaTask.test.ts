@@ -14,16 +14,29 @@ import { TaskGraphBuilder } from "@ellmers/task-graph";
 describe("LambdaTask", () => {
   test("in command mode", async () => {
     const results = await Lambda({
-      fn: async () => {
+      run: async () => {
         return { output: "Hello, world!" };
       },
     });
     expect(results).toEqual({ output: "Hello, world!" });
   });
 
+  test("in command mode with reactive with input", async () => {
+    const results = await Lambda({
+      runReactive: async (input) => {
+        return { output: input.a + input.b };
+      },
+      input: {
+        a: 1,
+        b: 2,
+      },
+    });
+    expect(results).toEqual({ output: 3 });
+  });
+
   test("in task mode", async () => {
     const task = new LambdaTask({
-      fn: async () => {
+      runReactive: async () => {
         return { output: "Hello, world!" };
       },
     });
@@ -35,7 +48,7 @@ describe("LambdaTask", () => {
     const graph = new TaskGraph();
     graph.addTask(
       new LambdaTask({
-        fn: async () => {
+        runReactive: async () => {
           return { output: "Hello, world!" };
         },
       })
@@ -48,7 +61,7 @@ describe("LambdaTask", () => {
   test("in task builder mode", async () => {
     const builder = new TaskGraphBuilder();
     builder.Lambda({
-      fn: async () => {
+      run: async () => {
         return { output: "Hello, world!" };
       },
     });
@@ -59,7 +72,22 @@ describe("LambdaTask", () => {
   test("in task builder mode with input", async () => {
     const builder = new TaskGraphBuilder();
     builder.Lambda({
-      fn: async (input) => {
+      run: async (input) => {
+        return { output: input.a + input.b };
+      },
+      input: {
+        a: 1,
+        b: 2,
+      },
+    });
+    const results = await builder.run();
+    expect(results[0]).toEqual({ output: 3 });
+  });
+
+  test("in task builder mode with input", async () => {
+    const builder = new TaskGraphBuilder();
+    builder.Lambda({
+      runReactive: async (input) => {
         return { output: input.a + input.b };
       },
       input: {
@@ -75,7 +103,7 @@ describe("LambdaTask", () => {
     const graph = new TaskGraph();
     const task = new LambdaTask({
       id: "lambda",
-      fn: async (input, updateProgress) => {
+      run: async (input, updateProgress) => {
         updateProgress(0.5, "Halfway there");
         return { output: "Hello, world!" };
       },
