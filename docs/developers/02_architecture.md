@@ -230,7 +230,7 @@ classDiagram
 
   class LambdaTask{
     Function fn
-    any input
+    TaskInput input
     run() output
   }
   SimpleTask <|-- LambdaTask
@@ -238,7 +238,7 @@ classDiagram
 
   class JavaScriptTask{
     Function code
-    any input
+    TaskInput input
     run() output
   }
   SimpleTask <|-- JavaScriptTask

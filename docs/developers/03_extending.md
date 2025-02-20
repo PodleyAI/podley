@@ -42,7 +42,7 @@ type SimpleDebugLogTaskInputs = {
   message: any;
 };
 export class SimpleDebugLogTask extends SimpleTask {
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "message",
       name: "Input",
@@ -76,7 +76,7 @@ type SimpleDebugLogTaskOutputs = {
 };
 export class SimpleDebugLogTask extends SimpleTask {
   public static sideeffects = true;
-  public static inputs = [
+  public static inputs: TaskInputDefinition[] = [
     {
       id: "message",
       name: "Input",
@@ -85,7 +85,7 @@ export class SimpleDebugLogTask extends SimpleTask {
   ] as const;
   declare defaults: Partial<SimpleDebugLogTaskInputs>;
   declare runInputData: SimpleDebugLogTaskInputs;
-  public static outputs = [
+  public static outputs: TaskOutputDefinition[] = [
     {
       id: "output",
       name: "Output",
