@@ -8,8 +8,8 @@
 import { nanoid } from "nanoid";
 import { makeFingerprint, sleep } from "@ellmers/util";
 import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
+import { JobQueueOptions } from "job/IJobQueue";
 import { Job, JobStatus } from "../job/Job";
-import { ILimiter } from "../job/ILimiter";
 /**
  * In-memory implementation of a job queue that manages asynchronous tasks.
  * Supports job scheduling, status tracking, and result caching.
@@ -18,17 +18,15 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
   /**
    * Creates a new in-memory job queue
    * @param queue - Name of the queue
-   * @param limiter - Rate limiter to control job execution
-   * @param waitDurationInMilliseconds - Polling interval for checking new jobs
    * @param jobClass - Optional custom Job class implementation
+   * @param options - Queue configuration options including limiter
    */
   constructor(
     queue: string,
-    limiter: ILimiter,
     jobClass: typeof Job<Input, Output> = Job<Input, Output>,
-    waitDurationInMilliseconds = 100
+    options: JobQueueOptions
   ) {
-    super(queue, limiter, jobClass, waitDurationInMilliseconds);
+    super(queue, jobClass, options);
     this.jobQueue = [];
   }
 
@@ -190,7 +188,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
     }
 
     if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-      this.onCompleted(job.id, job.status, output, error);
+      await this.onCompleted(job.id, job.status, output, error);
     }
   }
 
@@ -241,5 +239,13 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
       this.jobQueue.find((j) => j.fingerprint === fingerprint && j.status === JobStatus.COMPLETED)
         ?.output ?? null
     );
+  }
+
+  protected async deleteJob(jobId: unknown): Promise<void> {
+    await sleep(0);
+    const jobIndex = this.jobQueue.findIndex((job) => job.id === jobId);
+    if (jobIndex !== -1) {
+      this.jobQueue.splice(jobIndex, 1);
+    }
   }
 }

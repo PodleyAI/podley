@@ -9,8 +9,8 @@ import { nanoid } from "nanoid";
 import { makeFingerprint } from "@ellmers/util";
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "@ellmers/storage";
 import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
+import { JobQueueOptions } from "job/IJobQueue";
 import { Job, JobStatus } from "../job/Job";
-import { ILimiter } from "../job/ILimiter";
 
 /**
  * IndexedDB implementation of a job queue.
@@ -22,12 +22,11 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
   constructor(
     tableNamePrefix: string,
     queue: string,
-    limiter: ILimiter,
     jobClass: typeof Job<Input, Output> = Job<Input, Output>,
-    waitDurationInMilliseconds: number = 100,
+    options: JobQueueOptions,
     public version: number = 1
   ) {
-    super(queue, limiter, jobClass, waitDurationInMilliseconds);
+    super(queue, jobClass, options);
     this.tableName = `${tableNamePrefix}_${queue}`;
 
     // Close any existing connections first
@@ -283,9 +282,9 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
         }
 
         const updateRequest = store.put(job);
-        updateRequest.onsuccess = () => {
+        updateRequest.onsuccess = async () => {
           if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-            this.onCompleted(job.id, job.status, output, error);
+            await this.onCompleted(job.id, job.status, output, error);
           }
           resolve();
         };
@@ -420,6 +419,19 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
         updateRequest.onerror = () => reject(updateRequest.error);
       };
       request.onerror = () => reject(request.error);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  protected async deleteJob(jobId: unknown): Promise<void> {
+    const db = await this.dbPromise;
+    const tx = db.transaction(this.tableName, "readwrite");
+    const store = tx.objectStore(this.tableName);
+
+    return new Promise((resolve, reject) => {
+      const request = store.delete(String(jobId));
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
   }

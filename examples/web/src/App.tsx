@@ -46,18 +46,18 @@ registerHuggingfaceLocalTasks();
 queueRegistry.registerQueue(
   new InMemoryJobQueue<TaskInput, TaskOutput>(
     LOCAL_ONNX_TRANSFORMERJS,
-    new ConcurrencyLimiter(1, 10),
-    AiJob<TaskInput, TaskOutput>
+    AiJob<TaskInput, TaskOutput>,
+    {
+      limiter: new ConcurrencyLimiter(1, 10),
+    }
   )
 );
 
 registerMediaPipeTfJsLocalTasks();
 queueRegistry.registerQueue(
-  new InMemoryJobQueue<TaskInput, TaskOutput>(
-    MEDIA_PIPE_TFJS_MODEL,
-    new ConcurrencyLimiter(1, 10),
-    AiJob<TaskInput, TaskOutput>
-  )
+  new InMemoryJobQueue<TaskInput, TaskOutput>(MEDIA_PIPE_TFJS_MODEL, AiJob<TaskInput, TaskOutput>, {
+    limiter: new ConcurrencyLimiter(1, 10),
+  })
 );
 
 queueRegistry.clearQueues();

@@ -90,7 +90,10 @@ describe("FetchTask", () => {
     const rateLimiter = new InMemoryRateLimiter(1, 1); // 1 request per 1 minute window
 
     // Create a queue with the base Job type to match TaskQueueRegistry's expectations
-    const queue = new InMemoryJobQueue<TaskInput, TaskOutput>(queueName, rateLimiter, FetchJob);
+    const queue = new InMemoryJobQueue<TaskInput, TaskOutput>(queueName, FetchJob, {
+      limiter: rateLimiter,
+      waitDurationInMilliseconds: 1,
+    });
 
     // Register the queue with the registry
     getTaskQueueRegistry().registerQueue(queue);
@@ -98,16 +101,18 @@ describe("FetchTask", () => {
     const mockResponse = { data: { success: true } };
     mockFetch.mockImplementation(() => Promise.resolve(createMockResponse(mockResponse)));
 
+    // Add jobs to queue
     await queue.add(new FetchJob({ input: { url: "https://api.example.com/1" } }));
     await queue.add(new FetchJob({ input: { url: "https://api.example.com/2" } }));
     await queue.add(new FetchJob({ input: { url: "https://api.example.com/3" } }));
 
-    // Start the queue
+    // Start the queue and wait for processing
     await queue.start();
-    await sleep(1);
+    await sleep(1); // Give time for rate limiting and processing
 
-    // Verify that fetch was called three times
+    // Verify that fetch was called only once due to rate limiting
     expect(mockFetch.mock.calls.length).toBe(1);
+
     // Clean up
     await queue.stop();
     await queue.clear();

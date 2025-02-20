@@ -31,11 +31,17 @@ describe("AiProviderRegistry", () => {
     return { result: "success with progress" };
   };
 
-  let queue = new InMemoryJobQueue(TEST_PROVIDER, new InMemoryRateLimiter(4, 1), AiJob);
+  let queue = new InMemoryJobQueue(TEST_PROVIDER, AiJob, {
+    limiter: new InMemoryRateLimiter(4, 1),
+    waitDurationInMilliseconds: 1,
+  });
   let aiProviderRegistry: AiProviderRegistry;
 
   beforeEach(() => {
-    queue = new InMemoryJobQueue(TEST_PROVIDER, new InMemoryRateLimiter(4, 1), AiJob);
+    queue = new InMemoryJobQueue(TEST_PROVIDER, AiJob, {
+      limiter: new InMemoryRateLimiter(4, 1),
+      waitDurationInMilliseconds: 1,
+    });
     setTaskQueueRegistry(new TaskQueueRegistry<TaskInput, TaskOutput>());
     const taskQueueRegistry = getTaskQueueRegistry();
     taskQueueRegistry.registerQueue(queue);
@@ -197,6 +203,7 @@ describe("AiProviderRegistry", () => {
       const mockRunFn = mock(() => Promise.resolve({ result: "success" }));
       aiProviderRegistry.registerRunFn("text-generation", TEST_PROVIDER, mockRunFn);
 
+      const controller = new AbortController();
       const job = new AiJob({
         queueName: TEST_PROVIDER,
         input: {
@@ -206,9 +213,9 @@ describe("AiProviderRegistry", () => {
         },
       });
 
-      const result = await job.execute();
+      const result = await job.execute(controller.signal);
 
-      expect(mockRunFn).toHaveBeenCalledWith(job, { text: "test" }, undefined);
+      expect(mockRunFn).toHaveBeenCalledWith(job, { text: "test" }, controller.signal);
       expect(result).toEqual({ result: "success" });
     });
   });

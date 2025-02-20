@@ -27,13 +27,10 @@ const db = new module(":memory:");
 
 function createSqliteJobQueue() {
   const queueName = `sqlite_test_queue_${nanoid()}`;
-  return new SqliteJobQueue(
-    db,
-    queueName,
-    new SqliteRateLimiter(db, queueName, 4, 1).ensureTableExists(),
-    TestJob,
-    1
-  ).ensureTableExists();
+  return new SqliteJobQueue(db, queueName, TestJob, {
+    limiter: new SqliteRateLimiter(db, queueName, 4, 1),
+    waitDurationInMilliseconds: 1,
+  }).ensureTableExists();
 }
 
 describe("SqliteJobQueue", () => {

@@ -8,8 +8,8 @@
 import { nanoid } from "nanoid";
 import { makeFingerprint } from "@ellmers/util";
 import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
+import { JobQueueOptions } from "job/IJobQueue";
 import { Job, JobStatus } from "../job/Job";
-import { ILimiter } from "../job/ILimiter";
 import { Pool } from "pg";
 // TODO: prepared statements
 
@@ -21,11 +21,10 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
   constructor(
     protected readonly db: Pool,
     queue: string,
-    limiter: ILimiter,
     jobClass: typeof Job<Input, Output> = Job<Input, Output>,
-    waitDurationInMilliseconds = 100
+    options: JobQueueOptions
   ) {
-    super(queue, limiter, jobClass, waitDurationInMilliseconds);
+    super(queue, jobClass, options);
     this.dbPromise = this.ensureTableExists();
   }
 
@@ -147,7 +146,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
         LIMIT 1`,
       [id]
     );
-    if (!result) return undefined;
+    if (!result || result.rows.length === 0) return undefined;
     return this.createNewJob(result.rows[0], false);
   }
 
@@ -335,7 +334,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
     }
 
     if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-      this.onCompleted(id, job.status, output, error);
+      await this.onCompleted(id, job.status, output, error);
     }
   }
 
@@ -425,5 +424,13 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
       WHERE id = $4 AND queue = $5`,
       [progress, message, details as any, jobId as number, this.queueName]
     );
+  }
+
+  protected async deleteJob(jobId: unknown): Promise<void> {
+    await this.dbPromise;
+    await this.db.query(`DELETE FROM job_queue WHERE id = $1 AND queue = $2`, [
+      String(jobId),
+      this.queueName,
+    ]);
   }
 }

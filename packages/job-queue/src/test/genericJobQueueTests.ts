@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { sleep } from "@ellmers/util";
 import { AbortSignalJobError, JobQueue } from "../job/JobQueue";
 import { Job, JobStatus } from "../job/Job";
+import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
 
 export interface TInput {
   [key: string]: any;
@@ -84,6 +85,39 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
       const job = await jobQueue.get(id);
       expect(job?.status).toBe(JobStatus.COMPLETED);
       expect(job?.output).toEqual({ result: "success" });
+    });
+
+    it("should delete completed jobs when deleteCompletedJobs option is enabled", async () => {
+      // Create a new queue with deleteCompletedJobs enabled
+      const autoDeleteQueue = createJobQueue();
+      // @ts-ignore - Accessing protected property for testing
+      autoDeleteQueue.options = {
+        deleteCompletedJobs: true,
+        waitDurationInMilliseconds: 1,
+      };
+      await autoDeleteQueue.start();
+
+      // Add and complete a job
+      const job1Id = await autoDeleteQueue.add(
+        new TestJob({ input: { taskType: "other", data: "input1" } })
+      );
+      await autoDeleteQueue.waitFor(job1Id);
+
+      // Give a small delay to ensure deletion completes
+      await sleep(1);
+
+      // Job should be automatically deleted after completion
+      const deletedJob = await autoDeleteQueue.get(job1Id);
+      expect(deletedJob).toBeUndefined();
+
+      // Add another job but don't complete it
+      const job2Id = await autoDeleteQueue.add(
+        new TestJob({ input: { taskType: "task2", data: "input2" } })
+      );
+      const pendingJob = await autoDeleteQueue.get(job2Id);
+      expect(pendingJob).toBeDefined();
+
+      await autoDeleteQueue.stop();
     });
 
     it("should add a job to the queue", async () => {

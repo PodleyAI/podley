@@ -11,6 +11,10 @@ import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJob
 
 describe("InMemoryTaskGraphJobQueue", () => {
   runGenericTaskGraphJobQueueTests(
-    async () => new InMemoryJobQueue("inMemory", new ConcurrencyLimiter(1, 10), TestJob, 10)
+    async () =>
+      new InMemoryJobQueue("inMemory", TestJob, {
+        limiter: new ConcurrencyLimiter(1, 10),
+        waitDurationInMilliseconds: 1,
+      })
   );
 });
