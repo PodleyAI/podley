@@ -22,8 +22,12 @@ import {
  * These types are generated from the static input/output definitions
  */
 export type LambdaTaskInput = {
-  fn: (...args: any[]) => any;
-  input: any;
+  fn: (param: {
+    input: TaskInput;
+    updateProgress: (progress: number, message: string) => void;
+  }) => Promise<LambdaTaskOutput>;
+  name?: string;
+  input?: TaskInput;
 };
 export type LambdaTaskOutput = {
   output: any;
@@ -55,7 +59,13 @@ export class LambdaTask extends SingleTask {
       id: "input",
       name: "Input",
       valueType: "any", // Can accept any type of input
-      defaultValue: null,
+    },
+    {
+      id: "name",
+      name: "Name",
+      valueType: "string",
+      defaultValue: "Lambda fn",
+      optional: true,
     },
   ] as const;
 
@@ -72,6 +82,7 @@ export class LambdaTask extends SingleTask {
   ] as const;
 
   constructor(config: TaskConfig & { input?: LambdaTaskInput } = {}) {
+    config.name = config.input?.name || config.name || "Lambda";
     super(config);
   }
 
@@ -84,11 +95,28 @@ export class LambdaTask extends SingleTask {
       throw new Error("No runner provided");
     }
     if (typeof this.runInputData.fn === "function") {
-      this.runOutputData.output = this.runInputData.fn(this.runInputData.input);
+      const updateProgress = (progress: number, message: string) => {
+        this.handleProgress(progress, message);
+      };
+      const result = await this.runInputData.fn({
+        input: this.runInputData.input ?? {},
+        updateProgress,
+      });
+      this.runOutputData.output = result.output;
     } else {
       console.error("error", "Runner is not a function");
     }
     return this.runOutputData;
+  }
+
+  public resetInputData(): void {
+    // Use deep clone to avoid state leakage
+    const { fn, ...rest } = this.defaults;
+    // @ts-ignore
+    this.defaults = rest;
+    super.resetInputData();
+    this.defaults.fn = fn;
+    this.runInputData.fn = fn!;
   }
 }
 

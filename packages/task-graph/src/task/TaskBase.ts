@@ -163,9 +163,9 @@ export abstract class TaskBase implements ITask {
 
   public resetInputData(): void {
     // Use deep clone to avoid state leakage
-    if (typeof structuredClone === "function") {
+    try {
       this.runInputData = structuredClone(this.defaults);
-    } else {
+    } catch (err) {
       this.runInputData = JSON.parse(JSON.stringify(this.defaults));
     }
   }
@@ -224,6 +224,7 @@ export abstract class TaskBase implements ITask {
       case "number":
         return typeof item === "bigint" || typeof item === "number";
       case "text":
+      case "string":
         return typeof item === "string";
       case "boolean":
         return typeof item === "boolean";
@@ -251,20 +252,24 @@ export abstract class TaskBase implements ITask {
       return false;
     }
     if (typeof input !== "object") return false;
-    if (inputdef.defaultValue !== undefined && input[inputId] === undefined) {
-      console.warn(
-        `No default value for '${inputId}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
-      );
-      return false;
-    } else if (input[inputId] === undefined) {
-      input[inputId] = inputdef.defaultValue;
+    if (input[inputId] === undefined) {
+      if (inputdef.defaultValue === undefined) {
+        input[inputId] = inputdef.defaultValue;
+      } else {
+        if (!inputdef.optional) {
+          console.warn(
+            `No default value for '${inputId}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
+          );
+          return false;
+        }
+      }
     }
+
     if (inputdef.isArray && !Array.isArray(input[inputId])) {
       input[inputId] = [input[inputId]];
     }
     const inputlist: any[] = inputdef.isArray ? input[inputId] : [input[inputId]];
 
-    // Rewritten using Promise.all for asynchronous validation
     const validationPromises = inputlist.map((item) =>
       this.validateItem(inputdef.valueType as string, item)
     );

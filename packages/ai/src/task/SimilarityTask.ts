@@ -53,7 +53,8 @@ export class SimilarityTask extends SingleTask {
       id: "k",
       name: "Top K",
       valueType: "number",
-      defaultValue: null,
+      defaultValue: 10,
+      optional: true,
     },
     {
       id: "similarity",

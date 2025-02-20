@@ -15,6 +15,7 @@ import {
   type TaskInput,
   TaskStatus,
   type JsonTaskItem,
+  type TaskConfig,
 } from "./TaskTypes";
 import { TaskBase } from "./TaskBase";
 
@@ -130,6 +131,10 @@ export class CompoundTask extends TaskBase implements ICompoundTask {
  */
 export class RegenerativeCompoundTask extends CompoundTask {
   static readonly type: TaskTypeName = "RegenerativeCompoundTask";
+  constructor(config: TaskConfig) {
+    super(config);
+    this.regenerateGraph();
+  }
   /**
    * Emits a "regenerate" event when the subtask graph is regenerated
    */

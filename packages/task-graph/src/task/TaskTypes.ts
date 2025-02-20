@@ -104,6 +104,7 @@ export type TaskInputDefinition = {
   readonly valueType: string;
   readonly isArray?: boolean;
   readonly defaultValue?: unknown;
+  readonly optional?: boolean;
 };
 
 export type TaskOutputDefinition = {

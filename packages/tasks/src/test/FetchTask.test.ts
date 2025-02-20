@@ -1,3 +1,10 @@
+//    *******************************************************************************
+//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *                                                                             *
+//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
+//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
+//    *******************************************************************************
+
 import { describe, test, expect, beforeEach, afterEach, mock, beforeAll, afterAll } from "bun:test";
 import { Fetch, FetchJob } from "../task/FetchTask";
 import {

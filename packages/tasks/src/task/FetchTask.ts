@@ -84,30 +84,32 @@ export class FetchTask extends JobQueueTask {
       name: "Method",
       valueType: "method",
       defaultValue: "GET",
+      optional: true,
     },
     {
       id: "headers",
       name: "Headers",
       valueType: "record_string_string",
-      defaultValue: undefined,
+      optional: true,
     },
     {
       id: "body",
       name: "Body",
       valueType: "text",
-      defaultValue: undefined,
+      optional: true,
     },
     {
       id: "response_type",
       name: "Response Type",
       valueType: "response_type",
       defaultValue: "json",
+      optional: true,
     },
     {
       id: "queueName",
       name: "Queue Name",
       valueType: "text",
-      defaultValue: undefined,
+      optional: true,
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
