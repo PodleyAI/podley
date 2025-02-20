@@ -82,6 +82,7 @@ export class CompoundTask extends TaskBase implements ICompoundTask {
       }
       const runner = new TaskGraphRunner(this.subGraph, repository);
       this.runOutputData.outputs = await runner.runGraph(nodeProvenance);
+      this.runOutputData = await this.runReactive();
 
       this.handleComplete();
       return this.runOutputData;

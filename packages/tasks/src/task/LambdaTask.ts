@@ -85,7 +85,7 @@ export class LambdaTask extends SingleTask {
         this.handleProgress(progress, message);
       };
       const result = await this.config.fn(this.runInputData ?? {}, updateProgress);
-      this.runOutputData.output = result.output;
+      this.runOutputData = result;
     } else {
       console.error("error", "Runner is not a function");
     }
