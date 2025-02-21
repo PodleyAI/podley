@@ -5,40 +5,57 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, beforeEach, afterEach } from "bun:test";
-import { rmdirSync } from "fs";
+import { describe, beforeEach, afterEach, expect, test } from "bun:test";
+import { rmdirSync, mkdirSync } from "fs";
 import { FileKVRepository } from "../FileKVRepository";
-import { BasePrimaryKeySchema, BaseValueSchema } from "../IKVRepository";
-import { runGenericKVRepositoryTests } from "./genericKVRepositoryTests";
-type PrimaryKey = {
-  name: string;
-  type: string;
-};
-type Value = {
-  option: string;
-  success: boolean;
-};
-
-export const PrimaryKeySchema: BasePrimaryKeySchema = { name: "string", type: "string" } as const;
-export const ValueSchema: BaseValueSchema = { option: "string", success: "boolean" } as const;
+import {
+  runGenericKVRepositoryTests,
+  PrimaryKey,
+  Value,
+  PrimaryKeySchema,
+  ValueSchema,
+  CompoundKey,
+  CompoundValue,
+  CompoundPrimaryKeySchema,
+  CompoundValueSchema,
+} from "./genericKVRepositoryTests";
 
 const testDir = ".cache/test/testing";
 
 describe("FileKVRepository", () => {
-  let repository: FileKVRepository;
-  try {
-    rmdirSync(testDir, { recursive: true });
-  } catch {}
-
   beforeEach(() => {
-    repository = new FileKVRepository(testDir);
-  });
-  afterEach(() => {
-    repository.deleteAll();
+    try {
+      mkdirSync(testDir, { recursive: true });
+    } catch {}
   });
 
-  runGenericKVRepositoryTests(
-    async () => new FileKVRepository(testDir),
-    async () => new FileKVRepository<PrimaryKey, Value>(testDir, PrimaryKeySchema, ValueSchema)
-  );
+  afterEach(async () => {
+    try {
+      rmdirSync(testDir, { recursive: true });
+    } catch {}
+  });
+
+  // Run basic storage tests that don't involve search
+  describe("basic functionality", () => {
+    runGenericKVRepositoryTests(
+      async () => new FileKVRepository(testDir),
+      async () => new FileKVRepository<PrimaryKey, Value>(testDir, PrimaryKeySchema, ValueSchema)
+    );
+  });
+
+  // Add specific tests for search functionality
+  describe("search functionality", () => {
+    test("should throw error when attempting to search", async () => {
+      const repo = new FileKVRepository<CompoundKey, CompoundValue>(
+        testDir,
+        CompoundPrimaryKeySchema,
+        CompoundValueSchema,
+        ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
+      );
+
+      expect(repo.search({ category: "test" })).rejects.toThrow(
+        "Search not supported for FileKVRepository"
+      );
+    });
+  });
 });

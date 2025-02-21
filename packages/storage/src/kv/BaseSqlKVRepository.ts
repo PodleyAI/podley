@@ -41,13 +41,14 @@ export abstract class BaseSqlKVRepository<
    * @param table - The name of the database table to use for storage
    * @param primaryKeySchema - Schema defining the structure of the primary key
    * @param valueSchema - Schema defining the structure of the stored values
-   * @param searchable - Array of columns to make searchable
+   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
     protected readonly table: string = "kv_store",
     primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    searchable: Array<keyof Combined> = []
+    searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     super(primaryKeySchema, valueSchema, searchable);
     this.validateTableAndSchema();

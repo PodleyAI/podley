@@ -43,8 +43,60 @@ export abstract class KVRepository<
   Combined extends Record<string, any> = Key & Value,
 > implements IKVRepository<Key, Value, Combined>
 {
-  // KV repository event emitter
+  /** Event emitter for repository events */
   protected events = new EventEmitter<KVEventListeners<Key, Value, Combined>>();
+
+  /**
+   * Indexes for primary key and value columns which are _only_ populated if the
+   * key or value schema has a single field.
+   */
+  protected primaryKeyIndex: string | undefined = undefined;
+  protected valueIndex: string | undefined = undefined;
+
+  /**
+   * Creates a new KVRepository instance
+   * @param primaryKeySchema - Schema defining the structure of primary keys
+   * @param valueSchema - Schema defining the structure of values
+   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   *                    while each array creates a compound index with columns in the specified order.
+   */
+  constructor(
+    protected primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
+    protected valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
+    protected searchable: Array<keyof Combined | Array<keyof Combined>> = []
+  ) {
+    this.primaryKeySchema = primaryKeySchema;
+    this.valueSchema = valueSchema;
+    if (this.primaryKeyColumns().length === 1) {
+      this.primaryKeyIndex = this.primaryKeyColumns()[0] as string;
+    }
+    if (this.valueColumns().length === 1) {
+      this.valueIndex = this.valueColumns()[0] as string;
+    }
+
+    // Ensure first part of primary key is searchable
+    const firstKeyPart = this.primaryKeyColumns()[0] as keyof Combined;
+    const hasFirstKeyPart = this.searchable.some((spec) =>
+      typeof spec === "string"
+        ? spec === firstKeyPart
+        : (spec as Array<keyof Combined>)[0] === firstKeyPart
+    );
+    if (!hasFirstKeyPart) {
+      this.searchable.push(firstKeyPart);
+    }
+
+    // Validate searchable columns
+    for (const spec of this.searchable) {
+      const columns = Array.isArray(spec) ? (spec as Array<keyof Combined>) : [spec];
+      for (const column of columns) {
+        if (!(column in this.primaryKeySchema) && !(column in this.valueSchema)) {
+          throw new Error(
+            `Searchable column ${String(column)} is not in the primary key schema or value schema`
+          );
+        }
+      }
+    }
+  }
 
   /**
    * Adds an event listener for a specific event
@@ -94,47 +146,6 @@ export abstract class KVRepository<
     name: Event
   ): Promise<KVEventParameters<Event, Key, Value, Combined>> {
     return this.events.emitted(name) as Promise<KVEventParameters<Event, Key, Value, Combined>>;
-  }
-
-  /**
-   * Indexes for primary key and value columns which are _only_ populated if the
-   * key or value schema has a single field.
-   */
-  protected primaryKeyIndex: string | undefined = undefined;
-  protected valueIndex: string | undefined = undefined;
-  /**
-   * Creates a new KVRepository instance
-   * @param primaryKeySchema - Schema defining the structure of primary keys
-   * @param valueSchema - Schema defining the structure of values
-   * @param searchable - Array of columns to make searchable
-   */
-  constructor(
-    protected primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    protected valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    protected searchable: Array<keyof Combined> = []
-  ) {
-    this.primaryKeySchema = primaryKeySchema;
-    this.valueSchema = valueSchema;
-    if (this.primaryKeyColumns().length === 1) {
-      this.primaryKeyIndex = this.primaryKeyColumns()[0] as string;
-    }
-    if (this.valueColumns().length === 1) {
-      this.valueIndex = this.valueColumns()[0] as string;
-    }
-    const firstKeyPart = this.primaryKeyColumns()[0] as keyof Combined;
-    if (!searchable.includes(firstKeyPart)) {
-      searchable.push(firstKeyPart);
-    }
-    this.searchable = searchable;
-
-    // make sure all the searchable columns are in the primary key schema or value schema
-    for (const column of this.searchable) {
-      if (!(column in this.primaryKeySchema) && !(column in this.valueSchema)) {
-        throw new Error(
-          `Searchable column ${column as string} is not in the primary key schema or value schema`
-        );
-      }
-    }
   }
 
   /**
@@ -294,5 +305,53 @@ export abstract class KVRepository<
       }
     }
     return orderedParams;
+  }
+
+  /**
+   * Finds the best matching index for a set of search keys.
+   * @param searchKeys - Array of keys being searched
+   * @returns Array of column names representing the best matching index, or undefined if no suitable index found
+   */
+  protected findBestMatchingIndex(
+    searchKeys: string[]
+  ): Array<keyof Combined> | keyof Combined | undefined {
+    // Convert searchKeys to Set for efficient lookup
+    const searchKeySet = new Set(searchKeys);
+
+    // First check if we have an exact match for a compound index
+    for (const spec of this.searchable) {
+      if (Array.isArray(spec)) {
+        const indexCols = spec as Array<keyof Combined>;
+        if (indexCols.length <= searchKeys.length) {
+          // Check if all index columns are in the search keys
+          if (indexCols.every((col) => searchKeySet.has(String(col)))) {
+            return indexCols;
+          }
+        }
+      }
+    }
+
+    // Then check single-column indexes
+    for (const spec of this.searchable) {
+      if (!Array.isArray(spec) && searchKeySet.has(String(spec))) {
+        return spec;
+      }
+    }
+
+    // If no exact match found, use any single searchable column that matches
+    for (const key of searchKeys) {
+      const keyAsCombined = key as keyof Combined;
+      if (
+        this.searchable.some((spec) =>
+          typeof spec === "string"
+            ? spec === keyAsCombined
+            : (spec as Array<keyof Combined>).includes(keyAsCombined)
+        )
+      ) {
+        return keyAsCombined;
+      }
+    }
+
+    return undefined;
   }
 }

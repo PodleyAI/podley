@@ -15,6 +15,10 @@ import {
   runGenericKVRepositoryTests,
   Value,
   ValueSchema,
+  CompoundKey,
+  CompoundValue,
+  CompoundPrimaryKeySchema,
+  CompoundValueSchema,
 } from "./genericKVRepositoryTests";
 
 describe("IndexedDbKVRepository", () => {
@@ -32,6 +36,7 @@ describe("IndexedDbKVRepository", () => {
     // Delete the test databases
     indexedDB.deleteDatabase(`${dbName}_simple`);
     indexedDB.deleteDatabase(`${dbName}_complex`);
+    indexedDB.deleteDatabase(`${dbName}_compound`);
   });
 
   runGenericKVRepositoryTests(
@@ -41,6 +46,20 @@ describe("IndexedDbKVRepository", () => {
         `${dbName}_complex`,
         PrimaryKeySchema,
         ValueSchema
-      )
+      ),
+    async () => {
+      const searchable = [
+        "category",
+        ["category", "subcategory"],
+        ["subcategory", "category"],
+        "value",
+      ] as const;
+      return new IndexedDbKVRepository<CompoundKey, CompoundValue>(
+        `${dbName}_compound`,
+        CompoundPrimaryKeySchema,
+        CompoundValueSchema,
+        searchable as unknown as Array<keyof (CompoundKey & CompoundValue)>
+      );
+    }
   );
 });

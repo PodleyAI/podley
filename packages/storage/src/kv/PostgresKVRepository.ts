@@ -18,15 +18,6 @@ import {
   DefaultValueType,
 } from "./IKVRepository";
 
-/// ******************************************************************
-/// *
-/// ******************************************************************
-/// **********************    NOT TESTED YET   ***********************
-/// ******************************************************************
-/// *
-/// ******************************************************************
-/// really... i wrote it and it passes the linter only!
-
 /**
 /**
  * A PostgreSQL-based key-value repository implementation that extends BaseSqlKVRepository.
@@ -55,14 +46,15 @@ export class PostgresKVRepository<
    * @param table - Name of the table to store key-value pairs (defaults to "kv_store")
    * @param primaryKeySchema - Schema definition for primary key columns
    * @param valueSchema - Schema definition for value columns
-   * @param searchable - Array of columns to make searchable
+   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
     db: Pool,
     table: string = "kv_store",
     primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    searchable: Array<keyof Combined> = []
+    searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     super(table, primaryKeySchema, valueSchema, searchable);
     this.db = db;
@@ -85,13 +77,45 @@ export class PostgresKVRepository<
     `;
     await this.db.query(sql);
 
-    for (const column of this.searchable) {
-      if (column !== this.primaryKeyColumns()[0]) {
-        /* Makes other columns searchable, but excludes the first column 
-         of a primary key (which would be redundant) */
-        const sql = `CREATE INDEX IF NOT EXISTS "${this.table}_${column as string}"
-            ON "${this.table}" (${column as string})`;
-        await this.db.query(sql);
+    // Get primary key columns to avoid creating redundant indexes
+    const pkColumns = this.primaryKeyColumns();
+    const pkColumnSet = new Set(pkColumns);
+
+    // Track created indexes to avoid duplicates and redundant indexes
+    const createdIndexes = new Set<string>();
+
+    for (const searchSpec of this.searchable) {
+      // Handle both single column and compound indexes
+      const columns = Array.isArray(searchSpec) ? searchSpec : [searchSpec];
+
+      // Skip if this is just the primary key or a prefix of it
+      if (columns.length <= pkColumns.length) {
+        const isPkPrefix = columns.every((col, idx) => col === pkColumns[idx]);
+        if (isPkPrefix) continue;
+      }
+
+      // Create index name and column list
+      const indexName = `${this.table}_${columns.join("_")}`;
+      const columnList = columns.map((col) => `"${String(col)}"`).join(", ");
+
+      // Skip if we've already created this index or if it's redundant
+      const columnKey = columns.join(",");
+      if (createdIndexes.has(columnKey)) continue;
+
+      // Check if this index would be redundant with an existing one
+      const isRedundant = Array.from(createdIndexes).some((existing) => {
+        const existingCols = existing.split(",");
+        return (
+          existingCols.length >= columns.length &&
+          columns.every((col, idx) => col === existingCols[idx])
+        );
+      });
+
+      if (!isRedundant) {
+        await this.db.query(
+          `CREATE INDEX IF NOT EXISTS "${indexName}" ON "${this.table}" (${columnList})`
+        );
+        createdIndexes.add(columnKey);
       }
     }
   }
@@ -186,20 +210,43 @@ export class PostgresKVRepository<
    */
   public async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
     await this.dbPromise;
-    const search = Object.keys(key);
-    if (search.length !== 1) {
-      //TODO: make this work with any prefix of primary key
-      throw new Error("Search must be a single key");
+    const searchKeys = Object.keys(key);
+    if (searchKeys.length === 0) {
+      return undefined;
     }
+
+    // Find the best matching index for the search
+    const bestIndex = this.findBestMatchingIndex(searchKeys);
+    if (!bestIndex) {
+      throw new Error("No suitable index found for the search criteria");
+    }
+
+    // Convert single key to array for consistent handling
+    const indexCols = Array.isArray(bestIndex) ? bestIndex : [bestIndex];
+
+    // Build the WHERE clause using the best matching index
+    const whereClauses = indexCols
+      .map((col, idx) => `"${String(col)}" = $${idx + 1}`)
+      .join(" AND ");
+    const params = indexCols.map((col) => key[col]);
 
     const sql = `
       SELECT * FROM "${this.table}"
-      WHERE ${search[0]} = $1
+      WHERE ${whereClauses}
     `;
-    const result = await this.db.query<Combined, any[]>(sql, [key[search[0]]]);
-    if (result.rows.length > 0) {
-      this.events.emit("search", key, result.rows);
-      return result.rows;
+
+    const result = await this.db.query<Combined, any[]>(sql, params);
+
+    // Filter results for any additional search keys not covered by the index
+    const remainingKeys = searchKeys.filter((k) => !indexCols.includes(k as keyof Combined));
+    const filteredValue =
+      remainingKeys.length > 0
+        ? result.rows.filter((row) => remainingKeys.every((k) => row[k] === key[k]))
+        : result.rows;
+
+    if (filteredValue.length > 0) {
+      this.events.emit("search", key, filteredValue);
+      return filteredValue;
     } else {
       this.events.emit("search", key, undefined);
       return undefined;

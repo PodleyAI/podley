@@ -12,6 +12,10 @@ import {
   Value,
   PrimaryKeySchema,
   ValueSchema,
+  CompoundKey,
+  CompoundValue,
+  CompoundPrimaryKeySchema,
+  CompoundValueSchema,
 } from "./genericKVRepositoryTests";
 import { nanoid } from "nanoid";
 import { describe } from "bun:test";
@@ -29,6 +33,14 @@ describe("PostgresKVRepository", () => {
         `sql_test_${nanoid()}`,
         PrimaryKeySchema,
         ValueSchema
+      ),
+    async () =>
+      new PostgresKVRepository<CompoundKey, CompoundValue>(
+        db,
+        `sql_test_${nanoid()}`,
+        CompoundPrimaryKeySchema,
+        CompoundValueSchema,
+        ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
       )
   );
 });

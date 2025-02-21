@@ -45,15 +45,17 @@ export class FileKVRepository<
    * @param folderPath - The directory path where the JSON files will be stored
    * @param primaryKeySchema - Schema defining the structure of the primary key
    * @param valueSchema - Schema defining the structure of the values
-   * @param searchable - Array of keys that can be used for searching (Note: search is not supported in this implementation)
+   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   *                    while each array creates a compound index with columns in the specified order.
+   *                    Note: search is not supported in this implementation.
    */
   constructor(
     folderPath: string,
     primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    searchable: Array<keyof Combined> = []
+    searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
-    super(primaryKeySchema, valueSchema, searchable);
+    super(primaryKeySchema, valueSchema, searchable as Array<keyof Combined>);
     this.folderPath = path.dirname(folderPath);
     try {
       mkdirSync(this.folderPath, { recursive: true });

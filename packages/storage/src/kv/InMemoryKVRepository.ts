@@ -41,12 +41,13 @@ export class InMemoryKVRepository<
    * Creates a new InMemoryKVRepository instance
    * @param primaryKeySchema - Schema defining the structure of primary keys
    * @param valueSchema - Schema defining the structure of values
-   * @param searchable - Array of field names that can be searched
+   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
     primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    searchable: Array<keyof Combined> = []
+    searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     super(primaryKeySchema, valueSchema, searchable);
   }
@@ -84,18 +85,43 @@ export class InMemoryKVRepository<
    * Searches for entries matching a partial key
    * @param key - Partial key object to search for
    * @returns Array of matching combined objects
-   * @throws Error if search criteria contains more than one key
+   * @throws Error if search criteria outside of searchable fields
    */
   async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
-    const search = Object.keys(key);
-    if (search.length !== 1) {
-      throw new Error("Search must be a single key");
+    const searchKeys = Object.keys(key);
+    if (searchKeys.length === 0) {
+      return undefined;
     }
-    const results = Array.from(this.values.entries())
-      .filter(([_fingerprint, value]) => value[search[0]] === key[search[0]])
-      .map(([_id, value]) => value);
-    this.events.emit("search", key, results);
-    return results;
+
+    // Find the best matching index
+    const bestIndex = this.findBestMatchingIndex(searchKeys);
+    if (!bestIndex) {
+      throw new Error("No suitable index found for the search criteria");
+    }
+
+    // Convert single key to array for consistent handling
+    const indexCols = Array.isArray(bestIndex) ? bestIndex : [bestIndex];
+
+    // Validate that we have all required index values and they are valid
+    for (const col of indexCols) {
+      const val = key[col];
+      if (val === undefined) {
+        throw new Error(`Missing value for indexed column: ${String(col)}`);
+      }
+    }
+
+    // Filter results based on the search criteria
+    const results = Array.from(this.values.values()).filter((item) =>
+      Object.entries(key).every(([k, v]) => item[k] === v)
+    );
+
+    if (results.length > 0) {
+      this.events.emit("search", key, results);
+      return results;
+    } else {
+      this.events.emit("search", key, undefined);
+      return undefined;
+    }
   }
 
   /**

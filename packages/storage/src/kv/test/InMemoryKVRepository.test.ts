@@ -6,13 +6,28 @@
 //    *******************************************************************************
 
 import { InMemoryKVRepository } from "../InMemoryKVRepository";
-import { runGenericKVRepositoryTests } from "./genericKVRepositoryTests";
-import { PrimaryKey, Value, PrimaryKeySchema, ValueSchema } from "./genericKVRepositoryTests";
+import {
+  runGenericKVRepositoryTests,
+  PrimaryKey,
+  Value,
+  PrimaryKeySchema,
+  ValueSchema,
+  CompoundKey,
+  CompoundValue,
+  CompoundPrimaryKeySchema,
+  CompoundValueSchema,
+} from "./genericKVRepositoryTests";
 import { describe } from "bun:test";
 
 describe("InMemoryKVRepository", () => {
   runGenericKVRepositoryTests(
     async () => new InMemoryKVRepository(),
-    async () => new InMemoryKVRepository<PrimaryKey, Value>(PrimaryKeySchema, ValueSchema)
+    async () => new InMemoryKVRepository<PrimaryKey, Value>(PrimaryKeySchema, ValueSchema),
+    async () =>
+      new InMemoryKVRepository<CompoundKey, CompoundValue>(
+        CompoundPrimaryKeySchema,
+        CompoundValueSchema,
+        ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
+      )
   );
 });

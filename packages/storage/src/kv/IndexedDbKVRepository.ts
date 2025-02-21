@@ -40,24 +40,50 @@ export class IndexedDbKVRepository<
    * @param table - Name of the IndexedDB store to use.
    * @param primaryKeySchema - Schema defining the structure of primary keys.
    * @param valueSchema - Schema defining the structure of values.
-   * @param searchable - Array of properties that can be searched.
+   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
     public table: string = "kv_store",
     primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    searchable: Array<keyof Combined> = []
+    searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
-    super(primaryKeySchema, valueSchema, searchable);
+    super(primaryKeySchema, valueSchema, searchable as Array<keyof Combined>);
     const pkColumns = super.primaryKeyColumns() as string[];
 
-    const expectedIndexes: ExpectedIndexDefinition[] = this.searchable
-      .filter((field) => !pkColumns.includes(String(field)))
-      .map((field) => ({
-        name: String(field),
-        keyPath: `value.${String(field)}`,
-        options: { unique: false },
-      }));
+    // Create index definitions for both single and compound indexes
+    const expectedIndexes: ExpectedIndexDefinition[] = [];
+
+    for (const spec of this.searchable) {
+      if (Array.isArray(spec)) {
+        // Handle compound index
+        const columns = spec as Array<keyof Combined>;
+        // Skip if this is just the primary key or a prefix of it
+        if (columns.length <= pkColumns.length) {
+          const isPkPrefix = columns.every((col, idx) => col === pkColumns[idx]);
+          if (isPkPrefix) continue;
+        }
+
+        // Create compound index name and keyPath
+        const indexName = columns.join("_");
+        expectedIndexes.push({
+          name: indexName,
+          keyPath: columns.map((col) => String(col)),
+          options: { unique: false },
+        });
+      } else {
+        // Handle single column index
+        const field = spec as keyof Combined;
+        if (!pkColumns.includes(String(field))) {
+          expectedIndexes.push({
+            name: String(field),
+            keyPath: String(field),
+            options: { unique: false },
+          });
+        }
+      }
+    }
 
     const primaryKey = pkColumns.length === 1 ? pkColumns[0] : pkColumns;
 
@@ -74,6 +100,7 @@ export class IndexedDbKVRepository<
   async putKeyValue(key: Key, value: Value): Promise<void> {
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
+    // Merge key and value, ensuring all fields are at the root level for indexing
     const record = { ...key, ...value };
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readwrite");
@@ -156,36 +183,51 @@ export class IndexedDbKVRepository<
    */
   async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
     if (!this.dbPromise) throw new Error("Database not initialized");
-    const queryKeys = Object.keys(key);
-    if (queryKeys.length === 0) return undefined;
+    const searchKeys = Object.keys(key);
+    if (searchKeys.length === 0) {
+      return undefined;
+    }
+
+    // Find the best matching index for the search
+    const bestIndex = this.findBestMatchingIndex(searchKeys);
+    if (!bestIndex) {
+      throw new Error("No suitable index found for the search criteria");
+    }
+
     const db = await this.dbPromise;
+
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readonly");
       const store = transaction.objectStore(this.table);
-      const searchableKey = queryKeys.find((k) => this.searchable.includes(k as keyof Combined));
-      if (searchableKey) {
-        try {
-          const index = store.index(searchableKey);
-          const request = index.getAll(key[searchableKey as keyof Combined]);
-          request.onsuccess = () => {
-            const results = request.result.filter((item) =>
-              Object.entries(key).every(([k, v]) => item[k] === v)
-            );
-            resolve(results.length > 0 ? results : undefined);
-          };
-          request.onerror = () => reject(request.error);
-          return;
-        } catch (err) {
-          // Fall back to a full scan
+
+      // For compound indexes, the index name is the columns joined by underscore
+      const indexName = Array.isArray(bestIndex) ? bestIndex.join("_") : String(bestIndex);
+      const index = store.index(indexName);
+
+      // Get the values for the index columns
+      const indexCols = Array.isArray(bestIndex) ? bestIndex : [bestIndex];
+      const indexValues: IDBValidKey[] = [];
+
+      // Validate and collect all required index values
+      for (const col of indexCols) {
+        const val = key[col];
+        if (val === undefined || (typeof val !== "string" && typeof val !== "number")) {
+          throw new Error(`Missing or invalid value for indexed column: ${String(col)}`);
         }
+        indexValues.push(val);
       }
-      const getAllRequest = store.getAll();
-      getAllRequest.onsuccess = () => {
-        let results = getAllRequest.result;
-        results = results.filter((item) => Object.entries(key).every(([k, v]) => item[k] === v));
+
+      // Use the index with the collected values
+      const request = index.getAll(indexValues.length === 1 ? indexValues[0] : indexValues);
+
+      request.onsuccess = () => {
+        // Filter results for any additional search keys
+        const results = request.result.filter((item) =>
+          Object.entries(key).every(([k, v]) => item[k] === v)
+        );
         resolve(results.length > 0 ? results : undefined);
       };
-      getAllRequest.onerror = () => reject(getAllRequest.error);
+      request.onerror = () => reject(request.error);
     });
   }
 
