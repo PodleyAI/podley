@@ -22,6 +22,13 @@ export function ensureIndexedDbTable(
   expectedIndexes: ExpectedIndexDefinition[] = []
 ): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
+    // Close any existing connections first
+    const closeRequest = indexedDB.open(tableName);
+    closeRequest.onsuccess = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      db.close();
+    };
+
     // First try to open without version to check existing structure
     const checkRequest = indexedDB.open(tableName);
 

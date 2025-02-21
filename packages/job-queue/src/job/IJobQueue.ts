@@ -7,13 +7,16 @@
 
 import { ILimiter } from "./ILimiter";
 import { Job, JobStatus } from "./Job";
-import { JobError, JobQueueStats, JobProgressListener } from "./JobQueue";
+import { JobQueueStats } from "./JobQueue";
+import { JobProgressListener } from "./JobQueueEventListeners";
+import { JobError } from "./JobError";
+import { IQueueStorage } from "./IQueueStorage";
 
 /**
  * Common options for all job queues
  */
 
-export interface JobQueueOptions {
+export interface JobQueueOptions<Input, Output> {
   /**
    * Time in milliseconds after which completed jobs should be deleted
    * Set to 0 to delete immediately, undefined to never delete
@@ -23,7 +26,7 @@ export interface JobQueueOptions {
    * Time in milliseconds after which failed jobs should be deleted
    * Set to 0 to delete immediately, undefined to never delete
    */
-  deleteAfterErrorMs?: number;
+  deleteAfterFailureMs?: number;
   /**
    * How often to check for new jobs in milliseconds
    */
@@ -32,6 +35,11 @@ export interface JobQueueOptions {
    * Rate limiter to control job execution
    */
   limiter?: ILimiter;
+
+  /**
+   * Storage to use for the job queue
+   */
+  storage?: IQueueStorage<Input, Output>;
 } /**
  * Defines how a job queue operates in different contexts
  */

@@ -154,7 +154,7 @@ import {
   HuggingFaceLocal_TextRewriterRun,
 } from "@ellmers/ai-provider/hf-transformers";
 
-import { InMemoryJobQueue } from "@ellmers/storage/inmemory";
+import { JobQueue } from "@ellmers/job-queue";
 
 // config and start up
 getGlobalModelRepository(new InMemoryModelRepository());
@@ -186,7 +186,7 @@ aiProviderRegistry.registerRunFn(
   LOCAL_ONNX_TRANSFORMERJS,
   HuggingFaceLocal_TextRewriterRun
 );
-const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>("test", Job, {
+const jobQueue = new JobQueue<TaskInput, TaskOutput>("test", Job, {
   limiter: new InMemoryRateLimiter(4, 1),
 });
 getTaskQueueRegistry().registerQueue(jobQueue);
@@ -245,7 +245,7 @@ LLM providers have long running functions. These are handled by a Job Queue. The
 
 #### In memory:
 
-- **`registerHuggingfaceLocalTasksInMemory`** function sets up the Huggingface Local provider (above), and a InMemoryJobQueue with a Concurrency Limiter so the ONNX queue only runs one task/job at a time.
+- **`registerHuggingfaceLocalTasksInMemory`** function sets up the Huggingface Local provider (above), and a JobQueue with a Concurrency Limiter so the ONNX queue only runs one task/job at a time.
 - **`registerMediaPipeTfJsLocalInMemory`** does the same for MediaPipe.
 
 #### Using Sqlite:

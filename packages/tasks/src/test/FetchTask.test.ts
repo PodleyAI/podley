@@ -13,7 +13,7 @@ import {
   TaskInput,
   TaskOutput,
 } from "@ellmers/task-graph";
-import { InMemoryJobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
+import { JobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
 import { sleep } from "@ellmers/util";
 
 // Create base mock response
@@ -90,7 +90,7 @@ describe("FetchTask", () => {
     const rateLimiter = new InMemoryRateLimiter(1, 1); // 1 request per 1 minute window
 
     // Create a queue with the base Job type to match TaskQueueRegistry's expectations
-    const queue = new InMemoryJobQueue<TaskInput, TaskOutput>(queueName, FetchJob, {
+    const queue = new JobQueue<TaskInput, TaskOutput>(queueName, FetchJob, {
       limiter: rateLimiter,
       waitDurationInMilliseconds: 1,
     });

@@ -6,9 +6,8 @@
 //    *******************************************************************************
 
 import { runGenericJobQueueTests, TestJob } from "./genericJobQueueTests";
-import { SqliteJobQueue } from "../storage/SqliteJobQueue";
+import { SqliteQueueStorage } from "../storage/SqliteQueueStorage";
 import { SqliteRateLimiter } from "../storage/SqliteRateLimiter";
-import { nanoid } from "nanoid";
 import { describe } from "bun:test";
 
 const wrapper = function () {
@@ -25,14 +24,10 @@ const module = wrapper();
 // Create an in-memory database
 const db = new module(":memory:");
 
-function createSqliteJobQueue() {
-  const queueName = `sqlite_test_queue_${nanoid()}`;
-  return new SqliteJobQueue(db, queueName, TestJob, {
-    limiter: new SqliteRateLimiter(db, queueName, 4, 1),
-    waitDurationInMilliseconds: 1,
-  }).ensureTableExists();
-}
-
-describe("SqliteJobQueue", () => {
-  runGenericJobQueueTests(createSqliteJobQueue);
+describe("JobQueue+SqliteQueueStorage", () => {
+  runGenericJobQueueTests(
+    (queueName: string) => new SqliteQueueStorage(db, queueName),
+    (queueName: string, maxRequests: number, windowSizeInMinutes: number) =>
+      new SqliteRateLimiter(db, queueName, maxRequests, windowSizeInMinutes)
+  );
 });

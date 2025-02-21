@@ -12,7 +12,7 @@ import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
 } from "@ellmers/task-graph";
-import { InMemoryJobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
+import { JobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
 import { sleep } from "@ellmers/util";
 // Constants for testing
 const TEST_PROVIDER = "test-provider";
@@ -31,14 +31,14 @@ describe("AiProviderRegistry", () => {
     return { result: "success with progress" };
   };
 
-  let queue = new InMemoryJobQueue(TEST_PROVIDER, AiJob, {
+  let queue = new JobQueue(TEST_PROVIDER, AiJob<TaskInput, TaskOutput>, {
     limiter: new InMemoryRateLimiter(4, 1),
     waitDurationInMilliseconds: 1,
   });
   let aiProviderRegistry: AiProviderRegistry;
 
   beforeEach(() => {
-    queue = new InMemoryJobQueue(TEST_PROVIDER, AiJob, {
+    queue = new JobQueue(TEST_PROVIDER, AiJob<TaskInput, TaskOutput>, {
       limiter: new InMemoryRateLimiter(4, 1),
       waitDurationInMilliseconds: 1,
     });

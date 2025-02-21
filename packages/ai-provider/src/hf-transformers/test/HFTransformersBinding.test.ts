@@ -14,8 +14,9 @@ import {
 } from "@ellmers/ai";
 import {
   ConcurrencyLimiter,
-  InMemoryJobQueue,
-  SqliteJobQueue,
+  InMemoryQueueStorage,
+  JobQueue,
+  SqliteQueueStorage,
   SqliteRateLimiter,
 } from "@ellmers/job-queue";
 import {
@@ -28,6 +29,8 @@ import {
 import { sleep } from "@ellmers/util";
 import { registerHuggingfaceLocalTasks } from "../bindings/registerTasks";
 import { LOCAL_ONNX_TRANSFORMERJS } from "../model/ONNXTransformerJsModel";
+import { nanoid } from "nanoid";
+import { AiProviderInput } from "@ellmers/ai";
 
 const wrapper = function () {
   if (process["isBun"]) {
@@ -52,19 +55,17 @@ export function getDatabase(name = ":memory:"): any {
 describe("HFTransformersBinding", () => {
   describe("InMemoryJobQueue", () => {
     it("Should have an item queued", async () => {
+      registerHuggingfaceLocalTasks();
+      setGlobalModelRepository(new InMemoryModelRepository());
       const queueRegistry = getTaskQueueRegistry();
-      const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
+      const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
         LOCAL_ONNX_TRANSFORMERJS,
         AiJob<TaskInput, TaskOutput>,
         {
           limiter: new ConcurrencyLimiter(1, 10),
-          waitDurationInMilliseconds: 1,
         }
       );
       queueRegistry.registerQueue(jobQueue);
-
-      registerHuggingfaceLocalTasks();
-      setGlobalModelRepository(new InMemoryModelRepository());
 
       const model = {
         name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
@@ -113,11 +114,14 @@ describe("HFTransformersBinding", () => {
       await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
       await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
 
-      const jobQueue = new SqliteJobQueue<TaskInput, TaskOutput>(
-        getDatabase(":memory:"),
+      const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
         "test",
         AiJob<TaskInput, TaskOutput>,
         {
+          storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
+            getDatabase(":memory:"),
+            "test"
+          ),
           limiter: new SqliteRateLimiter(getDatabase(":memory:"), "test", 4, 1),
           waitDurationInMilliseconds: 1,
         }

@@ -8,22 +8,24 @@
 import type { Database } from "bun:sqlite";
 import { nanoid } from "nanoid";
 import { makeFingerprint, toSQLiteTimestamp } from "@ellmers/util";
-import { JobError, JobQueue } from "../job/JobQueue";
-import { JobQueueOptions } from "job/IJobQueue";
+import { JobError } from "job/JobError";
 import { Job, JobStatus } from "../job/Job";
+import { JobStorageFormat } from "job/IQueueStorage";
+import { IQueueStorage } from "../job/IQueueStorage";
 
 /**
  * SQLite implementation of a job queue.
  * Provides storage and retrieval for job execution states using SQLite.
  */
-export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
+export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, Output> {
   constructor(
     protected db: Database,
-    queue: string,
-    jobClass: typeof Job<Input, Output> = Job<Input, Output>,
-    options: JobQueueOptions
+    protected queueName: string,
+    protected options?: {
+      deleteAfterCompletionMs?: number;
+      deleteAfterFailureMs?: number;
+    }
   ) {
-    super(queue, jobClass, options);
     this.ensureTableExists();
   }
 
@@ -39,9 +41,9 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         output TEXT,
         retries INTEGER default 0,
         maxRetries INTEGER default 23,
-        runAfter TEXT DEFAULT CURRENT_TIMESTAMP,
+        runAfter TEXT NOT NULL,
         lastRanAt TEXT,
-        createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        createdAt TEXT NOT NULL,
         completedAt TEXT,
         deadlineAt TEXT,
         error TEXT,
@@ -63,16 +65,17 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @param job - The job to add
    * @returns The ID of the added job
    */
-  public async add(job: Job<Input, Output>) {
-    job.queueName = this.queueName;
-    const fingerprint = await makeFingerprint(job.input);
-    job.fingerprint = fingerprint;
+  public async add(job: JobStorageFormat<Input, Output>) {
+    const now = new Date().toISOString();
     job.jobRunId = job.jobRunId ?? nanoid();
+    job.queue = this.queueName;
+    job.fingerprint = await makeFingerprint(job.input);
     job.status = JobStatus.PENDING;
     job.progress = 0;
     job.progressMessage = "";
     job.progressDetails = null;
-    job.queue = this;
+    job.createdAt = now;
+    job.runAfter = now;
 
     const AddQuery = `
       INSERT INTO job_queue(
@@ -85,9 +88,10 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         jobRunId, 
         progress, 
         progressMessage, 
-        progressDetails
+        progressDetails,
+        createdAt
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING id`;
 
     const stmt = this.db.prepare<
@@ -103,20 +107,22 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         progress: number,
         progressMessage: string,
         progressDetails: string | null,
+        createdAt: string,
       ]
     >(AddQuery);
 
     const result = stmt.get(
-      this.queueName,
-      fingerprint,
+      job.queue,
+      job.fingerprint,
       JSON.stringify(job.input),
-      toSQLiteTimestamp(job.runAfter),
-      toSQLiteTimestamp(job.deadlineAt),
-      job.maxRetries,
+      job.runAfter,
+      job.deadlineAt ?? null,
+      job.maxRetries!,
       job.jobRunId,
       job.progress,
       job.progressMessage,
-      job.progressDetails ? JSON.stringify(job.progressDetails) : null
+      job.progressDetails ? JSON.stringify(job.progressDetails) : null,
+      job.createdAt
     ) as { id: string } | undefined;
 
     job.id = result?.id;
@@ -134,9 +140,23 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         FROM job_queue
         WHERE id = $1 AND queue = $2
         LIMIT 1`;
-    const stmt = this.db.prepare<Job<Input, Output>, [id: string, queue: string]>(JobQuery);
-    const result = stmt.get(id, this.queueName) as any;
-    return result ? this.createNewJob(result) : undefined;
+    const stmt = this.db.prepare<
+      JobStorageFormat<Input, Output> & {
+        input: string;
+        output: string | null;
+        progressDetails: string | null;
+      },
+      [id: string, queue: string]
+    >(JobQuery);
+    const result = stmt.get(id, this.queueName);
+    if (!result) return undefined;
+
+    // Parse JSON fields
+    if (result.input) result.input = JSON.parse(result.input);
+    if (result.output) result.output = JSON.parse(result.output);
+    if (result.progressDetails) result.progressDetails = JSON.parse(result.progressDetails);
+
+    return result;
   }
 
   /**
@@ -153,11 +173,23 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         AND status = $2
         ORDER BY runAfter ASC
         LIMIT ${num}`;
-    const stmt = this.db.prepare(FutureJobQuery);
-    const ret: Array<Job<Input, Output>> = [];
-    const result = stmt.all(this.queueName, status) as any[];
-    for (const job of result || []) ret.push(this.createNewJob(job));
-    return ret;
+    const stmt = this.db.prepare<
+      JobStorageFormat<Input, Output> & {
+        input: string;
+        output: string | null;
+        progressDetails: string | null;
+      },
+      [queue: string, status: string]
+    >(FutureJobQuery);
+    const result = stmt.all(this.queueName, status);
+    return (result || []).map((details) => {
+      // Parse JSON fields
+      if (details.input) details.input = JSON.parse(details.input);
+      if (details.output) details.output = JSON.parse(details.output);
+      if (details.progressDetails) details.progressDetails = JSON.parse(details.progressDetails);
+
+      return details;
+    });
   }
 
   /**
@@ -172,9 +204,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         SET status = $1
         WHERE id = $2 AND queue = $3`;
     const stmt = this.db.prepare(AbortQuery);
-    const result = stmt.run(JobStatus.ABORTING, jobId, this.queueName);
-    this.abortJob(jobId);
-    return result.changes > 0 ? true : false;
+    stmt.run(JobStatus.ABORTING, jobId, this.queueName);
   }
 
   /**
@@ -182,16 +212,28 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @param jobRunId - The ID of the job run to retrieve
    * @returns An array of jobs
    */
-  public async getJobsByRunId(jobRunId: string) {
+  public async getByRunId(jobRunId: string) {
     const JobsByRunIdQuery = `
       SELECT *
         FROM job_queue
         WHERE jobRunId = $1 AND queue = $2`;
-    const stmt = this.db.prepare(JobsByRunIdQuery);
-    const result = stmt.all(jobRunId, this.queueName) as any[];
-    const ret: Array<Job<Input, Output>> = [];
-    for (const job of result || []) ret.push(this.createNewJob(job));
-    return ret;
+    const stmt = this.db.prepare<
+      JobStorageFormat<Input, Output> & {
+        input: string;
+        output: string | null;
+        progressDetails: string | null;
+      },
+      [jobRunId: string, queue: string]
+    >(JobsByRunIdQuery);
+    const result = stmt.all(jobRunId, this.queueName);
+    return (result || []).map((details) => {
+      // Parse JSON fields
+      if (details.input) details.input = JSON.parse(details.input);
+      if (details.output) details.output = JSON.parse(details.output);
+      if (details.progressDetails) details.progressDetails = JSON.parse(details.progressDetails);
+
+      return details;
+    });
   }
 
   /**
@@ -201,24 +243,40 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @returns The next job or undefined if no job is available
    */
   public async next() {
-    const stmt = this.db.prepare<any, [JobStatus, string, JobStatus]>(
+    const now = new Date().toISOString();
+
+    // Then, get the next job to process
+    const stmt = this.db.prepare<
+      JobStorageFormat<Input, Output> & {
+        input: string;
+        output: string | null;
+        progressDetails: string | null;
+      },
+      [JobStatus, string, string, JobStatus, string]
+    >(
       `
       UPDATE job_queue 
-      SET status = $1, lastRanAt = CURRENT_TIMESTAMP
+      SET status = $1, lastRanAt = $2
       WHERE id = (
         SELECT id 
         FROM job_queue 
-        WHERE queue = $2 
-        AND status = $3 
-        AND runAfter <= CURRENT_TIMESTAMP 
+        WHERE queue = $3 
+        AND status = $4 
+        AND runAfter <= $5 
         ORDER BY runAfter ASC 
         LIMIT 1
       )
       RETURNING *`
     );
-    const result = stmt.get(JobStatus.PROCESSING, this.queueName, JobStatus.PENDING);
+    const result = stmt.get(JobStatus.PROCESSING, now, this.queueName, JobStatus.PENDING, now);
+    if (!result) return undefined;
 
-    return result?.id ? this.createNewJob(result) : undefined;
+    // Parse JSON fields
+    if (result.input) result.input = JSON.parse(result.input);
+    if (result.output) result.output = JSON.parse(result.output);
+    if (result.progressDetails) result.progressDetails = JSON.parse(result.progressDetails);
+
+    return result;
   }
 
   /**
@@ -244,15 +302,12 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * - For a retryable error, updates runAfter with the retry date.
    * - Marks the job as FAILED for permanent or generic errors.
    */
-  public async complete(id: string, output: Output | null = null, error?: JobError) {
-    const job = await this.get(id);
-    if (!job) throw new Error(`Job ${id} not found`);
-
-    this.updateJobAfterExecution(job, error, output);
-
+  public async complete(job: JobStorageFormat<Input, Output>) {
+    const now = new Date().toISOString();
     let updateQuery: string;
     let params: any[];
-    if (error && job.status === JobStatus.PENDING) {
+
+    if (job.status === JobStatus.PENDING) {
       updateQuery = `
           UPDATE job_queue 
             SET 
@@ -260,18 +315,21 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
               errorCode = ?, 
               status = ?, 
               runAfter = ?, 
-              progress = ?, 
+              progress = 0, 
               progressMessage = "", 
               progressDetails = NULL, 
-              retries = retries + 1 
+              retries = retries + 1,
+              lastRanAt = ?
             WHERE id = ? AND queue = ?`;
       params = [
-        error.message,
-        error.name,
+        job.error ?? null,
+        job.errorCode ?? null,
         job.status,
-        job.runAfter.toISOString(),
-        job.progress,
-        id,
+        job.runAfter,
+        now,
+        job.status,
+        now,
+        job.id,
         this.queueName,
       ];
     } else {
@@ -282,26 +340,25 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
               error = ?, 
               errorCode = ?, 
               status = ?, 
-              progress = ?, 
-              retries = retries + 1, 
+              progress = 100, 
               progressMessage = "", 
               progressDetails = NULL, 
-              completedAt = CURRENT_TIMESTAMP
+              lastRanAt = ?,
+              completedAt = ?
             WHERE id = ? AND queue = ?`;
       params = [
-        JSON.stringify(output),
+        job.output ? JSON.stringify(job.output) : null,
         job.error ?? null,
         job.errorCode ?? null,
         job.status,
-        job.progress,
-        id,
+        now,
+        now,
+        job.id,
         this.queueName,
       ];
     }
-    this.db.exec(updateQuery, params);
-    if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-      await this.onCompleted(job.id, job.status, output, error);
-    }
+    const stmt = this.db.prepare(updateQuery);
+    stmt.run(...params);
   }
 
   public async deleteAll() {
@@ -310,7 +367,6 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         WHERE queue = ?`;
     const stmt = this.db.prepare(ClearQuery);
     stmt.run(this.queueName);
-    await this.limiter.clear();
   }
 
   /**
@@ -324,19 +380,18 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
       SELECT output
         FROM job_queue
         WHERE queue = ? AND fingerprint = ? AND status = ?`;
-    const stmt = this.db.prepare(OutputQuery);
-    const result = stmt.get(this.queueName, fingerprint, JobStatus.COMPLETED) as
-      | {
-          output: string;
-        }
-      | undefined;
+    const stmt = this.db.prepare<
+      { output: string },
+      [queue: string, fingerprint: string, status: string]
+    >(OutputQuery);
+    const result = stmt.get(this.queueName, fingerprint, JobStatus.COMPLETED);
     return result?.output ? JSON.parse(result.output) : null;
   }
 
   /**
    * Implements the abstract saveProgress method from JobQueue
    */
-  protected async saveProgress(
+  public async saveProgress(
     jobId: unknown,
     progress: number,
     message: string,
@@ -356,8 +411,28 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
   /**
    * Deletes a job by its ID
    */
-  protected async deleteJob(jobId: unknown): Promise<void> {
-    const stmt = this.db.prepare("DELETE FROM job_queue WHERE id = ? AND queue = ?");
+  public async delete(jobId: unknown): Promise<void> {
+    const DeleteQuery = `
+      DELETE FROM job_queue
+        WHERE id = ? AND queue = ?`;
+    const stmt = this.db.prepare(DeleteQuery);
     stmt.run(String(jobId), this.queueName);
+  }
+
+  /**
+   * Delete jobs with a specific status older than a cutoff date
+   * @param status - Status of jobs to delete
+   * @param olderThanMs - Delete jobs completed more than this many milliseconds ago
+   */
+  public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
+    const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
+    const DeleteQuery = `
+      DELETE FROM job_queue
+        WHERE queue = ?
+        AND status = ?
+        AND completedAt IS NOT NULL
+        AND completedAt <= ?`;
+    const stmt = this.db.prepare(DeleteQuery);
+    stmt.run(this.queueName, status, cutoffDate);
   }
 }

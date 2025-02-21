@@ -5,7 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import type { JobProgressListener, JobQueue } from "./JobQueue";
+import type { JobQueue } from "./JobQueue";
+import type { JobProgressListener } from "./JobQueueEventListeners";
 
 export enum JobStatus {
   PENDING = "PENDING",
@@ -18,7 +19,7 @@ export enum JobStatus {
 /**
  * Details about a job that reflect the structure in the database.
  */
-export interface JobDetails<Input, Output> {
+export type JobConstructorParam<Input, Output> = {
   id?: unknown;
   jobRunId?: string;
   queueName?: string;
@@ -29,16 +30,16 @@ export interface JobDetails<Input, Output> {
   fingerprint?: string;
   maxRetries?: number;
   status?: JobStatus;
-  createdAt?: Date | string;
-  deadlineAt?: Date | string | null;
-  lastRanAt?: Date | string | null;
-  runAfter?: Date | string | null;
-  completedAt?: Date | string | null;
+  createdAt?: Date;
+  deadlineAt?: Date | null;
+  lastRanAt?: Date | null;
+  runAfter?: Date | null;
+  completedAt?: Date | null;
   retries?: number;
   progress?: number;
   progressMessage?: string;
   progressDetails?: Record<string, any> | null;
-}
+};
 
 /**
  * A job that can be executed by a JobQueue.
@@ -46,7 +47,7 @@ export interface JobDetails<Input, Output> {
  * @template Input - The type of the job's input
  * @template Output - The type of the job's output
  */
-export class Job<Input, Output> implements JobDetails<Input, Output> {
+export class Job<Input, Output> {
   public id: unknown;
   public jobRunId: string | undefined;
   public queueName: string | undefined;
@@ -83,32 +84,27 @@ export class Job<Input, Output> implements JobDetails<Input, Output> {
     deadlineAt = null,
     retries = 0,
     lastRanAt = null,
-    runAfter = null,
+    runAfter = new Date(),
     progress = 0,
     progressMessage = "",
     progressDetails = null,
-  }: JobDetails<Input, Output>) {
-    if (typeof runAfter === "string") runAfter = new Date(runAfter);
-    if (typeof lastRanAt === "string") lastRanAt = new Date(lastRanAt);
-    if (typeof createdAt === "string") createdAt = new Date(createdAt);
-    if (typeof deadlineAt === "string") deadlineAt = new Date(deadlineAt);
-    if (typeof completedAt === "string") completedAt = new Date(completedAt);
+  }: JobConstructorParam<Input, Output>) {
+    this.runAfter = runAfter ?? new Date();
+    this.createdAt = createdAt ?? new Date();
+    this.lastRanAt = lastRanAt ?? null;
+    this.deadlineAt = deadlineAt ?? null;
+    this.completedAt = completedAt ?? null;
 
-    this.id = id;
-    this.fingerprint = fingerprint;
     this.queueName = queueName;
+    this.id = id;
+    this.jobRunId = jobRunId;
+    this.status = status;
+    this.fingerprint = fingerprint;
     this.input = input;
     this.maxRetries = maxRetries;
-    this.createdAt = createdAt ?? new Date();
-    this.runAfter = runAfter ?? createdAt ?? new Date();
-    this.status = status;
-    this.deadlineAt = deadlineAt;
     this.retries = retries;
-    this.lastRanAt = lastRanAt;
-    this.completedAt = completedAt;
     this.output = output;
     this.error = error;
-    this.jobRunId = jobRunId;
     this.progress = progress;
     this.progressMessage = progressMessage;
     this.progressDetails = progressDetails;

@@ -4,7 +4,7 @@
   - [Storage](#storage)
   - [Source Data](#source-data)
   - [LLM Providers](#llm-providers)
-  - [Job Queues](#job-queues)
+  - [Job Queue](#job-queue)
   - [Tasks](#tasks)
 - [Tasks](#tasks-1)
   - [Task Classes](#task-classes)
@@ -48,14 +48,14 @@ The system is composed of several different systems, several of which that can b
 - **OpenAI**: The OpenAI provider is a simple wrapper around the OpenAI API and is intended for running models in the cloud.\*
 - **Anthropic**: The Anthropic provider is a simple wrapper around the Anthropic API and is intended for running models in the cloud.\*
 
-## Job Queues
+## Job Queue
 
-Some tasks are run in a queue, so that a full task queue can resume where it left off (in concert with a TaskOutputRepository). Queues handling things like retries, timeouts, and other things that are not directly related to the task itself. There are several different queue implementations, including:
+Some tasks are run in a queue, so that a full task queue can resume where it left off (in concert with a TaskOutputRepository). Queues handling things like retries, timeouts, and other things that are not directly related to the task itself. There are several storage implementations:
 
-- **InMemoryJobQueue**: The InMemoryQueue is a simple in-memory queue that is not resumable.
-- **IndexedDbJobQueue**: The IndexedDbQueue is a queue that is stored in the browser's indexeddb and is resumable.
-- **SqliteJobQueue**: The SqliteQueue is a queue that is stored in a Sqlite database and is resumable.
-- **PostgresJobQueue**: The PostgresQueue is a queue that is stored in a Postgres database and is resumable.
+- **InMemoryQueueStorage**: The InMemoryQueueStorage is a simple in-memory queue storage that is not resumable.
+- **IndexedDbQueueStorage**: The IndexedDbQueueStorage is a queue storage that is stored in the browser's indexeddb and is resumable.
+- **SqliteQueueStorage**: The SqliteQueueStorage is a queue storage that is stored in a Sqlite database and is resumable.
+- **PostgresQueueStorage**: The PostgresQueueStorage is a queue storage that is stored in a Postgres database and is resumable.
 
 Queues can have limiters, like only running one task at a time, or based on rate limits.
 

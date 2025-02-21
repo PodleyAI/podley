@@ -5,19 +5,15 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { InMemoryJobQueue } from "../storage/InMemoryJobQueue";
-import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
-import { runGenericJobQueueTests, TestJob, TInput, TOutput } from "./genericJobQueueTests";
-import { nanoid } from "nanoid";
 import { describe } from "bun:test";
+import { InMemoryQueueStorage } from "../storage/InMemoryQueueStorage";
+import { runGenericJobQueueTests } from "./genericJobQueueTests";
+import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
 
-function createInMemoryJobQueue() {
-  return new InMemoryJobQueue<TInput, TOutput>(`in_memory_test_queue_${nanoid()}`, TestJob, {
-    limiter: new InMemoryRateLimiter(4, 1),
-    waitDurationInMilliseconds: 1,
-  });
-}
-
-describe("InMemoryJobQueue", () => {
-  runGenericJobQueueTests(createInMemoryJobQueue);
+describe("JobQueue+InMemoryQueueStorage", () => {
+  runGenericJobQueueTests(
+    (queueName: string) => new InMemoryQueueStorage(queueName),
+    (queueName: string, maxRequests: number, windowSizeInMinutes: number) =>
+      new InMemoryRateLimiter(maxRequests, windowSizeInMinutes)
+  );
 });
