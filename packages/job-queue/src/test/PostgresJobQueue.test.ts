@@ -17,14 +17,11 @@ import { Pool } from "pg";
 const db = new PGlite() as unknown as Pool;
 
 function createPostgresJobQueue() {
-  const queueName = `sqlite_test_queue_${nanoid()}`;
-  return new PostgresJobQueue(
-    db,
-    queueName,
-    new PostgresRateLimiter(db, queueName, 4, 1),
-    TestJob,
-    1
-  );
+  const queueName = `postgres_test_queue_${nanoid()}`;
+  return new PostgresJobQueue(db, queueName, TestJob, {
+    limiter: new PostgresRateLimiter(db, queueName, 4, 1),
+    waitDurationInMilliseconds: 1,
+  });
 }
 
 describe("PostgresJobQueue", () => {

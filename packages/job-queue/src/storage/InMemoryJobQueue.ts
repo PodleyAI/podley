@@ -7,9 +7,9 @@
 
 import { nanoid } from "nanoid";
 import { makeFingerprint, sleep } from "@ellmers/util";
-import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
+import { JobError, JobQueue } from "../job/JobQueue";
+import { JobQueueOptions } from "job/IJobQueue";
 import { Job, JobStatus } from "../job/Job";
-import { ILimiter } from "../job/ILimiter";
 /**
  * In-memory implementation of a job queue that manages asynchronous tasks.
  * Supports job scheduling, status tracking, and result caching.
@@ -18,17 +18,15 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
   /**
    * Creates a new in-memory job queue
    * @param queue - Name of the queue
-   * @param limiter - Rate limiter to control job execution
-   * @param waitDurationInMilliseconds - Polling interval for checking new jobs
    * @param jobClass - Optional custom Job class implementation
+   * @param options - Queue configuration options including limiter
    */
   constructor(
     queue: string,
-    limiter: ILimiter,
     jobClass: typeof Job<Input, Output> = Job<Input, Output>,
-    waitDurationInMilliseconds = 100
+    options: JobQueueOptions
   ) {
-    super(queue, limiter, jobClass, waitDurationInMilliseconds);
+    super(queue, jobClass, options);
     this.jobQueue = [];
   }
 
@@ -104,6 +102,7 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
     const job = top[0];
     if (job) {
       job.status = JobStatus.PROCESSING;
+      job.lastRanAt = new Date();
       return this.createNewJob(job, false);
     }
   }
@@ -157,40 +156,10 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
       throw new Error(`Job ${id} not found`);
     }
 
-    job.progress = 100;
-    job.progressMessage = "";
-    job.progressDetails = null;
-
-    if (error) {
-      job.error = error.message;
-      job.errorCode = error.name;
-      if (error instanceof RetryableJobError) {
-        job.retries++;
-        if (job.retries >= job.maxRetries) {
-          job.status = JobStatus.FAILED;
-          job.completedAt = new Date();
-        } else {
-          job.status = JobStatus.PENDING;
-          job.runAfter = error.retryDate;
-          job.progress = 0;
-        }
-      } else if (error instanceof PermanentJobError) {
-        job.status = JobStatus.FAILED;
-        job.completedAt = new Date();
-      } else {
-        job.status = JobStatus.FAILED;
-        job.completedAt = new Date();
-      }
-    } else {
-      job.status = JobStatus.COMPLETED;
-      job.completedAt = new Date();
-      job.output = output;
-      job.error = null;
-      job.errorCode = null;
-    }
+    this.updateJobAfterExecution(job, error, output);
 
     if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-      this.onCompleted(job.id, job.status, output, error);
+      await this.onCompleted(job.id, job.status, output, error);
     }
   }
 
@@ -241,5 +210,13 @@ export class InMemoryJobQueue<Input, Output> extends JobQueue<Input, Output> {
       this.jobQueue.find((j) => j.fingerprint === fingerprint && j.status === JobStatus.COMPLETED)
         ?.output ?? null
     );
+  }
+
+  /**
+   * Deletes a job by its ID
+   */
+  protected async deleteJob(id: unknown): Promise<void> {
+    await sleep(0);
+    this.jobQueue = this.jobQueue.filter((job) => job.id !== id);
   }
 }

@@ -8,9 +8,9 @@
 import type { Database } from "bun:sqlite";
 import { nanoid } from "nanoid";
 import { makeFingerprint, toSQLiteTimestamp } from "@ellmers/util";
-import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
+import { JobError, JobQueue } from "../job/JobQueue";
+import { JobQueueOptions } from "job/IJobQueue";
 import { Job, JobStatus } from "../job/Job";
-import { ILimiter } from "../job/ILimiter";
 
 /**
  * SQLite implementation of a job queue.
@@ -20,11 +20,10 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
   constructor(
     protected db: Database,
     queue: string,
-    limiter: ILimiter,
     jobClass: typeof Job<Input, Output> = Job<Input, Output>,
-    waitDurationInMilliseconds = 100
+    options: JobQueueOptions
   ) {
-    super(queue, limiter, jobClass, waitDurationInMilliseconds);
+    super(queue, jobClass, options);
     this.ensureTableExists();
   }
 
@@ -43,6 +42,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
         runAfter TEXT DEFAULT CURRENT_TIMESTAMP,
         lastRanAt TEXT,
         createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        completedAt TEXT,
         deadlineAt TEXT,
         error TEXT,
         errorCode TEXT,
@@ -248,37 +248,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
     const job = await this.get(id);
     if (!job) throw new Error(`Job ${id} not found`);
 
-    job.progress = 100;
-    job.progressMessage = "";
-    job.progressDetails = null;
-
-    if (error) {
-      job.error = error.message;
-      job.errorCode = error.name;
-      job.retries = (job.retries || 0) + 1;
-      if (error instanceof RetryableJobError) {
-        if (job.retries >= job.maxRetries) {
-          job.status = JobStatus.FAILED;
-          job.completedAt = new Date();
-        } else {
-          job.status = JobStatus.PENDING;
-          job.runAfter = error.retryDate;
-          job.progress = 0;
-        }
-      } else if (error instanceof PermanentJobError) {
-        job.status = JobStatus.FAILED;
-        job.completedAt = new Date();
-      } else {
-        job.status = JobStatus.FAILED;
-        job.completedAt = new Date();
-      }
-    } else {
-      job.status = JobStatus.COMPLETED;
-      job.output = output;
-      job.error = null;
-      job.errorCode = null;
-      job.completedAt = new Date();
-    }
+    this.updateJobAfterExecution(job, error, output);
 
     let updateQuery: string;
     let params: any[];
@@ -293,7 +263,6 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
               progress = ?, 
               progressMessage = "", 
               progressDetails = NULL, 
-              lastRanAt = CURRENT_TIMESTAMP, 
               retries = retries + 1 
             WHERE id = ? AND queue = ?`;
       params = [
@@ -317,7 +286,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
               retries = retries + 1, 
               progressMessage = "", 
               progressDetails = NULL, 
-              lastRanAt = CURRENT_TIMESTAMP
+              completedAt = CURRENT_TIMESTAMP
             WHERE id = ? AND queue = ?`;
       params = [
         JSON.stringify(output),
@@ -331,7 +300,7 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
     }
     this.db.exec(updateQuery, params);
     if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-      this.onCompleted(job.id, job.status, output, error);
+      await this.onCompleted(job.id, job.status, output, error);
     }
   }
 
@@ -382,5 +351,13 @@ export class SqliteJobQueue<Input, Output> extends JobQueue<Input, Output> {
 
     const stmt = this.db.prepare(UpdateProgressQuery);
     stmt.run(progress, message, JSON.stringify(details), String(jobId), this.queueName);
+  }
+
+  /**
+   * Deletes a job by its ID
+   */
+  protected async deleteJob(jobId: unknown): Promise<void> {
+    const stmt = this.db.prepare("DELETE FROM job_queue WHERE id = ? AND queue = ?");
+    stmt.run(String(jobId), this.queueName);
   }
 }

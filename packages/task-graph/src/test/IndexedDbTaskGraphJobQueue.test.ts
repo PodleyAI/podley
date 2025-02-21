@@ -12,14 +12,10 @@ import { nanoid } from "nanoid";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 
 describe("IndexedDbTaskGraphJobQueue", () => {
-  runGenericTaskGraphJobQueueTests(
-    async () =>
-      new IndexedDbJobQueue(
-        "idx_test",
-        `queue_${nanoid()}`,
-        new InMemoryRateLimiter(1, 10),
-        TestJob,
-        10
-      )
-  );
+  runGenericTaskGraphJobQueueTests(async () => {
+    return new IndexedDbJobQueue("idx_test", `queue_${nanoid()}`, TestJob, {
+      limiter: new InMemoryRateLimiter(1, 10),
+      waitDurationInMilliseconds: 1,
+    });
+  });
 });

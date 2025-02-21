@@ -19,6 +19,7 @@ import {
   DefaultPrimaryKeySchema,
 } from "./IKVRepository";
 import { KVRepository } from "./KVRepository";
+import { sleep } from "@ellmers/util";
 /**
  * A key-value repository implementation that uses the filesystem for storage.
  * Each key-value pair is stored as a separate JSON file in the specified directory.
@@ -54,7 +55,14 @@ export class FileKVRepository<
   ) {
     super(primaryKeySchema, valueSchema, searchable);
     this.folderPath = path.dirname(folderPath);
-    mkdirSync(this.folderPath, { recursive: true });
+    try {
+      mkdirSync(this.folderPath, { recursive: true });
+    } catch (error) {
+      // CI system sometimes has issues temporarily
+      setTimeout(() => {
+        mkdirSync(this.folderPath, { recursive: true });
+      }, 0);
+    }
   }
 
   /**
@@ -68,7 +76,13 @@ export class FileKVRepository<
     try {
       await writeFile(filePath, JSON.stringify(value));
     } catch (error) {
-      console.error("Error writing file", filePath, error);
+      try {
+        // CI system sometimes has issues temporarily
+        await sleep(1);
+        await writeFile(filePath, JSON.stringify(value));
+      } catch (error) {
+        console.error("Error writing file", filePath, error);
+      }
     }
     this.events.emit("put", key, value);
   }

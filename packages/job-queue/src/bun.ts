@@ -12,7 +12,7 @@ export * from "./job/ILimiter";
 export * from "./job/ConcurrencyLimiter";
 export * from "./job/DelayLimiter";
 export * from "./job/CompositeLimiter";
-
+export * from "./job/NullLimiter";
 export * from "./storage/InMemoryJobQueue";
 export * from "./storage/InMemoryRateLimiter";
 

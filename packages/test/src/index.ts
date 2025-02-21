@@ -22,24 +22,18 @@ export * from "./sample/ONNXModelSamples";
 
 export async function registerHuggingfaceLocalTasksInMemory() {
   registerHuggingfaceLocalTasks();
-  const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
-    LOCAL_ONNX_TRANSFORMERJS,
-    new ConcurrencyLimiter(1, 10),
-    AiJob,
-    10
-  );
+  const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(LOCAL_ONNX_TRANSFORMERJS, AiJob, {
+    limiter: new ConcurrencyLimiter(1, 10),
+  });
   getTaskQueueRegistry().registerQueue(jobQueue);
   jobQueue.start();
 }
 
 export async function registerMediaPipeTfJsLocalInMemory() {
   registerMediaPipeTfJsLocalTasks();
-  const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
-    MEDIA_PIPE_TFJS_MODEL,
-    new ConcurrencyLimiter(1, 10),
-    AiJob,
-    10
-  );
+  const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(MEDIA_PIPE_TFJS_MODEL, AiJob, {
+    limiter: new ConcurrencyLimiter(1, 10),
+  });
   getTaskQueueRegistry().registerQueue(jobQueue);
   jobQueue.start();
 }

@@ -14,13 +14,10 @@ import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJob
 describe("SqliteTaskGraphJobQueue", () => {
   runGenericTaskGraphJobQueueTests(async () => {
     const db = new Database(":memory:");
-    const queue = new SqliteJobQueue(
-      db,
-      `sqlite_test_queue_${nanoid()}`,
-      new ConcurrencyLimiter(1, 10),
-      TestJob,
-      10
-    );
+    const queue = new SqliteJobQueue(db, `sqlite_test_queue_${nanoid()}`, TestJob, {
+      limiter: new ConcurrencyLimiter(1, 10),
+      waitDurationInMilliseconds: 1,
+    });
     queue.ensureTableExists();
     return queue;
   });

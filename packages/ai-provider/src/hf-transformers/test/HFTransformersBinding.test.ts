@@ -7,19 +7,27 @@
 
 import { afterAll, describe, expect, it } from "bun:test";
 import {
+  AiJob,
+  getGlobalModelRepository,
+  InMemoryModelRepository,
+  setGlobalModelRepository,
+} from "@ellmers/ai";
+import {
+  ConcurrencyLimiter,
+  InMemoryJobQueue,
+  SqliteJobQueue,
+  SqliteRateLimiter,
+} from "@ellmers/job-queue";
+import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
   TaskGraphBuilder,
   TaskInput,
   TaskOutput,
 } from "@ellmers/task-graph";
-import { AiJob, getGlobalModelRepository, setGlobalModelRepository } from "@ellmers/ai";
-import { InMemoryModelRepository } from "@ellmers/ai";
-import { SqliteJobQueue } from "@ellmers/job-queue";
+import { sleep } from "@ellmers/util";
 import { registerHuggingfaceLocalTasks } from "../bindings/registerTasks";
-import { sleep } from "bun";
 import { LOCAL_ONNX_TRANSFORMERJS } from "../model/ONNXTransformerJsModel";
-import { ConcurrencyLimiter, InMemoryJobQueue } from "@ellmers/job-queue";
 
 const wrapper = function () {
   if (process["isBun"]) {
@@ -47,9 +55,11 @@ describe("HFTransformersBinding", () => {
       const queueRegistry = getTaskQueueRegistry();
       const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
         LOCAL_ONNX_TRANSFORMERJS,
-        new ConcurrencyLimiter(1, 10),
         AiJob<TaskInput, TaskOutput>,
-        10
+        {
+          limiter: new ConcurrencyLimiter(1, 10),
+          waitDurationInMilliseconds: 1,
+        }
       );
       queueRegistry.registerQueue(jobQueue);
 
@@ -105,10 +115,12 @@ describe("HFTransformersBinding", () => {
 
       const jobQueue = new SqliteJobQueue<TaskInput, TaskOutput>(
         getDatabase(":memory:"),
-        LOCAL_ONNX_TRANSFORMERJS,
-        new ConcurrencyLimiter(1, 10),
+        "test",
         AiJob<TaskInput, TaskOutput>,
-        10
+        {
+          limiter: new SqliteRateLimiter(getDatabase(":memory:"), "test", 4, 1),
+          waitDurationInMilliseconds: 1,
+        }
       );
 
       getTaskQueueRegistry().registerQueue(jobQueue);

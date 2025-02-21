@@ -7,9 +7,9 @@
 
 import { nanoid } from "nanoid";
 import { makeFingerprint } from "@ellmers/util";
-import { JobError, JobQueue, PermanentJobError, RetryableJobError } from "../job/JobQueue";
+import { JobError, JobQueue } from "../job/JobQueue";
+import { JobQueueOptions } from "job/IJobQueue";
 import { Job, JobStatus } from "../job/Job";
-import { ILimiter } from "../job/ILimiter";
 import { Pool } from "pg";
 // TODO: prepared statements
 
@@ -21,11 +21,10 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
   constructor(
     protected readonly db: Pool,
     queue: string,
-    limiter: ILimiter,
     jobClass: typeof Job<Input, Output> = Job<Input, Output>,
-    waitDurationInMilliseconds = 100
+    options: JobQueueOptions
   ) {
-    super(queue, limiter, jobClass, waitDurationInMilliseconds);
+    super(queue, jobClass, options);
     this.dbPromise = this.ensureTableExists();
   }
 
@@ -58,6 +57,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
       lastRanAt timestamp with time zone,
       createdAt timestamp with time zone DEFAULT now(),
       deadlineAt timestamp with time zone,
+      completedAt timestamp with time zone,
       error text,
       errorCode text,
       progress real DEFAULT 0,
@@ -81,6 +81,39 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
       CREATE INDEX IF NOT EXISTS jobs_fingerprint_unique_idx 
         ON job_queue (queue, fingerprint, status)`;
     await this.db.query(sql);
+  }
+
+  /**
+   * Creates a new job instance from the provided database results.
+   * @param results - The job data from the database
+   * @returns A new Job instance with populated properties
+   */
+  protected createNewJob(results: any, parseIO = true): Job<Input, Output> {
+    const job = new this.jobClass({
+      input: (parseIO ? JSON.parse(results.input) : results.input) as Input,
+      output: results.output
+        ? ((parseIO ? JSON.parse(results.output) : results.output) as Output)
+        : null,
+      runAfter: results.runafter ? new Date(results.runafter + "Z") : null,
+      createdAt: new Date(results.createdat + "Z"),
+      deadlineAt: results.deadlineat ? new Date(results.deadlineat + "Z") : null,
+      lastRanAt: results.lastranat ? new Date(results.lastranat + "Z") : null,
+      completedAt: results.completedat ? new Date(results.completedat + "Z") : null,
+      progress: results.progress || 0,
+      progressMessage: results.progressmessage || "",
+      progressDetails: results.progressdetails ?? null,
+      queueName: results.queue,
+      jobRunId: results.jobrunid,
+      id: results.id,
+      status: results.status,
+      retries: results.retries,
+      maxRetries: results.maxretries,
+      fingerprint: results.fingerprint,
+      error: results.error,
+      errorCode: results.errorcode,
+    });
+    job.queue = this;
+    return job;
   }
 
   /**
@@ -147,7 +180,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
         LIMIT 1`,
       [id]
     );
-    if (!result) return undefined;
+    if (!result || result.rows.length === 0) return undefined;
     return this.createNewJob(result.rows[0], false);
   }
 
@@ -178,11 +211,11 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
       [string, JobStatus, number]
     >(
       `
-      SELECT id, fingerprint, queue, status, deadlineAt, input, retries, maxRetries, runAfter, lastRanAt, createdAt, error, jobRunId
+      SELECT *
         FROM job_queue
         WHERE queue = $1
         AND status = $2
-        AND runAfter <= NOW()
+        AND runAfter <= NOW() AT TIME ZONE 'UTC'
         ORDER BY runAfter ASC
         LIMIT $3
         FOR UPDATE SKIP LOCKED`,
@@ -202,13 +235,13 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
     const result = await this.db.query<Job<Input, Output>, [JobStatus, string, JobStatus]>(
       `
       UPDATE job_queue 
-      SET status = $1, lastRanAt = NOW()
+      SET status = $1, lastRanAt = NOW() AT TIME ZONE 'UTC'
       WHERE id = (
         SELECT id 
         FROM job_queue 
         WHERE queue = $2 
         AND status = $3 
-        AND runAfter <= NOW() 
+        AND runAfter <= NOW() AT TIME ZONE 'UTC'
         ORDER BY runAfter ASC 
         FOR UPDATE SKIP LOCKED 
         LIMIT 1
@@ -233,7 +266,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
         FROM job_queue
         WHERE queue = $1
         AND status = $2
-        AND runAfter <= NOW()`,
+        AND runAfter <= NOW() AT TIME ZONE 'UTC'`,
       [this.queueName, status]
     );
     if (!result) return 0;
@@ -251,40 +284,10 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
     const job = await this.get(id);
     if (!job) throw new Error(`Job ${id} not found`);
 
-    job.progress = 100;
-    job.progressMessage = "";
-    job.progressDetails = null;
-
-    if (error) {
-      job.error = error.message;
-      job.errorCode = error.name;
-      job.retries = (job.retries || 0) + 1;
-      if (error instanceof RetryableJobError) {
-        if (job.retries >= job.maxRetries) {
-          job.status = JobStatus.FAILED;
-          job.completedAt = new Date();
-        } else {
-          job.status = JobStatus.PENDING;
-          job.runAfter = error.retryDate;
-          job.progress = 0;
-        }
-      } else if (error instanceof PermanentJobError) {
-        job.status = JobStatus.FAILED;
-        job.completedAt = new Date();
-      } else {
-        job.status = JobStatus.FAILED;
-        job.completedAt = new Date();
-      }
-    } else {
-      job.status = JobStatus.COMPLETED;
-      job.output = output;
-      job.error = null;
-      job.errorCode = null;
-      job.completedAt = new Date();
-    }
+    this.updateJobAfterExecution(job, error, output);
 
     if (error && job.status === JobStatus.PENDING) {
-      await this.db.query(
+      const result = await this.db.query(
         `
         UPDATE job_queue 
           SET 
@@ -295,14 +298,13 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
             progress = $5,
             progressMessage = '',
             progressDetails = NULL,
-            lastRanAt = NOW(),
-            retries = retries + 1
+            completedAt = NOW() AT TIME ZONE 'UTC'
           WHERE id = $6 AND queue = $7`,
         [
           job.error,
           job.errorCode,
           job.status,
-          job.runAfter.toISOString(),
+          job.runAfter!.toISOString(),
           job.progress,
           id,
           this.queueName,
@@ -317,17 +319,18 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
               errorCode = $3,
               status = $4, 
               retries = retries + 1, 
-              lastRanAt = NOW(),
               progress = $5,
               progressMessage = '',
-              progressDetails = NULL
-          WHERE id = $6 AND queue = $7`,
+              progressDetails = NULL,
+              completedAt = $6
+          WHERE id = $7 AND queue = $8`,
         [
           output ? JSON.stringify(output) : null,
           job.error ?? null,
           job.errorCode ?? null,
           job.status,
           job.progress,
+          job.completedAt!.toISOString(),
           id,
           this.queueName,
         ]
@@ -335,7 +338,7 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
     }
 
     if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-      this.onCompleted(id, job.status, output, error);
+      await this.onCompleted(id, job.status, output, error);
     }
   }
 
@@ -425,5 +428,16 @@ export class PostgresJobQueue<Input, Output> extends JobQueue<Input, Output> {
       WHERE id = $4 AND queue = $5`,
       [progress, message, details as any, jobId as number, this.queueName]
     );
+  }
+
+  /**
+   * Deletes a job by its ID
+   */
+  protected async deleteJob(jobId: unknown): Promise<void> {
+    await this.dbPromise;
+    await this.db.query("DELETE FROM job_queue WHERE id = $1 AND queue = $2", [
+      jobId,
+      this.queueName,
+    ]);
   }
 }

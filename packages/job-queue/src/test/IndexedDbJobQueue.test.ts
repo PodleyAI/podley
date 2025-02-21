@@ -13,13 +13,10 @@ import { nanoid } from "nanoid";
 import { describe } from "bun:test";
 
 function createIndexedDbJobQueue() {
-  return new IndexedDbJobQueue<TInput, TOutput>(
-    `idx_test_${nanoid()}`,
-    `jobs`,
-    new InMemoryRateLimiter(4, 1),
-    TestJob,
-    1
-  );
+  return new IndexedDbJobQueue<TInput, TOutput>(`idx_test_${nanoid()}`, `jobs`, TestJob, {
+    limiter: new InMemoryRateLimiter(4, 1),
+    waitDurationInMilliseconds: 1,
+  });
 }
 
 describe("IndexedDbJobQueue", () => {

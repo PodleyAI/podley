@@ -7,19 +7,28 @@
 
 import { afterAll, describe, expect, it } from "bun:test";
 import {
+  AiJob,
+  getGlobalModelRepository,
+  InMemoryModelRepository,
+  Model,
+  setGlobalModelRepository,
+} from "@ellmers/ai";
+import {
+  ConcurrencyLimiter,
+  InMemoryJobQueue,
+  SqliteJobQueue,
+  SqliteRateLimiter,
+} from "@ellmers/job-queue";
+import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
   TaskGraphBuilder,
   TaskInput,
   TaskOutput,
 } from "@ellmers/task-graph";
-import { getGlobalModelRepository, Model, AiJob, setGlobalModelRepository } from "@ellmers/ai";
-import { InMemoryModelRepository } from "@ellmers/ai";
-import { SqliteJobQueue } from "@ellmers/job-queue";
-import { registerMediaPipeTfJsLocalTasks } from "../bindings/registerTasks";
 import { sleep } from "@ellmers/util";
+import { registerMediaPipeTfJsLocalTasks } from "../bindings/registerTasks";
 import { MEDIA_PIPE_TFJS_MODEL } from "../model/MediaPipeModel";
-import { InMemoryJobQueue, ConcurrencyLimiter } from "@ellmers/job-queue";
 
 const wrapper = function () {
   if (process["isBun"]) {
@@ -47,9 +56,11 @@ describe("TfMediaPipeBinding", () => {
       const queueRegistry = getTaskQueueRegistry();
       const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
         MEDIA_PIPE_TFJS_MODEL,
-        new ConcurrencyLimiter(1, 10),
         AiJob<TaskInput, TaskOutput>,
-        10
+        {
+          limiter: new ConcurrencyLimiter(1, 10),
+          waitDurationInMilliseconds: 1,
+        }
       );
       queueRegistry.registerQueue(jobQueue);
 
@@ -107,9 +118,11 @@ describe("TfMediaPipeBinding", () => {
       const jobQueue = new SqliteJobQueue<TaskInput, TaskOutput>(
         getDatabase(":memory:"),
         MEDIA_PIPE_TFJS_MODEL,
-        new ConcurrencyLimiter(1, 10),
         AiJob<TaskInput, TaskOutput>,
-        10
+        {
+          limiter: new SqliteRateLimiter(getDatabase(":memory:"), MEDIA_PIPE_TFJS_MODEL, 4, 1),
+          waitDurationInMilliseconds: 1,
+        }
       );
       jobQueue.ensureTableExists();
 

@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { sleep } from "@ellmers/util";
 import { AbortSignalJobError, JobQueue } from "../job/JobQueue";
 import { Job, JobStatus } from "../job/Job";
+import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
 
 export interface TInput {
   [key: string]: any;
@@ -21,6 +22,10 @@ export class TestJob extends Job<TInput, TOutput> {
   public async execute(signal: AbortSignal): Promise<TOutput> {
     if (!this.queue) {
       throw new Error("Job must be added to a queue before execution");
+    }
+
+    if (this.input.taskType === "failing") {
+      throw new Error("Job failed as expected");
     }
 
     if (this.input.taskType === "long_running") {
@@ -84,6 +89,124 @@ export function runGenericJobQueueTests(createJobQueue: () => JobQueue<TInput, T
       const job = await jobQueue.get(id);
       expect(job?.status).toBe(JobStatus.COMPLETED);
       expect(job?.output).toEqual({ result: "success" });
+    });
+
+    it("should delete completed jobs after specified time", async () => {
+      // Create a new queue with deleteAfterCompletionMs set to 1ms
+      const autoDeleteQueue = createJobQueue();
+      // @ts-ignore - Accessing protected property for testing
+      autoDeleteQueue.options = {
+        deleteAfterCompletionMs: 0, // Delete completed jobs immediately
+        waitDurationInMilliseconds: 1,
+      };
+      await autoDeleteQueue.start();
+
+      // Add and complete a job
+      const job1Id = await autoDeleteQueue.add(
+        new TestJob({ input: { taskType: "other", data: "input1" } })
+      );
+      await autoDeleteQueue.waitFor(job1Id);
+
+      // Give a small delay to ensure deletion completes
+      await sleep(1);
+
+      // Job should be automatically deleted after completion
+      const deletedJobExists = !!(await autoDeleteQueue.get(job1Id));
+      expect(deletedJobExists).toBe(false);
+
+      // Add another job but don't complete it
+      const job2Id = await autoDeleteQueue.add(
+        new TestJob({ input: { taskType: "task2", data: "input2" } })
+      );
+      const pendingJob = await autoDeleteQueue.get(job2Id);
+      expect(pendingJob).toBeDefined();
+
+      await autoDeleteQueue.stop();
+    });
+
+    it("should delete failed jobs after specified time", async () => {
+      // Create a new queue with deleteAfterErrorMs set to 1ms
+      const autoDeleteQueue = createJobQueue();
+      // @ts-ignore - Accessing protected property for testing
+      autoDeleteQueue.options = {
+        deleteAfterErrorMs: 1, // Delete failed jobs after 1ms
+        waitDurationInMilliseconds: 1,
+      };
+      await autoDeleteQueue.start();
+
+      // Add a job that will fail
+      const jobId = await autoDeleteQueue.add(
+        new TestJob({ input: { taskType: "failing", data: "input1" } })
+      );
+
+      try {
+        await autoDeleteQueue.waitFor(jobId);
+      } catch (error) {
+        // Expected error
+      }
+
+      // Give a small delay to ensure deletion completes
+      await sleep(5);
+
+      // Failed job should be automatically deleted
+      const deletedJobExists = !!(await autoDeleteQueue.get(jobId));
+      expect(deletedJobExists).toBe(false);
+
+      await autoDeleteQueue.stop();
+    });
+
+    it("should not delete jobs when timing options are undefined", async () => {
+      // Create a new queue with no deletion options
+      const queue = createJobQueue();
+      await queue.start();
+
+      // Add and complete a job
+      const jobId = await queue.add(new TestJob({ input: { taskType: "other", data: "input1" } }));
+      await queue.waitFor(jobId);
+
+      // Give a small delay
+      await sleep(5);
+
+      // Job should still exist
+      const job = await queue.get(jobId);
+      expect(job).toBeDefined();
+      expect(job?.status).toBe(JobStatus.COMPLETED);
+
+      await queue.stop();
+    });
+
+    it("should delete jobs immediately when timing is set to 0", async () => {
+      // Create a new queue with immediate deletion
+      const queue = createJobQueue();
+      // @ts-ignore - Accessing protected property for testing
+      queue.options = {
+        deleteAfterCompletionMs: 0, // Delete completed jobs immediately
+        deleteAfterErrorMs: 0, // Delete failed jobs immediately
+        waitDurationInMilliseconds: 1,
+      };
+      await queue.start();
+
+      // Test completed job
+      const completedJobId = await queue.add(
+        new TestJob({ input: { taskType: "other", data: "input1" } })
+      );
+      await queue.waitFor(completedJobId);
+      const completedJobExists = !!(await queue.get(completedJobId));
+      expect(completedJobExists).toBe(false);
+
+      // Test failed job
+      const failedJobId = await queue.add(
+        new TestJob({ input: { taskType: "failing", data: "input2" } })
+      );
+      try {
+        await queue.waitFor(failedJobId);
+      } catch (error) {
+        // Expected error
+      }
+      const failedJob = !!(await queue.get(failedJobId));
+      expect(failedJob).toBe(false);
+
+      await queue.stop();
     });
 
     it("should add a job to the queue", async () => {

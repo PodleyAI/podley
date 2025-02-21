@@ -9,7 +9,8 @@ import { EventEmitter, EventParameters } from "@ellmers/util";
 import { sleep } from "@ellmers/util";
 import { ILimiter } from "./ILimiter";
 import { Job, JobStatus } from "./Job";
-import { IJobQueue } from "./IJobQueue";
+import { IJobQueue, JobQueueOptions, QueueMode } from "./IJobQueue";
+import { NullLimiter } from "./NullLimiter";
 
 export abstract class JobError extends Error {
   public abstract retryable: boolean;
@@ -110,27 +111,6 @@ export interface JobQueueStats {
 }
 
 /**
- * Defines how a job queue operates in different contexts
- */
-export enum QueueMode {
-  /**
-   * Queue operates in client mode only - can submit jobs and receive progress updates
-   * but does not process jobs
-   */
-  CLIENT = "CLIENT",
-
-  /**
-   * Queue operates in server mode only - processes jobs but does not accept new submissions
-   */
-  SERVER = "SERVER",
-
-  /**
-   * Queue operates in both client and server mode - can submit and process jobs
-   */
-  BOTH = "BOTH",
-}
-
-/**
  * Base class for implementing job queues with different storage backends.
  */
 export abstract class JobQueue<Input, Output> {
@@ -153,13 +133,20 @@ export abstract class JobQueue<Input, Output> {
       details: Record<string, any>;
     }
   > = new Map();
+  protected options: JobQueueOptions;
+  protected limiter: ILimiter;
 
   constructor(
     public readonly queueName: string,
-    protected limiter: ILimiter,
     public readonly jobClass: typeof Job<Input, Output> = Job<Input, Output>,
-    protected waitDurationInMilliseconds: number
+    options: JobQueueOptions
   ) {
+    const { limiter, ...rest } = options;
+    this.options = {
+      waitDurationInMilliseconds: 100,
+      ...rest,
+    };
+    this.limiter = limiter ?? new NullLimiter();
     this.stats = {
       totalJobs: 0,
       completedJobs: 0,
@@ -329,6 +316,39 @@ export abstract class JobQueue<Input, Output> {
   }
 
   /**
+   * Deletes a job by its ID
+   */
+  protected abstract deleteJob(id: unknown): Promise<void>;
+
+  /**
+   * Checks if a job should be deleted based on its status and completion time
+   */
+  protected shouldDeleteJob(job: Job<Input, Output>): boolean {
+    if (!job.lastRanAt) return false;
+
+    const now = Date.now();
+    const lastRanTime = job.lastRanAt.getTime();
+
+    if (job.status === JobStatus.COMPLETED) {
+      if (this.options.deleteAfterCompletionMs === 0) {
+        return true;
+      }
+      if (this.options.deleteAfterCompletionMs !== undefined) {
+        return now - lastRanTime >= this.options.deleteAfterCompletionMs;
+      }
+    } else if (job.status === JobStatus.FAILED) {
+      if (this.options.deleteAfterErrorMs === 0) {
+        return true;
+      }
+      if (this.options.deleteAfterErrorMs !== undefined) {
+        return now - lastRanTime >= this.options.deleteAfterErrorMs;
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Processes a job and handles its lifecycle including retries and error handling
    */
   protected async processJob(job: Job<Input, Output>): Promise<void> {
@@ -422,12 +442,17 @@ export abstract class JobQueue<Input, Output> {
   /**
    * Handles job completion and promise resolution
    */
-  protected onCompleted(
+  protected async onCompleted(
     jobId: unknown,
     status: JobStatus,
     output: Output | null = null,
     error?: JobError
-  ): void {
+  ): Promise<void> {
+    const updatedJob = await this.get(jobId);
+    if (updatedJob && this.shouldDeleteJob(updatedJob)) {
+      await this.deleteJob(jobId);
+    }
+
     const promises = this.activeJobPromises.get(jobId) || [];
 
     if (status === JobStatus.FAILED) {
@@ -441,8 +466,17 @@ export abstract class JobQueue<Input, Output> {
     } else if (status === JobStatus.ABORTING) {
       this.events.emit("job_aborting", this.queueName, jobId);
       promises.forEach(({ reject }) => reject(new AbortSignalJobError("Job aborted onCompleted")));
+    } else {
+      console.error(`Unknown job status: ${status}`);
     }
 
+    // Get the updated job state after completion
+
+    // Clear any remaining state
+    this.activeJobSignals.delete(jobId);
+    this.processingTimes.delete(jobId);
+    this.lastKnownProgress.delete(jobId);
+    this.jobProgressListeners.delete(jobId);
     this.activeJobPromises.delete(jobId);
     this.emitStatsUpdate();
   }
@@ -556,12 +590,52 @@ export abstract class JobQueue<Input, Output> {
       createdAt: results.createdAt ? new Date(results.createdAt + "Z") : null,
       deadlineAt: results.deadlineAt ? new Date(results.deadlineAt + "Z") : null,
       lastRanAt: results.lastRanAt ? new Date(results.lastRanAt + "Z") : null,
+      completedAt: results.completedAt ? new Date(results.completedAt + "Z") : null,
       progress: results.progress || 0,
       progressMessage: results.progressMessage || "",
       progressDetails: results.progressDetails ?? null,
     });
     job.queue = this;
     return job;
+  }
+
+  protected updateJobAfterExecution(
+    job: Job<Input, Output>,
+    error: JobError | undefined,
+    output: Output | null
+  ): void {
+    job.progressMessage = "";
+    job.progressDetails = null;
+
+    if (error) {
+      job.error = error.message;
+      job.errorCode = error.name;
+      job.retries = (job.retries || 0) + 1;
+
+      if (error instanceof RetryableJobError) {
+        if (job.retries >= job.maxRetries) {
+          job.status = JobStatus.FAILED;
+          job.progress = 100;
+          job.completedAt = new Date();
+        } else {
+          job.status = JobStatus.PENDING;
+          job.runAfter = error.retryDate;
+          job.progress = 0;
+        }
+      } else {
+        // Both PermanentJobError and other errors result in FAILED status
+        job.status = JobStatus.FAILED;
+        job.progress = 100;
+        job.completedAt = new Date();
+      }
+    } else {
+      job.status = JobStatus.COMPLETED;
+      job.progress = 100;
+      job.output = output ?? null;
+      job.error = null;
+      job.errorCode = null;
+      job.completedAt = new Date();
+    }
   }
 
   /**
@@ -579,10 +653,10 @@ export abstract class JobQueue<Input, Output> {
           this.processJob(job);
         }
       }
-      setTimeout(() => this.processJobs(), this.waitDurationInMilliseconds);
+      setTimeout(() => this.processJobs(), this.options.waitDurationInMilliseconds);
     } catch (error) {
       console.error(`Error in processJobs: ${error}`);
-      setTimeout(() => this.processJobs(), this.waitDurationInMilliseconds);
+      setTimeout(() => this.processJobs(), this.options.waitDurationInMilliseconds);
     }
   }
 
@@ -648,7 +722,7 @@ export abstract class JobQueue<Input, Output> {
     }
 
     // Schedule next monitoring iteration
-    setTimeout(() => this.monitorJobs(), this.waitDurationInMilliseconds);
+    setTimeout(() => this.monitorJobs(), this.options.waitDurationInMilliseconds);
   }
 
   /**

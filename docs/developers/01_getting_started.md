@@ -186,10 +186,9 @@ aiProviderRegistry.registerRunFn(
   LOCAL_ONNX_TRANSFORMERJS,
   HuggingFaceLocal_TextRewriterRun
 );
-const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
-  LOCAL_ONNX_TRANSFORMERJS,
-  new ConcurrencyLimiter(1, 10)
-);
+const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>("test", Job, {
+  limiter: new InMemoryRateLimiter(4, 1),
+});
 getTaskQueueRegistry().registerQueue(jobQueue);
 jobQueue.start();
 
