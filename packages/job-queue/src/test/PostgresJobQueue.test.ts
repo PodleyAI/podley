@@ -5,25 +5,19 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { PGlite } from "@electric-sql/pglite";
-import { nanoid } from "nanoid";
 import { describe } from "bun:test";
-import { PostgresRateLimiter } from "../storage/PostgresRateLimiter";
-import { PostgresJobQueue } from "../storage/PostgresJobQueue";
-import { TestJob } from "./genericJobQueueTests";
-import { runGenericJobQueueTests } from "./genericJobQueueTests";
+import { PGlite } from "@electric-sql/pglite";
 import { Pool } from "pg";
+import { PostgresRateLimiter } from "../storage/PostgresRateLimiter";
+import { runGenericJobQueueTests } from "./genericJobQueueTests";
+import { PostgresQueueStorage } from "../storage/PostgresQueueStorage";
 
 const db = new PGlite() as unknown as Pool;
 
-function createPostgresJobQueue() {
-  const queueName = `postgres_test_queue_${nanoid()}`;
-  return new PostgresJobQueue(db, queueName, TestJob, {
-    limiter: new PostgresRateLimiter(db, queueName, 4, 1),
-    waitDurationInMilliseconds: 1,
-  });
-}
-
-describe("PostgresJobQueue", () => {
-  runGenericJobQueueTests(createPostgresJobQueue);
+describe("JobQueue+PostgresQueueStorage", () => {
+  runGenericJobQueueTests(
+    (queueName: string) => new PostgresQueueStorage(db, queueName),
+    (queueName: string, maxRequests: number, windowSizeInMinutes: number) =>
+      new PostgresRateLimiter(db, queueName, maxRequests, windowSizeInMinutes)
+  );
 });

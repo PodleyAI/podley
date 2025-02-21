@@ -8,32 +8,19 @@
 import { nanoid } from "nanoid";
 import { makeFingerprint } from "@ellmers/util";
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "@ellmers/storage";
-import { JobError, JobQueue } from "../job/JobQueue";
-import { JobQueueOptions } from "job/IJobQueue";
-import { Job, JobStatus } from "../job/Job";
+import { JobStatus } from "../job/Job";
+import { JobStorageFormat, IQueueStorage } from "../job/IQueueStorage";
 
 /**
- * IndexedDB implementation of a job queue.
+ * IndexedDB implementation of a job queue storage.
  * Provides storage and retrieval for job execution states using IndexedDB.
  */
-export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
+export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input, Output> {
   private dbPromise: Promise<IDBDatabase>;
   private tableName: string;
-  constructor(
-    tableNamePrefix: string,
-    queue: string,
-    jobClass: typeof Job<Input, Output> = Job<Input, Output>,
-    options: JobQueueOptions
-  ) {
-    super(queue, jobClass, options);
-    this.tableName = `${tableNamePrefix}_${queue}`;
 
-    // Close any existing connections first
-    const closeRequest = indexedDB.open(this.tableName);
-    closeRequest.onsuccess = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      db.close();
-    };
+  constructor(public readonly queueName: string) {
+    this.tableName = `jobs_${queueName}`;
 
     const expectedIndexes: ExpectedIndexDefinition[] = [
       {
@@ -67,42 +54,30 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @param job - The job to add to the queue.
    * @returns A promise that resolves to the job id.
    */
-  public async add(job: Job<Input, Output>): Promise<unknown> {
+  public async add(job: JobStorageFormat<Input, Output>): Promise<unknown> {
+    const now = new Date().toISOString();
     job.id = job.id ?? nanoid();
     job.jobRunId = job.jobRunId ?? nanoid();
-    job.queueName = this.queueName;
+    job.queue = this.queueName;
     job.fingerprint = await makeFingerprint(job.input);
     job.status = JobStatus.PENDING;
     job.progress = 0;
     job.progressMessage = "";
     job.progressDetails = null;
-    job.queue = this;
+    job.createdAt = now;
+    job.runAfter = now;
 
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
-    const request = store.add({
-      id: job.id,
-      jobRunId: job.jobRunId,
-      queueName: this.queueName,
-      fingerprint: job.fingerprint,
-      input: job.input,
-      status: job.status,
-      output: job.output,
-      error: job.error,
-      errorCode: job.errorCode,
-      retries: job.retries,
-      runAfter: job.runAfter,
-      createdAt: job.createdAt,
-      progress: job.progress,
-      progressMessage: job.progressMessage,
-      progressDetails: job.progressDetails,
-    });
 
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(job.id);
-      request.onerror = () => reject(request.error);
+      const request = store.add(job);
+
+      // Don't resolve until transaction is complete
+      tx.oncomplete = () => resolve(job.id);
       tx.onerror = () => reject(tx.error);
+      request.onerror = () => reject(request.error);
     });
   }
 
@@ -111,14 +86,13 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * @param id - The id of the job to retrieve.
    * @returns A promise that resolves to the job or undefined if the job is not found.
    */
-  async get(id: unknown): Promise<Job<Input, Output> | undefined> {
+  async get(id: unknown): Promise<JobStorageFormat<Input, Output> | undefined> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
     const request = store.get(id as string);
     return new Promise((resolve, reject) => {
-      request.onsuccess = () =>
-        resolve(request.result ? this.createNewJob(request.result, false) : undefined);
+      request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
       tx.onerror = () => reject(tx.error);
     });
@@ -133,32 +107,30 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
   public async peek(
     status: JobStatus = JobStatus.PENDING,
     num: number = 100
-  ): Promise<Job<Input, Output>[]> {
+  ): Promise<JobStorageFormat<Input, Output>[]> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
     const index = store.index("status_runAfter");
 
     return new Promise((resolve, reject) => {
-      const ret: Array<Job<Input, Output>> = [];
-      const cursorRequest = index.openCursor(
-        IDBKeyRange.bound(
-          [status, 0], // Lower bound: status with earliest possible date
-          [status, new Date()] // Upper bound: status with latest possible date
-        ),
-        "prev" // Use reverse direction to get descending order
-      );
+      const ret = new Map<unknown, JobStorageFormat<Input, Output>>();
+      // Create a key range for the compound index: from [status, ""] to [status, "\uffff"]
+      const keyRange = IDBKeyRange.bound([status, ""], [status, "\uffff"]);
+      const cursorRequest = index.openCursor(keyRange);
 
-      cursorRequest.onsuccess = (e) => {
+      const handleCursor = (e: Event) => {
         const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
-        if (!cursor || ret.length >= num) {
-          resolve(ret);
+        if (!cursor || ret.size >= num) {
+          resolve(Array.from(ret.values()));
           return;
         }
-        ret.push(this.createNewJob(cursor.value, false));
+        // Use Map to ensure no duplicates by job ID
+        ret.set(cursor.value.id, cursor.value);
         cursor.continue();
       };
 
+      cursorRequest.onsuccess = handleCursor;
       cursorRequest.onerror = () => reject(cursorRequest.error);
       tx.onerror = () => reject(tx.error);
     });
@@ -168,22 +140,28 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
    * Retrieves the next job from the queue.
    * @returns A promise that resolves to the next job or undefined if the queue is empty.
    */
-  public async next(): Promise<Job<Input, Output> | undefined> {
+  public async next(): Promise<JobStorageFormat<Input, Output> | undefined> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
     const index = store.index("status_runAfter");
-    const now = new Date();
+    const now = new Date().toISOString();
 
     return new Promise((resolve, reject) => {
       const cursorRequest = index.openCursor(
-        IDBKeyRange.bound([JobStatus.PENDING, 0], [JobStatus.PENDING, now], false, true)
+        IDBKeyRange.bound([JobStatus.PENDING, ""], [JobStatus.PENDING, now], false, true)
       );
+
+      let jobToReturn: JobStorageFormat<Input, Output> | undefined;
 
       cursorRequest.onsuccess = (e) => {
         const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
         if (!cursor) {
-          resolve(undefined);
+          if (jobToReturn) {
+            resolve(jobToReturn);
+          } else {
+            resolve(undefined);
+          }
           return;
         }
 
@@ -200,7 +178,8 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
         try {
           const updateRequest = store.put(job);
           updateRequest.onsuccess = () => {
-            return job ? resolve(this.createNewJob(job, false)) : resolve(undefined);
+            jobToReturn = job;
+            // Don't resolve here - wait for transaction to complete
           };
           updateRequest.onerror = (err) => {
             console.error("Failed to update job status:", err);
@@ -213,6 +192,11 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
       };
 
       cursorRequest.onerror = () => reject(cursorRequest.error);
+
+      // Wait for transaction to complete before resolving
+      tx.oncomplete = () => {
+        resolve(jobToReturn);
+      };
       tx.onerror = () => reject(tx.error);
     });
   }
@@ -237,98 +221,54 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
 
   /**
    * Marks a job as complete with its output or error.
-   * Uses enhanced error handling to update the job's status.
-   * If a retryable error occurred, the job's retry count is incremented and its runAfter updated.
    */
-  public async complete(id: unknown, output: Output, error?: JobError): Promise<void> {
+  public async complete(job: JobStorageFormat<Input, Output>): Promise<void> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
-    const request = store.get(id as string);
 
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        const job = request.result;
-        if (!job) {
-          reject(new Error(`Job ${id} not found`));
-          return;
-        }
+      const request = store.put(job);
 
-        this.updateJobAfterExecution(job, error, output);
-
-        const updateRequest = store.put(job);
-        updateRequest.onsuccess = async () => {
-          if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-            await this.onCompleted(job.id, job.status, output, error);
-          }
-          resolve();
-        };
-        updateRequest.onerror = () => reject(updateRequest.error);
-      };
-      request.onerror = () => reject(request.error);
+      // Don't resolve until transaction is complete
+      tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
+      request.onerror = () => reject(request.error);
     });
   }
 
   /**
-   * Aborts a job by setting its status to "ABORTING".
-   * This method will signal the corresponding AbortController so that
-   * the job's execute() method (if it supports an AbortSignal parameter)
-   * can clean up and exit.
+   * Aborts a job in the queue.
    */
-  public async abort(jobId: unknown): Promise<boolean> {
-    const db = await this.dbPromise;
-    const tx = db.transaction(this.tableName, "readwrite");
-    const store = tx.objectStore(this.tableName);
-    const request = store.get(jobId as string);
+  public async abort(id: unknown): Promise<void> {
+    const job = await this.get(id);
+    if (!job) return;
 
-    return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        const job = request.result;
-        if (!job) {
-          resolve(false);
-          return;
-        }
-
-        job.status = JobStatus.ABORTING;
-        const updateRequest = store.put(job);
-        updateRequest.onsuccess = () => {
-          this.abortJob(jobId);
-          resolve(true);
-        };
-        updateRequest.onerror = () => reject(updateRequest.error);
-      };
-      request.onerror = () => reject(request.error);
-      tx.onerror = () => reject(tx.error);
-    });
+    job.status = JobStatus.ABORTING;
+    await this.complete(job);
   }
 
   /**
-   * Retrieves all jobs by their jobRunId.
-   * @param jobRunId - The jobRunId of the jobs to retrieve.
-   * @returns A promise that resolves to an array of jobs.
+   * Gets jobs by their run ID.
    */
-  async getJobsByRunId(jobRunId: string): Promise<Job<Input, Output>[]> {
+  public async getByRunId(jobRunId: string): Promise<JobStorageFormat<Input, Output>[]> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
-    const request = store.index("jobRunId").getAll(jobRunId);
+    const index = store.index("jobRunId");
+    const request = index.getAll(jobRunId);
 
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        const ret: Array<Job<Input, Output>> = [];
-        for (const job of request.result || []) ret.push(this.createNewJob(job, false));
-        resolve(ret);
-      };
+      request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
       tx.onerror = () => reject(tx.error);
     });
   }
 
   /**
-   * Clears all jobs from the queue.
+   * Deletes all jobs from the queue.
    */
-  async deleteAll(): Promise<void> {
+  public async deleteAll(): Promise<void> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
@@ -342,75 +282,87 @@ export class IndexedDbJobQueue<Input, Output> extends JobQueue<Input, Output> {
   }
 
   /**
-   * Retrieves the output for a job based input.
-   * Uses a compound key to query the IndexedDB for the job's output.
+   * Gets the output for a given input.
    */
-  async outputForInput(input: Input): Promise<Output | null> {
+  public async outputForInput(input: Input): Promise<Output | null> {
+    const fingerprint = await makeFingerprint(input);
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
-    const fingerprint = await makeFingerprint(input);
     const index = store.index("fingerprint_status");
     const request = index.get([fingerprint, JobStatus.COMPLETED]);
 
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        const result = request.result;
-        resolve(result ? result.output : null);
-      };
+      request.onsuccess = () => resolve(request.result?.output ?? null);
       request.onerror = () => reject(request.error);
       tx.onerror = () => reject(tx.error);
     });
   }
 
   /**
-   * Implements the abstract saveProgress method from JobQueue
+   * Saves progress updates for a job.
    */
-  protected async saveProgress(
-    jobId: unknown,
+  public async saveProgress(
+    id: unknown,
     progress: number,
     message: string,
-    details: Record<string, any>
+    details: Record<string, any> | null
   ): Promise<void> {
+    const job = await this.get(id);
+    if (!job) throw new Error(`Job ${id} not found`);
+
+    job.progress = progress;
+    job.progressMessage = message;
+    job.progressDetails = details;
+
+    await this.complete(job);
+  }
+
+  /**
+   * Deletes a job by its ID.
+   */
+  public async delete(id: unknown): Promise<void> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
-    const request = store.get(jobId as string);
+    const request = store.delete(id as string);
 
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        const job = request.result;
-        if (!job) {
-          reject(new Error(`Job ${jobId} not found`));
-          return;
-        }
-
-        job.progress = progress;
-        job.progressMessage = message;
-        job.progressDetails = details;
-
-        const updateRequest = store.put(job);
-        updateRequest.onsuccess = () => resolve();
-        updateRequest.onerror = () => reject(updateRequest.error);
-      };
+      request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
       tx.onerror = () => reject(tx.error);
     });
   }
 
   /**
-   * Deletes a job by its ID
+   * Delete jobs with a specific status older than a cutoff date
+   * @param status - Status of jobs to delete
+   * @param olderThanMs - Delete jobs completed more than this many milliseconds ago
    */
-  protected async deleteJob(jobId: unknown): Promise<void> {
+  public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
+    const index = store.index("status");
+    const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
 
     return new Promise((resolve, reject) => {
-      const request = store.delete(String(jobId));
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve();
+      const request = index.openCursor();
+
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          const job = cursor.value;
+          if (job.status === status && job.completedAt && job.completedAt <= cutoffDate) {
+            cursor.delete();
+          }
+          cursor.continue();
+        }
+      };
+
+      tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
+      request.onerror = () => reject(request.error);
     });
   }
 }

@@ -6,20 +6,22 @@
 //    *******************************************************************************
 
 export * from "./job/IJobQueue";
-export * from "./job/JobQueue";
 export * from "./job/Job";
+export * from "./job/IQueueStorage";
+export * from "./job/IJobQueue";
+export * from "./job/JobQueue";
+export * from "./job/JobQueueEventListeners";
+export * from "./job/JobError";
 export * from "./job/ILimiter";
 export * from "./job/ConcurrencyLimiter";
 export * from "./job/DelayLimiter";
 export * from "./job/CompositeLimiter";
 export * from "./job/NullLimiter";
-export * from "./storage/InMemoryJobQueue";
-export * from "./storage/InMemoryRateLimiter";
 
-export * from "./storage/SqliteJobQueue";
+export * from "./storage/SqliteQueueStorage";
 export * from "./storage/SqliteRateLimiter";
 
-export * from "./storage/PostgresJobQueue";
+export * from "./storage/PostgresQueueStorage";
 export * from "./storage/PostgresRateLimiter";
 
-export * from "./storage/IndexedDbJobQueue";
+export * from "./storage/IndexedDbQueueStorage";

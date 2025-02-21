@@ -6,19 +6,15 @@
 //    *******************************************************************************
 
 import "fake-indexeddb/auto";
-import { IndexedDbJobQueue } from "../storage/IndexedDbJobQueue";
-import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
-import { runGenericJobQueueTests, TestJob, TInput, TOutput } from "./genericJobQueueTests";
-import { nanoid } from "nanoid";
 import { describe } from "bun:test";
+import { IndexedDbQueueStorage } from "../storage/IndexedDbQueueStorage";
+import { runGenericJobQueueTests } from "./genericJobQueueTests";
+import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
 
-function createIndexedDbJobQueue() {
-  return new IndexedDbJobQueue<TInput, TOutput>(`idx_test_${nanoid()}`, `jobs`, TestJob, {
-    limiter: new InMemoryRateLimiter(4, 1),
-    waitDurationInMilliseconds: 1,
-  });
-}
-
-describe("IndexedDbJobQueue", () => {
-  runGenericJobQueueTests(createIndexedDbJobQueue);
+describe("JobQueue+IndexedDbQueueStorage", () => {
+  runGenericJobQueueTests(
+    (queueName: string) => new IndexedDbQueueStorage(queueName),
+    (queueName: string, maxRequests: number, windowSizeInMinutes: number) =>
+      new InMemoryRateLimiter(maxRequests, windowSizeInMinutes)
+  );
 });
