@@ -55,21 +55,17 @@ export function getDatabase(name = ":memory:"): any {
 describe("HFTransformersBinding", () => {
   describe("InMemoryJobQueue", () => {
     it("Should have an item queued", async () => {
+      registerHuggingfaceLocalTasks();
+      setGlobalModelRepository(new InMemoryModelRepository());
       const queueRegistry = getTaskQueueRegistry();
-      const queueName = `inMemory_test_queue_${nanoid()}`;
       const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
-        queueName,
+        LOCAL_ONNX_TRANSFORMERJS,
         AiJob<TaskInput, TaskOutput>,
         {
-          storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(queueName),
           limiter: new ConcurrencyLimiter(1, 10),
-          waitDurationInMilliseconds: 1,
         }
       );
       queueRegistry.registerQueue(jobQueue);
-
-      registerHuggingfaceLocalTasks();
-      setGlobalModelRepository(new InMemoryModelRepository());
 
       const model = {
         name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
