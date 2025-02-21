@@ -23,7 +23,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     protected queueName: string,
     protected options?: {
       deleteAfterCompletionMs?: number;
-      deleteAfterErrorMs?: number;
+      deleteAfterFailureMs?: number;
     }
   ) {
     this.ensureTableExists();

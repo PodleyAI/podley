@@ -380,7 +380,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
 
     if (job.status === JobStatus.COMPLETED && this.options.deleteAfterCompletionMs === 0) {
       return true;
-    } else if (job.status === JobStatus.FAILED && this.options.deleteAfterErrorMs === 0) {
+    } else if (job.status === JobStatus.FAILED && this.options.deleteAfterFailureMs === 0) {
       return true;
     }
     return false;
@@ -680,10 +680,10 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
         this.options.deleteAfterCompletionMs
       );
     }
-    if (this.options.deleteAfterErrorMs) {
+    if (this.options.deleteAfterFailureMs) {
       await this.storage.deleteJobsByStatusAndAge(
         JobStatus.FAILED,
-        this.options.deleteAfterErrorMs
+        this.options.deleteAfterFailureMs
       );
     }
   }

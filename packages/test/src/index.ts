@@ -15,7 +15,20 @@ import {
 } from "@ellmers/ai-provider/tf-mediapipe";
 import { TaskInput, TaskOutput, getTaskQueueRegistry } from "@ellmers/task-graph";
 import { AiJob, AiProviderInput } from "@ellmers/ai";
-import { ConcurrencyLimiter, InMemoryQueueStorage, JobQueue } from "@ellmers/job-queue";
+import {
+  ConcurrencyLimiter,
+  IndexedDbQueueStorage,
+  InMemoryQueueStorage,
+  InMemoryRateLimiter,
+  Job,
+  JobConstructorParam,
+  JobQueue,
+  JobQueueOptions,
+  PostgresQueueStorage,
+  PostgresRateLimiter,
+  SqliteQueueStorage,
+  SqliteRateLimiter,
+} from "@ellmers/job-queue";
 export * from "./sample/MediaPipeModelSamples";
 export * from "./sample/ONNXModelSamples";
 
@@ -49,4 +62,170 @@ export async function registerMediaPipeTfJsLocalInMemory() {
   );
   getTaskQueueRegistry().registerQueue(jobQueue);
   jobQueue.start();
+}
+
+export class SqliteJobQueue<I, O, C extends Job<I, O>> extends JobQueue<I, O, C> {
+  constructor(
+    db: any,
+    queueName: string,
+    jobCls: new (param: JobConstructorParam<I, O>) => C,
+    options: JobQueueOptions<I, O>
+  ) {
+    options.storage = new SqliteQueueStorage<I, O>(db, queueName);
+    super(queueName, jobCls, options);
+  }
+}
+
+export class InMemoryJobQueue<I, O, C extends Job<I, O>> extends JobQueue<I, O, C> {
+  constructor(
+    queueName: string,
+    jobCls: new (param: JobConstructorParam<I, O>) => C,
+    options: JobQueueOptions<I, O>
+  ) {
+    options.storage = new InMemoryQueueStorage<I, O>(queueName);
+    super(queueName, jobCls, options);
+  }
+}
+
+export class IndexedDbJobQueue<I, O, C extends Job<I, O>> extends JobQueue<I, O, C> {
+  constructor(
+    queueName: string,
+    jobCls: new (param: JobConstructorParam<I, O>) => C,
+    options: JobQueueOptions<I, O>
+  ) {
+    options.storage = new IndexedDbQueueStorage<I, O>(queueName);
+    super(queueName, jobCls, options);
+  }
+}
+
+export class PostgresJobQueue<I, O, C extends Job<I, O>> extends JobQueue<I, O, C> {
+  constructor(
+    db: any,
+    queueName: string,
+    jobCls: new (param: JobConstructorParam<I, O>) => C,
+    options: JobQueueOptions<I, O>
+  ) {
+    options.storage = new PostgresQueueStorage<I, O>(db, queueName);
+    super(queueName, jobCls, options);
+  }
+}
+
+interface SimpleJobQueueOptions {
+  rateLimiterMaxExecutions?: number;
+  rateLimiterWindowSizeInMinutes?: number;
+  waitDurationInMilliseconds?: number;
+  deleteAfterCompletionMs?: number;
+  deleteAfterFailureMs?: number;
+}
+
+const defaultSimpleJobQueueOptions: SimpleJobQueueOptions = {
+  rateLimiterMaxExecutions: 10,
+  rateLimiterWindowSizeInMinutes: 1,
+  waitDurationInMilliseconds: 100,
+  deleteAfterCompletionMs: 0,
+  deleteAfterFailureMs: 0,
+};
+
+export async function registerSimpleSqliteJobQueue<I, O, C extends Job<I, O>>(
+  db: any,
+  queueName: string,
+  jobCls: new (param: JobConstructorParam<I, O>) => C,
+  {
+    rateLimiterMaxExecutions = 10,
+    rateLimiterWindowSizeInMinutes = 1,
+    waitDurationInMilliseconds = 100,
+    deleteAfterCompletionMs = 0,
+    deleteAfterFailureMs = 0,
+  }: SimpleJobQueueOptions = { ...defaultSimpleJobQueueOptions }
+) {
+  const jobQueue = new JobQueue<I, O, C>(queueName, jobCls, {
+    storage: new SqliteQueueStorage<I, O>(db, queueName),
+    limiter: new SqliteRateLimiter(
+      db,
+      queueName,
+      rateLimiterMaxExecutions,
+      rateLimiterWindowSizeInMinutes
+    ),
+    waitDurationInMilliseconds,
+    deleteAfterCompletionMs,
+    deleteAfterFailureMs,
+  });
+  getTaskQueueRegistry().registerQueue(jobQueue);
+  jobQueue.start();
+  return jobQueue;
+}
+
+export async function registerSimpleInMemoryJobQueue<I, O, C extends Job<I, O>>(
+  queueName: string,
+  jobCls: new (param: JobConstructorParam<I, O>) => C,
+  {
+    rateLimiterMaxExecutions = 10,
+    rateLimiterWindowSizeInMinutes = 1,
+    waitDurationInMilliseconds = 100,
+    deleteAfterCompletionMs = 0,
+    deleteAfterFailureMs = 0,
+  }: SimpleJobQueueOptions = { ...defaultSimpleJobQueueOptions }
+) {
+  const jobQueue = new JobQueue<I, O, C>(queueName, jobCls, {
+    storage: new InMemoryQueueStorage<I, O>(queueName),
+    limiter: new InMemoryRateLimiter(rateLimiterMaxExecutions, rateLimiterWindowSizeInMinutes),
+    waitDurationInMilliseconds,
+    deleteAfterCompletionMs,
+    deleteAfterFailureMs,
+  });
+  getTaskQueueRegistry().registerQueue(jobQueue);
+  jobQueue.start();
+  return jobQueue;
+}
+
+export async function registerSimpleIndexedDbJobQueue<I, O, C extends Job<I, O>>(
+  queueName: string,
+  jobCls: new (param: JobConstructorParam<I, O>) => C,
+  {
+    rateLimiterMaxExecutions = 10,
+    rateLimiterWindowSizeInMinutes = 1,
+    waitDurationInMilliseconds = 100,
+    deleteAfterCompletionMs = 0,
+    deleteAfterFailureMs = 0,
+  }: SimpleJobQueueOptions = { ...defaultSimpleJobQueueOptions }
+) {
+  const jobQueue = new IndexedDbJobQueue<I, O, C>(queueName, jobCls, {
+    storage: new IndexedDbQueueStorage<I, O>(queueName),
+    limiter: new InMemoryRateLimiter(rateLimiterMaxExecutions, rateLimiterWindowSizeInMinutes),
+    waitDurationInMilliseconds,
+    deleteAfterCompletionMs,
+    deleteAfterFailureMs,
+  });
+  getTaskQueueRegistry().registerQueue(jobQueue);
+  jobQueue.start();
+  return jobQueue;
+}
+
+export async function registerSimplePostgresJobQueue<I, O, C extends Job<I, O>>(
+  db: any,
+  queueName: string,
+  jobCls: new (param: JobConstructorParam<I, O>) => C,
+  {
+    rateLimiterMaxExecutions = 10,
+    rateLimiterWindowSizeInMinutes = 1,
+    waitDurationInMilliseconds = 100,
+    deleteAfterCompletionMs = 0,
+    deleteAfterFailureMs = 0,
+  }: SimpleJobQueueOptions = { ...defaultSimpleJobQueueOptions }
+) {
+  const jobQueue = new PostgresJobQueue<I, O, C>(db, queueName, jobCls, {
+    storage: new PostgresQueueStorage<I, O>(db, queueName),
+    limiter: new PostgresRateLimiter(
+      db,
+      queueName,
+      rateLimiterMaxExecutions,
+      rateLimiterWindowSizeInMinutes
+    ),
+    waitDurationInMilliseconds,
+    deleteAfterCompletionMs,
+    deleteAfterFailureMs,
+  });
+  getTaskQueueRegistry().registerQueue(jobQueue);
+  jobQueue.start();
+  return jobQueue;
 }

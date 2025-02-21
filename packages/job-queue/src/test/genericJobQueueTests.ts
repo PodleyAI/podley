@@ -128,10 +128,10 @@ export function runGenericJobQueueTests(
     });
 
     it.only("should delete failed jobs after specified time", async () => {
-      const deleteAfterErrorMs = 10;
+      const deleteAfterFailureMs = 10;
       // @ts-ignore - Accessing protected property for testing
       jobQueue.options = {
-        deleteAfterErrorMs, // Delete failed jobs after 1ms
+        deleteAfterFailureMs: deleteAfterFailureMs, // Delete failed jobs after 1ms
         waitDurationInMilliseconds: 1,
       };
       await jobQueue.start();
@@ -150,7 +150,7 @@ export function runGenericJobQueueTests(
       const jobExists = !!(await jobQueue.get(jobId));
       expect(jobExists).toBe(true);
 
-      await sleep(deleteAfterErrorMs + 1);
+      await sleep(deleteAfterFailureMs + 1);
       // Failed job should be automatically deleted
       const deletedJobExists = !!(await jobQueue.get(jobId));
       expect(deletedJobExists).toBe(false);
@@ -181,7 +181,7 @@ export function runGenericJobQueueTests(
       // @ts-ignore - Accessing protected property for testing
       jobQueue.options = {
         deleteAfterCompletionMs: 0, // Delete completed jobs immediately
-        deleteAfterErrorMs: 0, // Delete failed jobs immediately
+        deleteAfterFailureMs: 0, // Delete failed jobs immediately
         waitDurationInMilliseconds: 1,
       };
       await jobQueue.start();
