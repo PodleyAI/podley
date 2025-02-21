@@ -5,7 +5,7 @@ import { getAiProviderRegistry } from "../provider/AiProviderRegistry";
 /**
  * Input data for the AiJob
  */
-interface AiProviderInput<Input extends TaskInput = TaskInput> {
+export interface AiProviderInput<Input extends TaskInput = TaskInput> {
   taskType: string;
   modelProvider: string;
   taskInput: Input;

@@ -16,8 +16,8 @@ export class TaskQueueRegistry<Input, Output> {
    * Queue management methods for starting, stopping, and clearing job queues
    * These methods help control the execution flow of tasks across all providers
    */
-  registerQueue(jobQueue: JobQueue<Input, Output>) {
-    this.queues.set(jobQueue.queueName, jobQueue);
+  registerQueue(jobQueue: any) {
+    this.queues.set(jobQueue.queueName, jobQueue as unknown as JobQueue<Input, Output>);
   }
 
   getQueue(queue: string) {
@@ -54,5 +54,9 @@ export function getTaskQueueRegistry() {
 }
 
 export function setTaskQueueRegistry(registry: TaskQueueRegistry<TaskInput, TaskOutput> | null) {
+  if (taskQueueRegistry) {
+    taskQueueRegistry.stopQueues();
+    taskQueueRegistry.clearQueues();
+  }
   taskQueueRegistry = registry;
 }

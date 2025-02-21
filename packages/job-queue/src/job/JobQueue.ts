@@ -52,7 +52,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
    */
   constructor(
     public readonly queueName: string,
-    public readonly jobClass: new (input: JobConstructorParam<Input, Output>) => QueueJob,
+    public readonly jobClass: new (param: JobConstructorParam<Input, Output>) => QueueJob,
     options: JobQueueOptions<Input, Output>
   ) {
     const { limiter, storage, ...rest } = options;
@@ -384,6 +384,11 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       return true;
     }
     return false;
+  }
+
+  async getJobsByRunId(runId: string): Promise<Job<Input, Output>[]> {
+    const jobs = await this.storage.getByRunId(runId);
+    return jobs.map((job) => this.createNewJob(job));
   }
 
   /**

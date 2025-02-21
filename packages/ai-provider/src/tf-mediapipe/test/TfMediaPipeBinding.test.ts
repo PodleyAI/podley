@@ -15,8 +15,10 @@ import {
 } from "@ellmers/ai";
 import {
   ConcurrencyLimiter,
-  InMemoryJobQueue,
-  SqliteJobQueue,
+  IJobQueue,
+  InMemoryQueueStorage,
+  JobQueue,
+  SqliteQueueStorage,
   SqliteRateLimiter,
 } from "@ellmers/job-queue";
 import {
@@ -29,6 +31,7 @@ import {
 import { sleep } from "@ellmers/util";
 import { registerMediaPipeTfJsLocalTasks } from "../bindings/registerTasks";
 import { MEDIA_PIPE_TFJS_MODEL } from "../model/MediaPipeModel";
+import { AiProviderInput } from "@ellmers/ai";
 
 const wrapper = function () {
   if (process["isBun"]) {
@@ -54,10 +57,13 @@ describe("TfMediaPipeBinding", () => {
   describe("InMemoryJobQueue", () => {
     it("should initialize without errors", async () => {
       const queueRegistry = getTaskQueueRegistry();
-      const jobQueue = new InMemoryJobQueue<TaskInput, TaskOutput>(
+      const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
         MEDIA_PIPE_TFJS_MODEL,
         AiJob<TaskInput, TaskOutput>,
         {
+          storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
+            MEDIA_PIPE_TFJS_MODEL
+          ),
           limiter: new ConcurrencyLimiter(1, 10),
           waitDurationInMilliseconds: 1,
         }
@@ -115,16 +121,18 @@ describe("TfMediaPipeBinding", () => {
         universal_sentence_encoder.name
       );
 
-      const jobQueue = new SqliteJobQueue<TaskInput, TaskOutput>(
-        getDatabase(":memory:"),
+      const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
         MEDIA_PIPE_TFJS_MODEL,
         AiJob<TaskInput, TaskOutput>,
         {
+          storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
+            getDatabase(":memory:"),
+            MEDIA_PIPE_TFJS_MODEL
+          ),
           limiter: new SqliteRateLimiter(getDatabase(":memory:"), MEDIA_PIPE_TFJS_MODEL, 4, 1),
           waitDurationInMilliseconds: 1,
         }
       );
-      jobQueue.ensureTableExists();
 
       getTaskQueueRegistry().registerQueue(jobQueue);
       const queue = getTaskQueueRegistry().getQueue(MEDIA_PIPE_TFJS_MODEL);

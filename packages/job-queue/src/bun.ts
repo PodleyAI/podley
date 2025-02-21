@@ -18,6 +18,9 @@ export * from "./job/DelayLimiter";
 export * from "./job/CompositeLimiter";
 export * from "./job/NullLimiter";
 
+export * from "./storage/InMemoryQueueStorage";
+export * from "./storage/InMemoryRateLimiter";
+
 export * from "./storage/SqliteQueueStorage";
 export * from "./storage/SqliteRateLimiter";
 

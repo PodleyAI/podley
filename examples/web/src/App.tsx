@@ -18,7 +18,7 @@ import {
   IndexedDbTaskGraphRepository,
   IndexedDbTaskOutputRepository,
 } from "@ellmers/task-graph";
-import { InMemoryJobQueue, ConcurrencyLimiter } from "@ellmers/job-queue";
+import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
 import {
   LOCAL_ONNX_TRANSFORMERJS,
   registerHuggingfaceLocalTasks,
@@ -44,18 +44,14 @@ const queueRegistry = getTaskQueueRegistry();
 
 registerHuggingfaceLocalTasks();
 queueRegistry.registerQueue(
-  new InMemoryJobQueue<TaskInput, TaskOutput>(
-    LOCAL_ONNX_TRANSFORMERJS,
-    AiJob<TaskInput, TaskOutput>,
-    {
-      limiter: new ConcurrencyLimiter(1, 10),
-    }
-  )
+  new JobQueue<TaskInput, TaskOutput>(LOCAL_ONNX_TRANSFORMERJS, AiJob<TaskInput, TaskOutput>, {
+    limiter: new ConcurrencyLimiter(1, 10),
+  })
 );
 
 registerMediaPipeTfJsLocalTasks();
 queueRegistry.registerQueue(
-  new InMemoryJobQueue<TaskInput, TaskOutput>(MEDIA_PIPE_TFJS_MODEL, AiJob<TaskInput, TaskOutput>, {
+  new JobQueue<TaskInput, TaskOutput>(MEDIA_PIPE_TFJS_MODEL, AiJob<TaskInput, TaskOutput>, {
     limiter: new ConcurrencyLimiter(1, 10),
   })
 );

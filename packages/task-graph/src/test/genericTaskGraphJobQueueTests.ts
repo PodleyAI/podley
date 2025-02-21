@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { expect, it, beforeEach, afterEach } from "bun:test";
-import { Job, JobQueue } from "@ellmers/job-queue";
+import { IJobQueue, Job, JobQueue } from "@ellmers/job-queue";
 import { TaskInput, TaskOutput } from "../task/TaskTypes";
 import { JobQueueTask } from "../task/JobQueueTask";
 import { getTaskQueueRegistry } from "../task/TaskQueueRegistry";
