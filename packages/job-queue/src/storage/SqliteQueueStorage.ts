@@ -319,7 +319,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
               progressMessage = "", 
               progressDetails = NULL, 
               retries = retries + 1,
-              lastRanAt = ?,
+              lastRanAt = ?
             WHERE id = ? AND queue = ?`;
       params = [
         job.error ?? null,
