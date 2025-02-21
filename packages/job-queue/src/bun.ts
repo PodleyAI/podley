@@ -20,11 +20,13 @@ export * from "./job/NullLimiter";
 
 export * from "./storage/InMemoryQueueStorage";
 export * from "./storage/InMemoryRateLimiter";
+export * from "./bindings/InMemoryJobQueue";
 
 export * from "./storage/SqliteQueueStorage";
 export * from "./storage/SqliteRateLimiter";
+export * from "./bindings/SqliteJobQueue";
 
 export * from "./storage/PostgresQueueStorage";
 export * from "./storage/PostgresRateLimiter";
-
+export * from "./bindings/PostgresJobQueue";
 export * from "./storage/IndexedDbQueueStorage";

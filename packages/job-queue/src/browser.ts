@@ -20,5 +20,7 @@ export * from "./job/NullLimiter";
 
 export * from "./storage/InMemoryQueueStorage";
 export * from "./storage/InMemoryRateLimiter";
+export * from "./bindings/InMemoryJobQueue";
 
 export * from "./storage/IndexedDbQueueStorage";
+export * from "./bindings/IndexedDbJobQueue";
