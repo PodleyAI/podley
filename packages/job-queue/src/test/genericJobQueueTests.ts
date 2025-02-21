@@ -103,7 +103,7 @@ export function runGenericJobQueueTests(
       expect(job?.output).toEqual({ result: "success" });
     });
 
-    it.only("should delete completed jobs after specified time", async () => {
+    it("should delete completed jobs after specified time", async () => {
       const deleteAfterCompletionMs = 10;
       // @ts-ignore - Accessing protected property for testing
       jobQueue.options = {
@@ -127,7 +127,7 @@ export function runGenericJobQueueTests(
       expect(deletedJobExists).toBe(false);
     });
 
-    it.only("should delete failed jobs after specified time", async () => {
+    it("should delete failed jobs after specified time", async () => {
       const deleteAfterFailureMs = 10;
       // @ts-ignore - Accessing protected property for testing
       jobQueue.options = {
