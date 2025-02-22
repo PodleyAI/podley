@@ -10,3 +10,8 @@ export * from "./tabular/TabularRepository";
 export * from "./tabular/InMemoryTabularRepository";
 export * from "./tabular/IndexedDbTabularRepository";
 export * from "./util/IndexedDbTable";
+
+export * from "./kv/IKvRepository";
+export * from "./kv/KvRepository";
+export * from "./kv/IndexedDbKvRepository";
+export * from "./kv/InMemoryKvRepository";
