@@ -6,8 +6,9 @@
 //    *******************************************************************************
 
 import { PostgresTabularRepository } from "../tabular/PostgresTabularRepository";
-import { BasicKeyType, JSONValue } from "./IKvRepository";
+import { JSONValue } from "./IKvRepository";
 import { KvRepository } from "./KvRepository";
+import { BasicKeyType } from "../tabular/ITabularRepository";
 
 /**
  * Abstract base class for key-value storage repositories.

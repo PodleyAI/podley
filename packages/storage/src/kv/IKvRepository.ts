@@ -1,4 +1,5 @@
 import { EventEmitter, EventParameters } from "@ellmers/util";
+import { BasicKeyType } from "../tabular/ITabularRepository";
 
 //    *******************************************************************************
 //    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
@@ -33,7 +34,7 @@ export type KvEventParameters<Event extends KvEventName, Key, Value, Combined> =
 /**
  * Schema definitions for primary keys and values
  */
-export type BasicKeyType = string | number | bigint;
+
 export type JSONValue =
   | string
   | number

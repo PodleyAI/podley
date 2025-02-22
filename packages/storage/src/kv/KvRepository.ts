@@ -13,11 +13,14 @@ import {
   KvEventListeners,
   KvEventParameters,
   IKvRepository,
-  BasicKeyType,
   JSONValue,
 } from "./IKvRepository";
 import { TabularRepository } from "../tabular/TabularRepository";
-import { DefaultPrimaryKeyType, DefaultValueType } from "../tabular/ITabularRepository";
+import {
+  DefaultPrimaryKeyType,
+  DefaultValueType,
+  BasicKeyType,
+} from "../tabular/ITabularRepository";
 
 /**
  * Abstract base class for key-value storage repositories.

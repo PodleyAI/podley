@@ -5,9 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { BasicKeyType, JSONValue } from "./IKvRepository";
+import { JSONValue } from "./IKvRepository";
 import { KvRepository } from "./KvRepository";
 import { FsFolderTabularRepository } from "../tabular/FsFolderTabularRepository";
+import { BasicKeyType } from "../tabular/ITabularRepository";
 
 /**
  * Abstract base class for key-value storage repositories.
