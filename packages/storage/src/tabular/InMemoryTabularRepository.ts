@@ -14,8 +14,8 @@ import {
   DefaultValueSchema,
   DefaultPrimaryKeyType,
   DefaultPrimaryKeySchema,
-} from "./IKVRepository";
-import { KVRepository } from "./KVRepository";
+} from "./ITabularRepository";
+import { TabularRepository } from "./TabularRepository";
 
 /**
  * A generic in-memory key-value repository implementation.
@@ -27,18 +27,18 @@ import { KVRepository } from "./KVRepository";
  * @template ValueSchema - Schema definition for the value
  * @template Combined - The combined type of Key & Value
  */
-export class InMemoryKVRepository<
+export class InMemoryTabularRepository<
   Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
   Value extends Record<string, any> = DefaultValueType,
   PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
   ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
   Combined extends Record<string, any> = Key & Value,
-> extends KVRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+> extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /** Internal storage using a Map with fingerprint strings as keys */
   values = new Map<string, Combined>();
 
   /**
-   * Creates a new InMemoryKVRepository instance
+   * Creates a new InMemoryTabularRepository instance
    * @param primaryKeySchema - Schema defining the structure of primary keys
    * @param valueSchema - Schema defining the structure of values
    * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
@@ -97,17 +97,6 @@ export class InMemoryKVRepository<
     const bestIndex = this.findBestMatchingIndex(searchKeys);
     if (!bestIndex) {
       throw new Error("No suitable index found for the search criteria");
-    }
-
-    // Convert single key to array for consistent handling
-    const indexCols = Array.isArray(bestIndex) ? bestIndex : [bestIndex];
-
-    // Validate that we have all required index values and they are valid
-    for (const col of indexCols) {
-      const val = key[col];
-      if (val === undefined) {
-        throw new Error(`Missing value for indexed column: ${String(col)}`);
-      }
     }
 
     // Filter results based on the search criteria

@@ -14,10 +14,10 @@ import {
   DefaultValueSchema,
   DefaultPrimaryKeyType,
   DefaultPrimaryKeySchema,
-} from "./IKVRepository";
-import { KVRepository } from "./KVRepository";
+} from "./ITabularRepository";
+import { TabularRepository } from "./TabularRepository";
 /**
- * A key-value repository implementation using IndexedDB for browser-based storage.
+ * A tabular repository implementation using IndexedDB for browser-based storage.
  *
  * @template Key - The type of the primary key object
  * @template Value - The type of the value object to be stored
@@ -25,18 +25,18 @@ import { KVRepository } from "./KVRepository";
  * @template ValueSchema - Schema definition for the value
  * @template Combined - Combined type of Key & Value
  */
-export class IndexedDbKVRepository<
+export class IndexedDbTabularRepository<
   Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
   Value extends Record<string, any> = DefaultValueType,
   PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
   ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
   Combined extends Record<string, any> = Key & Value,
-> extends KVRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+> extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /** Promise that resolves to the IndexedDB database instance */
   private dbPromise: Promise<IDBDatabase> | undefined;
 
   /**
-   * Creates a new IndexedDB-based key-value repository.
+   * Creates a new IndexedDB-based tabular repository.
    * @param table - Name of the IndexedDB store to use.
    * @param primaryKeySchema - Schema defining the structure of primary keys.
    * @param valueSchema - Schema defining the structure of values.
@@ -44,45 +44,34 @@ export class IndexedDbKVRepository<
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
-    public table: string = "kv_store",
+    public table: string = "tabular_store",
     primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    searchable: Array<keyof Combined | Array<keyof Combined>> = []
+    searchableIndex: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
-    super(primaryKeySchema, valueSchema, searchable as Array<keyof Combined>);
+    super(primaryKeySchema, valueSchema, searchableIndex as Array<keyof Combined>);
     const pkColumns = super.primaryKeyColumns() as string[];
 
     // Create index definitions for both single and compound indexes
     const expectedIndexes: ExpectedIndexDefinition[] = [];
 
     for (const spec of this.searchable) {
-      if (Array.isArray(spec)) {
-        // Handle compound index
-        const columns = spec as Array<keyof Combined>;
-        // Skip if this is just the primary key or a prefix of it
-        if (columns.length <= pkColumns.length) {
-          const isPkPrefix = columns.every((col, idx) => col === pkColumns[idx]);
-          if (isPkPrefix) continue;
-        }
-
-        // Create compound index name and keyPath
-        const indexName = columns.join("_");
-        expectedIndexes.push({
-          name: indexName,
-          keyPath: columns.map((col) => String(col)),
-          options: { unique: false },
-        });
-      } else {
-        // Handle single column index
-        const field = spec as keyof Combined;
-        if (!pkColumns.includes(String(field))) {
-          expectedIndexes.push({
-            name: String(field),
-            keyPath: String(field),
-            options: { unique: false },
-          });
-        }
+      // Handle compound index
+      const columns = spec as Array<keyof Combined>;
+      // Skip if this is just the primary key or a prefix of it
+      if (columns.length <= pkColumns.length) {
+        const isPkPrefix = columns.every((col, idx) => col === pkColumns[idx]);
+        if (isPkPrefix) continue;
       }
+
+      // Create compound index name and keyPath
+      const columnNames = columns.map((col) => String(col));
+      const indexName = columnNames.join("_");
+      expectedIndexes.push({
+        name: indexName,
+        keyPath: columnNames.length === 1 ? columnNames[0] : columnNames,
+        options: { unique: false },
+      });
     }
 
     const primaryKey = pkColumns.length === 1 ? pkColumns[0] : pkColumns;
@@ -92,7 +81,7 @@ export class IndexedDbKVRepository<
   }
 
   /**
-   * Stores a key-value pair in the repository.
+   * Stores a row in the repository.
    * @param key - The key object.
    * @param value - The value object to store.
    * @emits put - Emitted when the value is successfully stored
@@ -201,38 +190,62 @@ export class IndexedDbKVRepository<
       const store = transaction.objectStore(this.table);
 
       // For compound indexes, the index name is the columns joined by underscore
-      const indexName = Array.isArray(bestIndex) ? bestIndex.join("_") : String(bestIndex);
-      const index = store.index(indexName);
+      const indexName = bestIndex.join("_");
+      const primaryKeyName = this.primaryKeyColumns().join("_");
+      const isPrimaryKey = indexName === primaryKeyName;
 
-      // Get the values for the index columns
-      const indexCols = Array.isArray(bestIndex) ? bestIndex : [bestIndex];
+      // Get the values for the index columns that we have
       const indexValues: IDBValidKey[] = [];
 
-      // Validate and collect all required index values
-      for (const col of indexCols) {
+      // Collect values for consecutive columns from the start of the index
+      for (const col of bestIndex) {
         const val = key[col];
-        if (val === undefined || (typeof val !== "string" && typeof val !== "number")) {
-          throw new Error(`Missing or invalid value for indexed column: ${String(col)}`);
+        // Break on first undefined value for compound index
+        if (val === undefined) break;
+        if (typeof val !== "string" && typeof val !== "number") {
+          throw new Error(`Invalid value type for indexed column ${String(col)}`);
         }
         indexValues.push(val);
       }
 
-      // Use the index with the collected values
-      const request = index.getAll(indexValues.length === 1 ? indexValues[0] : indexValues);
+      // If we have at least one valid index value, use it
+      let request: IDBRequest;
+      if (indexValues.length > 0) {
+        if (isPrimaryKey && indexValues.length < bestIndex.length) {
+          // For primary key prefix search, use IDBKeyRange
+          const keyRange = IDBKeyRange.bound(
+            indexValues,
+            indexValues.concat(["\uffff"]), // Use high value for upper bound
+            true, // Include lower bound
+            true // Include upper bound
+          );
+          request = store.getAll(keyRange);
+        } else {
+          // For regular indexes or exact primary key match
+          const index = isPrimaryKey ? store : store.index(indexName);
+          request = index.getAll(indexValues.length === 1 ? indexValues[0] : indexValues);
+        }
+      } else {
+        throw new Error(`No valid values provided for indexed columns: ${bestIndex.join(", ")}`);
+      }
 
       request.onsuccess = () => {
         // Filter results for any additional search keys
-        const results = request.result.filter((item) =>
+        const results = request.result.filter((item: Combined) =>
           Object.entries(key).every(([k, v]) => item[k] === v)
         );
         resolve(results.length > 0 ? results : undefined);
       };
-      request.onerror = () => reject(request.error);
+
+      request.onerror = () => {
+        console.error("Search error:", request.error);
+        reject(request.error);
+      };
     });
   }
 
   /**
-   * Deletes a key-value pair from the repository.
+   * Deletes a row from the repository.
    * @param key - The key object to delete.
    */
   async deleteKeyValue(key: Key): Promise<void> {
@@ -270,7 +283,7 @@ export class IndexedDbKVRepository<
   }
 
   /**
-   * Returns the total number of key-value pairs in the repository.
+   * Returns the total number of rows in the repository.
    * @returns Count of stored items.
    */
   async size(): Promise<number> {

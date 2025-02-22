@@ -8,20 +8,20 @@
 import "fake-indexeddb/auto";
 import { nanoid } from "nanoid";
 import { afterEach, describe } from "bun:test";
-import { IndexedDbKVRepository } from "../IndexedDbKVRepository";
+import { IndexedDbTabularRepository } from "../IndexedDbTabularRepository";
 import {
   PrimaryKey,
   PrimaryKeySchema,
-  runGenericKVRepositoryTests,
+  runGenericTabularRepositoryTests,
   Value,
   ValueSchema,
   CompoundKey,
   CompoundValue,
   CompoundPrimaryKeySchema,
   CompoundValueSchema,
-} from "./genericKVRepositoryTests";
+} from "./genericTabularRepositoryTests";
 
-describe("IndexedDbKVRepository", () => {
+describe("IndexedDbTabularRepository", () => {
   const dbName = `idx_test_${nanoid()}`;
 
   // Clean up after each test
@@ -39,10 +39,10 @@ describe("IndexedDbKVRepository", () => {
     indexedDB.deleteDatabase(`${dbName}_compound`);
   });
 
-  runGenericKVRepositoryTests(
-    async () => new IndexedDbKVRepository(`${dbName}_simple`),
+  runGenericTabularRepositoryTests(
+    async () => new IndexedDbTabularRepository(`${dbName}_simple`),
     async () =>
-      new IndexedDbKVRepository<PrimaryKey, Value>(
+      new IndexedDbTabularRepository<PrimaryKey, Value>(
         `${dbName}_complex`,
         PrimaryKeySchema,
         ValueSchema
@@ -54,7 +54,7 @@ describe("IndexedDbKVRepository", () => {
         ["subcategory", "category"],
         "value",
       ] as const;
-      return new IndexedDbKVRepository<CompoundKey, CompoundValue>(
+      return new IndexedDbTabularRepository<CompoundKey, CompoundValue>(
         `${dbName}_compound`,
         CompoundPrimaryKeySchema,
         CompoundValueSchema,

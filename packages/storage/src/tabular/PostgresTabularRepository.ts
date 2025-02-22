@@ -5,87 +5,85 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Database } from "bun:sqlite";
+import type { Pool } from "pg";
+
+import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import {
+  BasePrimaryKeySchema,
   BaseValueSchema,
   BasicKeyType,
-  BasePrimaryKeySchema,
-  DefaultValueType,
-  DefaultValueSchema,
-  DefaultPrimaryKeyType,
   DefaultPrimaryKeySchema,
-} from "./IKVRepository";
-import { BaseSqlKVRepository } from "./BaseSqlKVRepository";
-
-// SqliteKVRepository is a key-value store that uses SQLite as the backend for
-// in app data.
+  DefaultPrimaryKeyType,
+  DefaultValueSchema,
+  DefaultValueType,
+} from "./ITabularRepository";
 
 /**
- * A SQLite-based key-value repository implementation.
- * @template Key - The type of the primary key object, must be a record of basic types
- * @template Value - The type of the value object being stored
+ * A PostgreSQL-based tabular repository implementation that extends BaseSqlTabularRepository.
+ * This class provides persistent storage for data in a PostgreSQL database,
+ * making it suitable for multi-user scenarios.
+ *
+ * @template Key - The type of the primary key, must be a record of basic types
+ * @template Value - The type of the stored value, can be any record type
  * @template PrimaryKeySchema - Schema definition for the primary key
  * @template ValueSchema - Schema definition for the value
  * @template Combined - Combined type of Key & Value
  */
-export class SqliteKVRepository<
+export class PostgresTabularRepository<
   Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
   Value extends Record<string, any> = DefaultValueType,
   PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
   ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
   Combined extends Record<string, any> = Key & Value,
-> extends BaseSqlKVRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
-  /** The SQLite database instance */
-  private db: Database;
+> extends BaseSqlTabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  private db: Pool;
 
   /**
-   * Creates a new SQLite key-value repository
-   * @param dbOrPath - Either a Database instance or a path to the SQLite database file
-   * @param table - The name of the table to use for storage (defaults to 'kv_store')
-   * @param primaryKeySchema - Schema defining the structure of the primary key
-   * @param valueSchema - Schema defining the structure of the values
+   * Creates a new PostgresTabularRepository instance.
+   *
+   * @param db - PostgreSQL db
+   * @param table - Name of the table to store data (defaults to "tabular_store")
+   * @param primaryKeySchema - Schema definition for primary key columns
+   * @param valueSchema - Schema definition for value columns
    * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
-    dbOrPath: string,
-    table: string = "kv_store",
+    db: Pool,
+    table: string = "tabular_store",
     primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
     searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     super(table, primaryKeySchema, valueSchema, searchable);
-    if (typeof dbOrPath === "string") {
-      this.db = new Database(dbOrPath);
-    } else {
-      this.db = dbOrPath;
-    }
-    this.setupDatabase();
+    this.db = db;
+    this.dbPromise = this.setupDatabase();
   }
 
+  private dbPromise: Promise<void> | undefined;
+
   /**
-   * Creates the database table if it doesn't exist with the defined schema
+   * Initializes the database table with the required schema.
+   * Creates the table if it doesn't exist with primary key and value columns.
    */
-  public setupDatabase(): void {
+  private async setupDatabase(): Promise<void> {
     const sql = `
-      CREATE TABLE IF NOT EXISTS \`${this.table}\` (
+      CREATE TABLE IF NOT EXISTS "${this.table}" (
         ${this.constructPrimaryKeyColumns()},
         ${this.constructValueColumns()},
         PRIMARY KEY (${this.primaryKeyColumnList()}) 
       )
     `;
-    this.db.exec(sql);
+    await this.db.query(sql);
 
     // Get primary key columns to avoid creating redundant indexes
     const pkColumns = this.primaryKeyColumns();
+    const pkColumnSet = new Set(pkColumns);
 
     // Track created indexes to avoid duplicates and redundant indexes
     const createdIndexes = new Set<string>();
 
-    for (const searchSpec of this.searchable) {
-      // Handle both single column and compound indexes
-      const columns = Array.isArray(searchSpec) ? searchSpec : [searchSpec];
-
+    for (const columns of this.searchable) {
       // Skip if this is just the primary key or a prefix of it
       if (columns.length <= pkColumns.length) {
         const isPkPrefix = columns.every((col, idx) => col === pkColumns[idx]);
@@ -94,7 +92,7 @@ export class SqliteKVRepository<
 
       // Create index name and column list
       const indexName = `${this.table}_${columns.join("_")}`;
-      const columnList = columns.map((col) => `\`${String(col)}\``).join(", ");
+      const columnList = columns.map((col) => `"${String(col)}"`).join(", ");
 
       // Skip if we've already created this index or if it's redundant
       const columnKey = columns.join(",");
@@ -110,8 +108,8 @@ export class SqliteKVRepository<
       });
 
       if (!isRedundant) {
-        this.db.exec(
-          `CREATE INDEX IF NOT EXISTS \`${indexName}\` ON \`${this.table}\` (${columnList})`
+        await this.db.query(
+          `CREATE INDEX IF NOT EXISTS "${indexName}" ON "${this.table}" (${columnList})`
         );
         createdIndexes.add(columnKey);
       }
@@ -119,16 +117,18 @@ export class SqliteKVRepository<
   }
 
   /**
-   * Maps TypeScript/JavaScript types to their SQLite column type equivalents
+   * Maps TypeScript/JavaScript types to corresponding PostgreSQL data types.
+   *
    * @param type - The TypeScript/JavaScript type to map
-   * @returns The corresponding SQLite column type
+   * @returns The corresponding PostgreSQL data type
    */
   protected mapTypeToSQL(type: string): string {
     // Basic type mapping; extend according to your needs
     switch (type) {
       case "string":
         return "TEXT";
-      case "boolean": // SQLite uses INTEGER for boolean
+      case "boolean":
+        return "BOOLEAN";
       case "number":
         return "INTEGER";
       default:
@@ -137,112 +137,105 @@ export class SqliteKVRepository<
   }
 
   /**
-   * Stores a key-value pair in the database
+   * Stores or updates a row in the database.
+   * Uses UPSERT (INSERT ... ON CONFLICT DO UPDATE) for atomic operations.
+   *
    * @param key - The primary key object
    * @param value - The value object to store
-   * @emits 'put' event when successful
+   * @emits "put" event with the key when successful
    */
   async putKeyValue(key: Key, value: Value): Promise<void> {
+    await this.dbPromise;
     const sql = `
-      INSERT OR REPLACE INTO \`${
-        this.table
-      }\` (${this.primaryKeyColumnList()}, ${this.valueColumnList()})
-      VALUES (
-        ${this.primaryKeyColumns().map((i) => "?")},
-        ${this.valueColumns().map((i) => "?")}
+      INSERT INTO "${this.table}" (
+        ${this.primaryKeyColumnList()},
+        ${this.valueColumnList()}
       )
+      VALUES (
+        ${[...this.primaryKeyColumns(), ...this.valueColumns()]
+          .map((_, i) => `$${i + 1}`)
+          .join(", ")}
+      )
+      ON CONFLICT (${this.primaryKeyColumnList()}) DO UPDATE
+      SET 
+      ${(this.valueColumns() as string[])
+        .map((col, i) => `${col} = $${i + this.primaryKeyColumns().length + 1}`)
+        .join(", ")}
     `;
-    const stmt = this.db.prepare(sql);
 
     const primaryKeyParams = this.getPrimaryKeyAsOrderedArray(key);
     const valueParams = this.getValueAsOrderedArray(value);
     const params = [...primaryKeyParams, ...valueParams];
-
-    const result = stmt.run(...params);
-
+    await this.db.query(sql, params);
     this.events.emit("put", key, value);
   }
 
   /**
-   * Retrieves a value from the database by its key
+   * Retrieves a value from the database by its primary key.
+   *
    * @param key - The primary key object to look up
    * @returns The stored value or undefined if not found
-   * @emits 'get' event when successful
+   * @emits "get" event with the key when successful
    */
   async getKeyValue(key: Key): Promise<Value | undefined> {
+    await this.dbPromise;
     const whereClauses = (this.primaryKeyColumns() as string[])
-      .map((key) => `\`${key}\` = ?`)
+      .map((discriminatorKey, i) => `${discriminatorKey} = $${i + 1}`)
       .join(" AND ");
 
-    const sql = `
-      SELECT ${this.valueColumnList()} FROM \`${this.table}\` WHERE ${whereClauses}
-    `;
-    const stmt = this.db.prepare<Value, BasicKeyType[]>(sql);
+    const sql = `SELECT ${this.valueColumnList()} FROM "${this.table}" WHERE ${whereClauses}`;
     const params = this.getPrimaryKeyAsOrderedArray(key);
-    const value = stmt.get(...params);
-    if (value) {
-      this.events.emit("get", key, value);
-      return value;
+    const result = await this.db.query(sql, params);
+
+    let val: Value | undefined;
+    if (result.rows.length > 0) {
+      val = result.rows[0] as Value;
     } else {
-      this.events.emit("get", key, undefined);
-      return undefined;
+      val = undefined;
     }
+    this.events.emit("get", key, val);
+    return val;
   }
 
   /**
-   * Method to be implemented by concrete repositories to search for key-value pairs
+   * Method to be implemented by concrete repositories to search for rows
    * based on a partial key.
    *
    * @param key - Partial key to search for
-   * @returns Promise resolving to an array of combined key-value objects or undefined if not found
+   * @returns Promise resolving to an array of combined row objects or undefined if not found
    */
   public async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
+    await this.dbPromise;
     const searchKeys = Object.keys(key);
     if (searchKeys.length === 0) {
       return undefined;
     }
 
     // Find the best matching index for the search
-    const bestIndex = super.findBestMatchingIndex(searchKeys);
+    const bestIndex = this.findBestMatchingIndex(searchKeys);
     if (!bestIndex) {
+      console.log("No suitable index found for the search criteria", key, searchKeys, bestIndex);
       throw new Error("No suitable index found for the search criteria");
     }
 
-    // Convert single key to array for consistent handling
-    const indexCols = Array.isArray(bestIndex) ? bestIndex : [bestIndex];
-
-    // Build the WHERE clause using the best matching index
-    const whereClauses = indexCols.map((col) => `\`${String(col)}\` = ?`).join(" AND ");
-
-    // Get params and ensure they are valid BasicKeyType values
-    const params: BasicKeyType[] = [];
-    for (const col of indexCols) {
-      const val = key[col];
-      if (
-        val === undefined ||
-        (typeof val !== "string" && typeof val !== "number" && typeof val !== "bigint")
-      ) {
-        throw new Error(`Missing or invalid value for indexed column: ${String(col)}`);
-      }
-      params.push(val);
+    // very columns in primary key or value schema
+    const validColumns = [...this.primaryKeyColumns(), ...this.valueColumns()];
+    const invalidColumns = searchKeys.filter((key) => !validColumns.includes(key));
+    if (invalidColumns.length > 0) {
+      throw new Error(`Invalid columns in search criteria: ${invalidColumns.join(", ")}`);
     }
 
-    const sql = `
-      SELECT * FROM \`${this.table}\` WHERE ${whereClauses}
-    `;
-    const stmt = this.db.prepare<Combined, BasicKeyType[]>(sql);
-    const value = stmt.all(...params);
+    const whereClauses = Object.keys(key)
+      .map((key, i) => `"${key}" = $${i + 1}`)
+      .join(" AND ");
+    const whereClauseValues = Object.values(key);
 
-    // Filter results for any additional search keys not covered by the index
-    const remainingKeys = searchKeys.filter((k) => !indexCols.includes(k as keyof Combined));
-    const filteredValue =
-      remainingKeys.length > 0
-        ? value.filter((row) => remainingKeys.every((k) => row[k] === key[k]))
-        : value;
+    const sql = `SELECT * FROM "${this.table}" WHERE ${whereClauses}`;
+    const result = await this.db.query<Combined, any[]>(sql, whereClauseValues);
 
-    if (filteredValue.length > 0) {
-      this.events.emit("search", key, filteredValue);
-      return filteredValue;
+    if (result.rows.length > 0) {
+      this.events.emit("search", key, result.rows);
+      return result.rows;
     } else {
       this.events.emit("search", key, undefined);
       return undefined;
@@ -250,17 +243,19 @@ export class SqliteKVRepository<
   }
 
   /**
-   * Deletes a key-value pair from the database
+   * Deletes a row from the database.
+   *
    * @param key - The primary key object to delete
-   * @emits 'delete' event when successful
+   * @emits "delete" event with the key when successful
    */
   async deleteKeyValue(key: Key): Promise<void> {
+    await this.dbPromise;
     const whereClauses = (this.primaryKeyColumns() as string[])
-      .map((key) => `${key} = ?`)
+      .map((key, i) => `${key} = $${i + 1}`)
       .join(" AND ");
+
     const params = this.getPrimaryKeyAsOrderedArray(key);
-    const stmt = this.db.prepare(`DELETE FROM ${this.table} WHERE ${whereClauses}`);
-    stmt.run(...params);
+    await this.db.query(`DELETE FROM "${this.table}" WHERE ${whereClauses}`, params);
     this.events.emit("delete", key);
   }
 
@@ -269,29 +264,30 @@ export class SqliteKVRepository<
    * @returns Promise resolving to an array of entries or undefined if not found
    */
   async getAll(): Promise<Combined[] | undefined> {
-    const sql = `SELECT * FROM \`${this.table}\``;
-    const stmt = this.db.prepare<Combined, []>(sql);
-    const value = stmt.all();
-    return value.length ? value : undefined;
+    await this.dbPromise;
+    const sql = `SELECT * FROM "${this.table}"`;
+    const result = await this.db.query<Combined, []>(sql);
+    return result.rows.length ? result.rows : undefined;
   }
 
   /**
-   * Deletes all entries from the database table
-   * @emits 'clearall' event when successful
+   * Deletes all rows from the database table.
+   * @emits "clearall" event when successful
    */
   async deleteAll(): Promise<void> {
-    this.db.exec(`DELETE FROM ${this.table}`);
+    await this.dbPromise;
+    await this.db.query(`DELETE FROM "${this.table}"`);
     this.events.emit("clearall");
   }
 
   /**
-   * Gets the total number of entries in the database table
-   * @returns The count of entries
+   * Returns the total number of rows in the database.
+   *
+   * @returns Promise resolving to the count of stored items
    */
   async size(): Promise<number> {
-    const stmt = this.db.prepare<{ count: number }, []>(`
-      SELECT COUNT(*) AS count FROM ${this.table}
-    `);
-    return stmt.get()?.count || 0;
+    await this.dbPromise;
+    const result = await this.db.query(`SELECT COUNT(*) FROM "${this.table}"`);
+    return parseInt(result.rows[0].count, 10);
   }
 }

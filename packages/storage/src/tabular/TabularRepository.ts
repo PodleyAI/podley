@@ -8,43 +8,43 @@
 import { EventEmitter } from "@ellmers/util";
 import { makeFingerprint } from "@ellmers/util";
 import {
-  IKVRepository,
-  BasicKeyType,
-  BasicValueType,
+  TabularEventName,
+  TabularEventListener,
+  TabularEventListeners,
+  TabularEventParameters,
+  ITabularRepository,
   BasePrimaryKeySchema,
   BaseValueSchema,
-  DefaultPrimaryKeySchema,
+  BasicKeyType,
+  BasicValueType,
   DefaultPrimaryKeyType,
-  DefaultValueSchema,
   DefaultValueType,
-  KVEventName,
-  KVEventListener,
-  KVEventListeners,
-  KVEventParameters,
-} from "./IKVRepository";
+  DefaultPrimaryKeySchema,
+  DefaultValueSchema,
+} from "./ITabularRepository";
 
 /**
- * Abstract base class for key-value storage repositories.
- * Provides a flexible interface for storing and retrieving data with typed
- * keys and values, and supports comound keys and partial key lookup.
+ * Abstract base class for tabular storage repositories.
+ * Provides functionality for storing and retrieving data with typed
+ * primary keys and values, and supports compound keys and partial key lookup.
  * Has a basic event emitter for listening to repository events.
  *
- * @typeParam Key - Type for the primary key structure
- * @typeParam Value - Type for the value structure
- * @typeParam PrimaryKeySchema - Schema definition for the primary key
- * @typeParam ValueSchema - Schema definition for the value
- * @typeParam Combined - Combined type of Key & Value
+ * @template Key - The type of the primary key object
+ * @template Value - The type of the value object being stored
+ * @template PrimaryKeySchema - Schema definition for the primary key
+ * @template ValueSchema - Schema definition for the value
+ * @template Combined - Combined type of Key & Value
  */
-export abstract class KVRepository<
+export abstract class TabularRepository<
   Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
   Value extends Record<string, any> = DefaultValueType,
   PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
   ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
   Combined extends Record<string, any> = Key & Value,
-> implements IKVRepository<Key, Value, Combined>
+> implements ITabularRepository<Key, Value, Combined>
 {
   /** Event emitter for repository events */
-  protected events = new EventEmitter<KVEventListeners<Key, Value, Combined>>();
+  protected events = new EventEmitter<TabularEventListeners<Key, Value, Combined>>();
 
   /**
    * Indexes for primary key and value columns which are _only_ populated if the
@@ -52,18 +52,18 @@ export abstract class KVRepository<
    */
   protected primaryKeyIndex: string | undefined = undefined;
   protected valueIndex: string | undefined = undefined;
-
+  protected searchable: Array<Array<keyof Combined>>;
   /**
-   * Creates a new KVRepository instance
+   * Creates a new TabularRepository instance
    * @param primaryKeySchema - Schema defining the structure of primary keys
    * @param valueSchema - Schema defining the structure of values
-   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   * @param searchable - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
     protected primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     protected valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    protected searchable: Array<keyof Combined | Array<keyof Combined>> = []
+    searchableInput: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     this.primaryKeySchema = primaryKeySchema;
     this.valueSchema = valueSchema;
@@ -74,21 +74,35 @@ export abstract class KVRepository<
       this.valueIndex = this.valueColumns()[0] as string;
     }
 
-    // Ensure first part of primary key is searchable
-    const firstKeyPart = this.primaryKeyColumns()[0] as keyof Combined;
-    const hasFirstKeyPart = this.searchable.some((spec) =>
-      typeof spec === "string"
-        ? spec === firstKeyPart
-        : (spec as Array<keyof Combined>)[0] === firstKeyPart
-    );
-    if (!hasFirstKeyPart) {
-      this.searchable.push(firstKeyPart);
+    // validate all combined columns names are "identifier" names
+    const combinedColumns = [...this.primaryKeyColumns(), ...this.valueColumns()];
+    for (const column of combinedColumns) {
+      if (typeof column !== "string") {
+        throw new Error("Column names must be strings");
+      }
+      if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(column)) {
+        throw new Error(
+          "Column names must start with a letter and contain only letters, digits, and underscores"
+        );
+      }
     }
 
+    // Normalize searchable into array of arrays
+    this.searchable = searchableInput.map((spec) => (Array.isArray(spec) ? spec : [spec])) as Array<
+      Array<keyof Combined>
+    >;
+
+    // searchable is an arrya of compound keys, which are arrays of columns
+    // clean up searchable array by removing any compoundkeys that are a prefix of another compoundkey
+    // or a prefix of the primary key
+    this.searchable = this.filterCompoundKeys(
+      this.primaryKeyColumns() as Array<keyof Combined>,
+      this.searchable
+    );
+
     // Validate searchable columns
-    for (const spec of this.searchable) {
-      const columns = Array.isArray(spec) ? (spec as Array<keyof Combined>) : [spec];
-      for (const column of columns) {
+    for (const compoundIndex of this.searchable) {
+      for (const column of compoundIndex) {
         if (!(column in this.primaryKeySchema) && !(column in this.valueSchema)) {
           throw new Error(
             `Searchable column ${String(column)} is not in the primary key schema or value schema`
@@ -98,12 +112,53 @@ export abstract class KVRepository<
     }
   }
 
+  protected filterCompoundKeys(
+    primaryKey: Array<keyof Combined>,
+    potentialKeys: Array<keyof Combined>[]
+  ): Array<keyof Combined>[] {
+    // Function to check if one array is a prefix of another
+    const isPrefix = (prefix: Array<keyof Combined>, arr: Array<keyof Combined>): boolean => {
+      if (prefix.length > arr.length) return false;
+      return prefix.every((val, index) => val === arr[index]);
+    };
+
+    // Sort potential keys by length
+    potentialKeys.sort((a, b) => a.length - b.length);
+
+    let filteredKeys: Array<keyof Combined>[] = [];
+
+    for (let i = 0; i < potentialKeys.length; i++) {
+      let key = potentialKeys[i];
+
+      // Skip if the key is a prefix of the primary key
+      if (isPrefix(key, primaryKey)) continue;
+
+      // Keep single-column indexes regardless of being a prefix
+      if (key.length === 1) {
+        filteredKeys.push(key);
+        continue;
+      }
+
+      // Skip if the key is a prefix of a later key in the list
+      let isRedundant = potentialKeys.some((otherKey, j) => j > i && isPrefix(key, otherKey));
+
+      if (!isRedundant) {
+        filteredKeys.push(key);
+      }
+    }
+
+    return filteredKeys;
+  }
+
   /**
    * Adds an event listener for a specific event
    * @param name The name of the event to listen for
    * @param fn The callback function to execute when the event occurs
    */
-  on<Event extends KVEventName>(name: Event, fn: KVEventListener<Event, Key, Value, Combined>) {
+  on<Event extends TabularEventName>(
+    name: Event,
+    fn: TabularEventListener<Event, Key, Value, Combined>
+  ) {
     this.events.on(name, fn);
   }
 
@@ -112,7 +167,10 @@ export abstract class KVRepository<
    * @param name The name of the event to remove the listener from
    * @param fn The callback function to remove
    */
-  off<Event extends KVEventName>(name: Event, fn: KVEventListener<Event, Key, Value, Combined>) {
+  off<Event extends TabularEventName>(
+    name: Event,
+    fn: TabularEventListener<Event, Key, Value, Combined>
+  ) {
     this.events.off(name, fn);
   }
 
@@ -121,7 +179,10 @@ export abstract class KVRepository<
    * @param name The name of the event to listen for
    * @param fn The callback function to execute when the event occurs
    */
-  once<Event extends KVEventName>(name: Event, fn: KVEventListener<Event, Key, Value, Combined>) {
+  once<Event extends TabularEventName>(
+    name: Event,
+    fn: TabularEventListener<Event, Key, Value, Combined>
+  ) {
     this.events.once(name, fn);
   }
 
@@ -130,10 +191,10 @@ export abstract class KVRepository<
    * @param name The name of the event to emit
    * @param args The arguments to pass to the event listeners
    */
-  emit<Event extends KVEventName>(
+  emit<Event extends TabularEventName>(
     name: Event,
-    ...args: KVEventParameters<Event, Key, Value, Combined>
-  ): void {
+    ...args: TabularEventParameters<Event, Key, Value, Combined>
+  ) {
     this.events.emit(name, ...args);
   }
 
@@ -142,10 +203,12 @@ export abstract class KVRepository<
    * @param name The name of the event to check
    * @returns true if the event has listeners, false otherwise
    */
-  emitted<Event extends KVEventName>(
+  emitted<Event extends TabularEventName>(
     name: Event
-  ): Promise<KVEventParameters<Event, Key, Value, Combined>> {
-    return this.events.emitted(name) as Promise<KVEventParameters<Event, Key, Value, Combined>>;
+  ): Promise<TabularEventParameters<Event, Key, Value, Combined>> {
+    return this.events.emitted(name) as Promise<
+      TabularEventParameters<Event, Key, Value, Combined>
+    >;
   }
 
   /**
@@ -159,11 +222,9 @@ export abstract class KVRepository<
   abstract size(): Promise<number>;
 
   /**
-   * Stores a key-value pair in the repository.
-   * This is a convenience method that automatically converts simple types to structured format if using default schema.
-   *
-   * @param key - Primary key to look up (basic key like default schema)
-   * @param value - Value to store (can be simple type if using a single property value like default schema)
+   * Stores a row in the repository.
+   * @param key - The primary key
+   * @param value - The value to store
    */
   public put(bkey: BasicKeyType, bvalue: BasicValueType): Promise<void> {
     if (!this.primaryKeyIndex || !this.valueIndex) {
@@ -196,19 +257,18 @@ export abstract class KVRepository<
   }
 
   /**
-   * Abstract method to be implemented by concrete repositories to search for key-value pairs
-   * based on a partial key or value.
+   * Abstract method to be implemented by concrete repositories to search for rows
+   * based on a partial key.
    *
-   * @param key - Partial key or value to search for
-   * @returns Promise resolving to an array of combined key-value objects or undefined if not found
+   * @param key - Partial key to search for
+   * @returns Promise resolving to an array of combined row objects or undefined if not found
    */
   public abstract search(key: Partial<Combined>): Promise<Combined[] | undefined>;
 
   /**
    * Retrieves both key and value as a combined object.
-   *
-   * @param key - Primary key to look up (can be simple type if using a single property key like default schema)
-   * @returns Combined key-value object or undefined if not found
+   * @param key - The primary key to look up
+   * @returns Combined row object or undefined if not found
    */
   public async getCombined(key: Key): Promise<Combined | undefined> {
     const value = await this.getKeyValue(key);
@@ -217,10 +277,8 @@ export abstract class KVRepository<
   }
 
   /**
-   * Deletes a key-value pair from the repository.
-   * Automatically converts simple types to structured format if using default schema.
-   *
-   * @param key - Primary key to delete (can be simple type if using a single property key like default schema)
+   * Deletes a row from the repository.
+   * @param key - The primary key of the row to delete
    */
   public delete(key: Key | BasicKeyType): Promise<void> {
     if (typeof key !== "object" && this.primaryKeyIndex) {
@@ -247,9 +305,8 @@ export abstract class KVRepository<
 
   /**
    * Utility method to separate a combined object into its key and value components
-   * based on the defined schemas.
-   *
-   * @param obj - Combined key-value object
+   * for storage.
+   * @param obj - Combined row object
    * @returns Separated key and value objects
    */
   protected separateKeyValueFromCombined(obj: Combined): { value: Value; key: Key } {
@@ -289,11 +346,10 @@ export abstract class KVRepository<
   }
 
   /**
-   * Converts a primary key object into an ordered array based on the primaryKeySchema
-   * This ensures consistent parameter ordering for SQL queries
+   * Converts a primary key object into an ordered array based on the schema
+   * This ensures consistent parameter ordering for storage operations
    * @param key - The primary key object to convert
    * @returns Array of key values ordered according to the schema
-   * @throws Error if a required primary key field is missing
    */
   protected getPrimaryKeyAsOrderedArray(key: Key): BasicKeyType[] {
     const orderedParams: BasicKeyType[] = [];
@@ -309,49 +365,48 @@ export abstract class KVRepository<
 
   /**
    * Finds the best matching index for a set of search keys.
-   * @param searchKeys - Array of keys being searched
-   * @returns Array of column names representing the best matching index, or undefined if no suitable index found
+   * @param unorderedSearchKey - Unordered array of keys being searched, can be reordered
+   * @returns Array of column names representing the best matching index, or undefined if no suitable index is found
    */
-  protected findBestMatchingIndex(
-    searchKeys: string[]
-  ): Array<keyof Combined> | keyof Combined | undefined {
-    // Convert searchKeys to Set for efficient lookup
-    const searchKeySet = new Set(searchKeys);
+  public findBestMatchingIndex(
+    unorderedSearchKey: Array<keyof Combined>
+  ): Array<keyof Combined> | undefined {
+    if (!unorderedSearchKey.length) return undefined;
 
-    // First check if we have an exact match for a compound index
-    for (const spec of this.searchable) {
-      if (Array.isArray(spec)) {
-        const indexCols = spec as Array<keyof Combined>;
-        if (indexCols.length <= searchKeys.length) {
-          // Check if all index columns are in the search keys
-          if (indexCols.every((col) => searchKeySet.has(String(col)))) {
-            return indexCols;
-          }
+    // Combine all possible indexes: primary key + searchable indexes
+    const allKeys: Array<keyof Combined>[] = [
+      this.primaryKeyColumns() as Array<keyof Combined>,
+      ...(this.searchable as Array<keyof Combined>[]),
+    ];
+
+    // Convert search keys to a Set for efficient lookup
+    const searchKeySet = new Set(unorderedSearchKey);
+
+    // Helper function to check if any search key matches the start of the index
+    const hasMatchingPrefix = (index: Array<keyof Combined>): boolean => {
+      // Check if the first column of the index is in our search keys
+      return index.length > 0 && searchKeySet.has(index[0]);
+    };
+
+    let bestMatch: Array<keyof Combined> | undefined;
+    let bestMatchScore = 0;
+
+    for (const index of allKeys) {
+      if (hasMatchingPrefix(index)) {
+        // Calculate how many consecutive search keys we can use from this index
+        let score = 0;
+        for (const col of index) {
+          if (!searchKeySet.has(col)) break;
+          score++;
+        }
+
+        if (score > bestMatchScore) {
+          bestMatch = index;
+          bestMatchScore = score;
         }
       }
     }
 
-    // Then check single-column indexes
-    for (const spec of this.searchable) {
-      if (!Array.isArray(spec) && searchKeySet.has(String(spec))) {
-        return spec;
-      }
-    }
-
-    // If no exact match found, use any single searchable column that matches
-    for (const key of searchKeys) {
-      const keyAsCombined = key as keyof Combined;
-      if (
-        this.searchable.some((spec) =>
-          typeof spec === "string"
-            ? spec === keyAsCombined
-            : (spec as Array<keyof Combined>).includes(keyAsCombined)
-        )
-      ) {
-        return keyAsCombined;
-      }
-    }
-
-    return undefined;
+    return bestMatch;
   }
 }

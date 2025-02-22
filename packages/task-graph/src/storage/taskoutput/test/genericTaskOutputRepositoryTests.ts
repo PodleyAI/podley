@@ -18,8 +18,8 @@ export function runGenericTaskOutputRepositoryTests(
     repository = await createRepository();
   });
 
-  it("should initialize the kvRepository", () => {
-    expect(repository.kvRepository).toBeDefined();
+  it("should initialize the tabularRepository", () => {
+    expect(repository.tabularRepository).toBeDefined();
   });
 
   it("should store and retrieve task outputs", async () => {

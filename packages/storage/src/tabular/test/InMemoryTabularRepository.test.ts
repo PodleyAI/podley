@@ -5,9 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { SqliteKVRepository } from "../SqliteKVRepository";
+import { InMemoryTabularRepository } from "../InMemoryTabularRepository";
 import {
-  runGenericKVRepositoryTests,
+  runGenericTabularRepositoryTests,
   PrimaryKey,
   Value,
   PrimaryKeySchema,
@@ -16,24 +16,15 @@ import {
   CompoundValue,
   CompoundPrimaryKeySchema,
   CompoundValueSchema,
-} from "./genericKVRepositoryTests";
-import { nanoid } from "nanoid";
+} from "./genericTabularRepositoryTests";
 import { describe } from "bun:test";
 
-describe("SqliteKVRepository", () => {
-  runGenericKVRepositoryTests(
-    async () => new SqliteKVRepository(":memory:", `sql_test_${nanoid()}`),
+describe("InMemoryTabularRepository", () => {
+  runGenericTabularRepositoryTests(
+    async () => new InMemoryTabularRepository(),
+    async () => new InMemoryTabularRepository<PrimaryKey, Value>(PrimaryKeySchema, ValueSchema),
     async () =>
-      new SqliteKVRepository<PrimaryKey, Value>(
-        ":memory:",
-        `sql_test_${nanoid()}`,
-        PrimaryKeySchema,
-        ValueSchema
-      ),
-    async () =>
-      new SqliteKVRepository<CompoundKey, CompoundValue>(
-        ":memory:",
-        `sql_test_${nanoid()}`,
+      new InMemoryTabularRepository<CompoundKey, CompoundValue>(
         CompoundPrimaryKeySchema,
         CompoundValueSchema,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]

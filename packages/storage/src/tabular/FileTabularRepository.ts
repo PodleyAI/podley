@@ -17,30 +17,30 @@ import {
   DefaultValueSchema,
   DefaultPrimaryKeyType,
   DefaultPrimaryKeySchema,
-} from "./IKVRepository";
-import { KVRepository } from "./KVRepository";
+} from "./ITabularRepository";
+import { TabularRepository } from "./TabularRepository";
 import { sleep } from "@ellmers/util";
 /**
- * A key-value repository implementation that uses the filesystem for storage.
- * Each key-value pair is stored as a separate JSON file in the specified directory.
+ * A tabular repository implementation that uses the filesystem for storage.
+ * Each row is stored as a separate JSON file in the specified directory.
  *
- * @template Key - The type of the primary key object, defaults to DefaultPrimaryKeyType
- * @template Value - The type of the value object, defaults to DefaultValueType
- * @template PrimaryKeySchema - The schema for the primary key, defaults to DefaultPrimaryKeySchema
- * @template ValueSchema - The schema for the value, defaults to DefaultValueSchema
+ * @template Key - The type of the primary key object
+ * @template Value - The type of the value object being stored
+ * @template PrimaryKeySchema - Schema definition for the primary key
+ * @template ValueSchema - Schema definition for the value
  * @template Combined - The combined type of Key & Value
  */
-export class FileKVRepository<
+export class FileTabularRepository<
   Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
   Value extends Record<string, any> = DefaultValueType,
   PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
   ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
   Combined extends Key & Value = Key & Value,
-> extends KVRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+> extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
   private folderPath: string;
 
   /**
-   * Creates a new FileKVRepository instance.
+   * Creates a new FileTabularRepository instance.
    *
    * @param folderPath - The directory path where the JSON files will be stored
    * @param primaryKeySchema - Schema defining the structure of the primary key
@@ -68,10 +68,10 @@ export class FileKVRepository<
   }
 
   /**
-   * Stores a key-value pair in the repository
+   * Stores a row in the repository
    * @param key - The primary key object
    * @param value - The value object to store
-   * @emits 'put' event with the fingerprint ID when successful
+   * @emits 'put' event when successful
    */
   async putKeyValue(key: Key, value: Value): Promise<void> {
     const filePath = await this.getFilePath(key);
@@ -124,8 +124,8 @@ export class FileKVRepository<
   }
 
   /**
-   * Retrieves all key-value pairs stored in the repository
-   * @returns Array of combined objects (key-value pairs) if found, undefined otherwise
+   * Retrieves all rows stored in the repository
+   * @returns Array of combined objects (rows) if found, undefined otherwise
    */
   async getAll(): Promise<Combined[] | undefined> {
     try {
@@ -164,8 +164,8 @@ export class FileKVRepository<
   }
 
   /**
-   * Returns the number of entries in the repository
-   * @returns The total count of stored key-value pairs
+   * Returns the total number of stored rows
+   * @returns Promise resolving to the count of stored items
    */
   async size(): Promise<number> {
     // Count all files in the folder ending in .json
@@ -179,7 +179,7 @@ export class FileKVRepository<
    * @throws {Error} Always throws an error indicating search is not supported
    */
   async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
-    throw new Error("Search not supported for FileKVRepository");
+    throw new Error("Search not supported for FileTabularRepository");
   }
 
   /**

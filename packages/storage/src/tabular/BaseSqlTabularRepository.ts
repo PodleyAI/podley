@@ -14,13 +14,13 @@ import {
   DefaultValueType,
   BasicKeyType,
   BasicValueType,
-} from "./IKVRepository";
-import { KVRepository } from "./KVRepository";
+} from "./ITabularRepository";
+import { TabularRepository } from "./TabularRepository";
 
-// BaseKVRepository is a key-value store that uses SQLite and Postgres use as common code
+// BaseTabularRepository is a tabular store that uses SQLite and Postgres use as common code
 
 /**
- * Base class for SQL-based key-value repositories that implements common functionality
+ * Base class for SQL-based tabular repositories that implements common functionality
  * for both SQLite and PostgreSQL database implementations.
  *
  * @template Key - The type of the primary key object, must be a record of basic types
@@ -29,15 +29,15 @@ import { KVRepository } from "./KVRepository";
  * @template ValueSchema - Schema definition for the value
  * @template Combined - Combined type of Key & Value in case just combining them is not enough
  */
-export abstract class BaseSqlKVRepository<
+export abstract class BaseSqlTabularRepository<
   Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
   Value extends Record<string, any> = DefaultValueType,
   PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
   ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
   Combined extends Record<string, any> = Key & Value,
-> extends KVRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+> extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /**
-   * Creates a new instance of BaseSqlKVRepository
+   * Creates a new instance of BaseSqlTabularRepository
    * @param table - The name of the database table to use for storage
    * @param primaryKeySchema - Schema defining the structure of the primary key
    * @param valueSchema - Schema defining the structure of the stored values
@@ -45,7 +45,7 @@ export abstract class BaseSqlKVRepository<
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
-    protected readonly table: string = "kv_store",
+    protected readonly table: string = "tabular_store",
     primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
     valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
     searchable: Array<keyof Combined | Array<keyof Combined>> = []

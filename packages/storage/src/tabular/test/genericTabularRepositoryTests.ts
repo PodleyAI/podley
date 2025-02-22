@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { BaseValueSchema, BasePrimaryKeySchema, IKVRepository } from "../IKVRepository";
+import { BaseValueSchema, BasePrimaryKeySchema, ITabularRepository } from "../ITabularRepository";
 
 export type PrimaryKey = {
   name: string;
@@ -38,13 +38,13 @@ export const CompoundValueSchema: BaseValueSchema = {
   value: "number",
 } as const;
 
-export function runGenericKVRepositoryTests(
-  createRepository: () => Promise<IKVRepository>,
-  createComplexRepository: () => Promise<IKVRepository<PrimaryKey, Value>>,
-  createCompoundRepository?: () => Promise<IKVRepository<CompoundKey, CompoundValue>>
+export function runGenericTabularRepositoryTests(
+  createRepository: () => Promise<ITabularRepository>,
+  createComplexRepository: () => Promise<ITabularRepository<PrimaryKey, Value>>,
+  createCompoundRepository?: () => Promise<ITabularRepository<CompoundKey, CompoundValue>>
 ) {
   describe("with default schemas (key and value)", () => {
-    let repository: IKVRepository;
+    let repository: ITabularRepository;
 
     beforeEach(async () => {
       repository = await createRepository();
@@ -70,7 +70,7 @@ export function runGenericKVRepositoryTests(
   });
 
   describe("with complex schemas", () => {
-    let repository: IKVRepository<PrimaryKey, Value>;
+    let repository: ITabularRepository<PrimaryKey, Value>;
 
     beforeEach(async () => {
       repository = await createComplexRepository();
@@ -97,7 +97,7 @@ export function runGenericKVRepositoryTests(
   // Only run compound index tests if createCompoundRepository is provided
   if (createCompoundRepository) {
     describe("with compound indexes", () => {
-      let repository: IKVRepository<CompoundKey, CompoundValue>;
+      let repository: ITabularRepository<CompoundKey, CompoundValue>;
 
       beforeEach(async () => {
         repository = await createCompoundRepository();

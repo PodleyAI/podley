@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import type { KVRepository } from "@ellmers/storage";
+import type { TabularRepository } from "@ellmers/storage";
 import { DataFlow } from "../../task-graph/DataFlow";
 import { TaskGraph, TaskGraphItemJson, TaskGraphJson } from "../../task-graph/TaskGraph";
 import { CompoundTask } from "../../task/CompoundTask";
@@ -36,7 +36,7 @@ export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParam
  */
 export abstract class TaskGraphRepository {
   public type = "TaskGraphRepository";
-  abstract kvRepository: KVRepository;
+  abstract tabularRepository: TabularRepository;
   protected events = new EventEmitter<TaskGraphEventListeners>();
 
   /**
@@ -136,7 +136,7 @@ export abstract class TaskGraphRepository {
    */
   async saveTaskGraph(key: string, output: TaskGraph): Promise<void> {
     const value = JSON.stringify(output.toJSON());
-    await this.kvRepository.put(key, value);
+    await this.tabularRepository.put(key, value);
     this.events.emit("graph_saved", key);
   }
 
@@ -147,7 +147,7 @@ export abstract class TaskGraphRepository {
    * @emits graph_retrieved when the operation completes successfully
    */
   async getTaskGraph(key: string): Promise<TaskGraph | undefined> {
-    const jsonStr = (await this.kvRepository.get(key)) as string;
+    const jsonStr = (await this.tabularRepository.get(key)) as string;
     if (!jsonStr) {
       return undefined;
     }
@@ -164,7 +164,7 @@ export abstract class TaskGraphRepository {
    * @emits graph_cleared when the operation completes
    */
   async clear(): Promise<void> {
-    await this.kvRepository.deleteAll();
+    await this.tabularRepository.deleteAll();
     this.events.emit("graph_cleared");
   }
 
@@ -173,6 +173,6 @@ export abstract class TaskGraphRepository {
    * @returns The count of stored task graphs
    */
   async size(): Promise<number> {
-    return await this.kvRepository.size();
+    return await this.tabularRepository.size();
   }
 }

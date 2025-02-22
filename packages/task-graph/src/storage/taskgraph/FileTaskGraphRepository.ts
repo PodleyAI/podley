@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { FileKVRepository } from "@ellmers/storage";
+import { FileTabularRepository } from "@ellmers/storage";
 import { TaskGraphRepository } from "./TaskGraphRepository";
 
 /**
@@ -13,10 +13,10 @@ import { TaskGraphRepository } from "./TaskGraphRepository";
  * Provides storage and retrieval for task graphs using a file system.
  */
 export class FileTaskGraphRepository extends TaskGraphRepository {
-  kvRepository: FileKVRepository;
+  tabularRepository: FileTabularRepository;
   public type = "FileTaskGraphRepository" as const;
   constructor(folderPath: string) {
     super();
-    this.kvRepository = new FileKVRepository(folderPath);
+    this.tabularRepository = new FileTabularRepository(folderPath);
   }
 }

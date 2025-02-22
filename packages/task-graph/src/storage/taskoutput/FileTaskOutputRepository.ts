@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, FileKVRepository } from "@ellmers/storage";
+import { DefaultValueType, FileTabularRepository } from "@ellmers/storage";
 import {
   TaskOutputPrimaryKeySchema,
   TaskOutputPrimaryKey,
@@ -17,7 +17,7 @@ import {
  * Provides storage and retrieval for task outputs using a file system.
  */
 export class FileTaskOutputRepository extends TaskOutputRepository {
-  kvRepository: FileKVRepository<
+  tabularRepository: FileTabularRepository<
     TaskOutputPrimaryKey,
     DefaultValueType,
     typeof TaskOutputPrimaryKeySchema
@@ -25,7 +25,7 @@ export class FileTaskOutputRepository extends TaskOutputRepository {
   public type = "FileTaskOutputRepository" as const;
   constructor(folderPath: string) {
     super();
-    this.kvRepository = new FileKVRepository<
+    this.tabularRepository = new FileTabularRepository<
       TaskOutputPrimaryKey,
       DefaultValueType,
       typeof TaskOutputPrimaryKeySchema

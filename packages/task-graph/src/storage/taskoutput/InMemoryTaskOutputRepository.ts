@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, InMemoryKVRepository } from "@ellmers/storage";
+import { DefaultValueType, InMemoryTabularRepository } from "@ellmers/storage";
 import { TaskOutputPrimaryKeySchema } from "./TaskOutputRepository";
 import { TaskOutputPrimaryKey } from "./TaskOutputRepository";
 import { TaskOutputRepository } from "./TaskOutputRepository";
@@ -15,7 +15,7 @@ import { TaskOutputRepository } from "./TaskOutputRepository";
  * Provides storage and retrieval for task outputs.
  */
 export class InMemoryTaskOutputRepository extends TaskOutputRepository {
-  kvRepository: InMemoryKVRepository<
+  tabularRepository: InMemoryTabularRepository<
     TaskOutputPrimaryKey,
     DefaultValueType,
     typeof TaskOutputPrimaryKeySchema
@@ -23,7 +23,7 @@ export class InMemoryTaskOutputRepository extends TaskOutputRepository {
   public type = "InMemoryTaskOutputRepository" as const;
   constructor() {
     super();
-    this.kvRepository = new InMemoryKVRepository<
+    this.tabularRepository = new InMemoryTabularRepository<
       TaskOutputPrimaryKey,
       DefaultValueType,
       typeof TaskOutputPrimaryKeySchema

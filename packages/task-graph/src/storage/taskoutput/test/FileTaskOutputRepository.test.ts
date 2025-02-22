@@ -20,8 +20,8 @@ describe("FileTaskOutputRepository", () => {
     repository = new FileTaskOutputRepository(".cache/test/file-task-output");
   });
 
-  it("should initialize the kvRepository", () => {
-    expect(repository.kvRepository).toBeDefined();
+  it("should initialize the tabularRepository", () => {
+    expect(repository.tabularRepository).toBeDefined();
   });
 
   it("should store and retrieve task outputs", async () => {

@@ -7,9 +7,9 @@
 
 import { describe, beforeEach, afterEach, expect, test } from "bun:test";
 import { rmdirSync, mkdirSync } from "fs";
-import { FileKVRepository } from "../FileKVRepository";
+import { FileTabularRepository } from "../FileTabularRepository";
 import {
-  runGenericKVRepositoryTests,
+  runGenericTabularRepositoryTests,
   PrimaryKey,
   Value,
   PrimaryKeySchema,
@@ -18,11 +18,11 @@ import {
   CompoundValue,
   CompoundPrimaryKeySchema,
   CompoundValueSchema,
-} from "./genericKVRepositoryTests";
+} from "./genericTabularRepositoryTests";
 
 const testDir = ".cache/test/testing";
 
-describe("FileKVRepository", () => {
+describe("FileTabularRepository", () => {
   beforeEach(() => {
     try {
       mkdirSync(testDir, { recursive: true });
@@ -37,16 +37,17 @@ describe("FileKVRepository", () => {
 
   // Run basic storage tests that don't involve search
   describe("basic functionality", () => {
-    runGenericKVRepositoryTests(
-      async () => new FileKVRepository(testDir),
-      async () => new FileKVRepository<PrimaryKey, Value>(testDir, PrimaryKeySchema, ValueSchema)
+    runGenericTabularRepositoryTests(
+      async () => new FileTabularRepository(testDir),
+      async () =>
+        new FileTabularRepository<PrimaryKey, Value>(testDir, PrimaryKeySchema, ValueSchema)
     );
   });
 
   // Add specific tests for search functionality
   describe("search functionality", () => {
     test("should throw error when attempting to search", async () => {
-      const repo = new FileKVRepository<CompoundKey, CompoundValue>(
+      const repo = new FileTabularRepository<CompoundKey, CompoundValue>(
         testDir,
         CompoundPrimaryKeySchema,
         CompoundValueSchema,
@@ -54,7 +55,7 @@ describe("FileKVRepository", () => {
       );
 
       expect(repo.search({ category: "test" })).rejects.toThrow(
-        "Search not supported for FileKVRepository"
+        "Search not supported for FileTabularRepository"
       );
     });
   });

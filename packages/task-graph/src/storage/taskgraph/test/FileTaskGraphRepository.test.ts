@@ -32,8 +32,8 @@ describe("FileTaskGraphRepository", () => {
     repository = new FileTaskGraphRepository(".cache/test/file-task-graph");
   });
 
-  it("should initialize the kvRepository", () => {
-    expect(repository.kvRepository).toBeDefined();
+  it("should initialize the tabularRepository", () => {
+    expect(repository.tabularRepository).toBeDefined();
   });
 
   it("should store and retrieve task graph", async () => {

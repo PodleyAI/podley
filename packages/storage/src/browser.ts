@@ -5,8 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./kv/IKVRepository";
-export * from "./kv/KVRepository";
-export * from "./kv/InMemoryKVRepository";
-export * from "./kv/IndexedDbKVRepository";
+export * from "./tabular/ITabularRepository";
+export * from "./tabular/TabularRepository";
+export * from "./tabular/InMemoryTabularRepository";
+export * from "./tabular/IndexedDbTabularRepository";
 export * from "./util/IndexedDbTable";

@@ -8,9 +8,9 @@ import { EventEmitter, EventParameters } from "@ellmers/util";
 //    *******************************************************************************
 
 /**
- * Type definitions for key-value repository events
+ * Type definitions for tabular repository events
  */
-export type KVEventListeners<Key, Value, Combined> = {
+export type TabularEventListeners<Key, Value, Combined> = {
   put: (key: unknown, value: Value) => void;
   get: (key: unknown, value: Value | undefined) => void;
   search: (key: Partial<Combined>, results: Combined[] | undefined) => void;
@@ -18,17 +18,20 @@ export type KVEventListeners<Key, Value, Combined> = {
   clearall: () => void;
 };
 
-export type KVEventName = keyof KVEventListeners<any, any, any>;
-export type KVEventListener<Event extends KVEventName, Key, Value, Combined> = KVEventListeners<
+export type TabularEventName = keyof TabularEventListeners<any, any, any>;
+export type TabularEventListener<
+  Event extends TabularEventName,
   Key,
   Value,
-  Combined
->[Event];
+  Combined,
+> = TabularEventListeners<Key, Value, Combined>[Event];
 
-export type KVEventParameters<Event extends KVEventName, Key, Value, Combined> = EventParameters<
-  KVEventListeners<Key, Value, Combined>,
-  Event
->;
+export type TabularEventParameters<
+  Event extends TabularEventName,
+  Key,
+  Value,
+  Combined,
+> = EventParameters<TabularEventListeners<Key, Value, Combined>, Event>;
 
 /**
  * Schema definitions for primary keys and values
@@ -39,7 +42,7 @@ export type BasePrimaryKeySchema = Record<string, "string" | "number" | "boolean
 export type BaseValueSchema = Record<string, "string" | "number" | "boolean" | "bigint">;
 
 /**
- * Default schema types for simple string key-value pairs
+ * Default schema types for simple string row data
  */
 export type DefaultPrimaryKeyType = { key: string };
 export const DefaultPrimaryKeySchema: BasePrimaryKeySchema = { key: "string" } as const;
@@ -48,9 +51,9 @@ export type DefaultValueType = { value: string };
 export const DefaultValueSchema: BaseValueSchema = { value: "string" } as const;
 
 /**
- * Interface defining the contract for key-value storage repositories.
+ * Interface defining the contract for tabular storage repositories.
  * Provides a flexible interface for storing and retrieving data with typed
- * keys and values, and supports compound keys and partial key lookup.
+ * primary keys and values, and supports compound keys and partial key lookup.
  *
  * @typeParam Key - Type for the primary key structure
  * @typeParam Value - Type for the value structure
@@ -58,7 +61,7 @@ export const DefaultValueSchema: BaseValueSchema = { value: "string" } as const;
  * @typeParam ValueSchema - Schema definition for the value
  * @typeParam Combined - Combined type of Key & Value
  */
-export interface IKVRepository<
+export interface ITabularRepository<
   Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
   Value extends Record<string, any> = DefaultValueType,
   Combined extends Record<string, any> = Key & Value,
@@ -72,25 +75,25 @@ export interface IKVRepository<
   size(): Promise<number>;
 
   // Event handling methods
-  on<Event extends KVEventName>(
+  on<Event extends TabularEventName>(
     name: Event,
-    fn: KVEventListener<Event, Key, Value, Combined>
+    fn: TabularEventListener<Event, Key, Value, Combined>
   ): void;
-  off<Event extends KVEventName>(
+  off<Event extends TabularEventName>(
     name: Event,
-    fn: KVEventListener<Event, Key, Value, Combined>
+    fn: TabularEventListener<Event, Key, Value, Combined>
   ): void;
-  emit<Event extends KVEventName>(
+  emit<Event extends TabularEventName>(
     name: Event,
-    ...args: KVEventParameters<Event, Key, Value, Combined>
+    ...args: TabularEventParameters<Event, Key, Value, Combined>
   ): void;
-  once<Event extends KVEventName>(
+  once<Event extends TabularEventName>(
     name: Event,
-    fn: KVEventListener<Event, Key, Value, Combined>
+    fn: TabularEventListener<Event, Key, Value, Combined>
   ): void;
-  emitted<Event extends KVEventName>(
+  emitted<Event extends TabularEventName>(
     name: Event
-  ): Promise<KVEventParameters<Event, Key, Value, Combined>>;
+  ): Promise<TabularEventParameters<Event, Key, Value, Combined>>;
 
   // Convenience methods
   put(key: BasicKeyType, value: BasicValueType): Promise<void>;

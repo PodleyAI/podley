@@ -22,7 +22,25 @@ export const runGenericModelRepositoryTests = (
     setGlobalModelRepository(repository);
   });
 
-  it("store and find model by task", async () => {
+  it("store and find model by name", async () => {
+    await getGlobalModelRepository().addModel({
+      name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
+      url: "Xenova/LaMini-Flan-T5-783M",
+      availableOnBrowser: true,
+      availableOnServer: true,
+      provider: LOCAL_ONNX_TRANSFORMERJS,
+      pipeline: "text2text-generation",
+    });
+
+    const model = await getGlobalModelRepository().findByName("onnx:Xenova/LaMini-Flan-T5-783M:q8");
+    expect(model).toBeDefined();
+    expect(model?.name).toEqual("onnx:Xenova/LaMini-Flan-T5-783M:q8");
+
+    const nonExistentModel = await getGlobalModelRepository().findByName("onnx:Xenova/no-exist");
+    expect(nonExistentModel).toBeUndefined();
+  });
+
+  it("store and find tasks by model", async () => {
     await getGlobalModelRepository().addModel({
       name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
       url: "Xenova/LaMini-Flan-T5-783M",
@@ -44,13 +62,12 @@ export const runGenericModelRepositoryTests = (
     );
     expect(tasks).toBeDefined();
     expect(tasks?.length).toEqual(2);
-    const models = await getGlobalModelRepository().findModelsByTask("TextGenerationTask");
-    expect(models).toBeDefined();
-    expect(models?.length).toEqual(1);
   });
+  it("store and find model by task", async () => {
+    const repo = getGlobalModelRepository();
 
-  it("store and find model by name", async () => {
-    await getGlobalModelRepository().addModel({
+    // Add the model and wait for it to complete
+    await repo.addModel({
       name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
       url: "Xenova/LaMini-Flan-T5-783M",
       availableOnBrowser: true,
@@ -59,11 +76,13 @@ export const runGenericModelRepositoryTests = (
       pipeline: "text2text-generation",
     });
 
-    const model = await getGlobalModelRepository().findByName("onnx:Xenova/LaMini-Flan-T5-783M:q8");
-    expect(model).toBeDefined();
-    expect(model?.name).toEqual("onnx:Xenova/LaMini-Flan-T5-783M:q8");
+    // Connect task to model and wait for it to complete
+    await repo.connectTaskToModel("TextGenerationTask", "onnx:Xenova/LaMini-Flan-T5-783M:q8");
+    await repo.connectTaskToModel("TextRewriterTask", "onnx:Xenova/LaMini-Flan-T5-783M:q8");
 
-    const nonExistentModel = await getGlobalModelRepository().findByName("onnx:Xenova/no-exist");
-    expect(nonExistentModel).toBeUndefined();
+    // Search for models by task
+    const models = await repo.findModelsByTask("TextGenerationTask");
+    expect(models).toBeDefined();
+    expect(models?.length).toEqual(1);
   });
 };

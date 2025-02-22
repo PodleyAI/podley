@@ -28,11 +28,16 @@ export function ensureIndexedDbTable(
       const db = (event.target as IDBOpenDBRequest).result;
       db.close();
     };
+    closeRequest.onerror = () => {
+      console.error("Error closing database", closeRequest.error);
+      reject(closeRequest.error);
+    };
 
     // First try to open without version to check existing structure
     const checkRequest = indexedDB.open(tableName);
 
     checkRequest.onerror = () => {
+      console.error("Error opening database", checkRequest.error);
       reject(checkRequest.error);
     };
 
@@ -98,6 +103,7 @@ export function ensureIndexedDbTable(
         // Delete the existing database
         const deleteRequest = indexedDB.deleteDatabase(tableName);
         deleteRequest.onerror = () => {
+          console.error("Error deleting database", deleteRequest.error);
           reject(deleteRequest.error);
         };
         deleteRequest.onsuccess = () => {
@@ -111,6 +117,7 @@ export function ensureIndexedDbTable(
         // Structure is correct, reopen with same version
         const reopenRequest = indexedDB.open(tableName);
         reopenRequest.onerror = () => {
+          console.error("Error reopening database", reopenRequest.error);
           reject(reopenRequest.error);
         };
         reopenRequest.onsuccess = () => {
@@ -137,6 +144,7 @@ export function ensureIndexedDbTable(
       };
 
       request.onerror = () => {
+        console.error("Error creating database", request.error);
         reject(request.error);
       };
     }

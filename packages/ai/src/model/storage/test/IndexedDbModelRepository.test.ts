@@ -10,7 +10,6 @@ import { IndexedDbModelRepository } from "../IndexedDbModelRepository";
 import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 import { nanoid } from "nanoid";
 import { describe } from "bun:test";
-// TODO: fix this test, it requires search on KVRepository, which is not implemented yet
 
 describe("IndexedDbModelRepository", () => {
   runGenericModelRepositoryTests(

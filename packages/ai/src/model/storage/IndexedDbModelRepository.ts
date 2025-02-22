@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, IndexedDbKVRepository } from "@ellmers/storage";
+import { DefaultValueType, IndexedDbTabularRepository } from "@ellmers/storage";
 import {
   Task2ModelDetailSchema,
   Task2ModelPrimaryKeySchema,
@@ -20,12 +20,12 @@ import { ModelPrimaryKey, ModelPrimaryKeySchema } from "../Model";
  * Provides storage and retrieval for models and task-to-model mappings.
  */
 export class IndexedDbModelRepository extends ModelRepository {
-  modelKvRepository: IndexedDbKVRepository<
+  modelTabularRepository: IndexedDbTabularRepository<
     ModelPrimaryKey,
     DefaultValueType,
     typeof ModelPrimaryKeySchema
   >;
-  task2ModelKvRepository: IndexedDbKVRepository<
+  task2ModelTabularRepository: IndexedDbTabularRepository<
     Task2ModelPrimaryKey,
     Task2ModelDetail,
     typeof Task2ModelPrimaryKeySchema,
@@ -35,12 +35,12 @@ export class IndexedDbModelRepository extends ModelRepository {
 
   constructor(tableModels: string = "models", tableTask2Models: string = "task2models") {
     super();
-    this.modelKvRepository = new IndexedDbKVRepository<
+    this.modelTabularRepository = new IndexedDbTabularRepository<
       ModelPrimaryKey,
       DefaultValueType,
       typeof ModelPrimaryKeySchema
     >(tableModels, ModelPrimaryKeySchema);
-    this.task2ModelKvRepository = new IndexedDbKVRepository<
+    this.task2ModelTabularRepository = new IndexedDbTabularRepository<
       Task2ModelPrimaryKey,
       Task2ModelDetail,
       typeof Task2ModelPrimaryKeySchema,
