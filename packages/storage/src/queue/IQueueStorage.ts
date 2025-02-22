@@ -5,7 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { JobStatus } from "./Job";
+export enum JobStatus {
+  PENDING = "PENDING",
+  PROCESSING = "PROCESSING",
+  COMPLETED = "COMPLETED",
+  ABORTING = "ABORTING",
+  FAILED = "FAILED",
+}
 
 /**
  * Details about a job that reflect the structure in the database.

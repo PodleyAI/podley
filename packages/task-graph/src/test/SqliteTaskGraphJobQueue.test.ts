@@ -5,7 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ConcurrencyLimiter, JobQueue, SqliteQueueStorage } from "@ellmers/job-queue";
+import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
+import { SqliteQueueStorage } from "@ellmers/storage";
 import { Database } from "bun:sqlite";
 import { describe } from "bun:test";
 import { nanoid } from "nanoid";

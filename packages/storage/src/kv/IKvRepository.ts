@@ -1,12 +1,12 @@
-import { EventEmitter, EventParameters } from "@ellmers/util";
-import { BasicKeyType } from "../tabular/ITabularRepository";
-
 //    *******************************************************************************
 //    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
+
+import { EventParameters } from "@ellmers/util";
+import { BasicKeyType } from "../tabular/ITabularRepository";
 
 /**
  * Type definitions for kv repository events

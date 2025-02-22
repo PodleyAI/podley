@@ -5,23 +5,20 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter } from "@ellmers/util";
-import { sleep } from "@ellmers/util";
-import { ILimiter } from "./ILimiter";
-import { Job, JobStatus, JobConstructorParam } from "./Job";
-import { JobStorageFormat } from "./IQueueStorage";
+import { IQueueStorage, InMemoryQueueStorage, JobStorageFormat } from "@ellmers/storage";
+import { EventEmitter, sleep } from "@ellmers/util";
 import { JobQueueOptions, QueueMode } from "./IJobQueue";
-import { NullLimiter } from "./NullLimiter";
-import { JobError, AbortSignalJobError, RetryableJobError, PermanentJobError } from "./JobError";
-import { IQueueStorage } from "./IQueueStorage";
-import { InMemoryQueueStorage } from "../storage/InMemoryQueueStorage";
+import { ILimiter } from "./ILimiter";
+import { Job, JobConstructorParam, JobStatus } from "./Job";
+import { AbortSignalJobError, JobError, PermanentJobError, RetryableJobError } from "./JobError";
 import {
-  JobQueueEventListeners,
   JobProgressListener,
-  JobQueueEvents,
   JobQueueEventListener,
+  JobQueueEventListeners,
   JobQueueEventParameters,
+  JobQueueEvents,
 } from "./JobQueueEventListeners";
+import { NullLimiter } from "./NullLimiter";
 
 /**
  * Statistics tracked for the job queue

@@ -8,9 +8,8 @@
 import { makeFingerprint } from "@ellmers/util";
 import { nanoid } from "nanoid";
 import { Pool } from "pg";
-import { IQueueStorage } from "../job/IQueueStorage";
-import { JobStatus } from "../job/Job";
-import { JobStorageFormat } from "job/IQueueStorage";
+import { IQueueStorage } from "./IQueueStorage";
+import { JobStatus, JobStorageFormat } from "./IQueueStorage";
 // TODO: prepared statements
 
 /**

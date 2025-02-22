@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { runGenericJobQueueTests, TestJob } from "./genericJobQueueTests";
-import { SqliteQueueStorage } from "../storage/SqliteQueueStorage";
+import { SqliteQueueStorage } from "@ellmers/storage";
 import { SqliteRateLimiter } from "../storage/SqliteRateLimiter";
 import { describe } from "bun:test";
 
@@ -24,7 +24,7 @@ const module = wrapper();
 // Create an in-memory database
 const db = new module(":memory:");
 
-describe("JobQueue+SqliteQueueStorage", () => {
+describe("SqliteJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new SqliteQueueStorage(db, queueName),
     (queueName: string, maxRequests: number, windowSizeInMinutes: number) =>

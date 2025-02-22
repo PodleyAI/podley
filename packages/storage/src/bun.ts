@@ -19,3 +19,9 @@ export * from "./kv/KvRepository";
 export * from "./kv/InMemoryKvRepository";
 export * from "./kv/PostgresKvRepository";
 export * from "./kv/SqliteKvRepository";
+
+export * from "./queue/IQueueStorage";
+export * from "./queue/IndexedDbQueueStorage";
+export * from "./queue/InMemoryQueueStorage";
+export * from "./queue/PostgresQueueStorage";
+export * from "./queue/SqliteQueueStorage";

@@ -5,10 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { IndexedDbQueueStorage } from "@ellmers/storage";
 import { Job, JobConstructorParam } from "../job/Job";
 import { JobQueueOptions } from "../job/IJobQueue";
 import { JobQueue } from "../job/JobQueue";
-import { IndexedDbQueueStorage } from "../storage/IndexedDbQueueStorage";
 import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
 
 export class IndexedDbJobQueue<I, O, C extends Job<I, O>> extends JobQueue<I, O, C> {

@@ -7,11 +7,11 @@
 
 import "fake-indexeddb/auto";
 import { describe } from "bun:test";
-import { IndexedDbQueueStorage } from "../storage/IndexedDbQueueStorage";
+import { IndexedDbQueueStorage } from "@ellmers/storage";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";
 import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
 
-describe("JobQueue+IndexedDbQueueStorage", () => {
+describe("IndexedDbJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new IndexedDbQueueStorage(queueName),
     (queueName: string, maxRequests: number, windowSizeInMinutes: number) =>

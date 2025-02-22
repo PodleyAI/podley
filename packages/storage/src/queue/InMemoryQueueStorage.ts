@@ -7,8 +7,7 @@
 
 import { nanoid } from "nanoid";
 import { makeFingerprint } from "@ellmers/util";
-import { JobStatus } from "../job/Job";
-import { JobStorageFormat, IQueueStorage } from "../job/IQueueStorage";
+import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
 /**
  * In-memory implementation of a job queue that manages asynchronous tasks.
  * Supports job scheduling, status tracking, and result caching.

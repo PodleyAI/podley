@@ -5,12 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { IQueueStorage } from "@ellmers/storage";
 import { ILimiter } from "./ILimiter";
 import { Job, JobStatus } from "./Job";
 import { JobQueueStats } from "./JobQueue";
 import { JobProgressListener } from "./JobQueueEventListeners";
 import { JobError } from "./JobError";
-import { IQueueStorage } from "./IQueueStorage";
 
 /**
  * Common options for all job queues

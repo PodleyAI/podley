@@ -6,7 +6,8 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { IKvRepository, BasicKeyType, JSONValue } from "../IKvRepository";
+import { IKvRepository, JSONValue } from "../IKvRepository";
+import { BasicKeyType } from "../../tabular/ITabularRepository";
 
 export function runGenericKvRepositoryTests(
   createRepository: <K extends BasicKeyType = BasicKeyType, V extends JSONValue = JSONValue>(

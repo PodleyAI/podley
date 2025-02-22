@@ -7,11 +7,8 @@
 
 import type { Database } from "bun:sqlite";
 import { nanoid } from "nanoid";
-import { makeFingerprint, toSQLiteTimestamp } from "@ellmers/util";
-import { JobError } from "job/JobError";
-import { Job, JobStatus } from "../job/Job";
-import { JobStorageFormat } from "job/IQueueStorage";
-import { IQueueStorage } from "../job/IQueueStorage";
+import { makeFingerprint } from "@ellmers/util";
+import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
 
 /**
  * SQLite implementation of a job queue.

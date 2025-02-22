@@ -12,13 +12,7 @@ import {
   InMemoryModelRepository,
   setGlobalModelRepository,
 } from "@ellmers/ai";
-import {
-  ConcurrencyLimiter,
-  InMemoryQueueStorage,
-  JobQueue,
-  SqliteQueueStorage,
-  SqliteRateLimiter,
-} from "@ellmers/job-queue";
+import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
@@ -29,8 +23,8 @@ import {
 import { sleep } from "@ellmers/util";
 import { registerHuggingfaceLocalTasks } from "../bindings/registerTasks";
 import { LOCAL_ONNX_TRANSFORMERJS } from "../model/ONNXTransformerJsModel";
-import { nanoid } from "nanoid";
 import { AiProviderInput } from "@ellmers/ai";
+import { SqliteQueueStorage } from "@ellmers/storage";
 
 const wrapper = function () {
   if (process["isBun"]) {

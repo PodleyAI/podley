@@ -15,3 +15,7 @@ export * from "./kv/IKvRepository";
 export * from "./kv/KvRepository";
 export * from "./kv/IndexedDbKvRepository";
 export * from "./kv/InMemoryKvRepository";
+
+export * from "./queue/IQueueStorage";
+export * from "./queue/IndexedDbQueueStorage";
+export * from "./queue/InMemoryQueueStorage";

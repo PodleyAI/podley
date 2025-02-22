@@ -8,8 +8,7 @@
 import { nanoid } from "nanoid";
 import { makeFingerprint } from "@ellmers/util";
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "@ellmers/storage";
-import { JobStatus } from "../job/Job";
-import { JobStorageFormat, IQueueStorage } from "../job/IQueueStorage";
+import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
 
 /**
  * IndexedDB implementation of a job queue storage.

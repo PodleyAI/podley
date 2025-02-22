@@ -13,14 +13,7 @@ import {
   Model,
   setGlobalModelRepository,
 } from "@ellmers/ai";
-import {
-  ConcurrencyLimiter,
-  IJobQueue,
-  InMemoryQueueStorage,
-  JobQueue,
-  SqliteQueueStorage,
-  SqliteRateLimiter,
-} from "@ellmers/job-queue";
+import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
@@ -32,6 +25,7 @@ import { sleep } from "@ellmers/util";
 import { registerMediaPipeTfJsLocalTasks } from "../bindings/registerTasks";
 import { MEDIA_PIPE_TFJS_MODEL } from "../model/MediaPipeModel";
 import { AiProviderInput } from "@ellmers/ai";
+import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";
 
 const wrapper = function () {
   if (process["isBun"]) {
