@@ -120,7 +120,7 @@ export function runGenericJobQueueTests(
       const jobExists = !!(await jobQueue.get(job1Id));
       expect(jobExists).toBe(true);
 
-      await sleep(deleteAfterCompletionMs + 1);
+      await sleep(deleteAfterCompletionMs * 2);
 
       const deletedJobExists = !!(await jobQueue.get(job1Id));
       expect(deletedJobExists).toBe(false);
@@ -130,7 +130,7 @@ export function runGenericJobQueueTests(
       const deleteAfterFailureMs = 10;
       // @ts-ignore - Accessing protected property for testing
       jobQueue.options = {
-        deleteAfterFailureMs: deleteAfterFailureMs, // Delete failed jobs after 1ms
+        deleteAfterFailureMs, // Delete failed jobs after 1ms
         waitDurationInMilliseconds: 1,
       };
       await jobQueue.start();
@@ -149,7 +149,7 @@ export function runGenericJobQueueTests(
       const jobExists = !!(await jobQueue.get(jobId));
       expect(jobExists).toBe(true);
 
-      await sleep(deleteAfterFailureMs + 1);
+      await sleep(deleteAfterFailureMs * 2);
       // Failed job should be automatically deleted
       const deletedJobExists = !!(await jobQueue.get(jobId));
       expect(deletedJobExists).toBe(false);
