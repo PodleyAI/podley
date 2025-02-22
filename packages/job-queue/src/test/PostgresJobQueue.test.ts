@@ -10,11 +10,11 @@ import { PGlite } from "@electric-sql/pglite";
 import { Pool } from "pg";
 import { PostgresRateLimiter } from "../storage/PostgresRateLimiter";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";
-import { PostgresQueueStorage } from "../storage/PostgresQueueStorage";
+import { PostgresQueueStorage } from "@ellmers/storage";
 
 const db = new PGlite() as unknown as Pool;
 
-describe("JobQueue+PostgresQueueStorage", () => {
+describe("PostgresJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new PostgresQueueStorage(db, queueName),
     (queueName: string, maxRequests: number, windowSizeInMinutes: number) =>

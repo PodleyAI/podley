@@ -7,14 +7,13 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { sleep } from "@ellmers/util";
-import { AbortSignalJobError } from "../job/JobError";
+import { IQueueStorage, IndexedDbQueueStorage } from "@ellmers/storage";
 import { nanoid } from "nanoid";
+import { AbortSignalJobError } from "../job/JobError";
 import { JobQueueOptions } from "../job/IJobQueue";
 import { ILimiter } from "../job/ILimiter";
-import { IQueueStorage } from "../job/IQueueStorage";
 import { Job, JobStatus } from "../job/Job";
 import { JobQueue } from "../job/JobQueue";
-import { IndexedDbQueueStorage } from "../storage/IndexedDbQueueStorage";
 
 export interface TInput {
   [key: string]: any;

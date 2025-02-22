@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { InMemoryKVRepository } from "@ellmers/storage";
+import { InMemoryTabularRepository } from "@ellmers/storage";
 import { TaskGraphRepository } from "./TaskGraphRepository";
 
 /**
@@ -13,10 +13,10 @@ import { TaskGraphRepository } from "./TaskGraphRepository";
  * Provides storage and retrieval for task graphs.
  */
 export class InMemoryTaskGraphRepository extends TaskGraphRepository {
-  kvRepository: InMemoryKVRepository;
+  tabularRepository: InMemoryTabularRepository;
   public type = "InMemoryTaskGraphRepository" as const;
   constructor() {
     super();
-    this.kvRepository = new InMemoryKVRepository();
+    this.tabularRepository = new InMemoryTabularRepository();
   }
 }

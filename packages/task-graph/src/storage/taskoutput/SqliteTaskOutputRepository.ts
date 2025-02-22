@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, SqliteKVRepository } from "@ellmers/storage";
+import { DefaultValueType, SqliteTabularRepository } from "@ellmers/storage";
 import {
   TaskOutputPrimaryKeySchema,
   TaskOutputPrimaryKey,
@@ -17,7 +17,7 @@ import {
  * Provides storage and retrieval for task outputs using SQLite.
  */
 export class SqliteTaskOutputRepository extends TaskOutputRepository {
-  kvRepository: SqliteKVRepository<
+  tabularRepository: SqliteTabularRepository<
     TaskOutputPrimaryKey,
     DefaultValueType,
     typeof TaskOutputPrimaryKeySchema
@@ -25,7 +25,7 @@ export class SqliteTaskOutputRepository extends TaskOutputRepository {
   public type = "SqliteTaskOutputRepository" as const;
   constructor(dbOrPath: string, table: string = "task_outputs") {
     super();
-    this.kvRepository = new SqliteKVRepository<
+    this.tabularRepository = new SqliteTabularRepository<
       TaskOutputPrimaryKey,
       DefaultValueType,
       typeof TaskOutputPrimaryKeySchema

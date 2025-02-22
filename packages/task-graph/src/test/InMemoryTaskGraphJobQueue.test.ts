@@ -5,7 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ConcurrencyLimiter, InMemoryQueueStorage, JobQueue } from "@ellmers/job-queue";
+import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
+import { InMemoryQueueStorage } from "@ellmers/storage";
 import { describe } from "bun:test";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 import { nanoid } from "nanoid";

@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import { DefaultValueType, type KVRepository } from "@ellmers/storage";
+import { DefaultValueType, type TabularRepository } from "@ellmers/storage";
 import { makeFingerprint } from "@ellmers/util";
 import { TaskInput, TaskOutput } from "../../task/TaskTypes";
 
@@ -42,7 +42,7 @@ export const TaskOutputPrimaryKeySchema = {
  */
 export abstract class TaskOutputRepository {
   public type = "TaskOutputRepository";
-  abstract kvRepository: KVRepository<TaskOutputPrimaryKey, DefaultValueType>;
+  abstract tabularRepository: TabularRepository<TaskOutputPrimaryKey, DefaultValueType>;
   protected events = new EventEmitter<TaskOutputEventListeners>();
 
   /**
@@ -81,7 +81,7 @@ export abstract class TaskOutputRepository {
   async saveOutput(taskType: string, inputs: TaskInput, output: TaskOutput): Promise<void> {
     const key = await makeFingerprint(inputs);
     const value = JSON.stringify(output);
-    await this.kvRepository.putKeyValue({ key, taskType }, { value: value });
+    await this.tabularRepository.putKeyValue({ key, taskType }, { value: value });
     this.events.emit("output_saved", taskType);
   }
 
@@ -93,7 +93,7 @@ export abstract class TaskOutputRepository {
    */
   async getOutput(taskType: string, inputs: TaskInput): Promise<TaskOutput | undefined> {
     const key = await makeFingerprint(inputs);
-    const output = await this.kvRepository.getKeyValue({ key, taskType });
+    const output = await this.tabularRepository.getKeyValue({ key, taskType });
     this.events.emit("output_retrieved", taskType);
     return output ? (JSON.parse(output["value"]) as TaskOutput) : undefined;
   }
@@ -103,7 +103,7 @@ export abstract class TaskOutputRepository {
    * @emits output_cleared when the operation completes
    */
   async clear(): Promise<void> {
-    await this.kvRepository.deleteAll();
+    await this.tabularRepository.deleteAll();
     this.events.emit("output_cleared");
   }
 
@@ -112,6 +112,6 @@ export abstract class TaskOutputRepository {
    * @returns The count of stored task outputs
    */
   async size(): Promise<number> {
-    return await this.kvRepository.size();
+    return await this.tabularRepository.size();
   }
 }

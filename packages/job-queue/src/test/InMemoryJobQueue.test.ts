@@ -6,11 +6,11 @@
 //    *******************************************************************************
 
 import { describe } from "bun:test";
-import { InMemoryQueueStorage } from "../storage/InMemoryQueueStorage";
+import { InMemoryQueueStorage } from "@ellmers/storage";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";
 import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
 
-describe("JobQueue+InMemoryQueueStorage", () => {
+describe("InMemoryJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new InMemoryQueueStorage(queueName),
     (queueName: string, maxRequests: number, windowSizeInMinutes: number) =>

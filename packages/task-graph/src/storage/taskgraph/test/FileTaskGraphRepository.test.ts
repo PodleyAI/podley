@@ -7,7 +7,7 @@
 
 import { describe, expect, it, beforeEach } from "bun:test";
 import { rmdirSync } from "fs";
-import { FileTaskGraphRepository } from "../FileTaskGraphRepository";
+import { FsFolderTaskGraphRepository } from "../FsFolderTaskGraphRepository";
 import { TaskOutput } from "../../../task/TaskTypes";
 import { SingleTask } from "../../../task/SingleTask";
 import { TaskRegistry } from "../../../task/TaskRegistry";
@@ -22,18 +22,18 @@ class TestTask extends SingleTask {
 }
 TaskRegistry.registerTask(TestTask);
 
-describe("FileTaskGraphRepository", () => {
-  let repository: FileTaskGraphRepository;
+describe("FsFolderTaskGraphRepository", () => {
+  let repository: FsFolderTaskGraphRepository;
 
   beforeEach(() => {
     try {
       rmdirSync(".cache/test/file-task-graph", { recursive: true });
     } catch {}
-    repository = new FileTaskGraphRepository(".cache/test/file-task-graph");
+    repository = new FsFolderTaskGraphRepository(".cache/test/file-task-graph");
   });
 
-  it("should initialize the kvRepository", () => {
-    expect(repository.kvRepository).toBeDefined();
+  it("should initialize the tabularRepository", () => {
+    expect(repository.tabularRepository).toBeDefined();
   });
 
   it("should store and retrieve task graph", async () => {

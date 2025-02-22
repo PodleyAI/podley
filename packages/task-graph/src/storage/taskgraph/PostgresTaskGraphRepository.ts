@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { TaskGraphRepository } from "./TaskGraphRepository";
-import { PostgresKVRepository } from "@ellmers/storage";
+import { PostgresTabularRepository } from "@ellmers/storage";
 import type { Pool } from "pg";
 
 /**
@@ -14,10 +14,10 @@ import type { Pool } from "pg";
  * Provides storage and retrieval for task graphs using PostgreSQL.
  */
 export class PostgresTaskGraphRepository extends TaskGraphRepository {
-  kvRepository: PostgresKVRepository;
+  tabularRepository: PostgresTabularRepository;
   public type = "PostgresTaskGraphRepository" as const;
   constructor(db: Pool) {
     super();
-    this.kvRepository = new PostgresKVRepository(db, "task_graphs");
+    this.tabularRepository = new PostgresTabularRepository(db, "task_graphs");
   }
 }

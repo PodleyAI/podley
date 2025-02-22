@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import { DefaultValueType, type KVRepository } from "@ellmers/storage";
+import { DefaultValueType, type TabularRepository } from "@ellmers/storage";
 import { Model, ModelPrimaryKey } from "./Model";
 
 /**
@@ -67,12 +67,12 @@ export abstract class ModelRepository {
   /**
    * Repository for storing and managing Model instances
    */
-  abstract modelKvRepository: KVRepository<ModelPrimaryKey, DefaultValueType>;
+  abstract modelTabularRepository: TabularRepository<ModelPrimaryKey, DefaultValueType>;
 
   /**
    * Repository for managing relationships between tasks and models
    */
-  abstract task2ModelKvRepository: KVRepository<Task2ModelPrimaryKey, Task2ModelDetail>;
+  abstract task2ModelTabularRepository: TabularRepository<Task2ModelPrimaryKey, Task2ModelDetail>;
 
   /** Event emitter for repository events */
   protected events = new EventEmitter<ModelEventListeners>();
@@ -118,7 +118,7 @@ export abstract class ModelRepository {
    * @param model - The model instance to add
    */
   async addModel(model: Model) {
-    await this.modelKvRepository.putKeyValue(
+    await this.modelTabularRepository.putKeyValue(
       { name: model.name },
       { value: JSON.stringify(model) }
     );
@@ -132,11 +132,11 @@ export abstract class ModelRepository {
    */
   async findModelsByTask(task: string) {
     if (typeof task != "string") return undefined;
-    const junctions = await this.task2ModelKvRepository.search({ task });
+    const junctions = await this.task2ModelTabularRepository.search({ task });
     if (!junctions || junctions.length === 0) return undefined;
     const models = [];
     for (const junction of junctions) {
-      const model = await this.modelKvRepository.getKeyValue({ name: junction.model });
+      const model = await this.modelTabularRepository.getKeyValue({ name: junction.model });
       if (model) models.push(JSON.parse(model["value"]));
     }
     return models;
@@ -149,7 +149,7 @@ export abstract class ModelRepository {
    */
   async findTasksByModel(model: string) {
     if (typeof model != "string") return undefined;
-    const junctions = await this.task2ModelKvRepository.search({ model });
+    const junctions = await this.task2ModelTabularRepository.search({ model });
     if (!junctions || junctions.length === 0) return undefined;
     return junctions.map((junction) => junction.task);
   }
@@ -159,7 +159,7 @@ export abstract class ModelRepository {
    * @returns Promise resolving to an array of task identifiers
    */
   async enumerateAllTasks() {
-    const junctions = await this.task2ModelKvRepository.getAll();
+    const junctions = await this.task2ModelTabularRepository.getAll();
     if (!junctions || junctions.length === 0) return undefined;
     const uniqueTasks = [...new Set(junctions.map((junction) => junction.task))];
     return uniqueTasks;
@@ -170,7 +170,7 @@ export abstract class ModelRepository {
    * @returns Promise resolving to an array of model instances
    */
   async enumerateAllModels() {
-    const models = await this.modelKvRepository.getAll();
+    const models = await this.modelTabularRepository.getAll();
     if (!models || models.length === 0) return undefined;
     return models.map((model) => JSON.parse(model["value"]));
   }
@@ -181,7 +181,7 @@ export abstract class ModelRepository {
    * @param model - The model to associate with the task
    */
   async connectTaskToModel(task: string, model: string) {
-    await this.task2ModelKvRepository.putKeyValue({ task, model }, { details: null });
+    await this.task2ModelTabularRepository.putKeyValue({ task, model }, { details: null });
     this.events.emit("task_model_connected", task, model);
   }
 
@@ -192,7 +192,7 @@ export abstract class ModelRepository {
    */
   async findByName(name: string) {
     if (typeof name != "string") return undefined;
-    const modelstr = await this.modelKvRepository.getKeyValue({ name });
+    const modelstr = await this.modelTabularRepository.getKeyValue({ name });
     if (!modelstr) return undefined;
     return JSON.parse(modelstr["value"]);
   }
@@ -202,6 +202,6 @@ export abstract class ModelRepository {
    * @returns Promise resolving to the number of stored models
    */
   async size(): Promise<number> {
-    return await this.modelKvRepository.size();
+    return await this.modelTabularRepository.size();
   }
 }

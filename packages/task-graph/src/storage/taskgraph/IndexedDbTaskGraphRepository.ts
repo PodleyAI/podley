@@ -6,17 +6,17 @@
 //    *******************************************************************************
 
 import { TaskGraphRepository } from "./TaskGraphRepository";
-import { IndexedDbKVRepository } from "@ellmers/storage";
+import { IndexedDbTabularRepository } from "@ellmers/storage";
 
 /**
  * IndexedDB implementation of a task graph repository.
  * Provides storage and retrieval for task graphs using IndexedDB.
  */
 export class IndexedDbTaskGraphRepository extends TaskGraphRepository {
-  kvRepository: IndexedDbKVRepository;
+  tabularRepository: IndexedDbTabularRepository;
   public type = "IndexedDbTaskGraphRepository" as const;
   constructor(table: string = "task_graphs") {
     super();
-    this.kvRepository = new IndexedDbKVRepository(table);
+    this.tabularRepository = new IndexedDbTabularRepository(table);
   }
 }

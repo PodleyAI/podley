@@ -6,17 +6,17 @@
 //    *******************************************************************************
 
 import { TaskGraphRepository } from "./TaskGraphRepository";
-import { SqliteKVRepository } from "@ellmers/storage";
+import { SqliteTabularRepository } from "@ellmers/storage";
 
 /**
  * SQLite implementation of a task graph repository.
  * Provides storage and retrieval for task graphs using SQLite.
  */
 export class SqliteTaskGraphRepository extends TaskGraphRepository {
-  kvRepository: SqliteKVRepository;
+  tabularRepository: SqliteTabularRepository;
   public type = "SqliteTaskGraphRepository" as const;
   constructor(dbOrPath: string, table: string = "task_graphs") {
     super();
-    this.kvRepository = new SqliteKVRepository(dbOrPath, table);
+    this.tabularRepository = new SqliteTabularRepository(dbOrPath, table);
   }
 }

@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, InMemoryKVRepository } from "@ellmers/storage";
+import { DefaultValueType, InMemoryTabularRepository } from "@ellmers/storage";
 import {
   Task2ModelDetailSchema,
   Task2ModelPrimaryKeySchema,
@@ -20,12 +20,12 @@ import { ModelPrimaryKey, ModelPrimaryKeySchema } from "../Model";
  * Provides storage and retrieval for models and task-to-model mappings.
  */
 export class InMemoryModelRepository extends ModelRepository {
-  modelKvRepository: InMemoryKVRepository<
+  modelTabularRepository: InMemoryTabularRepository<
     ModelPrimaryKey,
     DefaultValueType,
     typeof ModelPrimaryKeySchema
   >;
-  task2ModelKvRepository: InMemoryKVRepository<
+  task2ModelTabularRepository: InMemoryTabularRepository<
     Task2ModelPrimaryKey,
     Task2ModelDetail,
     typeof Task2ModelPrimaryKeySchema,
@@ -34,12 +34,12 @@ export class InMemoryModelRepository extends ModelRepository {
   public type = "InMemoryModelRepository" as const;
   constructor() {
     super();
-    this.modelKvRepository = new InMemoryKVRepository<
+    this.modelTabularRepository = new InMemoryTabularRepository<
       ModelPrimaryKey,
       DefaultValueType,
       typeof ModelPrimaryKeySchema
     >(ModelPrimaryKeySchema);
-    this.task2ModelKvRepository = new InMemoryKVRepository<
+    this.task2ModelTabularRepository = new InMemoryTabularRepository<
       Task2ModelPrimaryKey,
       Task2ModelDetail,
       typeof Task2ModelPrimaryKeySchema,

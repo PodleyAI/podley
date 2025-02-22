@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, PostgresKVRepository } from "@ellmers/storage";
+import { DefaultValueType, PostgresTabularRepository } from "@ellmers/storage";
 import {
   Task2ModelDetailSchema,
   Task2ModelPrimaryKeySchema,
@@ -22,12 +22,12 @@ import { Pool } from "pg";
  */
 export class PostgresModelRepository extends ModelRepository {
   public type = "PostgresModelRepository" as const;
-  modelKvRepository: PostgresKVRepository<
+  modelTabularRepository: PostgresTabularRepository<
     ModelPrimaryKey,
     DefaultValueType,
     typeof ModelPrimaryKeySchema
   >;
-  task2ModelKvRepository: PostgresKVRepository<
+  task2ModelTabularRepository: PostgresTabularRepository<
     Task2ModelPrimaryKey,
     Task2ModelDetail,
     typeof Task2ModelPrimaryKeySchema,
@@ -40,16 +40,16 @@ export class PostgresModelRepository extends ModelRepository {
     tableTask2Models: string = "aitask2aimodel"
   ) {
     super();
-    this.modelKvRepository = new PostgresKVRepository<
+    this.modelTabularRepository = new PostgresTabularRepository<
       ModelPrimaryKey,
       DefaultValueType,
       typeof ModelPrimaryKeySchema
     >(db, tableModels, ModelPrimaryKeySchema);
-    this.task2ModelKvRepository = new PostgresKVRepository<
+    this.task2ModelTabularRepository = new PostgresTabularRepository<
       Task2ModelPrimaryKey,
       Task2ModelDetail,
       typeof Task2ModelPrimaryKeySchema,
       typeof Task2ModelDetailSchema
-    >(db, tableTask2Models, Task2ModelPrimaryKeySchema, Task2ModelDetailSchema);
+    >(db, tableTask2Models, Task2ModelPrimaryKeySchema, Task2ModelDetailSchema, ["model"]);
   }
 }

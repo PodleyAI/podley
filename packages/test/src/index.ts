@@ -14,8 +14,9 @@ import {
   MEDIA_PIPE_TFJS_MODEL,
   registerMediaPipeTfJsLocalTasks,
 } from "@ellmers/ai-provider/tf-mediapipe";
-import { ConcurrencyLimiter, InMemoryQueueStorage, JobQueue } from "@ellmers/job-queue";
+import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
 import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@ellmers/task-graph";
+import { InMemoryQueueStorage } from "@ellmers/storage";
 export * from "./sample/MediaPipeModelSamples";
 export * from "./sample/ONNXModelSamples";
 

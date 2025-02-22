@@ -6,10 +6,11 @@
 //    *******************************************************************************
 
 import "fake-indexeddb/auto";
-import { IndexedDbQueueStorage, InMemoryRateLimiter, JobQueue } from "@ellmers/job-queue";
+import { InMemoryRateLimiter, JobQueue } from "@ellmers/job-queue";
 import { describe } from "bun:test";
 import { nanoid } from "nanoid";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
+import { IndexedDbQueueStorage } from "@ellmers/storage";
 
 describe("IndexedDbTaskGraphJobQueue", () => {
   runGenericTaskGraphJobQueueTests(async () => {

@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, PostgresKVRepository } from "@ellmers/storage";
+import { DefaultValueType, PostgresTabularRepository } from "@ellmers/storage";
 import type { Pool } from "pg";
 import {
   TaskOutputPrimaryKey,
@@ -18,7 +18,7 @@ import {
  * Provides storage and retrieval for task outputs using PostgreSQL.
  */
 export class PostgresTaskOutputRepository extends TaskOutputRepository {
-  kvRepository: PostgresKVRepository<
+  tabularRepository: PostgresTabularRepository<
     TaskOutputPrimaryKey,
     DefaultValueType,
     typeof TaskOutputPrimaryKeySchema
@@ -26,7 +26,7 @@ export class PostgresTaskOutputRepository extends TaskOutputRepository {
   public type = "PostgresTaskOutputRepository" as const;
   constructor(db: Pool) {
     super();
-    this.kvRepository = new PostgresKVRepository<
+    this.tabularRepository = new PostgresTabularRepository<
       TaskOutputPrimaryKey,
       DefaultValueType,
       typeof TaskOutputPrimaryKeySchema
