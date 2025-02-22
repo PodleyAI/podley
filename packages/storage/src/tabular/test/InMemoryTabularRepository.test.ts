@@ -21,7 +21,6 @@ import { describe } from "bun:test";
 
 describe("InMemoryTabularRepository", () => {
   runGenericTabularRepositoryTests(
-    async () => new InMemoryTabularRepository(),
     async () => new InMemoryTabularRepository<PrimaryKey, Value>(PrimaryKeySchema, ValueSchema),
     async () =>
       new InMemoryTabularRepository<CompoundKey, CompoundValue>(

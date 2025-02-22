@@ -222,41 +222,6 @@ export abstract class TabularRepository<
   abstract size(): Promise<number>;
 
   /**
-   * Stores a row in the repository.
-   * @param key - The primary key
-   * @param value - The value to store
-   */
-  public put(bkey: BasicKeyType, bvalue: BasicValueType): Promise<void> {
-    if (!this.primaryKeyIndex || !this.valueIndex) {
-      throw new Error("Can not use simple key type with this repository");
-    }
-
-    const key = { [this.primaryKeyIndex]: bkey } as Key;
-    const value = { [this.valueIndex]: bvalue } as Value;
-
-    return this.putKeyValue(key, value);
-  }
-
-  /**
-   * Retrieves a value by its key.
-   * This is a convenience method that automatically converts simple types to structured format if using default schema.
-   *
-   * @param key - Primary key to look up (basic key like default schema)
-   * @returns The stored value or undefined if not found
-   */
-  public async get(bkey: BasicKeyType): Promise<BasicValueType | undefined> {
-    if (!this.primaryKeyIndex || !this.valueIndex) {
-      throw new Error("Can not use simple key type with this repository");
-    }
-
-    const key = { [this.primaryKeyIndex]: bkey } as Key;
-
-    const value = await this.getKeyValue(key);
-    if (!value) return undefined;
-    return value[this.valueIndex] as BasicValueType;
-  }
-
-  /**
    * Abstract method to be implemented by concrete repositories to search for rows
    * based on a partial key.
    *

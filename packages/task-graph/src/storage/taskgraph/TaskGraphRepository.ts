@@ -136,7 +136,7 @@ export abstract class TaskGraphRepository {
    */
   async saveTaskGraph(key: string, output: TaskGraph): Promise<void> {
     const value = JSON.stringify(output.toJSON());
-    await this.tabularRepository.put(key, value);
+    await this.tabularRepository.putKeyValue({ key }, { value });
     this.events.emit("graph_saved", key);
   }
 
@@ -147,11 +147,12 @@ export abstract class TaskGraphRepository {
    * @emits graph_retrieved when the operation completes successfully
    */
   async getTaskGraph(key: string): Promise<TaskGraph | undefined> {
-    const jsonStr = (await this.tabularRepository.get(key)) as string;
-    if (!jsonStr) {
+    const result = await this.tabularRepository.getKeyValue({ key });
+    const value = result?.value;
+    if (!value) {
       return undefined;
     }
-    const jsonObj = JSON.parse(jsonStr);
+    const jsonObj = JSON.parse(value);
 
     const graph = this.createSubGraph(jsonObj);
 

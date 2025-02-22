@@ -38,7 +38,6 @@ describe("FsFolderTabularRepository", () => {
   // Run basic storage tests that don't involve search
   describe("basic functionality", () => {
     runGenericTabularRepositoryTests(
-      async () => new FsFolderTabularRepository(testDir),
       async () =>
         new FsFolderTabularRepository<PrimaryKey, Value>(testDir, PrimaryKeySchema, ValueSchema)
     );

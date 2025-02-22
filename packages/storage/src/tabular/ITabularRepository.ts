@@ -96,8 +96,6 @@ export interface ITabularRepository<
   ): Promise<TabularEventParameters<Event, Key, Value, Combined>>;
 
   // Convenience methods
-  put(key: BasicKeyType, value: BasicValueType): Promise<void>;
-  get(key: BasicKeyType): Promise<BasicValueType | undefined>;
   search(key: Partial<Combined>): Promise<Combined[] | undefined>;
   getCombined(key: Key): Promise<Combined | undefined>;
   delete(key: Key | BasicKeyType): Promise<void>;

@@ -39,36 +39,9 @@ export const CompoundValueSchema: BaseValueSchema = {
 } as const;
 
 export function runGenericTabularRepositoryTests(
-  createRepository: () => Promise<ITabularRepository>,
   createComplexRepository: () => Promise<ITabularRepository<PrimaryKey, Value>>,
   createCompoundRepository?: () => Promise<ITabularRepository<CompoundKey, CompoundValue>>
 ) {
-  describe("with default schemas (key and value)", () => {
-    let repository: ITabularRepository;
-
-    beforeEach(async () => {
-      repository = await createRepository();
-    });
-
-    it("should store and retrieve values for a key", async () => {
-      const key = "key1";
-      const value = "value1";
-      await repository.put(key, value);
-      const output = await repository.get(key);
-
-      expect(output).toEqual(value);
-    });
-
-    it("should get undefined for a key that doesn't exist", async () => {
-      const key = "key";
-      const value = "value";
-      await repository.put(key, value);
-      const output = await repository.get("not-a-key");
-
-      expect(output == undefined).toEqual(true);
-    });
-  });
-
   describe("with complex schemas", () => {
     let repository: ITabularRepository<PrimaryKey, Value>;
 

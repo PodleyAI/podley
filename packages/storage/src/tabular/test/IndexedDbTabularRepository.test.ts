@@ -40,7 +40,6 @@ describe("IndexedDbTabularRepository", () => {
   });
 
   runGenericTabularRepositoryTests(
-    async () => new IndexedDbTabularRepository(`${dbName}_simple`),
     async () =>
       new IndexedDbTabularRepository<PrimaryKey, Value>(
         `${dbName}_complex`,

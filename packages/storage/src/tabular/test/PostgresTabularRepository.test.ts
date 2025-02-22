@@ -26,7 +26,6 @@ const db = new PGlite() as unknown as Pool;
 
 describe("PostgresTabularRepository", () => {
   runGenericTabularRepositoryTests(
-    async () => new PostgresTabularRepository(db, `sql_test_${nanoid()}`),
     async () =>
       new PostgresTabularRepository<PrimaryKey, Value>(
         db,

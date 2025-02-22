@@ -22,7 +22,6 @@ import { describe } from "bun:test";
 
 describe("SqliteTabularRepository", () => {
   runGenericTabularRepositoryTests(
-    async () => new SqliteTabularRepository(":memory:", `sql_test_${nanoid()}`),
     async () =>
       new SqliteTabularRepository<PrimaryKey, Value>(
         ":memory:",
