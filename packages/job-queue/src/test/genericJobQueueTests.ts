@@ -73,7 +73,7 @@ export function runGenericJobQueueTests(
     queueName: string,
     options?: JobQueueOptions<TInput, TOutput>
   ) => IQueueStorage<TInput, TOutput>,
-  limiter?: (queueName: string, maxRequests: number, windowSizeInMinutes: number) => ILimiter
+  limiter?: (queueName: string, maxRequests: number, windowSizeInSeconds: number) => ILimiter
 ) {
   let jobQueue: JobQueue<TInput, TOutput, TestJob>;
 
@@ -81,7 +81,7 @@ export function runGenericJobQueueTests(
     const queueName = `test-queue-${nanoid()}`;
     jobQueue = new JobQueue<TInput, TOutput, TestJob>(queueName, TestJob as any, {
       storage: storage(queueName),
-      limiter: limiter?.(queueName, 4, 1),
+      limiter: limiter?.(queueName, 4, 1000),
       waitDurationInMilliseconds: 1,
     });
   });

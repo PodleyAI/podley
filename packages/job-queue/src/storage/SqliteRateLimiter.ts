@@ -19,11 +19,11 @@ export class SqliteRateLimiter implements ILimiter {
   private readonly maxExecutions: number;
   private readonly windowSizeInMilliseconds: number;
 
-  constructor(db: Database, queueName: string, maxExecutions: number, windowSizeInMinutes: number) {
+  constructor(db: Database, queueName: string, maxExecutions: number, windowSizeInSeconds: number) {
     this.db = db;
     this.queueName = queueName;
     this.maxExecutions = maxExecutions;
-    this.windowSizeInMilliseconds = windowSizeInMinutes * 60 * 1000;
+    this.windowSizeInMilliseconds = windowSizeInSeconds * 1000;
     this.ensureTableExists();
   }
 
@@ -121,8 +121,8 @@ export class SqliteRateLimiter implements ILimiter {
     let rateLimitedTime = new Date();
     if (oldestExecution) {
       rateLimitedTime = new Date(oldestExecution.executed_at + "Z");
-      rateLimitedTime.setMinutes(
-        rateLimitedTime.getMinutes() + this.windowSizeInMilliseconds / 60000
+      rateLimitedTime.setSeconds(
+        rateLimitedTime.getSeconds() + this.windowSizeInMilliseconds / 1000
       );
     }
 

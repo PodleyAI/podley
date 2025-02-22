@@ -27,7 +27,7 @@ const db = new module(":memory:");
 describe("SqliteJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new SqliteQueueStorage(db, queueName),
-    (queueName: string, maxRequests: number, windowSizeInMinutes: number) =>
-      new SqliteRateLimiter(db, queueName, maxRequests, windowSizeInMinutes)
+    (queueName: string, maxRequests: number, windowSizeInSeconds: number) =>
+      new SqliteRateLimiter(db, queueName, maxRequests, windowSizeInSeconds)
   );
 });

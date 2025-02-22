@@ -13,13 +13,13 @@ import { ILimiter } from "../job/ILimiter";
  */
 export class InMemoryRateLimiter implements ILimiter {
   private requests: Date[] = [];
-  private nextAvailableTime: Date = new Date(); // New property to track externally set delay
+  private nextAvailableTime: Date = new Date();
   private readonly maxRequests: number;
   private readonly windowSizeInMilliseconds: number;
 
-  constructor(maxRequests: number, windowSizeInMinutes: number) {
+  constructor(maxRequests: number, windowSizeInSeconds: number) {
     this.maxRequests = maxRequests;
-    this.windowSizeInMilliseconds = windowSizeInMinutes * 60 * 1000; // Corrected to calculate milliseconds
+    this.windowSizeInMilliseconds = windowSizeInSeconds * 1000;
   }
 
   private removeOldRequests() {

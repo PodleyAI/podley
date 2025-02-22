@@ -31,7 +31,7 @@ export async function createSimpleSqliteJobQueue<I, O, C extends Job<I, O>>(
   ) => C,
   {
     rateLimiterMaxExecutions = 10,
-    rateLimiterWindowSizeInMinutes = 1,
+    rateLimiterWindowSizeInSeconds = 1,
     waitDurationInMilliseconds = 100,
     deleteAfterCompletionMs = 0,
     deleteAfterFailureMs = 0,
@@ -42,7 +42,7 @@ export async function createSimpleSqliteJobQueue<I, O, C extends Job<I, O>>(
       db,
       queueName,
       rateLimiterMaxExecutions,
-      rateLimiterWindowSizeInMinutes
+      rateLimiterWindowSizeInSeconds
     ),
     waitDurationInMilliseconds,
     deleteAfterCompletionMs,

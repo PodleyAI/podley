@@ -19,9 +19,9 @@ export class PostgresRateLimiter implements ILimiter {
     protected readonly db: Pool,
     private readonly queueName: string,
     private readonly maxExecutions: number,
-    windowSizeInMinutes: number
+    windowSizeInSeconds: number
   ) {
-    this.windowSizeInMilliseconds = windowSizeInMinutes * 60 * 1000;
+    this.windowSizeInMilliseconds = windowSizeInSeconds * 1000;
     this.dbPromise = this.ensureTableExists();
   }
 
@@ -135,8 +135,8 @@ export class PostgresRateLimiter implements ILimiter {
     let rateLimitedTime = new Date();
     if (oldestExecution) {
       rateLimitedTime = new Date(oldestExecution.executed_at);
-      rateLimitedTime.setMinutes(
-        rateLimitedTime.getMinutes() + this.windowSizeInMilliseconds / 60000
+      rateLimitedTime.setSeconds(
+        rateLimitedTime.getSeconds() + this.windowSizeInMilliseconds / 1000
       );
     }
 

@@ -17,7 +17,7 @@ const db = new PGlite() as unknown as Pool;
 describe("PostgresJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new PostgresQueueStorage(db, queueName),
-    (queueName: string, maxRequests: number, windowSizeInMinutes: number) =>
-      new PostgresRateLimiter(db, queueName, maxRequests, windowSizeInMinutes)
+    (queueName: string, maxRequests: number, windowSizeInSeconds: number) =>
+      new PostgresRateLimiter(db, queueName, maxRequests, windowSizeInSeconds)
   );
 });
