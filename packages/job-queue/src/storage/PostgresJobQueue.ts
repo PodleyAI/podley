@@ -9,7 +9,7 @@ import { PostgresQueueStorage } from "@ellmers/storage";
 import { Job, JobConstructorParam } from "../job/Job";
 import { JobQueueOptions } from "../job/IJobQueue";
 import { JobQueue } from "../job/JobQueue";
-import { PostgresRateLimiter } from "../storage/PostgresRateLimiter";
+import { PostgresRateLimiter } from "./PostgresRateLimiter";
 
 export class PostgresJobQueue<I, O, C extends Job<I, O>> extends JobQueue<I, O, C> {
   constructor(

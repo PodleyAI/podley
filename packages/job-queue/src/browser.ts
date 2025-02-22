@@ -18,6 +18,6 @@ export * from "./job/CompositeLimiter";
 export * from "./job/NullLimiter";
 
 export * from "./storage/InMemoryRateLimiter";
-export * from "./bindings/InMemoryJobQueue";
+export * from "./storage/InMemoryJobQueue";
 
-export * from "./bindings/IndexedDbJobQueue";
+export * from "./storage/IndexedDbJobQueue";

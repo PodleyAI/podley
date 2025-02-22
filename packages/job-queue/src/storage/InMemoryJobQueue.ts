@@ -5,24 +5,24 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IndexedDbQueueStorage } from "@ellmers/storage";
+import { InMemoryQueueStorage } from "@ellmers/storage";
 import { Job, JobConstructorParam } from "../job/Job";
 import { JobQueueOptions } from "../job/IJobQueue";
 import { JobQueue } from "../job/JobQueue";
-import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
+import { InMemoryRateLimiter } from "./InMemoryRateLimiter";
 
-export class IndexedDbJobQueue<I, O, C extends Job<I, O>> extends JobQueue<I, O, C> {
+export class InMemoryJobQueue<I, O, C extends Job<I, O>> extends JobQueue<I, O, C> {
   constructor(
     queueName: string,
     jobCls: new (param: JobConstructorParam<I, O>) => C,
     options: JobQueueOptions<I, O>
   ) {
-    options.storage ??= new IndexedDbQueueStorage<I, O>(queueName);
+    options.storage ??= new InMemoryQueueStorage<I, O>(queueName);
     super(queueName, jobCls, options);
   }
 }
 
-export async function createSimpleIndexedDbJobQueue<I, O, C extends Job<I, O>>(
+export async function createSimpleInMemoryJobQueue<I, O, C extends Job<I, O>>(
   queueName: string,
   jobCls: new (param: JobConstructorParam<I, O>) => C = Job as new (
     param: JobConstructorParam<I, O>
@@ -35,7 +35,7 @@ export async function createSimpleIndexedDbJobQueue<I, O, C extends Job<I, O>>(
     deleteAfterFailureMs = 0,
   }
 ) {
-  const jobQueue = new IndexedDbJobQueue<I, O, C>(queueName, jobCls, {
+  const jobQueue = new InMemoryJobQueue<I, O, C>(queueName, jobCls, {
     limiter: new InMemoryRateLimiter(rateLimiterMaxExecutions, rateLimiterWindowSizeInMinutes),
     waitDurationInMilliseconds,
     deleteAfterCompletionMs,
