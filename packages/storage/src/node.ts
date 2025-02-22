@@ -14,7 +14,6 @@ export * from "./tabular/PostgresTabularRepository";
 
 export * from "./kv/IKvRepository";
 export * from "./kv/KvRepository";
-export * from "./kv/IndexedDbKvRepository";
 export * from "./kv/InMemoryKvRepository";
 export * from "./kv/PostgresKvRepository";
 export * from "./kv/SqliteKvRepository";
