@@ -30,7 +30,7 @@ import { sleep } from "@ellmers/util";
  * @template ValueSchema - Schema definition for the value
  * @template Combined - The combined type of Key & Value
  */
-export class FileTabularRepository<
+export class FsFolderTabularRepository<
   Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
   Value extends Record<string, any> = DefaultValueType,
   PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
@@ -40,7 +40,7 @@ export class FileTabularRepository<
   private folderPath: string;
 
   /**
-   * Creates a new FileTabularRepository instance.
+   * Creates a new FsFolderTabularRepository instance.
    *
    * @param folderPath - The directory path where the JSON files will be stored
    * @param primaryKeySchema - Schema defining the structure of the primary key
@@ -179,7 +179,7 @@ export class FileTabularRepository<
    * @throws {Error} Always throws an error indicating search is not supported
    */
   async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
-    throw new Error("Search not supported for FileTabularRepository");
+    throw new Error("Search not supported for FsFolderTabularRepository");
   }
 
   /**

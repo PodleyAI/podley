@@ -23,11 +23,11 @@ export * from "./storage/taskoutput/TaskOutputRepository";
 export * from "./storage/taskgraph/TaskGraphRepository";
 
 export * from "./storage/taskgraph/InMemoryTaskGraphRepository";
-export * from "./storage/taskgraph/FileTaskGraphRepository";
+export * from "./storage/taskgraph/FsFolderTaskGraphRepository";
 export * from "./storage/taskgraph/SqliteTaskGraphRepository";
 export * from "./storage/taskgraph/PostgresTaskGraphRepository";
 
 export * from "./storage/taskoutput/InMemoryTaskOutputRepository";
-export * from "./storage/taskoutput/FileTaskOutputRepository";
+export * from "./storage/taskoutput/FsFolderTaskOutputRepository";
 export * from "./storage/taskoutput/SqliteTaskOutputRepository";
 export * from "./storage/taskoutput/PostgresTaskOutputRepository";

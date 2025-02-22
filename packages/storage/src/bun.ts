@@ -10,6 +10,6 @@ export * from "./tabular/TabularRepository";
 export * from "./tabular/InMemoryTabularRepository";
 export * from "./tabular/IndexedDbTabularRepository";
 export * from "./tabular/SqliteTabularRepository";
-export * from "./tabular/FileTabularRepository";
+export * from "./tabular/FsFolderTabularRepository";
 export * from "./tabular/PostgresTabularRepository";
 export * from "./util/IndexedDbTable";

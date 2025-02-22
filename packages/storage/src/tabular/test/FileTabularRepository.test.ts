@@ -7,7 +7,7 @@
 
 import { describe, beforeEach, afterEach, expect, test } from "bun:test";
 import { rmdirSync, mkdirSync } from "fs";
-import { FileTabularRepository } from "../FileTabularRepository";
+import { FsFolderTabularRepository } from "../FsFolderTabularRepository";
 import {
   runGenericTabularRepositoryTests,
   PrimaryKey,
@@ -22,7 +22,7 @@ import {
 
 const testDir = ".cache/test/testing";
 
-describe("FileTabularRepository", () => {
+describe("FsFolderTabularRepository", () => {
   beforeEach(() => {
     try {
       mkdirSync(testDir, { recursive: true });
@@ -38,16 +38,16 @@ describe("FileTabularRepository", () => {
   // Run basic storage tests that don't involve search
   describe("basic functionality", () => {
     runGenericTabularRepositoryTests(
-      async () => new FileTabularRepository(testDir),
+      async () => new FsFolderTabularRepository(testDir),
       async () =>
-        new FileTabularRepository<PrimaryKey, Value>(testDir, PrimaryKeySchema, ValueSchema)
+        new FsFolderTabularRepository<PrimaryKey, Value>(testDir, PrimaryKeySchema, ValueSchema)
     );
   });
 
   // Add specific tests for search functionality
   describe("search functionality", () => {
     test("should throw error when attempting to search", async () => {
-      const repo = new FileTabularRepository<CompoundKey, CompoundValue>(
+      const repo = new FsFolderTabularRepository<CompoundKey, CompoundValue>(
         testDir,
         CompoundPrimaryKeySchema,
         CompoundValueSchema,
@@ -55,7 +55,7 @@ describe("FileTabularRepository", () => {
       );
 
       expect(repo.search({ category: "test" })).rejects.toThrow(
-        "Search not supported for FileTabularRepository"
+        "Search not supported for FsFolderTabularRepository"
       );
     });
   });

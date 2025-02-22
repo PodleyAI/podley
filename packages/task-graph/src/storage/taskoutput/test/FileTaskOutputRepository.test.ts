@@ -6,18 +6,18 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { FileTaskOutputRepository } from "../FileTaskOutputRepository";
+import { FsFolderTaskOutputRepository } from "../FsFolderTaskOutputRepository";
 import { TaskInput, TaskOutput } from "../../../task/TaskTypes";
 import { rmdirSync } from "node:fs";
 
-describe("FileTaskOutputRepository", () => {
-  let repository: FileTaskOutputRepository;
+describe("FsFolderTaskOutputRepository", () => {
+  let repository: FsFolderTaskOutputRepository;
 
   beforeEach(() => {
     try {
       rmdirSync(".cache/test/file-task-output", { recursive: true });
     } catch {}
-    repository = new FileTaskOutputRepository(".cache/test/file-task-output");
+    repository = new FsFolderTaskOutputRepository(".cache/test/file-task-output");
   });
 
   it("should initialize the tabularRepository", () => {
