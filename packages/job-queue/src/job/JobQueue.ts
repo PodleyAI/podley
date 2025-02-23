@@ -161,20 +161,22 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
 
     job.progressMessage = "";
     job.progressDetails = null;
+    job.runAttempts = (job.runAttempts || 0) + 1;
 
     if (error) {
       job.error = error.message;
-      job.errorCode = error.cause;
-      job.retries = (job.retries || 0) + 1;
+      job.errorCode = error.cause ? String(error.cause) : (error.constructor.name ?? error.name);
 
       if (error instanceof RetryableJobError) {
-        if (job.retries >= job.maxRetries) {
+        if (job.runAttempts > job.maxRetries) {
           job.status = JobStatus.FAILED;
           job.progress = 100;
           job.completedAt = new Date();
         } else {
           job.status = JobStatus.PENDING;
-          job.runAfter = error.retryDate;
+          // TODO: use the limiter to calculate the retry date guess if none is provided
+          // Ensure we have a valid Date for runAfter
+          job.runAfter = error.retryDate instanceof Date ? error.retryDate : new Date();
           job.progress = 0;
         }
       } else {
@@ -390,7 +392,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   }
 
   /**
-   * Processes a job and handles its lifecycle including retries and error handling
+   * Processes a job and handles its lifecycle including runAttempts and error handling
    */
   protected async processJob(job: Job<Input, Output>): Promise<void> {
     if (!job || !job.id) throw new Error("Invalid job provided for processing");
@@ -417,7 +419,9 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
         this.events.emit("job_aborting", this.queueName, job.id);
         this.stats.abortedJobs++;
       } else if (error instanceof RetryableJobError) {
-        this.events.emit("job_retry", this.queueName, job.id, error.retryDate);
+        // Ensure we have a valid Date for the retry event
+        const retryDate = error.retryDate instanceof Date ? error.retryDate : new Date();
+        this.events.emit("job_retry", this.queueName, job.id, retryDate);
         this.stats.retriedJobs++;
       } else {
         this.events.emit("job_error", this.queueName, job.id, error.message);
@@ -603,7 +607,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       status: details.status as JobStatus,
       error: details.error ?? null,
       errorCode: details.errorCode ?? null,
-      retries: details.retries ?? 0,
+      runAttempts: details.runAttempts ?? 0,
       maxRetries: details.maxRetries ?? 10,
     });
     job.queue = this;
@@ -633,7 +637,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       output: job.output ?? null,
       error: job.error === null ? null : String(job.error),
       errorCode: job.errorCode || null,
-      retries: job.retries ?? 0,
+      runAttempts: job.runAttempts ?? 0,
       maxRetries: job.maxRetries ?? 10,
       runAfter: dateToISOString(job.runAfter) ?? now,
       createdAt: dateToISOString(job.createdAt) ?? now,
@@ -662,11 +666,15 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       if (canProceed) {
         const job = await this.next();
         if (job) {
+          // NOTE: We don't await the processJob here because we want to continue
+          //       to process other jobs in the background
           this.processJob(job);
         }
       }
     } finally {
-      setTimeout(() => this.processJobs(), this.options.waitDurationInMilliseconds);
+      if (this.running) {
+        setTimeout(() => this.processJobs(), this.options.waitDurationInMilliseconds);
+      }
     }
   }
 

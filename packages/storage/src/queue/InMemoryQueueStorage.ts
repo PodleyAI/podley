@@ -130,7 +130,7 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
 
   /**
    * Marks a job as complete with its output or error
-   * Handles retries for failed jobs and triggers completion callbacks
+   * Handles runAttempts for failed jobs and triggers completion callbacks
    * @param id - ID of the job to complete
    * @param output - Result of the job execution
    * @param error - Optional error message if job failed

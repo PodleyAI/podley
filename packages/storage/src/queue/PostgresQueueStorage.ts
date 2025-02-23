@@ -47,7 +47,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
       status job_status NOT NULL default 'PENDING',
       input jsonb NOT NULL,
       output jsonb,
-      retries integer default 0,
+      runAttempts integer default 0,
       maxRetries integer default 23,
       runAfter timestamp with time zone DEFAULT now(),
       lastRanAt timestamp with time zone,
@@ -232,7 +232,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
   /**
    * Marks a job as complete with its output or error.
    * Enhanced error handling:
-   * - For a retryable error, increments retries and updates runAfter.
+   * - For a retryable error, increments runAttempts and updates runAfter.
    * - Marks a job as FAILED immediately for permanent or generic errors.
    */
   public async complete(jobDetails: JobStorageFormat<Input, Output>): Promise<void> {
@@ -249,7 +249,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
             progress = 0,
             progressMessage = '',
             progressDetails = NULL,
-            retries = retries + 1, 
+            runAttempts = runAttempts + 1, 
             lastRanAt = NOW() AT TIME ZONE 'UTC'
           WHERE id = $5 AND queue = $6`,
         [
@@ -271,6 +271,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
               errorCode = $3,
               status = $4, 
               progress = 100,
+              runAttempts = runAttempts + 1, 
               progressMessage = '',
               progressDetails = NULL,
               completedAt = NOW() AT TIME ZONE 'UTC',

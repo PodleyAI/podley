@@ -7,7 +7,7 @@
 
 import { describe } from "bun:test";
 import { InMemoryQueueStorage } from "@ellmers/storage";
-import { runGenericJobQueueTests } from "./genericJobQueueTests";
+import { runGenericJobQueueTests } from "./genericJobQueueTests.test";
 import { InMemoryRateLimiter } from "../storage/InMemoryRateLimiter";
 
 describe("InMemoryJobQueue", () => {

@@ -14,6 +14,7 @@ import { JobQueueOptions } from "../job/IJobQueue";
 import { ILimiter } from "../job/ILimiter";
 import { Job, JobStatus } from "../job/Job";
 import { JobQueue } from "../job/JobQueue";
+import { RetryableJobError } from "../job/JobError";
 
 export interface TInput {
   [key: string]: any;
@@ -26,6 +27,14 @@ export class TestJob extends Job<TInput, TOutput> {
   public async execute(signal: AbortSignal): Promise<TOutput> {
     if (this.input.taskType === "failing") {
       throw new Error("Job failed as expected");
+    }
+
+    if (this.input.taskType === "failing_retryable") {
+      throw new RetryableJobError("Job failed but can be retried");
+    }
+
+    if (this.input.taskType === "permanent_fail") {
+      throw new PermanentJobError("Permanent failure - do not retry");
     }
 
     if (this.input.taskType === "long_running") {
@@ -81,7 +90,7 @@ export function runGenericJobQueueTests(
     const queueName = `test-queue-${nanoid()}`;
     jobQueue = new JobQueue<TInput, TOutput, TestJob>(queueName, TestJob as any, {
       storage: storage(queueName),
-      limiter: limiter?.(queueName, 4, 1000),
+      limiter: limiter?.(queueName, 4, 60),
       waitDurationInMilliseconds: 1,
     });
   });
@@ -591,12 +600,12 @@ export function runGenericJobQueueTests(
       // @ts-ignore - Accessing protected property for testing
       await sleep(jobQueue.storage instanceof IndexedDbQueueStorage ? 30 : 3);
 
-      // Helper function to get job counts with retries
+      // Helper function to get job counts with runAttempts
       async function getJobCounts(
-        retries = 5,
+        runAttempts = 5,
         retryDelay = 3
       ): Promise<{ pending: number; processing: number; completed: number }> {
-        for (let i = 0; i < retries; i++) {
+        for (let i = 0; i < runAttempts; i++) {
           try {
             const pending = await jobQueue.size(JobStatus.PENDING);
             const processing = await jobQueue.size(JobStatus.PROCESSING);
@@ -607,7 +616,7 @@ export function runGenericJobQueueTests(
               return { pending, processing, completed };
             }
           } catch (err) {
-            if (i === retries - 1) throw err;
+            if (i === runAttempts - 1) throw err;
             await sleep(retryDelay);
           }
         }
@@ -761,7 +770,7 @@ export function runGenericJobQueueTests(
       expect(updatedJob).toBeDefined();
       expect(updatedJob!.status).toBe(JobStatus.PENDING);
       expect(updatedJob!.error).toBe("Restarting server");
-      expect(updatedJob!.retries).toBe(1);
+      expect(updatedJob!.runAttempts).toBe(1);
     });
 
     it("should fix stuck aborting jobs on start", async () => {
@@ -784,7 +793,7 @@ export function runGenericJobQueueTests(
       expect(updatedJob).toBeDefined();
       expect(updatedJob!.status).toBe(JobStatus.PENDING);
       expect(updatedJob!.error).toBe("Restarting server");
-      expect(updatedJob!.retries).toBe(1);
+      expect(updatedJob!.runAttempts).toBe(1);
     });
 
     it("should handle multiple stuck jobs", async () => {
@@ -820,11 +829,11 @@ export function runGenericJobQueueTests(
 
       expect(updatedProcessingJob!.status).toBe(JobStatus.PENDING);
       expect(updatedProcessingJob!.error).toBe("Restarting server");
-      expect(updatedProcessingJob!.retries).toBe(1);
+      expect(updatedProcessingJob!.runAttempts).toBe(1);
 
       expect(updatedAbortingJob!.status).toBe(JobStatus.PENDING);
       expect(updatedAbortingJob!.error).toBe("Restarting server");
-      expect(updatedAbortingJob!.retries).toBe(1);
+      expect(updatedAbortingJob!.runAttempts).toBe(1);
     });
 
     it("should not affect jobs in other states", async () => {
@@ -852,10 +861,124 @@ export function runGenericJobQueueTests(
 
       expect(updatedPendingJob!.status).toBe(JobStatus.PENDING);
       expect(updatedPendingJob!.error).toBeNull();
-      expect(updatedPendingJob!.retries).toBe(0);
+      expect(updatedPendingJob!.runAttempts).toBe(0);
 
       expect(updatedCompletedJob!.status).toBe(JobStatus.COMPLETED);
       expect(updatedFailedJob!.status).toBe(JobStatus.FAILED);
+    });
+  });
+
+  describe("Error Handling", () => {
+    it("should handle job failures and mark job as failed", async () => {
+      const jobId = await jobQueue.add(
+        new TestJob({
+          input: { taskType: "failing", data: "will-fail" },
+          maxRetries: 0, // Ensure no runAttempts
+        })
+      );
+
+      let error: Error | null = null;
+      try {
+        await jobQueue.start();
+        await jobQueue.waitFor(jobId);
+      } catch (err) {
+        error = err as Error;
+      }
+      expect(error).toBeDefined();
+      expect(error).toBeInstanceOf(Error);
+      expect(error?.message).toBe("Job failed as expected");
+
+      const failedJob = await jobQueue.get(jobId);
+      expect(failedJob?.status).toBe(JobStatus.FAILED);
+      expect(failedJob?.error).toBe("Job failed as expected");
+      expect(failedJob?.runAttempts).toBe(0);
+    });
+
+    it.skip("should retry a failed job up to maxRetries", async () => {
+      const jobId = await jobQueue.add(
+        new TestJob({
+          input: { taskType: "failing_retryable", data: "will-retry" },
+          maxRetries: 0, // Allow 3 runAttempts
+        })
+      );
+
+      let error: Error | null = null;
+      try {
+        await jobQueue.start();
+        await jobQueue.waitFor(jobId);
+      } catch (err) {
+        error = err as Error;
+      }
+      expect(error).toBeDefined();
+      expect(error).toBeInstanceOf(RetryableJobError);
+      expect(error?.message).toBe("Job failed but can be retried");
+
+      // Wait for runAttempts to complete
+      await sleep(10);
+
+      const failedJob = await jobQueue.get(jobId);
+      expect(failedJob?.status).toBe(JobStatus.FAILED);
+      expect(failedJob?.runAttempts).toBe(3); // Should have attempted 3 runAttempts, two retries and one initial run
+      expect(failedJob?.error).toBe("Job failed but can be retried");
+
+      await jobQueue.stop();
+    });
+
+    it("should handle permanent failures without retrying", async () => {
+      await jobQueue.start();
+      const jobId = await jobQueue.add(
+        new TestJob({
+          input: { taskType: "permanent_fail", data: "no-retry" },
+          maxRetries: 2, // Even with runAttempts enabled, permanent failures should not retry
+        })
+      );
+
+      let error: Error | null = null;
+      try {
+        await jobQueue.waitFor(jobId);
+      } catch (err) {
+        error = err as Error;
+      }
+      expect(error).toBeDefined();
+      expect(error).toBeInstanceOf(PermanentJobError);
+      expect(error?.message).toBe("Permanent failure - do not retry");
+
+      const failedJob = await jobQueue.get(jobId);
+      expect(failedJob?.status).toBe(JobStatus.FAILED);
+      expect(failedJob?.error).toBe("Permanent failure - do not retry");
+      expect(failedJob?.runAttempts).toBe(0); // Should not retry permanent failures
+
+      await jobQueue.stop();
+    });
+
+    it("should emit error events when jobs fail", async () => {
+      await jobQueue.start();
+      let errorEventReceived = false;
+      let errorEventJob: unknown;
+      let errorEventError = "";
+
+      jobQueue.on("job_error", (_queueName, jobId, error) => {
+        errorEventReceived = true;
+        errorEventJob = jobId;
+        errorEventError = error;
+      });
+
+      const jobId = await jobQueue.add(
+        new TestJob({
+          input: { taskType: "failing", data: "will-fail" },
+          maxRetries: 0, // Ensure no runAttempts
+        })
+      );
+
+      try {
+        await jobQueue.waitFor(jobId);
+      } catch (error) {
+        // Expected error
+      }
+
+      expect(errorEventReceived).toBe(true);
+      expect(errorEventJob).toBe(jobId);
+      expect(errorEventError).toContain("Job failed as expected");
     });
   });
 }

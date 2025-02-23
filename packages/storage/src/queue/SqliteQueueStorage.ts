@@ -36,7 +36,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         status TEXT NOT NULL default 'PENDING',
         input TEXT NOT NULL,
         output TEXT,
-        retries INTEGER default 0,
+        runAttempts INTEGER default 0,
         maxRetries INTEGER default 23,
         runAfter TEXT NOT NULL,
         lastRanAt TEXT,
@@ -152,7 +152,6 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     if (result.input) result.input = JSON.parse(result.input);
     if (result.output) result.output = JSON.parse(result.output);
     if (result.progressDetails) result.progressDetails = JSON.parse(result.progressDetails);
-
     return result;
   }
 
@@ -303,7 +302,6 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     const now = new Date().toISOString();
     let updateQuery: string;
     let params: any[];
-
     if (job.status === JobStatus.PENDING) {
       updateQuery = `
           UPDATE job_queue 
@@ -316,7 +314,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
               progress = 0, 
               progressMessage = "", 
               progressDetails = NULL, 
-              retries = retries + 1,
+              runAttempts = runAttempts + 1,
               lastRanAt = ?
             WHERE id = ? AND queue = ?`;
       params = [
@@ -341,7 +339,8 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
               progressMessage = "", 
               progressDetails = NULL, 
               lastRanAt = ?,
-              completedAt = ?
+              completedAt = ?,
+              runAttempts = runAttempts + 1
             WHERE id = ? AND queue = ?`;
       params = [
         job.output ? JSON.stringify(job.output) : null,

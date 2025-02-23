@@ -32,7 +32,7 @@ export type JobStorageFormat<Input, Output> = {
   lastRanAt?: string | null;
   runAfter: string | null;
   completedAt: string | null;
-  retries?: number;
+  runAttempts?: number;
   progress?: number;
   progressMessage?: string;
   progressDetails?: Record<string, any> | null;

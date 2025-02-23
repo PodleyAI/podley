@@ -35,7 +35,7 @@ export type JobConstructorParam<Input, Output> = {
   lastRanAt?: Date | null;
   runAfter?: Date | null;
   completedAt?: Date | null;
-  retries?: number;
+  runAttempts?: number;
   progress?: number;
   progressMessage?: string;
   progressDetails?: Record<string, any> | null;
@@ -58,7 +58,7 @@ export class Job<Input, Output> {
   public status: JobStatus = JobStatus.PENDING;
   public runAfter: Date;
   public output: Output | null = null;
-  public retries: number = 0;
+  public runAttempts: number = 0;
   public lastRanAt: Date | null = null;
   public completedAt: Date | null = null;
   public deadlineAt: Date | null = null;
@@ -82,7 +82,7 @@ export class Job<Input, Output> {
     completedAt = null,
     status = JobStatus.PENDING,
     deadlineAt = null,
-    retries = 0,
+    runAttempts = 0,
     lastRanAt = null,
     runAfter = new Date(),
     progress = 0,
@@ -102,7 +102,7 @@ export class Job<Input, Output> {
     this.fingerprint = fingerprint;
     this.input = input;
     this.maxRetries = maxRetries;
-    this.retries = retries;
+    this.runAttempts = runAttempts;
     this.output = output;
     this.error = error;
     this.progress = progress;
