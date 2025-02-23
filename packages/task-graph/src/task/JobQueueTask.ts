@@ -99,7 +99,6 @@ export abstract class JobQueueTask extends SingleTask {
       return this.runOutputData;
     } catch (err: any) {
       this.handleError(err);
-      console.error(err);
       throw err;
     } finally {
       this.abortController = undefined;

@@ -164,7 +164,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
 
     if (error) {
       job.error = error.message;
-      job.errorCode = error.name;
+      job.errorCode = error.cause;
       job.retries = (job.retries || 0) + 1;
 
       if (error instanceof RetryableJobError) {
@@ -203,7 +203,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
 
       if (job.status === JobStatus.FAILED) {
         this.stats.failedJobs++;
-        this.events.emit("job_error", this.queueName, job.id, `${error!.name}: ${error!.message}`);
+        this.events.emit("job_error", this.queueName, job.id, `${error!.cause}: ${error!.message}`);
         promises.forEach(({ reject }) => reject(error!));
       } else if (job.status === JobStatus.COMPLETED) {
         this.stats.completedJobs++;
@@ -457,7 +457,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       return err;
     }
     if (err instanceof Error) {
-      return new PermanentJobError(err.message);
+      return err as JobError;
     }
     return new PermanentJobError(String(err));
   }

@@ -14,7 +14,7 @@ import {
   TaskInputDefinition,
   TaskOutputDefinition,
 } from "@ellmers/task-graph";
-import { Job } from "@ellmers/job-queue";
+import { Job, PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
 
 export type url = string;
 export type FetchTaskInput = {
@@ -52,16 +52,50 @@ export class FetchJob extends Job<FetchTaskInput, FetchTaskOutput> {
       signal: signal,
     });
 
-    if (this.input.response_type === "json") {
-      result = await response.json();
-    } else if (this.input.response_type === "text") {
-      result = await response.text();
-    } else if (this.input.response_type === "blob") {
-      result = await response.blob();
-    } else if (this.input.response_type === "arraybuffer") {
-      result = await response.arrayBuffer();
+    if (response.ok) {
+      if (this.input.response_type === "json") {
+        result = await response.json();
+      } else if (this.input.response_type === "text") {
+        result = await response.text();
+      } else if (this.input.response_type === "blob") {
+        result = await response.blob();
+      } else if (this.input.response_type === "arraybuffer") {
+        result = await response.arrayBuffer();
+      }
+      return { output: result };
+    } else {
+      if (
+        response.status === 429 ||
+        response.status === 503 ||
+        response.headers.get("Retry-After")
+      ) {
+        let retryDate: Date | undefined;
+        const retryAfterStr = response.headers.get("Retry-After");
+        if (retryAfterStr) {
+          // Try parsing as HTTP date first
+          const parsedDate = new Date(retryAfterStr);
+          if (!isNaN(parsedDate.getTime()) && parsedDate > new Date()) {
+            // Only use the date if it's in the future
+            retryDate = parsedDate;
+          } else {
+            // If not a valid future date, treat as seconds
+            const retryAfterSeconds = parseInt(retryAfterStr) * 1000;
+            if (!isNaN(retryAfterSeconds)) {
+              retryDate = new Date(Date.now() + retryAfterSeconds);
+            }
+          }
+        }
+
+        throw new RetryableJobError(
+          `Failed to fetch ${this.input.url}: ${response.status} ${response.statusText}`,
+          retryDate
+        );
+      } else {
+        throw new PermanentJobError(
+          `Failed to fetch ${this.input.url}: ${response.status} ${response.statusText}`
+        );
+      }
     }
-    return { output: result };
   }
 }
 
