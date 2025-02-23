@@ -191,6 +191,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       job.errorCode = null;
       job.completedAt = new Date();
     }
+
     await this.storage.complete(this.jobToStorage(job));
 
     if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
@@ -625,12 +626,12 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     return {
       id: job.id,
       jobRunId: job.jobRunId,
-      queue: job.queueName,
+      queue: job.queueName || this.queueName,
       fingerprint: job.fingerprint,
       input: job.input,
       status: job.status,
       output: job.output ?? null,
-      error: String(job.error) || null,
+      error: job.error === null ? null : String(job.error),
       errorCode: job.errorCode || null,
       retries: job.retries ?? 0,
       maxRetries: job.maxRetries ?? 10,
@@ -764,15 +765,32 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
 
     // Start job processing if in SERVER or BOTH mode
     if (this.mode !== QueueMode.CLIENT) {
-      this.processJobs();
+      await this.fixupJobs();
+      await this.processJobs();
     }
 
     // Start job monitoring if in CLIENT or BOTH mode
     if (this.mode !== QueueMode.SERVER) {
-      this.monitorJobs();
+      await this.monitorJobs();
     }
 
     return this;
+  }
+
+  /**
+   * Fixes stuck jobs when the server restarts
+   */
+  private async fixupJobs() {
+    const stuckProcessingJobs = await this.peek(JobStatus.PROCESSING);
+    const stuckAbortingJobs = await this.peek(JobStatus.ABORTING);
+    const stuckJobs = [...stuckProcessingJobs, ...stuckAbortingJobs];
+    for (const job of stuckJobs) {
+      await this.complete(
+        job.id,
+        undefined,
+        new RetryableJobError("Restarting server", job.lastRanAt!)
+      );
+    }
   }
 
   /**

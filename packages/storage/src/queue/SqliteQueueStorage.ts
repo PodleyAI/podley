@@ -312,6 +312,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
               errorCode = ?, 
               status = ?, 
               runAfter = ?, 
+              lastRanAt = ?,
               progress = 0, 
               progressMessage = "", 
               progressDetails = NULL, 
@@ -325,7 +326,6 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         job.runAfter,
         now,
         job.status,
-        now,
         job.id,
         this.queueName,
       ];

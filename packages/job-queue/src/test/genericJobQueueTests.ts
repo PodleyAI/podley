@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { sleep } from "@ellmers/util";
 import { IQueueStorage, IndexedDbQueueStorage } from "@ellmers/storage";
 import { nanoid } from "nanoid";
-import { AbortSignalJobError } from "../job/JobError";
+import { AbortSignalJobError, PermanentJobError } from "../job/JobError";
 import { JobQueueOptions } from "../job/IJobQueue";
 import { ILimiter } from "../job/ILimiter";
 import { Job, JobStatus } from "../job/Job";
@@ -732,6 +732,130 @@ export function runGenericJobQueueTests(
       expect(pending.length).toBeGreaterThan(0);
 
       await jobQueue.stop();
+    });
+  });
+
+  describe("Job Queue Restart", () => {
+    it("should fix stuck processing jobs on start", async () => {
+      // Create a job and manually set it to PROCESSING state
+      const job = new TestJob({ input: { data: "test" } });
+      const jobId = await jobQueue.add(job);
+      // @ts-ignore - Accessing protected property for testing
+      await jobQueue.storage.complete({
+        ...jobQueue.jobToStorage(job),
+        id: jobId,
+        status: JobStatus.PROCESSING,
+        lastRanAt: new Date().toISOString(),
+      });
+
+      const checkJob = await jobQueue.get(jobId);
+      expect(checkJob).toBeDefined();
+      expect(checkJob!.status).toBe(JobStatus.PROCESSING);
+      expect(checkJob!.lastRanAt).toBeDefined();
+
+      // @ts-ignore - Accessing protected method for testing
+      await jobQueue.fixupJobs();
+
+      // Get the job and verify it was marked for retry
+      const updatedJob = await jobQueue.get(jobId);
+      expect(updatedJob).toBeDefined();
+      expect(updatedJob!.status).toBe(JobStatus.PENDING);
+      expect(updatedJob!.error).toBe("Restarting server");
+      expect(updatedJob!.retries).toBe(1);
+    });
+
+    it("should fix stuck aborting jobs on start", async () => {
+      // Create a job and manually set it to ABORTING state
+      const job = new TestJob({ input: { value: "test" } });
+      const jobId = await jobQueue.add(job);
+      // @ts-ignore - Accessing protected property for testing
+      await jobQueue.storage.complete({
+        ...jobQueue.jobToStorage(job),
+        id: jobId,
+        status: JobStatus.ABORTING,
+        lastRanAt: new Date().toISOString(),
+      });
+
+      // @ts-ignore - Accessing protected method for testing
+      await jobQueue.fixupJobs();
+
+      // Get the job and verify it was marked for retry
+      const updatedJob = await jobQueue.get(jobId);
+      expect(updatedJob).toBeDefined();
+      expect(updatedJob!.status).toBe(JobStatus.PENDING);
+      expect(updatedJob!.error).toBe("Restarting server");
+      expect(updatedJob!.retries).toBe(1);
+    });
+
+    it("should handle multiple stuck jobs", async () => {
+      // Create multiple jobs in different stuck states
+      const processingJob = new TestJob({ input: { value: "processing" } });
+      const abortingJob = new TestJob({ input: { value: "aborting" } });
+
+      const processingJobId = await jobQueue.add(processingJob);
+      const abortingJobId = await jobQueue.add(abortingJob);
+
+      // @ts-ignore - Accessing protected property for testing
+      await jobQueue.storage.complete({
+        ...jobQueue.jobToStorage(processingJob),
+        id: processingJobId,
+        status: JobStatus.PROCESSING,
+        lastRanAt: new Date().toISOString(),
+      });
+
+      // @ts-ignore - Accessing protected property for testing
+      await jobQueue.storage.complete({
+        ...jobQueue.jobToStorage(abortingJob),
+        id: abortingJobId,
+        status: JobStatus.ABORTING,
+        lastRanAt: new Date().toISOString(),
+      });
+
+      /// @ts-ignore - Accessing protected method for testing
+      await jobQueue.fixupJobs();
+
+      // Verify both jobs were fixed
+      const updatedProcessingJob = await jobQueue.get(processingJobId);
+      const updatedAbortingJob = await jobQueue.get(abortingJobId);
+
+      expect(updatedProcessingJob!.status).toBe(JobStatus.PENDING);
+      expect(updatedProcessingJob!.error).toBe("Restarting server");
+      expect(updatedProcessingJob!.retries).toBe(1);
+
+      expect(updatedAbortingJob!.status).toBe(JobStatus.PENDING);
+      expect(updatedAbortingJob!.error).toBe("Restarting server");
+      expect(updatedAbortingJob!.retries).toBe(1);
+    });
+
+    it("should not affect jobs in other states", async () => {
+      // Create a job in PENDING state
+      const pendingJob = new TestJob({ input: { value: "pending" } });
+      const pendingJobId = await jobQueue.add(pendingJob);
+
+      // Create a job in COMPLETED state
+      const completedJob = new TestJob({ input: { value: "completed" } });
+      const completedJobId = await jobQueue.add(completedJob);
+      await jobQueue.complete(completedJobId, { result: "done" });
+
+      // Create a job in FAILED state
+      const failedJob = new TestJob({ input: { value: "failed" } });
+      const failedJobId = await jobQueue.add(failedJob);
+      await jobQueue.complete(failedJobId, undefined, new PermanentJobError("Failed"));
+
+      // @ts-ignore - Accessing protected method for testing
+      await jobQueue.fixupJobs();
+
+      // Verify jobs in other states were not affected
+      const updatedPendingJob = await jobQueue.get(pendingJobId);
+      const updatedCompletedJob = await jobQueue.get(completedJobId);
+      const updatedFailedJob = await jobQueue.get(failedJobId);
+
+      expect(updatedPendingJob!.status).toBe(JobStatus.PENDING);
+      expect(updatedPendingJob!.error).toBeNull();
+      expect(updatedPendingJob!.retries).toBe(0);
+
+      expect(updatedCompletedJob!.status).toBe(JobStatus.COMPLETED);
+      expect(updatedFailedJob!.status).toBe(JobStatus.FAILED);
     });
   });
 }
