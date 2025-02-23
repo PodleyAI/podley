@@ -751,10 +751,11 @@ export function runGenericJobQueueTests(
       const jobId = await jobQueue.add(job);
       // @ts-ignore - Accessing protected property for testing
       await jobQueue.storage.complete({
-        ...jobQueue.jobToStorage(job),
+        ...jobQueue.classToStorage(job),
         id: jobId,
         status: JobStatus.PROCESSING,
-        lastRanAt: new Date().toISOString(),
+        last_ran_at: new Date().toISOString(),
+        run_attempts: 1,
       });
 
       const checkJob = await jobQueue.get(jobId);
@@ -770,7 +771,7 @@ export function runGenericJobQueueTests(
       expect(updatedJob).toBeDefined();
       expect(updatedJob!.status).toBe(JobStatus.PENDING);
       expect(updatedJob!.error).toBe("Restarting server");
-      expect(updatedJob!.runAttempts).toBe(1);
+      expect(updatedJob!.runAttempts).toBe(2);
     });
 
     it("should fix stuck aborting jobs on start", async () => {
@@ -779,10 +780,10 @@ export function runGenericJobQueueTests(
       const jobId = await jobQueue.add(job);
       // @ts-ignore - Accessing protected property for testing
       await jobQueue.storage.complete({
-        ...jobQueue.jobToStorage(job),
+        ...jobQueue.classToStorage(job),
         id: jobId,
         status: JobStatus.ABORTING,
-        lastRanAt: new Date().toISOString(),
+        last_ran_at: new Date().toISOString(),
       });
 
       // @ts-ignore - Accessing protected method for testing
@@ -793,7 +794,7 @@ export function runGenericJobQueueTests(
       expect(updatedJob).toBeDefined();
       expect(updatedJob!.status).toBe(JobStatus.PENDING);
       expect(updatedJob!.error).toBe("Restarting server");
-      expect(updatedJob!.runAttempts).toBe(1);
+      expect(updatedJob!.runAttempts).toBe(2);
     });
 
     it("should handle multiple stuck jobs", async () => {
@@ -806,18 +807,18 @@ export function runGenericJobQueueTests(
 
       // @ts-ignore - Accessing protected property for testing
       await jobQueue.storage.complete({
-        ...jobQueue.jobToStorage(processingJob),
+        ...jobQueue.classToStorage(processingJob),
         id: processingJobId,
         status: JobStatus.PROCESSING,
-        lastRanAt: new Date().toISOString(),
+        last_ran_at: new Date().toISOString(),
       });
 
       // @ts-ignore - Accessing protected property for testing
       await jobQueue.storage.complete({
-        ...jobQueue.jobToStorage(abortingJob),
+        ...jobQueue.classToStorage(abortingJob),
         id: abortingJobId,
         status: JobStatus.ABORTING,
-        lastRanAt: new Date().toISOString(),
+        last_ran_at: new Date().toISOString(),
       });
 
       /// @ts-ignore - Accessing protected method for testing
@@ -829,11 +830,11 @@ export function runGenericJobQueueTests(
 
       expect(updatedProcessingJob!.status).toBe(JobStatus.PENDING);
       expect(updatedProcessingJob!.error).toBe("Restarting server");
-      expect(updatedProcessingJob!.runAttempts).toBe(1);
+      expect(updatedProcessingJob!.runAttempts).toBe(2);
 
       expect(updatedAbortingJob!.status).toBe(JobStatus.PENDING);
       expect(updatedAbortingJob!.error).toBe("Restarting server");
-      expect(updatedAbortingJob!.runAttempts).toBe(1);
+      expect(updatedAbortingJob!.runAttempts).toBe(2);
     });
 
     it("should not affect jobs in other states", async () => {
@@ -891,14 +892,14 @@ export function runGenericJobQueueTests(
       const failedJob = await jobQueue.get(jobId);
       expect(failedJob?.status).toBe(JobStatus.FAILED);
       expect(failedJob?.error).toBe("Job failed as expected");
-      expect(failedJob?.runAttempts).toBe(0);
+      expect(failedJob?.runAttempts).toBe(1);
     });
 
-    it.skip("should retry a failed job up to maxRetries", async () => {
+    it("should retry a failed job up to maxRetries", async () => {
       const jobId = await jobQueue.add(
         new TestJob({
           input: { taskType: "failing_retryable", data: "will-retry" },
-          maxRetries: 0, // Allow 3 runAttempts
+          maxRetries: 2, // Allow 3 runAttempts
         })
       );
 
@@ -946,7 +947,7 @@ export function runGenericJobQueueTests(
       const failedJob = await jobQueue.get(jobId);
       expect(failedJob?.status).toBe(JobStatus.FAILED);
       expect(failedJob?.error).toBe("Permanent failure - do not retry");
-      expect(failedJob?.runAttempts).toBe(0); // Should not retry permanent failures
+      expect(failedJob?.runAttempts).toBe(1); // Should not retry permanent failures
 
       await jobQueue.stop();
     });

@@ -28,13 +28,13 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
         options: { unique: false },
       },
       {
-        name: "status_runAfter",
-        keyPath: ["status", "runAfter"],
+        name: "status_run_after",
+        keyPath: ["status", "run_after"],
         options: { unique: false },
       },
       {
-        name: "jobRunId",
-        keyPath: `jobRunId`,
+        name: "job_run_id",
+        keyPath: `job_run_id`,
         options: { unique: false },
       },
       {
@@ -56,15 +56,15 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   public async add(job: JobStorageFormat<Input, Output>): Promise<unknown> {
     const now = new Date().toISOString();
     job.id = job.id ?? nanoid();
-    job.jobRunId = job.jobRunId ?? nanoid();
+    job.job_run_id = job.job_run_id ?? nanoid();
     job.queue = this.queueName;
     job.fingerprint = await makeFingerprint(job.input);
     job.status = JobStatus.PENDING;
     job.progress = 0;
-    job.progressMessage = "";
-    job.progressDetails = null;
-    job.createdAt = now;
-    job.runAfter = now;
+    job.progress_message = "";
+    job.progress_details = null;
+    job.created_at = now;
+    job.run_after = now;
 
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
@@ -110,7 +110,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
-    const index = store.index("status_runAfter");
+    const index = store.index("status_run_after");
 
     return new Promise((resolve, reject) => {
       const ret = new Map<unknown, JobStorageFormat<Input, Output>>();
@@ -143,7 +143,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
-    const index = store.index("status_runAfter");
+    const index = store.index("status_run_after");
     const now = new Date().toISOString();
 
     return new Promise((resolve, reject) => {
@@ -172,7 +172,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
         }
 
         job.status = JobStatus.PROCESSING;
-        job.lastRanAt = now;
+        job.last_ran_at = now;
 
         try {
           const updateRequest = store.put(job);
@@ -227,6 +227,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const store = tx.objectStore(this.tableName);
 
     return new Promise((resolve, reject) => {
+      job.run_attempts = job.run_attempts || 1;
       const request = store.put(job);
 
       // Don't resolve until transaction is complete
@@ -250,12 +251,12 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   /**
    * Gets jobs by their run ID.
    */
-  public async getByRunId(jobRunId: string): Promise<JobStorageFormat<Input, Output>[]> {
+  public async getByRunId(job_run_id: string): Promise<JobStorageFormat<Input, Output>[]> {
     const db = await this.dbPromise;
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
-    const index = store.index("jobRunId");
-    const request = index.getAll(jobRunId);
+    const index = store.index("job_run_id");
+    const request = index.getAll(job_run_id);
 
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve(request.result);
@@ -311,8 +312,8 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     if (!job) throw new Error(`Job ${id} not found`);
 
     job.progress = progress;
-    job.progressMessage = message;
-    job.progressDetails = details;
+    job.progress_message = message;
+    job.progress_details = details;
 
     await this.complete(job);
   }
@@ -352,7 +353,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
         const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
           const job = cursor.value;
-          if (job.status === status && job.completedAt && job.completedAt <= cutoffDate) {
+          if (job.status === status && job.completed_at && job.completed_at <= cutoffDate) {
             cursor.delete();
           }
           cursor.continue();

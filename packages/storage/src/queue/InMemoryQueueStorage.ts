@@ -32,8 +32,8 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
     const now = new Date().toISOString();
     return this.jobQueue
       .filter((job) => job.status === JobStatus.PENDING)
-      .filter((job) => !job.runAfter || job.runAfter <= now)
-      .sort((a, b) => (a.runAfter || "").localeCompare(b.runAfter || ""));
+      .filter((job) => !job.run_after || job.run_after <= now)
+      .sort((a, b) => (a.run_after || "").localeCompare(b.run_after || ""));
   }
 
   /**
@@ -43,15 +43,15 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
   public async add(job: JobStorageFormat<Input, Output>) {
     const now = new Date().toISOString();
     job.id = job.id ?? nanoid();
-    job.jobRunId = job.jobRunId ?? nanoid();
+    job.job_run_id = job.job_run_id ?? nanoid();
     job.queue = this.queueName;
     job.fingerprint = await makeFingerprint(job.input);
     job.status = JobStatus.PENDING;
     job.progress = 0;
-    job.progressMessage = "";
-    job.progressDetails = null;
-    job.createdAt = now;
-    job.runAfter = now;
+    job.progress_message = "";
+    job.progress_details = null;
+    job.created_at = now;
+    job.run_after = now;
 
     this.jobQueue.push(job);
     return job.id;
@@ -75,7 +75,7 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
   public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
     num = Number(num) || 100;
     return this.jobQueue
-      .sort((a, b) => (a.runAfter || "").localeCompare(b.runAfter || ""))
+      .sort((a, b) => (a.run_after || "").localeCompare(b.run_after || ""))
       .filter((j) => j.status === status)
       .slice(0, num);
   }
@@ -90,7 +90,7 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
     const job = top[0];
     if (job) {
       job.status = JobStatus.PROCESSING;
-      job.lastRanAt = new Date().toISOString();
+      job.last_ran_at = new Date().toISOString();
       return job;
     }
   }
@@ -124,18 +124,19 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
     }
 
     job.progress = progress;
-    job.progressMessage = message;
-    job.progressDetails = details;
+    job.progress_message = message;
+    job.progress_details = details;
   }
 
   /**
    * Marks a job as complete with its output or error
-   * Handles runAttempts for failed jobs and triggers completion callbacks
+   * Handles run_attempts for failed jobs and triggers completion callbacks
    * @param id - ID of the job to complete
    * @param output - Result of the job execution
    * @param error - Optional error message if job failed
    */
   public async complete(job: JobStorageFormat<Input, Output>) {
+    job.run_attempts = job.run_attempts || 1;
     const index = this.jobQueue.findIndex((j) => j.id === job.id);
     if (index !== -1) {
       this.jobQueue[index] = job;
@@ -154,12 +155,12 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
   }
 
   /**
-   * Retrieves all jobs by their jobRunId.
-   * @param jobRunId - The jobRunId of the jobs to retrieve.
+   * Retrieves all jobs by their job_run_id.
+   * @param job_run_id - The job_run_id of the jobs to retrieve.
    * @returns A promise that resolves to an array of jobs.
    */
   public async getByRunId(runId: string): Promise<Array<JobStorageFormat<Input, Output>>> {
-    return this.jobQueue.filter((job) => job.jobRunId === runId);
+    return this.jobQueue.filter((job) => job.job_run_id === runId);
   }
 
   /**
@@ -198,7 +199,7 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
   public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
     this.jobQueue = this.jobQueue.filter(
-      (job) => job.status !== status || !job.completedAt || job.completedAt > cutoffDate
+      (job) => job.status !== status || !job.completed_at || job.completed_at > cutoffDate
     );
   }
 }

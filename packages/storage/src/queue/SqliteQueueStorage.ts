@@ -32,27 +32,27 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         id INTEGER PRIMARY KEY,
         fingerprint text NOT NULL,
         queue text NOT NULL,
-        jobRunId text NOT NULL,
+        job_run_id text NOT NULL,
         status TEXT NOT NULL default 'PENDING',
         input TEXT NOT NULL,
         output TEXT,
-        runAttempts INTEGER default 0,
-        maxRetries INTEGER default 23,
-        runAfter TEXT NOT NULL,
-        lastRanAt TEXT,
-        createdAt TEXT NOT NULL,
-        completedAt TEXT,
-        deadlineAt TEXT,
+        run_attempts INTEGER default 0,
+        max_retries INTEGER default 23,
+        run_after TEXT NOT NULL,
+        last_ran_at TEXT,
+        created_at TEXT NOT NULL,
+        completed_at TEXT,
+        deadline_at TEXT,
         error TEXT,
-        errorCode TEXT,
+        error_code TEXT,
         progress REAL DEFAULT 0,
-        progressMessage TEXT DEFAULT '',
-        progressDetails TEXT NULL
+        progress_message TEXT DEFAULT '',
+        progress_details TEXT NULL
       );
       
-      CREATE INDEX IF NOT EXISTS job_queue_fetcher_idx ON job_queue (queue, status, runAfter);
+      CREATE INDEX IF NOT EXISTS job_queue_fetcher_idx ON job_queue (queue, status, run_after);
       CREATE INDEX IF NOT EXISTS job_queue_fingerprint_idx ON job_queue (queue, fingerprint, status);
-      CREATE INDEX IF NOT EXISTS job_queue_jobRunId_idx ON job_queue (queue, jobRunId);
+      CREATE INDEX IF NOT EXISTS job_queue_job_run_id_idx ON job_queue (queue, job_run_id);
     `);
     return this;
   }
@@ -64,29 +64,29 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    */
   public async add(job: JobStorageFormat<Input, Output>) {
     const now = new Date().toISOString();
-    job.jobRunId = job.jobRunId ?? nanoid();
+    job.job_run_id = job.job_run_id ?? nanoid();
     job.queue = this.queueName;
     job.fingerprint = await makeFingerprint(job.input);
     job.status = JobStatus.PENDING;
     job.progress = 0;
-    job.progressMessage = "";
-    job.progressDetails = null;
-    job.createdAt = now;
-    job.runAfter = now;
+    job.progress_message = "";
+    job.progress_details = null;
+    job.created_at = now;
+    job.run_after = now;
 
     const AddQuery = `
       INSERT INTO job_queue(
         queue, 
         fingerprint, 
         input, 
-        runAfter, 
-        deadlineAt, 
-        maxRetries, 
-        jobRunId, 
+        run_after, 
+        deadline_at, 
+        max_retries, 
+        job_run_id, 
         progress, 
-        progressMessage, 
-        progressDetails,
-        createdAt
+        progress_message, 
+        progress_details,
+        created_at
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING id`;
@@ -97,14 +97,14 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         queue: string,
         fingerprint: string,
         input: string,
-        runAfter: string | null,
-        deadlineAt: string | null,
-        maxRetries: number,
-        jobRunId: string,
+        run_after: string | null,
+        deadline_at: string | null,
+        max_retries: number,
+        job_run_id: string,
         progress: number,
-        progressMessage: string,
-        progressDetails: string | null,
-        createdAt: string,
+        progress_message: string,
+        progress_details: string | null,
+        created_at: string,
       ]
     >(AddQuery);
 
@@ -112,14 +112,14 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
       job.queue,
       job.fingerprint,
       JSON.stringify(job.input),
-      job.runAfter,
-      job.deadlineAt ?? null,
-      job.maxRetries!,
-      job.jobRunId,
+      job.run_after,
+      job.deadline_at ?? null,
+      job.max_retries!,
+      job.job_run_id,
       job.progress,
-      job.progressMessage,
-      job.progressDetails ? JSON.stringify(job.progressDetails) : null,
-      job.createdAt
+      job.progress_message,
+      job.progress_details ? JSON.stringify(job.progress_details) : null,
+      job.created_at
     ) as { id: string } | undefined;
 
     job.id = result?.id;
@@ -141,7 +141,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
       JobStorageFormat<Input, Output> & {
         input: string;
         output: string | null;
-        progressDetails: string | null;
+        progress_details: string | null;
       },
       [id: string, queue: string]
     >(JobQuery);
@@ -151,7 +151,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     // Parse JSON fields
     if (result.input) result.input = JSON.parse(result.input);
     if (result.output) result.output = JSON.parse(result.output);
-    if (result.progressDetails) result.progressDetails = JSON.parse(result.progressDetails);
+    if (result.progress_details) result.progress_details = JSON.parse(result.progress_details);
     return result;
   }
 
@@ -167,13 +167,13 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         FROM job_queue
         WHERE queue = $1
         AND status = $2
-        ORDER BY runAfter ASC
+        ORDER BY run_after ASC
         LIMIT ${num}`;
     const stmt = this.db.prepare<
       JobStorageFormat<Input, Output> & {
         input: string;
         output: string | null;
-        progressDetails: string | null;
+        progress_details: string | null;
       },
       [queue: string, status: string]
     >(FutureJobQuery);
@@ -182,7 +182,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
       // Parse JSON fields
       if (details.input) details.input = JSON.parse(details.input);
       if (details.output) details.output = JSON.parse(details.output);
-      if (details.progressDetails) details.progressDetails = JSON.parse(details.progressDetails);
+      if (details.progress_details) details.progress_details = JSON.parse(details.progress_details);
 
       return details;
     });
@@ -205,28 +205,28 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
 
   /**
    * Retrieves all jobs for a given job run ID.
-   * @param jobRunId - The ID of the job run to retrieve
+   * @param job_run_id - The ID of the job run to retrieve
    * @returns An array of jobs
    */
-  public async getByRunId(jobRunId: string) {
+  public async getByRunId(job_run_id: string) {
     const JobsByRunIdQuery = `
       SELECT *
         FROM job_queue
-        WHERE jobRunId = $1 AND queue = $2`;
+        WHERE job_run_id = $1 AND queue = $2`;
     const stmt = this.db.prepare<
       JobStorageFormat<Input, Output> & {
         input: string;
         output: string | null;
-        progressDetails: string | null;
+        progress_details: string | null;
       },
-      [jobRunId: string, queue: string]
+      [job_run_id: string, queue: string]
     >(JobsByRunIdQuery);
-    const result = stmt.all(jobRunId, this.queueName);
+    const result = stmt.all(job_run_id, this.queueName);
     return (result || []).map((details) => {
       // Parse JSON fields
       if (details.input) details.input = JSON.parse(details.input);
       if (details.output) details.output = JSON.parse(details.output);
-      if (details.progressDetails) details.progressDetails = JSON.parse(details.progressDetails);
+      if (details.progress_details) details.progress_details = JSON.parse(details.progress_details);
 
       return details;
     });
@@ -246,20 +246,20 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
       JobStorageFormat<Input, Output> & {
         input: string;
         output: string | null;
-        progressDetails: string | null;
+        progress_details: string | null;
       },
       [JobStatus, string, string, JobStatus, string]
     >(
       `
       UPDATE job_queue 
-      SET status = $1, lastRanAt = $2
+      SET status = $1, last_ran_at = $2
       WHERE id = (
         SELECT id 
         FROM job_queue 
         WHERE queue = $3 
         AND status = $4 
-        AND runAfter <= $5 
-        ORDER BY runAfter ASC 
+        AND run_after <= $5 
+        ORDER BY run_after ASC 
         LIMIT 1
       )
       RETURNING *`
@@ -270,7 +270,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     // Parse JSON fields
     if (result.input) result.input = JSON.parse(result.input);
     if (result.output) result.output = JSON.parse(result.output);
-    if (result.progressDetails) result.progressDetails = JSON.parse(result.progressDetails);
+    if (result.progress_details) result.progress_details = JSON.parse(result.progress_details);
 
     return result;
   }
@@ -295,7 +295,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * Marks a job as complete with its output or error.
    * Enhanced error handling:
    * - Increments the retry count.
-   * - For a retryable error, updates runAfter with the retry date.
+   * - For a retryable error, updates run_after with the retry date.
    * - Marks the job as FAILED for permanent or generic errors.
    */
   public async complete(job: JobStorageFormat<Input, Output>) {
@@ -307,21 +307,21 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
           UPDATE job_queue 
             SET 
               error = ?, 
-              errorCode = ?, 
+              error_code = ?, 
               status = ?, 
-              runAfter = ?, 
-              lastRanAt = ?,
+              run_after = ?, 
+              last_ran_at = ?,
               progress = 0, 
-              progressMessage = "", 
-              progressDetails = NULL, 
-              runAttempts = runAttempts + 1,
-              lastRanAt = ?
+              progress_message = "", 
+              progress_details = NULL, 
+              run_attempts = run_attempts + 1,
+              last_ran_at = ?
             WHERE id = ? AND queue = ?`;
       params = [
         job.error ?? null,
-        job.errorCode ?? null,
+        job.error_code ?? null,
         job.status,
-        job.runAfter,
+        job.run_after,
         now,
         job.status,
         job.id,
@@ -333,19 +333,19 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
             SET 
               output = ?, 
               error = ?, 
-              errorCode = ?, 
+              error_code = ?, 
               status = ?, 
               progress = 100, 
-              progressMessage = "", 
-              progressDetails = NULL, 
-              lastRanAt = ?,
-              completedAt = ?,
-              runAttempts = runAttempts + 1
+              progress_message = "", 
+              progress_details = NULL, 
+              last_ran_at = ?,
+              completed_at = ?,
+              run_attempts = run_attempts + 1
             WHERE id = ? AND queue = ?`;
       params = [
         job.output ? JSON.stringify(job.output) : null,
         job.error ?? null,
-        job.errorCode ?? null,
+        job.error_code ?? null,
         job.status,
         now,
         now,
@@ -396,8 +396,8 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     const UpdateProgressQuery = `
       UPDATE job_queue
         SET progress = ?,
-            progressMessage = ?,
-            progressDetails = ?
+            progress_message = ?,
+            progress_details = ?
         WHERE id = ? AND queue = ?`;
 
     const stmt = this.db.prepare(UpdateProgressQuery);
@@ -426,8 +426,8 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
       DELETE FROM job_queue
         WHERE queue = ?
         AND status = ?
-        AND completedAt IS NOT NULL
-        AND completedAt <= ?`;
+        AND completed_at IS NOT NULL
+        AND completed_at <= ?`;
     const stmt = this.db.prepare(DeleteQuery);
     stmt.run(this.queueName, status, cutoffDate);
   }

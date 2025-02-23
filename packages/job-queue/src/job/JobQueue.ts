@@ -104,7 +104,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     if (!id) throw new Error("Cannot get undefined job");
     const job = await this.storage.get(id);
     if (!job) return undefined;
-    return this.createNewJob(job);
+    return this.storageToClass(job);
   }
 
   /**
@@ -112,7 +112,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
    * @param job The job to add
    */
   public async add(job: QueueJob) {
-    const jobId = await this.storage.add(this.jobToStorage(job));
+    const jobId = await this.storage.add(this.classToStorage(job));
     return jobId;
   }
 
@@ -122,7 +122,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   public async next() {
     const job = await this.storage.next();
     if (!job) return undefined;
-    return this.createNewJob(job);
+    return this.storageToClass(job);
   }
 
   /**
@@ -132,7 +132,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
    */
   public async peek(status?: JobStatus, num?: number) {
     const jobs = await this.storage.peek(status, num);
-    return jobs.map((job) => this.createNewJob(job));
+    return jobs.map((job) => this.storageToClass(job));
   }
 
   /**
@@ -194,7 +194,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       job.completedAt = new Date();
     }
 
-    await this.storage.complete(this.jobToStorage(job));
+    await this.storage.complete(this.classToStorage(job));
 
     if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
       if (job && this.shouldDeleteJobImmediately(job)) {
@@ -259,7 +259,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   public async getByRunId(runId: string) {
     if (!runId) throw new Error("Cannot get jobs by undefined runId");
     const jobs = await this.storage.getByRunId(runId);
-    return jobs.map((job) => this.createNewJob(job));
+    return jobs.map((job) => this.storageToClass(job));
   }
 
   /**
@@ -388,7 +388,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
 
   async getJobsByRunId(runId: string): Promise<Job<Input, Output>[]> {
     const jobs = await this.storage.getByRunId(runId);
-    return jobs.map((job) => this.createNewJob(job));
+    return jobs.map((job) => this.storageToClass(job));
   }
 
   /**
@@ -583,7 +583,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
    * @param details - The job data from the database
    * @returns A new Job instance with populated properties
    */
-  protected createNewJob(details: JobStorageFormat<Input, Output>): Job<Input, Output> {
+  protected storageToClass(details: JobStorageFormat<Input, Output>): Job<Input, Output> {
     const toDate = (date: string | null | undefined): Date | null => {
       if (!date) return null;
       const d = new Date(date);
@@ -591,24 +591,24 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     };
     const job = new this.jobClass({
       id: details.id,
-      jobRunId: details.jobRunId,
+      jobRunId: details.job_run_id,
       queueName: details.queue,
       fingerprint: details.fingerprint,
       input: details.input as unknown as Input,
       output: details.output as unknown as Output,
-      runAfter: toDate(details.runAfter),
-      createdAt: toDate(details.createdAt)!,
-      deadlineAt: toDate(details.deadlineAt),
-      lastRanAt: toDate(details.lastRanAt),
-      completedAt: toDate(details.completedAt),
+      runAfter: toDate(details.run_after),
+      createdAt: toDate(details.created_at)!,
+      deadlineAt: toDate(details.deadline_at),
+      lastRanAt: toDate(details.last_ran_at),
+      completedAt: toDate(details.completed_at),
       progress: details.progress || 0,
-      progressMessage: details.progressMessage || "",
-      progressDetails: details.progressDetails ?? null,
+      progressMessage: details.progress_message || "",
+      progressDetails: details.progress_details ?? null,
       status: details.status as JobStatus,
       error: details.error ?? null,
-      errorCode: details.errorCode ?? null,
-      runAttempts: details.runAttempts ?? 0,
-      maxRetries: details.maxRetries ?? 10,
+      errorCode: details.error_code ?? null,
+      runAttempts: details.run_attempts ?? 0,
+      maxRetries: details.max_retries ?? 10,
     });
     job.queue = this;
     return job;
@@ -619,7 +619,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
    * @param job - The Job instance to convert
    * @returns A JobDetails object with the same properties as the Job instance
    */
-  public jobToStorage(job: Job<Input, Output>): JobStorageFormat<Input, Output> {
+  public classToStorage(job: Job<Input, Output>): JobStorageFormat<Input, Output> {
     // Helper to safely convert Date to ISO string
     const dateToISOString = (date: Date | null | undefined): string | null => {
       if (!date) return null;
@@ -629,24 +629,24 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     const now = new Date().toISOString();
     return {
       id: job.id,
-      jobRunId: job.jobRunId,
+      job_run_id: job.jobRunId,
       queue: job.queueName || this.queueName,
       fingerprint: job.fingerprint,
       input: job.input,
       status: job.status,
       output: job.output ?? null,
       error: job.error === null ? null : String(job.error),
-      errorCode: job.errorCode || null,
-      runAttempts: job.runAttempts ?? 0,
-      maxRetries: job.maxRetries ?? 10,
-      runAfter: dateToISOString(job.runAfter) ?? now,
-      createdAt: dateToISOString(job.createdAt) ?? now,
-      deadlineAt: dateToISOString(job.deadlineAt),
-      lastRanAt: dateToISOString(job.lastRanAt),
-      completedAt: dateToISOString(job.completedAt),
+      error_code: job.errorCode || null,
+      run_attempts: job.runAttempts ?? 0,
+      max_retries: job.maxRetries ?? 10,
+      run_after: dateToISOString(job.runAfter) ?? now,
+      created_at: dateToISOString(job.createdAt) ?? now,
+      deadline_at: dateToISOString(job.deadlineAt),
+      last_ran_at: dateToISOString(job.lastRanAt),
+      completed_at: dateToISOString(job.completedAt),
       progress: job.progress ?? 0,
-      progressMessage: job.progressMessage ?? "",
-      progressDetails: job.progressDetails ?? null,
+      progress_message: job.progressMessage ?? "",
+      progress_details: job.progressDetails ?? null,
     };
   }
 
