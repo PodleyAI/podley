@@ -75,6 +75,7 @@ export class Job<Input, Output> {
     jobRunId,
     id,
     error = null,
+    errorCode = null,
     fingerprint = undefined,
     output = null,
     maxRetries = 10,
@@ -105,6 +106,7 @@ export class Job<Input, Output> {
     this.runAttempts = runAttempts;
     this.output = output;
     this.error = error;
+    this.errorCode = errorCode;
     this.progress = progress;
     this.progressMessage = progressMessage;
     this.progressDetails = progressDetails;

@@ -10,6 +10,7 @@ import { TaskConfig, TaskOutput, TaskEventListeners, TaskStatus, TaskInput } fro
 import { SingleTask } from "./SingleTask";
 import { EventEmitter } from "@ellmers/util";
 import { Job } from "@ellmers/job-queue";
+import { TaskConfigurationError } from "./TaskError";
 
 /**
  * Configuration interface for job queue tasks
@@ -51,33 +52,24 @@ export abstract class JobQueueTask extends SingleTask {
     this.jobClass = Job<TaskInput, TaskOutput>;
   }
 
-  private abortController: AbortController | undefined;
-
-  async run(): Promise<TaskOutput> {
-    this.handleStart();
-
+  async runFull(): Promise<TaskOutput> {
     let cleanup: () => void = () => {};
 
     try {
-      if (this.status === TaskStatus.ABORTING) {
-        throw new Error("Task aborted by run time");
-      }
-
       const job = await this.createJob();
 
       const queue = getTaskQueueRegistry().getQueue(this.config.queueName!);
 
       if (!queue) {
         if ((this.constructor as typeof JobQueueTask).canRunDirectly) {
-          this.abortController = new AbortController();
           cleanup = job.onJobProgress(
             (progress: number, message: string, details: Record<string, any> | null) => {
               this.handleProgress(progress, message, details);
             }
           );
-          this.runOutputData = await job.execute(this.abortController.signal);
+          this.runOutputData = await job.execute(this.abortController!.signal);
         } else {
-          throw new Error(
+          throw new TaskConfigurationError(
             `Queue ${this.config.queueName} not found, and ${this.constructor.name} cannot run directly`
           );
         }
@@ -86,7 +78,7 @@ export abstract class JobQueueTask extends SingleTask {
         this.config.currentJobRunId = job.jobRunId; // no longer undefined
         this.config.currentJobId = jobId;
 
-        const cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
+        cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
           this.handleProgress(progress, message, details);
         });
         this.runOutputData = await queue.waitFor(jobId);
@@ -101,7 +93,6 @@ export abstract class JobQueueTask extends SingleTask {
       this.handleError(err);
       throw err;
     } finally {
-      this.abortController = undefined;
       cleanup();
     }
   }
@@ -127,7 +118,7 @@ export abstract class JobQueueTask extends SingleTask {
           input: this.runInputData,
         });
       } else {
-        throw new Error("Queue not found");
+        throw new TaskConfigurationError("Queue not found");
       }
     }
     const job = new queue.jobClass({

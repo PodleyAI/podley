@@ -11,9 +11,17 @@ export class JobError extends Error {
   constructor(public message: string) {
     super(message);
     this.name = this.constructor.name;
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, JobError);
-    }
+  }
+}
+
+/**
+ * A job error that is caused by a job not being found
+ *
+ * Examples: job.id is undefined, job.id is not found in the storage, etc.
+ */
+export class JobNotFoundError extends JobError {
+  constructor(message: string = "Job not found") {
+    super(message);
   }
 }
 

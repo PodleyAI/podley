@@ -11,6 +11,8 @@ import type { TaskGraph } from "../task-graph/TaskGraph";
 import type { CompoundTask } from "./CompoundTask";
 import type { SingleTask } from "./SingleTask";
 import type { TaskBase } from "./TaskBase";
+import { TaskAbortedError } from "./TaskError";
+import { TaskError } from "./TaskError";
 
 export enum TaskStatus {
   PENDING = "PENDING",
@@ -54,8 +56,8 @@ export type JsonTaskItem = {
 export type TaskEventListeners = {
   start: () => void;
   complete: () => void;
-  abort: (error: string) => void;
-  error: (error: string) => void;
+  abort: (error: TaskAbortedError) => void;
+  error: (error: TaskError) => void;
   progress: (progress: number) => void;
   regenerate: () => void;
 };

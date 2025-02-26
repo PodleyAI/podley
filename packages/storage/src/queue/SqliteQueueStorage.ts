@@ -7,7 +7,7 @@
 
 import type { Database } from "bun:sqlite";
 import { nanoid } from "nanoid";
-import { makeFingerprint } from "@ellmers/util";
+import { makeFingerprint, sleep } from "@ellmers/util";
 import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
 
 /**
@@ -63,6 +63,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns The ID of the added job
    */
   public async add(job: JobStorageFormat<Input, Output>) {
+    await sleep(0);
     const now = new Date().toISOString();
     job.job_run_id = job.job_run_id ?? nanoid();
     job.queue = this.queueName;
@@ -132,6 +133,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns The job if found, undefined otherwise
    */
   public async get(id: string) {
+    await sleep(0);
     const JobQuery = `
       SELECT *
         FROM job_queue
@@ -161,6 +163,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns An array of jobs
    */
   public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
+    await sleep(0);
     num = Number(num) || 100; // TS does not validate, so ensure it is a number since we put directly in SQL string
     const FutureJobQuery = `
       SELECT * 
@@ -195,6 +198,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * can clean up and exit.
    */
   public async abort(jobId: string) {
+    await sleep(0);
     const AbortQuery = `
       UPDATE job_queue
         SET status = $1
@@ -209,6 +213,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns An array of jobs
    */
   public async getByRunId(job_run_id: string) {
+    await sleep(0);
     const JobsByRunIdQuery = `
       SELECT *
         FROM job_queue
@@ -239,6 +244,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns The next job or undefined if no job is available
    */
   public async next() {
+    await sleep(0);
     const now = new Date().toISOString();
 
     // Then, get the next job to process
@@ -281,6 +287,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns The count of jobs with the specified status
    */
   public async size(status = JobStatus.PENDING) {
+    await sleep(0);
     const sizeQuery = `
       SELECT COUNT(*) as count
         FROM job_queue
@@ -299,6 +306,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * - Marks the job as FAILED for permanent or generic errors.
    */
   public async complete(job: JobStorageFormat<Input, Output>) {
+    await sleep(0);
     const now = new Date().toISOString();
     let updateQuery: string;
     let params: any[];
@@ -358,6 +366,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
   }
 
   public async deleteAll() {
+    await sleep(0);
     const ClearQuery = `
       DELETE FROM job_queue
         WHERE queue = ?`;
@@ -371,6 +380,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns The cached output or null if not found
    */
   public async outputForInput(input: Input) {
+    await sleep(0);
     const fingerprint = await makeFingerprint(input);
     const OutputQuery = `
       SELECT output
@@ -393,6 +403,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     message: string,
     details: Record<string, any>
   ): Promise<void> {
+    await sleep(0);
     const UpdateProgressQuery = `
       UPDATE job_queue
         SET progress = ?,
@@ -408,6 +419,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * Deletes a job by its ID
    */
   public async delete(jobId: unknown): Promise<void> {
+    await sleep(0);
     const DeleteQuery = `
       DELETE FROM job_queue
         WHERE id = ? AND queue = ?`;
@@ -421,6 +433,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @param olderThanMs - Delete jobs completed more than this many milliseconds ago
    */
   public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
+    await sleep(0);
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
     const DeleteQuery = `
       DELETE FROM job_queue

@@ -23,6 +23,8 @@ import {
   type TaskEventListeners,
   type IConfig,
 } from "./TaskTypes";
+import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 
 /**
  * Base class for all tasks that implements the ITask interface
@@ -46,7 +48,7 @@ export abstract class TaskBase implements ITask {
   createdAt: Date = new Date();
   startedAt?: Date;
   completedAt?: Date;
-  error?: string;
+  error?: TaskError;
 
   // Event handling
   public readonly events = new EventEmitter<TaskEventListeners>();
@@ -124,15 +126,34 @@ export abstract class TaskBase implements ITask {
    * The the defaults and overrides are combined to match the required input of the task.
    */
   runOutputData: TaskOutput = {};
+  abortController: AbortController | undefined;
+
+  public abort(): void {
+    this.abortController?.abort();
+  }
 
   // Core task methods
   public handleStart(): void {
     if (this.status === TaskStatus.PROCESSING) return;
     // this.runOutputData = {};
     this.startedAt = new Date();
+    this.nodeProvenance = {};
+    this.outputCache = undefined;
     this.progress = 0;
     this.status = TaskStatus.PROCESSING;
+    this.abortController = new AbortController();
+    this.abortController.signal.addEventListener("abort", () => {
+      this.handleAbort();
+    });
     this.events.emit("start");
+  }
+
+  public handleAbort(): void {
+    if (this.status === TaskStatus.ABORTING) return;
+    this.status = TaskStatus.ABORTING;
+    this.progress = 100;
+    this.error = new TaskAbortedError();
+    this.events.emit("abort", this.error);
   }
 
   public handleComplete(): void {
@@ -140,16 +161,25 @@ export abstract class TaskBase implements ITask {
     this.completedAt = new Date();
     this.progress = 100;
     this.status = TaskStatus.COMPLETED;
+    this.abortController = undefined;
+    this.outputCache = undefined;
+    this.nodeProvenance = {};
     this.events.emit("complete");
   }
 
-  public handleError(err: any): void {
+  public handleError(err: Error): void {
+    if (err instanceof TaskAbortedError) return this.handleAbort();
     if (this.status === TaskStatus.FAILED) return;
     this.completedAt = new Date();
     this.progress = 100;
+    // console the stack trace
     this.status = TaskStatus.FAILED;
-    this.error = err?.message || "Task failed";
-    this.events.emit("error", err?.message || "Task failed");
+    this.error =
+      err instanceof TaskError ? err : new TaskFailedError(err?.message || "Task failed");
+    this.abortController = undefined;
+    this.outputCache = undefined;
+    this.nodeProvenance = {};
+    this.events.emit("error", this.error);
   }
 
   public handleProgress(progress: number, ...args: any[]): void {
@@ -273,8 +303,10 @@ export abstract class TaskBase implements ITask {
     const validationPromises = inputlist.map((item) =>
       this.validateItem(inputdef.valueType as string, item)
     );
-    const validationResults = await Promise.all(validationPromises);
-    return validationResults.every(Boolean);
+    const validationResults = await Promise.allSettled(validationPromises);
+    return validationResults.every(
+      (result) => result.status === "fulfilled" && result.value === true
+    );
   }
 
   /**
@@ -284,16 +316,59 @@ export abstract class TaskBase implements ITask {
    */
   public async validateInputData(input: Partial<TaskInput>): Promise<boolean> {
     for (const inputdef of this.inputs) {
-      if ((await this.validateInputItem(input, inputdef.id)) === false) {
+      if (inputdef.optional && input[inputdef.id] === undefined) continue;
+      const isValid = await this.validateInputItem(input, inputdef.id);
+      if (!isValid) {
         return false;
       }
     }
     return true;
   }
 
-  public abstract run(): Promise<TaskOutput>;
+  outputCache: TaskOutputRepository | undefined;
+  nodeProvenance: TaskInput = {};
+
   /**
-   * Runs the task reactively
+   * Run will runFull() and return the output, wrapping the task in a try/catch block.
+   */
+  async run(
+    nodeProvenance: TaskInput = {},
+    repository?: TaskOutputRepository
+  ): Promise<TaskOutput> {
+    this.handleStart();
+    this.nodeProvenance = nodeProvenance;
+    this.outputCache = repository;
+
+    try {
+      const isValid = await this.validateInputData(this.runInputData);
+      if (!isValid) {
+        throw new TaskInvalidInputError();
+      }
+      // TODO: erase the following if the error not printed to console
+      if (this.abortController?.signal.aborted) {
+        this.handleAbort();
+        throw new TaskAbortedError("Promise for task created and aborted before run");
+      }
+      this.runOutputData = await this.runFull();
+
+      this.handleComplete();
+      return this.runOutputData;
+    } catch (err: any) {
+      this.handleError(err);
+      throw err;
+    }
+  }
+
+  /**
+   * Runs the full task
+   * @returns The output of the task
+   */
+  public abstract runFull(): Promise<TaskOutput>;
+
+  /**
+   * Runs the task "reactively", defaults to no-op
+   * This is generally for UI updating, and should
+   * be light weight.
    * @returns The output of the task
    */
   public abstract runReactive(): Promise<TaskOutput>;
@@ -317,17 +392,5 @@ export abstract class TaskBase implements ITask {
    */
   toDependencyJSON(): JsonTaskItem {
     return this.toJSON();
-  }
-
-  /**
-   * Aborts the task
-   * @returns A promise that resolves when the task is aborted
-   */
-  public async abort(): Promise<void> {
-    // if (this.status !== TaskStatus.PROCESSING) return;
-    this.progress = 100;
-    this.status = TaskStatus.ABORTING;
-    this.error = "Task aborting by run time";
-    this.events.emit("abort", this.error);
   }
 }

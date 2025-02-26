@@ -29,7 +29,7 @@ export class DataFlow {
   get id(): string {
     return `${this.sourceTaskId}.${this.sourceTaskOutputId} -> ${this.targetTaskId}.${this.targetTaskInputId}`;
   }
-  public value: TaskOutput = {};
+  public value: any = undefined;
   public provenance: TaskInput = {};
 
   toJSON(): DataFlowJson {

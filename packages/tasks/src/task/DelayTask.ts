@@ -1,0 +1,67 @@
+//    *******************************************************************************
+//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *                                                                             *
+//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
+//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
+//    *******************************************************************************
+
+import { SingleTask, TaskAbortedError } from "@ellmers/task-graph";
+import { sleep } from "@ellmers/util";
+
+// TODO: we should have a generic way to handle "...rest" inputs to pass through to outputs
+export type DelayTaskInput = {
+  input: "any";
+  delay: number;
+};
+export type DelayTaskOutput = {
+  output: "any";
+};
+
+export class DelayTask extends SingleTask {
+  static readonly type = "DelayTask";
+  static readonly category = "Utility";
+  declare runInputData: DelayTaskInput;
+  declare runOutputData: DelayTaskOutput;
+  static inputs = [
+    {
+      id: "delay",
+      name: "Delay (ms)",
+      valueType: "number",
+      defaultValue: 1,
+    },
+    {
+      id: "input",
+      name: "Input",
+      valueType: "any",
+    },
+  ] as const;
+  static outputs = [
+    {
+      id: "output",
+      name: "Output",
+      valueType: "number",
+    },
+  ] as const;
+
+  async runFull(): Promise<DelayTaskOutput> {
+    const delay = this.runInputData.delay;
+    if (delay > 100) {
+      const iterations = Math.min(100, Math.floor(delay / 16)); // 1/60fps is about 16ms
+      const chunkSize = delay / iterations;
+      for (let i = 0; i < iterations; i++) {
+        if (this.abortController?.signal.aborted) {
+          throw new TaskAbortedError("Task aborted");
+        }
+        await sleep(chunkSize);
+        this.handleProgress(i / iterations);
+      }
+    } else {
+      await sleep(delay);
+    }
+    return this.runReactive();
+  }
+
+  async runReactive(): Promise<DelayTaskOutput> {
+    return { output: this.runInputData.input };
+  }
+}

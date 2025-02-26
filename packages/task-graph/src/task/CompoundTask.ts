@@ -5,15 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskGraph, type TaskGraphItemJson } from "../task-graph/TaskGraph";
 import { TaskGraphRunner } from "../task-graph/TaskGraphRunner";
 import type { ICompoundTask } from "./ITask";
 import {
   type TaskTypeName,
   type TaskOutput,
-  type TaskInput,
-  TaskStatus,
   type JsonTaskItem,
   type TaskConfig,
 } from "./TaskTypes";
@@ -66,49 +63,22 @@ export class CompoundTask extends TaskBase implements ICompoundTask {
    * @param repository The repository to use for caching task outputs
    * @returns The output of the compound task
    */
-  public async run(
-    nodeProvenance: TaskInput = {},
-    repository?: TaskOutputRepository
-  ): Promise<TaskOutput> {
-    this.handleStart();
-
-    try {
-      if (this.status === TaskStatus.ABORTING) {
-        throw new Error("Task aborted before run time");
-      }
-
-      if (!(await this.validateInputData(this.runInputData))) {
-        throw new Error("Invalid input data");
-      }
-      const runner = new TaskGraphRunner(this.subGraph, repository);
-      this.runOutputData.outputs = await runner.runGraph(nodeProvenance);
-
-      // NOTE: do not runReactive here, because the runReactive
-      // is already called for each run() call.
-
-      this.handleComplete();
-      return this.runOutputData;
-    } catch (err: any) {
-      this.handleError(err);
-      throw err;
-    }
+  public async runFull(): Promise<TaskOutput> {
+    const runner = new TaskGraphRunner(this.subGraph, this.outputCache);
+    this.runOutputData.outputs = await runner.runGraph(
+      this.nodeProvenance,
+      this.abortController!.signal
+    );
+    return this.runOutputData;
   }
 
   /**
-   * Runs the compound task and all its subtasks reactively
+   * Runs the compound all its subtasks reactively
    */
   public async runReactive(): Promise<TaskOutput> {
     const runner = new TaskGraphRunner(this.subGraph);
     this.runOutputData.outputs = await runner.runGraphReactive();
     return this.runOutputData;
-  }
-
-  /**
-   * Aborts the compound task and all its subtasks
-   */
-  public async abort(): Promise<void> {
-    await super.abort();
-    await Promise.all(this.subGraph.getNodes().map((node) => node.abort()));
   }
 
   /**

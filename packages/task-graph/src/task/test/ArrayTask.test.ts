@@ -72,6 +72,6 @@ describe("ArrayTask", () => {
     );
     const runner = new TaskGraphRunner(graph);
     const results = await runner.runGraph();
-    expect(results[0]).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 121] });
+    expect(results![0][1]).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 121] });
   });
 });

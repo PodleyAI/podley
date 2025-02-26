@@ -19,9 +19,10 @@ import {
 } from "@ellmers/task-graph";
 
 type LambdaTaskConfig = Partial<IConfig> & {
-  run?: (
+  runFull?: (
     input: TaskInput,
-    updateProgress: (progress: number, message: string) => void
+    updateProgress: (progress: number, message: string) => void,
+    signal?: AbortSignal
   ) => Promise<TaskOutput>;
   runReactive?: (input: TaskInput) => Promise<TaskOutput>;
   input?: TaskInput;
@@ -64,11 +65,15 @@ export class LambdaTask extends SingleTask {
   ] as const;
 
   constructor(config: LambdaTaskConfig) {
-    if (config.input?.run || config.input?.runReactive) {
-      config.run = config.input.run;
-      delete config.input.run;
-      config.runReactive = config.input.runReactive;
-      delete config.input.runReactive;
+    if (config.input?.runFull || config.input?.runReactive) {
+      if (config.input.runFull) {
+        config.runFull = config.input.runFull;
+        delete config.input.runFull;
+      }
+      if (config.input.runReactive) {
+        config.runReactive = config.input.runReactive;
+        delete config.input.runReactive;
+      }
       config.input = config.input.input;
       delete config?.input?.input;
     }
@@ -76,45 +81,34 @@ export class LambdaTask extends SingleTask {
   }
 
   resetInputData() {
-    if (this.runInputData?.run || this.runInputData?.runReactive) {
-      this.config.run = this.runInputData.run;
-      delete this.runInputData.run;
-      this.config.runReactive = this.runInputData.runReactive;
-      delete this.runInputData.runReactive;
+    if (this.runInputData?.runFull || this.runInputData?.runReactive) {
+      if (this.runInputData.runFull) {
+        this.config.runFull = this.runInputData.runFull;
+        delete this.runInputData.runFull;
+      }
+      if (this.runInputData.runReactive) {
+        this.config.runReactive = this.runInputData.runReactive;
+        delete this.runInputData.runReactive;
+      }
       this.runInputData = this.runInputData.input;
       delete this.runInputData?.input;
     }
     super.resetInputData();
   }
 
-  /**
-   * Default implementation of run that just returns the current output data.
-   * Subclasses should override this to provide actual task functionality.
-   */
-  async run(): Promise<TaskOutput> {
-    this.handleStart();
-
-    try {
-      if (!(await this.validateInputData(this.runInputData))) {
-        throw new Error("Invalid input data");
-      }
-      if (this.status === TaskStatus.ABORTING) {
-        throw new Error("Task aborted by run time");
-      }
-      if (typeof this.config.run === "function") {
-        let updateProgress = (progress: number, message: string) => {
-          this.handleProgress(progress, message);
-        };
-        this.runOutputData = await this.config.run(this.runInputData ?? {}, updateProgress);
-      }
-      this.runOutputData = await this.runReactive();
-
-      this.handleComplete();
-      return this.runOutputData;
-    } catch (err: any) {
-      this.handleError(err);
-      throw err;
+  async runFull(): Promise<TaskOutput> {
+    let updateProgress = (progress: number, message: string) => {
+      this.handleProgress(progress, message);
+    };
+    if (typeof this.config.runFull === "function") {
+      this.runOutputData = await this.config.runFull(
+        this.runInputData ?? {},
+        updateProgress,
+        this.abortController?.signal
+      );
     }
+    this.runOutputData = await this.runReactive();
+    return this.runOutputData;
   }
 
   /**

@@ -104,7 +104,7 @@ export class FetchJob extends Job<FetchTaskInput, FetchTaskOutput> {
  */
 export class FetchTask extends JobQueueTask {
   static readonly type: string = "FetchTask";
-  static readonly category = "Output";
+  static readonly category = "Input";
   declare runInputData: FetchTaskInput;
   declare runOutputData: FetchTaskOutput;
   public static inputs: TaskInputDefinition[] = [
@@ -152,6 +152,7 @@ export class FetchTask extends JobQueueTask {
 
   constructor(config: JobQueueTaskConfig & { input?: FetchTaskInput } = {}) {
     config.queueName = config.input?.queueName ?? config.queueName;
+
     super(config);
     this.jobClass = FetchJob;
   }
@@ -163,9 +164,13 @@ export class FetchTask extends JobQueueTask {
   async validateItem(valueType: string, item: any) {
     if (valueType === "url") {
       try {
-        new URL(item);
+        if (item instanceof URL) {
+          return true;
+        }
+        new URL(item); // This will throw an error if the URL is invalid
         return true;
       } catch (err) {
+        console.log("url is invalid", err);
         return false;
       }
     }

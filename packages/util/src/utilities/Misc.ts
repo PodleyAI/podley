@@ -74,7 +74,7 @@ export function serialize(obj: Record<string, any>): string {
   return JSON.stringify(sortedObj);
 }
 
-export async function sha256(data: string): Promise<string> {
+export async function sha256(data: string) {
   if (typeof window === "object" && window.crypto && window.crypto.subtle) {
     // Browser environment
     const encoder = new TextEncoder();
@@ -82,10 +82,12 @@ export async function sha256(data: string): Promise<string> {
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
     });
+  } else if (typeof Bun !== "undefined") {
+    // Bun environment
+    return new Bun.CryptoHasher("sha256").update(data).digest("hex");
   } else if (typeof process === "object" && process.versions && process.versions.node) {
     // Node.js environment
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return Promise.resolve(new Bun.CryptoHasher("sha256").update(data).digest("hex"));
+    return require("crypto").createHash("sha256").update(data).digest("hex");
   } else {
     throw new Error("Unsupported environment");
   }
