@@ -278,13 +278,12 @@ export class TaskGraphRunner {
       node.runOutputData = {};
       node.error = undefined;
       node.progress = 0;
-      if (node.isCompound) {
-        const subGraph = (node as CompoundTask).subGraph;
+      if (node.isCompound && node instanceof CompoundTask) {
         if (node instanceof RegenerativeCompoundTask) {
           node.regenerateGraph();
         }
-        if (subGraph) {
-          this.resetGraph(subGraph);
+        if (node.subGraph) {
+          this.resetGraph(node.subGraph);
         }
       }
     });

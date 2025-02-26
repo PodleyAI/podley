@@ -45,7 +45,7 @@ export abstract class JobQueueTask extends SingleTask {
   public jobClass: any;
 
   declare config: JobQueueTaskWithIdsConfig;
-  public events = new EventEmitter<JobQueueTaskEventListeners>();
+  declare events: EventEmitter<JobQueueTaskEventListeners>;
 
   constructor(config: JobQueueTaskConfig) {
     super(config);
