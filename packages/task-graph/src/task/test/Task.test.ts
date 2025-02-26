@@ -50,7 +50,7 @@ class TestTask extends SingleTask {
   async runReactive(): Promise<TestTaskOutput> {
     return { all: false, key: this.runInputData.key, reactiveOnly: true };
   }
-  async run(): Promise<TestTaskOutput> {
+  async runFull(): Promise<TestTaskOutput> {
     return { all: true, key: this.runInputData.key, reactiveOnly: false };
   }
 }
@@ -88,7 +88,7 @@ class TestCompoundTask extends CompoundTask {
     this.runOutputData = { key: this.runInputData.key, all: false, reactiveOnly: true };
     return this.runOutputData;
   }
-  async run(): Promise<TestTaskOutput> {
+  async runFull(): Promise<TestTaskOutput> {
     this.runOutputData = { key: this.runInputData.key, all: true, reactiveOnly: false };
     return this.runOutputData;
   }

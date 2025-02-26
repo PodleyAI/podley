@@ -1,0 +1,54 @@
+//    *******************************************************************************
+//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *                                                                             *
+//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
+//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
+//    *******************************************************************************
+
+import { beforeEach, describe, expect, it } from "bun:test";
+import { sleep } from "@ellmers/util";
+import { Task, TaskGraph, TaskGraphRunner } from "@ellmers/task-graph";
+import { DelayTask } from "../task/DelayTask";
+import { TaskStatus } from "@ellmers/task-graph";
+import { TaskAbortedError } from "@ellmers/task-graph";
+
+describe("DelayTask", () => {
+  let task: DelayTask;
+
+  beforeEach(() => {
+    task = new DelayTask({ id: "delayed", input: { delay: 10 } });
+  });
+
+  it("should complete successfully with short delay", async () => {
+    // Start the task with a short delay
+    const result = await task.run();
+
+    // Verify the task completed successfully
+    expect(task.status).toBe(TaskStatus.COMPLETED);
+    expect(result).toEqual({ output: undefined });
+  });
+
+  it("should pass through input to output", async () => {
+    // Create a task with input
+    const taskWithInput = new DelayTask({
+      id: "delayed-with-input",
+      input: { delay: 10, input: "test-value" },
+    });
+
+    // Run the task
+    const result = await taskWithInput.run();
+
+    // Verify the input was passed through to the output
+    expect(result).toEqual({ output: "test-value" });
+  });
+
+  it("should handle task abortion", async () => {
+    try {
+      const resultPromise = task.run();
+      task.abort();
+      await resultPromise;
+    } catch (error) {
+      expect(error).toBeInstanceOf(TaskAbortedError);
+    }
+  });
+});

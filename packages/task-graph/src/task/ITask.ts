@@ -1,8 +1,14 @@
+//    *******************************************************************************
+//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *                                                                             *
+//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
+//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
+//    *******************************************************************************
+
 import type { EventEmitter } from "@ellmers/util";
 import type { TaskGraph } from "../task-graph/TaskGraph";
 import type {
   TaskStatus,
-  TaskTypeName,
   TaskInput,
   TaskOutput,
   TaskConfig,
@@ -14,7 +20,8 @@ import type {
   TaskEventParameters,
   JsonTaskItem,
 } from "./TaskTypes";
-
+import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskError } from "./TaskError";
 /**
  * Core interface that all tasks must implement
  */
@@ -27,7 +34,7 @@ export interface ITask {
   createdAt: Date;
   startedAt?: Date;
   completedAt?: Date;
-  error?: string;
+  error?: TaskError;
 
   // Input/Output definitions
   readonly inputs: TaskInputDefinition[];
@@ -47,13 +54,15 @@ export interface ITask {
   emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>): void;
 
   // Core task methods
-  run(): Promise<TaskOutput>;
+  run(nodeProvenance: TaskInput, repository?: TaskOutputRepository): Promise<TaskOutput>;
+  runFull(): Promise<TaskOutput>;
   runReactive(): Promise<TaskOutput>;
-  abort(): Promise<void>;
+  abort(): void;
 
   handleStart(): void;
   handleComplete(): void;
   handleError(err: any): void;
+  handleAbort(): void;
   getProvenance(): TaskInput;
   resetInputData(): void;
   addInputData<T extends TaskInput>(overrides: Partial<T> | undefined): ITask;

@@ -19,28 +19,11 @@ export class SingleTask extends TaskBase implements ISimpleTask {
   readonly isCompound = false;
 
   /**
-   * Default implementation of run that just returns the current output data.
+   * Default implementation of runFull that just returns the current output data.
    * Subclasses should override this to provide actual task functionality.
    */
-  async run(): Promise<TaskOutput> {
-    this.handleStart();
-
-    try {
-      if (!(await this.validateInputData(this.runInputData))) {
-        throw new Error("Invalid input data");
-      }
-      if (this.status === TaskStatus.ABORTING) {
-        throw new Error("Task aborted by run time");
-      }
-
-      this.runOutputData = await this.runReactive();
-
-      this.handleComplete();
-      return this.runOutputData;
-    } catch (err: any) {
-      this.handleError(err);
-      throw err;
-    }
+  public async runFull(): Promise<TaskOutput> {
+    return this.runReactive();
   }
 
   /**

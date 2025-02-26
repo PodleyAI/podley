@@ -18,24 +18,24 @@ export enum JobStatus {
  */
 export type JobStorageFormat<Input, Output> = {
   id?: unknown;
-  jobRunId?: string;
+  job_run_id?: string;
   queue?: string;
   input: Input;
   output?: Output | null;
   error?: string | null;
-  errorCode?: string | null;
+  error_code?: string | null;
   fingerprint?: string;
-  maxRetries?: number;
+  max_retries?: number;
   status?: JobStatus;
-  createdAt?: string;
-  deadlineAt?: string | null;
-  lastRanAt?: string | null;
-  runAfter: string | null;
-  completedAt: string | null;
-  retries?: number;
+  created_at?: string;
+  deadline_at?: string | null;
+  last_ran_at?: string | null;
+  run_after: string | null;
+  completed_at: string | null;
+  run_attempts?: number;
   progress?: number;
-  progressMessage?: string;
-  progressDetails?: Record<string, any> | null;
+  progress_message?: string;
+  progress_details?: Record<string, any> | null;
 };
 
 /**

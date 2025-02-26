@@ -126,43 +126,40 @@ describe("TaskGraphRunner", () => {
   beforeEach(() => {
     graph = new TaskGraph();
     nodes = [
-      new TestTask({ id: "task1" }),
-      new TestSquareTask({ id: "task2", input: { input: 5 } }),
-      new TestDoubleTask({ id: "task3", input: { input: 5 } }),
+      new TestTask({ id: "task0" }),
+      new TestSquareTask({ id: "task1", input: { input: 5 } }),
+      new TestDoubleTask({ id: "task2", input: { input: 5 } }),
     ];
     graph.addTasks(nodes);
     runner = new TaskGraphRunner(graph);
   });
 
-  describe("runGraphReactive", () => {
-    it("should run nodes in each layer synchronously", async () => {
+  describe("Basic", () => {
+    it("should run", async () => {
       const runReactiveSpy = spyOn(nodes[0], "runReactive");
 
       await runner.runGraphReactive();
 
       expect(runReactiveSpy).toHaveBeenCalledTimes(1);
     });
-  });
 
-  describe("runGraph", () => {
-    it("should run the graph in the correct order", async () => {
+    it("should run the graph with results", async () => {
       const results = await runner.runGraph();
-      expect(results[1].output).toEqual(25);
-      expect(results[2].output).toEqual(10);
+      expect(results?.find(([id]) => id === "task1")?.[1].output).toEqual(25);
+      expect(results?.find(([id]) => id === "task2")?.[1].output).toEqual(10);
     });
-  });
 
-  describe("runGraph 2", () => {
     it("should run the graph in the correct order with dependencies", async () => {
-      const task = new TestAddTask({ id: "task4" });
-      graph.addTask(task);
-      graph.addDataFlow(new DataFlow("task2", "output", "task4", "a"));
-      graph.addDataFlow(new DataFlow("task3", "output", "task4", "b"));
+      const task3 = new TestAddTask({ id: "task3" });
+      graph.addTask(task3);
+      graph.addDataFlow(new DataFlow("task1", "output", "task3", "a"));
+      graph.addDataFlow(new DataFlow("task2", "output", "task3", "b"));
 
-      const nodeRunSpy = spyOn(task, "run");
+      const nodeRunSpy = spyOn(task3, "runReactive");
 
       const results = await runner.runGraph();
 
+      expect(results?.find(([id]) => id === "task3")?.[1].output).toEqual(35);
       expect(nodeRunSpy).toHaveBeenCalledTimes(1);
     });
   });

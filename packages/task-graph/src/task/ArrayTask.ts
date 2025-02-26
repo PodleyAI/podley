@@ -18,6 +18,7 @@ import {
 import { SingleTask } from "./SingleTask";
 import { CompoundTask, RegenerativeCompoundTask } from "./CompoundTask";
 import { TaskRegistry } from "./TaskRegistry";
+import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 
 // Type utilities for array transformations
 // Makes specified properties optional arrays
@@ -242,12 +243,11 @@ export function arrayTaskFactory<
      * Runs the task synchronously, collecting outputs from all child tasks into arrays
      * @returns Combined output with arrays of values from all child tasks
      */
-    async run(...args: any[]): Promise<PluralOutputType> {
-      const runDataOut = await super.run(...args);
-      this.runOutputData = collectPropertyValues<SingleOutputType>(
-        runDataOut.outputs
-      ) as PluralOutputType;
-      return this.runOutputData;
+    async runFull(): Promise<TaskOutput> {
+      const runDataOut = (await super.runFull()) as { outputs: [string, TaskOutput][] };
+      const outputs = runDataOut.outputs.map(([id, output]) => output) as SingleOutputType[];
+      const results = collectPropertyValues<SingleOutputType>(outputs);
+      return results as TaskOutput;
     }
 
     toJSON(): JsonTaskItem {

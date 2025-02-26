@@ -6,15 +6,12 @@
 //    *******************************************************************************
 
 import { describe, test, expect } from "bun:test";
-import { TaskGraph } from "@ellmers/task-graph";
-import { TaskGraphRunner } from "@ellmers/task-graph";
-
-import {
-  SingleTask,
-  ConvertAllToArrays,
-  ConvertSomeToOptionalArray,
-  arrayTaskFactory,
-} from "@ellmers/task-graph";
+import { SingleTask } from "../SingleTask";
+import { ConvertAllToArrays } from "../ArrayTask";
+import { ConvertSomeToOptionalArray } from "../ArrayTask";
+import { arrayTaskFactory } from "../ArrayTask";
+import { TaskGraph } from "../../task-graph/TaskGraph";
+import { TaskGraphRunner } from "../../task-graph/TaskGraphRunner";
 
 type TestSquareTaskInput = {
   input: number;
@@ -75,6 +72,6 @@ describe("ArrayTask", () => {
     );
     const runner = new TaskGraphRunner(graph);
     const results = await runner.runGraph();
-    expect(results[0]).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 121] });
+    expect(results![0][1]).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 121] });
   });
 });

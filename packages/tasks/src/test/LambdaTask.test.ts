@@ -14,7 +14,7 @@ import { TaskGraphBuilder } from "@ellmers/task-graph";
 describe("LambdaTask", () => {
   test("in command mode", async () => {
     const results = await Lambda({
-      run: async () => {
+      runFull: async () => {
         return { output: "Hello, world!" };
       },
     });
@@ -48,6 +48,7 @@ describe("LambdaTask", () => {
     const graph = new TaskGraph();
     graph.addTask(
       new LambdaTask({
+        id: "lambdaReactiveTest",
         runReactive: async () => {
           return { output: "Hello, world!" };
         },
@@ -55,24 +56,26 @@ describe("LambdaTask", () => {
     );
     const runner = new TaskGraphRunner(graph);
     const results = await runner.runGraph();
-    expect(results[0]).toEqual({ output: "Hello, world!" });
+    expect(results[0]).toEqual(["lambdaReactiveTest", { output: "Hello, world!" }]);
   });
 
   test("in task builder mode", async () => {
     const builder = new TaskGraphBuilder();
     builder.Lambda({
-      run: async () => {
+      id: "lambdaFullTest",
+      runFull: async () => {
         return { output: "Hello, world!" };
       },
     });
     const results = await builder.run();
-    expect(results[0]).toEqual({ output: "Hello, world!" });
+    expect(results[0][1]).toEqual({ output: "Hello, world!" });
   });
 
   test("in task builder mode with input", async () => {
     const builder = new TaskGraphBuilder();
     builder.Lambda({
-      run: async (input) => {
+      id: "lambdaFullTest",
+      runFull: async (input) => {
         return { output: input.a + input.b };
       },
       input: {
@@ -81,7 +84,7 @@ describe("LambdaTask", () => {
       },
     });
     const results = await builder.run();
-    expect(results[0]).toEqual({ output: 3 });
+    expect(results[0][1]).toEqual({ output: 3 });
   });
 
   test("in task builder mode with input", async () => {
@@ -96,14 +99,13 @@ describe("LambdaTask", () => {
       },
     });
     const results = await builder.run();
-    expect(results[0]).toEqual({ output: 3 });
+    expect(results[0][1]).toEqual({ output: 3 });
   });
 
   test("with updateProgress", async () => {
     const graph = new TaskGraph();
     const task = new LambdaTask({
-      id: "lambda",
-      run: async (input, updateProgress) => {
+      runFull: async (input, updateProgress) => {
         updateProgress(0.5, "Halfway there");
         return { output: "Hello, world!" };
       },
@@ -115,7 +117,7 @@ describe("LambdaTask", () => {
       progressCounter++;
     });
     const results = await runner.runGraph();
-    expect(results[0]).toEqual({ output: "Hello, world!" });
+    expect(results[0][1]).toEqual({ output: "Hello, world!" });
     expect(progressCounter).toEqual(1);
   });
 });

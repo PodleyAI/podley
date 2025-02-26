@@ -9,7 +9,7 @@ import { describe } from "bun:test";
 import { PGlite } from "@electric-sql/pglite";
 import { Pool } from "pg";
 import { PostgresRateLimiter } from "../storage/PostgresRateLimiter";
-import { runGenericJobQueueTests } from "./genericJobQueueTests";
+import { runGenericJobQueueTests } from "./genericJobQueueTests.test";
 import { PostgresQueueStorage } from "@ellmers/storage";
 
 const db = new PGlite() as unknown as Pool;

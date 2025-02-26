@@ -129,7 +129,7 @@ export class SqliteRateLimiter implements ILimiter {
     // Get the next available time set externally, if any
     const nextAvailableStmt = this.db.prepare(`
       SELECT next_available_at
-      FROM queue_next_available
+      FROM job_queue_next_available
       WHERE queue_name = ?`);
     const nextAvailableResult = nextAvailableStmt.get(this.queueName) as
       | { next_available_at: string }

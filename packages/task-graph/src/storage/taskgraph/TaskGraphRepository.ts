@@ -11,6 +11,7 @@ import { DataFlow } from "../../task-graph/DataFlow";
 import { TaskGraph, TaskGraphItemJson, TaskGraphJson } from "../../task-graph/TaskGraph";
 import { CompoundTask } from "../../task/CompoundTask";
 import { TaskRegistry } from "../../task/TaskRegistry";
+import { TaskConfigurationError } from "../../task/TaskError";
 
 /**
  * Events that can be emitted by the TaskGraphRepository
@@ -82,15 +83,15 @@ export abstract class TaskGraphRepository {
    * @throws Error if required fields are missing or invalid
    */
   private createTask(item: TaskGraphItemJson) {
-    if (!item.id) throw new Error("Task id required");
-    if (!item.type) throw new Error("Task type required");
+    if (!item.id) throw new TaskConfigurationError("Task id required");
+    if (!item.type) throw new TaskConfigurationError("Task type required");
     if (item.input && (Array.isArray(item.input) || Array.isArray(item.provenance)))
-      throw new Error("Task input must be an object");
+      throw new TaskConfigurationError("Task input must be an object");
     if (item.provenance && (Array.isArray(item.provenance) || typeof item.provenance !== "object"))
-      throw new Error("Task provenance must be an object");
+      throw new TaskConfigurationError("Task provenance must be an object");
 
     const taskClass = TaskRegistry.all.get(item.type);
-    if (!taskClass) throw new Error(`Task type ${item.type} not found`);
+    if (!taskClass) throw new TaskConfigurationError(`Task type ${item.type} not found`);
 
     const taskConfig = {
       id: item.id,

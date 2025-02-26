@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { runGenericJobQueueTests, TestJob } from "./genericJobQueueTests";
+import { runGenericJobQueueTests, TestJob } from "./genericJobQueueTests.test";
 import { SqliteQueueStorage } from "@ellmers/storage";
 import { SqliteRateLimiter } from "../storage/SqliteRateLimiter";
 import { describe } from "bun:test";

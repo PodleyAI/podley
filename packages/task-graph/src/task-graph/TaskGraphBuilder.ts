@@ -20,6 +20,7 @@ import { TaskBase } from "../task/TaskBase";
 import { DataFlow } from "./DataFlow";
 import { TaskGraph, TaskGraphJson } from "./TaskGraph";
 import { TaskGraphRunner } from "./TaskGraphRunner";
+import { TaskBuilderError } from "../task/TaskError";
 
 export type TaskGraphBuilderHelper<I extends TaskInput> = (input?: Partial<I>) => TaskGraphBuilder;
 
@@ -180,19 +181,24 @@ export class TaskGraphBuilder {
     this._graph.events.off("edge-removed", this._onChanged);
   }
 
+  abortController: AbortController | undefined;
+
   /**
    * Runs the task graph
    * @returns The output of the task graph
    */
   async run() {
     this.events.emit("start");
+    this.abortController = new AbortController();
     try {
-      const out = await this._runner.runGraph();
+      const out = await this._runner.runGraph({}, this.abortController.signal);
       this.events.emit("complete");
       return out;
     } catch (error) {
       this.events.emit("error", String(error));
       throw error;
+    } finally {
+      this.abortController = undefined;
     }
   }
 
@@ -200,9 +206,7 @@ export class TaskGraphBuilder {
    * Aborts the task graph
    */
   async abort() {
-    this.events.emit("abort", "Task aborted by run time");
-    await this._runner.abort();
-    this.events.emit("complete");
+    this.abortController?.abort();
   }
 
   /**
@@ -259,13 +263,13 @@ export class TaskGraphBuilder {
     const nodes = this._graph.getNodes();
     if (-index > nodes.length) {
       this._error = `Back index greater than number of tasks`;
-      throw new Error(this._error);
+      throw new TaskBuilderError(this._error);
     }
     const lastNode = nodes[nodes.length + index];
     const sourceTaskOutputs = (lastNode?.constructor as typeof TaskBase)?.outputs;
     if (!sourceTaskOutputs.find((o) => o.id === source)) {
       this._error = `Output ${source} not found on task ${lastNode.config.id}`;
-      throw new Error(this._error);
+      throw new TaskBuilderError(this._error);
     }
     this._dataFlows.push(new DataFlow(lastNode.config.id, source, undefined, target));
     return this;
