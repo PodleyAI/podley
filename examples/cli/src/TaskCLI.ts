@@ -26,7 +26,11 @@ export function AddBaseCommands(program: Command) {
           program.error(`Unknown model ${options.model}`);
         }
       }
-      await runTask(graph);
+      try {
+        await runTask(graph);
+      } catch (error) {
+        console.error("Error running download task:", error);
+      }
     });
 
   program
@@ -44,9 +48,13 @@ export function AddBaseCommands(program: Command) {
       if (!model) {
         program.error(`Unknown model ${options.model}`);
       } else {
-        const build = new Workflow();
-        build.TextEmbedding({ model, text });
-        await runTask(build.graph);
+        const workflow = new Workflow();
+        workflow.TextEmbedding({ model, text });
+        try {
+          await runTask(workflow.graph);
+        } catch (error) {
+          console.error("Error running embedding task:", error);
+        }
       }
     });
 
@@ -64,9 +72,13 @@ export function AddBaseCommands(program: Command) {
       if (!model) {
         program.error(`Unknown model ${options.model}`);
       } else {
-        const build = new Workflow();
-        build.TextSummary({ model, text });
-        await runTask(build.graph);
+        const workflow = new Workflow();
+        workflow.TextSummary({ model, text });
+        try {
+          await runTask(workflow.graph);
+        } catch (error) {
+          console.error("Error running summary task:", error);
+        }
       }
     });
 
@@ -85,9 +97,13 @@ export function AddBaseCommands(program: Command) {
       if (!model) {
         program.error(`Unknown model ${options.model}`);
       } else {
-        const build = new Workflow();
-        build.TextRewriter({ model, text, prompt: options.prompt });
-        await runTask(build.graph);
+        const workflow = new Workflow();
+        workflow.TextRewriter({ model, text, prompt: options.prompt });
+        try {
+          await runTask(workflow.graph);
+        } catch (error) {
+          console.error("Error running rewriter task:", error);
+        }
       }
     });
 
@@ -125,7 +141,11 @@ export function AddBaseCommands(program: Command) {
       const task = new JsonTask({ name: "Test JSON", input: { json } });
       const graph = new TaskGraph();
       graph.addTask(task);
-      await runTask(graph);
+      try {
+        await runTask(graph);
+      } catch (error) {
+        console.error("Error running JSON task:", error);
+      }
     });
 
   program
@@ -142,9 +162,9 @@ export function AddBaseCommands(program: Command) {
         .DebugLog();
 
       try {
-        await workflow.run();
-      } catch {
-        console.error(workflow._error);
+        await runTask(workflow.graph);
+      } catch (error) {
+        console.error(error);
       }
     });
 }
