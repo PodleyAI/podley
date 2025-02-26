@@ -11,7 +11,7 @@ import { JsonTask } from "@ellmers/tasks";
 import {
   JsonTaskItem,
   TaskGraph,
-  TaskGraphBuilder,
+  Workflow,
   TaskInput,
   TaskOutput,
   getTaskQueueRegistry,
@@ -60,14 +60,14 @@ queueRegistry.clearQueues();
 queueRegistry.startQueues();
 
 const taskOutputCache = new IndexedDbTaskOutputRepository();
-const builder = new TaskGraphBuilder(taskOutputCache);
-const run = builder.run.bind(builder);
-builder.run = async () => {
+const workflow = new Workflow(taskOutputCache);
+const run = workflow.run.bind(workflow);
+workflow.run = async () => {
   console.log("Running task graph...");
   try {
-    const data = await run();
+    const result = await run();
     console.log("Task graph complete.");
-    return data;
+    return result;
   } catch (error) {
     console.error("Task graph error:", error);
     throw error;
@@ -77,7 +77,7 @@ builder.run = async () => {
 const taskGraphRepo = new IndexedDbTaskGraphRepository();
 const graph = await taskGraphRepo.getTaskGraph("default");
 const resetGraph = () => {
-  builder
+  workflow
     .reset()
     .DownloadModel({ model: ["onnx:Xenova/LaMini-Flan-T5-783M:q8", "onnx:Xenova/m2m100_418M:q8"] })
     .TextRewriter({
@@ -92,37 +92,38 @@ const resetGraph = () => {
     .rename("text", "message")
     .rename("text", "message", -2)
     .DebugLog({ level: "info" });
-  taskGraphRepo.saveTaskGraph("default", builder.graph);
+  taskGraphRepo.saveTaskGraph("default", workflow.graph);
 };
 
 if (graph) {
-  builder.graph = graph;
+  workflow.graph = graph;
 } else {
   resetGraph();
 }
 
-builder.on("changed", () => {
-  taskGraphRepo.saveTaskGraph("default", builder.graph);
+workflow.on("changed", () => {
+  taskGraphRepo.saveTaskGraph("default", workflow.graph);
 });
-builder.on("reset", () => {
-  taskGraphRepo.saveTaskGraph("default", builder.graph);
+workflow.on("reset", () => {
+  taskGraphRepo.saveTaskGraph("default", workflow.graph);
 });
 taskGraphRepo.on("graph_cleared", () => {
   resetGraph();
 });
-const initialJsonObj: JsonTaskItem[] = builder.toDependencyJSON();
+const initialJsonObj: JsonTaskItem[] = workflow.toDependencyJSON();
 const initialJson = JSON.stringify(initialJsonObj, null, 2);
 
 // console access. what happens there will be reflected in the UI
-window["builder"] = builder;
+window["workflow"] = workflow;
+window["workflow"] = workflow;
 
 export const App = () => {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [isAborting, setIsAborting] = useState<boolean>(false);
-  const [graph, setGraph] = useState<TaskGraph>(builder.graph);
+  const [graph, setGraph] = useState<TaskGraph>(workflow.graph);
   const [jsonData, setJsonData] = useState<string>(initialJson);
 
-  // changes coming from builder in console
+  // changes coming from workflow in console
   useEffect(() => {
     async function init() {
       await registerHuggingfaceLocalModels();
@@ -131,15 +132,15 @@ export const App = () => {
     init();
 
     function listen() {
-      setJsonData(JSON.stringify(builder.toDependencyJSON(), null, 2));
-      setGraph(builder.graph);
+      setJsonData(JSON.stringify(workflow.toDependencyJSON(), null, 2));
+      setGraph(workflow.graph);
     }
-    builder.on("changed", listen);
-    builder.on("reset", listen);
+    workflow.on("changed", listen);
+    workflow.on("reset", listen);
     listen();
     return () => {
-      builder.off("changed", listen);
-      builder.off("reset", listen);
+      workflow.off("changed", listen);
+      workflow.off("reset", listen);
     };
   }, []);
 
@@ -154,21 +155,21 @@ export const App = () => {
     function abort() {
       setIsAborting(true);
     }
-    builder.on("start", start);
-    builder.on("complete", complete);
-    builder.on("error", complete);
-    builder.on("abort", abort);
+    workflow.on("start", start);
+    workflow.on("complete", complete);
+    workflow.on("error", complete);
+    workflow.on("abort", abort);
     return () => {
-      builder.off("start", start);
-      builder.off("complete", complete);
-      builder.off("error", complete);
-      builder.off("abort", abort);
+      workflow.off("start", start);
+      workflow.off("complete", complete);
+      workflow.off("error", complete);
+      workflow.off("abort", abort);
     };
   }, []);
 
   const setNewJson = useCallback((json: string) => {
     const task = new JsonTask({ input: { json: json } });
-    builder.graph = task.subGraph;
+    workflow.graph = task.subGraph;
     setJsonData(json);
   }, []);
 
@@ -186,8 +187,8 @@ export const App = () => {
             <JsonEditor
               json={jsonData}
               onJsonChange={setNewJson}
-              run={() => builder.run()}
-              stop={() => builder.abort()}
+              run={() => workflow.run()}
+              stop={() => workflow.abort()}
               running={isRunning}
               aborting={isAborting}
             />

@@ -1,0 +1,7 @@
+---
+description: Testing
+globs: *.test.ts
+---
+Use bun not jest
+
+To run tests: `bun test`. To run specific ones: `bun run <testname>`.

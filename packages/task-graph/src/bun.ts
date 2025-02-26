@@ -14,7 +14,7 @@ export * from "./task-graph/DataFlow";
 export * from "./task/TaskRegistry";
 export * from "./task-graph/TaskGraph";
 export * from "./task-graph/TaskGraphRunner";
-export * from "./task-graph/TaskGraphBuilder";
+export * from "./task-graph/Workflow";
 export * from "./task/ArrayTask";
 export * from "./task/OutputTask";
 export * from "./task/JobQueueTask";

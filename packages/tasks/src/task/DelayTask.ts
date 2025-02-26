@@ -5,7 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { SingleTask, TaskAbortedError } from "@ellmers/task-graph";
+import {
+  CreateWorkflow,
+  SingleTask,
+  TaskAbortedError,
+  TaskRegistry,
+  Workflow,
+} from "@ellmers/task-graph";
 import { sleep } from "@ellmers/util";
 
 // TODO: we should have a generic way to handle "...rest" inputs to pass through to outputs
@@ -65,3 +71,26 @@ export class DelayTask extends SingleTask {
     return { output: this.runInputData.input };
   }
 }
+
+// Register DelayTask with the task registry
+TaskRegistry.registerTask(DelayTask);
+
+/**
+ * DelayTask
+ *
+ * Delays the execution of a task for a specified amount of time
+ *
+ * @param {delay} - The delay in milliseconds
+ */
+export const Delay = (input: DelayTaskInput) => {
+  const task = new DelayTask({ input });
+  return task.run();
+};
+
+declare module "@ellmers/task-graph" {
+  interface Workflow {
+    Delay: CreateWorkflow<DelayTaskInput>;
+  }
+}
+
+Workflow.prototype.Delay = CreateWorkflow(DelayTask);

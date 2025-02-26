@@ -14,7 +14,7 @@ import {
 } from "@ellmers/task-graph";
 import { TaskRegistry } from "@ellmers/task-graph";
 import { JobQueueTaskConfig } from "@ellmers/task-graph";
-import { TaskGraphBuilder, TaskGraphBuilderHelper } from "@ellmers/task-graph";
+import { Workflow, CreateWorkflow } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
 import { language } from "./base/TaskIOTypes";
 import { model_translation } from "./base/TaskIOTypes";
@@ -98,11 +98,11 @@ export const TextTranslation = (input: TextTranslationCompoundTaskInput) => {
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    TextTranslation: TaskGraphBuilderHelper<TextTranslationCompoundTaskInput>;
+  interface Workflow {
+    TextTranslation: CreateWorkflow<TextTranslationCompoundTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.TextTranslation = TaskGraphBuilderHelper(TextTranslationCompoundTask);
+Workflow.prototype.TextTranslation = CreateWorkflow(TextTranslationCompoundTask);
 
 // console.log("TextTranslationTask.ts", TextTranslationCompoundTask);

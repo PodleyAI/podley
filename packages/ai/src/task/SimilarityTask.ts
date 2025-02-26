@@ -7,8 +7,8 @@
 
 import {
   TaskRegistry,
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
   SingleTask,
   TaskOutput,
   TaskConfig,
@@ -152,12 +152,12 @@ export const Similarity = (input: SimilarityTaskInput) => {
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    Similarity: TaskGraphBuilderHelper<SimilarityTaskInput>;
+  interface Workflow {
+    Similarity: CreateWorkflow<SimilarityTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.Similarity = TaskGraphBuilderHelper(SimilarityTask);
+Workflow.prototype.Similarity = CreateWorkflow(SimilarityTask);
 
 // ===============================================================================
 

@@ -8,8 +8,8 @@
 import {
   SingleTask,
   TaskOutput,
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
   TaskRegistry,
   TaskInput,
   TaskInputDefinition,
@@ -135,11 +135,11 @@ export const Lambda = (config: LambdaTaskConfig) => {
   return task.run();
 };
 
-// Add Lambda task builder to TaskGraphBuilder interface
+// Add Lambda task workflow to Workflow interface
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    Lambda: TaskGraphBuilderHelper<LambdaTaskConfig>;
+  interface Workflow {
+    Lambda: CreateWorkflow<LambdaTaskConfig>;
   }
 }
 
-TaskGraphBuilder.prototype.Lambda = TaskGraphBuilderHelper(LambdaTask);
+Workflow.prototype.Lambda = CreateWorkflow(LambdaTask);

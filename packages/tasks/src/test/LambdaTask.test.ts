@@ -9,7 +9,7 @@ import { describe, test, expect } from "bun:test";
 import { Lambda, LambdaTask } from "../task/LambdaTask";
 import { TaskGraph } from "@ellmers/task-graph";
 import { TaskGraphRunner } from "@ellmers/task-graph";
-import { TaskGraphBuilder } from "@ellmers/task-graph";
+import { Workflow } from "@ellmers/task-graph";
 
 describe("LambdaTask", () => {
   test("in command mode", async () => {
@@ -59,21 +59,21 @@ describe("LambdaTask", () => {
     expect(results[0]).toEqual(["lambdaReactiveTest", { output: "Hello, world!" }]);
   });
 
-  test("in task builder mode", async () => {
-    const builder = new TaskGraphBuilder();
-    builder.Lambda({
+  test("in task workflow mode", async () => {
+    const workflow = new Workflow();
+    workflow.Lambda({
       id: "lambdaFullTest",
       runFull: async () => {
         return { output: "Hello, world!" };
       },
     });
-    const results = await builder.run();
+    const results = await workflow.run();
     expect(results[0][1]).toEqual({ output: "Hello, world!" });
   });
 
-  test("in task builder mode with input", async () => {
-    const builder = new TaskGraphBuilder();
-    builder.Lambda({
+  test("in task workflow mode with input", async () => {
+    const workflow = new Workflow();
+    workflow.Lambda({
       id: "lambdaFullTest",
       runFull: async (input) => {
         return { output: input.a + input.b };
@@ -83,13 +83,13 @@ describe("LambdaTask", () => {
         b: 2,
       },
     });
-    const results = await builder.run();
+    const results = await workflow.run();
     expect(results[0][1]).toEqual({ output: 3 });
   });
 
-  test("in task builder mode with input", async () => {
-    const builder = new TaskGraphBuilder();
-    builder.Lambda({
+  test("in task workflow mode with input", async () => {
+    const workflow = new Workflow();
+    workflow.Lambda({
       runReactive: async (input) => {
         return { output: input.a + input.b };
       },
@@ -98,7 +98,7 @@ describe("LambdaTask", () => {
         b: 2,
       },
     });
-    const results = await builder.run();
+    const results = await workflow.run();
     expect(results[0][1]).toEqual({ output: 3 });
   });
 

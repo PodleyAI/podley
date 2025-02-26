@@ -13,8 +13,8 @@ import {
   arrayTaskFactory,
   TaskRegistry,
   JobQueueTaskConfig,
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
 } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
 import { AnyNumberArray, model_embedding } from "./base/TaskIOTypes";
@@ -86,9 +86,9 @@ export const TextEmbedding = (input: TextEmbeddingCompoundTaskInput) => {
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    TextEmbedding: TaskGraphBuilderHelper<TextEmbeddingCompoundTaskInput>;
+  interface Workflow {
+    TextEmbedding: CreateWorkflow<TextEmbeddingCompoundTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.TextEmbedding = TaskGraphBuilderHelper(TextEmbeddingCompoundTask);
+Workflow.prototype.TextEmbedding = CreateWorkflow(TextEmbeddingCompoundTask);

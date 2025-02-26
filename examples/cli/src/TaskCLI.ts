@@ -8,7 +8,7 @@
 import type { Command } from "commander";
 import { runTask } from "./TaskStreamToListr2";
 import "@huggingface/transformers";
-import { TaskGraph, TaskGraphBuilder, JsonTaskItem } from "@ellmers/task-graph";
+import { TaskGraph, Workflow, JsonTaskItem } from "@ellmers/task-graph";
 import { DownloadModelTask, getGlobalModelRepository } from "@ellmers/ai";
 import { JsonTask } from "@ellmers/tasks";
 export function AddBaseCommands(program: Command) {
@@ -44,7 +44,7 @@ export function AddBaseCommands(program: Command) {
       if (!model) {
         program.error(`Unknown model ${options.model}`);
       } else {
-        const build = new TaskGraphBuilder();
+        const build = new Workflow();
         build.TextEmbedding({ model, text });
         await runTask(build.graph);
       }
@@ -64,7 +64,7 @@ export function AddBaseCommands(program: Command) {
       if (!model) {
         program.error(`Unknown model ${options.model}`);
       } else {
-        const build = new TaskGraphBuilder();
+        const build = new Workflow();
         build.TextSummary({ model, text });
         await runTask(build.graph);
       }
@@ -85,7 +85,7 @@ export function AddBaseCommands(program: Command) {
       if (!model) {
         program.error(`Unknown model ${options.model}`);
       } else {
-        const build = new TaskGraphBuilder();
+        const build = new Workflow();
         build.TextRewriter({ model, text, prompt: options.prompt });
         await runTask(build.graph);
       }
@@ -129,11 +129,11 @@ export function AddBaseCommands(program: Command) {
     });
 
   program
-    .command("builder")
-    .description("run based on builder")
+    .command("workflow")
+    .description("run based on workflow")
     .action(async () => {
-      const builder = new TaskGraphBuilder();
-      builder
+      const workflow = new Workflow();
+      workflow
         .DownloadModel({ model: "Supabase/gte-small" })
         .TextEmbedding({
           text: "The quick brown fox jumps over the lazy dog.",
@@ -142,9 +142,9 @@ export function AddBaseCommands(program: Command) {
         .DebugLog();
 
       try {
-        await builder.run();
+        await workflow.run();
       } catch {
-        console.error(builder._error);
+        console.error(workflow._error);
       }
     });
 }

@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import {
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
   TaskRegistry,
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
@@ -192,10 +192,10 @@ export const DownloadModel = (input: DownloadModelCompoundTaskInput) => {
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    DownloadModel: TaskGraphBuilderHelper<DownloadModelCompoundTaskInput>;
+  interface Workflow {
+    DownloadModel: CreateWorkflow<DownloadModelCompoundTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.DownloadModel =
-  TaskGraphBuilderHelper<DownloadModelCompoundTaskInput>(DownloadModelCompoundTask);
+Workflow.prototype.DownloadModel =
+  CreateWorkflow<DownloadModelCompoundTaskInput>(DownloadModelCompoundTask);

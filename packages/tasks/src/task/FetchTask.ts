@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import {
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
   TaskRegistry,
   JobQueueTask,
   JobQueueTaskConfig,
@@ -197,9 +197,9 @@ export const Fetch = (input: FetchTaskInput) => {
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    Fetch: TaskGraphBuilderHelper<FetchTaskInput>;
+  interface Workflow {
+    Fetch: CreateWorkflow<FetchTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.Fetch = TaskGraphBuilderHelper(FetchTask);
+Workflow.prototype.Fetch = CreateWorkflow(FetchTask);

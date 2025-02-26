@@ -16,7 +16,7 @@ import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-qu
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
-  TaskGraphBuilder,
+  Workflow,
   TaskInput,
   TaskOutput,
 } from "@ellmers/task-graph";
@@ -78,14 +78,14 @@ describe("HFTransformersBinding", () => {
       expect(queue).toBeDefined();
       expect(queue!.queueName).toEqual(LOCAL_ONNX_TRANSFORMERJS);
 
-      const builder = new TaskGraphBuilder();
-      builder.DownloadModel({
+      const workflow = new Workflow();
+      workflow.DownloadModel({
         model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
       });
-      builder.run();
+      workflow.run();
       await sleep(1);
       expect(await queue?.size()).toEqual(1);
-      builder.reset();
+      workflow.reset();
       await queue?.clear();
     });
   });
@@ -126,14 +126,14 @@ describe("HFTransformersBinding", () => {
       expect(queue).toBeDefined();
       expect(queue?.queueName).toEqual(LOCAL_ONNX_TRANSFORMERJS);
 
-      const builder = new TaskGraphBuilder();
-      builder.DownloadModel({
+      const workflow = new Workflow();
+      workflow.DownloadModel({
         model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
       });
-      builder.run();
+      workflow.run();
       await sleep(1);
       expect(await queue?.size()).toEqual(1);
-      builder.reset();
+      workflow.reset();
       await queue?.clear();
     });
   });

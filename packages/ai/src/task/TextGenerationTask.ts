@@ -13,8 +13,8 @@ import {
   arrayTaskFactory,
   TaskRegistry,
   JobQueueTaskConfig,
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
 } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
 import { model_generation } from "./base/TaskIOTypes";
@@ -85,9 +85,9 @@ export const TextGeneration = (input: TextGenerationCompoundTaskInput) => {
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    TextGeneration: TaskGraphBuilderHelper<TextGenerationCompoundTaskInput>;
+  interface Workflow {
+    TextGeneration: CreateWorkflow<TextGenerationCompoundTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.TextGeneration = TaskGraphBuilderHelper(TextGenerationCompoundTask);
+Workflow.prototype.TextGeneration = CreateWorkflow(TextGenerationCompoundTask);

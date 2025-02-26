@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import {
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
   TaskRegistry,
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
@@ -75,9 +75,9 @@ export const TextSummary = (input: TextSummaryCompoundTaskInput) => {
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    TextSummary: TaskGraphBuilderHelper<TextSummaryCompoundTaskInput>;
+  interface Workflow {
+    TextSummary: CreateWorkflow<TextSummaryCompoundTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.TextSummary = TaskGraphBuilderHelper(TextSummaryCompoundTask);
+Workflow.prototype.TextSummary = CreateWorkflow(TextSummaryCompoundTask);
