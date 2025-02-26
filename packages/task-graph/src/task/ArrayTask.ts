@@ -19,6 +19,7 @@ import { SingleTask } from "./SingleTask";
 import { CompoundTask, RegenerativeCompoundTask } from "./CompoundTask";
 import { TaskRegistry } from "./TaskRegistry";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { GraphSingleResult } from "../task-graph/TaskGraphRunner";
 
 // Type utilities for array transformations
 // Makes specified properties optional arrays
@@ -208,6 +209,7 @@ export function arrayTaskFactory<
      * Each child task processes a single combination of the array inputs
      */
     regenerateGraph() {
+      //TODO: only regenerate if we need to
       this.subGraph = new TaskGraph();
       const combinations = generateCombinations(this.runInputData, inputMakeArray);
       combinations.forEach((input, index) => {
@@ -244,8 +246,10 @@ export function arrayTaskFactory<
      * @returns Combined output with arrays of values from all child tasks
      */
     async runFull(): Promise<TaskOutput> {
-      const runDataOut = (await super.runFull()) as { outputs: [string, TaskOutput][] };
-      const outputs = runDataOut.outputs.map(([id, output]) => output) as SingleOutputType[];
+      const runDataOut = await super.runFull();
+      const outputs = runDataOut.outputs.map(
+        (result: GraphSingleResult) => result.data
+      ) as SingleOutputType[];
       const results = collectPropertyValues<SingleOutputType>(outputs);
       return results as TaskOutput;
     }

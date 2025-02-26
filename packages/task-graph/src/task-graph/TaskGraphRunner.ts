@@ -18,6 +18,9 @@ import {
   TaskErrorGroup,
 } from "../task/TaskError";
 
+export type GraphSingleResult = { id: unknown; type: String; data: TaskOutput };
+export type GraphResult = Array<GraphSingleResult>;
+
 /**
  * Class for running a task graph
  * Manages the execution of tasks in a task graph, including provenance tracking and caching
@@ -93,7 +96,7 @@ export class TaskGraphRunner {
   private async runTaskWithProvenance(
     task: Task,
     parentProvenance: TaskInput
-  ): Promise<TaskOutput> {
+  ): Promise<GraphSingleResult> {
     // Update provenance for the current task
     const nodeProvenance = {
       ...parentProvenance,
@@ -127,7 +130,11 @@ export class TaskGraphRunner {
     }
 
     this.pushOutputFromNodeToEdges(task, results, nodeProvenance);
-    return results;
+    return {
+      id: task.config.id,
+      type: (task.constructor as any).runtype || (task.constructor as any).type,
+      data: results,
+    };
   }
 
   private abortController: AbortController | undefined;
@@ -181,10 +188,10 @@ export class TaskGraphRunner {
   public async runGraph(
     parentProvenance: TaskInput = {},
     parentSignal?: AbortSignal
-  ): Promise<[key: unknown, out: TaskOutput][]> {
+  ): Promise<GraphResult> {
     this.handleStart(parentSignal);
 
-    const results = new Map<unknown, TaskOutput>();
+    const results: GraphResult = [];
     let error: TaskError | undefined;
 
     try {
@@ -197,7 +204,13 @@ export class TaskGraphRunner {
 
         // Check if any tasks have failed
         if (this.failedTaskErrors.size > 0) {
-          throw new TaskErrorGroup(Array.from(this.failedTaskErrors.entries()));
+          throw new TaskErrorGroup(
+            Array.from(this.failedTaskErrors.entries()).map(([key, error]) => ({
+              key,
+              type: (error as any).name || (error as any).constructor.name,
+              error,
+            }))
+          );
         }
 
         const runAsync = async () => {
@@ -208,7 +221,7 @@ export class TaskGraphRunner {
 
             if (this.dag.getTargetDataFlows(task.config.id).length === 0) {
               // we save the results of all the leaves
-              results.set(task.config.id, taskResult);
+              results.push(taskResult);
             } else {
               //  console.log("task intermediate result", taskResult);
             }
@@ -237,18 +250,24 @@ export class TaskGraphRunner {
     await Promise.allSettled(Array.from(this.inProgressFunctions.values())); //cleanup
 
     if (this.failedTaskErrors.size > 0) {
-      const errors = Array.from(this.failedTaskErrors.entries());
+      const errors = Array.from(this.failedTaskErrors.entries()).map(([key, error]) => ({
+        key,
+        type: (error as any).name || (error as any).constructor.name,
+        error,
+      }));
       const errorGroup = new TaskErrorGroup(errors);
       this.handleError();
       throw errorGroup;
     }
     if (this.abortController?.signal.aborted) {
-      throw new TaskErrorGroup([["*", new TaskAbortedError()]]);
+      throw new TaskErrorGroup([
+        { key: "*", type: "TaskAbortedError", error: new TaskAbortedError() },
+      ]);
     }
 
     this.handleComplete();
 
-    return Array.from(results.entries());
+    return results;
   }
 
   private handleError() {
@@ -320,7 +339,7 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskConfigurationError if the graph is already running reactively
    */
-  public async runGraphReactive() {
+  public async runGraphReactive(): Promise<GraphResult> {
     if (this.reactiveRunning) {
       throw new TaskConfigurationError("Graph is already running reactively");
     }
@@ -332,7 +351,7 @@ export class TaskGraphRunner {
 
     this.reactiveScheduler.reset();
 
-    const results: TaskOutput[] = [];
+    const results: GraphResult = [];
 
     try {
       for await (const task of this.reactiveScheduler.tasks()) {
@@ -342,7 +361,11 @@ export class TaskGraphRunner {
           const taskResult = await task.runReactive();
           this.pushOutputFromNodeToEdges(task, taskResult);
           if (this.dag.getTargetDataFlows(task.config.id).length === 0) {
-            results.push(taskResult);
+            results.push({
+              id: task.config.id,
+              type: (task.constructor as any).runtype || (task.constructor as any).type,
+              data: taskResult,
+            });
           }
         }
       }

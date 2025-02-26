@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { sleep } from "@ellmers/util";
 import { DataFlow } from "../DataFlow";
 import { TaskGraph } from "../TaskGraph";
-import { TaskGraphRunner } from "../TaskGraphRunner";
+import { GraphResult, TaskGraphRunner } from "../TaskGraphRunner";
 import {
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
@@ -143,7 +143,7 @@ describe("TaskSubGraphRunner", () => {
 
       const results = await runner.runGraph();
       expect(nodeRunSpy).toHaveBeenCalledTimes(1);
-      expect(results?.find(([id]) => id === "task0")?.[1]).toEqual({ output: [36, 49] });
+      expect(results?.find((r) => r.id === "task0")?.data).toEqual({ output: [36, 49] });
     });
 
     it("array input into ArrayTask", async () => {
@@ -175,7 +175,7 @@ describe("TaskSubGraphRunner", () => {
       graph.addTask(failingTask);
 
       let error: TaskErrorGroup | undefined;
-      let result: [key: unknown, out: TaskOutput][] | undefined;
+      let result: GraphResult | undefined;
       try {
         result = await runner.runGraph();
       } catch (err) {
@@ -233,7 +233,7 @@ describe("TaskSubGraphRunner", () => {
       graph.addTask(abortingTask);
 
       let error: TaskErrorGroup | undefined;
-      let result: [key: unknown, out: TaskOutput][] | undefined;
+      let result: GraphResult | undefined;
       try {
         const resultPromise = runner.runGraph();
         runner.abort();
@@ -250,7 +250,7 @@ describe("TaskSubGraphRunner", () => {
       graph.addTask(abortingTask);
 
       let error: TaskErrorGroup | undefined;
-      let result: [key: unknown, out: TaskOutput][] | undefined;
+      let result: GraphResult | undefined;
       try {
         const resultPromise = runner.runGraph();
         await sleep(1);

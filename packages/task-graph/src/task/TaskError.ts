@@ -70,37 +70,37 @@ export class TaskInvalidInputError extends TaskError {
  * Examples: CompoundTask, ArrayTask, TaskRunner, etc.
  */
 export class TaskErrorGroup extends TaskError {
-  constructor(private errors: [key: unknown, error: TaskError][]) {
+  constructor(private errors: { key: unknown; type: string; error: TaskError }[]) {
     super("Multiple errors occurred");
   }
   getError(key: unknown): TaskError | undefined {
-    return this.errors.find(([k]) => k === key)?.[1];
+    return this.errors.find((e) => e.key === key)?.error;
   }
   getErrors(): TaskError[] {
-    return this.errors.map(([k, error]) => error);
+    return this.errors.map((e) => e.error);
   }
   getErrorKeys(): unknown[] {
-    return this.errors.map(([k]) => k);
-  }
-  getErrorEntries(): [key: unknown, error: TaskError][] {
-    return this.errors;
+    return this.errors.map((e) => e.key);
   }
   getErrorCount(): number {
     return this.errors.length;
   }
   getErrorNames(): string[] {
-    return this.errors.map(([k, error]) => error.name);
+    return this.errors.map((e) => e.error.name);
   }
   getErrorMessages(): string[] {
-    return this.errors.map(([k, error]) => error.message);
+    return this.errors.map((e) => e.error.message);
   }
   getFirstError(): TaskError {
-    return this.errors[0][1];
+    return this.errors[0].error;
   }
   getFirstErrorKey(): unknown {
-    return this.errors[0][0];
+    return this.errors[0].key;
+  }
+  getFirstErrorType(): string {
+    return this.errors[0].type;
   }
   hasAbortError(): boolean {
-    return this.errors.some(([k, error]) => error instanceof TaskAbortedError);
+    return this.errors.some((e) => e.error instanceof TaskAbortedError);
   }
 }

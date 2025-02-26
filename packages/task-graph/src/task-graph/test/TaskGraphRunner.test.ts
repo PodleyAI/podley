@@ -145,8 +145,8 @@ describe("TaskGraphRunner", () => {
 
     it("should run the graph with results", async () => {
       const results = await runner.runGraph();
-      expect(results?.find(([id]) => id === "task1")?.[1].output).toEqual(25);
-      expect(results?.find(([id]) => id === "task2")?.[1].output).toEqual(10);
+      expect(results?.find((r) => r.id === "task1")?.data.output).toEqual(25);
+      expect(results?.find((r) => r.id === "task2")?.data.output).toEqual(10);
     });
 
     it("should run the graph in the correct order with dependencies", async () => {
@@ -159,7 +159,7 @@ describe("TaskGraphRunner", () => {
 
       const results = await runner.runGraph();
 
-      expect(results?.find(([id]) => id === "task3")?.[1].output).toEqual(35);
+      expect(results?.find((r) => r.id === "task3")?.data.output).toEqual(35);
       expect(nodeRunSpy).toHaveBeenCalledTimes(1);
     });
   });
