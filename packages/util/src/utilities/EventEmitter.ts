@@ -34,6 +34,16 @@ export type EventParameters<Events, EventType extends keyof Events> = {
 }[EventType];
 
 /**
+ * A type that represents the return type of the emitted method.
+ * @template Events - A record of event names and their corresponding listener functions
+ * @template EventType - The name of the event
+ */
+export type EmittedReturnType<Events, EventType extends keyof Events> = EventParameters<
+  Events,
+  EventType
+>;
+
+/**
  * A class that implements an event emitter pattern.
  * @template EventListenerTypes - A record of event names and their corresponding listener functions
  */
@@ -41,18 +51,6 @@ export class EventEmitter<EventListenerTypes extends Record<string, (...args: an
   private listeners: {
     [Event in keyof EventListenerTypes]?: EventListeners<EventListenerTypes, Event>;
   } = {};
-
-  private weakListeners: WeakMap<
-    object,
-    {
-      event: keyof EventListenerTypes;
-      listener: Function;
-      once?: boolean;
-    }
-  > = new WeakMap();
-
-  // Keep track of weak listener keys since WeakMap isn't iterable
-  private weakListenerKeys: Set<object> = new Set();
 
   /**
    * Remove all listeners for a specific event or all events
@@ -62,18 +60,8 @@ export class EventEmitter<EventListenerTypes extends Record<string, (...args: an
   removeAllListeners<Event extends keyof EventListenerTypes>(event?: Event): this {
     if (event) {
       delete this.listeners[event];
-      // Remove weak listeners for this event
-      for (const key of this.weakListenerKeys) {
-        const value = this.weakListeners.get(key);
-        if (value && value.event === event) {
-          this.weakListeners.delete(key);
-          this.weakListenerKeys.delete(key);
-        }
-      }
     } else {
       this.listeners = {};
-      this.weakListeners = new WeakMap();
-      this.weakListenerKeys.clear();
     }
     return this;
   }
@@ -88,21 +76,9 @@ export class EventEmitter<EventListenerTypes extends Record<string, (...args: an
     event: Event,
     listener: EventListener<EventListenerTypes, Event>
   ): this {
-    // If the listener is an object method, store it in the WeakMap
-    if (typeof listener === "object" && listener !== null) {
-      this.weakListeners.set(listener as object, {
-        event,
-        listener: listener as Function,
-        once: false,
-      });
-      this.weakListenerKeys.add(listener as object);
-    } else {
-      // Regular function listeners go in the normal array storage
-      const listeners: EventListeners<EventListenerTypes, Event> =
-        this.listeners[event] || (this.listeners[event] = []);
-      listeners.push({ listener });
-    }
-
+    const listeners: EventListeners<EventListenerTypes, Event> =
+      this.listeners[event] || (this.listeners[event] = []);
+    listeners.push({ listener });
     return this;
   }
 
@@ -116,17 +92,12 @@ export class EventEmitter<EventListenerTypes extends Record<string, (...args: an
     event: Event,
     listener: EventListener<EventListenerTypes, Event>
   ): this {
-    if (typeof listener === "object" && listener !== null) {
-      this.weakListeners.delete(listener as object);
-      this.weakListenerKeys.delete(listener as object);
-    } else {
-      const listeners = this.listeners[event];
-      if (!listeners) return this;
+    const listeners = this.listeners[event];
+    if (!listeners) return this;
 
-      const index = listeners.findIndex((l) => l.listener === listener);
-      if (index >= 0) {
-        listeners.splice(index, 1);
-      }
+    const index = listeners.findIndex((l) => l.listener === listener);
+    if (index >= 0) {
+      listeners.splice(index, 1);
     }
     return this;
   }
@@ -141,37 +112,28 @@ export class EventEmitter<EventListenerTypes extends Record<string, (...args: an
     event: Event,
     listener: EventListener<EventListenerTypes, Event>
   ): this {
-    if (typeof listener === "object" && listener !== null) {
-      this.weakListeners.set(listener as object, {
-        event,
-        listener: listener as Function,
-        once: true,
-      });
-      this.weakListenerKeys.add(listener as object);
-    } else {
-      const listeners: EventListeners<EventListenerTypes, Event> =
-        this.listeners[event] || (this.listeners[event] = []);
-      listeners.push({ listener, once: true });
-    }
+    const listeners: EventListeners<EventListenerTypes, Event> =
+      this.listeners[event] || (this.listeners[event] = []);
+    listeners.push({ listener, once: true });
     return this;
   }
 
   /**
    * Returns a promise that resolves when the event is emitted
    * @param event - The event name to listen for
-   * @returns a promise that resolves to the event parameters
+   * @returns a promise that resolves to an array of all parameters of the event (empty array for events with no parameters)
    */
   emitted<Event extends keyof EventListenerTypes>(
     event: Event
-  ): Promise<
-    EventParameters<EventListenerTypes, Event> extends [infer Param]
-      ? Param
-      : EventParameters<EventListenerTypes, Event> extends []
-        ? void
-        : EventParameters<EventListenerTypes, Event>
-  > {
+  ): Promise<EmittedReturnType<EventListenerTypes, Event>> {
     return new Promise((resolve, reject) => {
-      this.once(event, resolve as EventListener<EventListenerTypes, Event>);
+      // Create an anonymous function that captures all arguments and passes them to resolve
+      const listener = ((...args: any[]) => {
+        // Always resolve with the array of arguments (which may be empty)
+        resolve(args as any);
+      }) as EventListener<EventListenerTypes, Event>;
+
+      this.once(event, listener);
     });
   }
 
@@ -185,7 +147,6 @@ export class EventEmitter<EventListenerTypes extends Record<string, (...args: an
     event: Event,
     ...args: EventParameters<EventListenerTypes, Event>
   ) {
-    // Handle regular function listeners
     const listeners: EventListeners<EventListenerTypes, Event> | undefined = this.listeners[event];
     if (listeners) {
       listeners.forEach(({ listener, once }) => {
@@ -193,18 +154,6 @@ export class EventEmitter<EventListenerTypes extends Record<string, (...args: an
       });
       // Remove once listeners we just called
       this.listeners[event] = listeners.filter((l) => !l.once);
-    }
-
-    // Handle weak listeners
-    for (const key of this.weakListenerKeys) {
-      const value = this.weakListeners.get(key);
-      if (value && value.event === event) {
-        value.listener.apply(key, args);
-        if (value.once) {
-          this.weakListeners.delete(key);
-          this.weakListenerKeys.delete(key);
-        }
-      }
     }
   }
 }
