@@ -10,7 +10,7 @@
   - [Task Classes](#task-classes)
   - [TaskGraph](#taskgraph)
   - [TaskGraphRunner](#taskgraphrunner)
-  - [TaskGraphBuilder](#taskgraphbuilder)
+  - [Workflow](#workflow)
 - [Warnings / ToDo](#warnings--todo)
 
 # Architecture Documentation
@@ -285,12 +285,12 @@ The TaskGraphRunner is responsible for executing tasks in a task graph. Key feat
 - **Reactive Mode**: Supports reactive execution where tasks can respond to input changes without full re-execution
 - **Smart Task Scheduling**: Automatically determines task execution order based on dependencies
 
-## TaskGraphBuilder
+## Workflow
 
 ```mermaid
 classDiagram
 
-  class TaskGraphBuilder{
+  class Workflow{
     -TaskGraphRunner _runner
     -TaskGraph _graph
     -TaskOutputRepository _repository
@@ -298,9 +298,9 @@ classDiagram
     +EventEmitter events
     run() TaskOutput
     pop()
-    parallel(...builders) TaskGraphBuilder
-    rename(string source, string target, number index) TaskGraphBuilder
-    reset() TaskGraphBuilder
+    parallel(...workflows) Workflow
+    rename(string source, string target, number index) Workflow
+    reset() Workflow
     toJSON() TaskGraphJson
     toDependencyJSON() JsonTaskItem[]
     +DownloadModel(model)
@@ -317,7 +317,7 @@ classDiagram
 
 ```
 
-The TaskGraphBuilder provides a fluent interface for constructing task graphs. Key features include:
+The Workflow provides a fluent interface for constructing task graphs. Key features include:
 
 - **Event System**: Emits events for graph changes and execution status
 - **Parallel Execution**: Can run multiple task graphs in parallel

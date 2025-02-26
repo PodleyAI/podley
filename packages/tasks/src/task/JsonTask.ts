@@ -12,8 +12,8 @@ import {
   JsonTaskItem,
   DataFlow,
   TaskGraph,
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
   TaskRegistry,
   TaskInputDefinition,
   TaskOutputDefinition,
@@ -148,24 +148,17 @@ export class JsonTask extends RegenerativeCompoundTask {
 TaskRegistry.registerTask(JsonTask);
 
 /**
- * Helper function to create and configure a JsonTask instance
- */
-const JsonBuilder = (input: JsonTaskInput) => {
-  return new JsonTask({ input });
-};
-
-/**
  * Convenience function to create and run a JsonTask
  */
 export const Json = (input: JsonTaskInput) => {
-  return JsonBuilder(input).run();
+  return new JsonTask({ input }).run();
 };
 
-// Add Json task builder to TaskGraphBuilder interface
+// Add Json task workflow to Workflow interface
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    Json: TaskGraphBuilderHelper<JsonTaskInput>;
+  interface Workflow {
+    Json: CreateWorkflow<JsonTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.Json = TaskGraphBuilderHelper(JsonTask);
+Workflow.prototype.Json = CreateWorkflow(JsonTask);

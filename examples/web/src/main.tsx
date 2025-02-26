@@ -7,12 +7,12 @@
 
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import { TaskGraphBuilder } from "@ellmers/task-graph";
+import { Workflow } from "@ellmers/task-graph";
 import "./main.css";
 import {
   TaskConsoleFormatter,
-  TaskGraphBuilderConsoleFormatter,
-  TaskGraphBuilderHelperConsoleFormatter,
+  CreateWorkflowConsoleFormatter,
+  WorkflowConsoleFormatter,
   isDarkMode,
 } from "./ConsoleFormatters";
 
@@ -22,10 +22,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   // </React.StrictMode>
 );
 
-window["TaskGraphBuilder"] = TaskGraphBuilder;
+window["Workflow"] = Workflow;
 window["devtoolsFormatters"] = [
-  new TaskGraphBuilderConsoleFormatter(),
-  new TaskGraphBuilderHelperConsoleFormatter(),
+  new CreateWorkflowConsoleFormatter(),
+  new WorkflowConsoleFormatter(),
   new TaskConsoleFormatter(),
 ];
 
@@ -40,18 +40,18 @@ console.log(
   "color: red;"
 );
 console.log(
-  "To get started, type 'builder.reset()' in the console. Then you can build a task graph using the builder API, and it will be reflected in the web page. For example, here is how the page started: "
+  "To get started, type 'workflow.reset()' in the console. Then you can build a task graph using the workflow API, and it will be reflected in the web page. For example, here is how the page started: "
 );
 console.log(
-  `  %cbuilder.%creset%c();
+  `  %cworkflow.%creset%c();
 
 
-  builder.%cDownloadModel%c({ %cmodel%c: [%c'ONNX Xenova/LaMini-Flan-T5-783M q8']%c });
-  builder.%cTextRewriter%c({ %ctext%c: %c'The quick brown fox jumps over the lazy dog.'%c, %cprompt%c: [%c'Rewrite the following text in reverse:'%c, %c'Rewrite this to sound like a pirate:'%c] });
-  builder.%crename%c(%c'text'%c, %c'message'%c);
-  builder.%cDebugLog%c({ %clevel%c: %c'info'%c });
+  workflow.%cDownloadModel%c({ %cmodel%c: [%c'ONNX Xenova/LaMini-Flan-T5-783M q8']%c });
+  workflow.%cTextRewriter%c({ %ctext%c: %c'The quick brown fox jumps over the lazy dog.'%c, %cprompt%c: [%c'Rewrite the following text in reverse:'%c, %c'Rewrite this to sound like a pirate:'%c] });
+  workflow.%crename%c(%c'text'%c, %c'message'%c);
+  workflow.%cDebugLog%c({ %clevel%c: %c'info'%c });
   
-  console.log(JSON.stringify(builder.toJSON(),null,2));
+  console.log(JSON.stringify(workflow.toJSON(),null,2));
   `,
   `color: ${grey}; font-weight: normal;`,
   `color: ${yellow}; font-weight: normal;`,
@@ -91,4 +91,4 @@ console.log(
   `color: ${orange}; font-weight: normal;`,
   `color: ${grey}; font-weight: normal;`
 );
-console.log(window["builder"]);
+console.log(window["workflow"]);

@@ -23,9 +23,9 @@ export class TaskConfigurationError extends TaskError {
 }
 
 /**
- * A task builder error
+ * A task workflow error
  */
-export class TaskBuilderError extends TaskError {
+export class WorkflowError extends TaskError {
   constructor(message: string) {
     super(message);
   }

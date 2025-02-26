@@ -113,20 +113,20 @@ To register the Task, you need to add it to the `TaskRegistry` class. The `TaskR
 TaskRegistry.registerTask(SimpleDebugLogTask);
 ```
 
-To use the Task in TaskGraphBuilder, there are a few steps:
+To use the Task in Workflow, there are a few steps:
 
 ```ts
 export const SimpleDebug = (input: DebugLogTaskInput) => {
   return new SimpleDebugTask({ input }).run();
 };
 
-declare module "./base/TaskGraphBuilder" {
-  interface TaskGraphBuilder {
-    SimpleDebug: TaskGraphBuilderHelper<DebugLogTaskInput>;
+declare module "./base/Workflow" {
+  interface Workflow {
+    SimpleDebug: CreateWorkflow<DebugLogTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.SimpleDebug = TaskGraphBuilderHelper(SimpleDebugTask);
+Workflow.prototype.SimpleDebug = CreateWorkflow(SimpleDebugTask);
 ```
 
 ## Job Queues and LLM tasks

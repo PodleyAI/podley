@@ -13,8 +13,8 @@ import {
   arrayTaskFactory,
   TaskRegistry,
   JobQueueTaskConfig,
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
 } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
 import { model_rewriting } from "./base/TaskIOTypes";
@@ -85,9 +85,9 @@ export const TextRewriter = (input: TextRewriterCompoundTaskInput) => {
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    TextRewriter: TaskGraphBuilderHelper<TextRewriterCompoundTaskInput>;
+  interface Workflow {
+    TextRewriter: CreateWorkflow<TextRewriterCompoundTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.TextRewriter = TaskGraphBuilderHelper(TextRewriterCompoundTask);
+Workflow.prototype.TextRewriter = CreateWorkflow(TextRewriterCompoundTask);

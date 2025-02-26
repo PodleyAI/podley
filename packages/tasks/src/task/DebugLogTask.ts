@@ -6,12 +6,12 @@
 //    *******************************************************************************
 
 import {
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
   TaskRegistry,
   OutputTask,
   TaskInputDefinition,
   TaskOutputDefinition,
+  CreateWorkflow,
 } from "@ellmers/task-graph";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
@@ -83,9 +83,9 @@ export const DebugLog = (input: DebugLogTaskInput) => {
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    DebugLog: TaskGraphBuilderHelper<DebugLogTaskInput>;
+  interface Workflow {
+    DebugLog: CreateWorkflow<DebugLogTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.DebugLog = TaskGraphBuilderHelper(DebugLogTask);
+Workflow.prototype.DebugLog = CreateWorkflow(DebugLogTask);

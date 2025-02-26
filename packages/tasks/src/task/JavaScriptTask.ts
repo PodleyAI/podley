@@ -10,8 +10,8 @@ import {
   SingleTask,
   TaskConfig,
   TaskOutput,
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
   TaskRegistry,
   TaskInputDefinition,
   TaskOutputDefinition,
@@ -67,18 +67,14 @@ export class JavaScriptTask extends SingleTask {
 }
 TaskRegistry.registerTask(JavaScriptTask);
 
-const JavaScriptBuilder = (input: JavaScriptTaskInput) => {
-  return new JavaScriptTask({ input });
-};
-
 export const JavaScript = (input: JavaScriptTaskInput) => {
-  return JavaScriptBuilder(input).run();
+  return new JavaScriptTask({ input }).run();
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    JavaScript: TaskGraphBuilderHelper<JavaScriptTaskInput>;
+  interface Workflow {
+    JavaScript: CreateWorkflow<JavaScriptTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.JavaScript = TaskGraphBuilderHelper(JavaScriptTask);
+Workflow.prototype.JavaScript = CreateWorkflow(JavaScriptTask);

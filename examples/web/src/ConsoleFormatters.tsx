@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import {
-  TaskGraphBuilder,
+  Workflow,
   TaskInputDefinition,
   TaskOutputDefinition,
   TaskStatus,
@@ -36,20 +36,20 @@ export function isDarkMode() {
   return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
-export class TaskGraphBuilderConsoleFormatter extends ConsoleFormatter {
+export class WorkflowConsoleFormatter extends ConsoleFormatter {
   header(obj: any, config?: Config) {
-    if (obj instanceof TaskGraphBuilder) {
+    if (obj instanceof Workflow) {
       const header = new JsonMLElement("div");
-      header.createChild("span").setStyle("font-weight: bold;").createTextChild("TaskGraphBuilder");
+      header.createChild("span").setStyle("font-weight: bold;").createTextChild("Workflow");
       header
         .createChild("span")
         .setStyle("color: green; margin-left: 10px;")
         .createTextChild(`(${obj.graph.getNodes().length} nodes)`);
-      if (obj._error) {
+      if (obj.error) {
         header
           .createChild("span")
           .setStyle("color: red; margin-left: 10px;")
-          .createTextChild(obj._error);
+          .createTextChild(obj.error);
       }
       return header.toJsonML();
     }
@@ -125,7 +125,7 @@ export class TaskGraphBuilderConsoleFormatter extends ConsoleFormatter {
   }
 }
 
-export class TaskGraphBuilderHelperConsoleFormatter extends ConsoleFormatter {
+export class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
   header(obj: any, config?: Config) {
     const dark = isDarkMode();
     const inputColor = dark ? "#ada" : "#363";
@@ -138,6 +138,7 @@ export class TaskGraphBuilderHelperConsoleFormatter extends ConsoleFormatter {
       const name = obj.constructor.runtype ?? obj.constructor.type ?? obj.type.replace(/Task$/, "");
       const inputs = obj.inputs.map((i: TaskInputDefinition) => i.id + ": …");
       const outputs = obj.outputs.map((i: TaskOutputDefinition) => i.id + ": …");
+
       header
         .createChild("span")
         .setStyle(`font-weight: bold;color:${yellow}`)
@@ -164,6 +165,7 @@ export class TaskGraphBuilderHelperConsoleFormatter extends ConsoleFormatter {
 
   body(obj: any, config?: Config) {
     return null;
+    return new JsonMLElement("div").toJsonML();
   }
 }
 

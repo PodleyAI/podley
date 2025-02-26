@@ -1,6 +1,6 @@
 - [Developer Getting Started](#developer-getting-started)
 - [Get Shit Done](#get-shit-done)
-  - [Using TaskGraphBuilder \& a config helper](#using-taskgraphbuilder--a-config-helper)
+  - [Using Workflow \& a config helper](#using-workflow--a-config-helper)
   - [Using Task and TaskGraph directly (\& a config helper)](#using-task-and-taskgraph-directly--a-config-helper)
   - [Using Task and TaskGraph directly (no config helper)](#using-task-and-taskgraph-directly-no-config-helper)
   - [Preset Configs](#preset-configs)
@@ -8,7 +8,7 @@
     - [Registering Provider plus related Job Queue](#registering-provider-plus-related-job-queue)
       - [In memory:](#in-memory)
       - [Using Sqlite:](#using-sqlite)
-  - [TaskGraphBuilder](#taskgraphbuilder)
+  - [Workflow](#workflow)
   - [JSON Configuration](#json-configuration)
 - [Going Deeper](#going-deeper)
   - [Tasks](#tasks)
@@ -42,22 +42,22 @@ bun run dev
 
 This will bring up a web page where you can edit some json to change the graph, and run it.
 
-Also, you can open DevTools and edit that way (follow the instructions for enabling Console Formatters for best experience). A simple task graph builder is available there. Just type `builder` in the console and you can start building a graph. With the custom formatters, you can see the graph as you build it, as well as documentation. Everything self documents.
+Also, you can open DevTools and edit that way (follow the instructions for enabling Console Formatters for best experience). A simple task graph workflow is available there. Just type `workflow` in the console and you can start building a graph. With the custom formatters, you can see the graph as you build it, as well as documentation. Everything self documents.
 
 After this, plese read [Architecture](02_architecture.md) before attempting to [write your own Tasks](03_extending.md).
 
 # Get Shit Done
 
-## Using TaskGraphBuilder & a config helper
+## Using Workflow & a config helper
 
 ```ts
-import { TaskGraphBuilder } from "@ellmers/task-graph";
+import { Workflow } from "@ellmers/task-graph";
 import { registerHuggingfaceLocalTasksInMemory } from "@ellmers/test";
 // config and start up
 registerHuggingfaceLocalTasksInMemory();
 
-const builder = new TaskGraphBuilder();
-builder
+const workflow = new Workflow();
+workflow
   .DownloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" })
   .TextRewriter({
     text: "The quick brown fox jumps over the lazy dog.",
@@ -65,10 +65,10 @@ builder
   })
   .rename("text", "message")
   .DebugLog();
-await builder.run();
+await workflow.run();
 
 // Export the graph
-const graphJson = builder.toJSON();
+const graphJson = workflow.toJSON();
 console.log(graphJson);
 ```
 
@@ -253,42 +253,42 @@ LLM providers have long running functions. These are handled by a Job Queue. The
 - **`registerHuggingfaceLocalTasksSqlite`** function sets up the Huggingface Local provider, and a SqliteJobQueue with a Concurrency Limiter
 - **`registerMediaPipeTfJsLocalSqlite`** does the same for MediaPipe.
 
-## TaskGraphBuilder
+## Workflow
 
-Every task in the library has a corresponding method in the TaskGraphBuilder. The builder is a simple way to build a graph. It is not meant to be a full replacement for the creating a TaskGraph directly, but it is a good way to get started.
+Every task in the library has a corresponding method in the Workflow. The workflow is a simple way to build a graph. It is not meant to be a full replacement for the creating a TaskGraph directly, but it is a good way to get started.
 
-Tasks are the smallest unit of work, therefore they take simple inputs. Most Tasks has a corresponding CompoundTask version that takes arrays for some inputs. These are the ones that the task builder uses.
+Tasks are the smallest unit of work, therefore they take simple inputs. Most Tasks has a corresponding CompoundTask version that takes arrays for some inputs. These are the ones that the task workflow uses.
 
-An example is TextEmbeddingTask and TextEmbeddingCompoundTask. The first takes a single model input, the second accepts an array of model inputs. Since models can have different providers, the Compound version creates a single task version for each model input. The builder is smart enough to know that the Compound version is needed when an array is passed, and as such, you don't need to differentiate between the two:
+An example is TextEmbeddingTask and TextEmbeddingCompoundTask. The first takes a single model input, the second accepts an array of model inputs. Since models can have different providers, the Compound version creates a single task version for each model input. The workflow is smart enough to know that the Compound version is needed when an array is passed, and as such, you don't need to differentiate between the two:
 
 ```ts
-import { TaskGraphBuilder } from "@ellmers/task-graph";
-const builder = new TaskGraphBuilder();
-builder.TextEmbedding({
+import { Workflow } from "@ellmers/task-graph";
+const workflow = new Workflow();
+workflow.TextEmbedding({
   model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
   text: "The quick brown fox jumps over the lazy dog.",
 });
-await builder.run();
+await workflow.run();
 ```
 
 OR
 
 ```ts
-import { TaskGraphBuilder } from "@ellmers/task-graph";
-const builder = new TaskGraphBuilder();
-builder.TextEmbedding({
+import { Workflow } from "@ellmers/task-graph";
+const workflow = new Workflow();
+workflow.TextEmbedding({
   model: ["onnx:Xenova/LaMini-Flan-T5-783M:q8", "Universal Sentence Encoder"],
   text: "The quick brown fox jumps over the lazy dog.",
 });
-await builder.run();
+await workflow.run();
 ```
 
-The builder will look at outputs of one task and automatically connect it to the input of the next task, if the output and input names and types match. If they don't, you can use the `rename` method to rename the output of the first task to match the input of the second task.
+The workflow will look at outputs of one task and automatically connect it to the input of the next task, if the output and input names and types match. If they don't, you can use the `rename` method to rename the output of the first task to match the input of the second task.
 
 ```ts
-import { TaskGraphBuilder } from "@ellmers/task-graph";
-const builder = new TaskGraphBuilder();
-builder
+import { Workflow } from "@ellmers/task-graph";
+const workflow = new Workflow();
+workflow
   .DownloadModel({
     model: ["onnx:Xenova/LaMini-Flan-T5-783M:q8", "Universal Sentence Encoder"],
   })
@@ -297,10 +297,10 @@ builder
   });
   .rename("vector", "message")
   .DebugLog();
-await builder.run();
+await workflow.run();
 ```
 
-The first task downloads the models (this is separated mostly for ui purposes so progress on the text embedding is separate from the progress of downloading the models). The second task will take the output of the first task and use it as input, in this case the names of the models. The builder will automatically create that data flow. The `rename` method is used to rename the `vector` output of the embedding task to match the expected `message` input of the second task.
+The first task downloads the models (this is separated mostly for ui purposes so progress on the text embedding is separate from the progress of downloading the models). The second task will take the output of the first task and use it as input, in this case the names of the models. The workflow will automatically create that data flow. The `rename` method is used to rename the `vector` output of the embedding task to match the expected `message` input of the second task.
 
 ## JSON Configuration
 
@@ -393,7 +393,7 @@ const result = await task.run();
 console.log(result);
 ```
 
-You will notice that the builder automatically creates ids for you, so it assumes that the object parameter is the input object. Using a task directly, you need to specify input object directly as above.
+You will notice that the workflow automatically creates ids for you, so it assumes that the object parameter is the input object. Using a task directly, you need to specify input object directly as above.
 
 ## TaskGraph
 

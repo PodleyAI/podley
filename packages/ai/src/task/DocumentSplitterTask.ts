@@ -7,8 +7,8 @@
 
 import {
   SingleTask,
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
   TaskInputDefinition,
   TaskOutputDefinition,
   TaskRegistry,
@@ -82,9 +82,9 @@ export const DocumentSplitter = (input: DocumentSplitterTaskInput) => {
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    DocumentSplitter: TaskGraphBuilderHelper<DocumentSplitterTask>;
+  interface Workflow {
+    DocumentSplitter: CreateWorkflow<DocumentSplitterTask>;
   }
 }
 
-TaskGraphBuilder.prototype.DocumentSplitter = TaskGraphBuilderHelper(DocumentSplitterTask);
+Workflow.prototype.DocumentSplitter = CreateWorkflow(DocumentSplitterTask);

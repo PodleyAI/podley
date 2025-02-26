@@ -13,8 +13,8 @@ import {
   arrayTaskFactory,
   TaskRegistry,
   JobQueueTaskConfig,
-  TaskGraphBuilder,
-  TaskGraphBuilderHelper,
+  Workflow,
+  CreateWorkflow,
 } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
 import { model_question_answering } from "./base/TaskIOTypes";
@@ -80,11 +80,9 @@ export const TextQuestionAnswer = (input: TextQuestionAnswerCompoundTaskInput) =
 };
 
 declare module "@ellmers/task-graph" {
-  interface TaskGraphBuilder {
-    TextQuestionAnswer: TaskGraphBuilderHelper<TextQuestionAnswerCompoundTaskInput>;
+  interface Workflow {
+    TextQuestionAnswer: CreateWorkflow<TextQuestionAnswerCompoundTaskInput>;
   }
 }
 
-TaskGraphBuilder.prototype.TextQuestionAnswer = TaskGraphBuilderHelper(
-  TextQuestionAnswerCompoundTask
-);
+Workflow.prototype.TextQuestionAnswer = CreateWorkflow(TextQuestionAnswerCompoundTask);
