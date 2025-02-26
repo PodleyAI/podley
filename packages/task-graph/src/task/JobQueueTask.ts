@@ -75,8 +75,8 @@ export abstract class JobQueueTask extends SingleTask {
         }
       } else {
         const jobId = await queue.add(job);
-        this.config.currentJobRunId = job.jobRunId; // no longer undefined
         this.config.currentJobId = jobId;
+        this.config.currentJobRunId = job.jobRunId; // no longer undefined
 
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
           this.handleProgress(progress, message, details);
@@ -87,10 +87,8 @@ export abstract class JobQueueTask extends SingleTask {
       this.runOutputData ??= {};
       this.runOutputData = await this.runReactive();
 
-      this.handleComplete();
       return this.runOutputData;
     } catch (err: any) {
-      this.handleError(err);
       throw err;
     } finally {
       cleanup();

@@ -87,13 +87,4 @@ export class AiTask extends JobQueueTask {
 
     return super.validateItem(valueType, item);
   }
-
-  /**
-   * Processes the task output data after the main execution
-   * Can be overridden by derived classes to implement reactive behavior
-   * @returns Promise<TaskOutput> - The processed output data
-   */
-  async runReactive(): Promise<TaskOutput> {
-    return this.runOutputData ?? {};
-  }
 }
