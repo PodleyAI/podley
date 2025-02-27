@@ -12,6 +12,7 @@ import {
   TaskInputDefinition,
   TaskOutputDefinition,
   CreateWorkflow,
+  TaskInvalidInputError,
 } from "@ellmers/task-graph";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
@@ -70,7 +71,11 @@ export class DebugLogTask extends OutputTask {
 
   async validateItem(valueType: string, item: any) {
     if (valueType == "log_level") {
-      return log_levels.includes(item);
+      const valid = log_levels.includes(item);
+      if (!valid) {
+        throw new TaskInvalidInputError(`${item} is not a valid log level`);
+      }
+      return valid;
     }
     return super.validateItem(valueType, item);
   }

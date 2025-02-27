@@ -245,24 +245,44 @@ export abstract class TaskBase implements ITask {
    * By default, we only check "number", "text", "boolean", and "function"
    * @param valueType The type of the item
    * @param item The item to validate
-   * @returns True if the item is valid, false otherwise
+   * @returns True if the item is valid, otherwise throws an error
+   * @throws TaskInvalidInputError if the item is invalid
    */
   async validateItem(valueType: string, item: any): Promise<boolean> {
     switch (valueType) {
       case "any":
         return true;
-      case "number":
-        return typeof item === "bigint" || typeof item === "number";
+      case "number": {
+        const valid = typeof item === "bigint" || typeof item === "number";
+        if (!valid) {
+          throw new TaskInvalidInputError(`${item} is not a number`);
+        }
+        return valid;
+      }
       case "text":
-      case "string":
-        return typeof item === "string";
-      case "boolean":
-        return typeof item === "boolean";
-      case "function":
-        return typeof item === "function";
+      case "string": {
+        const valid = typeof item === "string";
+        if (!valid) {
+          throw new TaskInvalidInputError(`${item} is not a string`);
+        }
+        return valid;
+      }
+      case "boolean": {
+        const valid = typeof item === "boolean";
+        if (!valid) {
+          throw new TaskInvalidInputError(`${item} is not a boolean`);
+        }
+        return valid;
+      }
+      case "function": {
+        const valid = typeof item === "function";
+        if (!valid) {
+          throw new TaskInvalidInputError(`${item} is not a function`);
+        }
+        return valid;
+      }
       default:
-        console.warn(`validateItem: Unknown value type: ${valueType}`);
-        return false;
+        throw new TaskInvalidInputError(`validateItem: Unknown value type: ${valueType}`);
     }
   }
 
@@ -270,7 +290,8 @@ export abstract class TaskBase implements ITask {
    * Validates an input item against the task's input definition
    * @param input The input to validate
    * @param inputId The id of the input to validate
-   * @returns True if the input is valid, false otherwise
+   * @returns True if the input is valid, otherwise throws an error
+   * @throws TaskInvalidInputError if the input is invalid
    */
   public async validateInputItem(
     input: Partial<TaskInput>,
@@ -279,18 +300,19 @@ export abstract class TaskBase implements ITask {
     const classRef = this.constructor as typeof TaskBase;
     const inputdef = this.inputs.find((def) => def.id === inputId);
     if (!inputdef) {
-      return false;
+      throw new TaskInvalidInputError(`validateInputItem: Unknown input id: ${inputId}`);
     }
-    if (typeof input !== "object") return false;
+    if (typeof input !== "object") {
+      throw new TaskInvalidInputError(`validateInputItem: Input is not an object: ${inputId}`);
+    }
     if (input[inputId] === undefined) {
-      if (inputdef.defaultValue === undefined) {
+      if (inputdef.defaultValue !== undefined) {
         input[inputId] = inputdef.defaultValue;
       } else {
         if (!inputdef.optional) {
-          console.warn(
+          throw new TaskInvalidInputError(
             `No default value for '${inputId}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
           );
-          return false;
         }
       }
     }
@@ -303,24 +325,20 @@ export abstract class TaskBase implements ITask {
     const validationPromises = inputlist.map((item) =>
       this.validateItem(inputdef.valueType as string, item)
     );
-    const validationResults = await Promise.allSettled(validationPromises);
-    return validationResults.every(
-      (result) => result.status === "fulfilled" && result.value === true
-    );
+    const validationResults = await Promise.all(validationPromises);
+    return validationResults.every((result) => result === true);
   }
 
   /**
    * Validates an input data object against the task's input definition
    * @param input The input to validate
-   * @returns True if the input is valid, false otherwise
+   * @returns True if the input is valid, otherwise throws an error
+   * @throws TaskInvalidInputError if the input is invalid
    */
   public async validateInputData(input: Partial<TaskInput>): Promise<boolean> {
     for (const inputdef of this.inputs) {
       if (inputdef.optional && input[inputdef.id] === undefined) continue;
-      const isValid = await this.validateInputItem(input, inputdef.id);
-      if (!isValid) {
-        return false;
-      }
+      await this.validateInputItem(input, inputdef.id);
     }
     return true;
   }
@@ -342,7 +360,7 @@ export abstract class TaskBase implements ITask {
     try {
       const isValid = await this.validateInputData(this.runInputData);
       if (!isValid) {
-        throw new TaskInvalidInputError();
+        throw new TaskInvalidInputError("unsure");
       }
       // TODO: erase the following if the error not printed to console
       if (this.abortController?.signal.aborted) {

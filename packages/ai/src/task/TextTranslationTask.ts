@@ -9,6 +9,7 @@ import {
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
   TaskInputDefinition,
+  TaskInvalidInputError,
   TaskOutputDefinition,
   arrayTaskFactory,
 } from "@ellmers/task-graph";
@@ -72,9 +73,14 @@ export class TextTranslationTask extends AiTask {
   declare defaults: Partial<TextTranslationTaskInput>;
   static readonly type = "TextTranslationTask";
   static readonly category = "Text Model";
+
   async validateItem(valueType: string, item: any) {
     if (valueType == "language") {
-      return typeof item == "string" && item.length == 2;
+      const valid = typeof item == "string" && item.length == 2;
+      if (!valid) {
+        throw new TaskInvalidInputError(`language must be a 2 character string: ${item}`);
+      }
+      return valid;
     }
     return super.validateItem(valueType, item);
   }

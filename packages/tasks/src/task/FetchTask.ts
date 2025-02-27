@@ -13,6 +13,7 @@ import {
   JobQueueTaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
+  TaskInvalidInputError,
 } from "@ellmers/task-graph";
 import { Job, PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
 
@@ -170,21 +171,31 @@ export class FetchTask extends JobQueueTask {
         new URL(item); // This will throw an error if the URL is invalid
         return true;
       } catch (err) {
-        console.log("url is invalid", err);
-        return false;
+        throw new TaskInvalidInputError(`${item} is not a valid URL`);
       }
     }
     if (valueType === "method") {
-      return ["GET", "POST", "PUT", "DELETE", "PATCH"].includes(item);
+      const valid = ["GET", "POST", "PUT", "DELETE", "PATCH"].includes(item);
+      if (!valid) {
+        throw new TaskInvalidInputError(`${item} is not a valid HTTP method`);
+      }
+      return valid;
     }
     if (valueType === "response_type") {
-      return ["json", "text", "blob", "arraybuffer"].includes(item);
+      const valid = ["json", "text", "blob", "arraybuffer"].includes(item);
+      if (!valid) {
+        throw new TaskInvalidInputError(`${item} is not a valid response type`);
+      }
+      return valid;
     }
     if (valueType === "record_string_string") {
-      return (
+      const valid =
         typeof item === "object" &&
-        Object.keys(item).every((key) => typeof key === "string" && typeof item[key] === "string")
-      );
+        Object.keys(item).every((key) => typeof key === "string" && typeof item[key] === "string");
+      if (!valid) {
+        throw new TaskInvalidInputError(`${item} is not a valid record of string to string`);
+      }
+      return valid;
     }
     return await super.validateItem(valueType, item);
   }

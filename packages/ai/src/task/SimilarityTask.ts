@@ -14,6 +14,7 @@ import {
   TaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
+  TaskInvalidInputError,
 } from "@ellmers/task-graph";
 import { AnyNumberArray, ElVector } from "./base/TaskIOTypes";
 
@@ -97,19 +98,31 @@ export class SimilarityTask extends SingleTask {
       case "k": {
         const val = input[inputId];
         if (val !== null && val !== undefined && val <= 0) {
-          return false;
+          throw new TaskInvalidInputError(`k must be greater than 0: ${val}`);
         }
         return true;
       }
       case "input": {
         const vectors = input[inputId];
-        if (!Array.isArray(vectors)) return false;
-        if (vectors.length === 0) return false;
+        if (!Array.isArray(vectors)) {
+          throw new TaskInvalidInputError(`input must be an array: ${vectors}`);
+        }
+        if (vectors.length === 0) {
+          throw new TaskInvalidInputError(`input must not be empty: ${vectors}`);
+        }
         const normalized = vectors[0].normalized;
         const dimensions = vectors[0].vector.length;
         for (const v of vectors) {
-          if (v.normalized !== normalized) return false;
-          if (v.vector.length !== dimensions) return false;
+          if (v.normalized !== normalized) {
+            throw new TaskInvalidInputError(
+              `all vectors must be normalized or none: ${normalized}`
+            );
+          }
+          if (v.vector.length !== dimensions) {
+            throw new TaskInvalidInputError(
+              `all vectors must have the same dimensions: ${v.vector.length} is not ${dimensions}`
+            );
+          }
         }
         return true;
       }

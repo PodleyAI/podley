@@ -15,6 +15,7 @@ import {
   JobQueueTaskConfig,
   type TaskOutput,
   type TaskInput,
+  TaskInvalidInputError,
 } from "@ellmers/task-graph";
 import { AiJob } from "../../job/AiJob";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
@@ -76,13 +77,18 @@ export class AiTask extends JobQueueTask {
   async validateItem(valueType: string, item: any) {
     const modelRepo = getGlobalModelRepository();
 
-    switch (valueType) {
-      case "model":
-        return typeof item == "string" && !!(await modelRepo.findByName(item));
-    }
-    if (valueType.startsWith("model_")) {
+    if (valueType === "model" || valueType.startsWith("model_")) {
+      const model = await modelRepo.findByName(item);
+      if (!model) {
+        throw new TaskInvalidInputError(`${valueType} not found: ${item}`);
+      }
       const tasks = await modelRepo.findTasksByModel(item);
-      return !!tasks?.includes((this.constructor as typeof AiTask).type);
+      const type = (this.constructor as typeof AiTask).type;
+      const valid = !!tasks?.includes(type) || type === "DownloadModelTask";
+      if (!valid) {
+        throw new TaskInvalidInputError(`${item} not valid for ${valueType} task: ${type}`);
+      }
+      return valid;
     }
 
     return super.validateItem(valueType, item);

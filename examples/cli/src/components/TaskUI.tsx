@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FC } from "react";
 import { Text, Box } from "tuir";
-import { TaskStatus, TaskGraph, Task, CompoundTask } from "@ellmers/task-graph";
+import { TaskStatus, TaskGraph, Task, CompoundTask, TaskError } from "@ellmers/task-graph";
 import spinners from "cli-spinners";
 import TaskGraphUI from "./TaskGraphUI";
 import { createBar, symbols, Spinner } from "./Elements";
@@ -48,6 +48,7 @@ export const TaskUI: FC<{
   const [dependantChildren, setDependantChildren] = useState<Task[]>(
     graph.getTargetTasks(task.config.id)
   );
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const setupTaskListeners = () => {
@@ -69,9 +70,18 @@ export const TaskUI: FC<{
         });
       });
       task.on("complete", () => setStatus(TaskStatus.COMPLETED));
-      task.on("error", () => setStatus(TaskStatus.FAILED));
-      task.on("regenerate", () => setSubGraph(task instanceof CompoundTask ? task.subGraph : null));
-      task.on("abort", () => setStatus(TaskStatus.ABORTING));
+      task.on("error", (error: TaskError) => {
+        setStatus(TaskStatus.FAILED);
+        setError((err: string | null) => (err ? `${err}\n${error.message}` : error.message));
+      });
+      task.on("regenerate", () => {
+        setSubGraph(task instanceof CompoundTask ? task.subGraph : null);
+        setDependantChildren(graph.getTargetTasks(task.config.id));
+      });
+      task.on("abort", () => {
+        setStatus(TaskStatus.ABORTING);
+        setError((err: string | null) => (err ? `${err}\nAborted` : "Aborted"));
+      });
     };
 
     setupTaskListeners();
@@ -111,6 +121,11 @@ export const TaskUI: FC<{
       {Object.keys(task.runOutputData || {}).length > 0 ? (
         <Box marginLeft={2}>
           <Text color="gray">{`${symbols.arrowRight} ${JSON.stringify(task.runOutputData)}`}</Text>
+        </Box>
+      ) : null}
+      {error ? (
+        <Box marginLeft={2}>
+          <Text color="red">{`${symbols.arrowRight} ${error}`}</Text>
         </Box>
       ) : null}
       {subGraph && (
