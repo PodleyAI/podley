@@ -6,11 +6,12 @@
 //    *******************************************************************************
 
 import type { Command } from "commander";
-import { runTask } from "./TaskStreamToListr2";
+import { runTask } from "./TaskGraphToUI";
 import "@huggingface/transformers";
 import { TaskGraph, Workflow, JsonTaskItem } from "@ellmers/task-graph";
 import { DownloadModelTask, getGlobalModelRepository } from "@ellmers/ai";
 import { JsonTask } from "@ellmers/tasks";
+
 export function AddBaseCommands(program: Command) {
   program
     .command("download")
@@ -117,6 +118,7 @@ export function AddBaseCommands(program: Command) {
           {
             id: "1",
             type: "DownloadModelTask",
+            name: "Download Model",
             input: {
               model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
             },
@@ -124,6 +126,7 @@ export function AddBaseCommands(program: Command) {
           {
             id: "2",
             type: "TextRewriterTask",
+            name: "Rewrite Text",
             input: {
               text: "The quick brown fox jumps over the lazy dog.",
               prompt: "Rewrite the following text in reverse:",
@@ -138,7 +141,7 @@ export function AddBaseCommands(program: Command) {
         ];
         json = JSON.stringify(exampleJson);
       }
-      const task = new JsonTask({ name: "Test JSON", input: { json } });
+      const task = new JsonTask({ name: "JSON Task Example", input: { json } });
       const graph = new TaskGraph();
       graph.addTask(task);
       try {
@@ -154,7 +157,7 @@ export function AddBaseCommands(program: Command) {
     .action(async () => {
       const workflow = new Workflow();
       workflow
-        .DownloadModel({ model: "Supabase/gte-small" })
+        .DownloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" })
         .TextEmbedding({
           text: "The quick brown fox jumps over the lazy dog.",
         })

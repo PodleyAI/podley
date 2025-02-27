@@ -494,7 +494,7 @@ describe("SingleTask", () => {
 
     describe("Event parameters", () => {
       it("should pass error object to error event listeners", async () => {
-        let receivedError: Error | null = null;
+        let receivedError: TaskError | null = null;
 
         task.on("error", (error: TaskError) => {
           receivedError = error;
@@ -504,7 +504,7 @@ describe("SingleTask", () => {
         await task.run().catch(() => {});
 
         expect(receivedError).not.toBeNull();
-        expect(receivedError?.message).toBe("Controlled test error");
+        expect(receivedError!.message).toBe("Controlled test error");
       });
 
       it("should pass progress value to progress event listeners", async () => {
