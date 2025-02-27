@@ -76,7 +76,7 @@ describe("LambdaTask", () => {
     });
   });
 
-  test("in task workflow mode with input", async () => {
+  test("in task workflow mode with input runFull", async () => {
     const workflow = new Workflow();
     workflow.Lambda({
       runFull: async (input) => {
@@ -91,7 +91,7 @@ describe("LambdaTask", () => {
     expect(results[0].data).toEqual({ output: 3 });
   });
 
-  test("in task workflow mode with input", async () => {
+  test("in task workflow mode with input runReactive", async () => {
     const workflow = new Workflow();
     workflow.Lambda({
       runReactive: async (input) => {

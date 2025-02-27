@@ -309,7 +309,7 @@ export abstract class TaskBase implements ITask {
       if (inputdef.defaultValue !== undefined) {
         input[inputId] = inputdef.defaultValue;
       } else {
-        if (!inputdef.optional) {
+        if (!inputdef.optional && inputdef.valueType !== "any") {
           throw new TaskInvalidInputError(
             `No default value for '${inputId}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
           );
