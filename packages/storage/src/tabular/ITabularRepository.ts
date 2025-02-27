@@ -67,9 +67,9 @@ export interface ITabularRepository<
   Combined extends Record<string, any> = Key & Value,
 > {
   // Core methods
-  putKeyValue(key: Key, value: Value): Promise<void>;
-  getKeyValue(key: Key): Promise<Value | undefined>;
-  deleteKeyValue(key: Key | Combined): Promise<void>;
+  put(key: Key, value: Value): Promise<void>;
+  get(key: Key): Promise<Value | undefined>;
+  delete(key: Key | Combined): Promise<void>;
   getAll(): Promise<Combined[] | undefined>;
   deleteAll(): Promise<void>;
   size(): Promise<number>;

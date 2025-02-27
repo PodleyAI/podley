@@ -81,7 +81,7 @@ export abstract class TaskOutputRepository {
   async saveOutput(taskType: string, inputs: TaskInput, output: TaskOutput): Promise<void> {
     const key = await makeFingerprint(inputs);
     const value = JSON.stringify(output);
-    await this.tabularRepository.putKeyValue({ key, taskType }, { value: value });
+    await this.tabularRepository.put({ key, taskType }, { value: value });
     this.events.emit("output_saved", taskType);
   }
 
@@ -93,7 +93,7 @@ export abstract class TaskOutputRepository {
    */
   async getOutput(taskType: string, inputs: TaskInput): Promise<TaskOutput | undefined> {
     const key = await makeFingerprint(inputs);
-    const output = await this.tabularRepository.getKeyValue({ key, taskType });
+    const output = await this.tabularRepository.get({ key, taskType });
     this.events.emit("output_retrieved", taskType);
     return output ? (JSON.parse(output["value"]) as TaskOutput) : undefined;
   }

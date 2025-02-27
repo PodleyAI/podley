@@ -202,9 +202,9 @@ export abstract class TabularRepository<
   /**
    * Core abstract methods that must be implemented by concrete repositories
    */
-  abstract putKeyValue(key: Key, value: Value): Promise<void>;
-  abstract getKeyValue(key: Key): Promise<Value | undefined>;
-  abstract deleteKeyValue(key: Key | Combined): Promise<void>;
+  abstract put(key: Key, value: Value): Promise<void>;
+  abstract get(key: Key): Promise<Value | undefined>;
+  abstract delete(key: Key | Combined): Promise<void>;
   abstract getAll(): Promise<Combined[] | undefined>;
   abstract deleteAll(): Promise<void>;
   abstract size(): Promise<number>;
@@ -224,7 +224,7 @@ export abstract class TabularRepository<
    * @returns Combined row object or undefined if not found
    */
   public async getCombined(key: Key): Promise<Combined | undefined> {
-    const value = await this.getKeyValue(key);
+    const value = await this.get(key);
     if (typeof value !== "object") return undefined;
     return Object.assign({}, key, value) as Combined;
   }

@@ -73,7 +73,7 @@ export class FsFolderTabularRepository<
    * @param value - The value object to store
    * @emits 'put' event when successful
    */
-  async putKeyValue(key: Key, value: Value): Promise<void> {
+  async put(key: Key, value: Value): Promise<void> {
     const filePath = await this.getFilePath(key);
     try {
       await writeFile(filePath, JSON.stringify(value));
@@ -95,7 +95,7 @@ export class FsFolderTabularRepository<
    * @returns The value object if found, undefined otherwise
    * @emits 'get' event with the fingerprint ID and value when found
    */
-  async getKeyValue(key: Key): Promise<Value | undefined> {
+  async get(key: Key): Promise<Value | undefined> {
     const filePath = await this.getFilePath(key);
     try {
       const data = await readFile(filePath, "utf-8");
@@ -113,7 +113,7 @@ export class FsFolderTabularRepository<
    * @param key - The primary key object of the entry to delete
    * @emits 'delete' event with the fingerprint ID when successful
    */
-  async deleteKeyValue(key: Key): Promise<void> {
+  async delete(key: Key): Promise<void> {
     const filePath = await this.getFilePath(key);
     try {
       await rm(filePath);

@@ -137,7 +137,7 @@ export abstract class TaskGraphRepository {
    */
   async saveTaskGraph(key: string, output: TaskGraph): Promise<void> {
     const value = JSON.stringify(output.toJSON());
-    await this.tabularRepository.putKeyValue({ key }, { value });
+    await this.tabularRepository.put({ key }, { value });
     this.events.emit("graph_saved", key);
   }
 
@@ -148,7 +148,7 @@ export abstract class TaskGraphRepository {
    * @emits graph_retrieved when the operation completes successfully
    */
   async getTaskGraph(key: string): Promise<TaskGraph | undefined> {
-    const result = await this.tabularRepository.getKeyValue({ key });
+    const result = await this.tabularRepository.get({ key });
     const value = result?.value;
     if (!value) {
       return undefined;

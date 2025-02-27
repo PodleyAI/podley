@@ -142,7 +142,7 @@ export class SqliteTabularRepository<
    * @param value - The value object to store
    * @emits 'put' event when successful
    */
-  async putKeyValue(key: Key, value: Value): Promise<void> {
+  async put(key: Key, value: Value): Promise<void> {
     const sql = `
       INSERT OR REPLACE INTO \`${
         this.table
@@ -169,7 +169,7 @@ export class SqliteTabularRepository<
    * @returns The stored value or undefined if not found
    * @emits 'get' event when successful
    */
-  async getKeyValue(key: Key): Promise<Value | undefined> {
+  async get(key: Key): Promise<Value | undefined> {
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `\`${key}\` = ?`)
       .join(" AND ");
@@ -241,7 +241,7 @@ export class SqliteTabularRepository<
    * @param key - The primary key object to delete
    * @emits 'delete' event when successful
    */
-  async deleteKeyValue(key: Key): Promise<void> {
+  async delete(key: Key): Promise<void> {
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `${key} = ?`)
       .join(" AND ");

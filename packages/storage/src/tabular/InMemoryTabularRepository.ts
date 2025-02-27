@@ -58,7 +58,7 @@ export class InMemoryTabularRepository<
    * @param value - The value object to store
    * @emits 'put' event with the fingerprint ID when successful
    */
-  async putKeyValue(key: Key, value: Value): Promise<void> {
+  async put(key: Key, value: Value): Promise<void> {
     const id = await makeFingerprint(key);
     this.values.set(id, Object.assign({}, key, value) as Combined);
     this.events.emit("put", id, value);
@@ -70,7 +70,7 @@ export class InMemoryTabularRepository<
    * @returns The value object if found, undefined otherwise
    * @emits 'get' event with the fingerprint ID and value when found
    */
-  async getKeyValue(key: Key): Promise<Value | undefined> {
+  async get(key: Key): Promise<Value | undefined> {
     const id = await makeFingerprint(key);
     const out = this.values.get(id);
     if (out === undefined) {
@@ -118,7 +118,7 @@ export class InMemoryTabularRepository<
    * @param key - The primary key object of the entry to delete
    * @emits 'delete' event with the fingerprint ID when successful
    */
-  async deleteKeyValue(key: Key): Promise<void> {
+  async delete(key: Key): Promise<void> {
     const id = await makeFingerprint(key);
     this.values.delete(id);
     this.events.emit("delete", id);

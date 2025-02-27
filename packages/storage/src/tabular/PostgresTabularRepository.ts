@@ -144,7 +144,7 @@ export class PostgresTabularRepository<
    * @param value - The value object to store
    * @emits "put" event with the key when successful
    */
-  async putKeyValue(key: Key, value: Value): Promise<void> {
+  async put(key: Key, value: Value): Promise<void> {
     await this.dbPromise;
     const sql = `
       INSERT INTO "${this.table}" (
@@ -177,7 +177,7 @@ export class PostgresTabularRepository<
    * @returns The stored value or undefined if not found
    * @emits "get" event with the key when successful
    */
-  async getKeyValue(key: Key): Promise<Value | undefined> {
+  async get(key: Key): Promise<Value | undefined> {
     await this.dbPromise;
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((discriminatorKey, i) => `${discriminatorKey} = $${i + 1}`)
@@ -248,7 +248,7 @@ export class PostgresTabularRepository<
    * @param key - The primary key object to delete
    * @emits "delete" event with the key when successful
    */
-  async deleteKeyValue(key: Key): Promise<void> {
+  async delete(key: Key): Promise<void> {
     await this.dbPromise;
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key, i) => `${key} = $${i + 1}`)

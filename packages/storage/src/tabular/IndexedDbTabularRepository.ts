@@ -86,7 +86,7 @@ export class IndexedDbTabularRepository<
    * @param value - The value object to store.
    * @emits put - Emitted when the value is successfully stored
    */
-  async putKeyValue(key: Key, value: Value): Promise<void> {
+  async put(key: Key, value: Value): Promise<void> {
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
     // Merge key and value, ensuring all fields are at the root level for indexing
@@ -124,7 +124,7 @@ export class IndexedDbTabularRepository<
    * @returns The value object or undefined if not found.
    * @emits get - Emitted when the value is successfully retrieved
    */
-  async getKeyValue(key: Key): Promise<Value | undefined> {
+  async get(key: Key): Promise<Value | undefined> {
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
     return new Promise((resolve, reject) => {
@@ -248,7 +248,7 @@ export class IndexedDbTabularRepository<
    * Deletes a row from the repository.
    * @param key - The key object to delete.
    */
-  async deleteKeyValue(key: Key): Promise<void> {
+  async delete(key: Key): Promise<void> {
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
     return new Promise((resolve, reject) => {

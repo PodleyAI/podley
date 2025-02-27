@@ -62,7 +62,7 @@ export abstract class KvRepository<
     } else {
       tValue = { value } as DefaultValueType;
     }
-    return await this.tabularRepository.putKeyValue(tKey, tValue);
+    return await this.tabularRepository.put(tKey, tValue);
   }
 
   /**
@@ -73,7 +73,7 @@ export abstract class KvRepository<
    * @returns The stored value or undefined if not found
    */
   public async get(key: Key): Promise<Value | undefined> {
-    const result = await this.tabularRepository.getKeyValue({ key } as DefaultPrimaryKeyType);
+    const result = await this.tabularRepository.get({ key } as DefaultPrimaryKeyType);
     if (result) {
       if (this.valueType === "json") {
         return JSON.parse(result.value) as Value;
@@ -90,7 +90,7 @@ export abstract class KvRepository<
    * @param key - The primary key of the row to delete
    */
   public async delete(key: Key): Promise<void> {
-    return await this.tabularRepository.deleteKeyValue({ key } as DefaultPrimaryKeyType);
+    return await this.tabularRepository.delete({ key } as DefaultPrimaryKeyType);
   }
 
   /**

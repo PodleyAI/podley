@@ -52,8 +52,8 @@ export function runGenericTabularRepositoryTests(
     it("should store and retrieve values for a key", async () => {
       const key = { name: "key1", type: "string1" };
       const value = { option: "value1", success: true };
-      await repository.putKeyValue(key, value);
-      const output = await repository.getKeyValue(key);
+      await repository.put(key, value);
+      const output = await repository.get(key);
 
       expect(output?.option).toEqual("value1");
       expect(!!output?.success).toEqual(true);
@@ -61,7 +61,7 @@ export function runGenericTabularRepositoryTests(
 
     it("should get undefined for a key that doesn't exist", async () => {
       const key = { name: "key", type: "string" };
-      const output = await repository.getKeyValue(key);
+      const output = await repository.get(key);
 
       expect(output == undefined).toEqual(true);
     });
@@ -78,15 +78,15 @@ export function runGenericTabularRepositoryTests(
 
       it("should store and search using compound indexes", async () => {
         // Insert test data
-        await repository.putKeyValue(
+        await repository.put(
           { id: "1" },
           { category: "electronics", subcategory: "phones", value: 100 }
         );
-        await repository.putKeyValue(
+        await repository.put(
           { id: "2" },
           { category: "electronics", subcategory: "laptops", value: 200 }
         );
-        await repository.putKeyValue(
+        await repository.put(
           { id: "3" },
           { category: "books", subcategory: "fiction", value: 300 }
         );
@@ -114,11 +114,11 @@ export function runGenericTabularRepositoryTests(
 
       it("should handle searching with multiple criteria in different orders", async () => {
         // Insert test data
-        await repository.putKeyValue(
+        await repository.put(
           { id: "1" },
           { category: "electronics", subcategory: "phones", value: 100 }
         );
-        await repository.putKeyValue(
+        await repository.put(
           { id: "2" },
           { category: "electronics", subcategory: "phones", value: 200 }
         );
@@ -141,15 +141,15 @@ export function runGenericTabularRepositoryTests(
 
       it("should handle partial matches with compound indexes", async () => {
         // Insert test data
-        await repository.putKeyValue(
+        await repository.put(
           { id: "1" },
           { category: "electronics", subcategory: "phones", value: 100 }
         );
-        await repository.putKeyValue(
+        await repository.put(
           { id: "2" },
           { category: "electronics", subcategory: "phones", value: 200 }
         );
-        await repository.putKeyValue(
+        await repository.put(
           { id: "3" },
           { category: "electronics", subcategory: "laptops", value: 300 }
         );
