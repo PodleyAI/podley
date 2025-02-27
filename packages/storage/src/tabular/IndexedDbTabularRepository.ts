@@ -86,11 +86,11 @@ export class IndexedDbTabularRepository<
    * @param value - The value object to store.
    * @emits put - Emitted when the value is successfully stored
    */
-  async put(key: Key, value: Value): Promise<void> {
+  async put(record: Combined): Promise<void> {
+    const { key } = this.separateKeyValueFromCombined(record);
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
     // Merge key and value, ensuring all fields are at the root level for indexing
-    const record = { ...key, ...value };
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readwrite");
       const store = transaction.objectStore(this.table);
@@ -99,7 +99,7 @@ export class IndexedDbTabularRepository<
         reject(request.error);
       };
       request.onsuccess = () => {
-        this.events.emit("put", key, value);
+        this.events.emit("put", record);
         resolve();
       };
     });
@@ -124,7 +124,7 @@ export class IndexedDbTabularRepository<
    * @returns The value object or undefined if not found.
    * @emits get - Emitted when the value is successfully retrieved
    */
-  async get(key: Key): Promise<Value | undefined> {
+  async get(key: Key): Promise<Combined | undefined> {
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
     return new Promise((resolve, reject) => {
@@ -138,9 +138,8 @@ export class IndexedDbTabularRepository<
           resolve(undefined);
           return;
         }
-        const { value } = this.separateKeyValueFromCombined(request.result);
-        this.events.emit("get", key, value);
-        resolve(value);
+        this.events.emit("get", key, request.result);
+        resolve(request.result);
       };
     });
   }

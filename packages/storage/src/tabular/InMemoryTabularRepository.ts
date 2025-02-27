@@ -54,14 +54,14 @@ export class InMemoryTabularRepository<
 
   /**
    * Stores a key-value pair in the repository
-   * @param key - The primary key object
-   * @param value - The value object to store
+   * @param value - The combined object to store
    * @emits 'put' event with the fingerprint ID when successful
    */
-  async put(key: Key, value: Value): Promise<void> {
+  async put(value: Combined): Promise<void> {
+    const { key } = this.separateKeyValueFromCombined(value);
     const id = await makeFingerprint(key);
-    this.values.set(id, Object.assign({}, key, value) as Combined);
-    this.events.emit("put", id, value);
+    this.values.set(id, value);
+    this.events.emit("put", value);
   }
 
   /**
@@ -70,15 +70,11 @@ export class InMemoryTabularRepository<
    * @returns The value object if found, undefined otherwise
    * @emits 'get' event with the fingerprint ID and value when found
    */
-  async get(key: Key): Promise<Value | undefined> {
+  async get(key: Key): Promise<Combined | undefined> {
     const id = await makeFingerprint(key);
     const out = this.values.get(id);
-    if (out === undefined) {
-      return undefined;
-    }
-    const { value } = this.separateKeyValueFromCombined(out);
-    this.events.emit("get", id, value);
-    return value;
+    this.events.emit("get", key, out);
+    return out;
   }
 
   /**
@@ -118,10 +114,11 @@ export class InMemoryTabularRepository<
    * @param key - The primary key object of the entry to delete
    * @emits 'delete' event with the fingerprint ID when successful
    */
-  async delete(key: Key): Promise<void> {
+  async delete(value: Key | Combined): Promise<void> {
+    const { key } = this.separateKeyValueFromCombined(value as Combined);
     const id = await makeFingerprint(key);
     this.values.delete(id);
-    this.events.emit("delete", id);
+    this.events.emit("delete", key);
   }
 
   /**

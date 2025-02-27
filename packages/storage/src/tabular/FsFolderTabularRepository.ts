@@ -73,20 +73,20 @@ export class FsFolderTabularRepository<
    * @param value - The value object to store
    * @emits 'put' event when successful
    */
-  async put(key: Key, value: Value): Promise<void> {
-    const filePath = await this.getFilePath(key);
+  async put(entity: Combined): Promise<void> {
+    const filePath = await this.getFilePath(entity);
     try {
-      await writeFile(filePath, JSON.stringify(value));
+      await writeFile(filePath, JSON.stringify(entity));
     } catch (error) {
       try {
         // CI system sometimes has issues temporarily
         await sleep(1);
-        await writeFile(filePath, JSON.stringify(value));
+        await writeFile(filePath, JSON.stringify(entity));
       } catch (error) {
         console.error("Error writing file", filePath, error);
       }
     }
-    this.events.emit("put", key, value);
+    this.events.emit("put", entity);
   }
 
   /**
@@ -95,13 +95,13 @@ export class FsFolderTabularRepository<
    * @returns The value object if found, undefined otherwise
    * @emits 'get' event with the fingerprint ID and value when found
    */
-  async get(key: Key): Promise<Value | undefined> {
+  async get(key: Key): Promise<Combined | undefined> {
     const filePath = await this.getFilePath(key);
     try {
       const data = await readFile(filePath, "utf-8");
-      const value = JSON.parse(data) as Value;
-      this.events.emit("get", key, value);
-      return value;
+      const entity = JSON.parse(data) as Combined;
+      this.events.emit("get", key, entity);
+      return entity;
     } catch (error) {
       this.events.emit("get", key, undefined);
       return undefined; // File not found or read error
@@ -113,12 +113,13 @@ export class FsFolderTabularRepository<
    * @param key - The primary key object of the entry to delete
    * @emits 'delete' event with the fingerprint ID when successful
    */
-  async delete(key: Key): Promise<void> {
+  async delete(value: Key | Combined): Promise<void> {
+    const { key } = this.separateKeyValueFromCombined(value as Combined);
     const filePath = await this.getFilePath(key);
     try {
       await rm(filePath);
     } catch (error) {
-      // console.error("Error deleting file", filePath, error);
+      console.error("Error deleting file", filePath, error);
     }
     this.events.emit("delete", key);
   }
@@ -186,7 +187,8 @@ export class FsFolderTabularRepository<
    * Generates the full filesystem path for a given key.
    * @private
    */
-  private async getFilePath(key: Key | BasicKeyType): Promise<string> {
+  private async getFilePath(value: Key | Combined): Promise<string> {
+    const { key } = this.separateKeyValueFromCombined(value as Combined);
     const filename = await this.getKeyAsIdString(key);
     const fullPath = path.join(this.folderPath, `${filename}.json`);
     return fullPath;

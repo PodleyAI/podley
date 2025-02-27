@@ -62,7 +62,7 @@ export abstract class KvRepository<
     } else {
       tValue = { value } as DefaultValueType;
     }
-    return await this.tabularRepository.put(tKey, tValue);
+    return await this.tabularRepository.put({ ...tKey, ...tValue });
   }
 
   /**

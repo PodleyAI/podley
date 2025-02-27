@@ -118,10 +118,7 @@ export abstract class ModelRepository {
    * @param model - The model instance to add
    */
   async addModel(model: Model) {
-    await this.modelTabularRepository.putKeyValue(
-      { name: model.name },
-      { value: JSON.stringify(model) }
-    );
+    await this.modelTabularRepository.put({ name: model.name, value: JSON.stringify(model) });
     this.events.emit("model_added", model);
   }
 
@@ -136,7 +133,7 @@ export abstract class ModelRepository {
     if (!junctions || junctions.length === 0) return undefined;
     const models = [];
     for (const junction of junctions) {
-      const model = await this.modelTabularRepository.getKeyValue({ name: junction.model });
+      const model = await this.modelTabularRepository.get({ name: junction.model });
       if (model) models.push(JSON.parse(model["value"]));
     }
     return models;
@@ -181,7 +178,7 @@ export abstract class ModelRepository {
    * @param model - The model to associate with the task
    */
   async connectTaskToModel(task: string, model: string) {
-    await this.task2ModelTabularRepository.putKeyValue({ task, model }, { details: null });
+    await this.task2ModelTabularRepository.put({ task, model, details: null });
     this.events.emit("task_model_connected", task, model);
   }
 
@@ -192,7 +189,7 @@ export abstract class ModelRepository {
    */
   async findByName(name: string) {
     if (typeof name != "string") return undefined;
-    const modelstr = await this.modelTabularRepository.getKeyValue({ name });
+    const modelstr = await this.modelTabularRepository.get({ name });
     if (!modelstr) return undefined;
     return JSON.parse(modelstr["value"]);
   }

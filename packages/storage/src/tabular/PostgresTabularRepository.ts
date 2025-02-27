@@ -144,8 +144,9 @@ export class PostgresTabularRepository<
    * @param value - The value object to store
    * @emits "put" event with the key when successful
    */
-  async put(key: Key, value: Value): Promise<void> {
+  async put(entity: Combined): Promise<void> {
     await this.dbPromise;
+    const { key, value } = this.separateKeyValueFromCombined(entity);
     const sql = `
       INSERT INTO "${this.table}" (
         ${this.primaryKeyColumnList()},
@@ -167,7 +168,7 @@ export class PostgresTabularRepository<
     const valueParams = this.getValueAsOrderedArray(value);
     const params = [...primaryKeyParams, ...valueParams];
     await this.db.query(sql, params);
-    this.events.emit("put", key, value);
+    this.events.emit("put", entity);
   }
 
   /**
@@ -177,7 +178,7 @@ export class PostgresTabularRepository<
    * @returns The stored value or undefined if not found
    * @emits "get" event with the key when successful
    */
-  async get(key: Key): Promise<Value | undefined> {
+  async get(key: Key): Promise<Combined | undefined> {
     await this.dbPromise;
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((discriminatorKey, i) => `${discriminatorKey} = $${i + 1}`)
@@ -187,9 +188,9 @@ export class PostgresTabularRepository<
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const result = await this.db.query(sql, params);
 
-    let val: Value | undefined;
+    let val: Combined | undefined;
     if (result.rows.length > 0) {
-      val = result.rows[0] as Value;
+      val = result.rows[0] as Combined;
     } else {
       val = undefined;
     }
@@ -248,8 +249,9 @@ export class PostgresTabularRepository<
    * @param key - The primary key object to delete
    * @emits "delete" event with the key when successful
    */
-  async delete(key: Key): Promise<void> {
+  async delete(value: Key | Combined): Promise<void> {
     await this.dbPromise;
+    const { key } = this.separateKeyValueFromCombined(value as Combined);
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key, i) => `${key} = $${i + 1}`)
       .join(" AND ");

@@ -142,7 +142,8 @@ export class SqliteTabularRepository<
    * @param value - The value object to store
    * @emits 'put' event when successful
    */
-  async put(key: Key, value: Value): Promise<void> {
+  async put(entity: Combined): Promise<void> {
+    const { key, value } = this.separateKeyValueFromCombined(entity);
     const sql = `
       INSERT OR REPLACE INTO \`${
         this.table
@@ -160,7 +161,7 @@ export class SqliteTabularRepository<
 
     const result = stmt.run(...params);
 
-    this.events.emit("put", key, value);
+    this.events.emit("put", entity);
   }
 
   /**
@@ -169,15 +170,15 @@ export class SqliteTabularRepository<
    * @returns The stored value or undefined if not found
    * @emits 'get' event when successful
    */
-  async get(key: Key): Promise<Value | undefined> {
+  async get(key: Key): Promise<Combined | undefined> {
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `\`${key}\` = ?`)
       .join(" AND ");
 
     const sql = `
-      SELECT ${this.valueColumnList()} FROM \`${this.table}\` WHERE ${whereClauses}
+      SELECT * FROM \`${this.table}\` WHERE ${whereClauses}
     `;
-    const stmt = this.db.prepare<Value, BasicKeyType[]>(sql);
+    const stmt = this.db.prepare<Combined, BasicKeyType[]>(sql);
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const value = stmt.get(...params);
     if (value) {

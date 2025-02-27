@@ -44,7 +44,7 @@ export abstract class TabularRepository<
 > implements ITabularRepository<Key, Value, Combined>
 {
   /** Event emitter for repository events */
-  protected events = new EventEmitter<TabularEventListeners<Key, Value, Combined>>();
+  protected events = new EventEmitter<TabularEventListeners<Key, Combined>>();
 
   protected searchable: Array<keyof Combined>[];
   /**
@@ -143,10 +143,7 @@ export abstract class TabularRepository<
    * @param name The name of the event to listen for
    * @param fn The callback function to execute when the event occurs
    */
-  on<Event extends TabularEventName>(
-    name: Event,
-    fn: TabularEventListener<Event, Key, Value, Combined>
-  ) {
+  on<Event extends TabularEventName>(name: Event, fn: TabularEventListener<Event, Key, Combined>) {
     this.events.on(name, fn);
   }
 
@@ -155,10 +152,7 @@ export abstract class TabularRepository<
    * @param name The name of the event to remove the listener from
    * @param fn The callback function to remove
    */
-  off<Event extends TabularEventName>(
-    name: Event,
-    fn: TabularEventListener<Event, Key, Value, Combined>
-  ) {
+  off<Event extends TabularEventName>(name: Event, fn: TabularEventListener<Event, Key, Combined>) {
     this.events.off(name, fn);
   }
 
@@ -169,7 +163,7 @@ export abstract class TabularRepository<
    */
   once<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Value, Combined>
+    fn: TabularEventListener<Event, Key, Combined>
   ) {
     this.events.once(name, fn);
   }
@@ -181,7 +175,7 @@ export abstract class TabularRepository<
    */
   emit<Event extends TabularEventName>(
     name: Event,
-    ...args: TabularEventParameters<Event, Key, Value, Combined>
+    ...args: TabularEventParameters<Event, Key, Combined>
   ) {
     this.events.emit(name, ...args);
   }
@@ -193,17 +187,15 @@ export abstract class TabularRepository<
    */
   emitted<Event extends TabularEventName>(
     name: Event
-  ): Promise<TabularEventParameters<Event, Key, Value, Combined>> {
-    return this.events.emitted(name) as Promise<
-      TabularEventParameters<Event, Key, Value, Combined>
-    >;
+  ): Promise<TabularEventParameters<Event, Key, Combined>> {
+    return this.events.emitted(name) as Promise<TabularEventParameters<Event, Key, Combined>>;
   }
 
   /**
    * Core abstract methods that must be implemented by concrete repositories
    */
-  abstract put(key: Key, value: Value): Promise<void>;
-  abstract get(key: Key): Promise<Value | undefined>;
+  abstract put(value: Combined): Promise<void>;
+  abstract get(key: Key): Promise<Combined | undefined>;
   abstract delete(key: Key | Combined): Promise<void>;
   abstract getAll(): Promise<Combined[] | undefined>;
   abstract deleteAll(): Promise<void>;
@@ -217,17 +209,6 @@ export abstract class TabularRepository<
    * @returns Promise resolving to an array of combined row objects or undefined if not found
    */
   public abstract search(key: Partial<Combined>): Promise<Combined[] | undefined>;
-
-  /**
-   * Retrieves both key and value as a combined object.
-   * @param key - The primary key to look up
-   * @returns Combined row object or undefined if not found
-   */
-  public async getCombined(key: Key): Promise<Combined | undefined> {
-    const value = await this.get(key);
-    if (typeof value !== "object") return undefined;
-    return Object.assign({}, key, value) as Combined;
-  }
 
   protected primaryKeyColumns(): Array<keyof Key> {
     const columns: Array<keyof Key> = [];

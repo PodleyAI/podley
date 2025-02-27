@@ -10,28 +10,25 @@ import { EventEmitter, EventParameters } from "@ellmers/util";
 /**
  * Type definitions for tabular repository events
  */
-export type TabularEventListeners<Key, Value, Combined> = {
-  put: (key: unknown, value: Value) => void;
-  get: (key: unknown, value: Value | undefined) => void;
+export type TabularEventListeners<Key, Combined> = {
+  put: (value: Combined) => void;
+  get: (key: Key, value: Combined | undefined) => void;
   search: (key: Partial<Combined>, results: Combined[] | undefined) => void;
-  delete: (key: unknown) => void;
+  delete: (key: Key) => void;
   clearall: () => void;
 };
 
-export type TabularEventName = keyof TabularEventListeners<any, any, any>;
+export type TabularEventName = keyof TabularEventListeners<any, any>;
 export type TabularEventListener<
   Event extends TabularEventName,
   Key,
-  Value,
   Combined,
-> = TabularEventListeners<Key, Value, Combined>[Event];
+> = TabularEventListeners<Key, Combined>[Event];
 
-export type TabularEventParameters<
-  Event extends TabularEventName,
-  Key,
-  Value,
-  Combined,
-> = EventParameters<TabularEventListeners<Key, Value, Combined>, Event>;
+export type TabularEventParameters<Event extends TabularEventName, Key, Combined> = EventParameters<
+  TabularEventListeners<Key, Combined>,
+  Event
+>;
 
 /**
  * Schema definitions for primary keys and values
@@ -67,8 +64,8 @@ export interface ITabularRepository<
   Combined extends Record<string, any> = Key & Value,
 > {
   // Core methods
-  put(key: Key, value: Value): Promise<void>;
-  get(key: Key): Promise<Value | undefined>;
+  put(value: Combined): Promise<void>;
+  get(key: Key): Promise<Combined | undefined>;
   delete(key: Key | Combined): Promise<void>;
   getAll(): Promise<Combined[] | undefined>;
   deleteAll(): Promise<void>;
@@ -77,25 +74,24 @@ export interface ITabularRepository<
   // Event handling methods
   on<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Value, Combined>
+    fn: TabularEventListener<Event, Key, Combined>
   ): void;
   off<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Value, Combined>
+    fn: TabularEventListener<Event, Key, Combined>
   ): void;
   emit<Event extends TabularEventName>(
     name: Event,
-    ...args: TabularEventParameters<Event, Key, Value, Combined>
+    ...args: TabularEventParameters<Event, Key, Combined>
   ): void;
   once<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Value, Combined>
+    fn: TabularEventListener<Event, Key, Combined>
   ): void;
   emitted<Event extends TabularEventName>(
     name: Event
-  ): Promise<TabularEventParameters<Event, Key, Value, Combined>>;
+  ): Promise<TabularEventParameters<Event, Key, Combined>>;
 
   // Convenience methods
   search(key: Partial<Combined>): Promise<Combined[] | undefined>;
-  getCombined(key: Key): Promise<Combined | undefined>;
 }
