@@ -38,7 +38,7 @@ export type TabularEventParameters<
  */
 export type BasicKeyType = string | number | bigint;
 export type BasicValueType = string | number | bigint | boolean | null;
-export type BasePrimaryKeySchema = Record<string, "string" | "number" | "boolean" | "bigint">;
+export type BasePrimaryKeySchema = Record<string, "string" | "number" | "bigint">;
 export type BaseValueSchema = Record<string, "string" | "number" | "boolean" | "bigint">;
 
 /**
@@ -98,5 +98,4 @@ export interface ITabularRepository<
   // Convenience methods
   search(key: Partial<Combined>): Promise<Combined[] | undefined>;
   getCombined(key: Key): Promise<Combined | undefined>;
-  delete(key: Key | BasicKeyType): Promise<void>;
 }

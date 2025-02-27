@@ -46,13 +46,7 @@ export abstract class TabularRepository<
   /** Event emitter for repository events */
   protected events = new EventEmitter<TabularEventListeners<Key, Value, Combined>>();
 
-  /**
-   * Indexes for primary key and value columns which are _only_ populated if the
-   * key or value schema has a single field.
-   */
-  protected primaryKeyIndex: string | undefined = undefined;
-  protected valueIndex: string | undefined = undefined;
-  protected searchable: Array<Array<keyof Combined>>;
+  protected searchable: Array<keyof Combined>[];
   /**
    * Creates a new TabularRepository instance
    * @param primaryKeySchema - Schema defining the structure of primary keys
@@ -67,12 +61,6 @@ export abstract class TabularRepository<
   ) {
     this.primaryKeySchema = primaryKeySchema;
     this.valueSchema = valueSchema;
-    if (this.primaryKeyColumns().length === 1) {
-      this.primaryKeyIndex = this.primaryKeyColumns()[0] as string;
-    }
-    if (this.valueColumns().length === 1) {
-      this.valueIndex = this.valueColumns()[0] as string;
-    }
 
     // validate all combined columns names are "identifier" names
     const combinedColumns = [...this.primaryKeyColumns(), ...this.valueColumns()];
@@ -241,17 +229,6 @@ export abstract class TabularRepository<
     return Object.assign({}, key, value) as Combined;
   }
 
-  /**
-   * Deletes a row from the repository.
-   * @param key - The primary key of the row to delete
-   */
-  public delete(key: Key | BasicKeyType): Promise<void> {
-    if (typeof key !== "object" && this.primaryKeyIndex) {
-      key = { [this.primaryKeyIndex]: key } as Key;
-    }
-    return this.deleteKeyValue(key as Key);
-  }
-
   protected primaryKeyColumns(): Array<keyof Key> {
     const columns: Array<keyof Key> = [];
     for (const [k, type] of Object.entries(this.primaryKeySchema)) {
@@ -303,10 +280,7 @@ export abstract class TabularRepository<
    * @param key - Primary key to convert
    * @returns Promise resolving to a string fingerprint of the key
    */
-  protected async getKeyAsIdString(key: Key | BasicKeyType): Promise<string> {
-    if (this.primaryKeyIndex && typeof key === "object") {
-      key = key[this.primaryKeyIndex];
-    }
+  protected async getKeyAsIdString(key: Key): Promise<string> {
     return await makeFingerprint(key);
   }
 
