@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FC } from "react";
-import { Text, Box } from "ink";
+import { Text, Box } from "tuir";
 import { TaskStatus, TaskGraph, Task, CompoundTask } from "@ellmers/task-graph";
 import spinners from "cli-spinners";
 import TaskGraphUI from "./TaskGraphUI";
@@ -40,6 +40,8 @@ export const TaskUI: FC<{
 }> = ({ task, graph }) => {
   const [status, setStatus] = useState<TaskStatus>(task.status);
   const [progress, setProgress] = useState<number>(task.progress);
+  const [message, setMessage] = useState<string>("");
+  const [details, setDetails] = useState<any>(undefined);
   const [subGraph, setSubGraph] = useState<TaskGraph | null>(
     task instanceof CompoundTask ? task.subGraph : null
   );
@@ -51,7 +53,21 @@ export const TaskUI: FC<{
     const setupTaskListeners = () => {
       // Set up listeners for this task
       task.on("start", () => setStatus(TaskStatus.PROCESSING));
-      task.on("progress", () => setProgress(task.progress));
+      // @ts-ignore
+      task.on("progress", (progress: number, message: string, details: any) => {
+        setProgress(progress);
+        setMessage(message);
+        setDetails((oldDetails: any) => {
+          if (oldDetails == null) {
+            return [details];
+          }
+          const found = oldDetails.find((d: any) => d.file == details.file);
+          if (found) {
+            return oldDetails.map((d: any) => (d.file == details.file ? details : d));
+          }
+          return [...oldDetails, details];
+        });
+      });
       task.on("complete", () => setStatus(TaskStatus.COMPLETED));
       task.on("error", () => setStatus(TaskStatus.FAILED));
       task.on("regenerate", () => setSubGraph(task instanceof CompoundTask ? task.subGraph : null));
@@ -63,7 +79,7 @@ export const TaskUI: FC<{
     return () => {
       task.events.removeAllListeners();
     };
-  }, [task.status, task.progress, graph]);
+  }, [task, graph]);
 
   let icon = getSymbol(task.status);
 
@@ -77,28 +93,36 @@ export const TaskUI: FC<{
         {status === TaskStatus.PROCESSING ? (
           <Box marginLeft={1}>
             <Text dimColor>[{status}]</Text>
-            <Text dimColor>{progress > 0 && `${Math.round(progress)}%`}</Text>
-            {/* <Box width={20}>
-              <Text>{progress > 0 && createBar(progress, 20)}</Text>
-            </Box> */}
+            <Text dimColor>
+              {progress > 0 &&
+                ` ${createBar(progress / 100, 20)} ${message} ${Math.round(progress)}%`}
+            </Text>
           </Box>
         ) : null}
       </Box>
+      {status == TaskStatus.PROCESSING &&
+        details &&
+        message == "Downloading model" &&
+        details.map((d: any) => (
+          <Box marginLeft={2} key={d.file}>
+            <Text color="gray">{`${symbols.arrowRight} ${createBar(d.progress / 100, 10)} ${d.file} ${Math.round(d.progress)}%`}</Text>
+          </Box>
+        ))}
       {Object.keys(task.runOutputData || {}).length > 0 ? (
         <Box marginLeft={2}>
           <Text color="gray">{`${symbols.arrowRight} ${JSON.stringify(task.runOutputData)}`}</Text>
         </Box>
       ) : null}
+      {subGraph && (
+        <Box flexDirection="column" marginLeft={2}>
+          <TaskGraphUI graph={subGraph} />
+        </Box>
+      )}
       {dependantChildren && (
         <Box flexDirection="column" marginLeft={2}>
           {dependantChildren.map((taskItem) => (
             <TaskUI key={String(taskItem.config.id)} task={taskItem} graph={graph} />
           ))}
-        </Box>
-      )}
-      {subGraph && (
-        <Box flexDirection="column" marginLeft={2}>
-          <TaskGraphUI graph={subGraph} />
         </Box>
       )}
     </Box>

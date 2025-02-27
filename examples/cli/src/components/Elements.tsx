@@ -8,7 +8,7 @@
 import chalk from "chalk";
 import React, { useState, useEffect } from "react";
 import type { FC } from "react";
-import { Text } from "ink";
+import { Text } from "tuir";
 
 /**
  * createBar
@@ -27,7 +27,7 @@ export function createBar(progress: number, length: number): string {
   // Add main portion
   bar += "\u2588".repeat(Math.floor(distance));
   // Add intermediate porttion
-  const c = Math.round((distance % 1) * 7) + 1;
+  const c = Math.round((distance % 1) * 7);
   switch (c) {
     case 1:
       bar += "\u258F";
@@ -53,14 +53,12 @@ export function createBar(progress: number, length: number): string {
     case 8:
       bar += "\u2588";
       break;
-    default:
-      bar += c;
   }
 
   // Extend empty bar
   bar += "\u258F".repeat(length > bar.length ? length - bar.length : 0);
 
-  return chalk.rgb(70, 70, 240)("\u2595" + chalk.bgRgb(20, 20, 70)(bar) + "\u258F");
+  return "\u2595" + bar + "\u258F";
 }
 
 export const symbols = {
