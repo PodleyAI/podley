@@ -8,6 +8,10 @@
 import { EventEmitter } from "@ellmers/util";
 import { makeFingerprint } from "@ellmers/util";
 import {
+  DefaultPrimaryKeyType,
+  DefaultValueType,
+  DefaultPrimaryKeySchema,
+  DefaultValueSchema,
   KvEventName,
   KvEventListener,
   KvEventListeners,
@@ -16,11 +20,7 @@ import {
   JSONValue,
 } from "./IKvRepository";
 import { TabularRepository } from "../tabular/TabularRepository";
-import {
-  DefaultPrimaryKeyType,
-  DefaultValueType,
-  BasicKeyType,
-} from "../tabular/ITabularRepository";
+import { BasicKeyType } from "../tabular/ITabularRepository";
 
 /**
  * Abstract base class for key-value storage repositories.
@@ -39,7 +39,12 @@ export abstract class KvRepository<
   /** Event emitter for repository events */
   protected events = new EventEmitter<KvEventListeners<Key, Value, Combined>>();
 
-  public abstract tabularRepository: TabularRepository;
+  public abstract tabularRepository: TabularRepository<
+    DefaultPrimaryKeyType,
+    DefaultValueType,
+    typeof DefaultPrimaryKeySchema,
+    typeof DefaultValueSchema
+  >;
 
   /**
    * Creates a new KvRepository instance

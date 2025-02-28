@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, SqliteTabularRepository } from "@ellmers/storage";
+import { DefaultValueSchema, DefaultValueType, SqliteTabularRepository } from "@ellmers/storage";
 import {
   TaskOutputPrimaryKeySchema,
   TaskOutputPrimaryKey,
@@ -20,7 +20,8 @@ export class SqliteTaskOutputRepository extends TaskOutputRepository {
   tabularRepository: SqliteTabularRepository<
     TaskOutputPrimaryKey,
     DefaultValueType,
-    typeof TaskOutputPrimaryKeySchema
+    typeof TaskOutputPrimaryKeySchema,
+    typeof DefaultValueSchema
   >;
   public type = "SqliteTaskOutputRepository" as const;
   constructor(dbOrPath: string, table: string = "task_outputs") {
@@ -28,7 +29,8 @@ export class SqliteTaskOutputRepository extends TaskOutputRepository {
     this.tabularRepository = new SqliteTabularRepository<
       TaskOutputPrimaryKey,
       DefaultValueType,
-      typeof TaskOutputPrimaryKeySchema
-    >(dbOrPath, table, TaskOutputPrimaryKeySchema);
+      typeof TaskOutputPrimaryKeySchema,
+      typeof DefaultValueSchema
+    >(dbOrPath, table, TaskOutputPrimaryKeySchema, DefaultValueSchema);
   }
 }

@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, SqliteTabularRepository } from "@ellmers/storage";
+import { DefaultValueSchema, DefaultValueType, SqliteTabularRepository } from "@ellmers/storage";
 import {
   Task2ModelDetailSchema,
   Task2ModelPrimaryKeySchema,
@@ -24,7 +24,8 @@ export class SqliteModelRepository extends ModelRepository {
   modelTabularRepository: SqliteTabularRepository<
     ModelPrimaryKey,
     DefaultValueType,
-    typeof ModelPrimaryKeySchema
+    typeof ModelPrimaryKeySchema,
+    typeof DefaultValueSchema
   >;
   task2ModelTabularRepository: SqliteTabularRepository<
     Task2ModelPrimaryKey,
@@ -41,8 +42,9 @@ export class SqliteModelRepository extends ModelRepository {
     this.modelTabularRepository = new SqliteTabularRepository<
       ModelPrimaryKey,
       DefaultValueType,
-      typeof ModelPrimaryKeySchema
-    >(dbOrPath, tableModels, ModelPrimaryKeySchema);
+      typeof ModelPrimaryKeySchema,
+      typeof DefaultValueSchema
+    >(dbOrPath, tableModels, ModelPrimaryKeySchema, DefaultValueSchema);
     this.task2ModelTabularRepository = new SqliteTabularRepository<
       Task2ModelPrimaryKey,
       Task2ModelDetail,

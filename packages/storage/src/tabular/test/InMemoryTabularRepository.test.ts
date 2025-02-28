@@ -21,12 +21,22 @@ import { describe } from "bun:test";
 
 describe("InMemoryTabularRepository", () => {
   runGenericTabularRepositoryTests(
-    async () => new InMemoryTabularRepository<PrimaryKey, Value>(PrimaryKeySchema, ValueSchema),
     async () =>
-      new InMemoryTabularRepository<CompoundKey, CompoundValue>(
-        CompoundPrimaryKeySchema,
-        CompoundValueSchema,
-        ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
-      )
+      new InMemoryTabularRepository<PrimaryKey, Value, typeof PrimaryKeySchema, typeof ValueSchema>(
+        PrimaryKeySchema,
+        ValueSchema
+      ),
+    async () =>
+      new InMemoryTabularRepository<
+        CompoundKey,
+        CompoundValue,
+        typeof CompoundPrimaryKeySchema,
+        typeof CompoundValueSchema
+      >(CompoundPrimaryKeySchema, CompoundValueSchema, [
+        "category",
+        ["category", "subcategory"],
+        ["subcategory", "category"],
+        "value",
+      ])
   );
 });

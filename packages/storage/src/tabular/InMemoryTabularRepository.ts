@@ -6,15 +6,7 @@
 //    *******************************************************************************
 
 import { makeFingerprint } from "@ellmers/util";
-import {
-  BaseValueSchema,
-  BasePrimaryKeySchema,
-  BasicKeyType,
-  DefaultValueType,
-  DefaultValueSchema,
-  DefaultPrimaryKeyType,
-  DefaultPrimaryKeySchema,
-} from "./ITabularRepository";
+import { BaseValueSchema, BasePrimaryKeySchema, BasicKeyType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
 /**
@@ -28,10 +20,10 @@ import { TabularRepository } from "./TabularRepository";
  * @template Combined - The combined type of Key & Value
  */
 export class InMemoryTabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
+  Key extends Record<string, BasicKeyType>,
+  Value extends Record<string, any>,
+  PrimaryKeySchema extends BasePrimaryKeySchema,
+  ValueSchema extends BaseValueSchema,
   Combined extends Record<string, any> = Key & Value,
 > extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /** Internal storage using a Map with fingerprint strings as keys */
@@ -45,8 +37,8 @@ export class InMemoryTabularRepository<
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
-    primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
+    primaryKeySchema: PrimaryKeySchema,
+    valueSchema: ValueSchema,
     searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     super(primaryKeySchema, valueSchema, searchable);

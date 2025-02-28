@@ -5,7 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { InMemoryTabularRepository } from "@ellmers/storage";
+import {
+  DefaultPrimaryKeySchema,
+  DefaultPrimaryKeyType,
+  DefaultValueSchema,
+  DefaultValueType,
+  InMemoryTabularRepository,
+} from "@ellmers/storage";
 import { TaskGraphRepository } from "./TaskGraphRepository";
 
 /**
@@ -13,10 +19,18 @@ import { TaskGraphRepository } from "./TaskGraphRepository";
  * Provides storage and retrieval for task graphs.
  */
 export class InMemoryTaskGraphRepository extends TaskGraphRepository {
-  tabularRepository: InMemoryTabularRepository;
+  tabularRepository: InMemoryTabularRepository<
+    DefaultPrimaryKeyType,
+    DefaultValueType,
+    typeof DefaultPrimaryKeySchema,
+    typeof DefaultValueSchema
+  >;
   public type = "InMemoryTaskGraphRepository" as const;
   constructor() {
     super();
-    this.tabularRepository = new InMemoryTabularRepository();
+    this.tabularRepository = new InMemoryTabularRepository(
+      DefaultPrimaryKeySchema,
+      DefaultValueSchema
+    );
   }
 }

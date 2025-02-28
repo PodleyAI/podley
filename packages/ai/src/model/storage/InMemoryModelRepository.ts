@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, InMemoryTabularRepository } from "@ellmers/storage";
+import { DefaultValueSchema, DefaultValueType, InMemoryTabularRepository } from "@ellmers/storage";
 import {
   Task2ModelDetailSchema,
   Task2ModelPrimaryKeySchema,
@@ -23,7 +23,8 @@ export class InMemoryModelRepository extends ModelRepository {
   modelTabularRepository: InMemoryTabularRepository<
     ModelPrimaryKey,
     DefaultValueType,
-    typeof ModelPrimaryKeySchema
+    typeof ModelPrimaryKeySchema,
+    typeof DefaultValueSchema
   >;
   task2ModelTabularRepository: InMemoryTabularRepository<
     Task2ModelPrimaryKey,
@@ -37,8 +38,9 @@ export class InMemoryModelRepository extends ModelRepository {
     this.modelTabularRepository = new InMemoryTabularRepository<
       ModelPrimaryKey,
       DefaultValueType,
-      typeof ModelPrimaryKeySchema
-    >(ModelPrimaryKeySchema);
+      typeof ModelPrimaryKeySchema,
+      typeof DefaultValueSchema
+    >(ModelPrimaryKeySchema, DefaultValueSchema);
     this.task2ModelTabularRepository = new InMemoryTabularRepository<
       Task2ModelPrimaryKey,
       Task2ModelDetail,

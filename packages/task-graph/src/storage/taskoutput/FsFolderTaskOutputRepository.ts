@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, FsFolderTabularRepository } from "@ellmers/storage";
+import { DefaultValueSchema, DefaultValueType, FsFolderTabularRepository } from "@ellmers/storage";
 import {
   TaskOutputPrimaryKeySchema,
   TaskOutputPrimaryKey,
@@ -20,7 +20,8 @@ export class FsFolderTaskOutputRepository extends TaskOutputRepository {
   tabularRepository: FsFolderTabularRepository<
     TaskOutputPrimaryKey,
     DefaultValueType,
-    typeof TaskOutputPrimaryKeySchema
+    typeof TaskOutputPrimaryKeySchema,
+    typeof DefaultValueSchema
   >;
   public type = "FsFolderTaskOutputRepository" as const;
   constructor(folderPath: string) {
@@ -28,7 +29,8 @@ export class FsFolderTaskOutputRepository extends TaskOutputRepository {
     this.tabularRepository = new FsFolderTabularRepository<
       TaskOutputPrimaryKey,
       DefaultValueType,
-      typeof TaskOutputPrimaryKeySchema
-    >(folderPath, TaskOutputPrimaryKeySchema);
+      typeof TaskOutputPrimaryKeySchema,
+      typeof DefaultValueSchema
+    >(folderPath, TaskOutputPrimaryKeySchema, DefaultValueSchema);
   }
 }

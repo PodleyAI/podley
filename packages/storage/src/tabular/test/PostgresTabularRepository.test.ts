@@ -27,19 +27,23 @@ const db = new PGlite() as unknown as Pool;
 describe("PostgresTabularRepository", () => {
   runGenericTabularRepositoryTests(
     async () =>
-      new PostgresTabularRepository<PrimaryKey, Value>(
+      new PostgresTabularRepository<PrimaryKey, Value, typeof PrimaryKeySchema, typeof ValueSchema>(
         db,
         `sql_test_${nanoid()}`,
         PrimaryKeySchema,
         ValueSchema
       ),
     async () =>
-      new PostgresTabularRepository<CompoundKey, CompoundValue>(
-        db,
-        `sql_test_${nanoid()}`,
-        CompoundPrimaryKeySchema,
-        CompoundValueSchema,
-        ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
-      )
+      new PostgresTabularRepository<
+        CompoundKey,
+        CompoundValue,
+        typeof CompoundPrimaryKeySchema,
+        typeof CompoundValueSchema
+      >(db, `sql_test_${nanoid()}`, CompoundPrimaryKeySchema, CompoundValueSchema, [
+        "category",
+        ["category", "subcategory"],
+        ["subcategory", "category"],
+        "value",
+      ])
   );
 });

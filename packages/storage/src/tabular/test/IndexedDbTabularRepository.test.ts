@@ -41,11 +41,12 @@ describe("IndexedDbTabularRepository", () => {
 
   runGenericTabularRepositoryTests(
     async () =>
-      new IndexedDbTabularRepository<PrimaryKey, Value>(
-        `${dbName}_complex`,
-        PrimaryKeySchema,
-        ValueSchema
-      ),
+      new IndexedDbTabularRepository<
+        PrimaryKey,
+        Value,
+        typeof PrimaryKeySchema,
+        typeof ValueSchema
+      >(`${dbName}_complex`, PrimaryKeySchema, ValueSchema),
     async () => {
       const searchable = [
         "category",
@@ -53,7 +54,12 @@ describe("IndexedDbTabularRepository", () => {
         ["subcategory", "category"],
         "value",
       ] as const;
-      return new IndexedDbTabularRepository<CompoundKey, CompoundValue>(
+      return new IndexedDbTabularRepository<
+        CompoundKey,
+        CompoundValue,
+        typeof CompoundPrimaryKeySchema,
+        typeof CompoundValueSchema
+      >(
         `${dbName}_compound`,
         CompoundPrimaryKeySchema,
         CompoundValueSchema,

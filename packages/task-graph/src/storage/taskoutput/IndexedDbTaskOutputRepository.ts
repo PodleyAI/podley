@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, IndexedDbTabularRepository } from "@ellmers/storage";
+import { DefaultValueSchema, DefaultValueType, IndexedDbTabularRepository } from "@ellmers/storage";
 import {
   TaskOutputPrimaryKey,
   TaskOutputPrimaryKeySchema,
@@ -20,7 +20,8 @@ export class IndexedDbTaskOutputRepository extends TaskOutputRepository {
   tabularRepository: IndexedDbTabularRepository<
     TaskOutputPrimaryKey,
     DefaultValueType,
-    typeof TaskOutputPrimaryKeySchema
+    typeof TaskOutputPrimaryKeySchema,
+    typeof DefaultValueSchema
   >;
   public type = "IndexedDbTaskOutputRepository" as const;
   constructor(table: string = "task_outputs") {
@@ -28,7 +29,8 @@ export class IndexedDbTaskOutputRepository extends TaskOutputRepository {
     this.tabularRepository = new IndexedDbTabularRepository<
       TaskOutputPrimaryKey,
       DefaultValueType,
-      typeof TaskOutputPrimaryKeySchema
-    >(table, TaskOutputPrimaryKeySchema);
+      typeof TaskOutputPrimaryKeySchema,
+      typeof DefaultValueSchema
+    >(table, TaskOutputPrimaryKeySchema, DefaultValueSchema);
   }
 }

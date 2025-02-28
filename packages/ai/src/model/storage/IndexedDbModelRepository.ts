@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, IndexedDbTabularRepository } from "@ellmers/storage";
+import { DefaultValueSchema, DefaultValueType, IndexedDbTabularRepository } from "@ellmers/storage";
 import {
   Task2ModelDetailSchema,
   Task2ModelPrimaryKeySchema,
@@ -23,7 +23,8 @@ export class IndexedDbModelRepository extends ModelRepository {
   modelTabularRepository: IndexedDbTabularRepository<
     ModelPrimaryKey,
     DefaultValueType,
-    typeof ModelPrimaryKeySchema
+    typeof ModelPrimaryKeySchema,
+    typeof DefaultValueSchema
   >;
   task2ModelTabularRepository: IndexedDbTabularRepository<
     Task2ModelPrimaryKey,
@@ -38,8 +39,9 @@ export class IndexedDbModelRepository extends ModelRepository {
     this.modelTabularRepository = new IndexedDbTabularRepository<
       ModelPrimaryKey,
       DefaultValueType,
-      typeof ModelPrimaryKeySchema
-    >(tableModels, ModelPrimaryKeySchema);
+      typeof ModelPrimaryKeySchema,
+      typeof DefaultValueSchema
+    >(tableModels, ModelPrimaryKeySchema, DefaultValueSchema);
     this.task2ModelTabularRepository = new IndexedDbTabularRepository<
       Task2ModelPrimaryKey,
       Task2ModelDetail,

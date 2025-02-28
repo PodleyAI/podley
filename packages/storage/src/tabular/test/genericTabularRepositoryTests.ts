@@ -39,11 +39,13 @@ export const CompoundValueSchema: BaseValueSchema = {
 } as const;
 
 export function runGenericTabularRepositoryTests(
-  createComplexRepository: () => Promise<ITabularRepository<PrimaryKey, Value>>,
-  createCompoundRepository?: () => Promise<ITabularRepository<CompoundKey, CompoundValue>>
+  createComplexRepository: () => Promise<ITabularRepository<PrimaryKey, PrimaryKey & Value>>,
+  createCompoundRepository?: () => Promise<
+    ITabularRepository<CompoundKey, CompoundKey & CompoundValue>
+  >
 ) {
   describe("with complex schemas", () => {
-    let repository: ITabularRepository<PrimaryKey, Value>;
+    let repository: ITabularRepository<PrimaryKey, PrimaryKey & Value>;
 
     beforeEach(async () => {
       repository = await createComplexRepository();
@@ -70,7 +72,7 @@ export function runGenericTabularRepositoryTests(
   // Only run compound index tests if createCompoundRepository is provided
   if (createCompoundRepository) {
     describe("with compound indexes", () => {
-      let repository: ITabularRepository<CompoundKey, CompoundValue>;
+      let repository: ITabularRepository<CompoundKey, CompoundKey & CompoundValue>;
 
       beforeEach(async () => {
         repository = await createCompoundRepository();

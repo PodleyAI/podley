@@ -8,15 +8,7 @@
 import type { Pool } from "pg";
 
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import {
-  BasePrimaryKeySchema,
-  BaseValueSchema,
-  BasicKeyType,
-  DefaultPrimaryKeySchema,
-  DefaultPrimaryKeyType,
-  DefaultValueSchema,
-  DefaultValueType,
-} from "./ITabularRepository";
+import { BasePrimaryKeySchema, BaseValueSchema, BasicKeyType } from "./ITabularRepository";
 
 /**
  * A PostgreSQL-based tabular repository implementation that extends BaseSqlTabularRepository.
@@ -30,10 +22,10 @@ import {
  * @template Combined - Combined type of Key & Value
  */
 export class PostgresTabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
+  Key extends Record<string, BasicKeyType>,
+  Value extends Record<string, any>,
+  PrimaryKeySchema extends BasePrimaryKeySchema,
+  ValueSchema extends BaseValueSchema,
   Combined extends Record<string, any> = Key & Value,
 > extends BaseSqlTabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
   private db: Pool;
@@ -51,8 +43,8 @@ export class PostgresTabularRepository<
   constructor(
     db: Pool,
     table: string = "tabular_store",
-    primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
+    primaryKeySchema: PrimaryKeySchema,
+    valueSchema: ValueSchema,
     searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     super(table, primaryKeySchema, valueSchema, searchable);

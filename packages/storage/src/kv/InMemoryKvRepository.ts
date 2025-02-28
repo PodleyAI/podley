@@ -9,6 +9,12 @@ import { JSONValue } from "./IKvRepository";
 import { KvRepository } from "./KvRepository";
 import { InMemoryTabularRepository } from "../tabular/InMemoryTabularRepository";
 import { BasicKeyType } from "../tabular/ITabularRepository";
+import {
+  DefaultPrimaryKeySchema,
+  DefaultPrimaryKeyType,
+  DefaultValueSchema,
+  DefaultValueType,
+} from "@ellmers/storage";
 
 /**
  * Abstract base class for key-value storage repositories.
@@ -23,7 +29,12 @@ export class InMemoryKvRepository<
   Value extends JSONValue = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
-  public tabularRepository: InMemoryTabularRepository;
+  public tabularRepository: InMemoryTabularRepository<
+    DefaultPrimaryKeyType,
+    DefaultValueType,
+    typeof DefaultPrimaryKeySchema,
+    typeof DefaultValueSchema
+  >;
 
   /**
    * Creates a new KvRepository instance
@@ -33,6 +44,9 @@ export class InMemoryKvRepository<
     valueType: "string" | "number" | "bigint" | "json"
   ) {
     super(primaryKeyType, valueType);
-    this.tabularRepository = new InMemoryTabularRepository();
+    this.tabularRepository = new InMemoryTabularRepository(
+      DefaultPrimaryKeySchema,
+      DefaultValueSchema
+    );
   }
 }

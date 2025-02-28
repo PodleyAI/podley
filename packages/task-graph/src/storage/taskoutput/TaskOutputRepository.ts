@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import { DefaultValueType, type TabularRepository } from "@ellmers/storage";
+import { DefaultValueSchema, DefaultValueType, type TabularRepository } from "@ellmers/storage";
 import { makeFingerprint } from "@ellmers/util";
 import { TaskInput, TaskOutput } from "../../task/TaskTypes";
 
@@ -42,7 +42,12 @@ export const TaskOutputPrimaryKeySchema = {
  */
 export abstract class TaskOutputRepository {
   public type = "TaskOutputRepository";
-  abstract tabularRepository: TabularRepository<TaskOutputPrimaryKey, DefaultValueType>;
+  abstract tabularRepository: TabularRepository<
+    TaskOutputPrimaryKey,
+    DefaultValueType,
+    typeof TaskOutputPrimaryKeySchema,
+    typeof DefaultValueSchema
+  >;
   protected events = new EventEmitter<TaskOutputEventListeners>();
 
   /**

@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, InMemoryTabularRepository } from "@ellmers/storage";
+import { DefaultValueSchema, DefaultValueType, InMemoryTabularRepository } from "@ellmers/storage";
 import { TaskOutputPrimaryKeySchema } from "./TaskOutputRepository";
 import { TaskOutputPrimaryKey } from "./TaskOutputRepository";
 import { TaskOutputRepository } from "./TaskOutputRepository";
@@ -18,7 +18,8 @@ export class InMemoryTaskOutputRepository extends TaskOutputRepository {
   tabularRepository: InMemoryTabularRepository<
     TaskOutputPrimaryKey,
     DefaultValueType,
-    typeof TaskOutputPrimaryKeySchema
+    typeof TaskOutputPrimaryKeySchema,
+    typeof DefaultValueSchema
   >;
   public type = "InMemoryTaskOutputRepository" as const;
   constructor() {
@@ -26,7 +27,8 @@ export class InMemoryTaskOutputRepository extends TaskOutputRepository {
     this.tabularRepository = new InMemoryTabularRepository<
       TaskOutputPrimaryKey,
       DefaultValueType,
-      typeof TaskOutputPrimaryKeySchema
-    >(TaskOutputPrimaryKeySchema);
+      typeof TaskOutputPrimaryKeySchema,
+      typeof DefaultValueSchema
+    >(TaskOutputPrimaryKeySchema, DefaultValueSchema);
   }
 }

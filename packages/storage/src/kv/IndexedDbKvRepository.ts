@@ -9,6 +9,12 @@ import { JSONValue } from "./IKvRepository";
 import { KvRepository } from "./KvRepository";
 import { IndexedDbTabularRepository } from "../tabular/IndexedDbTabularRepository";
 import { BasicKeyType } from "../tabular/ITabularRepository";
+import {
+  DefaultPrimaryKeySchema,
+  DefaultPrimaryKeyType,
+  DefaultValueSchema,
+  DefaultValueType,
+} from "@ellmers/storage";
 
 /**
  * Abstract base class for key-value storage repositories.
@@ -23,7 +29,12 @@ export class IndexedDbKvRepository<
   Value extends JSONValue = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
-  public tabularRepository: IndexedDbTabularRepository;
+  public tabularRepository: IndexedDbTabularRepository<
+    DefaultPrimaryKeyType,
+    DefaultValueType,
+    typeof DefaultPrimaryKeySchema,
+    typeof DefaultValueSchema
+  >;
 
   /**
    * Creates a new KvRepository instance
@@ -34,6 +45,10 @@ export class IndexedDbKvRepository<
     valueType: "string" | "number" | "bigint" | "json"
   ) {
     super(primaryKeyType, valueType);
-    this.tabularRepository = new IndexedDbTabularRepository(dbName);
+    this.tabularRepository = new IndexedDbTabularRepository(
+      dbName,
+      DefaultPrimaryKeySchema,
+      DefaultValueSchema
+    );
   }
 }

@@ -9,15 +9,7 @@ import path from "node:path";
 import { readFile, writeFile, rm, readdir } from "node:fs/promises";
 import { mkdirSync } from "node:fs";
 import { glob } from "glob";
-import {
-  BaseValueSchema,
-  BasePrimaryKeySchema,
-  BasicKeyType,
-  DefaultValueType,
-  DefaultValueSchema,
-  DefaultPrimaryKeyType,
-  DefaultPrimaryKeySchema,
-} from "./ITabularRepository";
+import { BaseValueSchema, BasePrimaryKeySchema, BasicKeyType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 import { sleep } from "@ellmers/util";
 /**
@@ -31,10 +23,10 @@ import { sleep } from "@ellmers/util";
  * @template Combined - The combined type of Key & Value
  */
 export class FsFolderTabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
+  Key extends Record<string, BasicKeyType>,
+  Value extends Record<string, any>,
+  PrimaryKeySchema extends BasePrimaryKeySchema,
+  ValueSchema extends BaseValueSchema,
   Combined extends Key & Value = Key & Value,
 > extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
   private folderPath: string;
@@ -51,8 +43,8 @@ export class FsFolderTabularRepository<
    */
   constructor(
     folderPath: string,
-    primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
+    primaryKeySchema: PrimaryKeySchema,
+    valueSchema: ValueSchema,
     searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     super(primaryKeySchema, valueSchema, searchable as Array<keyof Combined>);

@@ -16,11 +16,6 @@ import {
   BasePrimaryKeySchema,
   BaseValueSchema,
   BasicKeyType,
-  BasicValueType,
-  DefaultPrimaryKeyType,
-  DefaultValueType,
-  DefaultPrimaryKeySchema,
-  DefaultValueSchema,
 } from "./ITabularRepository";
 
 /**
@@ -36,12 +31,12 @@ import {
  * @template Combined - Combined type of Key & Value
  */
 export abstract class TabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
+  Key extends Record<string, BasicKeyType>,
+  Value extends Record<string, any>,
+  PrimaryKeySchema extends BasePrimaryKeySchema,
+  ValueSchema extends BaseValueSchema,
   Combined extends Record<string, any> = Key & Value,
-> implements ITabularRepository<Key, Value, Combined>
+> implements ITabularRepository<Key, Combined>
 {
   /** Event emitter for repository events */
   protected events = new EventEmitter<TabularEventListeners<Key, Combined>>();
@@ -55,8 +50,8 @@ export abstract class TabularRepository<
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
-    protected primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    protected valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
+    protected primaryKeySchema: PrimaryKeySchema,
+    protected valueSchema: ValueSchema,
     searchableInput: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     this.primaryKeySchema = primaryKeySchema;

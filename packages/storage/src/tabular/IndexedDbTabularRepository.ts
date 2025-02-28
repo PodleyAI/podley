@@ -6,15 +6,7 @@
 //    *******************************************************************************
 
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
-import {
-  BaseValueSchema,
-  BasePrimaryKeySchema,
-  BasicKeyType,
-  DefaultValueType,
-  DefaultValueSchema,
-  DefaultPrimaryKeyType,
-  DefaultPrimaryKeySchema,
-} from "./ITabularRepository";
+import { BaseValueSchema, BasePrimaryKeySchema, BasicKeyType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 /**
  * A tabular repository implementation using IndexedDB for browser-based storage.
@@ -26,10 +18,10 @@ import { TabularRepository } from "./TabularRepository";
  * @template Combined - Combined type of Key & Value
  */
 export class IndexedDbTabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
+  Key extends Record<string, BasicKeyType>,
+  Value extends Record<string, any>,
+  PrimaryKeySchema extends BasePrimaryKeySchema,
+  ValueSchema extends BaseValueSchema,
   Combined extends Record<string, any> = Key & Value,
 > extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /** Promise that resolves to the IndexedDB database instance */
@@ -45,8 +37,8 @@ export class IndexedDbTabularRepository<
    */
   constructor(
     public table: string = "tabular_store",
-    primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
+    primaryKeySchema: PrimaryKeySchema,
+    valueSchema: ValueSchema,
     searchableIndex: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     super(primaryKeySchema, valueSchema, searchableIndex as Array<keyof Combined>);

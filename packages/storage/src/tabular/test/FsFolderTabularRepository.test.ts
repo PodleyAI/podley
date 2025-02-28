@@ -39,19 +39,29 @@ describe("FsFolderTabularRepository", () => {
   describe("basic functionality", () => {
     runGenericTabularRepositoryTests(
       async () =>
-        new FsFolderTabularRepository<PrimaryKey, Value>(testDir, PrimaryKeySchema, ValueSchema)
+        new FsFolderTabularRepository<
+          PrimaryKey,
+          Value,
+          typeof PrimaryKeySchema,
+          typeof ValueSchema
+        >(testDir, PrimaryKeySchema, ValueSchema)
     );
   });
 
   // Add specific tests for search functionality
   describe("search functionality", () => {
     test("should throw error when attempting to search", async () => {
-      const repo = new FsFolderTabularRepository<CompoundKey, CompoundValue>(
-        testDir,
-        CompoundPrimaryKeySchema,
-        CompoundValueSchema,
-        ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
-      );
+      const repo = new FsFolderTabularRepository<
+        CompoundKey,
+        CompoundValue,
+        typeof CompoundPrimaryKeySchema,
+        typeof CompoundValueSchema
+      >(testDir, CompoundPrimaryKeySchema, CompoundValueSchema, [
+        "category",
+        ["category", "subcategory"],
+        ["subcategory", "category"],
+        "value",
+      ]);
 
       expect(repo.search({ category: "test" })).rejects.toThrow(
         "Search not supported for FsFolderTabularRepository"

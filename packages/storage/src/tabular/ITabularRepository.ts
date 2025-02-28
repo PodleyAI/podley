@@ -11,9 +11,9 @@ import { EventEmitter, EventParameters } from "@ellmers/util";
  * Type definitions for tabular repository events
  */
 export type TabularEventListeners<Key, Combined> = {
-  put: (value: Combined) => void;
-  get: (key: Key, value: Combined | undefined) => void;
-  search: (key: Partial<Combined>, results: Combined[] | undefined) => void;
+  put: (entity: Combined) => void;
+  get: (key: Key, entity: Combined | undefined) => void;
+  search: (key: Partial<Combined>, entities: Combined[] | undefined) => void;
   delete: (key: Key) => void;
   clearall: () => void;
 };
@@ -39,15 +39,6 @@ export type BasePrimaryKeySchema = Record<string, "string" | "number" | "bigint"
 export type BaseValueSchema = Record<string, "string" | "number" | "boolean" | "bigint">;
 
 /**
- * Default schema types for simple string row data
- */
-export type DefaultPrimaryKeyType = { key: string };
-export const DefaultPrimaryKeySchema: BasePrimaryKeySchema = { key: "string" } as const;
-
-export type DefaultValueType = { value: string };
-export const DefaultValueSchema: BaseValueSchema = { value: "string" } as const;
-
-/**
  * Interface defining the contract for tabular storage repositories.
  * Provides a flexible interface for storing and retrieving data with typed
  * primary keys and values, and supports compound keys and partial key lookup.
@@ -59,9 +50,8 @@ export const DefaultValueSchema: BaseValueSchema = { value: "string" } as const;
  * @typeParam Combined - Combined type of Key & Value
  */
 export interface ITabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  Combined extends Record<string, any> = Key & Value,
+  Key extends Record<string, BasicKeyType>,
+  Combined extends Record<string, BasicValueType>,
 > {
   // Core methods
   put(value: Combined): Promise<void>;

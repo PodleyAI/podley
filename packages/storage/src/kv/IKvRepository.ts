@@ -6,7 +6,16 @@
 //    *******************************************************************************
 
 import { EventParameters } from "@ellmers/util";
-import { BasicKeyType } from "../tabular/ITabularRepository";
+import { BasePrimaryKeySchema, BaseValueSchema, BasicKeyType } from "../tabular/ITabularRepository";
+
+/**
+ * Default schema types for simple string row data
+ */
+export type DefaultPrimaryKeyType = { key: string };
+export const DefaultPrimaryKeySchema: BasePrimaryKeySchema = { key: "string" } as const;
+
+export type DefaultValueType = { value: string };
+export const DefaultValueSchema: BaseValueSchema = { value: "string" } as const;
 
 /**
  * Type definitions for kv repository events

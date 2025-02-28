@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, PostgresTabularRepository } from "@ellmers/storage";
+import { DefaultValueSchema, DefaultValueType, PostgresTabularRepository } from "@ellmers/storage";
 import type { Pool } from "pg";
 import {
   TaskOutputPrimaryKey,
@@ -21,7 +21,8 @@ export class PostgresTaskOutputRepository extends TaskOutputRepository {
   tabularRepository: PostgresTabularRepository<
     TaskOutputPrimaryKey,
     DefaultValueType,
-    typeof TaskOutputPrimaryKeySchema
+    typeof TaskOutputPrimaryKeySchema,
+    typeof DefaultValueSchema
   >;
   public type = "PostgresTaskOutputRepository" as const;
   constructor(db: Pool) {
@@ -29,7 +30,8 @@ export class PostgresTaskOutputRepository extends TaskOutputRepository {
     this.tabularRepository = new PostgresTabularRepository<
       TaskOutputPrimaryKey,
       DefaultValueType,
-      typeof TaskOutputPrimaryKeySchema
-    >(db, "task_outputs", TaskOutputPrimaryKeySchema);
+      typeof TaskOutputPrimaryKeySchema,
+      typeof DefaultValueSchema
+    >(db, "task_outputs", TaskOutputPrimaryKeySchema, DefaultValueSchema);
   }
 }

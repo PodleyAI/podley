@@ -9,6 +9,12 @@ import { JSONValue } from "./IKvRepository";
 import { KvRepository } from "./KvRepository";
 import { FsFolderTabularRepository } from "../tabular/FsFolderTabularRepository";
 import { BasicKeyType } from "../tabular/ITabularRepository";
+import {
+  DefaultPrimaryKeySchema,
+  DefaultPrimaryKeyType,
+  DefaultValueSchema,
+  DefaultValueType,
+} from "@ellmers/storage";
 
 /**
  * Abstract base class for key-value storage repositories.
@@ -23,7 +29,12 @@ export class FsFolderKvRepository<
   Value extends JSONValue = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
-  public tabularRepository: FsFolderTabularRepository;
+  public tabularRepository: FsFolderTabularRepository<
+    DefaultPrimaryKeyType,
+    DefaultValueType,
+    typeof DefaultPrimaryKeySchema,
+    typeof DefaultValueSchema
+  >;
 
   /**
    * Creates a new KvRepository instance
@@ -34,6 +45,10 @@ export class FsFolderKvRepository<
     valueType: "string" | "number" | "bigint" | "json"
   ) {
     super(primaryKeyType, valueType);
-    this.tabularRepository = new FsFolderTabularRepository(folderPath);
+    this.tabularRepository = new FsFolderTabularRepository(
+      folderPath,
+      DefaultPrimaryKeySchema,
+      DefaultValueSchema
+    );
   }
 }

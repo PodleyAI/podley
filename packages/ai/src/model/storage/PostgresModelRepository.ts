@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, PostgresTabularRepository } from "@ellmers/storage";
+import { DefaultValueSchema, DefaultValueType, PostgresTabularRepository } from "@ellmers/storage";
 import {
   Task2ModelDetailSchema,
   Task2ModelPrimaryKeySchema,
@@ -25,7 +25,8 @@ export class PostgresModelRepository extends ModelRepository {
   modelTabularRepository: PostgresTabularRepository<
     ModelPrimaryKey,
     DefaultValueType,
-    typeof ModelPrimaryKeySchema
+    typeof ModelPrimaryKeySchema,
+    typeof DefaultValueSchema
   >;
   task2ModelTabularRepository: PostgresTabularRepository<
     Task2ModelPrimaryKey,
@@ -43,8 +44,9 @@ export class PostgresModelRepository extends ModelRepository {
     this.modelTabularRepository = new PostgresTabularRepository<
       ModelPrimaryKey,
       DefaultValueType,
-      typeof ModelPrimaryKeySchema
-    >(db, tableModels, ModelPrimaryKeySchema);
+      typeof ModelPrimaryKeySchema,
+      typeof DefaultValueSchema
+    >(db, tableModels, ModelPrimaryKeySchema, DefaultValueSchema);
     this.task2ModelTabularRepository = new PostgresTabularRepository<
       Task2ModelPrimaryKey,
       Task2ModelDetail,

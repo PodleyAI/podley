@@ -6,15 +6,7 @@
 //    *******************************************************************************
 
 import { Database } from "bun:sqlite";
-import {
-  BaseValueSchema,
-  BasicKeyType,
-  BasePrimaryKeySchema,
-  DefaultValueType,
-  DefaultValueSchema,
-  DefaultPrimaryKeyType,
-  DefaultPrimaryKeySchema,
-} from "./ITabularRepository";
+import { BaseValueSchema, BasicKeyType, BasePrimaryKeySchema } from "./ITabularRepository";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 
 // SqliteTabularRepository is a key-value store that uses SQLite as the backend for
@@ -29,10 +21,10 @@ import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
  * @template Combined - Combined type of Key & Value
  */
 export class SqliteTabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
+  Key extends Record<string, BasicKeyType>,
+  Value extends Record<string, any>,
+  PrimaryKeySchema extends BasePrimaryKeySchema,
+  ValueSchema extends BaseValueSchema,
   Combined extends Record<string, any> = Key & Value,
 > extends BaseSqlTabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /** The SQLite database instance */
@@ -50,8 +42,8 @@ export class SqliteTabularRepository<
   constructor(
     dbOrPath: string,
     table: string = "tabular_store",
-    primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
+    primaryKeySchema: PrimaryKeySchema,
+    valueSchema: ValueSchema,
     searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     super(table, primaryKeySchema, valueSchema, searchable);

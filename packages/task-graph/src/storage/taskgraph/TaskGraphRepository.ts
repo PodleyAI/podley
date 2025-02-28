@@ -6,7 +6,13 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import type { TabularRepository } from "@ellmers/storage";
+import type {
+  DefaultPrimaryKeyType,
+  DefaultValueType,
+  DefaultPrimaryKeySchema,
+  DefaultValueSchema,
+  TabularRepository,
+} from "@ellmers/storage";
 import { DataFlow } from "../../task-graph/DataFlow";
 import { TaskGraph, TaskGraphItemJson, TaskGraphJson } from "../../task-graph/TaskGraph";
 import { CompoundTask } from "../../task/CompoundTask";
@@ -37,7 +43,12 @@ export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParam
  */
 export abstract class TaskGraphRepository {
   public type = "TaskGraphRepository";
-  abstract tabularRepository: TabularRepository;
+  abstract tabularRepository: TabularRepository<
+    DefaultPrimaryKeyType,
+    DefaultValueType,
+    typeof DefaultPrimaryKeySchema,
+    typeof DefaultValueSchema
+  >;
   protected events = new EventEmitter<TaskGraphEventListeners>();
 
   /**

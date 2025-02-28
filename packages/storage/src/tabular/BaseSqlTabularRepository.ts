@@ -8,10 +8,6 @@
 import {
   BasePrimaryKeySchema,
   BaseValueSchema,
-  DefaultPrimaryKeySchema,
-  DefaultPrimaryKeyType,
-  DefaultValueSchema,
-  DefaultValueType,
   BasicKeyType,
   BasicValueType,
 } from "./ITabularRepository";
@@ -30,10 +26,10 @@ import { TabularRepository } from "./TabularRepository";
  * @template Combined - Combined type of Key & Value in case just combining them is not enough
  */
 export abstract class BaseSqlTabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
+  Key extends Record<string, BasicKeyType>,
+  Value extends Record<string, any>,
+  PrimaryKeySchema extends BasePrimaryKeySchema,
+  ValueSchema extends BaseValueSchema,
   Combined extends Record<string, any> = Key & Value,
 > extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /**
@@ -46,8 +42,8 @@ export abstract class BaseSqlTabularRepository<
    */
   constructor(
     protected readonly table: string = "tabular_store",
-    primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
+    primaryKeySchema: PrimaryKeySchema,
+    valueSchema: ValueSchema,
     searchable: Array<keyof Combined | Array<keyof Combined>> = []
   ) {
     super(primaryKeySchema, valueSchema, searchable);

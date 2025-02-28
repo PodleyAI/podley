@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import { DefaultValueType, type TabularRepository } from "@ellmers/storage";
-import { Model, ModelPrimaryKey } from "./Model";
+import { DefaultValueSchema, DefaultValueType, type TabularRepository } from "@ellmers/storage";
+import { Model, ModelPrimaryKey, ModelPrimaryKeySchema } from "./Model";
 
 /**
  * Events that can be emitted by the ModelRepository
@@ -67,12 +67,22 @@ export abstract class ModelRepository {
   /**
    * Repository for storing and managing Model instances
    */
-  abstract modelTabularRepository: TabularRepository<ModelPrimaryKey, DefaultValueType>;
+  abstract modelTabularRepository: TabularRepository<
+    ModelPrimaryKey,
+    DefaultValueType,
+    typeof ModelPrimaryKeySchema,
+    typeof DefaultValueSchema
+  >;
 
   /**
    * Repository for managing relationships between tasks and models
    */
-  abstract task2ModelTabularRepository: TabularRepository<Task2ModelPrimaryKey, Task2ModelDetail>;
+  abstract task2ModelTabularRepository: TabularRepository<
+    Task2ModelPrimaryKey,
+    Task2ModelDetail,
+    typeof Task2ModelPrimaryKeySchema,
+    typeof Task2ModelDetailSchema
+  >;
 
   /** Event emitter for repository events */
   protected events = new EventEmitter<ModelEventListeners>();

@@ -23,19 +23,23 @@ import { describe } from "bun:test";
 describe("SqliteTabularRepository", () => {
   runGenericTabularRepositoryTests(
     async () =>
-      new SqliteTabularRepository<PrimaryKey, Value>(
+      new SqliteTabularRepository<PrimaryKey, Value, typeof PrimaryKeySchema, typeof ValueSchema>(
         ":memory:",
         `sql_test_${nanoid()}`,
         PrimaryKeySchema,
         ValueSchema
       ),
     async () =>
-      new SqliteTabularRepository<CompoundKey, CompoundValue>(
-        ":memory:",
-        `sql_test_${nanoid()}`,
-        CompoundPrimaryKeySchema,
-        CompoundValueSchema,
-        ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
-      )
+      new SqliteTabularRepository<
+        CompoundKey,
+        CompoundValue,
+        typeof CompoundPrimaryKeySchema,
+        typeof CompoundValueSchema
+      >(":memory:", `sql_test_${nanoid()}`, CompoundPrimaryKeySchema, CompoundValueSchema, [
+        "category",
+        ["category", "subcategory"],
+        ["subcategory", "category"],
+        "value",
+      ])
   );
 });
