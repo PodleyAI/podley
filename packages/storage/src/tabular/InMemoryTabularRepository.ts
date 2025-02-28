@@ -13,19 +13,19 @@ import { TabularRepository } from "./TabularRepository";
  * A generic in-memory key-value repository implementation.
  * Provides a simple, non-persistent storage solution suitable for testing and caching scenarios.
  *
- * @template Key - The type of the primary key object, must be a record of basic types
+ * @template PrimaryKey - The type of the primary key object, must be a record of basic types
  * @template Value - The type of the value object being stored
  * @template PrimaryKeySchema - Schema definition for the primary key
  * @template ValueSchema - Schema definition for the value
  * @template Combined - The combined type of Key & Value
  */
 export class InMemoryTabularRepository<
-  Key extends Record<string, BasicKeyType>,
+  PrimaryKey extends Record<string, BasicKeyType>,
   Value extends Record<string, any>,
   PrimaryKeySchema extends BasePrimaryKeySchema,
   ValueSchema extends BaseValueSchema,
-  Combined extends Record<string, any> = Key & Value,
-> extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Combined extends Record<string, any> = PrimaryKey & Value,
+> extends TabularRepository<PrimaryKey, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /** Internal storage using a Map with fingerprint strings as keys */
   values = new Map<string, Combined>();
 
@@ -62,7 +62,7 @@ export class InMemoryTabularRepository<
    * @returns The value object if found, undefined otherwise
    * @emits 'get' event with the fingerprint ID and value when found
    */
-  async get(key: Key): Promise<Combined | undefined> {
+  async get(key: PrimaryKey): Promise<Combined | undefined> {
     const id = await makeFingerprint(key);
     const out = this.values.get(id);
     this.events.emit("get", key, out);
@@ -106,7 +106,7 @@ export class InMemoryTabularRepository<
    * @param key - The primary key object of the entry to delete
    * @emits 'delete' event with the fingerprint ID when successful
    */
-  async delete(value: Key | Combined): Promise<void> {
+  async delete(value: PrimaryKey | Combined): Promise<void> {
     const { key } = this.separateKeyValueFromCombined(value as Combined);
     const id = await makeFingerprint(key);
     this.values.delete(id);

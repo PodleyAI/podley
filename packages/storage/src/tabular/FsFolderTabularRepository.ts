@@ -16,19 +16,19 @@ import { sleep } from "@ellmers/util";
  * A tabular repository implementation that uses the filesystem for storage.
  * Each row is stored as a separate JSON file in the specified directory.
  *
- * @template Key - The type of the primary key object
+ * @template PrimaryKey - The type of the primary key object
  * @template Value - The type of the value object being stored
  * @template PrimaryKeySchema - Schema definition for the primary key
  * @template ValueSchema - Schema definition for the value
  * @template Combined - The combined type of Key & Value
  */
 export class FsFolderTabularRepository<
-  Key extends Record<string, BasicKeyType>,
+  PrimaryKey extends Record<string, BasicKeyType>,
   Value extends Record<string, any>,
   PrimaryKeySchema extends BasePrimaryKeySchema,
   ValueSchema extends BaseValueSchema,
-  Combined extends Key & Value = Key & Value,
-> extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Combined extends PrimaryKey & Value = PrimaryKey & Value,
+> extends TabularRepository<PrimaryKey, Value, PrimaryKeySchema, ValueSchema, Combined> {
   private folderPath: string;
 
   /**
@@ -87,7 +87,7 @@ export class FsFolderTabularRepository<
    * @returns The value object if found, undefined otherwise
    * @emits 'get' event with the fingerprint ID and value when found
    */
-  async get(key: Key): Promise<Combined | undefined> {
+  async get(key: PrimaryKey): Promise<Combined | undefined> {
     const filePath = await this.getFilePath(key);
     try {
       const data = await readFile(filePath, "utf-8");
@@ -105,7 +105,7 @@ export class FsFolderTabularRepository<
    * @param key - The primary key object of the entry to delete
    * @emits 'delete' event with the fingerprint ID when successful
    */
-  async delete(value: Key | Combined): Promise<void> {
+  async delete(value: PrimaryKey | Combined): Promise<void> {
     const { key } = this.separateKeyValueFromCombined(value as Combined);
     const filePath = await this.getFilePath(key);
     try {
@@ -179,7 +179,7 @@ export class FsFolderTabularRepository<
    * Generates the full filesystem path for a given key.
    * @private
    */
-  private async getFilePath(value: Key | Combined): Promise<string> {
+  private async getFilePath(value: PrimaryKey | Combined): Promise<string> {
     const { key } = this.separateKeyValueFromCombined(value as Combined);
     const filename = await this.getKeyAsIdString(key);
     const fullPath = path.join(this.folderPath, `${filename}.json`);

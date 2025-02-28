@@ -14,19 +14,19 @@ import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 
 /**
  * A SQLite-based key-value repository implementation.
- * @template Key - The type of the primary key object, must be a record of basic types
+ * @template PrimaryKey - The type of the primary key object, must be a record of basic types
  * @template Value - The type of the value object being stored
  * @template PrimaryKeySchema - Schema definition for the primary key
  * @template ValueSchema - Schema definition for the value
  * @template Combined - Combined type of Key & Value
  */
 export class SqliteTabularRepository<
-  Key extends Record<string, BasicKeyType>,
+  PrimaryKey extends Record<string, BasicKeyType>,
   Value extends Record<string, any>,
   PrimaryKeySchema extends BasePrimaryKeySchema,
   ValueSchema extends BaseValueSchema,
-  Combined extends Record<string, any> = Key & Value,
-> extends BaseSqlTabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Combined extends Record<string, any> = PrimaryKey & Value,
+> extends BaseSqlTabularRepository<PrimaryKey, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /** The SQLite database instance */
   private db: Database;
 
@@ -162,7 +162,7 @@ export class SqliteTabularRepository<
    * @returns The stored value or undefined if not found
    * @emits 'get' event when successful
    */
-  async get(key: Key): Promise<Combined | undefined> {
+  async get(key: PrimaryKey): Promise<Combined | undefined> {
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `\`${key}\` = ?`)
       .join(" AND ");
@@ -234,7 +234,7 @@ export class SqliteTabularRepository<
    * @param key - The primary key object to delete
    * @emits 'delete' event when successful
    */
-  async delete(key: Key): Promise<void> {
+  async delete(key: PrimaryKey): Promise<void> {
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `${key} = ?`)
       .join(" AND ");

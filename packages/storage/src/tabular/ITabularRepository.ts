@@ -43,20 +43,17 @@ export type BaseValueSchema = Record<string, "string" | "number" | "boolean" | "
  * Provides a flexible interface for storing and retrieving data with typed
  * primary keys and values, and supports compound keys and partial key lookup.
  *
- * @typeParam Key - Type for the primary key structure
- * @typeParam Value - Type for the value structure
- * @typeParam PrimaryKeySchema - Schema definition for the primary key
- * @typeParam ValueSchema - Schema definition for the value
+ * @typeParam PrimaryKey - Type for the primary key structure
  * @typeParam Combined - Combined type of Key & Value
  */
 export interface ITabularRepository<
-  Key extends Record<string, BasicKeyType>,
+  PrimaryKey extends Record<string, BasicKeyType>,
   Combined extends Record<string, BasicValueType>,
 > {
   // Core methods
   put(value: Combined): Promise<void>;
-  get(key: Key): Promise<Combined | undefined>;
-  delete(key: Key | Combined): Promise<void>;
+  get(key: PrimaryKey): Promise<Combined | undefined>;
+  delete(key: PrimaryKey | Combined): Promise<void>;
   getAll(): Promise<Combined[] | undefined>;
   deleteAll(): Promise<void>;
   size(): Promise<number>;
@@ -64,23 +61,23 @@ export interface ITabularRepository<
   // Event handling methods
   on<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Combined>
+    fn: TabularEventListener<Event, PrimaryKey, Combined>
   ): void;
   off<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Combined>
+    fn: TabularEventListener<Event, PrimaryKey, Combined>
   ): void;
   emit<Event extends TabularEventName>(
     name: Event,
-    ...args: TabularEventParameters<Event, Key, Combined>
+    ...args: TabularEventParameters<Event, PrimaryKey, Combined>
   ): void;
   once<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Combined>
+    fn: TabularEventListener<Event, PrimaryKey, Combined>
   ): void;
   emitted<Event extends TabularEventName>(
     name: Event
-  ): Promise<TabularEventParameters<Event, Key, Combined>>;
+  ): Promise<TabularEventParameters<Event, PrimaryKey, Combined>>;
 
   // Convenience methods
   search(key: Partial<Combined>): Promise<Combined[] | undefined>;

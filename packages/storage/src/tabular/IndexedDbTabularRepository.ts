@@ -11,19 +11,19 @@ import { TabularRepository } from "./TabularRepository";
 /**
  * A tabular repository implementation using IndexedDB for browser-based storage.
  *
- * @template Key - The type of the primary key object
+ * @template PrimaryKey - The type of the primary key object
  * @template Value - The type of the value object to be stored
  * @template PrimaryKeySchema - Schema definition for the primary key
  * @template ValueSchema - Schema definition for the value
  * @template Combined - Combined type of Key & Value
  */
 export class IndexedDbTabularRepository<
-  Key extends Record<string, BasicKeyType>,
+  PrimaryKey extends Record<string, BasicKeyType>,
   Value extends Record<string, any>,
   PrimaryKeySchema extends BasePrimaryKeySchema,
   ValueSchema extends BaseValueSchema,
-  Combined extends Record<string, any> = Key & Value,
-> extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Combined extends Record<string, any> = PrimaryKey & Value,
+> extends TabularRepository<PrimaryKey, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /** Promise that resolves to the IndexedDB database instance */
   private dbPromise: Promise<IDBDatabase> | undefined;
 
@@ -97,13 +97,13 @@ export class IndexedDbTabularRepository<
     });
   }
 
-  protected getPrimaryKeyAsOrderedArray(key: Key) {
+  protected getPrimaryKeyAsOrderedArray(key: PrimaryKey) {
     return super
       .getPrimaryKeyAsOrderedArray(key)
       .map((value) => (typeof value === "bigint" ? value.toString() : value));
   }
 
-  private getIndexedKey(key: Key): any {
+  private getIndexedKey(key: PrimaryKey): any {
     const keys = super
       .getPrimaryKeyAsOrderedArray(key)
       .map((value) => (typeof value === "bigint" ? value.toString() : value));
@@ -116,7 +116,7 @@ export class IndexedDbTabularRepository<
    * @returns The value object or undefined if not found.
    * @emits get - Emitted when the value is successfully retrieved
    */
-  async get(key: Key): Promise<Combined | undefined> {
+  async get(key: PrimaryKey): Promise<Combined | undefined> {
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
     return new Promise((resolve, reject) => {
@@ -239,7 +239,7 @@ export class IndexedDbTabularRepository<
    * Deletes a row from the repository.
    * @param key - The key object to delete.
    */
-  async delete(key: Key): Promise<void> {
+  async delete(key: PrimaryKey): Promise<void> {
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
     return new Promise((resolve, reject) => {

@@ -16,6 +16,7 @@ import {
   BasePrimaryKeySchema,
   BaseValueSchema,
   BasicKeyType,
+  BasicValueType,
 } from "./ITabularRepository";
 
 /**
@@ -24,22 +25,22 @@ import {
  * primary keys and values, and supports compound keys and partial key lookup.
  * Has a basic event emitter for listening to repository events.
  *
- * @template Key - The type of the primary key object
+ * @template PrimaryKey - The type of the primary key object
  * @template Value - The type of the value object being stored
  * @template PrimaryKeySchema - Schema definition for the primary key
  * @template ValueSchema - Schema definition for the value
  * @template Combined - Combined type of Key & Value
  */
 export abstract class TabularRepository<
-  Key extends Record<string, BasicKeyType>,
-  Value extends Record<string, any>,
+  PrimaryKey extends Record<string, BasicKeyType>,
+  Value extends Record<string, BasicValueType>,
   PrimaryKeySchema extends BasePrimaryKeySchema,
   ValueSchema extends BaseValueSchema,
-  Combined extends Record<string, any> = Key & Value,
-> implements ITabularRepository<Key, Combined>
+  Combined extends Record<string, BasicValueType> = PrimaryKey & Value,
+> implements ITabularRepository<PrimaryKey, Combined>
 {
   /** Event emitter for repository events */
-  protected events = new EventEmitter<TabularEventListeners<Key, Combined>>();
+  protected events = new EventEmitter<TabularEventListeners<PrimaryKey, Combined>>();
 
   protected searchable: Array<keyof Combined>[];
   /**
@@ -138,7 +139,10 @@ export abstract class TabularRepository<
    * @param name The name of the event to listen for
    * @param fn The callback function to execute when the event occurs
    */
-  on<Event extends TabularEventName>(name: Event, fn: TabularEventListener<Event, Key, Combined>) {
+  on<Event extends TabularEventName>(
+    name: Event,
+    fn: TabularEventListener<Event, PrimaryKey, Combined>
+  ) {
     this.events.on(name, fn);
   }
 
@@ -147,7 +151,10 @@ export abstract class TabularRepository<
    * @param name The name of the event to remove the listener from
    * @param fn The callback function to remove
    */
-  off<Event extends TabularEventName>(name: Event, fn: TabularEventListener<Event, Key, Combined>) {
+  off<Event extends TabularEventName>(
+    name: Event,
+    fn: TabularEventListener<Event, PrimaryKey, Combined>
+  ) {
     this.events.off(name, fn);
   }
 
@@ -158,7 +165,7 @@ export abstract class TabularRepository<
    */
   once<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Combined>
+    fn: TabularEventListener<Event, PrimaryKey, Combined>
   ) {
     this.events.once(name, fn);
   }
@@ -170,7 +177,7 @@ export abstract class TabularRepository<
    */
   emit<Event extends TabularEventName>(
     name: Event,
-    ...args: TabularEventParameters<Event, Key, Combined>
+    ...args: TabularEventParameters<Event, PrimaryKey, Combined>
   ) {
     this.events.emit(name, ...args);
   }
@@ -182,16 +189,18 @@ export abstract class TabularRepository<
    */
   emitted<Event extends TabularEventName>(
     name: Event
-  ): Promise<TabularEventParameters<Event, Key, Combined>> {
-    return this.events.emitted(name) as Promise<TabularEventParameters<Event, Key, Combined>>;
+  ): Promise<TabularEventParameters<Event, PrimaryKey, Combined>> {
+    return this.events.emitted(name) as Promise<
+      TabularEventParameters<Event, PrimaryKey, Combined>
+    >;
   }
 
   /**
    * Core abstract methods that must be implemented by concrete repositories
    */
   abstract put(value: Combined): Promise<void>;
-  abstract get(key: Key): Promise<Combined | undefined>;
-  abstract delete(key: Key | Combined): Promise<void>;
+  abstract get(key: PrimaryKey): Promise<Combined | undefined>;
+  abstract delete(key: PrimaryKey | Combined): Promise<void>;
   abstract getAll(): Promise<Combined[] | undefined>;
   abstract deleteAll(): Promise<void>;
   abstract size(): Promise<number>;
@@ -205,10 +214,10 @@ export abstract class TabularRepository<
    */
   public abstract search(key: Partial<Combined>): Promise<Combined[] | undefined>;
 
-  protected primaryKeyColumns(): Array<keyof Key> {
-    const columns: Array<keyof Key> = [];
+  protected primaryKeyColumns(): Array<keyof PrimaryKey> {
+    const columns: Array<keyof PrimaryKey> = [];
     for (const [k, type] of Object.entries(this.primaryKeySchema)) {
-      columns.push(k as keyof Key);
+      columns.push(k as keyof PrimaryKey);
     }
     return columns;
   }
@@ -227,27 +236,27 @@ export abstract class TabularRepository<
    * @param obj - Combined row object
    * @returns Separated key and value objects
    */
-  protected separateKeyValueFromCombined(obj: Combined): { value: Value; key: Key } {
+  protected separateKeyValueFromCombined(obj: Combined): { value: Value; key: PrimaryKey } {
     if (obj === null) {
       console.warn("Key is null");
-      return { value: {} as Value, key: {} as Key };
+      return { value: {} as Value, key: {} as PrimaryKey };
     }
     if (typeof obj !== "object") {
       console.warn("Object is not an object");
-      return { value: {} as Value, key: {} as Key };
+      return { value: {} as Value, key: {} as PrimaryKey };
     }
     const primaryKeyNames = this.primaryKeyColumns();
     const valueNames = this.valueColumns();
     const value: Partial<Value> = {};
-    const key: Partial<Key> = {};
+    const key: Partial<PrimaryKey> = {};
     for (const k of primaryKeyNames) {
-      key[k] = obj[k as keyof Combined];
+      key[k as keyof PrimaryKey] = obj[k as keyof Combined] as any;
     }
     for (const k of valueNames) {
-      value[k] = obj[k as keyof Combined];
+      value[k as keyof Value] = obj[k as keyof Combined] as any;
     }
 
-    return { value: value as Value, key: key as Key };
+    return { value: value as Value, key: key as PrimaryKey };
   }
 
   /**
@@ -256,7 +265,7 @@ export abstract class TabularRepository<
    * @param key - Primary key to convert
    * @returns Promise resolving to a string fingerprint of the key
    */
-  protected async getKeyAsIdString(key: Key): Promise<string> {
+  protected async getKeyAsIdString(key: PrimaryKey): Promise<string> {
     return await makeFingerprint(key);
   }
 
@@ -266,7 +275,7 @@ export abstract class TabularRepository<
    * @param key - The primary key object to convert
    * @returns Array of key values ordered according to the schema
    */
-  protected getPrimaryKeyAsOrderedArray(key: Key): BasicKeyType[] {
+  protected getPrimaryKeyAsOrderedArray(key: PrimaryKey): BasicKeyType[] {
     const orderedParams: BasicKeyType[] = [];
     for (const [k, type] of Object.entries(this.primaryKeySchema)) {
       if (k in key) {

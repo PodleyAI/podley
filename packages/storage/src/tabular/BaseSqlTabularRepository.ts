@@ -19,19 +19,19 @@ import { TabularRepository } from "./TabularRepository";
  * Base class for SQL-based tabular repositories that implements common functionality
  * for both SQLite and PostgreSQL database implementations.
  *
- * @template Key - The type of the primary key object, must be a record of basic types
+ * @template PrimaryKey - The type of the primary key object, must be a record of basic types
  * @template Value - The type of the value object being stored
  * @template PrimaryKeySchema - Schema definition for the primary key
  * @template ValueSchema - Schema definition for the value
  * @template Combined - Combined type of Key & Value in case just combining them is not enough
  */
 export abstract class BaseSqlTabularRepository<
-  Key extends Record<string, BasicKeyType>,
+  PrimaryKey extends Record<string, BasicKeyType>,
   Value extends Record<string, any>,
   PrimaryKeySchema extends BasePrimaryKeySchema,
   ValueSchema extends BaseValueSchema,
-  Combined extends Record<string, any> = Key & Value,
-> extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Combined extends Record<string, any> = PrimaryKey & Value,
+> extends TabularRepository<PrimaryKey, Value, PrimaryKeySchema, ValueSchema, Combined> {
   /**
    * Creates a new instance of BaseSqlTabularRepository
    * @param table - The name of the database table to use for storage

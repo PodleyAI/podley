@@ -15,19 +15,19 @@ import { BasePrimaryKeySchema, BaseValueSchema, BasicKeyType } from "./ITabularR
  * This class provides persistent storage for data in a PostgreSQL database,
  * making it suitable for multi-user scenarios.
  *
- * @template Key - The type of the primary key, must be a record of basic types
+ * @template PrimaryKey - The type of the primary key, must be a record of basic types
  * @template Value - The type of the stored value, can be any record type
  * @template PrimaryKeySchema - Schema definition for the primary key
  * @template ValueSchema - Schema definition for the value
  * @template Combined - Combined type of Key & Value
  */
 export class PostgresTabularRepository<
-  Key extends Record<string, BasicKeyType>,
+  PrimaryKey extends Record<string, BasicKeyType>,
   Value extends Record<string, any>,
   PrimaryKeySchema extends BasePrimaryKeySchema,
   ValueSchema extends BaseValueSchema,
-  Combined extends Record<string, any> = Key & Value,
-> extends BaseSqlTabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Combined extends Record<string, any> = PrimaryKey & Value,
+> extends BaseSqlTabularRepository<PrimaryKey, Value, PrimaryKeySchema, ValueSchema, Combined> {
   private db: Pool;
 
   /**
@@ -170,7 +170,7 @@ export class PostgresTabularRepository<
    * @returns The stored value or undefined if not found
    * @emits "get" event with the key when successful
    */
-  async get(key: Key): Promise<Combined | undefined> {
+  async get(key: PrimaryKey): Promise<Combined | undefined> {
     await this.dbPromise;
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((discriminatorKey, i) => `${discriminatorKey} = $${i + 1}`)
@@ -241,7 +241,7 @@ export class PostgresTabularRepository<
    * @param key - The primary key object to delete
    * @emits "delete" event with the key when successful
    */
-  async delete(value: Key | Combined): Promise<void> {
+  async delete(value: PrimaryKey | Combined): Promise<void> {
     await this.dbPromise;
     const { key } = this.separateKeyValueFromCombined(value as Combined);
     const whereClauses = (this.primaryKeyColumns() as string[])
