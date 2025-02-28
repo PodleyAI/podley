@@ -8,24 +8,24 @@
 import { InMemoryTabularRepository } from "../InMemoryTabularRepository";
 import {
   runGenericTabularRepositoryTests,
-  PrimaryKey,
-  Value,
-  PrimaryKeySchema,
-  ValueSchema,
-  CompoundKey,
-  CompoundValue,
-  CompoundPrimaryKeySchema,
-  CompoundValueSchema,
+  CompoundPrimaryKeyNames,
+  CompoundSchema,
+  SearchPrimaryKeyNames,
+  SearchSchema,
 } from "./genericTabularRepositoryTests";
 import { describe } from "bun:test";
 
 describe("InMemoryTabularRepository", () => {
   runGenericTabularRepositoryTests(
-    async () => new InMemoryTabularRepository<PrimaryKey, Value>(PrimaryKeySchema, ValueSchema),
     async () =>
-      new InMemoryTabularRepository<CompoundKey, CompoundValue>(
-        CompoundPrimaryKeySchema,
-        CompoundValueSchema,
+      new InMemoryTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
+        CompoundSchema,
+        CompoundPrimaryKeyNames
+      ),
+    async () =>
+      new InMemoryTabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>(
+        SearchSchema,
+        SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
       )
   );

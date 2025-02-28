@@ -5,10 +5,16 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { JSONValue } from "./IKvRepository";
+import {
+  JSONValue,
+  KeyOptionType,
+  ValueOptionType,
+  KeyOption,
+  ValueOption,
+} from "../tabular/ITabularRepository";
 import { KvRepository } from "./KvRepository";
 import { InMemoryTabularRepository } from "../tabular/InMemoryTabularRepository";
-import { BasicKeyType } from "../tabular/ITabularRepository";
+import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
 
 /**
  * Abstract base class for key-value storage repositories.
@@ -19,20 +25,23 @@ import { BasicKeyType } from "../tabular/ITabularRepository";
  * @template Combined - Combined type of Key & Value
  */
 export class InMemoryKvRepository<
-  Key extends BasicKeyType = BasicKeyType,
-  Value extends JSONValue = JSONValue,
+  Key extends KeyOptionType = KeyOptionType,
+  Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
-  public tabularRepository: InMemoryTabularRepository;
+  public tabularRepository: InMemoryTabularRepository<
+    typeof DefaultKeyValueSchema,
+    typeof DefaultKeyValueKey
+  >;
 
   /**
    * Creates a new KvRepository instance
    */
-  constructor(
-    primaryKeyType: "string" | "number" | "bigint" | "uuid4",
-    valueType: "string" | "number" | "bigint" | "json"
-  ) {
+  constructor(primaryKeyType: KeyOption, valueType: ValueOption) {
     super(primaryKeyType, valueType);
-    this.tabularRepository = new InMemoryTabularRepository();
+    this.tabularRepository = new InMemoryTabularRepository(
+      DefaultKeyValueSchema,
+      DefaultKeyValueKey
+    );
   }
 }

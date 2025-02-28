@@ -6,9 +6,15 @@
 //    *******************************************************************************
 
 import { PostgresTabularRepository } from "../tabular/PostgresTabularRepository";
-import { JSONValue } from "./IKvRepository";
+import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
+import {
+  JSONValue,
+  KeyOptionType,
+  ValueOptionType,
+  KeyOption,
+  ValueOption,
+} from "../tabular/ITabularRepository";
 import { KvRepository } from "./KvRepository";
-import { BasicKeyType } from "../tabular/ITabularRepository";
 
 /**
  * Abstract base class for key-value storage repositories.
@@ -19,11 +25,14 @@ import { BasicKeyType } from "../tabular/ITabularRepository";
  * @template Combined - Combined type of Key & Value
  */
 export class PostgresKvRepository<
-  Key extends BasicKeyType = BasicKeyType,
-  Value extends JSONValue = JSONValue,
+  Key extends KeyOptionType = KeyOptionType,
+  Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
-  public tabularRepository: PostgresTabularRepository;
+  public tabularRepository: PostgresTabularRepository<
+    typeof DefaultKeyValueSchema,
+    typeof DefaultKeyValueKey
+  >;
 
   /**
    * Creates a new KvRepository instance
@@ -31,10 +40,15 @@ export class PostgresKvRepository<
   constructor(
     public db: any,
     public dbName: string,
-    primaryKeyType: "string" | "number" | "bigint" | "uuid4",
-    valueType: "string" | "number" | "bigint" | "json"
+    primaryKeyType: KeyOption,
+    valueType: ValueOption
   ) {
     super(primaryKeyType, valueType);
-    this.tabularRepository = new PostgresTabularRepository(db, dbName);
+    this.tabularRepository = new PostgresTabularRepository(
+      db,
+      dbName,
+      DefaultKeyValueSchema,
+      DefaultKeyValueKey
+    );
   }
 }

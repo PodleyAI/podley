@@ -5,15 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, IndexedDbTabularRepository } from "@ellmers/storage";
+import { IndexedDbTabularRepository } from "@ellmers/storage";
 import {
-  Task2ModelDetailSchema,
-  Task2ModelPrimaryKeySchema,
-  Task2ModelDetail,
-  Task2ModelPrimaryKey,
+  Task2ModelSchema,
+  Task2ModelPrimaryKeyNames,
   ModelRepository,
+  ModelSchema,
+  ModelPrimaryKeyNames,
 } from "../ModelRepository";
-import { ModelPrimaryKey, ModelPrimaryKeySchema } from "../Model";
 
 /**
  * IndexedDB implementation of a model repository.
@@ -21,30 +20,27 @@ import { ModelPrimaryKey, ModelPrimaryKeySchema } from "../Model";
  */
 export class IndexedDbModelRepository extends ModelRepository {
   modelTabularRepository: IndexedDbTabularRepository<
-    ModelPrimaryKey,
-    DefaultValueType,
-    typeof ModelPrimaryKeySchema
+    typeof ModelSchema,
+    typeof ModelPrimaryKeyNames
   >;
   task2ModelTabularRepository: IndexedDbTabularRepository<
-    Task2ModelPrimaryKey,
-    Task2ModelDetail,
-    typeof Task2ModelPrimaryKeySchema,
-    typeof Task2ModelDetailSchema
+    typeof Task2ModelSchema,
+    typeof Task2ModelPrimaryKeyNames
   >;
   public type = "IndexedDbModelRepository" as const;
 
   constructor(tableModels: string = "models", tableTask2Models: string = "task2models") {
     super();
-    this.modelTabularRepository = new IndexedDbTabularRepository<
-      ModelPrimaryKey,
-      DefaultValueType,
-      typeof ModelPrimaryKeySchema
-    >(tableModels, ModelPrimaryKeySchema);
-    this.task2ModelTabularRepository = new IndexedDbTabularRepository<
-      Task2ModelPrimaryKey,
-      Task2ModelDetail,
-      typeof Task2ModelPrimaryKeySchema,
-      typeof Task2ModelDetailSchema
-    >(tableTask2Models, Task2ModelPrimaryKeySchema, Task2ModelDetailSchema, ["model"]);
+    this.modelTabularRepository = new IndexedDbTabularRepository(
+      tableModels,
+      ModelSchema,
+      ModelPrimaryKeyNames
+    );
+    this.task2ModelTabularRepository = new IndexedDbTabularRepository(
+      tableTask2Models,
+      Task2ModelSchema,
+      Task2ModelPrimaryKeyNames,
+      ["model"]
+    );
   }
 }

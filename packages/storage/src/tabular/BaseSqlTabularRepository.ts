@@ -6,14 +6,11 @@
 //    *******************************************************************************
 
 import {
-  BasePrimaryKeySchema,
-  BaseValueSchema,
-  DefaultPrimaryKeySchema,
-  DefaultPrimaryKeyType,
-  DefaultValueSchema,
-  DefaultValueType,
-  BasicKeyType,
-  BasicValueType,
+  ValueSchema,
+  ValueOptionType,
+  ExtractPrimaryKey,
+  ExtractValue,
+  SchemaToType,
 } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
@@ -23,34 +20,32 @@ import { TabularRepository } from "./TabularRepository";
  * Base class for SQL-based tabular repositories that implements common functionality
  * for both SQLite and PostgreSQL database implementations.
  *
- * @template Key - The type of the primary key object, must be a record of basic types
- * @template Value - The type of the value object being stored
- * @template PrimaryKeySchema - Schema definition for the primary key
- * @template ValueSchema - Schema definition for the value
- * @template Combined - Combined type of Key & Value in case just combining them is not enough
+ * @template Schema - The schema definition for the entity
+ * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export abstract class BaseSqlTabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
-  Combined extends Record<string, any> = Key & Value,
-> extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Schema extends ValueSchema,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  // computed types
+  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
+  Entity = SchemaToType<Schema>,
+  Value = ExtractValue<Schema, PrimaryKeyNames>,
+> extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /**
    * Creates a new instance of BaseSqlTabularRepository
    * @param table - The name of the database table to use for storage
-   * @param primaryKeySchema - Schema defining the structure of the primary key
-   * @param valueSchema - Schema defining the structure of the stored values
-   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   * @param schema - Schema defining the structure of the entity
+   * @param primaryKeyNames - Array of property names that form the primary key
+   * @param indexes - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
     protected readonly table: string = "tabular_store",
-    primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    searchable: Array<keyof Combined | Array<keyof Combined>> = []
+    schema: Schema,
+    primaryKeyNames: PrimaryKeyNames,
+    indexes: Array<keyof Entity | Array<keyof Entity>> = []
   ) {
-    super(primaryKeySchema, valueSchema, searchable);
+    super(schema, primaryKeyNames, indexes);
     this.validateTableAndSchema();
   }
 
@@ -85,7 +80,11 @@ export abstract class BaseSqlTabularRepository<
         return `${$delimiter}${key}${$delimiter} ${sqlType} NULL`;
       })
       .join(", ");
-    return cols;
+    if (cols.length > 0) {
+      return `, ${cols}`;
+    } else {
+      return "";
+    }
   }
 
   /**
@@ -111,11 +110,14 @@ export abstract class BaseSqlTabularRepository<
    * @returns Array of values ordered according to the schema
    * @throws Error if a required field is missing
    */
-  protected getValueAsOrderedArray(value: Value): BasicValueType[] {
-    const orderedParams: BasicValueType[] = [];
+  protected getValueAsOrderedArray(value: Value): ValueOptionType[] {
+    const orderedParams: ValueOptionType[] = [];
+
     for (const [key, type] of Object.entries(this.valueSchema)) {
-      if (key in value) {
-        orderedParams.push(value[key]);
+      // Use a type assertion to ensure TypeScript recognizes value as an object with string keys
+      const valueAsRecord = value as Record<string, ValueOptionType>;
+      if (Object.prototype.hasOwnProperty.call(valueAsRecord, key)) {
+        orderedParams.push(valueAsRecord[key]);
       } else {
         throw new Error(`Missing required value field: ${key}`);
       }

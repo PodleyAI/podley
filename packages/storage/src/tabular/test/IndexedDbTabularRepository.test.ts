@@ -10,15 +10,11 @@ import { nanoid } from "nanoid";
 import { afterEach, describe } from "bun:test";
 import { IndexedDbTabularRepository } from "../IndexedDbTabularRepository";
 import {
-  PrimaryKey,
-  PrimaryKeySchema,
+  CompoundPrimaryKeyNames,
   runGenericTabularRepositoryTests,
-  Value,
-  ValueSchema,
-  CompoundKey,
-  CompoundValue,
-  CompoundPrimaryKeySchema,
-  CompoundValueSchema,
+  CompoundSchema,
+  SearchPrimaryKeyNames,
+  SearchSchema,
 } from "./genericTabularRepositoryTests";
 
 describe("IndexedDbTabularRepository", () => {
@@ -41,23 +37,17 @@ describe("IndexedDbTabularRepository", () => {
 
   runGenericTabularRepositoryTests(
     async () =>
-      new IndexedDbTabularRepository<PrimaryKey, Value>(
+      new IndexedDbTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
         `${dbName}_complex`,
-        PrimaryKeySchema,
-        ValueSchema
+        CompoundSchema,
+        CompoundPrimaryKeyNames
       ),
     async () => {
-      const searchable = [
-        "category",
-        ["category", "subcategory"],
-        ["subcategory", "category"],
-        "value",
-      ] as const;
-      return new IndexedDbTabularRepository<CompoundKey, CompoundValue>(
+      return new IndexedDbTabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>(
         `${dbName}_compound`,
-        CompoundPrimaryKeySchema,
-        CompoundValueSchema,
-        searchable as unknown as Array<keyof (CompoundKey & CompoundValue)>
+        SearchSchema,
+        SearchPrimaryKeyNames,
+        ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
       );
     }
   );

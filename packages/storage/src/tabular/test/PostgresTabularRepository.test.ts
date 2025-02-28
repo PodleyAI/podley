@@ -8,14 +8,10 @@
 import { PostgresTabularRepository } from "../PostgresTabularRepository";
 import {
   runGenericTabularRepositoryTests,
-  PrimaryKey,
-  Value,
-  PrimaryKeySchema,
-  ValueSchema,
-  CompoundKey,
-  CompoundValue,
-  CompoundPrimaryKeySchema,
-  CompoundValueSchema,
+  CompoundPrimaryKeyNames,
+  CompoundSchema,
+  SearchPrimaryKeyNames,
+  SearchSchema,
 } from "./genericTabularRepositoryTests";
 import { nanoid } from "nanoid";
 import { describe } from "bun:test";
@@ -27,18 +23,18 @@ const db = new PGlite() as unknown as Pool;
 describe("PostgresTabularRepository", () => {
   runGenericTabularRepositoryTests(
     async () =>
-      new PostgresTabularRepository<PrimaryKey, Value>(
+      new PostgresTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
         db,
         `sql_test_${nanoid()}`,
-        PrimaryKeySchema,
-        ValueSchema
+        CompoundSchema,
+        CompoundPrimaryKeyNames
       ),
     async () =>
-      new PostgresTabularRepository<CompoundKey, CompoundValue>(
+      new PostgresTabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>(
         db,
         `sql_test_${nanoid()}`,
-        CompoundPrimaryKeySchema,
-        CompoundValueSchema,
+        SearchSchema,
+        SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
       )
   );

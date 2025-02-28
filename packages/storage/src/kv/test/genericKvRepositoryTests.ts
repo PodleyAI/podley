@@ -6,17 +6,25 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { IKvRepository, JSONValue } from "../IKvRepository";
-import { BasicKeyType } from "../../tabular/ITabularRepository";
+import { DefaultKvPkType, DefaultKvValueType, IKvRepository } from "../IKvRepository";
+import {
+  KeyOption,
+  KeyOptionType,
+  ValueOption,
+  ValueOptionType,
+} from "../../tabular/ITabularRepository";
 
 export function runGenericKvRepositoryTests(
-  createRepository: <K extends BasicKeyType = BasicKeyType, V extends JSONValue = JSONValue>(
-    keyType: "string" | "number" | "bigint" | "uuid4",
-    valueType: "string" | "number" | "bigint" | "json"
+  createRepository: <
+    K extends KeyOptionType = KeyOptionType,
+    V extends ValueOptionType = ValueOptionType,
+  >(
+    keyType: KeyOption,
+    valueType: ValueOption
   ) => Promise<IKvRepository<K, V>>
 ) {
   describe("with default schemas (key and value)", () => {
-    let repository: IKvRepository;
+    let repository: IKvRepository<DefaultKvPkType, DefaultKvValueType>;
 
     beforeEach(async () => {
       repository = await createRepository("string", "string");
@@ -45,7 +53,7 @@ export function runGenericKvRepositoryTests(
     let repository: IKvRepository<string, { option: string; success: boolean }>;
 
     beforeEach(async () => {
-      repository = await createRepository<string, { option: string; success: boolean }>(
+      repository = await createRepository<DefaultKvPkType, { option: string; success: boolean }>(
         "string",
         "json"
       );

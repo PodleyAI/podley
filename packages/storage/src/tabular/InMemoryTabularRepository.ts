@@ -6,62 +6,52 @@
 //    *******************************************************************************
 
 import { makeFingerprint } from "@ellmers/util";
-import {
-  BaseValueSchema,
-  BasePrimaryKeySchema,
-  BasicKeyType,
-  DefaultValueType,
-  DefaultValueSchema,
-  DefaultPrimaryKeyType,
-  DefaultPrimaryKeySchema,
-} from "./ITabularRepository";
+import { ValueSchema, ExtractPrimaryKey, ExtractValue, SchemaToType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
 /**
  * A generic in-memory key-value repository implementation.
  * Provides a simple, non-persistent storage solution suitable for testing and caching scenarios.
  *
- * @template Key - The type of the primary key object, must be a record of basic types
- * @template Value - The type of the value object being stored
- * @template PrimaryKeySchema - Schema definition for the primary key
- * @template ValueSchema - Schema definition for the value
- * @template Combined - The combined type of Key & Value
+ * @template Schema - The schema definition for the entity
+ * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class InMemoryTabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
-  Combined extends Record<string, any> = Key & Value,
-> extends TabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Schema extends ValueSchema,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  // computed types
+  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
+  Entity = SchemaToType<Schema>,
+  Value = ExtractValue<Schema, PrimaryKeyNames>,
+> extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** Internal storage using a Map with fingerprint strings as keys */
-  values = new Map<string, Combined>();
+  values = new Map<string, Entity>();
 
   /**
    * Creates a new InMemoryTabularRepository instance
-   * @param primaryKeySchema - Schema defining the structure of primary keys
-   * @param valueSchema - Schema defining the structure of values
-   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   * @param schema - Schema defining the structure of the entity
+   * @param primaryKeyNames - Array of property names that form the primary key
+   * @param indexes - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
-    primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    searchable: Array<keyof Combined | Array<keyof Combined>> = []
+    schema: Schema,
+    primaryKeyNames: PrimaryKeyNames,
+    indexes: Array<keyof Entity | Array<keyof Entity>> = []
   ) {
-    super(primaryKeySchema, valueSchema, searchable);
+    super(schema, primaryKeyNames, indexes);
   }
 
   /**
    * Stores a key-value pair in the repository
-   * @param key - The primary key object
-   * @param value - The value object to store
+   * @param value - The combined object to store
    * @emits 'put' event with the fingerprint ID when successful
    */
-  async putKeyValue(key: Key, value: Value): Promise<void> {
+  async put(value: Entity): Promise<void> {
+    const { key } = this.separateKeyValueFromCombined(value);
     const id = await makeFingerprint(key);
-    this.values.set(id, Object.assign({}, key, value) as Combined);
-    this.events.emit("put", id, value);
+    this.values.set(id, value);
+    this.events.emit("put", value);
   }
 
   /**
@@ -70,15 +60,11 @@ export class InMemoryTabularRepository<
    * @returns The value object if found, undefined otherwise
    * @emits 'get' event with the fingerprint ID and value when found
    */
-  async getKeyValue(key: Key): Promise<Value | undefined> {
+  async get(key: PrimaryKey): Promise<Entity | undefined> {
     const id = await makeFingerprint(key);
     const out = this.values.get(id);
-    if (out === undefined) {
-      return undefined;
-    }
-    const { value } = this.separateKeyValueFromCombined(out);
-    this.events.emit("get", id, value);
-    return value;
+    this.events.emit("get", key, out);
+    return out;
   }
 
   /**
@@ -87,8 +73,8 @@ export class InMemoryTabularRepository<
    * @returns Array of matching combined objects
    * @throws Error if search criteria outside of searchable fields
    */
-  async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
-    const searchKeys = Object.keys(key);
+  async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
+    const searchKeys = Object.keys(key) as Array<keyof Entity>;
     if (searchKeys.length === 0) {
       return undefined;
     }
@@ -96,11 +82,18 @@ export class InMemoryTabularRepository<
     // Find the best matching index
     const bestIndex = this.findBestMatchingIndex(searchKeys);
     if (!bestIndex) {
-      throw new Error("No suitable index found for the search criteria");
+      throw new Error(
+        `No suitable index found for the search criteria, searching for ['${searchKeys.join(
+          "', '"
+        )}'] with pk ['${this.primaryKeyNames.join("', '")}'] and indexes ['${this.indexes.join(
+          "', '"
+        )}']`
+      );
     }
 
     // Filter results based on the search criteria
     const results = Array.from(this.values.values()).filter((item) =>
+      // @ts-ignore
       Object.entries(key).every(([k, v]) => item[k] === v)
     );
 
@@ -118,10 +111,11 @@ export class InMemoryTabularRepository<
    * @param key - The primary key object of the entry to delete
    * @emits 'delete' event with the fingerprint ID when successful
    */
-  async deleteKeyValue(key: Key): Promise<void> {
+  async delete(value: PrimaryKey | Entity): Promise<void> {
+    const { key } = this.separateKeyValueFromCombined(value as Entity);
     const id = await makeFingerprint(key);
     this.values.delete(id);
-    this.events.emit("delete", id);
+    this.events.emit("delete", key);
   }
 
   /**
@@ -137,7 +131,7 @@ export class InMemoryTabularRepository<
    * Returns an array of all entries in the repository
    * @returns Array of all entries in the repository
    */
-  async getAll(): Promise<Combined[] | undefined> {
+  async getAll(): Promise<Entity[] | undefined> {
     return Array.from(this.values.values());
   }
 

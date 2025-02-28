@@ -5,15 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, PostgresTabularRepository } from "@ellmers/storage";
+import { PostgresTabularRepository } from "@ellmers/storage";
 import {
-  Task2ModelDetailSchema,
-  Task2ModelPrimaryKeySchema,
-  Task2ModelDetail,
-  Task2ModelPrimaryKey,
   ModelRepository,
+  ModelSchema,
+  ModelPrimaryKeyNames,
+  Task2ModelPrimaryKeyNames,
+  Task2ModelSchema,
 } from "../ModelRepository";
-import { ModelPrimaryKey, ModelPrimaryKeySchema } from "../Model";
 import { Pool } from "pg";
 
 /**
@@ -23,15 +22,12 @@ import { Pool } from "pg";
 export class PostgresModelRepository extends ModelRepository {
   public type = "PostgresModelRepository" as const;
   modelTabularRepository: PostgresTabularRepository<
-    ModelPrimaryKey,
-    DefaultValueType,
-    typeof ModelPrimaryKeySchema
+    typeof ModelSchema,
+    typeof ModelPrimaryKeyNames
   >;
   task2ModelTabularRepository: PostgresTabularRepository<
-    Task2ModelPrimaryKey,
-    Task2ModelDetail,
-    typeof Task2ModelPrimaryKeySchema,
-    typeof Task2ModelDetailSchema
+    typeof Task2ModelSchema,
+    typeof Task2ModelPrimaryKeyNames
   >;
 
   constructor(
@@ -40,16 +36,18 @@ export class PostgresModelRepository extends ModelRepository {
     tableTask2Models: string = "aitask2aimodel"
   ) {
     super();
-    this.modelTabularRepository = new PostgresTabularRepository<
-      ModelPrimaryKey,
-      DefaultValueType,
-      typeof ModelPrimaryKeySchema
-    >(db, tableModels, ModelPrimaryKeySchema);
-    this.task2ModelTabularRepository = new PostgresTabularRepository<
-      Task2ModelPrimaryKey,
-      Task2ModelDetail,
-      typeof Task2ModelPrimaryKeySchema,
-      typeof Task2ModelDetailSchema
-    >(db, tableTask2Models, Task2ModelPrimaryKeySchema, Task2ModelDetailSchema, ["model"]);
+    this.modelTabularRepository = new PostgresTabularRepository(
+      db,
+      tableModels,
+      ModelSchema,
+      ModelPrimaryKeyNames
+    );
+    this.task2ModelTabularRepository = new PostgresTabularRepository(
+      db,
+      tableTask2Models,
+      Task2ModelSchema,
+      Task2ModelPrimaryKeyNames,
+      ["model"]
+    );
   }
 }

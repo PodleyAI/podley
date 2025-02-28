@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskGraphRepository } from "./TaskGraphRepository";
+import {
+  TaskGraphPrimaryKeyNames,
+  TaskGraphRepository,
+  TaskGraphSchema,
+} from "./TaskGraphRepository";
 import { SqliteTabularRepository } from "@ellmers/storage";
 
 /**
@@ -13,10 +17,18 @@ import { SqliteTabularRepository } from "@ellmers/storage";
  * Provides storage and retrieval for task graphs using SQLite.
  */
 export class SqliteTaskGraphRepository extends TaskGraphRepository {
-  tabularRepository: SqliteTabularRepository;
+  tabularRepository: SqliteTabularRepository<
+    typeof TaskGraphSchema,
+    typeof TaskGraphPrimaryKeyNames
+  >;
   public type = "SqliteTaskGraphRepository" as const;
   constructor(dbOrPath: string, table: string = "task_graphs") {
     super();
-    this.tabularRepository = new SqliteTabularRepository(dbOrPath, table);
+    this.tabularRepository = new SqliteTabularRepository(
+      dbOrPath,
+      table,
+      TaskGraphSchema,
+      TaskGraphPrimaryKeyNames
+    );
   }
 }

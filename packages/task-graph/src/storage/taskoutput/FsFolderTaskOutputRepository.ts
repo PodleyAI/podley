@@ -5,30 +5,29 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, FsFolderTabularRepository } from "@ellmers/storage";
+import { FsFolderTabularRepository } from "@ellmers/storage";
 import {
-  TaskOutputPrimaryKeySchema,
-  TaskOutputPrimaryKey,
+  TaskOutputSchema,
+  TaskOutputPrimaryKeyNames,
   TaskOutputRepository,
 } from "./TaskOutputRepository";
 
 /**
- * File-based implementation of a task output repository.
- * Provides storage and retrieval for task outputs using a file system.
+ * File system folder implementation of a task output repository.
+ * Provides storage and retrieval for task outputs using the file system.
  */
 export class FsFolderTaskOutputRepository extends TaskOutputRepository {
   tabularRepository: FsFolderTabularRepository<
-    TaskOutputPrimaryKey,
-    DefaultValueType,
-    typeof TaskOutputPrimaryKeySchema
+    typeof TaskOutputSchema,
+    typeof TaskOutputPrimaryKeyNames
   >;
   public type = "FsFolderTaskOutputRepository" as const;
   constructor(folderPath: string) {
     super();
-    this.tabularRepository = new FsFolderTabularRepository<
-      TaskOutputPrimaryKey,
-      DefaultValueType,
-      typeof TaskOutputPrimaryKeySchema
-    >(folderPath, TaskOutputPrimaryKeySchema);
+    this.tabularRepository = new FsFolderTabularRepository(
+      folderPath,
+      TaskOutputSchema,
+      TaskOutputPrimaryKeyNames
+    );
   }
 }

@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskGraphRepository } from "./TaskGraphRepository";
+import {
+  TaskGraphRepository,
+  TaskGraphSchema,
+  TaskGraphPrimaryKeyNames,
+} from "./TaskGraphRepository";
 import { PostgresTabularRepository } from "@ellmers/storage";
 import type { Pool } from "pg";
 
@@ -14,10 +18,18 @@ import type { Pool } from "pg";
  * Provides storage and retrieval for task graphs using PostgreSQL.
  */
 export class PostgresTaskGraphRepository extends TaskGraphRepository {
-  tabularRepository: PostgresTabularRepository;
+  tabularRepository: PostgresTabularRepository<
+    typeof TaskGraphSchema,
+    typeof TaskGraphPrimaryKeyNames
+  >;
   public type = "PostgresTaskGraphRepository" as const;
   constructor(db: Pool) {
     super();
-    this.tabularRepository = new PostgresTabularRepository(db, "task_graphs");
+    this.tabularRepository = new PostgresTabularRepository(
+      db,
+      "task_graphs",
+      TaskGraphSchema,
+      TaskGraphPrimaryKeyNames
+    );
   }
 }

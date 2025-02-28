@@ -10,93 +10,127 @@ import { EventEmitter, EventParameters } from "@ellmers/util";
 /**
  * Type definitions for tabular repository events
  */
-export type TabularEventListeners<Key, Value, Combined> = {
-  put: (key: unknown, value: Value) => void;
-  get: (key: unknown, value: Value | undefined) => void;
-  search: (key: Partial<Combined>, results: Combined[] | undefined) => void;
-  delete: (key: unknown) => void;
+export type TabularEventListeners<PrimaryKey, Entity> = {
+  put: (entity: Entity) => void;
+  get: (key: PrimaryKey, entity: Entity | undefined) => void;
+  search: (key: Partial<Entity>, entities: Entity[] | undefined) => void;
+  delete: (key: PrimaryKey) => void;
   clearall: () => void;
 };
 
-export type TabularEventName = keyof TabularEventListeners<any, any, any>;
+export type TabularEventName = keyof TabularEventListeners<any, any>;
 export type TabularEventListener<
   Event extends TabularEventName,
-  Key,
-  Value,
-  Combined,
-> = TabularEventListeners<Key, Value, Combined>[Event];
+  PrimaryKey,
+  Entity,
+> = TabularEventListeners<PrimaryKey, Entity>[Event];
 
 export type TabularEventParameters<
   Event extends TabularEventName,
-  Key,
-  Value,
-  Combined,
-> = EventParameters<TabularEventListeners<Key, Value, Combined>, Event>;
+  PrimaryKey,
+  Entity,
+> = EventParameters<TabularEventListeners<PrimaryKey, Entity>, Event>;
 
-/**
- * Schema definitions for primary keys and values
- */
-export type BasicKeyType = string | number | bigint;
-export type BasicValueType = string | number | bigint | boolean | null;
-export type BasePrimaryKeySchema = Record<string, "string" | "number" | "boolean" | "bigint">;
-export type BaseValueSchema = Record<string, "string" | "number" | "boolean" | "bigint">;
+// Helper type to map schema types to their actual types
+export type MapSchemaTypes<T extends keyof SchemaTypeMap> = SchemaTypeMap[T];
 
-/**
- * Default schema types for simple string row data
- */
-export type DefaultPrimaryKeyType = { key: string };
-export const DefaultPrimaryKeySchema: BasePrimaryKeySchema = { key: "string" } as const;
+// Type definitions for specialized string types
+export type uuid4 = string;
+export type uuid7 = string;
+export type nanoid = string;
+export type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
+  | { [key: string]: JSONValue };
 
-export type DefaultValueType = { value: string };
-export const DefaultValueSchema: BaseValueSchema = { value: "string" } as const;
+// Type mapping from schema type strings to actual types
+export type SchemaTypeMap = {
+  uuid4: uuid4;
+  uuid7: uuid7;
+  nanoid: nanoid;
+  string: string;
+  number: number;
+  bigint: bigint;
+  boolean: boolean;
+  null: null;
+  json: JSONValue;
+  date: Date;
+};
+
+export type KeyOption = "string" | "number" | "bigint" | "uuid4" | "uuid7" | "nanoid";
+export type KeySchema = Record<string, KeyOption>;
+export type KeyOptionType = MapSchemaTypes<KeyOption>;
+
+export type ValueOption = KeyOption | "boolean" | "null" | "json" | "date";
+export type ValueSchema = Record<string, ValueOption>;
+export type ValueOptionType = MapSchemaTypes<ValueOption>;
+
+// Type to map schema to TypeScript types
+export type SchemaToType<T extends Record<string, keyof SchemaTypeMap>> = {
+  [K in keyof T]: MapSchemaTypes<T[K]>;
+};
+
+// Extract primary key type
+export type ExtractPrimaryKey<
+  T extends Record<string, keyof SchemaTypeMap>,
+  K extends ReadonlyArray<keyof T>,
+> = {
+  [P in K[number]]: MapSchemaTypes<T[P]>;
+};
+
+// Extract value type (everything except the primary key)
+export type ExtractValue<
+  T extends Record<string, keyof SchemaTypeMap>,
+  K extends ReadonlyArray<keyof T>,
+> = Omit<SchemaToType<T>, K[number]>;
 
 /**
  * Interface defining the contract for tabular storage repositories.
  * Provides a flexible interface for storing and retrieving data with typed
  * primary keys and values, and supports compound keys and partial key lookup.
  *
- * @typeParam Key - Type for the primary key structure
- * @typeParam Value - Type for the value structure
- * @typeParam PrimaryKeySchema - Schema definition for the primary key
- * @typeParam ValueSchema - Schema definition for the value
- * @typeParam Combined - Combined type of Key & Value
+ * @typeParam Schema - The schema definition for the entity
+ * @typeParam PrimaryKeyNames - Array of property names that form the primary key
  */
 export interface ITabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  Combined extends Record<string, any> = Key & Value,
+  Schema extends ValueSchema,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema> = ReadonlyArray<keyof Schema>,
+  // computed types
+  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
+  Entity = SchemaToType<Schema>,
 > {
   // Core methods
-  putKeyValue(key: Key, value: Value): Promise<void>;
-  getKeyValue(key: Key): Promise<Value | undefined>;
-  deleteKeyValue(key: Key | Combined): Promise<void>;
-  getAll(): Promise<Combined[] | undefined>;
+  put(value: Entity): Promise<void>;
+  get(key: PrimaryKey): Promise<Entity | undefined>;
+  delete(key: PrimaryKey | Entity): Promise<void>;
+  getAll(): Promise<Entity[] | undefined>;
   deleteAll(): Promise<void>;
   size(): Promise<number>;
 
   // Event handling methods
   on<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Value, Combined>
+    fn: TabularEventListener<Event, PrimaryKey, Entity>
   ): void;
   off<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Value, Combined>
+    fn: TabularEventListener<Event, PrimaryKey, Entity>
   ): void;
   emit<Event extends TabularEventName>(
     name: Event,
-    ...args: TabularEventParameters<Event, Key, Value, Combined>
+    ...args: TabularEventParameters<Event, PrimaryKey, Entity>
   ): void;
   once<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, Key, Value, Combined>
+    fn: TabularEventListener<Event, PrimaryKey, Entity>
   ): void;
   emitted<Event extends TabularEventName>(
     name: Event
-  ): Promise<TabularEventParameters<Event, Key, Value, Combined>>;
+  ): Promise<TabularEventParameters<Event, PrimaryKey, Entity>>;
 
   // Convenience methods
-  search(key: Partial<Combined>): Promise<Combined[] | undefined>;
-  getCombined(key: Key): Promise<Combined | undefined>;
-  delete(key: Key | BasicKeyType): Promise<void>;
+  search(key: Partial<Entity>): Promise<Entity[] | undefined>;
 }

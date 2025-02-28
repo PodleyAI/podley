@@ -6,7 +6,25 @@
 //    *******************************************************************************
 
 import { EventParameters } from "@ellmers/util";
-import { BasicKeyType } from "../tabular/ITabularRepository";
+import {
+  JSONValue,
+  KeyOptionType,
+  ValueSchema,
+  ValueOptionType,
+} from "../tabular/ITabularRepository";
+
+/**
+ * Default schema types for simple string row data
+ */
+export const DefaultKeyValueSchema: ValueSchema = {
+  key: "string",
+  value: "json",
+} as const;
+export const DefaultKeyValueKey = ["key"] as const;
+export type DefaultKvPkType = string;
+export type DefaultKvPk = { key: DefaultKvPkType };
+export type DefaultKvValueType = JSONValue;
+export type DefaultKvValue = { value: DefaultKvValueType };
 
 /**
  * Type definitions for kv repository events
@@ -32,29 +50,17 @@ export type KvEventParameters<Event extends KvEventName, Key, Value, Combined> =
 >;
 
 /**
- * Schema definitions for primary keys and values
- */
-
-export type JSONValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JSONValue[]
-  | { [key: string]: JSONValue };
-
-/**
  * Interface defining the contract for kv storage repositories.
  * Provides a flexible interface for storing and retrieving data with typed
  * primary keys and values, and supports compound keys and partial key lookup.
  *
  * @typeParam Key - Type for the primary key
- * @typeParam Value - Type for the value structure
+ * @typeParam Value - Type for the value struct re
  * @typeParam Combined - Combined type of Key & Value
  */
 export interface IKvRepository<
-  Key extends BasicKeyType = BasicKeyType,
-  Value extends JSONValue = JSONValue,
+  Key extends KeyOptionType = KeyOptionType,
+  Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > {
   // Core methods

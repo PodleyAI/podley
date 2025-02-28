@@ -31,13 +31,22 @@ export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParam
   Event
 >;
 
+export const TaskGraphSchema = {
+  key: "string",
+  value: "string",
+} as const;
+
+export const TaskGraphPrimaryKeyNames = ["key"] as const;
 /**
  * Abstract repository class for managing task graphs persistence and retrieval.
  * Provides functionality to save, load, and manipulate task graphs with their associated tasks and data flows.
  */
 export abstract class TaskGraphRepository {
   public type = "TaskGraphRepository";
-  abstract tabularRepository: TabularRepository;
+  abstract tabularRepository: TabularRepository<
+    typeof TaskGraphSchema,
+    typeof TaskGraphPrimaryKeyNames
+  >;
   protected events = new EventEmitter<TaskGraphEventListeners>();
 
   /**
@@ -137,7 +146,7 @@ export abstract class TaskGraphRepository {
    */
   async saveTaskGraph(key: string, output: TaskGraph): Promise<void> {
     const value = JSON.stringify(output.toJSON());
-    await this.tabularRepository.putKeyValue({ key }, { value });
+    await this.tabularRepository.put({ key, value });
     this.events.emit("graph_saved", key);
   }
 
@@ -148,7 +157,7 @@ export abstract class TaskGraphRepository {
    * @emits graph_retrieved when the operation completes successfully
    */
   async getTaskGraph(key: string): Promise<TaskGraph | undefined> {
-    const result = await this.tabularRepository.getKeyValue({ key });
+    const result = await this.tabularRepository.get({ key });
     const value = result?.value;
     if (!value) {
       return undefined;

@@ -7,13 +7,11 @@
 
 import { Database } from "bun:sqlite";
 import {
-  BaseValueSchema,
-  BasicKeyType,
-  BasePrimaryKeySchema,
-  DefaultValueType,
-  DefaultValueSchema,
-  DefaultPrimaryKeyType,
-  DefaultPrimaryKeySchema,
+  ValueSchema,
+  KeyOptionType,
+  ExtractPrimaryKey,
+  ExtractValue,
+  SchemaToType,
 } from "./ITabularRepository";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 
@@ -22,19 +20,17 @@ import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 
 /**
  * A SQLite-based key-value repository implementation.
- * @template Key - The type of the primary key object, must be a record of basic types
- * @template Value - The type of the value object being stored
- * @template PrimaryKeySchema - Schema definition for the primary key
- * @template ValueSchema - Schema definition for the value
- * @template Combined - Combined type of Key & Value
+ * @template Schema - The schema definition for the entity
+ * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class SqliteTabularRepository<
-  Key extends Record<string, BasicKeyType> = DefaultPrimaryKeyType,
-  Value extends Record<string, any> = DefaultValueType,
-  PrimaryKeySchema extends BasePrimaryKeySchema = typeof DefaultPrimaryKeySchema,
-  ValueSchema extends BaseValueSchema = typeof DefaultValueSchema,
-  Combined extends Record<string, any> = Key & Value,
-> extends BaseSqlTabularRepository<Key, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Schema extends ValueSchema,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  // computed types
+  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
+  Entity = SchemaToType<Schema>,
+  Value = ExtractValue<Schema, PrimaryKeyNames>,
+> extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** The SQLite database instance */
   private db: Database;
 
@@ -42,19 +38,19 @@ export class SqliteTabularRepository<
    * Creates a new SQLite key-value repository
    * @param dbOrPath - Either a Database instance or a path to the SQLite database file
    * @param table - The name of the table to use for storage (defaults to 'tabular_store')
-   * @param primaryKeySchema - Schema defining the structure of the primary key
-   * @param valueSchema - Schema defining the structure of the values
-   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   * @param schema - Schema defining the structure of the entity
+   * @param primaryKeyNames - Array of property names that form the primary key
+   * @param indexes - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
     dbOrPath: string,
     table: string = "tabular_store",
-    primaryKeySchema: PrimaryKeySchema = DefaultPrimaryKeySchema as PrimaryKeySchema,
-    valueSchema: ValueSchema = DefaultValueSchema as ValueSchema,
-    searchable: Array<keyof Combined | Array<keyof Combined>> = []
+    schema: Schema,
+    primaryKeyNames: PrimaryKeyNames,
+    indexes: Array<keyof Entity | Array<keyof Entity>> = []
   ) {
-    super(table, primaryKeySchema, valueSchema, searchable);
+    super(table, schema, primaryKeyNames, indexes);
     if (typeof dbOrPath === "string") {
       this.db = new Database(dbOrPath);
     } else {
@@ -69,8 +65,7 @@ export class SqliteTabularRepository<
   public setupDatabase(): void {
     const sql = `
       CREATE TABLE IF NOT EXISTS \`${this.table}\` (
-        ${this.constructPrimaryKeyColumns()},
-        ${this.constructValueColumns()},
+        ${this.constructPrimaryKeyColumns()} ${this.constructValueColumns()},
         PRIMARY KEY (${this.primaryKeyColumnList()}) 
       )
     `;
@@ -82,12 +77,13 @@ export class SqliteTabularRepository<
     // Track created indexes to avoid duplicates and redundant indexes
     const createdIndexes = new Set<string>();
 
-    for (const searchSpec of this.searchable) {
+    for (const searchSpec of this.indexes) {
       // Handle both single column and compound indexes
       const columns = Array.isArray(searchSpec) ? searchSpec : [searchSpec];
 
       // Skip if this is just the primary key or a prefix of it
       if (columns.length <= pkColumns.length) {
+        // @ts-ignore
         const isPkPrefix = columns.every((col, idx) => col === pkColumns[idx]);
         if (isPkPrefix) continue;
       }
@@ -142,14 +138,15 @@ export class SqliteTabularRepository<
    * @param value - The value object to store
    * @emits 'put' event when successful
    */
-  async putKeyValue(key: Key, value: Value): Promise<void> {
+  async put(entity: Entity): Promise<void> {
+    const { key, value } = this.separateKeyValueFromCombined(entity);
     const sql = `
       INSERT OR REPLACE INTO \`${
         this.table
-      }\` (${this.primaryKeyColumnList()}, ${this.valueColumnList()})
+      }\` (${this.primaryKeyColumnList()} ${this.valueColumnList() ? ", " + this.valueColumnList() : ""})
       VALUES (
-        ${this.primaryKeyColumns().map((i) => "?")},
-        ${this.valueColumns().map((i) => "?")}
+        ${this.primaryKeyColumns().map((i) => "?")}
+        ${this.valueColumns().length > 0 ? ", " + this.valueColumns().map((i) => "?") : ""}
       )
     `;
     const stmt = this.db.prepare(sql);
@@ -158,9 +155,10 @@ export class SqliteTabularRepository<
     const valueParams = this.getValueAsOrderedArray(value);
     const params = [...primaryKeyParams, ...valueParams];
 
+    // @ts-ignore
     const result = stmt.run(...params);
 
-    this.events.emit("put", key, value);
+    this.events.emit("put", entity);
   }
 
   /**
@@ -169,15 +167,15 @@ export class SqliteTabularRepository<
    * @returns The stored value or undefined if not found
    * @emits 'get' event when successful
    */
-  async getKeyValue(key: Key): Promise<Value | undefined> {
+  async get(key: PrimaryKey): Promise<Entity | undefined> {
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `\`${key}\` = ?`)
       .join(" AND ");
 
     const sql = `
-      SELECT ${this.valueColumnList()} FROM \`${this.table}\` WHERE ${whereClauses}
+      SELECT * FROM \`${this.table}\` WHERE ${whereClauses}
     `;
-    const stmt = this.db.prepare<Value, BasicKeyType[]>(sql);
+    const stmt = this.db.prepare<Entity, KeyOptionType[]>(sql);
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const value = stmt.get(...params);
     if (value) {
@@ -196,8 +194,8 @@ export class SqliteTabularRepository<
    * @param key - Partial key to search for
    * @returns Promise resolving to an array of combined key-value objects or undefined if not found
    */
-  public async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
-    const searchKeys = Object.keys(key);
+  public async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
+    const searchKeys = Object.keys(key) as Array<keyof Entity>;
     if (searchKeys.length === 0) {
       return undefined;
     }
@@ -205,12 +203,18 @@ export class SqliteTabularRepository<
     // Find the best matching index for the search
     const bestIndex = super.findBestMatchingIndex(searchKeys);
     if (!bestIndex) {
-      console.log("No suitable index found for the search criteria", key, searchKeys, bestIndex);
-      throw new Error("No suitable index found for the search criteria");
+      throw new Error(
+        `No suitable index found for the search criteria, searching for ['${searchKeys.join(
+          "', '"
+        )}'] with pk ['${this.primaryKeyNames.join("', '")}'] and indexes ['${this.indexes.join(
+          "', '"
+        )}']`
+      );
     }
 
     // very columns in primary key or value schema
     const validColumns = [...this.primaryKeyColumns(), ...this.valueColumns()];
+    // @ts-ignore
     const invalidColumns = searchKeys.filter((key) => !validColumns.includes(key));
     if (invalidColumns.length > 0) {
       throw new Error(`Invalid columns in search criteria: ${invalidColumns.join(", ")}`);
@@ -224,7 +228,8 @@ export class SqliteTabularRepository<
     const sql = `
       SELECT * FROM \`${this.table}\` WHERE ${whereClauses}
     `;
-    const stmt = this.db.prepare<Combined, BasicKeyType[]>(sql);
+    const stmt = this.db.prepare<Entity, KeyOptionType[]>(sql);
+    // @ts-ignore
     const result = stmt.all(...whereClauseValues);
 
     if (result.length > 0) {
@@ -241,7 +246,7 @@ export class SqliteTabularRepository<
    * @param key - The primary key object to delete
    * @emits 'delete' event when successful
    */
-  async deleteKeyValue(key: Key): Promise<void> {
+  async delete(key: PrimaryKey): Promise<void> {
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `${key} = ?`)
       .join(" AND ");
@@ -255,9 +260,9 @@ export class SqliteTabularRepository<
    * Retrieves all entries from the database table
    * @returns Promise resolving to an array of entries or undefined if not found
    */
-  async getAll(): Promise<Combined[] | undefined> {
+  async getAll(): Promise<Entity[] | undefined> {
     const sql = `SELECT * FROM \`${this.table}\``;
-    const stmt = this.db.prepare<Combined, []>(sql);
+    const stmt = this.db.prepare<Entity, []>(sql);
     const value = stmt.all();
     return value.length ? value : undefined;
   }

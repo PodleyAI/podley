@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import { DefaultValueType, type TabularRepository } from "@ellmers/storage";
+import { type TabularRepository } from "@ellmers/storage";
 import { makeFingerprint } from "@ellmers/util";
 import { TaskInput, TaskOutput } from "../../task/TaskTypes";
 
@@ -31,10 +31,13 @@ export type TaskOutputPrimaryKey = {
   taskType: string;
 };
 
-export const TaskOutputPrimaryKeySchema = {
+export const TaskOutputSchema = {
   key: "string",
   taskType: "string",
+  value: "string",
 } as const;
+
+export const TaskOutputPrimaryKeyNames = ["key", "taskType"] as const;
 
 /**
  * Abstract class for managing task outputs in a repository
@@ -42,7 +45,10 @@ export const TaskOutputPrimaryKeySchema = {
  */
 export abstract class TaskOutputRepository {
   public type = "TaskOutputRepository";
-  abstract tabularRepository: TabularRepository<TaskOutputPrimaryKey, DefaultValueType>;
+  abstract tabularRepository: TabularRepository<
+    typeof TaskOutputSchema,
+    typeof TaskOutputPrimaryKeyNames
+  >;
   protected events = new EventEmitter<TaskOutputEventListeners>();
 
   /**
@@ -81,7 +87,7 @@ export abstract class TaskOutputRepository {
   async saveOutput(taskType: string, inputs: TaskInput, output: TaskOutput): Promise<void> {
     const key = await makeFingerprint(inputs);
     const value = JSON.stringify(output);
-    await this.tabularRepository.putKeyValue({ key, taskType }, { value: value });
+    await this.tabularRepository.put({ taskType, key, value });
     this.events.emit("output_saved", taskType);
   }
 
@@ -93,9 +99,9 @@ export abstract class TaskOutputRepository {
    */
   async getOutput(taskType: string, inputs: TaskInput): Promise<TaskOutput | undefined> {
     const key = await makeFingerprint(inputs);
-    const output = await this.tabularRepository.getKeyValue({ key, taskType });
+    const output = await this.tabularRepository.get({ key, taskType });
     this.events.emit("output_retrieved", taskType);
-    return output ? (JSON.parse(output["value"]) as TaskOutput) : undefined;
+    return output?.value ? (JSON.parse(output.value) as TaskOutput) : undefined;
   }
 
   /**

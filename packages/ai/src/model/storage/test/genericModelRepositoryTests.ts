@@ -84,5 +84,8 @@ export const runGenericModelRepositoryTests = (
     const models = await repo.findModelsByTask("TextGenerationTask");
     expect(models).toBeDefined();
     expect(models?.length).toEqual(1);
+    expect(models?.[0].name).toEqual("onnx:Xenova/LaMini-Flan-T5-783M:q8");
+    expect(models?.[0].provider).toEqual(LOCAL_ONNX_TRANSFORMERJS);
+    expect(models?.[0].pipeline).toEqual("text2text-generation");
   });
 };

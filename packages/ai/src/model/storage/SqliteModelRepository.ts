@@ -5,15 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueType, SqliteTabularRepository } from "@ellmers/storage";
+import { SqliteTabularRepository } from "@ellmers/storage";
 import {
-  Task2ModelDetailSchema,
-  Task2ModelPrimaryKeySchema,
-  Task2ModelDetail,
-  Task2ModelPrimaryKey,
   ModelRepository,
+  ModelSchema,
+  ModelPrimaryKeyNames,
+  Task2ModelPrimaryKeyNames,
+  Task2ModelSchema,
 } from "../ModelRepository";
-import { ModelPrimaryKey, ModelPrimaryKeySchema } from "../Model";
 
 /**
  * SQLite implementation of a model repository.
@@ -21,16 +20,10 @@ import { ModelPrimaryKey, ModelPrimaryKeySchema } from "../Model";
  */
 export class SqliteModelRepository extends ModelRepository {
   public type = "SqliteModelRepository" as const;
-  modelTabularRepository: SqliteTabularRepository<
-    ModelPrimaryKey,
-    DefaultValueType,
-    typeof ModelPrimaryKeySchema
-  >;
+  modelTabularRepository: SqliteTabularRepository<typeof ModelSchema, typeof ModelPrimaryKeyNames>;
   task2ModelTabularRepository: SqliteTabularRepository<
-    Task2ModelPrimaryKey,
-    Task2ModelDetail,
-    typeof Task2ModelPrimaryKeySchema,
-    typeof Task2ModelDetailSchema
+    typeof Task2ModelSchema,
+    typeof Task2ModelPrimaryKeyNames
   >;
   constructor(
     dbOrPath: string,
@@ -38,16 +31,18 @@ export class SqliteModelRepository extends ModelRepository {
     tableTask2Models: string = "aitask2aimodel"
   ) {
     super();
-    this.modelTabularRepository = new SqliteTabularRepository<
-      ModelPrimaryKey,
-      DefaultValueType,
-      typeof ModelPrimaryKeySchema
-    >(dbOrPath, tableModels, ModelPrimaryKeySchema);
-    this.task2ModelTabularRepository = new SqliteTabularRepository<
-      Task2ModelPrimaryKey,
-      Task2ModelDetail,
-      typeof Task2ModelPrimaryKeySchema,
-      typeof Task2ModelDetailSchema
-    >(dbOrPath, tableTask2Models, Task2ModelPrimaryKeySchema, Task2ModelDetailSchema, ["model"]);
+    this.modelTabularRepository = new SqliteTabularRepository(
+      dbOrPath,
+      tableModels,
+      ModelSchema,
+      ModelPrimaryKeyNames
+    );
+    this.task2ModelTabularRepository = new SqliteTabularRepository(
+      dbOrPath,
+      tableTask2Models,
+      Task2ModelSchema,
+      Task2ModelPrimaryKeyNames,
+      ["model"]
+    );
   }
 }
