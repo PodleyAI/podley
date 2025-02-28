@@ -464,12 +464,13 @@ export function runGenericJobQueueTests(
 
       // Verify progress updates
       if (jobQueue instanceof IndexedDbQueueStorage) {
-        console.log(progressUpdates);
+        if (progressUpdates.length == 5) {
+          console.log(progressUpdates);
+        }
         // something weird happens only occationally with IndexedDbQueueStorage on CI
         // expect 4 or 5 updates
         expect(progressUpdates.length).toBeOneOf([4, 5]);
       } else {
-        console.log(progressUpdates);
         expect(progressUpdates.length).toBe(4); // Should have 4 unique progress updates
       }
       expect(progressUpdates[0]).toEqual({
