@@ -5,14 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskGraphRepository } from "./TaskGraphRepository";
 import {
-  DefaultPrimaryKeySchema,
-  DefaultPrimaryKeyType,
-  DefaultValueSchema,
-  DefaultValueType,
-  PostgresTabularRepository,
-} from "@ellmers/storage";
+  TaskGraphRepository,
+  TaskGraphSchema,
+  TaskGraphPrimaryKeyNames,
+} from "./TaskGraphRepository";
+import { PostgresTabularRepository } from "@ellmers/storage";
 import type { Pool } from "pg";
 
 /**
@@ -21,10 +19,8 @@ import type { Pool } from "pg";
  */
 export class PostgresTaskGraphRepository extends TaskGraphRepository {
   tabularRepository: PostgresTabularRepository<
-    DefaultPrimaryKeyType,
-    DefaultValueType,
-    typeof DefaultPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof TaskGraphSchema,
+    typeof TaskGraphPrimaryKeyNames
   >;
   public type = "PostgresTaskGraphRepository" as const;
   constructor(db: Pool) {
@@ -32,8 +28,8 @@ export class PostgresTaskGraphRepository extends TaskGraphRepository {
     this.tabularRepository = new PostgresTabularRepository(
       db,
       "task_graphs",
-      DefaultPrimaryKeySchema,
-      DefaultValueSchema
+      TaskGraphSchema,
+      TaskGraphPrimaryKeyNames
     );
   }
 }

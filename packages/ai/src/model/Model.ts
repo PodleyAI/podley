@@ -9,10 +9,6 @@ export type ModelPrimaryKey = {
   name: string;
 };
 
-export const ModelPrimaryKeySchema = {
-  name: "string",
-} as const;
-
 export type ModelDetail = {
   url: string;
   provider: string;

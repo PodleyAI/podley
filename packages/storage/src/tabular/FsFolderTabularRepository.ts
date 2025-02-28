@@ -9,45 +9,43 @@ import path from "node:path";
 import { readFile, writeFile, rm, readdir } from "node:fs/promises";
 import { mkdirSync } from "node:fs";
 import { glob } from "glob";
-import { BaseValueSchema, BasePrimaryKeySchema, BasicKeyType } from "./ITabularRepository";
+import { ValueSchema, ExtractPrimaryKey, ExtractValue, SchemaToType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 import { sleep } from "@ellmers/util";
 /**
  * A tabular repository implementation that uses the filesystem for storage.
  * Each row is stored as a separate JSON file in the specified directory.
  *
- * @template PrimaryKey - The type of the primary key object
- * @template Value - The type of the value object being stored
- * @template PrimaryKeySchema - Schema definition for the primary key
- * @template ValueSchema - Schema definition for the value
- * @template Combined - The combined type of Key & Value
+ * @template Schema - The schema definition for the entity
+ * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class FsFolderTabularRepository<
-  PrimaryKey extends Record<string, BasicKeyType>,
-  Value extends Record<string, any>,
-  PrimaryKeySchema extends BasePrimaryKeySchema,
-  ValueSchema extends BaseValueSchema,
-  Combined extends PrimaryKey & Value = PrimaryKey & Value,
-> extends TabularRepository<PrimaryKey, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Schema extends ValueSchema,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  // computed types
+  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
+  Entity = SchemaToType<Schema>,
+  Value = ExtractValue<Schema, PrimaryKeyNames>,
+> extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   private folderPath: string;
 
   /**
    * Creates a new FsFolderTabularRepository instance.
    *
    * @param folderPath - The directory path where the JSON files will be stored
-   * @param primaryKeySchema - Schema defining the structure of the primary key
-   * @param valueSchema - Schema defining the structure of the values
-   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   * @param schema - Schema defining the structure of the entity
+   * @param primaryKeyNames - Array of property names that form the primary key
+   * @param indexes - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
    *                    while each array creates a compound index with columns in the specified order.
-   *                    Note: search is not supported in this implementation.
+   *                    Note: indexes are not supported in this implementation.
    */
   constructor(
     folderPath: string,
-    primaryKeySchema: PrimaryKeySchema,
-    valueSchema: ValueSchema,
-    searchable: Array<keyof Combined | Array<keyof Combined>> = []
+    schema: Schema,
+    primaryKeyNames: PrimaryKeyNames,
+    indexes: Array<keyof Entity | Array<keyof Entity>> = []
   ) {
-    super(primaryKeySchema, valueSchema, searchable as Array<keyof Combined>);
+    super(schema, primaryKeyNames, indexes);
     this.folderPath = path.dirname(folderPath);
     try {
       mkdirSync(this.folderPath, { recursive: true });
@@ -65,7 +63,7 @@ export class FsFolderTabularRepository<
    * @param value - The value object to store
    * @emits 'put' event when successful
    */
-  async put(entity: Combined): Promise<void> {
+  async put(entity: Entity): Promise<void> {
     const filePath = await this.getFilePath(entity);
     try {
       await writeFile(filePath, JSON.stringify(entity));
@@ -87,11 +85,11 @@ export class FsFolderTabularRepository<
    * @returns The value object if found, undefined otherwise
    * @emits 'get' event with the fingerprint ID and value when found
    */
-  async get(key: PrimaryKey): Promise<Combined | undefined> {
+  async get(key: PrimaryKey): Promise<Entity | undefined> {
     const filePath = await this.getFilePath(key);
     try {
       const data = await readFile(filePath, "utf-8");
-      const entity = JSON.parse(data) as Combined;
+      const entity = JSON.parse(data) as Entity;
       this.events.emit("get", key, entity);
       return entity;
     } catch (error) {
@@ -105,8 +103,8 @@ export class FsFolderTabularRepository<
    * @param key - The primary key object of the entry to delete
    * @emits 'delete' event with the fingerprint ID when successful
    */
-  async delete(value: PrimaryKey | Combined): Promise<void> {
-    const { key } = this.separateKeyValueFromCombined(value as Combined);
+  async delete(value: PrimaryKey | Entity): Promise<void> {
+    const { key } = this.separateKeyValueFromCombined(value as Entity);
     const filePath = await this.getFilePath(key);
     try {
       await rm(filePath);
@@ -120,7 +118,7 @@ export class FsFolderTabularRepository<
    * Retrieves all rows stored in the repository
    * @returns Array of combined objects (rows) if found, undefined otherwise
    */
-  async getAll(): Promise<Combined[] | undefined> {
+  async getAll(): Promise<Entity[] | undefined> {
     try {
       const files = await readdir(this.folderPath);
       const jsonFiles = files.filter((file) => file.endsWith(".json"));
@@ -130,7 +128,7 @@ export class FsFolderTabularRepository<
       const results = await Promise.allSettled(
         jsonFiles.map(async (file) => {
           const content = await readFile(path.join(this.folderPath, file), "utf-8");
-          const data = JSON.parse(content) as Combined;
+          const data = JSON.parse(content) as Entity;
           return data;
         })
       );
@@ -171,7 +169,7 @@ export class FsFolderTabularRepository<
    * Search is not supported in the filesystem implementation.
    * @throws {Error} Always throws an error indicating search is not supported
    */
-  async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
+  async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
     throw new Error("Search not supported for FsFolderTabularRepository");
   }
 
@@ -179,8 +177,8 @@ export class FsFolderTabularRepository<
    * Generates the full filesystem path for a given key.
    * @private
    */
-  private async getFilePath(value: PrimaryKey | Combined): Promise<string> {
-    const { key } = this.separateKeyValueFromCombined(value as Combined);
+  private async getFilePath(value: PrimaryKey | Entity): Promise<string> {
+    const { key } = this.separateKeyValueFromCombined(value as Entity);
     const filename = await this.getKeyAsIdString(key);
     const fullPath = path.join(this.folderPath, `${filename}.json`);
     return fullPath;

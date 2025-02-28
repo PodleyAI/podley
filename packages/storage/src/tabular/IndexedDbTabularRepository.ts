@@ -6,50 +6,48 @@
 //    *******************************************************************************
 
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
-import { BaseValueSchema, BasePrimaryKeySchema, BasicKeyType } from "./ITabularRepository";
+import { ValueSchema, ExtractPrimaryKey, ExtractValue, SchemaToType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 /**
  * A tabular repository implementation using IndexedDB for browser-based storage.
  *
- * @template PrimaryKey - The type of the primary key object
- * @template Value - The type of the value object to be stored
- * @template PrimaryKeySchema - Schema definition for the primary key
- * @template ValueSchema - Schema definition for the value
- * @template Combined - Combined type of Key & Value
+ * @template Schema - The schema definition for the entity
+ * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class IndexedDbTabularRepository<
-  PrimaryKey extends Record<string, BasicKeyType>,
-  Value extends Record<string, any>,
-  PrimaryKeySchema extends BasePrimaryKeySchema,
-  ValueSchema extends BaseValueSchema,
-  Combined extends Record<string, any> = PrimaryKey & Value,
-> extends TabularRepository<PrimaryKey, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Schema extends ValueSchema,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  // computed types
+  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
+  Entity = SchemaToType<Schema>,
+  Value = ExtractValue<Schema, PrimaryKeyNames>,
+> extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** Promise that resolves to the IndexedDB database instance */
   private dbPromise: Promise<IDBDatabase> | undefined;
 
   /**
    * Creates a new IndexedDB-based tabular repository.
    * @param table - Name of the IndexedDB store to use.
-   * @param primaryKeySchema - Schema defining the structure of primary keys.
-   * @param valueSchema - Schema defining the structure of values.
-   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   * @param schema - Schema defining the structure of the entity
+   * @param primaryKeyNames - Array of property names that form the primary key
+   * @param indexes - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
     public table: string = "tabular_store",
-    primaryKeySchema: PrimaryKeySchema,
-    valueSchema: ValueSchema,
-    searchableIndex: Array<keyof Combined | Array<keyof Combined>> = []
+    schema: Schema,
+    primaryKeyNames: PrimaryKeyNames,
+    indexes: Array<keyof Entity | Array<keyof Entity>> = []
   ) {
-    super(primaryKeySchema, valueSchema, searchableIndex as Array<keyof Combined>);
+    super(schema, primaryKeyNames, indexes);
     const pkColumns = super.primaryKeyColumns() as string[];
 
     // Create index definitions for both single and compound indexes
     const expectedIndexes: ExpectedIndexDefinition[] = [];
 
-    for (const spec of this.searchable) {
+    for (const spec of this.indexes) {
       // Handle compound index
-      const columns = spec as Array<keyof Combined>;
+      const columns = spec as Array<keyof Entity>;
       // Skip if this is just the primary key or a prefix of it
       if (columns.length <= pkColumns.length) {
         const isPkPrefix = columns.every((col, idx) => col === pkColumns[idx]);
@@ -78,7 +76,7 @@ export class IndexedDbTabularRepository<
    * @param value - The value object to store.
    * @emits put - Emitted when the value is successfully stored
    */
-  async put(record: Combined): Promise<void> {
+  async put(record: Entity): Promise<void> {
     const { key } = this.separateKeyValueFromCombined(record);
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
@@ -116,7 +114,7 @@ export class IndexedDbTabularRepository<
    * @returns The value object or undefined if not found.
    * @emits get - Emitted when the value is successfully retrieved
    */
-  async get(key: PrimaryKey): Promise<Combined | undefined> {
+  async get(key: PrimaryKey): Promise<Entity | undefined> {
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
     return new Promise((resolve, reject) => {
@@ -140,7 +138,7 @@ export class IndexedDbTabularRepository<
    * Returns an array of all entries in the repository.
    * @returns Array of all entries in the repository.
    */
-  async getAll(): Promise<Combined[] | undefined> {
+  async getAll(): Promise<Entity[] | undefined> {
     if (!this.dbPromise) throw new Error("Database not initialized");
     const db = await this.dbPromise;
     const transaction = db.transaction(this.table, "readonly");
@@ -161,9 +159,9 @@ export class IndexedDbTabularRepository<
    * @param key - Partial query object.
    * @returns Array of matching records or undefined.
    */
-  async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
+  async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
     if (!this.dbPromise) throw new Error("Database not initialized");
-    const searchKeys = Object.keys(key);
+    const searchKeys = Object.keys(key) as Array<keyof Entity>;
     if (searchKeys.length === 0) {
       return undefined;
     }
@@ -222,7 +220,8 @@ export class IndexedDbTabularRepository<
 
       request.onsuccess = () => {
         // Filter results for any additional search keys
-        const results = request.result.filter((item: Combined) =>
+        const results = request.result.filter((item: Entity) =>
+          // @ts-ignore
           Object.entries(key).every(([k, v]) => item[k] === v)
         );
         resolve(results.length > 0 ? results : undefined);

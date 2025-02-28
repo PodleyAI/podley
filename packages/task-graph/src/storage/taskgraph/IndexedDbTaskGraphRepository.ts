@@ -5,14 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskGraphRepository } from "./TaskGraphRepository";
 import {
-  DefaultPrimaryKeySchema,
-  DefaultPrimaryKeyType,
-  DefaultValueSchema,
-  DefaultValueType,
-  IndexedDbTabularRepository,
-} from "@ellmers/storage";
+  TaskGraphPrimaryKeyNames,
+  TaskGraphRepository,
+  TaskGraphSchema,
+} from "./TaskGraphRepository";
+import { IndexedDbTabularRepository } from "@ellmers/storage";
 
 /**
  * IndexedDB implementation of a task graph repository.
@@ -20,18 +18,16 @@ import {
  */
 export class IndexedDbTaskGraphRepository extends TaskGraphRepository {
   tabularRepository: IndexedDbTabularRepository<
-    DefaultPrimaryKeyType,
-    DefaultValueType,
-    typeof DefaultPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof TaskGraphSchema,
+    typeof TaskGraphPrimaryKeyNames
   >;
   public type = "IndexedDbTaskGraphRepository" as const;
   constructor(table: string = "task_graphs") {
     super();
     this.tabularRepository = new IndexedDbTabularRepository(
       table,
-      DefaultPrimaryKeySchema,
-      DefaultValueSchema
+      TaskGraphSchema,
+      TaskGraphPrimaryKeyNames
     );
   }
 }

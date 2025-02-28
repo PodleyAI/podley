@@ -13,10 +13,13 @@ import {
   TabularEventListeners,
   TabularEventParameters,
   ITabularRepository,
-  BasePrimaryKeySchema,
-  BaseValueSchema,
-  BasicKeyType,
-  BasicValueType,
+  ValueSchema,
+  KeyOptionType,
+  SchemaToType,
+  ExtractPrimaryKey,
+  ExtractValue,
+  KeyOption,
+  KeySchema,
 } from "./ITabularRepository";
 
 /**
@@ -25,38 +28,50 @@ import {
  * primary keys and values, and supports compound keys and partial key lookup.
  * Has a basic event emitter for listening to repository events.
  *
- * @template PrimaryKey - The type of the primary key object
- * @template Value - The type of the value object being stored
- * @template PrimaryKeySchema - Schema definition for the primary key
- * @template ValueSchema - Schema definition for the value
- * @template Combined - Combined type of Key & Value
+ * @template Schema - The schema definition for the entity
+ * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export abstract class TabularRepository<
-  PrimaryKey extends Record<string, BasicKeyType>,
-  Value extends Record<string, BasicValueType>,
-  PrimaryKeySchema extends BasePrimaryKeySchema,
-  ValueSchema extends BaseValueSchema,
-  Combined extends Record<string, BasicValueType> = PrimaryKey & Value,
-> implements ITabularRepository<PrimaryKey, Combined>
+  Schema extends ValueSchema,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  // computed types
+  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
+  Entity = SchemaToType<Schema>,
+  Value = ExtractValue<Schema, PrimaryKeyNames>,
+> implements ITabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity>
 {
   /** Event emitter for repository events */
-  protected events = new EventEmitter<TabularEventListeners<PrimaryKey, Combined>>();
+  protected events = new EventEmitter<TabularEventListeners<PrimaryKey, Entity>>();
 
-  protected searchable: Array<keyof Combined>[];
+  protected indexes: Array<keyof Entity>[];
+  protected primaryKeySchema: KeySchema;
+  protected valueSchema: ValueSchema;
+
   /**
    * Creates a new TabularRepository instance
-   * @param primaryKeySchema - Schema defining the structure of primary keys
-   * @param valueSchema - Schema defining the structure of values
-   * @param searchable - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
+   * @param schema - Schema defining the structure of the entity
+   * @param primaryKeyNames - Array of property names that form the primary key
+   * @param indexes - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
-    protected primaryKeySchema: PrimaryKeySchema,
-    protected valueSchema: ValueSchema,
-    searchableInput: Array<keyof Combined | Array<keyof Combined>> = []
+    protected schema: Schema,
+    protected primaryKeyNames: PrimaryKeyNames,
+    indexes: Array<keyof Entity | Array<keyof Entity>> = []
   ) {
-    this.primaryKeySchema = primaryKeySchema;
-    this.valueSchema = valueSchema;
+    this.primaryKeySchema = {};
+    const primaryKeySet = new Set(primaryKeyNames);
+    for (const [key, type] of Object.entries(schema)) {
+      if (primaryKeySet.has(key as keyof Schema)) {
+        this.primaryKeySchema[key] = type as KeyOption;
+      }
+    }
+    this.valueSchema = {};
+    for (const [key, type] of Object.entries(schema)) {
+      if (!primaryKeySet.has(key as keyof Schema)) {
+        this.valueSchema[key] = type;
+      }
+    }
 
     // validate all combined columns names are "identifier" names
     const combinedColumns = [...this.primaryKeyColumns(), ...this.valueColumns()];
@@ -72,20 +87,20 @@ export abstract class TabularRepository<
     }
 
     // Normalize searchable into array of arrays
-    this.searchable = searchableInput.map((spec) => (Array.isArray(spec) ? spec : [spec])) as Array<
-      Array<keyof Combined>
+    this.indexes = indexes.map((spec) => (Array.isArray(spec) ? spec : [spec])) as Array<
+      Array<keyof Entity>
     >;
 
     // searchable is an arrya of compound keys, which are arrays of columns
     // clean up searchable array by removing any compoundkeys that are a prefix of another compoundkey
     // or a prefix of the primary key
-    this.searchable = this.filterCompoundKeys(
-      this.primaryKeyColumns() as Array<keyof Combined>,
-      this.searchable
+    this.indexes = this.filterCompoundKeys(
+      this.primaryKeyColumns() as unknown as Array<keyof Entity>,
+      this.indexes
     );
 
     // Validate searchable columns
-    for (const compoundIndex of this.searchable) {
+    for (const compoundIndex of this.indexes) {
       for (const column of compoundIndex) {
         if (!(column in this.primaryKeySchema) && !(column in this.valueSchema)) {
           throw new Error(
@@ -97,11 +112,11 @@ export abstract class TabularRepository<
   }
 
   protected filterCompoundKeys(
-    primaryKey: Array<keyof Combined>,
-    potentialKeys: Array<keyof Combined>[]
-  ): Array<keyof Combined>[] {
+    primaryKey: Array<keyof Entity>,
+    potentialKeys: Array<keyof Entity>[]
+  ): Array<keyof Entity>[] {
     // Function to check if one array is a prefix of another
-    const isPrefix = (prefix: Array<keyof Combined>, arr: Array<keyof Combined>): boolean => {
+    const isPrefix = (prefix: Array<keyof Entity>, arr: Array<keyof Entity>): boolean => {
       if (prefix.length > arr.length) return false;
       return prefix.every((val, index) => val === arr[index]);
     };
@@ -109,7 +124,7 @@ export abstract class TabularRepository<
     // Sort potential keys by length
     potentialKeys.sort((a, b) => a.length - b.length);
 
-    let filteredKeys: Array<keyof Combined>[] = [];
+    let filteredKeys: Array<keyof Entity>[] = [];
 
     for (let i = 0; i < potentialKeys.length; i++) {
       let key = potentialKeys[i];
@@ -141,7 +156,7 @@ export abstract class TabularRepository<
    */
   on<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, PrimaryKey, Combined>
+    fn: TabularEventListener<Event, PrimaryKey, Entity>
   ) {
     this.events.on(name, fn);
   }
@@ -153,7 +168,7 @@ export abstract class TabularRepository<
    */
   off<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, PrimaryKey, Combined>
+    fn: TabularEventListener<Event, PrimaryKey, Entity>
   ) {
     this.events.off(name, fn);
   }
@@ -165,7 +180,7 @@ export abstract class TabularRepository<
    */
   once<Event extends TabularEventName>(
     name: Event,
-    fn: TabularEventListener<Event, PrimaryKey, Combined>
+    fn: TabularEventListener<Event, PrimaryKey, Entity>
   ) {
     this.events.once(name, fn);
   }
@@ -177,7 +192,7 @@ export abstract class TabularRepository<
    */
   emit<Event extends TabularEventName>(
     name: Event,
-    ...args: TabularEventParameters<Event, PrimaryKey, Combined>
+    ...args: TabularEventParameters<Event, PrimaryKey, Entity>
   ) {
     this.events.emit(name, ...args);
   }
@@ -189,19 +204,17 @@ export abstract class TabularRepository<
    */
   emitted<Event extends TabularEventName>(
     name: Event
-  ): Promise<TabularEventParameters<Event, PrimaryKey, Combined>> {
-    return this.events.emitted(name) as Promise<
-      TabularEventParameters<Event, PrimaryKey, Combined>
-    >;
+  ): Promise<TabularEventParameters<Event, PrimaryKey, Entity>> {
+    return this.events.emitted(name) as Promise<TabularEventParameters<Event, PrimaryKey, Entity>>;
   }
 
   /**
    * Core abstract methods that must be implemented by concrete repositories
    */
-  abstract put(value: Combined): Promise<void>;
-  abstract get(key: PrimaryKey): Promise<Combined | undefined>;
-  abstract delete(key: PrimaryKey | Combined): Promise<void>;
-  abstract getAll(): Promise<Combined[] | undefined>;
+  abstract put(value: Entity): Promise<void>;
+  abstract get(key: PrimaryKey): Promise<Entity | undefined>;
+  abstract delete(key: PrimaryKey | Entity): Promise<void>;
+  abstract getAll(): Promise<Entity[] | undefined>;
   abstract deleteAll(): Promise<void>;
   abstract size(): Promise<number>;
 
@@ -212,7 +225,7 @@ export abstract class TabularRepository<
    * @param key - Partial key to search for
    * @returns Promise resolving to an array of combined row objects or undefined if not found
    */
-  public abstract search(key: Partial<Combined>): Promise<Combined[] | undefined>;
+  public abstract search(key: Partial<Entity>): Promise<Entity[] | undefined>;
 
   protected primaryKeyColumns(): Array<keyof PrimaryKey> {
     const columns: Array<keyof PrimaryKey> = [];
@@ -233,10 +246,10 @@ export abstract class TabularRepository<
   /**
    * Utility method to separate a combined object into its key and value components
    * for storage.
-   * @param obj - Combined row object
+   * @param obj - Entity row object
    * @returns Separated key and value objects
    */
-  protected separateKeyValueFromCombined(obj: Combined): { value: Value; key: PrimaryKey } {
+  protected separateKeyValueFromCombined(obj: Entity): { value: Value; key: PrimaryKey } {
     if (obj === null) {
       console.warn("Key is null");
       return { value: {} as Value, key: {} as PrimaryKey };
@@ -250,10 +263,10 @@ export abstract class TabularRepository<
     const value: Partial<Value> = {};
     const key: Partial<PrimaryKey> = {};
     for (const k of primaryKeyNames) {
-      key[k as keyof PrimaryKey] = obj[k as keyof Combined] as any;
+      key[k as keyof PrimaryKey] = obj[k as unknown as keyof Entity] as any;
     }
     for (const k of valueNames) {
-      value[k as keyof Value] = obj[k as keyof Combined] as any;
+      value[k as keyof Value] = obj[k as unknown as keyof Entity] as any;
     }
 
     return { value: value as Value, key: key as PrimaryKey };
@@ -275,11 +288,12 @@ export abstract class TabularRepository<
    * @param key - The primary key object to convert
    * @returns Array of key values ordered according to the schema
    */
-  protected getPrimaryKeyAsOrderedArray(key: PrimaryKey): BasicKeyType[] {
-    const orderedParams: BasicKeyType[] = [];
+  protected getPrimaryKeyAsOrderedArray(key: PrimaryKey): KeyOptionType[] {
+    const orderedParams: KeyOptionType[] = [];
+    const keyObj = key as Record<string, KeyOptionType>;
     for (const [k, type] of Object.entries(this.primaryKeySchema)) {
-      if (k in key) {
-        orderedParams.push(key[k]);
+      if (k in keyObj) {
+        orderedParams.push(keyObj[k]);
       } else {
         throw new Error(`Missing required primary key field: ${k}`);
       }
@@ -293,26 +307,26 @@ export abstract class TabularRepository<
    * @returns Array of column names representing the best matching index, or undefined if no suitable index is found
    */
   public findBestMatchingIndex(
-    unorderedSearchKey: Array<keyof Combined>
-  ): Array<keyof Combined> | undefined {
+    unorderedSearchKey: Array<keyof Entity>
+  ): Array<keyof Entity> | undefined {
     if (!unorderedSearchKey.length) return undefined;
 
     // Combine all possible indexes: primary key + searchable indexes
-    const allKeys: Array<keyof Combined>[] = [
-      this.primaryKeyColumns() as Array<keyof Combined>,
-      ...(this.searchable as Array<keyof Combined>[]),
+    const allKeys: Array<keyof Entity>[] = [
+      this.primaryKeyColumns() as unknown as Array<keyof Entity>,
+      ...(this.indexes as Array<keyof Entity>[]),
     ];
 
     // Convert search keys to a Set for efficient lookup
     const searchKeySet = new Set(unorderedSearchKey);
 
     // Helper function to check if any search key matches the start of the index
-    const hasMatchingPrefix = (index: Array<keyof Combined>): boolean => {
+    const hasMatchingPrefix = (index: Array<keyof Entity>): boolean => {
       // Check if the first column of the index is in our search keys
       return index.length > 0 && searchKeySet.has(index[0]);
     };
 
-    let bestMatch: Array<keyof Combined> | undefined;
+    let bestMatch: Array<keyof Entity> | undefined;
     let bestMatchScore = 0;
 
     for (const index of allKeys) {

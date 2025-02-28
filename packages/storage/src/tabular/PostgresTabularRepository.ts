@@ -8,26 +8,24 @@
 import type { Pool } from "pg";
 
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import { BasePrimaryKeySchema, BaseValueSchema, BasicKeyType } from "./ITabularRepository";
+import { ValueSchema, ExtractValue, SchemaToType, ExtractPrimaryKey } from "./ITabularRepository";
 
 /**
  * A PostgreSQL-based tabular repository implementation that extends BaseSqlTabularRepository.
  * This class provides persistent storage for data in a PostgreSQL database,
  * making it suitable for multi-user scenarios.
  *
- * @template PrimaryKey - The type of the primary key, must be a record of basic types
- * @template Value - The type of the stored value, can be any record type
- * @template PrimaryKeySchema - Schema definition for the primary key
- * @template ValueSchema - Schema definition for the value
- * @template Combined - Combined type of Key & Value
+ * @template Schema - The schema definition for the entity
+ * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class PostgresTabularRepository<
-  PrimaryKey extends Record<string, BasicKeyType>,
-  Value extends Record<string, any>,
-  PrimaryKeySchema extends BasePrimaryKeySchema,
-  ValueSchema extends BaseValueSchema,
-  Combined extends Record<string, any> = PrimaryKey & Value,
-> extends BaseSqlTabularRepository<PrimaryKey, Value, PrimaryKeySchema, ValueSchema, Combined> {
+  Schema extends ValueSchema,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  // computed types
+  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
+  Entity = SchemaToType<Schema>,
+  Value = ExtractValue<Schema, PrimaryKeyNames>,
+> extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   private db: Pool;
 
   /**
@@ -35,19 +33,19 @@ export class PostgresTabularRepository<
    *
    * @param db - PostgreSQL db
    * @param table - Name of the table to store data (defaults to "tabular_store")
-   * @param primaryKeySchema - Schema definition for primary key columns
-   * @param valueSchema - Schema definition for value columns
-   * @param searchable - Array of columns or column arrays to make searchable. Each string creates a single-column index,
+   * @param schema - Schema defining the structure of the entity
+   * @param primaryKeyNames - Array of property names that form the primary key
+   * @param indexes - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
     db: Pool,
     table: string = "tabular_store",
-    primaryKeySchema: PrimaryKeySchema,
-    valueSchema: ValueSchema,
-    searchable: Array<keyof Combined | Array<keyof Combined>> = []
+    schema: Schema,
+    primaryKeyNames: PrimaryKeyNames,
+    indexes: Array<keyof Entity | Array<keyof Entity>> = []
   ) {
-    super(table, primaryKeySchema, valueSchema, searchable);
+    super(table, schema, primaryKeyNames, indexes);
     this.db = db;
     this.dbPromise = this.setupDatabase();
   }
@@ -61,8 +59,7 @@ export class PostgresTabularRepository<
   private async setupDatabase(): Promise<void> {
     const sql = `
       CREATE TABLE IF NOT EXISTS "${this.table}" (
-        ${this.constructPrimaryKeyColumns()},
-        ${this.constructValueColumns()},
+        ${this.constructPrimaryKeyColumns()} ${this.constructValueColumns()},
         PRIMARY KEY (${this.primaryKeyColumnList()}) 
       )
     `;
@@ -70,14 +67,14 @@ export class PostgresTabularRepository<
 
     // Get primary key columns to avoid creating redundant indexes
     const pkColumns = this.primaryKeyColumns();
-    const pkColumnSet = new Set(pkColumns);
 
     // Track created indexes to avoid duplicates and redundant indexes
     const createdIndexes = new Set<string>();
 
-    for (const columns of this.searchable) {
+    for (const columns of this.indexes) {
       // Skip if this is just the primary key or a prefix of it
       if (columns.length <= pkColumns.length) {
+        // @ts-ignore
         const isPkPrefix = columns.every((col, idx) => col === pkColumns[idx]);
         if (isPkPrefix) continue;
       }
@@ -136,24 +133,29 @@ export class PostgresTabularRepository<
    * @param value - The value object to store
    * @emits "put" event with the key when successful
    */
-  async put(entity: Combined): Promise<void> {
+  async put(entity: Entity): Promise<void> {
     await this.dbPromise;
     const { key, value } = this.separateKeyValueFromCombined(entity);
     const sql = `
       INSERT INTO "${this.table}" (
-        ${this.primaryKeyColumnList()},
-        ${this.valueColumnList()}
+        ${this.primaryKeyColumnList()} ${this.valueColumnList() ? ", " + this.valueColumnList() : ""}
       )
       VALUES (
         ${[...this.primaryKeyColumns(), ...this.valueColumns()]
           .map((_, i) => `$${i + 1}`)
           .join(", ")}
       )
+      ${
+        !this.valueColumnList()
+          ? ""
+          : `
       ON CONFLICT (${this.primaryKeyColumnList()}) DO UPDATE
       SET 
       ${(this.valueColumns() as string[])
         .map((col, i) => `${col} = $${i + this.primaryKeyColumns().length + 1}`)
         .join(", ")}
+      `
+      }
     `;
 
     const primaryKeyParams = this.getPrimaryKeyAsOrderedArray(key);
@@ -170,7 +172,7 @@ export class PostgresTabularRepository<
    * @returns The stored value or undefined if not found
    * @emits "get" event with the key when successful
    */
-  async get(key: PrimaryKey): Promise<Combined | undefined> {
+  async get(key: PrimaryKey): Promise<Entity | undefined> {
     await this.dbPromise;
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((discriminatorKey, i) => `${discriminatorKey} = $${i + 1}`)
@@ -180,9 +182,9 @@ export class PostgresTabularRepository<
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const result = await this.db.query(sql, params);
 
-    let val: Combined | undefined;
+    let val: Entity | undefined;
     if (result.rows.length > 0) {
-      val = result.rows[0] as Combined;
+      val = result.rows[0] as Entity;
     } else {
       val = undefined;
     }
@@ -197,9 +199,9 @@ export class PostgresTabularRepository<
    * @param key - Partial key to search for
    * @returns Promise resolving to an array of combined row objects or undefined if not found
    */
-  public async search(key: Partial<Combined>): Promise<Combined[] | undefined> {
+  public async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
     await this.dbPromise;
-    const searchKeys = Object.keys(key);
+    const searchKeys = Object.keys(key) as Array<keyof Entity>;
     if (searchKeys.length === 0) {
       return undefined;
     }
@@ -207,12 +209,18 @@ export class PostgresTabularRepository<
     // Find the best matching index for the search
     const bestIndex = this.findBestMatchingIndex(searchKeys);
     if (!bestIndex) {
-      console.log("No suitable index found for the search criteria", key, searchKeys, bestIndex);
-      throw new Error("No suitable index found for the search criteria");
+      throw new Error(
+        `No suitable index found for the search criteria, searching for ['${searchKeys.join(
+          "', '"
+        )}'] with pk ['${this.primaryKeyNames.join("', '")}'] and indexes ['${this.indexes.join(
+          "', '"
+        )}']`
+      );
     }
 
     // very columns in primary key or value schema
     const validColumns = [...this.primaryKeyColumns(), ...this.valueColumns()];
+    // @ts-ignore
     const invalidColumns = searchKeys.filter((key) => !validColumns.includes(key));
     if (invalidColumns.length > 0) {
       throw new Error(`Invalid columns in search criteria: ${invalidColumns.join(", ")}`);
@@ -224,7 +232,8 @@ export class PostgresTabularRepository<
     const whereClauseValues = Object.values(key);
 
     const sql = `SELECT * FROM "${this.table}" WHERE ${whereClauses}`;
-    const result = await this.db.query<Combined, any[]>(sql, whereClauseValues);
+    // @ts-ignore
+    const result = await this.db.query<Entity, any[]>(sql, whereClauseValues);
 
     if (result.rows.length > 0) {
       this.events.emit("search", key, result.rows);
@@ -241,9 +250,9 @@ export class PostgresTabularRepository<
    * @param key - The primary key object to delete
    * @emits "delete" event with the key when successful
    */
-  async delete(value: PrimaryKey | Combined): Promise<void> {
+  async delete(value: PrimaryKey | Entity): Promise<void> {
     await this.dbPromise;
-    const { key } = this.separateKeyValueFromCombined(value as Combined);
+    const { key } = this.separateKeyValueFromCombined(value as Entity);
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key, i) => `${key} = $${i + 1}`)
       .join(" AND ");
@@ -257,10 +266,10 @@ export class PostgresTabularRepository<
    * Retrieves all entries from the database table
    * @returns Promise resolving to an array of entries or undefined if not found
    */
-  async getAll(): Promise<Combined[] | undefined> {
+  async getAll(): Promise<Entity[] | undefined> {
     await this.dbPromise;
     const sql = `SELECT * FROM "${this.table}"`;
-    const result = await this.db.query<Combined, []>(sql);
+    const result = await this.db.query(sql);
     return result.rows.length ? result.rows : undefined;
   }
 

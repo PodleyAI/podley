@@ -5,15 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueSchema, DefaultValueType, InMemoryTabularRepository } from "@ellmers/storage";
+import { InMemoryTabularRepository } from "@ellmers/storage";
 import {
-  Task2ModelDetailSchema,
-  Task2ModelPrimaryKeySchema,
-  Task2ModelDetail,
-  Task2ModelPrimaryKey,
   ModelRepository,
+  ModelSchema,
+  ModelPrimaryKeyNames,
+  Task2ModelPrimaryKeyNames,
+  Task2ModelSchema,
 } from "../ModelRepository";
-import { ModelPrimaryKey, ModelPrimaryKeySchema } from "../Model";
 
 /**
  * In-memory implementation of a model repository.
@@ -21,31 +20,21 @@ import { ModelPrimaryKey, ModelPrimaryKeySchema } from "../Model";
  */
 export class InMemoryModelRepository extends ModelRepository {
   modelTabularRepository: InMemoryTabularRepository<
-    ModelPrimaryKey,
-    DefaultValueType,
-    typeof ModelPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof ModelSchema,
+    typeof ModelPrimaryKeyNames
   >;
   task2ModelTabularRepository: InMemoryTabularRepository<
-    Task2ModelPrimaryKey,
-    Task2ModelDetail,
-    typeof Task2ModelPrimaryKeySchema,
-    typeof Task2ModelDetailSchema
+    typeof Task2ModelSchema,
+    typeof Task2ModelPrimaryKeyNames
   >;
   public type = "InMemoryModelRepository" as const;
   constructor() {
     super();
-    this.modelTabularRepository = new InMemoryTabularRepository<
-      ModelPrimaryKey,
-      DefaultValueType,
-      typeof ModelPrimaryKeySchema,
-      typeof DefaultValueSchema
-    >(ModelPrimaryKeySchema, DefaultValueSchema);
-    this.task2ModelTabularRepository = new InMemoryTabularRepository<
-      Task2ModelPrimaryKey,
-      Task2ModelDetail,
-      typeof Task2ModelPrimaryKeySchema,
-      typeof Task2ModelDetailSchema
-    >(Task2ModelPrimaryKeySchema, Task2ModelDetailSchema, ["model"]);
+    this.modelTabularRepository = new InMemoryTabularRepository(ModelSchema, ModelPrimaryKeyNames);
+    this.task2ModelTabularRepository = new InMemoryTabularRepository(
+      Task2ModelSchema,
+      Task2ModelPrimaryKeyNames,
+      ["model"]
+    );
   }
 }

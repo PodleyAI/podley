@@ -5,16 +5,16 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { JSONValue } from "./IKvRepository";
+import {
+  JSONValue,
+  ValueOptionType,
+  KeyOptionType,
+  KeyOption,
+  ValueOption,
+} from "../tabular/ITabularRepository";
 import { KvRepository } from "./KvRepository";
 import { IndexedDbTabularRepository } from "../tabular/IndexedDbTabularRepository";
-import { BasicKeyType } from "../tabular/ITabularRepository";
-import {
-  DefaultPrimaryKeySchema,
-  DefaultPrimaryKeyType,
-  DefaultValueSchema,
-  DefaultValueType,
-} from "@ellmers/storage";
+import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
 
 /**
  * Abstract base class for key-value storage repositories.
@@ -25,15 +25,13 @@ import {
  * @template Combined - Combined type of Key & Value
  */
 export class IndexedDbKvRepository<
-  Key extends BasicKeyType = BasicKeyType,
-  Value extends JSONValue = JSONValue,
+  Key extends KeyOptionType = KeyOptionType,
+  Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
   public tabularRepository: IndexedDbTabularRepository<
-    DefaultPrimaryKeyType,
-    DefaultValueType,
-    typeof DefaultPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof DefaultKeyValueSchema,
+    typeof DefaultKeyValueKey
   >;
 
   /**
@@ -41,14 +39,14 @@ export class IndexedDbKvRepository<
    */
   constructor(
     public dbName: string,
-    primaryKeyType: "string" | "number" | "bigint" | "uuid4",
-    valueType: "string" | "number" | "bigint" | "json"
+    primaryKeyType: KeyOption,
+    valueType: ValueOption
   ) {
     super(primaryKeyType, valueType);
     this.tabularRepository = new IndexedDbTabularRepository(
       dbName,
-      DefaultPrimaryKeySchema,
-      DefaultValueSchema
+      DefaultKeyValueSchema,
+      DefaultKeyValueKey
     );
   }
 }

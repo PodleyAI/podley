@@ -8,14 +8,10 @@
 import { SqliteTabularRepository } from "../SqliteTabularRepository";
 import {
   runGenericTabularRepositoryTests,
-  PrimaryKey,
-  Value,
-  PrimaryKeySchema,
-  ValueSchema,
-  CompoundKey,
-  CompoundValue,
-  CompoundPrimaryKeySchema,
-  CompoundValueSchema,
+  CompoundPrimaryKeyNames,
+  SearchPrimaryKeyNames,
+  CompoundSchema,
+  SearchSchema,
 } from "./genericTabularRepositoryTests";
 import { nanoid } from "nanoid";
 import { describe } from "bun:test";
@@ -23,23 +19,19 @@ import { describe } from "bun:test";
 describe("SqliteTabularRepository", () => {
   runGenericTabularRepositoryTests(
     async () =>
-      new SqliteTabularRepository<PrimaryKey, Value, typeof PrimaryKeySchema, typeof ValueSchema>(
+      new SqliteTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
         ":memory:",
         `sql_test_${nanoid()}`,
-        PrimaryKeySchema,
-        ValueSchema
+        CompoundSchema,
+        CompoundPrimaryKeyNames
       ),
     async () =>
-      new SqliteTabularRepository<
-        CompoundKey,
-        CompoundValue,
-        typeof CompoundPrimaryKeySchema,
-        typeof CompoundValueSchema
-      >(":memory:", `sql_test_${nanoid()}`, CompoundPrimaryKeySchema, CompoundValueSchema, [
-        "category",
-        ["category", "subcategory"],
-        ["subcategory", "category"],
-        "value",
-      ])
+      new SqliteTabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>(
+        ":memory:",
+        `sql_test_${nanoid()}`,
+        SearchSchema,
+        SearchPrimaryKeyNames,
+        ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
+      )
   );
 });

@@ -6,49 +6,37 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { BaseValueSchema, BasePrimaryKeySchema, ITabularRepository } from "../ITabularRepository";
+import { ValueSchema, KeySchema, ITabularRepository } from "../ITabularRepository";
 
-export type PrimaryKey = {
-  name: string;
-  type: string;
-};
-export type Value = {
-  option: string;
-  success: boolean;
-};
+export const CompoundPrimaryKeyNames = ["name", "type"] as const;
+export const CompoundSchema: ValueSchema = {
+  name: "string",
+  type: "string",
+  option: "string",
+  success: "boolean",
+} as const;
 
-export const PrimaryKeySchema: BasePrimaryKeySchema = { name: "string", type: "string" } as const;
-export const ValueSchema: BaseValueSchema = { option: "string", success: "boolean" } as const;
-
-// Schema for compound index testing
-export type CompoundKey = {
-  id: string;
-};
-
-export type CompoundValue = {
-  category: string;
-  subcategory: string;
-  value: number;
-};
-
-export const CompoundPrimaryKeySchema: BasePrimaryKeySchema = { id: "string" } as const;
-export const CompoundValueSchema: BaseValueSchema = {
+export const SearchPrimaryKeyNames = ["id"] as const;
+export const SearchSchema: ValueSchema = {
+  id: "string",
   category: "string",
   subcategory: "string",
   value: "number",
 } as const;
 
 export function runGenericTabularRepositoryTests(
-  createComplexRepository: () => Promise<ITabularRepository<PrimaryKey, PrimaryKey & Value>>,
-  createCompoundRepository?: () => Promise<
-    ITabularRepository<CompoundKey, CompoundKey & CompoundValue>
+  createCompoundPkRepository: () => Promise<
+    ITabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>
+  >,
+  createSearchableRepository?: () => Promise<
+    ITabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>
   >
 ) {
-  describe("with complex schemas", () => {
-    let repository: ITabularRepository<PrimaryKey, PrimaryKey & Value>;
+  describe("with compound primary keys", () => {
+    let repository: ITabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>;
 
     beforeEach(async () => {
-      repository = await createComplexRepository();
+      repository = await createCompoundPkRepository();
     });
 
     it("should store and retrieve values for a key", async () => {
@@ -70,12 +58,12 @@ export function runGenericTabularRepositoryTests(
   });
 
   // Only run compound index tests if createCompoundRepository is provided
-  if (createCompoundRepository) {
-    describe("with compound indexes", () => {
-      let repository: ITabularRepository<CompoundKey, CompoundKey & CompoundValue>;
+  if (createSearchableRepository) {
+    describe("with searchable indexes", () => {
+      let repository: ITabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>;
 
       beforeEach(async () => {
-        repository = await createCompoundRepository();
+        repository = await createSearchableRepository();
       });
 
       it("should store and search using compound indexes", async () => {

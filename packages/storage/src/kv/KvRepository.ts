@@ -8,19 +8,24 @@
 import { EventEmitter } from "@ellmers/util";
 import { makeFingerprint } from "@ellmers/util";
 import {
-  DefaultPrimaryKeyType,
-  DefaultValueType,
-  DefaultPrimaryKeySchema,
-  DefaultValueSchema,
   KvEventName,
   KvEventListener,
   KvEventListeners,
   KvEventParameters,
   IKvRepository,
-  JSONValue,
+  DefaultKeyValueSchema,
+  DefaultKeyValueKey,
+  DefaultKvPk,
+  DefaultKvValue,
 } from "./IKvRepository";
-import { TabularRepository } from "../tabular/TabularRepository";
-import { BasicKeyType } from "../tabular/ITabularRepository";
+import {
+  JSONValue,
+  KeyOption,
+  ValueOption,
+  ValueOptionType,
+  KeyOptionType,
+} from "../tabular/ITabularRepository";
+import type { TabularRepository } from "../tabular/TabularRepository";
 
 /**
  * Abstract base class for key-value storage repositories.
@@ -31,8 +36,8 @@ import { BasicKeyType } from "../tabular/ITabularRepository";
  * @template Combined - Combined type of Key & Value
  */
 export abstract class KvRepository<
-  Key extends BasicKeyType = BasicKeyType,
-  Value extends JSONValue = JSONValue,
+  Key extends KeyOptionType = KeyOptionType,
+  Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > implements IKvRepository<Key, Value, Combined>
 {
@@ -40,18 +45,16 @@ export abstract class KvRepository<
   protected events = new EventEmitter<KvEventListeners<Key, Value, Combined>>();
 
   public abstract tabularRepository: TabularRepository<
-    DefaultPrimaryKeyType,
-    DefaultValueType,
-    typeof DefaultPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof DefaultKeyValueSchema,
+    typeof DefaultKeyValueKey
   >;
 
   /**
    * Creates a new KvRepository instance
    */
   constructor(
-    public primaryKeyType: "string" | "number" | "bigint" | "uuid4",
-    public valueType: "string" | "number" | "bigint" | "json"
+    public primaryKeyType: KeyOption,
+    public valueType: ValueOption
   ) {}
 
   /**
@@ -60,12 +63,12 @@ export abstract class KvRepository<
    * @param value - The value to store
    */
   public async put(key: Key, value: Value): Promise<void> {
-    const tKey = { key } as DefaultPrimaryKeyType;
-    let tValue: DefaultValueType;
+    const tKey = { key } as DefaultKvPk;
+    let tValue: DefaultKvValue;
     if (this.valueType === "json") {
-      tValue = { value: JSON.stringify(value) } as DefaultValueType;
+      tValue = { value: JSON.stringify(value) } as DefaultKvValue;
     } else {
-      tValue = { value } as DefaultValueType;
+      tValue = { value } as DefaultKvValue;
     }
     return await this.tabularRepository.put({ ...tKey, ...tValue });
   }
@@ -78,10 +81,10 @@ export abstract class KvRepository<
    * @returns The stored value or undefined if not found
    */
   public async get(key: Key): Promise<Value | undefined> {
-    const result = await this.tabularRepository.get({ key } as DefaultPrimaryKeyType);
+    const result = await this.tabularRepository.get({ key } as DefaultKvPk);
     if (result) {
       if (this.valueType === "json") {
-        return JSON.parse(result.value) as Value;
+        return JSON.parse(result.value as string) as Value;
       } else {
         return result.value as Value;
       }
@@ -95,7 +98,7 @@ export abstract class KvRepository<
    * @param key - The primary key of the row to delete
    */
   public async delete(key: Key): Promise<void> {
-    return await this.tabularRepository.delete({ key } as DefaultPrimaryKeyType);
+    return await this.tabularRepository.delete({ key } as DefaultKvPk);
   }
 
   /**
@@ -109,7 +112,7 @@ export abstract class KvRepository<
         (value) =>
           ({
             key: value.key,
-            value: this.valueType === "json" ? JSON.parse(value.value) : value.value,
+            value: this.valueType === "json" ? JSON.parse(value.value as string) : value.value,
           }) as Combined
       );
     }

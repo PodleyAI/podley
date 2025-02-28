@@ -5,14 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { FsFolderTabularRepository } from "@ellmers/storage";
 import {
-  DefaultPrimaryKeySchema,
-  DefaultPrimaryKeyType,
-  DefaultValueSchema,
-  DefaultValueType,
-  FsFolderTabularRepository,
-} from "@ellmers/storage";
-import { TaskGraphRepository } from "./TaskGraphRepository";
+  TaskGraphPrimaryKeyNames,
+  TaskGraphRepository,
+  TaskGraphSchema,
+} from "./TaskGraphRepository";
 
 /**
  * File-based implementation of a task graph repository.
@@ -20,18 +18,16 @@ import { TaskGraphRepository } from "./TaskGraphRepository";
  */
 export class FsFolderTaskGraphRepository extends TaskGraphRepository {
   tabularRepository: FsFolderTabularRepository<
-    DefaultPrimaryKeyType,
-    DefaultValueType,
-    typeof DefaultPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof TaskGraphSchema,
+    typeof TaskGraphPrimaryKeyNames
   >;
   public type = "FsFolderTaskGraphRepository" as const;
   constructor(folderPath: string) {
     super();
     this.tabularRepository = new FsFolderTabularRepository(
       folderPath,
-      DefaultPrimaryKeySchema,
-      DefaultValueSchema
+      TaskGraphSchema,
+      TaskGraphPrimaryKeyNames
     );
   }
 }

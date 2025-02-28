@@ -5,17 +5,16 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { JSONValue } from "./IKvRepository";
+import {
+  JSONValue,
+  KeyOptionType,
+  ValueOptionType,
+  KeyOption,
+  ValueOption,
+} from "../tabular/ITabularRepository";
 import { KvRepository } from "./KvRepository";
 import { SqliteTabularRepository } from "../tabular/SqliteTabularRepository";
-import { BasicKeyType } from "../tabular/ITabularRepository";
-import {
-  DefaultPrimaryKeySchema,
-  DefaultPrimaryKeyType,
-  DefaultValueSchema,
-  DefaultValueType,
-} from "@ellmers/storage";
-
+import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
 /**
  * Abstract base class for key-value storage repositories.
  * Has a basic event emitter for listening to repository events.
@@ -25,15 +24,13 @@ import {
  * @template Combined - Combined type of Key & Value
  */
 export class SqliteKvRepository<
-  Key extends BasicKeyType = BasicKeyType,
-  Value extends JSONValue = JSONValue,
+  Key extends KeyOptionType = KeyOptionType,
+  Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
   public tabularRepository: SqliteTabularRepository<
-    DefaultPrimaryKeyType,
-    DefaultValueType,
-    typeof DefaultPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof DefaultKeyValueSchema,
+    typeof DefaultKeyValueKey
   >;
 
   /**
@@ -42,15 +39,15 @@ export class SqliteKvRepository<
   constructor(
     public db: any,
     public dbName: string,
-    primaryKeyType: "string" | "number" | "bigint" | "uuid4",
-    valueType: "string" | "number" | "bigint" | "json"
+    primaryKeyType: KeyOption,
+    valueType: ValueOption
   ) {
     super(primaryKeyType, valueType);
     this.tabularRepository = new SqliteTabularRepository(
       db,
       dbName,
-      DefaultPrimaryKeySchema,
-      DefaultValueSchema
+      DefaultKeyValueSchema,
+      DefaultKeyValueKey
     );
   }
 }

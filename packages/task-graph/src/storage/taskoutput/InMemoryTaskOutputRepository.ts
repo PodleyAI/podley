@@ -5,10 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DefaultValueSchema, DefaultValueType, InMemoryTabularRepository } from "@ellmers/storage";
-import { TaskOutputPrimaryKeySchema } from "./TaskOutputRepository";
-import { TaskOutputPrimaryKey } from "./TaskOutputRepository";
-import { TaskOutputRepository } from "./TaskOutputRepository";
+import { InMemoryTabularRepository } from "@ellmers/storage";
+import {
+  TaskOutputSchema,
+  TaskOutputPrimaryKeyNames,
+  TaskOutputRepository,
+} from "./TaskOutputRepository";
 
 /**
  * In-memory implementation of a task output repository.
@@ -16,19 +18,15 @@ import { TaskOutputRepository } from "./TaskOutputRepository";
  */
 export class InMemoryTaskOutputRepository extends TaskOutputRepository {
   tabularRepository: InMemoryTabularRepository<
-    TaskOutputPrimaryKey,
-    DefaultValueType,
-    typeof TaskOutputPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof TaskOutputSchema,
+    typeof TaskOutputPrimaryKeyNames
   >;
   public type = "InMemoryTaskOutputRepository" as const;
   constructor() {
     super();
-    this.tabularRepository = new InMemoryTabularRepository<
-      TaskOutputPrimaryKey,
-      DefaultValueType,
-      typeof TaskOutputPrimaryKeySchema,
-      typeof DefaultValueSchema
-    >(TaskOutputPrimaryKeySchema, DefaultValueSchema);
+    this.tabularRepository = new InMemoryTabularRepository(
+      TaskOutputSchema,
+      TaskOutputPrimaryKeyNames
+    );
   }
 }

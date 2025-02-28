@@ -6,13 +6,11 @@
 //    *******************************************************************************
 
 import {
-  DefaultPrimaryKeySchema,
-  DefaultPrimaryKeyType,
-  DefaultValueSchema,
-  DefaultValueType,
-  InMemoryTabularRepository,
-} from "@ellmers/storage";
-import { TaskGraphRepository } from "./TaskGraphRepository";
+  TaskGraphRepository,
+  TaskGraphSchema,
+  TaskGraphPrimaryKeyNames,
+} from "./TaskGraphRepository";
+import { InMemoryTabularRepository } from "@ellmers/storage";
 
 /**
  * In-memory implementation of a task graph repository.
@@ -20,17 +18,15 @@ import { TaskGraphRepository } from "./TaskGraphRepository";
  */
 export class InMemoryTaskGraphRepository extends TaskGraphRepository {
   tabularRepository: InMemoryTabularRepository<
-    DefaultPrimaryKeyType,
-    DefaultValueType,
-    typeof DefaultPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof TaskGraphSchema,
+    typeof TaskGraphPrimaryKeyNames
   >;
   public type = "InMemoryTaskGraphRepository" as const;
   constructor() {
     super();
     this.tabularRepository = new InMemoryTabularRepository(
-      DefaultPrimaryKeySchema,
-      DefaultValueSchema
+      TaskGraphSchema,
+      TaskGraphPrimaryKeyNames
     );
   }
 }

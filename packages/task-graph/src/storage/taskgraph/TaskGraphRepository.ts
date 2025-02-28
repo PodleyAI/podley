@@ -6,13 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import type {
-  DefaultPrimaryKeyType,
-  DefaultValueType,
-  DefaultPrimaryKeySchema,
-  DefaultValueSchema,
-  TabularRepository,
-} from "@ellmers/storage";
+import type { TabularRepository } from "@ellmers/storage";
 import { DataFlow } from "../../task-graph/DataFlow";
 import { TaskGraph, TaskGraphItemJson, TaskGraphJson } from "../../task-graph/TaskGraph";
 import { CompoundTask } from "../../task/CompoundTask";
@@ -37,6 +31,12 @@ export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParam
   Event
 >;
 
+export const TaskGraphSchema = {
+  key: "string",
+  value: "string",
+} as const;
+
+export const TaskGraphPrimaryKeyNames = ["key"] as const;
 /**
  * Abstract repository class for managing task graphs persistence and retrieval.
  * Provides functionality to save, load, and manipulate task graphs with their associated tasks and data flows.
@@ -44,10 +44,8 @@ export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParam
 export abstract class TaskGraphRepository {
   public type = "TaskGraphRepository";
   abstract tabularRepository: TabularRepository<
-    DefaultPrimaryKeyType,
-    DefaultValueType,
-    typeof DefaultPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof TaskGraphSchema,
+    typeof TaskGraphPrimaryKeyNames
   >;
   protected events = new EventEmitter<TaskGraphEventListeners>();
 

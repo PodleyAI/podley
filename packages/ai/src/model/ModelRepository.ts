@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import { DefaultValueSchema, DefaultValueType, type TabularRepository } from "@ellmers/storage";
-import { Model, ModelPrimaryKey, ModelPrimaryKeySchema } from "./Model";
+import { type TabularRepository } from "@ellmers/storage";
+import { Model } from "./Model";
 
 /**
  * Events that can be emitted by the ModelRepository
@@ -30,30 +30,20 @@ export type ModelEventParameters<Event extends ModelEvents> = EventParameters<
   Event
 >;
 
-/**
- * Represents the primary key structure for mapping tasks to models
- */
-export type Task2ModelPrimaryKey = {
-  task: string;
-  model: string;
-};
+export const ModelSchema = {
+  name: "string",
+  details: "json",
+} as const;
+export const ModelPrimaryKeyNames = ["name"] as const;
 
-export const Task2ModelPrimaryKeySchema = {
+/**
+ * Represents the structure for mapping tasks to models
+ */
+export const Task2ModelSchema = {
   task: "string",
   model: "string",
 } as const;
-
-/**
- * Schema definition for Task2ModelDetail
- */
-export type Task2ModelDetail = {
-  /** Optional details about the task-model relationship */
-  details: string | null;
-};
-
-export const Task2ModelDetailSchema = {
-  details: "string",
-} as const;
+export const Task2ModelPrimaryKeyNames = ["task", "model"] as const;
 
 /**
  * Abstract base class for managing AI models and their relationships with tasks.
@@ -68,20 +58,16 @@ export abstract class ModelRepository {
    * Repository for storing and managing Model instances
    */
   abstract modelTabularRepository: TabularRepository<
-    ModelPrimaryKey,
-    DefaultValueType,
-    typeof ModelPrimaryKeySchema,
-    typeof DefaultValueSchema
+    typeof ModelSchema,
+    typeof ModelPrimaryKeyNames
   >;
 
   /**
    * Repository for managing relationships between tasks and models
    */
   abstract task2ModelTabularRepository: TabularRepository<
-    Task2ModelPrimaryKey,
-    Task2ModelDetail,
-    typeof Task2ModelPrimaryKeySchema,
-    typeof Task2ModelDetailSchema
+    typeof Task2ModelSchema,
+    typeof Task2ModelPrimaryKeyNames
   >;
 
   /** Event emitter for repository events */
@@ -128,7 +114,7 @@ export abstract class ModelRepository {
    * @param model - The model instance to add
    */
   async addModel(model: Model) {
-    await this.modelTabularRepository.put({ name: model.name, value: JSON.stringify(model) });
+    await this.modelTabularRepository.put({ name: model.name, details: JSON.stringify(model) });
     this.events.emit("model_added", model);
   }
 
@@ -143,8 +129,8 @@ export abstract class ModelRepository {
     if (!junctions || junctions.length === 0) return undefined;
     const models = [];
     for (const junction of junctions) {
-      const model = await this.modelTabularRepository.get({ name: junction.model });
-      if (model) models.push(JSON.parse(model["value"]));
+      const model = await this.modelTabularRepository.get({ name: junction.model } as any);
+      if (model) models.push(JSON.parse(model.details as string));
     }
     return models;
   }
@@ -179,7 +165,7 @@ export abstract class ModelRepository {
   async enumerateAllModels() {
     const models = await this.modelTabularRepository.getAll();
     if (!models || models.length === 0) return undefined;
-    return models.map((model) => JSON.parse(model["value"]));
+    return models.map((model) => JSON.parse(model.details as string));
   }
 
   /**
@@ -188,7 +174,7 @@ export abstract class ModelRepository {
    * @param model - The model to associate with the task
    */
   async connectTaskToModel(task: string, model: string) {
-    await this.task2ModelTabularRepository.put({ task, model, details: null });
+    await this.task2ModelTabularRepository.put({ task, model });
     this.events.emit("task_model_connected", task, model);
   }
 
@@ -199,9 +185,9 @@ export abstract class ModelRepository {
    */
   async findByName(name: string) {
     if (typeof name != "string") return undefined;
-    const modelstr = await this.modelTabularRepository.get({ name });
+    const modelstr = await this.modelTabularRepository.get({ name } as any);
     if (!modelstr) return undefined;
-    return JSON.parse(modelstr["value"]);
+    return JSON.parse(modelstr.details as string);
   }
 
   /**
