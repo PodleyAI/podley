@@ -168,22 +168,22 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, Dataflow, TaskIdType, 
       if (!target.dependencies) {
         target.dependencies = {};
       }
-      const targetDeps = target.dependencies[edge.targetTaskInputId];
+      const targetDeps = target.dependencies[edge.targetTaskPortId];
       if (!targetDeps) {
-        target.dependencies[edge.targetTaskInputId] = {
+        target.dependencies[edge.targetTaskPortId] = {
           id: edge.sourceTaskId,
-          output: edge.sourceTaskOutputId,
+          output: edge.sourceTaskPortId,
         };
       } else {
         if (Array.isArray(targetDeps)) {
           targetDeps.push({
             id: edge.sourceTaskId,
-            output: edge.sourceTaskOutputId,
+            output: edge.sourceTaskPortId,
           });
         } else {
-          target.dependencies[edge.targetTaskInputId] = [
+          target.dependencies[edge.targetTaskPortId] = [
             targetDeps,
-            { id: edge.sourceTaskId, output: edge.sourceTaskOutputId },
+            { id: edge.sourceTaskId, output: edge.sourceTaskPortId },
           ];
         }
       }

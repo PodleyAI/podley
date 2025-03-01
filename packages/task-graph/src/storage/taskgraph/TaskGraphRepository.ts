@@ -129,9 +129,9 @@ export abstract class TaskGraphRepository {
       subGraph.addDataflow(
         new Dataflow(
           subitem.sourceTaskId,
-          subitem.sourceTaskOutputId,
+          subitem.sourceTaskPortId,
           subitem.targetTaskId,
-          subitem.targetTaskInputId
+          subitem.targetTaskPortId
         )
       );
     }

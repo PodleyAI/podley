@@ -77,6 +77,9 @@ export interface TaskInput {
 export interface TaskOutput {
   [key: string]: any;
 }
+export interface Provenance {
+  [key: string]: any;
+}
 
 export interface ITaskSimple {
   readonly isCompound: false;

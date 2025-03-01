@@ -263,9 +263,9 @@ describe("Workflow", () => {
       expect(edges).toHaveLength(1);
       const edge = edges[0];
       expect(edge.sourceTaskId).toBe(nodes[0].config.id);
-      expect(edge.sourceTaskOutputId).toBe("customOutput");
+      expect(edge.sourceTaskPortId).toBe("customOutput");
       expect(edge.targetTaskId).toBe(nodes[1].config.id);
-      expect(edge.targetTaskInputId).toBe("customInput");
+      expect(edge.targetTaskPortId).toBe("customInput");
     });
 
     it("should throw error when source output doesn't exist", () => {
@@ -358,8 +358,8 @@ describe("Workflow", () => {
 
       const edges = workflow.graph.getDataflows();
       expect(edges).toHaveLength(1);
-      expect(edges[0].sourceTaskOutputId).toBe("output");
-      expect(edges[0].targetTaskInputId).toBe("input");
+      expect(edges[0].sourceTaskPortId).toBe("output");
+      expect(edges[0].targetTaskPortId).toBe("input");
     });
 
     it("should not auto-connect when types don't match", () => {

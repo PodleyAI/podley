@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
-import { TaskInput, Task, TaskOutput, TaskStatus } from "../task/TaskTypes";
+import { TaskInput, Task, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
 import { TaskGraph } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
 import { nanoid } from "nanoid";
@@ -54,7 +54,7 @@ export class TaskGraphRunner {
   private copyInputFromEdgesToNode(node: Task) {
     this.dag.getSourceDataflows(node.config.id).forEach((dataFlow) => {
       const toInput: TaskInput = {};
-      toInput[dataFlow.targetTaskInputId] = dataFlow.value;
+      toInput[dataFlow.targetTaskPortId] = dataFlow.value;
       node.addInputData(toInput);
     });
   }
@@ -65,7 +65,7 @@ export class TaskGraphRunner {
    * @returns The provenance input for the task
    */
   private getInputProvenance(node: Task): TaskInput {
-    const nodeProvenance: TaskInput = {};
+    const nodeProvenance: Provenance = {};
     this.dag.getSourceDataflows(node.config.id).forEach((dataFlow) => {
       Object.assign(nodeProvenance, dataFlow.provenance);
     });
@@ -80,8 +80,8 @@ export class TaskGraphRunner {
    */
   private pushOutputFromNodeToEdges(node: Task, results: TaskOutput, nodeProvenance?: TaskInput) {
     this.dag.getTargetDataflows(node.config.id).forEach((dataFlow) => {
-      if (results[dataFlow.sourceTaskOutputId] !== undefined) {
-        dataFlow.value = results[dataFlow.sourceTaskOutputId];
+      if (results[dataFlow.sourceTaskPortId] !== undefined) {
+        dataFlow.value = results[dataFlow.sourceTaskPortId];
       }
       if (nodeProvenance) dataFlow.provenance = nodeProvenance;
     });
@@ -95,7 +95,7 @@ export class TaskGraphRunner {
    */
   private async runTaskWithProvenance(
     task: Task,
-    parentProvenance: TaskInput
+    parentProvenance: Provenance
   ): Promise<GraphSingleResult> {
     // Update provenance for the current task
     const nodeProvenance = {
@@ -186,7 +186,7 @@ export class TaskGraphRunner {
    * @throws TaskErrorGroup if any tasks have failed
    */
   public async runGraph(
-    parentProvenance: TaskInput = {},
+    parentProvenance: Provenance = {},
     parentSignal?: AbortSignal
   ): Promise<GraphResult> {
     this.handleStart(parentSignal);

@@ -89,8 +89,8 @@ export class Workflow {
       // Process any pending data flows
       if (this._dataFlows.length > 0) {
         this._dataFlows.forEach((dataFlow) => {
-          if (task.inputs.find((i) => i.id === dataFlow.targetTaskInputId) === undefined) {
-            this._error = `Input ${dataFlow.targetTaskInputId} not found on task ${task.config.id}`;
+          if (task.inputs.find((i) => i.id === dataFlow.targetTaskPortId) === undefined) {
+            this._error = `Input ${dataFlow.targetTaskPortId} not found on task ${task.config.id}`;
             console.error(this._error);
             return;
           }

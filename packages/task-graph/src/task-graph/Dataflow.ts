@@ -5,15 +5,15 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
+import { Provenance, TaskIdType } from "../task/TaskTypes";
 
 export type DataflowIdType = string;
 
 export type DataflowJson = {
   sourceTaskId: unknown;
-  sourceTaskOutputId: string;
+  sourceTaskPortId: string;
   targetTaskId: unknown;
-  targetTaskInputId: string;
+  targetTaskPortId: string;
 };
 
 /**
@@ -22,22 +22,31 @@ export type DataflowJson = {
 export class Dataflow {
   constructor(
     public sourceTaskId: TaskIdType,
-    public sourceTaskOutputId: string,
+    public sourceTaskPortId: string,
     public targetTaskId: TaskIdType,
-    public targetTaskInputId: string
+    public targetTaskPortId: string
   ) {}
   get id(): string {
-    return `${this.sourceTaskId}.${this.sourceTaskOutputId} -> ${this.targetTaskId}.${this.targetTaskInputId}`;
+    return `${this.sourceTaskId}.${this.sourceTaskPortId} -> ${this.targetTaskId}.${this.targetTaskPortId}`;
   }
   public value: any = undefined;
-  public provenance: TaskInput = {};
+  public provenance: Provenance = {};
 
   toJSON(): DataflowJson {
     return {
       sourceTaskId: this.sourceTaskId,
-      sourceTaskOutputId: this.sourceTaskOutputId,
+      sourceTaskPortId: this.sourceTaskPortId,
       targetTaskId: this.targetTaskId,
-      targetTaskInputId: this.targetTaskInputId,
+      targetTaskPortId: this.targetTaskPortId,
     };
+  }
+}
+
+export class DataflowArrow extends Dataflow {
+  constructor(dataflow: string) {
+    const [source, target] = dataflow.split(" -> ");
+    const [sourceTaskId, sourceTaskPortId] = source.split(".");
+    const [targetTaskId, targetTaskPortId] = target.split(".");
+    super(sourceTaskId, sourceTaskPortId, targetTaskId, targetTaskPortId);
   }
 }

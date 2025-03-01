@@ -19,6 +19,7 @@ import type {
   TaskEventListener,
   TaskEventParameters,
   JsonTaskItem,
+  Provenance,
 } from "./TaskTypes";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskError } from "./TaskError";
@@ -54,7 +55,7 @@ export interface ITask {
   emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>): void;
 
   // Core task methods
-  run(nodeProvenance: TaskInput, repository?: TaskOutputRepository): Promise<TaskOutput>;
+  run(nodeProvenance: Provenance, repository?: TaskOutputRepository): Promise<TaskOutput>;
   runFull(): Promise<TaskOutput>;
   runReactive(): Promise<TaskOutput>;
   abort(): void;

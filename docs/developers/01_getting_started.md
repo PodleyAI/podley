@@ -108,17 +108,17 @@ graph.addTask(new DebugLog({ id: "3" }));
 graph.addDataflow(
   new Dataflow({
     sourceTaskId: "1",
-    sourceTaskOutputId: "model",
+    sourceTaskPortId: "model",
     targetTaskId: "2",
-    targetTaskInputId: "model",
+    targetTaskPortId: "model",
   })
 );
 graph.addDataflow(
   new Dataflow({
     sourceTaskId: "2",
-    sourceTaskOutputId: "text",
+    sourceTaskPortId: "text",
     targetTaskId: "3",
-    targetTaskInputId: "message",
+    targetTaskPortId: "message",
   })
 );
 
@@ -210,17 +210,17 @@ graph.addTask(new DebugLog({ id: "3" }));
 graph.addDataflow(
   new Dataflow({
     sourceTaskId: "1",
-    sourceTaskOutputId: "model",
+    sourceTaskPortId: "model",
     targetTaskId: "2",
-    targetTaskInputId: "model",
+    targetTaskPortId: "model",
   })
 );
 graph.addDataflow(
   new Dataflow({
     sourceTaskId: "2",
-    sourceTaskOutputId: "text",
+    sourceTaskPortId: "text",
     targetTaskId: "3",
-    targetTaskInputId: "message",
+    targetTaskPortId: "message",
   })
 );
 
@@ -440,9 +440,9 @@ graph.addTask(
 graph.addDataflow(
   new Dataflow({
     sourceTaskId: "1",
-    sourceTaskOutputId: "text",
+    sourceTaskPortId: "text",
     targetTaskId: "2",
-    targetTaskInputId: "message",
+    targetTaskPortId: "message",
   })
 );
 ```
