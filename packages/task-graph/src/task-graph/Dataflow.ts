@@ -5,7 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Provenance, TaskIdType } from "../task/TaskTypes";
+import { TaskError } from "../task/TaskError";
+import { Provenance, TaskIdType, TaskOutput, TaskStatus } from "../task/TaskTypes";
 
 export type DataflowIdType = string;
 
@@ -17,6 +18,7 @@ export type DataflowJson = {
 };
 
 export const DATAFLOW_ALL_PORTS = "*";
+export const DATAFLOW_ERROR_PORT = "[error]";
 
 /**
  * Represents a data flow between two tasks, indicating how one task's output is used as input for another task
@@ -33,6 +35,29 @@ export class Dataflow {
   }
   public value: any = undefined;
   public provenance: Provenance = {};
+  public status: TaskStatus = TaskStatus.PENDING;
+  public error: TaskError | undefined;
+
+  setPortData(entireDataBlock: any, nodeProvenance: any) {
+    if (this.sourceTaskPortId === DATAFLOW_ALL_PORTS) {
+      this.value = entireDataBlock;
+    } else if (this.sourceTaskPortId === DATAFLOW_ERROR_PORT) {
+      this.error = entireDataBlock;
+    } else {
+      this.value = entireDataBlock[this.sourceTaskPortId];
+    }
+    if (nodeProvenance) this.provenance = nodeProvenance;
+  }
+
+  getPortData(): TaskOutput {
+    if (this.sourceTaskPortId === DATAFLOW_ALL_PORTS) {
+      return this.value;
+    } else if (this.targetTaskPortId === DATAFLOW_ERROR_PORT) {
+      return { [DATAFLOW_ERROR_PORT]: this.error };
+    } else {
+      return { [this.targetTaskPortId]: this.value };
+    }
+  }
 
   toJSON(): DataflowJson {
     return {

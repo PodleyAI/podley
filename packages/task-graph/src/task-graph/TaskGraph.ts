@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { DirectedAcyclicGraph } from "@sroussey/typescript-graph";
-import { Task, TaskIdType, TaskInput, JsonTaskItem } from "../task/TaskTypes";
+import { Task, TaskIdType, TaskInput, JsonTaskItem, Provenance } from "../task/TaskTypes";
 import { Dataflow, DataflowIdType, DataflowJson } from "./Dataflow";
 
 /**
@@ -17,7 +17,7 @@ export type TaskGraphItemJson = {
   type: string;
   name?: string;
   input?: TaskInput;
-  provenance?: TaskInput;
+  provenance?: Provenance;
   subgraph?: TaskGraphJson;
 };
 

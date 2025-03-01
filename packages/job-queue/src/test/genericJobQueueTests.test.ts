@@ -465,11 +465,11 @@ export function runGenericJobQueueTests(
       // Verify progress updates
       if (jobQueue instanceof IndexedDbQueueStorage) {
         if (progressUpdates.length == 5) {
-          console.log(progressUpdates);
+          console.error(progressUpdates);
         }
         // something weird happens only occationally with IndexedDbQueueStorage on CI
         // expect 4 or 5 updates
-        expect(progressUpdates.length).toBeOneOf([4, 5]);
+        expect(progressUpdates.length).toBeOneOf([4]);
       } else {
         expect(progressUpdates.length).toBe(4); // Should have 4 unique progress updates
       }
@@ -501,8 +501,10 @@ export function runGenericJobQueueTests(
       const jobId = await jobQueue.add(job);
 
       let listenerCalls = 0;
-      const cleanup = jobQueue.onJobProgress(jobId, () => {
+      let listenerArgs: any[] = [];
+      const cleanup = jobQueue.onJobProgress(jobId, (...args) => {
         listenerCalls++;
+        listenerArgs.push(args);
       });
 
       // Wait for job completion
@@ -516,7 +518,14 @@ export function runGenericJobQueueTests(
       }
 
       cleanup();
-      expect(listenerCalls).toBe(4); // Should only have the original 3 progress updates
+      if (jobQueue instanceof IndexedDbQueueStorage) {
+        if (listenerCalls == 5) {
+          console.log("listenerCalls", listenerArgs);
+        }
+        expect(listenerCalls).toBeOneOf([4]); // Looking for weird behavior with IndexedDbQueueStorage on CI
+      } else {
+        expect(listenerCalls).toBe(4); // Should only have the original 4 progress updates
+      }
     });
 
     it("should handle multiple jobs with progress monitoring", async () => {

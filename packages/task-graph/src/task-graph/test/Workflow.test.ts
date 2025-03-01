@@ -12,7 +12,7 @@ import { TaskOutputRepository } from "../../storage/taskoutput/TaskOutputReposit
 import { TaskInputDefinition, TaskOutputDefinition } from "../../task/TaskTypes";
 import { TaskAbortedError, TaskError, WorkflowError } from "../../task/TaskError";
 import { CreateWorkflow, Workflow } from "../Workflow";
-import { sleep } from "bun";
+import { sleep } from "@ellmers/util";
 
 // Mock task classes for testing
 class TestSingleTask extends SingleTask {

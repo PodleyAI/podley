@@ -58,7 +58,7 @@ export class AiTask extends JobQueueTask {
     this.config.queueName = queue.queueName;
     const job = new AiJob({
       queueName: queue.queueName,
-      jobRunId: this.config.currentJobRunId, // could be undefined
+      jobRunId: this.config.runnerId, // could be undefined
       input: {
         taskType: runtype,
         modelProvider: model.provider,
