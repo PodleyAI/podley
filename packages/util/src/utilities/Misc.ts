@@ -73,28 +73,3 @@ export function serialize(obj: Record<string, any>): string {
   const sortedObj = sortObject(obj);
   return JSON.stringify(sortedObj);
 }
-
-export async function sha256(data: string) {
-  if (typeof window === "object" && window.crypto && window.crypto.subtle) {
-    // Browser environment
-    const encoder = new TextEncoder();
-    return window.crypto.subtle.digest("SHA-256", encoder.encode(data)).then((hashBuffer) => {
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-    });
-  } else if (typeof Bun !== "undefined") {
-    // Bun environment
-    return new Bun.CryptoHasher("sha256").update(data).digest("hex");
-  } else if (typeof process === "object" && process.versions && process.versions.node) {
-    // Node.js environment
-    return require("crypto").createHash("sha256").update(data).digest("hex");
-  } else {
-    throw new Error("Unsupported environment");
-  }
-}
-
-export async function makeFingerprint(input: any): Promise<string> {
-  const serializedObj = serialize(input);
-  const hash = await sha256(serializedObj);
-  return hash;
-}
