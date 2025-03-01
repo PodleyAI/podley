@@ -9,20 +9,9 @@ import { runGenericJobQueueTests, TestJob } from "./genericJobQueueTests.test";
 import { SqliteQueueStorage } from "@ellmers/storage";
 import { SqliteRateLimiter } from "../storage/SqliteRateLimiter";
 import { describe } from "bun:test";
+import { Sqlite } from "@ellmers/util";
 
-const wrapper = function () {
-  if (process["isBun"]) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("bun:sqlite").Database;
-  }
-
-  return require("better-sqlite3");
-};
-
-const module = wrapper();
-
-// Create an in-memory database
-const db = new module(":memory:");
+const db = new Sqlite.Database(":memory:");
 
 describe("SqliteJobQueue", () => {
   runGenericJobQueueTests(

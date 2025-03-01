@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import type { Database } from "better-sqlite3";
+import type { Sqlite } from "@ellmers/util";
 import { toSQLiteTimestamp } from "@ellmers/util";
 import { ILimiter } from "../job/ILimiter";
 
@@ -14,12 +14,17 @@ import { ILimiter } from "../job/ILimiter";
  * Manages request counts and delays to control job execution.
  */
 export class SqliteRateLimiter implements ILimiter {
-  private readonly db: Database;
+  private readonly db: Sqlite.Database;
   private readonly queueName: string;
   private readonly maxExecutions: number;
   private readonly windowSizeInMilliseconds: number;
 
-  constructor(db: Database, queueName: string, maxExecutions: number, windowSizeInSeconds: number) {
+  constructor(
+    db: Sqlite.Database,
+    queueName: string,
+    maxExecutions: number,
+    windowSizeInSeconds: number
+  ) {
     this.db = db;
     this.queueName = queueName;
     this.maxExecutions = maxExecutions;
@@ -78,7 +83,7 @@ export class SqliteRateLimiter implements ILimiter {
 
     const thresholdTime = toSQLiteTimestamp(new Date(Date.now() - this.windowSizeInMilliseconds));
     const result = this.db
-      .prepare<[queue: string, executedAt: string]>(
+      .prepare(
         `SELECT COUNT(*) AS attempt_count
           FROM job_queue_execution_tracking
           WHERE queue_name = ? AND executed_at > ?`

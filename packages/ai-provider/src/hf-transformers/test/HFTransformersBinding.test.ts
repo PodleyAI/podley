@@ -20,31 +20,13 @@ import {
   TaskInput,
   TaskOutput,
 } from "@ellmers/task-graph";
-import { sleep } from "@ellmers/util";
+import { Sqlite, sleep } from "@ellmers/util";
 import { registerHuggingfaceLocalTasks } from "../bindings/registerTasks";
 import { LOCAL_ONNX_TRANSFORMERJS } from "../model/ONNXTransformerJsModel";
 import { AiProviderInput } from "@ellmers/ai";
 import { SqliteQueueStorage } from "@ellmers/storage";
 
-const wrapper = function () {
-  if (process["isBun"]) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("bun:sqlite").Database;
-  }
-
-  return require("better-sqlite3");
-};
-
-const module = wrapper();
-
-let db: any;
-
-export function getDatabase(name = ":memory:"): any {
-  if (!db) {
-    db = new module(name);
-  }
-  return db;
-}
+const db = new Sqlite.Database(":memory:");
 
 describe("HFTransformersBinding", () => {
   describe("InMemoryJobQueue", () => {
@@ -112,11 +94,8 @@ describe("HFTransformersBinding", () => {
         "test",
         AiJob<TaskInput, TaskOutput>,
         {
-          storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
-            getDatabase(":memory:"),
-            "test"
-          ),
-          limiter: new SqliteRateLimiter(getDatabase(":memory:"), "test", 4, 1),
+          storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(db, "test"),
+          limiter: new SqliteRateLimiter(db, "test", 4, 1),
           waitDurationInMilliseconds: 1,
         }
       );

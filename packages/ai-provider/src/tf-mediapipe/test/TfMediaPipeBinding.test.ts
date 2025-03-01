@@ -21,31 +21,13 @@ import {
   TaskInput,
   TaskOutput,
 } from "@ellmers/task-graph";
-import { sleep } from "@ellmers/util";
+import { sleep, Sqlite } from "@ellmers/util";
 import { registerMediaPipeTfJsLocalTasks } from "../bindings/registerTasks";
 import { MEDIA_PIPE_TFJS_MODEL } from "../model/MediaPipeModel";
 import { AiProviderInput } from "@ellmers/ai";
 import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";
 
-const wrapper = function () {
-  if (process["isBun"]) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("bun:sqlite").Database;
-  }
-
-  return require("better-sqlite3");
-};
-
-const module = wrapper();
-
-let db: any;
-
-export function getDatabase(name = ":memory:"): any {
-  if (!db) {
-    db = new module(name);
-  }
-  return db;
-}
+const db = new Sqlite.Database(":memory:");
 
 describe("TfMediaPipeBinding", () => {
   describe("InMemoryJobQueue", () => {
@@ -120,10 +102,10 @@ describe("TfMediaPipeBinding", () => {
         AiJob<TaskInput, TaskOutput>,
         {
           storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
-            getDatabase(":memory:"),
+            db,
             MEDIA_PIPE_TFJS_MODEL
           ),
-          limiter: new SqliteRateLimiter(getDatabase(":memory:"), MEDIA_PIPE_TFJS_MODEL, 4, 1),
+          limiter: new SqliteRateLimiter(db, MEDIA_PIPE_TFJS_MODEL, 4, 1),
           waitDurationInMilliseconds: 1,
         }
       );

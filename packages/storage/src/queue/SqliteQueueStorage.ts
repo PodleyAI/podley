@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import type { Database } from "bun:sqlite";
+import type { Sqlite } from "@ellmers/util";
 import { nanoid } from "nanoid";
 import { makeFingerprint, sleep } from "@ellmers/util";
 import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
@@ -16,7 +16,7 @@ import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
  */
 export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, Output> {
   constructor(
-    protected db: Database,
+    protected db: Sqlite.Database,
     protected queueName: string,
     protected options?: {
       deleteAfterCompletionMs?: number;

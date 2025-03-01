@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Database } from "bun:sqlite";
+import { Sqlite } from "@ellmers/util";
 import {
   ValueSchema,
   KeyOptionType,
@@ -14,6 +14,8 @@ import {
   SchemaToType,
 } from "./ITabularRepository";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
+
+const Database = Sqlite.Database;
 
 // SqliteTabularRepository is a key-value store that uses SQLite as the backend for
 // in app data.
@@ -32,7 +34,7 @@ export class SqliteTabularRepository<
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** The SQLite database instance */
-  private db: Database;
+  private db: Sqlite.Database;
 
   /**
    * Creates a new SQLite key-value repository
