@@ -98,7 +98,7 @@ export class WorkflowConsoleFormatter extends ConsoleFormatter {
           .setStyle("list-style-type: none; padding-left: 10px;");
         for (const [, , edge] of obj._graph.inEdges(node.config.id)) {
           const edgeTag = nodeTag.createChild("li").setStyle("padding-left: 20px;");
-          if (edge.sourceTaskOutputId === edge.targetTaskInputId) continue;
+          if (edge.sourceTaskPortId === edge.targetTaskPortId) continue;
           const num =
             tasks.findIndex((t) => t.config.id === edge.sourceTaskId) -
             tasks.findIndex((t) => t.config.id === node.config.id);
@@ -107,12 +107,12 @@ export class WorkflowConsoleFormatter extends ConsoleFormatter {
           edgeTag
             .createChild("span")
             .setStyle(`color:${outputColor};`)
-            .createTextChild(`${edge.sourceTaskOutputId}`);
+            .createTextChild(`${edge.sourceTaskPortId}`);
           edgeTag.createChild("span").setStyle(`color:${grey};`).createTextChild(`", "`);
           edgeTag
             .createChild("span")
             .setStyle(`color:${inputColor};`)
-            .createTextChild(`${edge.targetTaskInputId}`);
+            .createTextChild(`${edge.targetTaskPortId}`);
           edgeTag.createChild("span").setStyle(`color:${grey};`).createTextChild('"');
           if (num !== -1)
             edgeTag.createChild("span").setStyle(`color:${grey};`).createTextChild(`, ${num}`);

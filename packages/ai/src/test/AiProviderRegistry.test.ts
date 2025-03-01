@@ -99,7 +99,7 @@ describe("AiProviderRegistry", () => {
   //     // Create a mock task instance with a config that allows string assignments
   //     const mockTask = {
   //       config: {
-  //         currentJobRunId: undefined as string | undefined,
+  //         runnerId: undefined as string | undefined,
   //         queue: undefined as string | undefined,
   //         currentJobId: undefined as string | undefined,
   //       },
@@ -122,7 +122,7 @@ describe("AiProviderRegistry", () => {
   //     // Create a mock task instance
   //     const mockTask = {
   //       config: {
-  //         currentJobRunId: undefined as string | undefined,
+  //         runnerId: undefined as string | undefined,
   //         queue: undefined as string | undefined,
   //         currentJobId: undefined as string | undefined,
   //       },
@@ -151,7 +151,7 @@ describe("AiProviderRegistry", () => {
   //     // Create a mock task instance
   //     const mockTask = {
   //       config: {
-  //         currentJobRunId: undefined as string | undefined,
+  //         runnerId: undefined as string | undefined,
   //         queue: undefined as string | undefined,
   //         currentJobId: undefined as string | undefined,
   //       },

@@ -69,10 +69,10 @@ Queues can have limiters, like only running one task at a time, or based on rate
 
 ## Tasks
 
-Tasks are the main building blocks of the system. They are simple or compound tasks that are the nodes in a directed acyclic graph (DAG), where the edges are DataFlows.
+Tasks are the main building blocks of the system. They are simple or compound tasks that are the nodes in a directed acyclic graph (DAG), where the edges are Dataflows.
 
 - **Task** Each task class has well defined inputs and outputs definitions. When a task is created, it can some of its inputs provided (defaults). The remainder of the inputs will come from the outputs of other tasks in the graph. When combined, the data can be found in runInputData at the time the task is run.
-- **DataFlow** The tasks in a graph are connected by edges called DataFlows. These define the which task and which output of that task are connected to which input of the next task.
+- **Dataflow** The tasks in a graph are connected by edges called Dataflows. These define the which task and which output of that task are connected to which input of the next task.
 
 # Tasks
 
@@ -294,7 +294,7 @@ classDiagram
     -TaskGraphRunner _runner
     -TaskGraph _graph
     -TaskOutputRepository _repository
-    -DataFlow[] _dataFlows
+    -Dataflow[] _dataFlows
     +EventEmitter events
     run() TaskOutput
     pop()

@@ -7,7 +7,7 @@
 
 import { expect, it, beforeEach } from "bun:test";
 import { TaskGraphRepository } from "../TaskGraphRepository";
-import { DataFlow } from "../../../task-graph/DataFlow";
+import { Dataflow } from "../../../task-graph/Dataflow";
 import { TaskGraph } from "../../../task-graph/TaskGraph";
 import { TaskRegistry } from "../../../task/TaskRegistry";
 import { TaskOutput } from "../../../task/TaskTypes";
@@ -42,16 +42,16 @@ export function runGenericTaskGraphRepositoryTests(
       new TestTask({ id: "task2" }),
       new TestTask({ id: "task3" }),
     ];
-    const edges: DataFlow[] = [
-      new DataFlow("task1", "output1", "task2", "input1"),
-      new DataFlow("task2", "output2", "task3", "input2"),
+    const edges: Dataflow[] = [
+      new Dataflow("task1", "output1", "task2", "input1"),
+      new Dataflow("task2", "output2", "task3", "input2"),
     ];
 
     graph.addTasks(tasks);
-    graph.addDataFlows(edges);
+    graph.addDataflows(edges);
 
-    expect(graph.getDataFlow("task1.output1 -> task2.input1")).toBeDefined();
-    expect(graph.getDataFlow("task2.output2 -> task3.input2")).toBeDefined();
+    expect(graph.getDataflow("task1.output1 -> task2.input1")).toBeDefined();
+    expect(graph.getDataflow("task2.output2 -> task3.input2")).toBeDefined();
 
     await repository.saveTaskGraph(id, graph);
     const retrievedGraph = await repository.getTaskGraph(id);

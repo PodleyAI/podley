@@ -160,7 +160,6 @@ function listenToTask(
   let progressItems: Array<{ id: string; text: string; progress: number }> = [];
 
   const handleStatusChange = (...args: any[]) => {
-    console.log("Status changed", task.config.id, task.status, task.runOutputData, args);
     if (task.status === TaskStatus.PROCESSING) {
       progressItems = [{ id: "text", text: "STARTING", progress: 1 }];
     } else if (task.status === TaskStatus.COMPLETED) {

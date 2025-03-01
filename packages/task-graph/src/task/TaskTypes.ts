@@ -43,7 +43,7 @@ export type JsonTaskItem = {
           output: string;
         }[];
   };
-  provenance?: TaskInput; // Optional metadata about task origin
+  provenance?: Provenance; // Optional metadata about task origin
   subtasks?: JsonTaskItem[]; // Nested tasks for compound operations
 };
 
@@ -77,6 +77,9 @@ export interface TaskInput {
 export interface TaskOutput {
   [key: string]: any;
 }
+export interface Provenance {
+  [key: string]: any;
+}
 
 export interface ITaskSimple {
   readonly isCompound: false;
@@ -97,7 +100,8 @@ export type TaskConfig = Partial<IConfig> & { input?: TaskInput };
 export interface IConfig {
   id: unknown;
   name?: string;
-  provenance?: TaskInput;
+  provenance?: Provenance;
+  runnerId?: string;
 }
 
 export type TaskInputDefinition = {

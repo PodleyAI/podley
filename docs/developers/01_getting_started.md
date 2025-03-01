@@ -13,7 +13,7 @@
 - [Going Deeper](#going-deeper)
   - [Tasks](#tasks)
   - [TaskGraph](#taskgraph)
-  - [DataFlows](#dataflows)
+  - [Dataflows](#dataflows)
   - [TaskGraphRunner](#taskgraphrunner)
 - [Appendix](#appendix)
   - [Source](#source)
@@ -81,7 +81,7 @@ import {
   DownloadModelTask,
   TextRewriterCompoundTask,
   DebugLog,
-  DataFlow,
+  Dataflow,
   TaskGraph,
   TaskGraphRunner,
 } from "@ellmers/task-graph";
@@ -105,20 +105,20 @@ graph.addTask(
   })
 );
 graph.addTask(new DebugLog({ id: "3" }));
-graph.addDataFlow(
-  new DataFlow({
+graph.addDataflow(
+  new Dataflow({
     sourceTaskId: "1",
-    sourceTaskOutputId: "model",
+    sourceTaskPortId: "model",
     targetTaskId: "2",
-    targetTaskInputId: "model",
+    targetTaskPortId: "model",
   })
 );
-graph.addDataFlow(
-  new DataFlow({
+graph.addDataflow(
+  new Dataflow({
     sourceTaskId: "2",
-    sourceTaskOutputId: "text",
+    sourceTaskPortId: "text",
     targetTaskId: "3",
-    targetTaskInputId: "message",
+    targetTaskPortId: "message",
   })
 );
 
@@ -133,7 +133,7 @@ And unrolling the config helpers, we get the following equivalent code:
 ```ts
 import {
   DebugLog,
-  DataFlow,
+  Dataflow,
   TaskGraph,
   TaskGraphRunner,
   ConcurrencyLimiter,
@@ -207,20 +207,20 @@ graph.addTask(
   })
 );
 graph.addTask(new DebugLog({ id: "3" }));
-graph.addDataFlow(
-  new DataFlow({
+graph.addDataflow(
+  new Dataflow({
     sourceTaskId: "1",
-    sourceTaskOutputId: "model",
+    sourceTaskPortId: "model",
     targetTaskId: "2",
-    targetTaskInputId: "model",
+    targetTaskPortId: "model",
   })
 );
-graph.addDataFlow(
-  new DataFlow({
+graph.addDataflow(
+  new Dataflow({
     sourceTaskId: "2",
-    sourceTaskOutputId: "text",
+    sourceTaskPortId: "text",
     targetTaskId: "3",
-    targetTaskInputId: "message",
+    targetTaskPortId: "message",
   })
 );
 
@@ -414,9 +414,9 @@ graph.addTask(
 );
 ```
 
-## DataFlows
+## Dataflows
 
-DataFlows are the edges in the graph. They connect the output of one task to the input of another. They are created by specifying the source and target tasks and the output and input ids.
+Dataflows are the edges in the graph. They connect the output of one task to the input of another. They are created by specifying the source and target tasks and the output and input ids.
 
 Example, adding a data flow to the graph similar to above:
 
@@ -437,12 +437,12 @@ graph.addTask(
     id: "2",
   })
 );
-graph.addDataFlow(
-  new DataFlow({
+graph.addDataflow(
+  new Dataflow({
     sourceTaskId: "1",
-    sourceTaskOutputId: "text",
+    sourceTaskPortId: "text",
     targetTaskId: "2",
-    targetTaskInputId: "message",
+    targetTaskPortId: "message",
   })
 );
 ```

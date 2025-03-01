@@ -119,7 +119,7 @@ export class DownloadModelTask extends AiTask {
     message: string,
     details: { file?: string; progress: number; text?: number }
   ): void {
-    if (details.file) {
+    if (details?.file) {
       const file = this.files.find((f) => f.file === details.file);
       if (file) {
         file.progress = details.progress;

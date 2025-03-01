@@ -18,7 +18,6 @@ import { TaskConfigurationError } from "./TaskError";
 export interface JobQueueTaskConfig extends TaskConfig {
   queueName?: string;
   currentJobId?: unknown;
-  currentJobRunId?: string;
 }
 
 /**
@@ -76,7 +75,7 @@ export abstract class JobQueueTask extends SingleTask {
       } else {
         const jobId = await queue.add(job);
         this.config.currentJobId = jobId;
-        this.config.currentJobRunId = job.jobRunId; // no longer undefined
+        // this.config.runnerId = job.jobRunId; // ??
 
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
           this.handleProgress(progress, message, details);
@@ -112,7 +111,7 @@ export abstract class JobQueueTask extends SingleTask {
       if ((this.constructor as typeof JobQueueTask).canRunDirectly) {
         return new this.jobClass({
           queueName: this.config.queueName,
-          jobRunId: this.config.currentJobRunId, // could be undefined
+          jobRunId: this.config.runnerId, // could be undefined
           input: this.runInputData,
         });
       } else {
@@ -121,7 +120,7 @@ export abstract class JobQueueTask extends SingleTask {
     }
     const job = new queue.jobClass({
       queueName: queue.queueName,
-      jobRunId: this.config.currentJobRunId, // could be undefined
+      jobRunId: this.config.runnerId, // could be undefined
       input: this.runInputData,
     });
     return job;

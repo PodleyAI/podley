@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
-import { TaskInput, Task, TaskOutput, TaskStatus } from "../task/TaskTypes";
+import { TaskInput, Task, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
 import { TaskGraph } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
 import { nanoid } from "nanoid";
@@ -17,6 +17,7 @@ import {
   TaskError,
   TaskErrorGroup,
 } from "../task/TaskError";
+import { DATAFLOW_ALL_PORTS } from "./Dataflow";
 
 export type GraphSingleResult = { id: unknown; type: String; data: TaskOutput };
 export type GraphResult = Array<GraphSingleResult>;
@@ -37,25 +38,23 @@ export class TaskGraphRunner {
 
   /**
    * Constructor for TaskGraphRunner
-   * @param dag The task graph to run
+   * @param graph The task graph to run
    * @param repository The task output repository to use for caching task outputs
    * @param processScheduler The scheduler to use for task execution
    * @param reactiveScheduler The scheduler to use for reactive task execution
    */
   constructor(
-    public dag: TaskGraph,
+    public graph: TaskGraph,
     public repository?: TaskOutputRepository,
-    public processScheduler = new DependencyBasedScheduler(dag),
-    public reactiveScheduler = new TopologicalScheduler(dag)
+    public processScheduler = new DependencyBasedScheduler(graph),
+    public reactiveScheduler = new TopologicalScheduler(graph)
   ) {
     this.provenanceInput = new Map();
   }
 
   private copyInputFromEdgesToNode(node: Task) {
-    this.dag.getSourceDataFlows(node.config.id).forEach((dataFlow) => {
-      const toInput: TaskInput = {};
-      toInput[dataFlow.targetTaskInputId] = dataFlow.value;
-      node.addInputData(toInput);
+    this.graph.getSourceDataflows(node.config.id).forEach((dataflow) => {
+      node.addInputData(dataflow.getPortData());
     });
   }
 
@@ -65,9 +64,9 @@ export class TaskGraphRunner {
    * @returns The provenance input for the task
    */
   private getInputProvenance(node: Task): TaskInput {
-    const nodeProvenance: TaskInput = {};
-    this.dag.getSourceDataFlows(node.config.id).forEach((dataFlow) => {
-      Object.assign(nodeProvenance, dataFlow.provenance);
+    const nodeProvenance: Provenance = {};
+    this.graph.getSourceDataflows(node.config.id).forEach((dataflow) => {
+      Object.assign(nodeProvenance, dataflow.provenance);
     });
     return nodeProvenance;
   }
@@ -78,12 +77,31 @@ export class TaskGraphRunner {
    * @param results The output of the task
    * @param nodeProvenance The provenance input for the task
    */
-  private pushOutputFromNodeToEdges(node: Task, results: TaskOutput, nodeProvenance?: TaskInput) {
-    this.dag.getTargetDataFlows(node.config.id).forEach((dataFlow) => {
-      if (results[dataFlow.sourceTaskOutputId] !== undefined) {
-        dataFlow.value = results[dataFlow.sourceTaskOutputId];
-      }
-      if (nodeProvenance) dataFlow.provenance = nodeProvenance;
+  private pushOutputFromNodeToEdges(node: Task, results: TaskOutput, nodeProvenance?: Provenance) {
+    this.graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
+      dataflow.setPortData(results, nodeProvenance);
+    });
+  }
+
+  /**
+   * Pushes the status of a task to its target edges
+   * @param node The task that produced the status
+   */
+  private pushStatusFromNodeToEdges(graph: TaskGraph, node: Task) {
+    if (!node?.config?.id) return;
+    graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
+      dataflow.status = node.status;
+    });
+  }
+
+  /**
+   * Pushes the error of a task to its target edges
+   * @param node The task that produced the error
+   */
+  private pushErrorFromNodeToEdges(graph: TaskGraph, node: Task) {
+    if (!node?.config?.id) return;
+    graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
+      dataflow.error = node.error;
     });
   }
 
@@ -95,7 +113,7 @@ export class TaskGraphRunner {
    */
   private async runTaskWithProvenance(
     task: Task,
-    parentProvenance: TaskInput
+    parentProvenance: Provenance
   ): Promise<GraphSingleResult> {
     // Update provenance for the current task
     const nodeProvenance = {
@@ -130,6 +148,7 @@ export class TaskGraphRunner {
     }
 
     this.pushOutputFromNodeToEdges(task, results, nodeProvenance);
+
     return {
       id: task.config.id,
       type: (task.constructor as any).runtype || (task.constructor as any).type,
@@ -156,7 +175,7 @@ export class TaskGraphRunner {
       parentSignal?.addEventListener(
         "abort",
         () => {
-          console.log("runner parent signal sent abor, forwarding to local abort controller");
+          console.log("runner parent signal sent abort, forwarding to local abort controller");
           this.abortController?.abort();
         },
         { once: true }
@@ -164,7 +183,7 @@ export class TaskGraphRunner {
     }
 
     this.running = true;
-    this.resetGraph(this.dag);
+    this.resetGraph(this.graph, nanoid());
     this.processScheduler.reset();
     this.inProgressTasks.clear();
     this.inProgressFunctions.clear();
@@ -186,7 +205,7 @@ export class TaskGraphRunner {
    * @throws TaskErrorGroup if any tasks have failed
    */
   public async runGraph(
-    parentProvenance: TaskInput = {},
+    parentProvenance: Provenance = {},
     parentSignal?: AbortSignal
   ): Promise<GraphResult> {
     this.handleStart(parentSignal);
@@ -219,7 +238,7 @@ export class TaskGraphRunner {
             this.inProgressTasks!.set(task.config.id, taskPromise);
             const taskResult = await taskPromise;
 
-            if (this.dag.getTargetDataFlows(task.config.id).length === 0) {
+            if (this.graph.getTargetDataflows(task.config.id).length === 0) {
               // we save the results of all the leaves
               results.push(taskResult);
             } else {
@@ -230,6 +249,8 @@ export class TaskGraphRunner {
             throw error;
           } finally {
             this.processScheduler.onTaskCompleted(task.config.id);
+            this.pushStatusFromNodeToEdges(this.graph, task);
+            this.pushErrorFromNodeToEdges(this.graph, task);
           }
         };
 
@@ -272,7 +293,7 @@ export class TaskGraphRunner {
 
   private handleError() {
     const abortPromise = Promise.allSettled(
-      this.dag.getNodes().map(async (task: Task) => {
+      this.graph.getNodes().map(async (task: Task) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
           task.abort();
         }
@@ -281,28 +302,33 @@ export class TaskGraphRunner {
     this.inProgressFunctions.set(Symbol("handleError"), abortPromise);
     return abortPromise;
   }
+
+  private resetTask(graph: TaskGraph, task: Task, runId: string) {
+    task.status = TaskStatus.PENDING;
+    task.resetInputData();
+    task.runOutputData = {};
+    task.error = undefined;
+    task.progress = 0;
+    if (task.config) {
+      task.config.runnerId = runId;
+    }
+    this.pushStatusFromNodeToEdges(graph, task);
+    this.pushErrorFromNodeToEdges(graph, task);
+  }
+
   /**
    * Resets the task graph, recursively
-   * @param dag The task graph to reset
+   * @param graph The task graph to reset
    */
-  private resetGraph(dag: TaskGraph) {
-    const taskRunId = nanoid();
-    dag.getNodes().forEach((node) => {
-      if (node.config) {
-        // @ts-ignore
-        node.config.currentJobRunId = taskRunId;
-      }
-      node.status = TaskStatus.PENDING;
-      node.resetInputData();
-      node.runOutputData = {};
-      node.error = undefined;
-      node.progress = 0;
+  private resetGraph(graph: TaskGraph, runnerId: string) {
+    graph.getNodes().forEach((node) => {
+      this.resetTask(graph, node, runnerId);
       if (node.isCompound && node instanceof CompoundTask) {
         if (node instanceof RegenerativeCompoundTask) {
           node.regenerateGraph();
         }
         if (node.subGraph) {
-          this.resetGraph(node.subGraph);
+          this.resetGraph(node.subGraph, runnerId);
         }
       }
     });
@@ -324,7 +350,7 @@ export class TaskGraphRunner {
    */
   public handleAbort() {
     const abortPromise = Promise.allSettled(
-      this.dag.getNodes().map(async (task: Task) => {
+      this.graph.getNodes().map(async (task: Task) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
           task.abort();
         }
@@ -346,7 +372,7 @@ export class TaskGraphRunner {
     this.reactiveRunning = true;
 
     if (!this.running) {
-      this.resetGraph(this.dag);
+      this.resetGraph(this.graph, nanoid());
     }
 
     this.reactiveScheduler.reset();
@@ -360,7 +386,7 @@ export class TaskGraphRunner {
           this.copyInputFromEdgesToNode(task);
           const taskResult = await task.runReactive();
           this.pushOutputFromNodeToEdges(task, taskResult);
-          if (this.dag.getTargetDataFlows(task.config.id).length === 0) {
+          if (this.graph.getTargetDataflows(task.config.id).length === 0) {
             results.push({
               id: task.config.id,
               type: (task.constructor as any).runtype || (task.constructor as any).type,

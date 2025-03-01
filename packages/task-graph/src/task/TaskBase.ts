@@ -22,6 +22,7 @@ import {
   type TaskEventParameters,
   type TaskEventListeners,
   type IConfig,
+  Provenance,
 } from "./TaskTypes";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
@@ -344,13 +345,13 @@ export abstract class TaskBase implements ITask {
   }
 
   outputCache: TaskOutputRepository | undefined;
-  nodeProvenance: TaskInput = {};
+  nodeProvenance: Provenance = {};
 
   /**
    * Run will runFull() and return the output, wrapping the task in a try/catch block.
    */
   async run(
-    nodeProvenance: TaskInput = {},
+    nodeProvenance: Provenance = {},
     repository?: TaskOutputRepository
   ): Promise<TaskOutput> {
     this.handleStart();

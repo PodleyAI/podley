@@ -19,12 +19,14 @@ const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
 
 export type DebugLogTaskInput = {
-  message: any;
-  level: LogLevel;
+  messages: any;
+  log_level: LogLevel;
 };
 export type DebugLogTaskOutput = {
-  output: any;
+  messages: any;
 };
+
+const DEFAULT_LOG_LEVEL: LogLevel = "log";
 
 /**
  * DebugLogTask provides console logging functionality as a task within the system.
@@ -44,28 +46,34 @@ export class DebugLogTask extends OutputTask {
   declare runOutputData: DebugLogTaskOutput;
   public static inputs: TaskInputDefinition[] = [
     {
-      id: "message",
-      name: "Input",
+      id: "messages",
+      name: "Messages",
       valueType: "any",
+      isArray: true,
     },
     {
-      id: "level",
+      id: "log_level",
       name: "Level",
       valueType: "log_level",
-      defaultValue: "info",
+      defaultValue: DEFAULT_LOG_LEVEL,
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
-    { id: "output", name: "Output", valueType: "any" },
+    {
+      id: "messages",
+      name: "Messages",
+      valueType: "any",
+    },
   ] as const;
+
   async runReactive() {
-    const level = this.runInputData.level || "log";
-    if (level == "dir") {
-      console.dir(this.runInputData.message, { depth: null });
+    const { log_level = DEFAULT_LOG_LEVEL, messages } = this.runInputData;
+    if (log_level == "dir") {
+      console.dir(messages, { depth: null });
     } else {
-      console[level](this.runInputData.message);
+      console[log_level](messages);
     }
-    this.runOutputData.output = this.runInputData.message;
+    this.runOutputData.messages = messages;
     return this.runOutputData;
   }
 

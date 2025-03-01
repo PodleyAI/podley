@@ -9,6 +9,7 @@ import {
   CreateWorkflow,
   SingleTask,
   TaskAbortedError,
+  TaskOutput,
   TaskRegistry,
   Workflow,
 } from "@ellmers/task-graph";
@@ -16,12 +17,10 @@ import { sleep } from "@ellmers/util";
 
 // TODO: we should have a generic way to handle "...rest" inputs to pass through to outputs
 export type DelayTaskInput = {
-  input: "any";
   delay: number;
+  pass_through: any;
 };
-export type DelayTaskOutput = {
-  output: "any";
-};
+export type DelayTaskOutput = TaskOutput;
 
 export class DelayTask extends SingleTask {
   static readonly type = "DelayTask";
@@ -36,21 +35,16 @@ export class DelayTask extends SingleTask {
       defaultValue: 1,
     },
     {
-      id: "input",
-      name: "Input",
+      id: "pass_through",
+      name: "Pass Through",
       valueType: "any",
     },
   ] as const;
-  static outputs = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
+  static outputs = [] as const;
 
   async runFull(): Promise<DelayTaskOutput> {
     const delay = this.runInputData.delay;
+    console.log("delay", delay, this.runInputData);
     if (delay > 100) {
       const iterations = Math.min(100, Math.floor(delay / 16)); // 1/60fps is about 16ms
       const chunkSize = delay / iterations;
@@ -68,7 +62,8 @@ export class DelayTask extends SingleTask {
   }
 
   async runReactive(): Promise<DelayTaskOutput> {
-    return { output: this.runInputData.input };
+    this.runOutputData = this.runInputData.pass_through;
+    return this.runOutputData;
   }
 }
 

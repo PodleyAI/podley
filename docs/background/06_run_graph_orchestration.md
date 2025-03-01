@@ -27,7 +27,7 @@ Notes about requirements for the nodes:
 
 ### Edge
 
-- DataFlow
+- Dataflow
 - Instrumentation
 
 Notes about requirements for the edges:
@@ -44,19 +44,19 @@ The graph runner is a simple recursive function that takes a graph and a node an
 ```mermaid
 erDiagram
     TaskGraph ||--o{ Task : nodes
-    TaskGraph ||--o{ DataFlow : edges
+    TaskGraph ||--o{ Dataflow : edges
     Task ||--o{ TaskInput : inputs
     Task ||--o{ TaskOutput: outputs
     TaskInput ||--|| ValueType : valueType
     TaskOutput ||--|| ValueType : valueType
-    DataFlow ||--|| TaskInput : handle
-    DataFlow ||--|| TaskOutput : handle
-    DataFlow ||--|| Task : source
-    DataFlow ||--|| Task : target
+    Dataflow ||--|| TaskInput : handle
+    Dataflow ||--|| TaskOutput : handle
+    Dataflow ||--|| Task : source
+    Dataflow ||--|| Task : target
 
     TaskGraph{
       Task[] nodes
-      DataFlow[] edges
+      Dataflow[] edges
     }
 
     Task{
@@ -66,7 +66,7 @@ erDiagram
       TaskOutput[] outputs
     }
 
-    DataFlow{
+    Dataflow{
       string id
       Task sourceTaskId
       Task targetTaskId

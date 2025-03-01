@@ -7,7 +7,7 @@
 
 import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { sleep } from "@ellmers/util";
-import { DataFlow } from "../DataFlow";
+import { Dataflow } from "../Dataflow";
 import { TaskGraph } from "../TaskGraph";
 import { GraphResult, TaskGraphRunner } from "../TaskGraphRunner";
 import {
@@ -149,8 +149,8 @@ describe("TaskSubGraphRunner", () => {
     it("array input into ArrayTask", async () => {
       const task = new TestSquareMultiInputTask({ id: "task3" });
       graph.addTask(task);
-      graph.addDataFlow(new DataFlow("task1", "output", "task3", "input"));
-      graph.addDataFlow(new DataFlow("task2", "output", "task3", "input"));
+      graph.addDataflow(new Dataflow("task1", "output", "task3", "input"));
+      graph.addDataflow(new Dataflow("task2", "output", "task3", "input"));
 
       const nodeRunSpy = spyOn(task, "run");
 
@@ -191,7 +191,7 @@ describe("TaskSubGraphRunner", () => {
       const squareTask = new TestSquareTask({ id: "square", input: { input: 5 } });
       const failingTask = new FailingTask({ id: "failing" });
       graph.addTasks([squareTask, failingTask]);
-      graph.addDataFlow(new DataFlow("square", "output", "failing", "input"));
+      graph.addDataflow(new Dataflow("square", "output", "failing", "input"));
 
       let error: TaskErrorGroup | undefined;
       try {
@@ -210,7 +210,7 @@ describe("TaskSubGraphRunner", () => {
       const failingTask1 = new FailingTask({ id: "failing1" });
       const failingTask2 = new FailingTask({ id: "failing2" });
       graph.addTasks([failingTask1, failingTask2]);
-      graph.addDataFlow(new DataFlow("failing1", "out", "failing2", "in"));
+      graph.addDataflow(new Dataflow("failing1", "out", "failing2", "in"));
 
       let error: TaskErrorGroup | undefined;
       try {
@@ -267,7 +267,7 @@ describe("TaskSubGraphRunner", () => {
       const squareTask = new TestSquareTask({ id: "square", input: { input: 5 } });
       const failingTask = new FailingTask({ id: "failing" });
       graph.addTasks([squareTask, failingTask]);
-      graph.addDataFlow(new DataFlow("square", "output", "failing", "in"));
+      graph.addDataflow(new Dataflow("square", "output", "failing", "in"));
 
       let error: TaskErrorGroup | undefined;
       try {
@@ -286,7 +286,7 @@ describe("TaskSubGraphRunner", () => {
       const squareTask = new TestSquareTask({ id: "square", input: { input: 5 } });
       const failingTask = new FailingTask({ id: "failing" });
       graph.addTasks([squareTask, failingTask]);
-      graph.addDataFlow(new DataFlow("square", "output", "failing", "in"));
+      graph.addDataflow(new Dataflow("square", "output", "failing", "in"));
 
       let error: TaskErrorGroup | undefined;
       try {
@@ -306,7 +306,7 @@ describe("TaskSubGraphRunner", () => {
       const abortingTask1 = new FailingTask({ id: "aborting1" });
       const abortingTask2 = new FailingTask({ id: "aborting2" });
       graph.addTasks([abortingTask1, abortingTask2]);
-      graph.addDataFlow(new DataFlow("aborting1", "output", "aborting2", "input"));
+      graph.addDataflow(new Dataflow("aborting1", "output", "aborting2", "input"));
 
       let error: Error | undefined;
       try {
