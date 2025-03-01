@@ -33,7 +33,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, Dataflow, TaskIdType, 
   constructor() {
     super(
       (task: Task) => task.config.id,
-      (dataFlow: Dataflow) => dataFlow.id
+      (dataflow: Dataflow) => dataflow.id
     );
   }
 
@@ -114,7 +114,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, Dataflow, TaskIdType, 
    * @returns An array of data flows that are sources of the given task
    */
   public getSourceDataflows(taskId: unknown): Dataflow[] {
-    return this.inEdges(taskId).map(([, , dataFlow]) => dataFlow);
+    return this.inEdges(taskId).map(([, , dataflow]) => dataflow);
   }
 
   /**
@@ -123,7 +123,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, Dataflow, TaskIdType, 
    * @returns An array of data flows that are targets of the given task
    */
   public getTargetDataflows(taskId: unknown): Dataflow[] {
-    return this.outEdges(taskId).map(([, , dataFlow]) => dataFlow);
+    return this.outEdges(taskId).map(([, , dataflow]) => dataflow);
   }
 
   /**
@@ -132,7 +132,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, Dataflow, TaskIdType, 
    * @returns An array of tasks that are sources of the given task
    */
   public getSourceTasks(taskId: unknown): Task[] {
-    return this.getSourceDataflows(taskId).map((dataFlow) => this.getNode(dataFlow.sourceTaskId)!);
+    return this.getSourceDataflows(taskId).map((dataflow) => this.getNode(dataflow.sourceTaskId)!);
   }
 
   /**
@@ -141,7 +141,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, Dataflow, TaskIdType, 
    * @returns An array of tasks that are targets of the given task
    */
   public getTargetTasks(taskId: unknown): Task[] {
-    return this.getTargetDataflows(taskId).map((dataFlow) => this.getNode(dataFlow.targetTaskId)!);
+    return this.getTargetDataflows(taskId).map((dataflow) => this.getNode(dataflow.targetTaskId)!);
   }
 
   /**

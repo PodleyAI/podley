@@ -52,9 +52,9 @@ export class TaskGraphRunner {
   }
 
   private copyInputFromEdgesToNode(node: Task) {
-    this.dag.getSourceDataflows(node.config.id).forEach((dataFlow) => {
+    this.dag.getSourceDataflows(node.config.id).forEach((dataflow) => {
       const toInput: TaskInput = {};
-      toInput[dataFlow.targetTaskPortId] = dataFlow.value;
+      toInput[dataflow.targetTaskPortId] = dataflow.value;
       node.addInputData(toInput);
     });
   }
@@ -66,8 +66,8 @@ export class TaskGraphRunner {
    */
   private getInputProvenance(node: Task): TaskInput {
     const nodeProvenance: Provenance = {};
-    this.dag.getSourceDataflows(node.config.id).forEach((dataFlow) => {
-      Object.assign(nodeProvenance, dataFlow.provenance);
+    this.dag.getSourceDataflows(node.config.id).forEach((dataflow) => {
+      Object.assign(nodeProvenance, dataflow.provenance);
     });
     return nodeProvenance;
   }
@@ -79,11 +79,11 @@ export class TaskGraphRunner {
    * @param nodeProvenance The provenance input for the task
    */
   private pushOutputFromNodeToEdges(node: Task, results: TaskOutput, nodeProvenance?: TaskInput) {
-    this.dag.getTargetDataflows(node.config.id).forEach((dataFlow) => {
-      if (results[dataFlow.sourceTaskPortId] !== undefined) {
-        dataFlow.value = results[dataFlow.sourceTaskPortId];
+    this.dag.getTargetDataflows(node.config.id).forEach((dataflow) => {
+      if (results[dataflow.sourceTaskPortId] !== undefined) {
+        dataflow.value = results[dataflow.sourceTaskPortId];
       }
-      if (nodeProvenance) dataFlow.provenance = nodeProvenance;
+      if (nodeProvenance) dataflow.provenance = nodeProvenance;
     });
   }
 

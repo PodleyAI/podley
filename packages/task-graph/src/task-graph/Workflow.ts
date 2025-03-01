@@ -88,15 +88,15 @@ export class Workflow {
 
       // Process any pending data flows
       if (this._dataFlows.length > 0) {
-        this._dataFlows.forEach((dataFlow) => {
-          if (task.inputs.find((i) => i.id === dataFlow.targetTaskPortId) === undefined) {
-            this._error = `Input ${dataFlow.targetTaskPortId} not found on task ${task.config.id}`;
+        this._dataFlows.forEach((dataflow) => {
+          if (task.inputs.find((i) => i.id === dataflow.targetTaskPortId) === undefined) {
+            this._error = `Input ${dataflow.targetTaskPortId} not found on task ${task.config.id}`;
             console.error(this._error);
             return;
           }
 
-          dataFlow.targetTaskId = task.config.id;
-          this.graph.addDataflow(dataFlow);
+          dataflow.targetTaskId = task.config.id;
+          this.graph.addDataflow(dataflow);
         });
 
         this._dataFlows = [];
@@ -114,13 +114,13 @@ export class Workflow {
             for (const taskInput of task.inputs) {
               if (!matches.has(taskInput.id) && comparator(parentOutput, taskInput)) {
                 matches.set(taskInput.id, parentOutput.id);
-                const dataFlow = new Dataflow(
+                const dataflow = new Dataflow(
                   parent.config.id,
                   parentOutput.id,
                   task.config.id,
                   taskInput.id
                 );
-                this.graph.addDataflow(dataFlow);
+                this.graph.addDataflow(dataflow);
               }
             }
           }
