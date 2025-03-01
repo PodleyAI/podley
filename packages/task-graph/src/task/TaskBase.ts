@@ -201,43 +201,12 @@ export abstract class TaskBase implements ITask {
     }
   }
 
-  /**
-   *
-   * ONLY CALLED BY THE TASK RUNNER
-   *
-   * @param overrides
-   * @returns
-   */
-  public addInputData<T extends TaskInput>(overrides: Partial<T> | undefined): ITask {
-    for (const input of this.inputs) {
-      if (overrides?.[input.id] !== undefined) {
-        let isArray = input.isArray;
-        if (
-          input.valueType === "any" &&
-          (Array.isArray(overrides[input.id]) || Array.isArray(this.runInputData[input.id]))
-        ) {
-          isArray = true;
-        }
-
-        if (isArray) {
-          const existingItems = Array.isArray(this.runInputData[input.id])
-            ? this.runInputData[input.id]
-            : [];
-          const newitems = [...existingItems];
-
-          const overrideItem = overrides[input.id];
-          if (Array.isArray(overrideItem)) {
-            newitems.push(...(overrideItem as any[]));
-          } else {
-            newitems.push(overrideItem);
-          }
-          this.runInputData[input.id] = newitems;
-        } else {
-          this.runInputData[input.id] = overrides[input.id];
-        }
+  public setInput(input: Partial<TaskInput>): void {
+    for (const inputdef of this.inputs) {
+      if (input[inputdef.id] !== undefined) {
+        this.runInputData[inputdef.id] = input[inputdef.id];
       }
     }
-    return this;
   }
 
   /**

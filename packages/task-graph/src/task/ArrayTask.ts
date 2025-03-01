@@ -220,16 +220,6 @@ export function arrayTaskFactory<
     }
 
     /**
-     * Adds new input data and regenerates the task graph to handle the updated inputs
-     * @param overrides Partial input data to merge with existing inputs
-     */
-    addInputData<PluralInputType>(overrides: Partial<PluralInputType>) {
-      super.addInputData(overrides);
-      this.regenerateGraph();
-      return this;
-    }
-
-    /**
      * Runs the task reactively, collecting outputs from all child tasks into arrays
      * @returns Combined output with arrays of values from all child tasks
      */

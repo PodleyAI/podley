@@ -56,17 +56,6 @@ export class JsonTask extends RegenerativeCompoundTask {
   }
 
   /**
-   * Updates the task's input data and regenerates the graph if JSON input changes
-   */
-  public addInputData(overrides: Partial<JsonTaskInput> | undefined) {
-    let changed = false;
-    if (overrides?.json != this.runInputData.json) changed = true;
-    super.addInputData(overrides);
-    if (changed) this.regenerateGraph();
-    return this;
-  }
-
-  /**
    * Creates a task instance from a JSON task item configuration
    * Validates required fields and resolves task type from registry
    */

@@ -66,7 +66,7 @@ export interface ITask {
   handleAbort(): void;
   getProvenance(): TaskInput;
   resetInputData(): void;
-  addInputData<T extends TaskInput>(overrides: Partial<T> | undefined): ITask;
+  setInput(input: Partial<TaskInput>): void;
   validateItem(valueType: string, item: any): Promise<boolean>;
   validateInputItem(input: Partial<TaskInput>, inputId: keyof TaskInput): Promise<boolean>;
   validateInputData(input: Partial<TaskInput>): Promise<boolean>;
