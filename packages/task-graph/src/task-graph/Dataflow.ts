@@ -20,6 +20,8 @@ export type DataflowJson = {
 export const DATAFLOW_ALL_PORTS = "*";
 export const DATAFLOW_ERROR_PORT = "[error]";
 
+type DataflowId = `${string}.${string} -> ${string}.${string}`;
+
 /**
  * Represents a data flow between two tasks, indicating how one task's output is used as input for another task
  */
@@ -30,7 +32,7 @@ export class Dataflow {
     public targetTaskId: TaskIdType,
     public targetTaskPortId: string
   ) {}
-  get id(): string {
+  get id(): DataflowId {
     return `${this.sourceTaskId}.${this.sourceTaskPortId} -> ${this.targetTaskId}.${this.targetTaskPortId}`;
   }
   public value: any = undefined;
@@ -69,8 +71,15 @@ export class Dataflow {
   }
 }
 
+/**
+ * Represents a data flow between two tasks, indicating how one task's output is used as input for another task
+ *
+ * This is a helper class that parses a data flow id string into a Dataflow object
+ *
+ * @param dataflow - The data flow string, e.g. "sourceTaskId.sourceTaskPortId -> targetTaskId.targetTaskPortId"
+ */
 export class DataflowArrow extends Dataflow {
-  constructor(dataflow: string) {
+  constructor(dataflow: DataflowId) {
     const [source, target] = dataflow.split(" -> ");
     const [sourceTaskId, sourceTaskPortId] = source.split(".");
     const [targetTaskId, targetTaskPortId] = target.split(".");
