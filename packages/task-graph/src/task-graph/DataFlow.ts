@@ -7,9 +7,9 @@
 
 import { TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
 
-export type DataFlowIdType = string;
+export type DataflowIdType = string;
 
-export type DataFlowJson = {
+export type DataflowJson = {
   sourceTaskId: unknown;
   sourceTaskOutputId: string;
   targetTaskId: unknown;
@@ -19,7 +19,7 @@ export type DataFlowJson = {
 /**
  * Represents a data flow between two tasks, indicating how one task's output is used as input for another task
  */
-export class DataFlow {
+export class Dataflow {
   constructor(
     public sourceTaskId: TaskIdType,
     public sourceTaskOutputId: string,
@@ -32,7 +32,7 @@ export class DataFlow {
   public value: any = undefined;
   public provenance: TaskInput = {};
 
-  toJSON(): DataFlowJson {
+  toJSON(): DataflowJson {
     return {
       sourceTaskId: this.sourceTaskId,
       sourceTaskOutputId: this.sourceTaskOutputId,

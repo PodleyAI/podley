@@ -7,7 +7,7 @@
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
 import type { TabularRepository } from "@ellmers/storage";
-import { DataFlow } from "../../task-graph/DataFlow";
+import { Dataflow } from "../../task-graph/Dataflow";
 import { TaskGraph, TaskGraphItemJson, TaskGraphJson } from "../../task-graph/TaskGraph";
 import { CompoundTask } from "../../task/CompoundTask";
 import { TaskRegistry } from "../../task/TaskRegistry";
@@ -126,8 +126,8 @@ export abstract class TaskGraphRepository {
       subGraph.addTask(this.createTask(subitem));
     }
     for (const subitem of graphJsonObj.edges) {
-      subGraph.addDataFlow(
-        new DataFlow(
+      subGraph.addDataflow(
+        new Dataflow(
           subitem.sourceTaskId,
           subitem.sourceTaskOutputId,
           subitem.targetTaskId,

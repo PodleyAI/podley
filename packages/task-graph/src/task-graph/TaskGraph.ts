@@ -7,7 +7,7 @@
 
 import { DirectedAcyclicGraph } from "@sroussey/typescript-graph";
 import { Task, TaskIdType, TaskInput, JsonTaskItem } from "../task/TaskTypes";
-import { DataFlow, DataFlowIdType, DataFlowJson } from "./DataFlow";
+import { Dataflow, DataflowIdType, DataflowJson } from "./Dataflow";
 
 /**
  * Represents a task graph item, which can be a task or a subgraph
@@ -23,17 +23,17 @@ export type TaskGraphItemJson = {
 
 export type TaskGraphJson = {
   nodes: TaskGraphItemJson[];
-  edges: DataFlowJson[];
+  edges: DataflowJson[];
 };
 
 /**
  * Represents a task graph, a directed acyclic graph of tasks and data flows
  */
-export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, DataFlowIdType> {
+export class TaskGraph extends DirectedAcyclicGraph<Task, Dataflow, TaskIdType, DataflowIdType> {
   constructor() {
     super(
       (task: Task) => task.config.id,
-      (dataFlow: DataFlow) => dataFlow.id
+      (dataFlow: Dataflow) => dataFlow.id
     );
   }
 
@@ -69,7 +69,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
    * @param dataflow The data flow to add
    * @returns The current task graph
    */
-  public addDataFlow(dataflow: DataFlow) {
+  public addDataflow(dataflow: Dataflow) {
     return super.addEdge(dataflow.sourceTaskId, dataflow.targetTaskId, dataflow);
   }
 
@@ -78,8 +78,8 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
    * @param dataflows The data flows to add
    * @returns The current task graph
    */
-  public addDataFlows(dataflows: DataFlow[]) {
-    const addedEdges = dataflows.map<[s: unknown, t: unknown, e: DataFlow]>((edge) => {
+  public addDataflows(dataflows: Dataflow[]) {
+    const addedEdges = dataflows.map<[s: unknown, t: unknown, e: Dataflow]>((edge) => {
       return [edge.sourceTaskId, edge.targetTaskId, edge];
     });
     return super.addEdges(addedEdges);
@@ -90,7 +90,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
    * @param id The id of the data flow to retrieve
    * @returns The data flow with the given id, or undefined if not found
    */
-  public getDataFlow(id: DataFlowIdType): DataFlow | undefined {
+  public getDataflow(id: DataflowIdType): Dataflow | undefined {
     for (const i in this.adjacency) {
       for (const j in this.adjacency[i]) {
         const maybeEdges = this.adjacency[i][j];
@@ -104,7 +104,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
       }
     }
   }
-  public getDataFlows(): DataFlow[] {
+  public getDataflows(): Dataflow[] {
     return this.getEdges().map((edge) => edge[2]);
   }
 
@@ -113,7 +113,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
    * @param taskId The id of the task to retrieve sources for
    * @returns An array of data flows that are sources of the given task
    */
-  public getSourceDataFlows(taskId: unknown): DataFlow[] {
+  public getSourceDataflows(taskId: unknown): Dataflow[] {
     return this.inEdges(taskId).map(([, , dataFlow]) => dataFlow);
   }
 
@@ -122,7 +122,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
    * @param taskId The id of the task to retrieve targets for
    * @returns An array of data flows that are targets of the given task
    */
-  public getTargetDataFlows(taskId: unknown): DataFlow[] {
+  public getTargetDataflows(taskId: unknown): Dataflow[] {
     return this.outEdges(taskId).map(([, , dataFlow]) => dataFlow);
   }
 
@@ -132,7 +132,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
    * @returns An array of tasks that are sources of the given task
    */
   public getSourceTasks(taskId: unknown): Task[] {
-    return this.getSourceDataFlows(taskId).map((dataFlow) => this.getNode(dataFlow.sourceTaskId)!);
+    return this.getSourceDataflows(taskId).map((dataFlow) => this.getNode(dataFlow.sourceTaskId)!);
   }
 
   /**
@@ -141,7 +141,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
    * @returns An array of tasks that are targets of the given task
    */
   public getTargetTasks(taskId: unknown): Task[] {
-    return this.getTargetDataFlows(taskId).map((dataFlow) => this.getNode(dataFlow.targetTaskId)!);
+    return this.getTargetDataflows(taskId).map((dataFlow) => this.getNode(dataFlow.targetTaskId)!);
   }
 
   /**
@@ -150,7 +150,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
    */
   public toJSON(): TaskGraphJson {
     const nodes = this.getNodes().map((node) => node.toJSON());
-    const edges = this.getDataFlows().map((df) => df.toJSON());
+    const edges = this.getDataflows().map((df) => df.toJSON());
     return {
       nodes,
       edges,
@@ -163,7 +163,7 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
    */
   public toDependencyJSON(): JsonTaskItem[] {
     const nodes = this.getNodes().flatMap((node) => node.toDependencyJSON());
-    this.getDataFlows().forEach((edge) => {
+    this.getDataflows().forEach((edge) => {
       const target = nodes.find((node) => node.id === edge.targetTaskId)!;
       if (!target.dependencies) {
         target.dependencies = {};
@@ -200,10 +200,10 @@ export class TaskGraph extends DirectedAcyclicGraph<Task, DataFlow, TaskIdType, 
  * @param outputHandle TaskIdType
  * @returns
  */
-function serialGraphEdges(tasks: Task[], inputHandle: string, outputHandle: string): DataFlow[] {
-  const edges: DataFlow[] = [];
+function serialGraphEdges(tasks: Task[], inputHandle: string, outputHandle: string): Dataflow[] {
+  const edges: Dataflow[] = [];
   for (let i = 0; i < tasks.length - 1; i++) {
-    edges.push(new DataFlow(tasks[i].config.id, inputHandle, tasks[i + 1].config.id, outputHandle));
+    edges.push(new Dataflow(tasks[i].config.id, inputHandle, tasks[i + 1].config.id, outputHandle));
   }
   return edges;
 }
@@ -219,6 +219,6 @@ function serialGraphEdges(tasks: Task[], inputHandle: string, outputHandle: stri
 export function serialGraph(tasks: Task[], inputHandle: string, outputHandle: string): TaskGraph {
   const graph = new TaskGraph();
   graph.addTasks(tasks);
-  graph.addDataFlows(serialGraphEdges(tasks, inputHandle, outputHandle));
+  graph.addDataflows(serialGraphEdges(tasks, inputHandle, outputHandle));
   return graph;
 }

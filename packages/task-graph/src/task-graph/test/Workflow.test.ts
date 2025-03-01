@@ -259,7 +259,7 @@ describe("Workflow", () => {
       expect(nodes).toHaveLength(2);
 
       // Check that the dataflow was created correctly
-      const edges = workflow.graph.getDataFlows();
+      const edges = workflow.graph.getDataflows();
       expect(edges).toHaveLength(1);
       const edge = edges[0];
       expect(edge.sourceTaskId).toBe(nodes[0].config.id);
@@ -356,7 +356,7 @@ describe("Workflow", () => {
       workflow = addTestTask1.call(workflow, { input: "test" });
       workflow = addTestTask2.call(workflow);
 
-      const edges = workflow.graph.getDataFlows();
+      const edges = workflow.graph.getDataflows();
       expect(edges).toHaveLength(1);
       expect(edges[0].sourceTaskOutputId).toBe("output");
       expect(edges[0].targetTaskInputId).toBe("input");

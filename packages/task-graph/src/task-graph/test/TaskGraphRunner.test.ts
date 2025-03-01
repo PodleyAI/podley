@@ -8,7 +8,7 @@
 import { describe, expect, it, beforeEach, spyOn } from "bun:test";
 import { Task, TaskOutput } from "../../task/TaskTypes";
 import { SingleTask } from "../../task/SingleTask";
-import { DataFlow } from "../DataFlow";
+import { Dataflow } from "../Dataflow";
 import { TaskGraph } from "../TaskGraph";
 import { TaskGraphRunner } from "../TaskGraphRunner";
 
@@ -152,8 +152,8 @@ describe("TaskGraphRunner", () => {
     it("should run the graph in the correct order with dependencies", async () => {
       const task3 = new TestAddTask({ id: "task3" });
       graph.addTask(task3);
-      graph.addDataFlow(new DataFlow("task1", "output", "task3", "a"));
-      graph.addDataFlow(new DataFlow("task2", "output", "task3", "b"));
+      graph.addDataflow(new Dataflow("task1", "output", "task3", "a"));
+      graph.addDataflow(new Dataflow("task2", "output", "task3", "b"));
 
       const nodeRunSpy = spyOn(task3, "runReactive");
 

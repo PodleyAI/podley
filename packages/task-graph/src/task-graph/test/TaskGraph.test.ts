@@ -8,7 +8,7 @@
 import { describe, expect, it, beforeEach } from "bun:test";
 import { Task, TaskOutput } from "../../task/TaskTypes";
 import { SingleTask } from "../../task/SingleTask";
-import { DataFlow } from "../../task-graph/DataFlow";
+import { Dataflow } from "../../task-graph/Dataflow";
 import { TaskGraph, serialGraph } from "../../task-graph/TaskGraph";
 
 class TestTask extends SingleTask {
@@ -40,30 +40,30 @@ describe("TaskGraph", () => {
   });
 
   it("should add edges to the graph", () => {
-    const edges: DataFlow[] = [
-      new DataFlow("task1", "output1", "task2", "input1"),
-      new DataFlow("task2", "output2", "task3", "input2"),
+    const edges: Dataflow[] = [
+      new Dataflow("task1", "output1", "task2", "input1"),
+      new Dataflow("task2", "output2", "task3", "input2"),
     ];
 
     graph.addTasks(tasks);
-    graph.addDataFlows(edges);
+    graph.addDataflows(edges);
 
-    expect(graph.getDataFlow("task1.output1 -> task2.input1")).toBeDefined();
-    expect(graph.getDataFlow("task2.output2 -> task3.input2")).toBeDefined();
+    expect(graph.getDataflow("task1.output1 -> task2.input1")).toBeDefined();
+    expect(graph.getDataflow("task2.output2 -> task3.input2")).toBeDefined();
   });
 
   it("should create a serial graph", () => {
     const inputHandle = "input";
     const outputHandle = "output";
 
-    const expectedDataFlows: DataFlow[] = [
-      new DataFlow("task1", inputHandle, "task2", outputHandle),
-      new DataFlow("task2", inputHandle, "task3", outputHandle),
+    const expectedDataflows: Dataflow[] = [
+      new Dataflow("task1", inputHandle, "task2", outputHandle),
+      new Dataflow("task2", inputHandle, "task3", outputHandle),
     ];
 
     const result = serialGraph(tasks, inputHandle, outputHandle);
 
     expect(result).toBeInstanceOf(TaskGraph);
-    expect(result.getDataFlows()).toEqual(expectedDataFlows);
+    expect(result.getDataflows()).toEqual(expectedDataflows);
   });
 });

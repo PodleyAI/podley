@@ -10,7 +10,7 @@ export * from "./task/TaskError";
 export * from "./task/TaskBase";
 export * from "./task/SingleTask";
 export * from "./task/CompoundTask";
-export * from "./task-graph/DataFlow";
+export * from "./task-graph/Dataflow";
 export * from "./task/TaskRegistry";
 export * from "./task-graph/TaskGraph";
 export * from "./task-graph/TaskGraphRunner";

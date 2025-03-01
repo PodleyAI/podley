@@ -10,7 +10,7 @@ import {
   RegenerativeCompoundTask,
   TaskConfig,
   JsonTaskItem,
-  DataFlow,
+  Dataflow,
   TaskGraph,
   Workflow,
   CreateWorkflow,
@@ -129,8 +129,8 @@ export class JsonTask extends RegenerativeCompoundTask {
           if (!sourceTask) {
             throw new Error(`Dependency id ${dep.id} not found`);
           }
-          const df = new DataFlow(sourceTask.config.id, dep.output, item.id, input);
-          this.subGraph.addDataFlow(df);
+          const df = new Dataflow(sourceTask.config.id, dep.output, item.id, input);
+          this.subGraph.addDataflow(df);
         }
       }
     }

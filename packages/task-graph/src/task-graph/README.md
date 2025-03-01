@@ -10,7 +10,7 @@ A robust TypeScript library for creating and managing task graphs with dependenc
   - [Workflow API](#workflow-api)
 - [Key Components](#key-components)
   - [TaskGraph](#taskgraph)
-  - [DataFlow](#dataflow)
+  - [Dataflow](#dataflow)
   - [TaskGraphRunner](#taskgraphrunner)
   - [Workflow](#workflow)
 - [Testing](#testing)
@@ -43,14 +43,14 @@ npm install @ellmers/task-graph
 ### Creating a Task Graph
 
 ```typescript
-import { TaskGraph, DataFlow } from "@ellmers/task-graph";
+import { TaskGraph, Dataflow } from "@ellmers/task-graph";
 
 const graph = new TaskGraph();
 const task1 = new TestTask({ id: "task1" });
 const task2 = new TestTask({ id: "task2" });
 
 graph.addTasks([task1, task2]);
-graph.addDataFlow(new DataFlow("task1", "output", "task2", "input"));
+graph.addDataflow(new Dataflow("task1", "output", "task2", "input"));
 ```
 
 ### Executing Tasks
@@ -86,7 +86,7 @@ const output = await workflow.run();
 - Serialization/deserialization
 - Dependency tracking
 
-### DataFlow
+### Dataflow
 
 - Connects task outputs to inputs
 - Value propagation
@@ -120,7 +120,7 @@ bun test:watch  # For development
 ### `TaskGraph` Class
 
 - `addTask(task: Task)`: Add a single task
-- `addDataFlow(dataflow: DataFlow)`: Connect tasks
+- `addDataflow(dataflow: Dataflow)`: Connect tasks
 - `getSourceTasks()`/`getTargetTasks()`: Navigate dependencies
 - `toJSON()`: Serialize graph structure
 

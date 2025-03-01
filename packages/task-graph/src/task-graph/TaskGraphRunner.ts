@@ -52,7 +52,7 @@ export class TaskGraphRunner {
   }
 
   private copyInputFromEdgesToNode(node: Task) {
-    this.dag.getSourceDataFlows(node.config.id).forEach((dataFlow) => {
+    this.dag.getSourceDataflows(node.config.id).forEach((dataFlow) => {
       const toInput: TaskInput = {};
       toInput[dataFlow.targetTaskInputId] = dataFlow.value;
       node.addInputData(toInput);
@@ -66,7 +66,7 @@ export class TaskGraphRunner {
    */
   private getInputProvenance(node: Task): TaskInput {
     const nodeProvenance: TaskInput = {};
-    this.dag.getSourceDataFlows(node.config.id).forEach((dataFlow) => {
+    this.dag.getSourceDataflows(node.config.id).forEach((dataFlow) => {
       Object.assign(nodeProvenance, dataFlow.provenance);
     });
     return nodeProvenance;
@@ -79,7 +79,7 @@ export class TaskGraphRunner {
    * @param nodeProvenance The provenance input for the task
    */
   private pushOutputFromNodeToEdges(node: Task, results: TaskOutput, nodeProvenance?: TaskInput) {
-    this.dag.getTargetDataFlows(node.config.id).forEach((dataFlow) => {
+    this.dag.getTargetDataflows(node.config.id).forEach((dataFlow) => {
       if (results[dataFlow.sourceTaskOutputId] !== undefined) {
         dataFlow.value = results[dataFlow.sourceTaskOutputId];
       }
@@ -219,7 +219,7 @@ export class TaskGraphRunner {
             this.inProgressTasks!.set(task.config.id, taskPromise);
             const taskResult = await taskPromise;
 
-            if (this.dag.getTargetDataFlows(task.config.id).length === 0) {
+            if (this.dag.getTargetDataflows(task.config.id).length === 0) {
               // we save the results of all the leaves
               results.push(taskResult);
             } else {
@@ -360,7 +360,7 @@ export class TaskGraphRunner {
           this.copyInputFromEdgesToNode(task);
           const taskResult = await task.runReactive();
           this.pushOutputFromNodeToEdges(task, taskResult);
-          if (this.dag.getTargetDataFlows(task.config.id).length === 0) {
+          if (this.dag.getTargetDataflows(task.config.id).length === 0) {
             results.push({
               id: task.config.id,
               type: (task.constructor as any).runtype || (task.constructor as any).type,

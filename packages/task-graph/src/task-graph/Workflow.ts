@@ -17,7 +17,7 @@ import {
   type TaskOutputDefinition,
 } from "../task/TaskTypes";
 import { TaskBase } from "../task/TaskBase";
-import { DataFlow } from "./DataFlow";
+import { Dataflow } from "./Dataflow";
 import { TaskGraph, TaskGraphJson } from "./TaskGraph";
 import { TaskGraphRunner } from "./TaskGraphRunner";
 import { WorkflowError } from "../task/TaskError";
@@ -53,7 +53,7 @@ export class Workflow {
   // Private properties
   private _graph: TaskGraph = new TaskGraph();
   private _runner: TaskGraphRunner;
-  private _dataFlows: DataFlow[] = [];
+  private _dataFlows: Dataflow[] = [];
   private _error: string = "";
   private _repository?: TaskOutputRepository;
 
@@ -96,7 +96,7 @@ export class Workflow {
           }
 
           dataFlow.targetTaskId = task.config.id;
-          this.graph.addDataFlow(dataFlow);
+          this.graph.addDataflow(dataFlow);
         });
 
         this._dataFlows = [];
@@ -114,13 +114,13 @@ export class Workflow {
             for (const taskInput of task.inputs) {
               if (!matches.has(taskInput.id) && comparator(parentOutput, taskInput)) {
                 matches.set(taskInput.id, parentOutput.id);
-                const dataFlow = new DataFlow(
+                const dataFlow = new Dataflow(
                   parent.config.id,
                   parentOutput.id,
                   task.config.id,
                   taskInput.id
                 );
-                this.graph.addDataFlow(dataFlow);
+                this.graph.addDataflow(dataFlow);
               }
             }
           }
@@ -339,7 +339,7 @@ export class Workflow {
       throw new WorkflowError(errorMsg);
     }
 
-    this._dataFlows.push(new DataFlow(lastNode.config.id, source, undefined, target));
+    this._dataFlows.push(new Dataflow(lastNode.config.id, source, undefined, target));
     return this;
   }
 
