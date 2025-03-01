@@ -8,7 +8,7 @@
 import { describe, expect, it, beforeEach } from "bun:test";
 import { Task, TaskOutput } from "../../task/TaskTypes";
 import { SingleTask } from "../../task/SingleTask";
-import { Dataflow } from "../../task-graph/Dataflow";
+import { Dataflow } from "../Dataflow";
 import { TaskGraph, serialGraph } from "../../task-graph/TaskGraph";
 
 class TestTask extends SingleTask {
