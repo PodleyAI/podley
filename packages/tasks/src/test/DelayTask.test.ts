@@ -6,8 +6,6 @@
 //    *******************************************************************************
 
 import { beforeEach, describe, expect, it } from "bun:test";
-import { sleep } from "@ellmers/util";
-import { Task, TaskGraph, TaskGraphRunner } from "@ellmers/task-graph";
 import { DelayTask } from "../task/DelayTask";
 import { TaskStatus } from "@ellmers/task-graph";
 import { TaskAbortedError } from "@ellmers/task-graph";
@@ -25,14 +23,14 @@ describe("DelayTask", () => {
 
     // Verify the task completed successfully
     expect(task.status).toBe(TaskStatus.COMPLETED);
-    expect(result).toEqual({ output: undefined });
+    expect(result).toBeUndefined();
   });
 
   it("should pass through input to output", async () => {
     // Create a task with input
     const taskWithInput = new DelayTask({
       id: "delayed-with-input",
-      input: { delay: 10, something: "test-value" },
+      input: { delay: 10, pass_through: { something: "test-value" } },
     });
 
     // Run the task

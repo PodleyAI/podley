@@ -9,7 +9,6 @@ import {
   CreateWorkflow,
   SingleTask,
   TaskAbortedError,
-  TaskInput,
   TaskOutput,
   TaskRegistry,
   Workflow,
