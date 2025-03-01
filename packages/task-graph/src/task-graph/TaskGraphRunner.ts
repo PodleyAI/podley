@@ -5,11 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { nanoid } from "nanoid";
+import { deepEqual } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskInput, Task, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
 import { TaskGraph } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
-import { nanoid } from "nanoid";
 import { CompoundTask, RegenerativeCompoundTask } from "../task/CompoundTask";
 import {
   TaskAbortedError,
@@ -17,7 +18,6 @@ import {
   TaskError,
   TaskErrorGroup,
 } from "../task/TaskError";
-import { DATAFLOW_ALL_PORTS } from "./Dataflow";
 
 export type GraphSingleResult = { id: unknown; type: String; data: TaskOutput };
 export type GraphResult = Array<GraphSingleResult>;
@@ -52,9 +52,53 @@ export class TaskGraphRunner {
     this.provenanceInput = new Map();
   }
 
-  private copyInputFromEdgesToNode(node: Task) {
-    this.graph.getSourceDataflows(node.config.id).forEach((dataflow) => {
-      node.addInputData(dataflow.getPortData());
+  /**
+   * Adds input data to a task
+   * @param task The task to add input data to
+   * @param overrides The input data to override (or add to if an array)
+   */
+  public addInputData(task: Task, overrides: Partial<TaskInput> | undefined) {
+    let changed = false;
+    for (const input of task.inputs) {
+      if (overrides?.[input.id] !== undefined) {
+        let isArray = input.isArray;
+        if (
+          input.valueType === "any" &&
+          (Array.isArray(overrides[input.id]) || Array.isArray(task.runInputData[input.id]))
+        ) {
+          isArray = true;
+        }
+
+        if (isArray) {
+          const existingItems = Array.isArray(task.runInputData[input.id])
+            ? task.runInputData[input.id]
+            : [];
+          const newitems = [...existingItems];
+
+          const overrideItem = overrides[input.id];
+          if (Array.isArray(overrideItem)) {
+            newitems.push(...(overrideItem as any[]));
+          } else {
+            newitems.push(overrideItem);
+          }
+          task.runInputData[input.id] = newitems;
+          changed = true;
+        } else {
+          if (!deepEqual(task.runInputData[input.id], overrides[input.id])) {
+            task.runInputData[input.id] = overrides[input.id];
+            changed = true;
+          }
+        }
+      }
+    }
+    if (changed && task instanceof RegenerativeCompoundTask) {
+      task.regenerateGraph();
+    }
+  }
+
+  private copyInputFromEdgesToNode(task: Task) {
+    this.graph.getSourceDataflows(task.config.id).forEach((dataflow) => {
+      this.addInputData(task, dataflow.getPortData());
     });
   }
 

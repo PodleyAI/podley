@@ -134,15 +134,6 @@ describe("SingleTask", () => {
         expect(task.status).toBe(TaskStatus.COMPLETED);
       });
 
-      it("should run the task with custom inputs", async () => {
-        task.addInputData({ value: "custom" });
-        const output = await task.run();
-        expect(output).toEqual({
-          processed: true,
-          result: "Processed: custom",
-        });
-      });
-
       it("should run the task reactively", async () => {
         const output = await task.runReactive();
         expect(output).toEqual({
@@ -270,14 +261,6 @@ describe("SingleTask", () => {
         expect(task.status).toBe(TaskStatus.COMPLETED);
         expect(task.startedAt).toBeInstanceOf(Date);
         expect(task.completedAt).toBeInstanceOf(Date);
-      });
-
-      it("should reset input data correctly", () => {
-        task.addInputData({ value: "modified" });
-        expect(task.runInputData).toEqual({ value: "modified" });
-
-        task.resetInputData();
-        expect(task.runInputData).toEqual({ value: "default" });
       });
     });
   });

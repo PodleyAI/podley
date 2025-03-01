@@ -96,46 +96,53 @@ class TestCompoundTask extends CompoundTask {
 
 describe("Task", () => {
   describe("SingleTask", () => {
-    it("should set input data and run the task", async () => {
-      const node = new TestTask();
+    it("should create with input data and run the task", async () => {
       const input = { key: "value" };
-      node.addInputData(input);
-      const output = await node.run();
+      const task = new TestTask({ input });
+      const output = await task.run();
       expect(output).toEqual({ ...input, reactiveOnly: false, all: true });
-      expect(node.runInputData).toEqual(input);
+      expect(task.runInputData).toEqual(input);
+    });
+
+    it("should set input data and run the task", async () => {
+      const task = new TestTask();
+      const input = { key: "value" };
+      task.setInput(input);
+      const output = await task.run();
+      expect(output).toEqual({ ...input, reactiveOnly: false, all: true });
+      expect(task.runInputData).toEqual(input);
     });
 
     it("should run the task reactively", async () => {
-      const node = new TestTask();
-      const output = await node.runReactive();
+      const task = new TestTask();
+      const output = await task.runReactive();
       expect(output).toEqual({ key: "", reactiveOnly: true, all: false });
     });
   });
 
   describe("CompoundTask", () => {
     it("should create a CompoundTask", () => {
-      const node = new TestCompoundTask();
-      expect(node).toBeInstanceOf(CompoundTask);
+      const task = new TestCompoundTask();
+      expect(task).toBeInstanceOf(CompoundTask);
     });
 
     it("should create a subgraph for the CompoundTask", () => {
-      const node = new TestCompoundTask();
-      const subGraph = node.subGraph;
+      const task = new TestCompoundTask();
+      const subGraph = task.subGraph;
       expect(subGraph).toBeInstanceOf(TaskGraph);
     });
 
     it("should set input data and run the task", async () => {
-      const node = new TestCompoundTask();
       const input = { key: "value" };
-      node.addInputData(input);
-      const output = await node.run();
+      const task = new TestCompoundTask({ input });
+      const output = await task.run();
       expect(output).toEqual({ key: "value", all: true, reactiveOnly: false });
-      expect(node.runInputData).toEqual(input);
+      expect(task.runInputData).toEqual(input);
     });
 
     it("should run the task synchronously", async () => {
-      const node = new TestCompoundTask({ input: { key: "value2" } });
-      const output = await node.runReactive();
+      const task = new TestCompoundTask({ input: { key: "value2" } });
+      const output = await task.runReactive();
       expect(output).toEqual({ key: "value2", reactiveOnly: true, all: false });
     });
   });
