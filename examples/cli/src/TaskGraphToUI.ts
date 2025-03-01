@@ -9,7 +9,6 @@ import { TaskGraph, TaskGraphRunner } from "@ellmers/task-graph";
 import React from "react";
 import { render } from "ink";
 import App from "./components/App";
-import { preserveScreen } from "tuir";
 import { sleep } from "@ellmers/util";
 
 export async function runTask(dag: TaskGraph) {
@@ -25,12 +24,12 @@ export async function runTask(dag: TaskGraph) {
 const runTaskToInk = async (runner: TaskGraphRunner) => {
   // preserveScreen();
   const { unmount } = render(React.createElement(App, { runner }));
+  let results: any;
   try {
     await sleep(1);
-    await runner.runGraph();
+    results = await runner.runGraph();
   } catch (e: any) {
-    console.error(e.errors[0].error);
-  } finally {
-    unmount();
+    console.error(e);
   }
+  unmount();
 };

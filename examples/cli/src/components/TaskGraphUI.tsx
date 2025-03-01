@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Box } from "tuir";
-import { Task, TaskStatus, TaskGraph } from "@ellmers/task-graph";
+import { Task, TaskGraph } from "@ellmers/task-graph";
 import { TaskUI } from "./TaskUI";
 
 type TaskGraphUIProps = {
@@ -25,7 +25,6 @@ const TaskGraphUI: React.FC<TaskGraphUIProps> = ({ graph }) => {
   // Force a re-render
   const forceUpdate = () => {
     setStatus((a) => a + 1);
-    console.log("forceUpdate", status);
   };
 
   // Set up event listeners for task status changes
@@ -51,7 +50,7 @@ const TaskGraphUI: React.FC<TaskGraphUIProps> = ({ graph }) => {
     <Box flexDirection="column">
       <Box flexDirection="row">
         {tasks.map((taskItem) => (
-          <TaskUI key={String(taskItem.config.id)} graph={graph} task={taskItem} />
+          <TaskUI key={`${taskItem.config.id}`} graph={graph} task={taskItem} />
         ))}
       </Box>
     </Box>

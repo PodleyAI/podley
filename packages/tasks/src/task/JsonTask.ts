@@ -53,9 +53,6 @@ export class JsonTask extends RegenerativeCompoundTask {
 
   constructor(config: TaskConfig & { input?: JsonTaskInput }) {
     super(config);
-    if (config?.input?.json) {
-      this.regenerateGraph();
-    }
   }
 
   /**

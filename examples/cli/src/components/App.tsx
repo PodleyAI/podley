@@ -9,7 +9,7 @@ type AppProps = {
 
 const App: React.FC<AppProps> = ({ runner }) => {
   return (
-    <Box flexDirection="column" borderStyle="round" paddingLeft={1} paddingRight={1}>
+    <Box flexDirection="column" borderStyle="double" paddingLeft={1} paddingRight={1}>
       <Box marginBottom={1}>
         <Text bold>Ellmers Task Graph Runner</Text>
       </Box>

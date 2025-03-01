@@ -128,7 +128,7 @@ export function AddBaseCommands(program: Command) {
             type: "TextRewriterTask",
             name: "Rewrite Text",
             input: {
-              text: "The quick brown fox jumps over the lazy dog.",
+              text: "The quick brown fox jumps over the lazy dog at the party.",
               prompt: "Rewrite the following text in reverse:",
             },
             dependencies: {
