@@ -17,6 +17,7 @@ import {
   TaskError,
   TaskErrorGroup,
 } from "../task/TaskError";
+import { DATAFLOW_ALL_PORTS } from "./Dataflow";
 
 export type GraphSingleResult = { id: unknown; type: String; data: TaskOutput };
 export type GraphResult = Array<GraphSingleResult>;
@@ -53,8 +54,12 @@ export class TaskGraphRunner {
 
   private copyInputFromEdgesToNode(node: Task) {
     this.dag.getSourceDataflows(node.config.id).forEach((dataflow) => {
-      const toInput: TaskInput = {};
-      toInput[dataflow.targetTaskPortId] = dataflow.value;
+      let toInput: TaskInput = {};
+      if (dataflow.sourceTaskPortId === DATAFLOW_ALL_PORTS && dataflow.value !== undefined) {
+        toInput = dataflow.value;
+      } else {
+        toInput[dataflow.targetTaskPortId] = dataflow.value;
+      }
       node.addInputData(toInput);
     });
   }
@@ -82,6 +87,9 @@ export class TaskGraphRunner {
     this.dag.getTargetDataflows(node.config.id).forEach((dataflow) => {
       if (results[dataflow.sourceTaskPortId] !== undefined) {
         dataflow.value = results[dataflow.sourceTaskPortId];
+      }
+      if (dataflow.sourceTaskPortId === DATAFLOW_ALL_PORTS && results !== undefined) {
+        dataflow.value = results;
       }
       if (nodeProvenance) dataflow.provenance = nodeProvenance;
     });

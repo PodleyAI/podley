@@ -16,6 +16,8 @@ export type DataflowJson = {
   targetTaskPortId: string;
 };
 
+export const DATAFLOW_ALL_PORTS = "*";
+
 /**
  * Represents a data flow between two tasks, indicating how one task's output is used as input for another task
  */

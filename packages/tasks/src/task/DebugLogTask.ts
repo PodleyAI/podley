@@ -13,18 +13,20 @@ import {
   TaskOutputDefinition,
   CreateWorkflow,
   TaskInvalidInputError,
+  DATAFLOW_ALL_PORTS,
+  TaskInput,
+  TaskOutput,
 } from "@ellmers/task-graph";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
 
-export type DebugLogTaskInput = {
-  message: any;
-  level: LogLevel;
+export type DebugLogTaskInput = TaskInput & {
+  log_level: LogLevel;
 };
-export type DebugLogTaskOutput = {
-  output: any;
-};
+export type DebugLogTaskOutput = TaskOutput;
+
+const DEFAULT_LOG_LEVEL: LogLevel = "log";
 
 /**
  * DebugLogTask provides console logging functionality as a task within the system.
@@ -44,28 +46,29 @@ export class DebugLogTask extends OutputTask {
   declare runOutputData: DebugLogTaskOutput;
   public static inputs: TaskInputDefinition[] = [
     {
-      id: "message",
+      id: DATAFLOW_ALL_PORTS,
       name: "Input",
       valueType: "any",
     },
     {
-      id: "level",
+      id: "log_level",
       name: "Level",
       valueType: "log_level",
-      defaultValue: "info",
+      defaultValue: DEFAULT_LOG_LEVEL,
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
-    { id: "output", name: "Output", valueType: "any" },
+    { id: DATAFLOW_ALL_PORTS, name: "Output", valueType: "any" },
   ] as const;
+
   async runReactive() {
-    const level = this.runInputData.level || "log";
-    if (level == "dir") {
-      console.dir(this.runInputData.message, { depth: null });
+    const { log_level = DEFAULT_LOG_LEVEL, ...message } = this.runInputData;
+    if (log_level == "dir") {
+      console.dir(message, { depth: null });
     } else {
-      console[level](this.runInputData.message);
+      console[log_level](message);
     }
-    this.runOutputData.output = this.runInputData.message;
+    this.runOutputData = message;
     return this.runOutputData;
   }
 

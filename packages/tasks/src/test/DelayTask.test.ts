@@ -32,14 +32,17 @@ describe("DelayTask", () => {
     // Create a task with input
     const taskWithInput = new DelayTask({
       id: "delayed-with-input",
-      input: { delay: 10, input: "test-value" },
+      input: { delay: 10, something: "test-value" },
     });
 
     // Run the task
     const result = await taskWithInput.run();
 
     // Verify the input was passed through to the output
-    expect(result).toEqual({ output: "test-value" });
+    expect(result).toEqual({ something: "test-value" });
+    expect(taskWithInput.status).toBe(TaskStatus.COMPLETED);
+    expect(taskWithInput.runOutputData).toEqual({ something: "test-value" });
+    expect(result.delay).toBeUndefined(); // we remove this as it could have come from defaults
   });
 
   it("should handle task abortion", async () => {
