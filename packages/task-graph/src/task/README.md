@@ -1,0 +1,164 @@
+# Task System Documentation
+
+This module provides a flexible task processing system with support for various task types, dependency management, and error handling.
+
+- [Key Components](#key-components)
+  - [Core Classes](#core-classes)
+- [Task Types](#task-types)
+  - [SingleTask](#singletask)
+  - [Compound Tasks](#compound-tasks)
+  - [Job Queue Tasks](#job-queue-tasks)
+- [Task Lifecycle](#task-lifecycle)
+- [Event Handling](#event-handling)
+- [Input/Output Definitions](#inputoutput-definitions)
+- [Registry \& Queues](#registry--queues)
+- [Error Handling](#error-handling)
+- [Testing](#testing)
+- [Installation](#installation)
+
+## Key Components
+
+### Core Classes
+
+- `TaskBase`: Abstract base class implementing core task functionality
+- `SingleTask`: Base class for simple atomic tasks
+- `CompoundTask`: Handles tasks containing subtasks (TaskGraph)
+- `ArrayTask`: Processes arrays of inputs using parallel subtasks
+- `JobQueueTask`: Integrates with job queue system for distributed processing
+- `OutputTask`: Specialized task for handling side effects
+
+## Task Types
+
+### SingleTask
+
+```typescript
+interface MyTaskInput {
+  input: number;
+}
+interface MyTaskOutput {
+  result: number;
+}
+class MyTask extends SingleTask {
+  static readonly type = "MyTask"; // Required, unique identifier for the task
+  static readonly category = "Utility"; // Optional, used for grouping tasks in UI
+  declare runInputData: MyTaskInput;
+  declare runOutputData: MyTaskOutput;
+  static inputs = [{ id: "input", valueType: "number" }];
+  static outputs = [{ id: "result", valueType: "number" }];
+
+  async runFull() {
+    // Do something with the input that takes a long time
+    await sleep(1000);
+    // Return the reactive result
+    return this.runReactive();
+  }
+  async runReactive() {
+    return { result: this.runInputData.input * 2 };
+  }
+}
+```
+
+### Compound Tasks
+
+- Compound tasks are tasks that contain other tasks. They are represented as a TaskGraph internally.
+- A regerative task is a compound task that can regenerate its own subtasks.
+- An ArrayTask is a regenerative task based on a single task that processes an array of inputs in parallel by creating a new subtask for each input, and then combining the results into a single array output.
+
+### Job Queue Tasks
+
+JobQueueTask is a task that can be used to run a task in a job queue. This is useful for when there might be rate limits or other constraints on the task that make it better to run in a job queue than in the main thread.
+
+```typescript
+class MyJobTask extends JobQueueTask {
+  async createJob() {
+    return new Job({
+      input: this.runInputData,
+      execute: (input) => ({ result: input.value * 3 }),
+    });
+  }
+}
+```
+
+## Task Lifecycle
+
+- **Statuses**: `Pending` → `Processing` → (`Completed`|`Failed`|`Aborted`)
+- **Methods**:
+  - `run()`: Full execution with caching
+  - `runReactive()`: Lightweight execution for UI updates
+  - `abort()`: Cancel running task
+
+## Event Handling
+
+```typescript
+task.on("start", () => console.log("Task started"));
+task.on("progress", (p) => console.log(`Progress: ${p}%`));
+task.on("complete", () => console.log("Task completed"));
+task.on("error", (err) => console.error("Task failed", err));
+task.on("abort", () => console.log("Task aborted"));
+task.on("regenerate", () => console.log("Task regenerated"));
+```
+
+## Input/Output Definitions
+
+```typescript
+static inputs = [
+  {
+    id: "username",
+    name: "User Name",
+    valueType: "string",
+    defaultValue: "guest",
+    optional: true
+  }
+];
+
+static outputs = [
+  {
+    id: "result",
+    name: "Processing Result",
+    valueType: "number"
+  }
+];
+```
+
+## Registry & Queues
+
+The TaskRegistry is used to register tasks to there is a global registry. This is useful for a node based UI to allow tasks to be dragged and dropped onto the canvas.
+
+```typescript
+TaskRegistry.registerTask(MyTask);
+```
+
+The TaskQueueRegistry is used to get a queue for a given name. This is useful for when you want to run a task in a job queue. A queue can be created for a given task type, and all the tasks of that type will be added to the queue.
+
+```typescript
+// Queue management
+const queue = getTaskQueueRegistry().getQueue("processing");
+queue.add(new MyJobTask());
+```
+
+## Error Handling
+
+```typescript
+try {
+  await task.run();
+} catch (err) {
+  if (err instanceof TaskAbortedError) {
+    console.log("Task was aborted");
+  }
+  if (err instanceof TaskErrorGroup) {
+    console.log("Multiple errors:", err.getErrors());
+  }
+}
+```
+
+## Testing
+
+```bash
+bun test
+```
+
+## Installation
+
+```bash
+bun add @ellmers/task-system
+```

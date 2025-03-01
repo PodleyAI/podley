@@ -38,5 +38,6 @@
   "javascript.format.enable": true,
   "editor.wordWrapColumn": 100,
   "prettier.printWidth": 100,
-  "bun.debugTerminal.enabled": true
+  "bun.debugTerminal.enabled": true,
+  "markdown.extension.toc.levels": "2..6"
 }
