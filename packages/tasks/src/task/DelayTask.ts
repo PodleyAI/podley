@@ -7,7 +7,6 @@
 
 import {
   CreateWorkflow,
-  DATAFLOW_ALL_PORTS,
   SingleTask,
   TaskAbortedError,
   TaskInput,
@@ -18,8 +17,9 @@ import {
 import { sleep } from "@ellmers/util";
 
 // TODO: we should have a generic way to handle "...rest" inputs to pass through to outputs
-export type DelayTaskInput = TaskInput & {
+export type DelayTaskInput = {
   delay: number;
+  pass_through: any;
 };
 export type DelayTaskOutput = TaskOutput;
 
@@ -36,18 +36,12 @@ export class DelayTask extends SingleTask {
       defaultValue: 1,
     },
     {
-      id: DATAFLOW_ALL_PORTS,
-      name: "Input",
+      id: "pass_through",
+      name: "Pass Through",
       valueType: "any",
     },
   ] as const;
-  static outputs = [
-    {
-      id: DATAFLOW_ALL_PORTS,
-      name: "Output",
-      valueType: "any",
-    },
-  ] as const;
+  static outputs = [] as const;
 
   async runFull(): Promise<DelayTaskOutput> {
     const delay = this.runInputData.delay;
@@ -69,8 +63,7 @@ export class DelayTask extends SingleTask {
   }
 
   async runReactive(): Promise<DelayTaskOutput> {
-    const { delay, ...input } = this.runInputData;
-    this.runOutputData = input;
+    this.runOutputData = this.runInputData.pass_through;
     return this.runOutputData;
   }
 }

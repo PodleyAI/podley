@@ -17,7 +17,7 @@ import {
   type TaskOutputDefinition,
 } from "../task/TaskTypes";
 import { TaskBase } from "../task/TaskBase";
-import { Dataflow } from "./Dataflow";
+import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph, TaskGraphJson } from "./TaskGraph";
 import { TaskGraphRunner } from "./TaskGraphRunner";
 import { WorkflowError } from "../task/TaskError";
@@ -89,7 +89,10 @@ export class Workflow {
       // Process any pending data flows
       if (this._dataFlows.length > 0) {
         this._dataFlows.forEach((dataflow) => {
-          if (task.inputs.find((i) => i.id === dataflow.targetTaskPortId) === undefined) {
+          if (
+            task.inputs.find((i) => i.id === dataflow.targetTaskPortId) === undefined &&
+            dataflow.targetTaskPortId !== DATAFLOW_ALL_PORTS
+          ) {
             this._error = `Input ${dataflow.targetTaskPortId} not found on task ${task.config.id}`;
             console.error(this._error);
             return;
@@ -332,7 +335,7 @@ export class Workflow {
     const lastNode = nodes[nodes.length + index];
     const sourceTaskOutputs = (lastNode?.constructor as typeof TaskBase)?.outputs;
 
-    if (!sourceTaskOutputs.find((o) => o.id === source)) {
+    if (!sourceTaskOutputs.find((o) => o.id === source) && source !== DATAFLOW_ALL_PORTS) {
       const errorMsg = `Output ${source} not found on task ${lastNode.config.id}`;
       this._error = errorMsg;
       console.error(this._error);

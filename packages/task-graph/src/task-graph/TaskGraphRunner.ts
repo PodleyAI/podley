@@ -175,7 +175,7 @@ export class TaskGraphRunner {
       parentSignal?.addEventListener(
         "abort",
         () => {
-          console.log("runner parent signal sent abor, forwarding to local abort controller");
+          console.log("runner parent signal sent abort, forwarding to local abort controller");
           this.abortController?.abort();
         },
         { once: true }

@@ -89,9 +89,9 @@ const resetGraph = () => {
       source_lang: "en",
       target_lang: "es",
     })
-    .rename("text", "message")
-    .rename("text", "message", -2)
-    .DebugLog({ level: "info" });
+    .rename("*", "messages")
+    .rename("*", "messages", -2)
+    .DebugLog({ log_level: "info" });
   taskGraphRepo.saveTaskGraph("default", workflow.graph);
 };
 
