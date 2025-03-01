@@ -77,7 +77,7 @@ export class TaskGraphRunner {
 
           const overrideItem = overrides[input.id];
           if (Array.isArray(overrideItem)) {
-            newitems.push(...(overrideItem as any[]));
+            newitems.push(...overrideItem);
           } else {
             newitems.push(overrideItem);
           }

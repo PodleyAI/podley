@@ -262,6 +262,14 @@ describe("SingleTask", () => {
         expect(task.startedAt).toBeInstanceOf(Date);
         expect(task.completedAt).toBeInstanceOf(Date);
       });
+
+      it("should reset input data correctly", () => {
+        task.setInput({ value: "modified" });
+        expect(task.runInputData).toEqual({ value: "modified" });
+
+        task.resetInputData();
+        expect(task.runInputData).toEqual({ value: "default" });
+      });
     });
   });
 
