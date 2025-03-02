@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { afterAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 import {
   AiJob,
   getGlobalModelRepository,
@@ -29,6 +29,9 @@ import { SqliteQueueStorage } from "@ellmers/storage";
 const db = new Sqlite.Database(":memory:");
 
 describe("HFTransformersBinding", () => {
+  beforeEach(() => {
+    setTaskQueueRegistry(null);
+  });
   describe("InMemoryJobQueue", () => {
     it("Should have an item queued", async () => {
       registerHuggingfaceLocalTasks();

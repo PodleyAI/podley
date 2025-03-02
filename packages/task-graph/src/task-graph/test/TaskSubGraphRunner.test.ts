@@ -19,6 +19,9 @@ import { SingleTask } from "../../task/SingleTask";
 import { TaskStatus } from "../../task/TaskTypes";
 import { TaskAbortedError, TaskErrorGroup, TaskFailedError } from "../../task/TaskError";
 import { ITask } from "../../task/ITask";
+import { TaskRegistry } from "../../task/TaskRegistry";
+
+TaskRegistry.all.clear();
 
 type TestSquareTaskInput = {
   input: number;
