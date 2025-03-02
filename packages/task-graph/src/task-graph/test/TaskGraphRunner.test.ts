@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { sleep } from "@ellmers/util";
 import { SingleTask } from "../../task/SingleTask";
 import { TaskAbortedError } from "../../task/TaskError";
-import { Task, TaskOutput, TaskStatus } from "../../task/TaskTypes";
+import { TaskOutput, TaskStatus } from "../../task/TaskTypes";
 import { Dataflow, DataflowArrow } from "../Dataflow";
 import { TaskGraph } from "../TaskGraph";
 import { TaskGraphRunner } from "../TaskGraphRunner";
@@ -116,7 +116,7 @@ class TestAddTask extends SingleTask<TestAddTaskInput, TestAddTaskOutput> {
 describe("TaskGraphRunner", () => {
   let runner: TaskGraphRunner;
   let graph: TaskGraph;
-  let nodes: Task[];
+  let nodes: TestTask[];
 
   beforeEach(() => {
     graph = new TaskGraph();
@@ -160,8 +160,8 @@ describe("TaskGraphRunner", () => {
   });
 
   describe("Status Dataflow Propagation", () => {
-    let errorTask: Task;
-    let targetTask: Task;
+    let errorTask: TestTask;
+    let targetTask: TestTask;
 
     beforeEach(() => {
       graph = new TaskGraph();
@@ -236,6 +236,7 @@ describe("TaskGraphRunner", () => {
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(resolve, 1000);
             // Check if we're aborted and clean up
+            // @ts-expect-error ts(2445)
             longRunningTask.abortController?.signal.addEventListener("abort", () => {
               clearTimeout(timeout);
               reject(new TaskAbortedError("Aborted"));

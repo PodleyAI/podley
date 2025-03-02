@@ -5,12 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { RegenerativeCompoundTask } from "./CompoundTask";
 import { ITaskConstructor } from "./ITask";
 import { TaskRegistry } from "./TaskRegistry";
 import {
   JsonTaskItem,
+  Provenance,
   TaskConfig,
   TaskInput,
   TaskInputDefinition,
@@ -266,6 +268,11 @@ export function arrayTaskFactory<
     async validateItem(valueType: string, item: any) {
       return true; // let children validate
     }
+
+    declare _subGraph: TaskGraph;
+    declare abortController: AbortController;
+    declare nodeProvenance: Provenance;
+    declare outputCache: TaskOutputRepository;
   }
 
   // Use type assertion to make TypeScript accept the registration

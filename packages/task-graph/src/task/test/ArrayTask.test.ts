@@ -13,7 +13,6 @@ import { arrayTaskFactory } from "../ArrayTask";
 import { TaskGraph } from "../../task-graph/TaskGraph";
 import { TaskGraphRunner } from "../../task-graph/TaskGraphRunner";
 import { TaskEvents, TaskStatus, TaskOutputDefinition, TaskInputDefinition } from "../TaskTypes";
-import { Task } from "../TaskTypes";
 import { TaskError } from "../TaskError";
 import { ITask } from "../ITask";
 import { JobQueueTaskConfig } from "../../node";

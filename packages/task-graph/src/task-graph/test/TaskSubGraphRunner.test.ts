@@ -16,7 +16,7 @@ import {
   arrayTaskFactory,
 } from "../../task/ArrayTask";
 import { SingleTask } from "../../task/SingleTask";
-import { Task, TaskOutput, TaskStatus } from "../../task/TaskTypes";
+import { TaskStatus } from "../../task/TaskTypes";
 import { TaskAbortedError, TaskErrorGroup, TaskFailedError } from "../../task/TaskError";
 import { ITask } from "../../task/ITask";
 

@@ -8,7 +8,7 @@
 import { nanoid } from "nanoid";
 import { deepEqual } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
-import { TaskInput, Task, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
+import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
 import { TaskGraph } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
 import { CompoundTask, RegenerativeCompoundTask } from "../task/CompoundTask";
