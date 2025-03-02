@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { getGlobalModelRepository } from "../../ModelRegistry";
 import { ModelRepository } from "../../ModelRepository";
 import { setGlobalModelRepository } from "../../ModelRegistry";
@@ -20,6 +20,10 @@ export const runGenericModelRepositoryTests = (
   beforeEach(async () => {
     repository = await createRepository();
     setGlobalModelRepository(repository);
+  });
+
+  afterEach(async () => {
+    await repository.clear();
   });
 
   it("store and find model by name", async () => {

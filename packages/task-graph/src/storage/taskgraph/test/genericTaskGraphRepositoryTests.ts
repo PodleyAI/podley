@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { expect, it, beforeEach } from "bun:test";
+import { expect, it, beforeEach, afterEach } from "bun:test";
 import { TaskGraphRepository } from "../TaskGraphRepository";
 import { Dataflow } from "../../../task-graph/Dataflow";
 import { TaskGraph } from "../../../task-graph/TaskGraph";
@@ -28,6 +28,10 @@ export function runGenericTaskGraphRepositoryTests(
 
   beforeEach(async () => {
     repository = await createRepository();
+  });
+
+  afterEach(async () => {
+    await repository.clear();
   });
 
   it("should initialize the tabularRepository", () => {

@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { expect, it, beforeEach } from "bun:test";
+import { expect, it, beforeEach, afterEach } from "bun:test";
 import { TaskOutputRepository } from "../TaskOutputRepository";
 import { TaskInput, TaskOutput } from "../../../task/TaskTypes";
 
@@ -16,6 +16,10 @@ export function runGenericTaskOutputRepositoryTests(
 
   beforeEach(async () => {
     repository = await createRepository();
+  });
+
+  afterEach(async () => {
+    await repository.clear();
   });
 
   it("should initialize the tabularRepository", () => {
