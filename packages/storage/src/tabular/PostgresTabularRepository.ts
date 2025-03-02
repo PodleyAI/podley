@@ -201,13 +201,13 @@ export class PostgresTabularRepository<
    */
   public async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
     await this.dbPromise;
-    const searchKeys = Object.keys(key) as Array<keyof Entity>;
+    const searchKeys = Object.keys(key);
     if (searchKeys.length === 0) {
       return undefined;
     }
 
     // Find the best matching index for the search
-    const bestIndex = this.findBestMatchingIndex(searchKeys);
+    const bestIndex = this.findBestMatchingIndex(searchKeys as Array<keyof Entity>);
     if (!bestIndex) {
       throw new Error(
         `No suitable index found for the search criteria, searching for ['${searchKeys.join(
@@ -220,7 +220,7 @@ export class PostgresTabularRepository<
 
     // very columns in primary key or value schema
     const validColumns = [...this.primaryKeyColumns(), ...this.valueColumns()];
-    // @ts-ignore
+    // @ts-expect-error
     const invalidColumns = searchKeys.filter((key) => !validColumns.includes(key));
     if (invalidColumns.length > 0) {
       throw new Error(`Invalid columns in search criteria: ${invalidColumns.join(", ")}`);

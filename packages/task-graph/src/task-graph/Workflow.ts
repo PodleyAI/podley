@@ -22,7 +22,7 @@ import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph, TaskGraphJson } from "./TaskGraph";
 import { TaskGraphRunner } from "./TaskGraphRunner";
 import { WorkflowError } from "../task/TaskError";
-import { ITaskConstructor } from "../task/ITask";
+import { ITask, ITaskConstructor } from "../task/ITask";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
@@ -92,11 +92,14 @@ export class Workflow {
 
       // Create and add the new task
       taskIdCounter++;
-      // @ts-expect-error -  TODO: fix
-      const task: SingleTask<I, O, C> = new taskClass(input, {
-        id: String(taskIdCounter),
-        ...config,
-      }) as SingleTask<I, O, C>;
+
+      const task: ITask<I, O, C> = new taskClass(
+        input as I,
+        {
+          id: String(taskIdCounter),
+          ...config,
+        } as C
+      );
       this.graph.addTask(task);
 
       // Process any pending data flows
@@ -173,8 +176,10 @@ export class Workflow {
     // Copy metadata from the task class
     // @ts-expect-error - runtype is hack from ArrayTask TODO: fix
     helper.type = taskClass.runtype ?? taskClass.type;
+    helper.category = taskClass.category;
     helper.inputs = taskClass.inputs;
     helper.outputs = taskClass.outputs;
+    helper.sideeffects = taskClass.sideeffects;
 
     return helper;
   }

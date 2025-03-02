@@ -80,7 +80,7 @@ export class JsonTask<
       name: item.name,
       provenance: item.provenance ?? {},
     };
-    // @ts-ignore TODO: fix this
+
     const task = new taskClass({}, taskConfig);
     if (task instanceof CompoundTask && item.subtasks) {
       task.subGraph = this.createSubGraph(item.subtasks);

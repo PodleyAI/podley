@@ -111,7 +111,6 @@ export abstract class TaskGraphRepository {
       provenance: item.provenance ?? {},
     };
 
-    // @ts-ignore TODO: fix this
     const task = new taskClass(item.input ?? {}, taskConfig);
     if (task instanceof CompoundTask && item.subgraph) {
       task.subGraph = this.createSubGraph(item.subgraph);
