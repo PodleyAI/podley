@@ -21,6 +21,7 @@ import {
   TaskInput,
   TaskOutput,
   TaskBase,
+  TaskConfigurationError,
 } from "@ellmers/task-graph";
 
 interface JsonTaskInput extends TaskInput {
@@ -72,16 +73,19 @@ export class JsonTask<
 
     const taskClass = TaskRegistry.all.get(item.type) as typeof SingleTask | typeof CompoundTask;
     if (!taskClass) throw new Error(`Task type ${item.type} not found`);
+    if (!(taskClass instanceof CompoundTask) && item.subtasks) {
+      throw new TaskConfigurationError("Subgraph is only supported for CompoundTasks");
+    }
 
     const taskConfig: TaskConfig = {
       id: item.id,
       name: item.name,
       provenance: item.provenance ?? {},
     };
-    // @ts-ignore
+    // @ts-ignore TODO: fix this
     const task = new taskClass({}, taskConfig);
-    if (item.subtasks) {
-      (task as CompoundTask).subGraph = this.createSubGraph(item.subtasks);
+    if (task instanceof CompoundTask && item.subtasks) {
+      task.subGraph = this.createSubGraph(item.subtasks);
     }
     return task;
   }
