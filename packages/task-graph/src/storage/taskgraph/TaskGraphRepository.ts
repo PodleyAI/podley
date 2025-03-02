@@ -108,7 +108,7 @@ export abstract class TaskGraphRepository {
       input: item.input ?? {},
       provenance: item.provenance ?? {},
     };
-    const task = new taskClass(taskConfig);
+    const task = new taskClass({}, taskConfig);
     if (item.subgraph) {
       (task as CompoundTask).subGraph = this.createSubGraph(item.subgraph);
     }

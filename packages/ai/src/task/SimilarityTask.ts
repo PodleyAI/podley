@@ -34,10 +34,12 @@ export type SimilarityTaskOutput = {
   score: number[];
 };
 
-export class SimilarityTask extends SingleTask {
+export class SimilarityTask<
+  Input extends SimilarityTaskInput = SimilarityTaskInput,
+  Output extends SimilarityTaskOutput = SimilarityTaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends SingleTask<Input, Output, Config> {
   static readonly type = "SimilarityTask";
-  declare runInputData: SimilarityTaskInput;
-  declare runOutputData: TaskOutput;
   public static inputs: TaskInputDefinition[] = [
     {
       id: "input",
@@ -78,10 +80,6 @@ export class SimilarityTask extends SingleTask {
       isArray: true,
     },
   ] as const;
-
-  constructor(config: TaskConfig & { input?: SimilarityTaskInput } = {}) {
-    super(config);
-  }
 
   async validateItem(valueType: string, item: any): Promise<boolean> {
     if (valueType === "similarity_fn") {
@@ -156,12 +154,12 @@ export class SimilarityTask extends SingleTask {
 }
 TaskRegistry.registerTask(SimilarityTask);
 
-const SimilarityBuilder = (input: SimilarityTaskInput) => {
-  return new SimilarityTask({ input });
-};
-
 export const Similarity = (input: SimilarityTaskInput) => {
-  return SimilarityBuilder(input).run();
+  // if (Array.isArray(input.input) || Array.isArray(input.query)) {
+  //   return new SimilarityCompoundTask(input).run();
+  // } else {
+  return new SimilarityTask(input as SimilarityTaskInput).run();
+  // }
 };
 
 declare module "@ellmers/task-graph" {

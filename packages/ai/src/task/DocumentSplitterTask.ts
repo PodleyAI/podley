@@ -14,6 +14,7 @@ import {
   TaskRegistry,
 } from "@ellmers/task-graph";
 import { Document, DocumentFragment } from "../source/Document";
+
 export type DocumentSplitterTaskInput = {
   parser: "txt" | "md";
   file: Document;
@@ -22,11 +23,12 @@ export type DocumentSplitterTaskOutput = {
   texts: string[];
 };
 
-export class DocumentSplitterTask extends SingleTask {
-  static readonly type: string = "DocumentSplitterTask";
-  static readonly category = "Input";
-  declare runInputData: DocumentSplitterTaskInput;
-  declare runOutputData: DocumentSplitterTaskOutput;
+export class DocumentSplitterTask extends SingleTask<
+  DocumentSplitterTaskInput,
+  DocumentSplitterTaskOutput
+> {
+  public static type = "DocumentSplitterTask";
+  public static category = "Input";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "parser",
@@ -73,12 +75,8 @@ export class DocumentSplitterTask extends SingleTask {
 }
 TaskRegistry.registerTask(DocumentSplitterTask);
 
-const DocumentSplitterBuilder = (input: Partial<DocumentSplitterTaskInput>) => {
-  return new DocumentSplitterTask({ input });
-};
-
 export const DocumentSplitter = (input: DocumentSplitterTaskInput) => {
-  return DocumentSplitterBuilder(input).run();
+  return new DocumentSplitterTask(input).run();
 };
 
 declare module "@ellmers/task-graph" {

@@ -6,11 +6,14 @@
 //    *******************************************************************************
 
 import { SingleTask } from "./SingleTask";
-
+import { TaskConfig, type TaskInput, type TaskOutput } from "./TaskTypes";
 /**
  * Output tasks have side effects, and so need to always run and not be cached
  */
-export class OutputTask extends SingleTask {
-  static readonly category = "Output";
+export class OutputTask<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends SingleTask<Input, Output, Config> {
   static readonly sideeffects = true;
 }

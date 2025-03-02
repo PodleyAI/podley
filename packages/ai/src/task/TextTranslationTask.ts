@@ -35,6 +35,8 @@ export type TextTranslationTaskOutput = {
  * This generates text from a prompt
  */
 export class TextTranslationTask extends AiTask {
+  public static type = "TextTranslationTask";
+  public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "text",
@@ -65,14 +67,6 @@ export class TextTranslationTask extends AiTask {
       valueType: "language",
     },
   ] as const;
-  constructor(config: JobQueueTaskConfig & { input?: TextTranslationTaskInput } = {}) {
-    super(config);
-  }
-  declare runInputData: TextTranslationTaskInput;
-  declare runOutputData: TextTranslationTaskOutput;
-  declare defaults: Partial<TextTranslationTaskInput>;
-  static readonly type = "TextTranslationTask";
-  static readonly category = "Text Model";
 
   async validateItem(valueType: string, item: any) {
     if (valueType == "language") {
@@ -100,7 +94,11 @@ export const TextTranslationCompoundTask = arrayTaskFactory<
 >(TextTranslationTask, ["model", "text"]);
 
 export const TextTranslation = (input: TextTranslationCompoundTaskInput) => {
-  return new TextTranslationCompoundTask({ input }).run();
+  if (Array.isArray(input.model) || Array.isArray(input.text)) {
+    return new TextTranslationCompoundTask(input).run();
+  } else {
+    return new TextTranslationTask(input as TextTranslationTaskInput).run();
+  }
 };
 
 declare module "@ellmers/task-graph" {

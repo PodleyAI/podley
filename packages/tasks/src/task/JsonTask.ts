@@ -17,20 +17,31 @@ import {
   TaskRegistry,
   TaskInputDefinition,
   TaskOutputDefinition,
+  SingleTask,
+  TaskInput,
+  TaskOutput,
+  TaskBase,
 } from "@ellmers/task-graph";
 
-type JsonTaskInput = {
-  json: string;
-};
-type JsonTaskOutput = {
+interface JsonTaskInput extends TaskInput {
+  json?: string;
+}
+
+interface JsonTaskOutput extends TaskOutput {
   output: any;
-};
+}
 
 /**
  * JsonTask is a specialized task that creates and manages task graphs from JSON configurations.
  * It allows dynamic creation of task networks by parsing JSON definitions of tasks and their relationships.
  */
-export class JsonTask extends RegenerativeCompoundTask {
+export class JsonTask<
+  Input extends JsonTaskInput = JsonTaskInput,
+  Output extends JsonTaskOutput = JsonTaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends RegenerativeCompoundTask<Input, Output, Config> {
+  static readonly type = "JsonTask";
+  static readonly category = "Utility";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "json",
@@ -47,14 +58,6 @@ export class JsonTask extends RegenerativeCompoundTask {
     },
   ] as const;
 
-  declare runInputData: JsonTaskInput;
-  declare runOutputData: JsonTaskOutput;
-  declare defaults: Partial<JsonTaskInput>;
-
-  constructor(config: TaskConfig & { input?: JsonTaskInput }) {
-    super(config);
-  }
-
   /**
    * Creates a task instance from a JSON task item configuration
    * Validates required fields and resolves task type from registry
@@ -67,16 +70,16 @@ export class JsonTask extends RegenerativeCompoundTask {
     if (item.provenance && (Array.isArray(item.provenance) || typeof item.provenance !== "object"))
       throw new Error("Task provenance must be an object");
 
-    const taskClass = TaskRegistry.all.get(item.type);
+    const taskClass = TaskRegistry.all.get(item.type) as typeof SingleTask | typeof CompoundTask;
     if (!taskClass) throw new Error(`Task type ${item.type} not found`);
 
-    const taskConfig = {
+    const taskConfig: TaskConfig = {
       id: item.id,
       name: item.name,
-      input: item.input ?? {},
       provenance: item.provenance ?? {},
     };
-    const task = new taskClass(taskConfig);
+    // @ts-ignore
+    const task = new taskClass({}, taskConfig);
     if (item.subtasks) {
       (task as CompoundTask).subGraph = this.createSubGraph(item.subtasks);
     }
@@ -125,19 +128,16 @@ export class JsonTask extends RegenerativeCompoundTask {
     }
     super.regenerateGraph();
   }
-
-  static readonly type = "JsonTask";
-  static readonly category = "Utility";
 }
 
 // Register JsonTask with the task registry
-TaskRegistry.registerTask(JsonTask);
+TaskRegistry.registerTask(JsonTask as any);
 
 /**
  * Convenience function to create and run a JsonTask
  */
 export const Json = (input: JsonTaskInput) => {
-  return new JsonTask({ input }).run();
+  return new JsonTask(input).run();
 };
 
 // Add Json task workflow to Workflow interface
@@ -147,4 +147,4 @@ declare module "@ellmers/task-graph" {
   }
 }
 
-Workflow.prototype.Json = CreateWorkflow(JsonTask);
+Workflow.prototype.Json = CreateWorkflow(JsonTask as any);

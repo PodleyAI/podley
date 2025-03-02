@@ -10,7 +10,7 @@ import { CompoundTask } from "./CompoundTask";
 
 const all = new Map<string, typeof SingleTask | typeof CompoundTask>();
 
-const registerTask = (baseClass: typeof SingleTask | typeof CompoundTask) => {
+const registerTask = (baseClass: any) => {
   all.set(baseClass.type, baseClass);
 };
 

@@ -25,11 +25,9 @@ export type JavaScriptTaskOutput = {
   output: any;
 };
 
-export class JavaScriptTask extends SingleTask {
+export class JavaScriptTask extends SingleTask<JavaScriptTaskInput, JavaScriptTaskOutput> {
   static readonly type = "JavaScriptTask";
   static readonly category = "Utility";
-  declare runInputData: JavaScriptTaskInput;
-  declare runOutputData: TaskOutput;
   public static inputs: TaskInputDefinition[] = [
     {
       id: "code",
@@ -65,7 +63,7 @@ export class JavaScriptTask extends SingleTask {
     return this.runOutputData;
   }
 }
-TaskRegistry.registerTask(JavaScriptTask);
+TaskRegistry.registerTask(JavaScriptTask as any);
 
 export const JavaScript = (input: JavaScriptTaskInput) => {
   return new JavaScriptTask({ input }).run();
@@ -77,4 +75,4 @@ declare module "@ellmers/task-graph" {
   }
 }
 
-Workflow.prototype.JavaScript = CreateWorkflow(JavaScriptTask);
+Workflow.prototype.JavaScript = CreateWorkflow(JavaScriptTask as any);

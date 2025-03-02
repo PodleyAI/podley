@@ -14,6 +14,7 @@ import {
   TaskInputDefinition,
   TaskOutputDefinition,
   TaskInvalidInputError,
+  TaskConfig,
 } from "@ellmers/task-graph";
 import { Job, PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
 
@@ -27,7 +28,11 @@ export type FetchTaskInput = {
   queueName?: string;
 };
 export type FetchTaskOutput = {
-  output?: any;
+  body?: any;
+};
+
+export type FetchTaskConfig = TaskConfig & {
+  queueName?: string;
 };
 
 /**
@@ -63,7 +68,7 @@ export class FetchJob extends Job<FetchTaskInput, FetchTaskOutput> {
       } else if (this.input.response_type === "arraybuffer") {
         result = await response.arrayBuffer();
       }
-      return { output: result };
+      return { body: result };
     } else {
       if (
         response.status === 429 ||
@@ -103,11 +108,13 @@ export class FetchJob extends Job<FetchTaskInput, FetchTaskOutput> {
 /**
  * FetchTask provides a task for fetching data from a URL.
  */
-export class FetchTask extends JobQueueTask {
-  static readonly type: string = "FetchTask";
-  static readonly category = "Input";
-  declare runInputData: FetchTaskInput;
-  declare runOutputData: FetchTaskOutput;
+export class FetchTask<
+  Input extends FetchTaskInput = FetchTaskInput,
+  Output extends FetchTaskOutput = FetchTaskOutput,
+  Config extends FetchTaskConfig = FetchTaskConfig,
+> extends JobQueueTask<Input, Output, Config> {
+  public static type = "FetchTask";
+  public static category = "Input";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "url",
@@ -148,18 +155,22 @@ export class FetchTask extends JobQueueTask {
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
-    { id: "output", name: "Output", valueType: "any" },
+    { id: "body", name: "Body", valueType: "any" },
+    // { id: "json", name: "JSON", valueType: "json" },
+    // { id: "text", name: "Text", valueType: "text" },
+    // { id: "blob", name: "Blob", valueType: "blob" },
+    // { id: "arraybuffer", name: "ArrayBuffer", valueType: "arraybuffer" },
   ] as const;
 
-  constructor(config: JobQueueTaskConfig & { input?: FetchTaskInput } = {}) {
-    config.queueName = config.input?.queueName ?? config.queueName;
+  constructor(input: Input = {} as Input, config: Config = {} as Config) {
+    config.queueName = input?.queueName ?? config.queueName;
 
-    super(config);
+    super(input, config);
     this.jobClass = FetchJob;
   }
 
-  async runReactive(): Promise<FetchTaskOutput> {
-    return this.runOutputData ?? { output: null };
+  async runReactive(): Promise<Output> {
+    return this.runOutputData ?? { body: null };
   }
 
   async validateItem(valueType: string, item: any) {
@@ -201,10 +212,10 @@ export class FetchTask extends JobQueueTask {
   }
 }
 
-TaskRegistry.registerTask(FetchTask);
+TaskRegistry.registerTask(FetchTask as any);
 
 export const Fetch = (input: FetchTaskInput) => {
-  return new FetchTask({ input }).run();
+  return new FetchTask(input).run();
 };
 
 declare module "@ellmers/task-graph" {
@@ -213,4 +224,4 @@ declare module "@ellmers/task-graph" {
   }
 }
 
-Workflow.prototype.Fetch = CreateWorkflow(FetchTask);
+Workflow.prototype.Fetch = CreateWorkflow(FetchTask as any);

@@ -71,15 +71,9 @@ export type TaskEventParameters<Event extends TaskEvents> = EventParameters<
   Event
 >;
 
-export interface TaskInput {
-  [key: string]: any;
-}
-export interface TaskOutput {
-  [key: string]: any;
-}
-export interface Provenance {
-  [key: string]: any;
-}
+export type TaskInput = Record<string, any>;
+export type TaskOutput = Record<string, any>;
+export type Provenance = Record<string, any>;
 
 export interface ITaskSimple {
   readonly isCompound: false;
@@ -93,7 +87,7 @@ export type ITask = ITaskSimple | ITaskCompound;
 
 export type TaskTypeName = string;
 
-export type TaskConfig = Partial<IConfig> & { input?: TaskInput };
+export type TaskConfig = Partial<IConfig>;
 
 // ===============================================================================
 
@@ -109,7 +103,7 @@ export type TaskInputDefinition = {
   readonly name: string;
   readonly valueType: string;
   readonly isArray?: boolean;
-  readonly defaultValue?: unknown;
+  readonly defaultValue?: any;
   readonly optional?: boolean;
 };
 
@@ -120,7 +114,7 @@ export type TaskOutputDefinition = {
   readonly isArray?: boolean;
 };
 
-export type TaskIdType = TaskBase["config"]["id"];
+export type TaskIdType = TaskBase<TaskInput, TaskOutput, TaskConfig>["config"]["id"];
 
 // ===============================================================================
 

@@ -26,7 +26,7 @@ import { TaskError } from "./TaskError";
 /**
  * Core interface that all tasks must implement
  */
-export interface ITask {
+export interface ITask<Input extends TaskInput, Output extends TaskOutput> {
   // Instance properties
   readonly isCompound: boolean;
   readonly config: TaskConfig;
@@ -43,8 +43,8 @@ export interface ITask {
 
   // Runtime data
   defaults: TaskInput;
-  runInputData: TaskInput;
-  runOutputData: TaskOutput;
+  runInputData: Input;
+  runOutputData: Output;
 
   // Event handling
   readonly events: EventEmitter<TaskEventListeners>;
@@ -55,9 +55,9 @@ export interface ITask {
   emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>): void;
 
   // Core task methods
-  run(nodeProvenance: Provenance, repository?: TaskOutputRepository): Promise<TaskOutput>;
-  runFull(): Promise<TaskOutput>;
-  runReactive(): Promise<TaskOutput>;
+  run(nodeProvenance: Provenance, repository?: TaskOutputRepository): Promise<Output>;
+  runFull(): Promise<Output>;
+  runReactive(): Promise<Output>;
   abort(): void;
 
   handleStart(): void;
@@ -66,10 +66,10 @@ export interface ITask {
   handleAbort(): void;
   getProvenance(): TaskInput;
   resetInputData(): void;
-  setInput(input: Partial<TaskInput>): void;
+  setInput(input: Partial<Input>): void;
   validateItem(valueType: string, item: any): Promise<boolean>;
-  validateInputItem(input: Partial<TaskInput>, inputId: keyof TaskInput): Promise<boolean>;
-  validateInputData(input: Partial<TaskInput>): Promise<boolean>;
+  validateInputItem(input: Partial<Input>, inputId: keyof Input): Promise<boolean>;
+  validateInputData(input: Partial<Input>): Promise<boolean>;
   toJSON(): JsonTaskItem;
   toDependencyJSON(): JsonTaskItem;
 }
@@ -77,7 +77,8 @@ export interface ITask {
 /**
  * Interface for tasks that can contain subtasks
  */
-export interface ICompoundTask extends ITask {
+export interface ICompoundTask<Input extends TaskInput, Output extends TaskOutput>
+  extends ITask<Input, Output> {
   readonly isCompound: true;
   readonly subGraph: TaskGraph;
 }
@@ -85,6 +86,7 @@ export interface ICompoundTask extends ITask {
 /**
  * Interface for simple tasks without subtasks
  */
-export interface ISimpleTask extends ITask {
+export interface ISimpleTask<Input extends TaskInput, Output extends TaskOutput>
+  extends ITask<Input, Output> {
   readonly isCompound: false;
 }

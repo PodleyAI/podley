@@ -31,7 +31,9 @@ export type TextSummaryTaskOutput = {
  * This summarizes a piece of text
  */
 
-export class TextSummaryTask extends AiTask {
+export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTaskOutput> {
+  public static type = "TextSummaryTask";
+  public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "text",
@@ -47,14 +49,6 @@ export class TextSummaryTask extends AiTask {
   public static outputs: TaskOutputDefinition[] = [
     { id: "text", name: "Text", valueType: "text" },
   ] as const;
-  constructor(config: JobQueueTaskConfig & { input?: TextSummaryTaskInput } = {}) {
-    super(config);
-  }
-  declare runInputData: TextSummaryTaskInput;
-  declare runOutputData: TextSummaryTaskOutput;
-  declare defaults: Partial<TextSummaryTaskInput>;
-  static readonly type = "TextSummaryTask";
-  static readonly category = "Text Model";
 }
 TaskRegistry.registerTask(TextSummaryTask);
 
@@ -71,7 +65,11 @@ export const TextSummaryCompoundTask = arrayTaskFactory<
 >(TextSummaryTask, ["model", "text"]);
 
 export const TextSummary = (input: TextSummaryCompoundTaskInput) => {
-  return new TextSummaryCompoundTask({ input }).run();
+  if (Array.isArray(input.model) || Array.isArray(input.text)) {
+    return new TextSummaryCompoundTask(input).run();
+  } else {
+    return new TextSummaryTask(input as TextSummaryTaskInput).run();
+  }
 };
 
 declare module "@ellmers/task-graph" {

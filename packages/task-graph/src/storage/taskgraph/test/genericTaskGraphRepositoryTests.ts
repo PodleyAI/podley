@@ -38,9 +38,9 @@ export function runGenericTaskGraphRepositoryTests(
     const id: string = "g1";
     const graph = new TaskGraph();
     const tasks = [
-      new TestTask({ id: "task1" }),
-      new TestTask({ id: "task2" }),
-      new TestTask({ id: "task3" }),
+      new TestTask({}, { id: "task1" }),
+      new TestTask({}, { id: "task2" }),
+      new TestTask({}, { id: "task3" }),
     ];
     const edges: Dataflow[] = [
       new Dataflow("task1", "output1", "task2", "input1"),
@@ -54,6 +54,7 @@ export function runGenericTaskGraphRepositoryTests(
     expect(graph.getDataflow("task2.output2 -> task3.input2")).toBeDefined();
 
     await repository.saveTaskGraph(id, graph);
+
     const retrievedGraph = await repository.getTaskGraph(id);
 
     expect(retrievedGraph?.toJSON()).toEqual(graph?.toJSON());

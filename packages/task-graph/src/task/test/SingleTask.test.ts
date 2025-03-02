@@ -21,12 +21,8 @@ type TestTaskOutput = {
 };
 
 // Create a test implementation of SingleTask
-class TestSingleTask extends SingleTask {
+class TestSingleTask extends SingleTask<TestTaskInput, TestTaskOutput> {
   static readonly type = "TestSingleTask";
-
-  // Declare input/output types
-  declare runInputData: TestTaskInput;
-  declare runOutputData: TestTaskOutput;
 
   // Define input/output definitions
   static readonly inputs = [
@@ -72,7 +68,7 @@ class TestSingleTask extends SingleTask {
 }
 
 // Create a test implementation of SingleTask with controllable behavior for event testing
-class EventTestTask extends SingleTask {
+class EventTestTask extends SingleTask<TestTaskInput, TestTaskOutput> {
   static readonly type = "EventTestTask";
 
   // Control flags for testing
@@ -429,10 +425,10 @@ describe("SingleTask", () => {
         const config = {
           id: "test-id",
           name: "Test Task",
-          input: { testKey: "testValue" },
         };
+        const input = { testKey: "testValue" };
 
-        const task = new SingleTask(config);
+        const task = new SingleTask(input, config);
 
         expect(task.config.id).toBe("test-id");
         expect(task.config.name).toBe("Test Task");

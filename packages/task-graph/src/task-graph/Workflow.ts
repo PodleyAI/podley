@@ -83,7 +83,10 @@ export class Workflow {
 
       // Create and add the new task
       taskIdCounter++;
-      const task = new taskClass({ id: String(taskIdCounter), input });
+      // @ts-expect-error -  TODO: fix
+      const task: SingleTask<I> = new taskClass(input, {
+        id: String(taskIdCounter),
+      }) as SingleTask<I>;
       this.graph.addTask(task);
 
       // Process any pending data flows
@@ -399,8 +402,6 @@ export class Workflow {
 /**
  * Helper function for backward compatibility
  */
-export function CreateWorkflow<I extends TaskInput>(
-  taskClass: typeof CompoundTask | typeof SingleTask
-): CreateWorkflow<I> {
+export function CreateWorkflow<I extends TaskInput>(taskClass: any): CreateWorkflow<I> {
   return Workflow.createWorkflow<I>(taskClass);
 }

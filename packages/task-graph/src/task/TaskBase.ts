@@ -21,7 +21,6 @@ import {
   type TaskEventListener,
   type TaskEventParameters,
   type TaskEventListeners,
-  type IConfig,
   Provenance,
 } from "./TaskTypes";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
@@ -30,20 +29,43 @@ import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } f
 /**
  * Base class for all tasks that implements the ITask interface
  */
-export abstract class TaskBase implements ITask {
-  // Static properties that should be overridden by subclasses
-  static readonly type: TaskTypeName = "TaskBase";
-  static readonly category: string = "Hidden";
-  static readonly sideeffects: boolean = false;
+export abstract class TaskBase<
+  Input extends TaskInput,
+  Output extends TaskOutput,
+  Config extends TaskConfig,
+> implements ITask<Input, Output>
+{
+  //    ========>     Static properties that should be overridden by subclasses       <=======
+  public static readonly type: TaskTypeName = "TaskBase";
+  public static readonly category: string = "Hidden";
+  public static readonly sideeffects: boolean = false;
+  public static readonly inputs: readonly TaskInputDefinition[] = [];
+  public static readonly outputs: readonly TaskOutputDefinition[] = [];
 
-  // Instance properties from static
-  // readonly type: TaskTypeName = (this.constructor as typeof TaskBase).type;
-  // readonly category: string = (this.constructor as typeof TaskBase).category;
-  // readonly sideeffects: boolean = (this.constructor as typeof TaskBase).sideeffects;
+  //    ========>         Instance properties to be overridden by subclasses          <=======
+  abstract readonly isCompound: boolean;
+
+  /**
+   * The defaults for the task. If no overrides at run time, then this would be equal to the
+   * input. resetInputData() will reset inputs to these defaults.
+   */
+  defaults: Partial<Input>;
+  /**
+   * The input to the task at the time of the task run. This takes defaults from construction
+   * time and overrides from run time. It is the input that created the output.
+   */
+  runInputData: Input = {} as Input;
+  /**
+   * The output of the task at the time of the task run. This is the result of the task.
+   * The the defaults and overrides are combined to match the required input of the task.
+   */
+  runOutputData: Output = {} as Output;
+  /**
+   * The configuration of the task. This is the configuration that was used to create the task.
+   */
 
   // Instance properties
-  abstract readonly isCompound: boolean;
-  config: IConfig;
+  config: Config;
   status: TaskStatus = TaskStatus.PENDING;
   progress: number = 0;
   createdAt: Date = new Date();
@@ -54,33 +76,36 @@ export abstract class TaskBase implements ITask {
   // Event handling
   public readonly events = new EventEmitter<TaskEventListeners>();
 
-  constructor(config: TaskConfig = {}) {
-    // Extract input data from config
-    const { input = {}, ...rest } = config;
-    const inputDefaults = this.inputs.reduce<Record<string, any>>((acc, cur) => {
-      if (cur.defaultValue !== undefined) {
-        acc[cur.id] = cur.defaultValue;
-      }
-      return acc;
-    }, {});
-    this.defaults = Object.assign(inputDefaults, input);
+  constructor(
+    callerDefaultInputs: Partial<Input> = {} as Partial<Input>,
+    config: Config = {} as Config
+  ) {
+    const inputDefaults = this.getDefaultInputsFromStaticInputDefinitions();
+    this.defaults = Object.assign(inputDefaults, callerDefaultInputs);
     this.resetInputData();
 
-    // Setup configuration
+    // Setup configuration defaults
     const name = new.target.type || new.target.name;
     this.config = Object.assign(
       {
         id: nanoid(),
         name: name,
       },
-      rest
+      config
     );
     Object.defineProperty(this, "events", { enumerable: false }); // Prevent serialization
   }
 
+  getDefaultInputsFromStaticInputDefinitions(): Partial<Input> {
+    return this.inputs.reduce<Record<string, any>>((acc, cur) => {
+      if (cur.defaultValue !== undefined) {
+        acc[cur.id] = cur.defaultValue;
+      }
+      return acc;
+    }, {}) as Partial<Input>;
+  }
+
   // Input/Output definitions
-  public static inputs: readonly TaskInputDefinition[];
-  public static outputs: readonly TaskOutputDefinition[];
 
   get inputs(): TaskInputDefinition[] {
     return ((this.constructor as typeof TaskBase).inputs as TaskInputDefinition[]) ?? [];
@@ -111,22 +136,6 @@ export abstract class TaskBase implements ITask {
     this.events.emit(name, ...args);
   }
 
-  // Runtime data
-  /**
-   * The defaults for the task. If no overrides at run time, then this would be equal to the
-   * input
-   */
-  defaults: TaskInput;
-  /**
-   * The input to the task at the time of the task run. This takes defaults from construction
-   * time and overrides from run time. It is the input that created the output.
-   */
-  runInputData: TaskInput = {};
-  /**
-   * The output of the task at the time of the task run. This is the result of the task.
-   * The the defaults and overrides are combined to match the required input of the task.
-   */
-  runOutputData: TaskOutput = {};
   abortController: AbortController | undefined;
 
   public abort(): void {
@@ -188,23 +197,24 @@ export abstract class TaskBase implements ITask {
     this.events.emit("progress", progress);
   }
 
-  public getProvenance(): TaskInput {
+  public getProvenance(): Provenance {
     return this.config.provenance ?? {};
   }
 
   public resetInputData(): void {
     // Use deep clone to avoid state leakage
     try {
-      this.runInputData = structuredClone(this.defaults);
+      this.runInputData = structuredClone(this.defaults) as Input;
     } catch (err) {
-      this.runInputData = JSON.parse(JSON.stringify(this.defaults));
+      this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as Input;
     }
   }
 
-  public setInput(input: Partial<TaskInput>): void {
+  public setInput(input: Partial<Input>): void {
     for (const inputdef of this.inputs) {
-      if (input[inputdef.id] !== undefined) {
-        this.runInputData[inputdef.id] = input[inputdef.id];
+      const inputId = inputdef.id as keyof Input;
+      if (input[inputId] !== undefined) {
+        this.runInputData[inputId] = input[inputId];
       }
     }
   }
@@ -263,17 +273,16 @@ export abstract class TaskBase implements ITask {
    * @returns True if the input is valid, otherwise throws an error
    * @throws TaskInvalidInputError if the input is invalid
    */
-  public async validateInputItem(
-    input: Partial<TaskInput>,
-    inputId: keyof TaskInput
-  ): Promise<boolean> {
+  public async validateInputItem(input: Partial<Input>, inputId: keyof Input): Promise<boolean> {
     const classRef = this.constructor as typeof TaskBase;
     const inputdef = this.inputs.find((def) => def.id === inputId);
     if (!inputdef) {
-      throw new TaskInvalidInputError(`validateInputItem: Unknown input id: ${inputId}`);
+      throw new TaskInvalidInputError(`validateInputItem: Unknown input id: ${inputId as string}`);
     }
     if (typeof input !== "object") {
-      throw new TaskInvalidInputError(`validateInputItem: Input is not an object: ${inputId}`);
+      throw new TaskInvalidInputError(
+        `validateInputItem: Input is not an object: ${inputId as string}`
+      );
     }
     if (input[inputId] === undefined) {
       if (inputdef.defaultValue !== undefined) {
@@ -281,16 +290,16 @@ export abstract class TaskBase implements ITask {
       } else {
         if (!inputdef.optional && inputdef.valueType !== "any") {
           throw new TaskInvalidInputError(
-            `No default value for '${inputId}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
+            `No default value for '${inputId as string}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
           );
         }
       }
     }
 
     if (inputdef.isArray && !Array.isArray(input[inputId])) {
-      input[inputId] = [input[inputId]];
+      input[inputId] = [input[inputId]] as any;
     }
-    const inputlist: any[] = inputdef.isArray ? input[inputId] : [input[inputId]];
+    const inputlist: any[] = inputdef.isArray ? (input[inputId] as any[]) : [input[inputId]];
 
     const validationPromises = inputlist.map((item) =>
       this.validateItem(inputdef.valueType as string, item)
@@ -305,7 +314,7 @@ export abstract class TaskBase implements ITask {
    * @returns True if the input is valid, otherwise throws an error
    * @throws TaskInvalidInputError if the input is invalid
    */
-  public async validateInputData(input: Partial<TaskInput>): Promise<boolean> {
+  public async validateInputData(input: Partial<Input>): Promise<boolean> {
     for (const inputdef of this.inputs) {
       if (inputdef.optional && input[inputdef.id] === undefined) continue;
       await this.validateInputItem(input, inputdef.id);
@@ -319,10 +328,7 @@ export abstract class TaskBase implements ITask {
   /**
    * Run will runFull() and return the output, wrapping the task in a try/catch block.
    */
-  async run(
-    nodeProvenance: Provenance = {},
-    repository?: TaskOutputRepository
-  ): Promise<TaskOutput> {
+  async run(nodeProvenance: Provenance = {}, repository?: TaskOutputRepository): Promise<Output> {
     this.handleStart();
     this.nodeProvenance = nodeProvenance;
     this.outputCache = repository;
@@ -351,7 +357,7 @@ export abstract class TaskBase implements ITask {
    * Runs the full task
    * @returns The output of the task
    */
-  public abstract runFull(): Promise<TaskOutput>;
+  public abstract runFull(): Promise<Output>;
 
   /**
    * Runs the task "reactively", defaults to no-op
@@ -359,7 +365,7 @@ export abstract class TaskBase implements ITask {
    * be light weight.
    * @returns The output of the task
    */
-  public abstract runReactive(): Promise<TaskOutput>;
+  public abstract runReactive(): Promise<Output>;
 
   /**
    * Converts the task to a JSON format suitable for dependency tracking

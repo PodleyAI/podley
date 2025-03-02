@@ -30,7 +30,9 @@ export type TextGenerationTaskOutput = {
 /**
  * This generates text from a prompt
  */
-export class TextGenerationTask extends AiTask {
+export class TextGenerationTask extends AiTask<TextGenerationTaskInput, TextGenerationTaskOutput> {
+  public static type = "TextGenerationTask";
+  public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "prompt",
@@ -46,14 +48,6 @@ export class TextGenerationTask extends AiTask {
   public static outputs: TaskOutputDefinition[] = [
     { id: "text", name: "Text", valueType: "text" },
   ] as const;
-  constructor(config: JobQueueTaskConfig & { input?: TextGenerationTaskInput } = {}) {
-    super(config);
-  }
-  declare runInputData: TextGenerationTaskInput;
-  declare runOutputData: TextGenerationTaskOutput;
-  declare defaults: Partial<TextGenerationTaskInput>;
-  static readonly type = "TextGenerationTask";
-  static readonly category = "Text Model";
 }
 TaskRegistry.registerTask(TextGenerationTask);
 
@@ -81,7 +75,11 @@ export const TextGenerationCompoundTask = arrayTaskFactory<
  * @returns Promise resolving to the generated text output(s)
  */
 export const TextGeneration = (input: TextGenerationCompoundTaskInput) => {
-  return new TextGenerationCompoundTask({ input }).run();
+  if (Array.isArray(input.model) || Array.isArray(input.prompt)) {
+    return new TextGenerationCompoundTask(input).run();
+  } else {
+    return new TextGenerationTask(input as TextGenerationTaskInput).run();
+  }
 };
 
 declare module "@ellmers/task-graph" {

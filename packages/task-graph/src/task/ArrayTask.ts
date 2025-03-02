@@ -16,7 +16,7 @@ import {
   JsonTaskItem,
 } from "./TaskTypes";
 import { SingleTask } from "./SingleTask";
-import { CompoundTask, RegenerativeCompoundTask } from "./CompoundTask";
+import { CompoundTask, CompoundTaskOutput, RegenerativeCompoundTask } from "./CompoundTask";
 import { TaskRegistry } from "./TaskRegistry";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { GraphSingleResult } from "../task-graph/TaskGraphRunner";
@@ -50,16 +50,16 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
  * @param input Array of objects to process
  * @returns Object with arrays of values for each property
  */
-function collectPropertyValues<T extends object>(input: T[]): { [K in keyof T]?: T[K][] } {
-  const output: { [K in keyof T]?: T[K][] } = {};
+function collectPropertyValues<Input>(input: Input[]): { [K in keyof Input]: Input[K][] } {
+  const output = {} as { [K in keyof Input]: Input[K][] };
 
   (input || []).forEach((item) => {
-    (Object.keys(item) as Array<keyof T>).forEach((key) => {
-      const value = item[key];
-      if (output[key]) {
-        output[key]!.push(value);
+    Object.keys(item as object).forEach((key) => {
+      const value = item[key as keyof Input];
+      if (output[key as keyof Input]) {
+        output[key as keyof Input].push(value);
       } else {
-        output[key] = [value];
+        output[key as keyof Input] = [value];
       }
     });
   });
@@ -115,7 +115,7 @@ function convertMultipleToArray<D extends TaskInputDefinition | TaskOutputDefini
  * @param inputMakeArray Keys of properties to generate combinations for
  * @returns Array of input objects with all possible combinations
  */
-function generateCombinations<T extends TaskInput>(input: T, inputMakeArray: (keyof T)[]): T[] {
+function generateCombinations<T, K extends keyof T>(input: T, inputMakeArray: K[]): T[] {
   // Helper function to check if a property is an array
   const isArray = (value: any): value is Array<any> => Array.isArray(value);
 
@@ -142,17 +142,19 @@ function generateCombinations<T extends TaskInput>(input: T, inputMakeArray: (ke
   }
 
   // Build objects based on the combinations
-  return combinations.map((combination) => {
+  const combos = combinations.map((combination) => {
     const result = { ...input }; // Start with a shallow copy of the input
 
     // Set values from the arrays based on the current combination
     combination.forEach((valueIndex, arrayIndex) => {
       const key = inputMakeArray[arrayIndex];
-      if (isArray(input[key])) result[key as keyof T] = input[key][valueIndex];
+      if (isArray(input[key])) result[key] = input[key][valueIndex];
     });
 
     return result;
   });
+
+  return combos;
 }
 
 /**
@@ -165,10 +167,13 @@ function generateCombinations<T extends TaskInput>(input: T, inputMakeArray: (ke
  */
 export function arrayTaskFactory<
   PluralInputType extends TaskInput = TaskInput,
-  PluralOutputType extends TaskOutput = TaskOutput,
+  PluralOutputType extends CompoundTaskOutput = CompoundTaskOutput,
   SingleOutputType extends TaskOutput = TaskOutput,
+  ArrayConfig extends TaskConfig = TaskConfig,
 >(
-  taskClass: typeof SingleTask | typeof CompoundTask,
+  taskClass:
+    | typeof SingleTask<PluralInputType, PluralOutputType, ArrayConfig>
+    | typeof CompoundTask<PluralInputType, PluralOutputType, ArrayConfig>,
   inputMakeArray: Array<keyof PluralInputType>,
   name?: string
 ) {
@@ -185,24 +190,20 @@ export function arrayTaskFactory<
    * A task class that handles array-based processing by creating subtasks for each combination of inputs
    * Extends RegenerativeCompoundTask to manage a collection of child tasks running in parallel
    */
-  class ArrayTask extends RegenerativeCompoundTask {
+  class ArrayTask<
+    Input extends PluralInputType = PluralInputType,
+    Output extends PluralOutputType = PluralOutputType,
+    Config extends ArrayConfig = ArrayConfig,
+  > extends RegenerativeCompoundTask<Input, Output, Config> {
     static readonly type: TaskTypeName = name!;
     static readonly runtype = taskClass.type;
     static readonly category = taskClass.category;
     static readonly sideeffects = taskClass.sideeffects;
-    declare runInputData: PluralInputType;
-    declare runOutputData: PluralOutputType;
-    declare defaults: Partial<PluralInputType>;
 
     itemClass = taskClass;
 
     static inputs = inputs;
     static override outputs = outputs;
-
-    constructor(config: TaskConfig & { input?: Partial<PluralInputType> } = {}) {
-      super(config);
-      this.regenerateGraph();
-    }
 
     /**
      * Regenerates the task graph by creating child tasks for each input combination
@@ -211,9 +212,14 @@ export function arrayTaskFactory<
     regenerateGraph() {
       //TODO: only regenerate if we need to
       this.subGraph = new TaskGraph();
-      const combinations = generateCombinations(this.runInputData, inputMakeArray);
+      const combinations = generateCombinations<Input, keyof Input>(
+        this.runInputData,
+        inputMakeArray as (keyof Input)[]
+      );
       combinations.forEach((input, index) => {
-        const current = new taskClass({ id: this.config.id + "-child-" + (index + 1), input });
+        const current = new taskClass(input, {
+          id: this.config.id + "-child-" + (index + 1),
+        } as ArrayConfig);
         this.subGraph.addTask(current);
       });
       super.regenerateGraph();
@@ -223,11 +229,14 @@ export function arrayTaskFactory<
      * Runs the task reactively, collecting outputs from all child tasks into arrays
      * @returns Combined output with arrays of values from all child tasks
      */
-    async runReactive(): Promise<PluralOutputType> {
+    async runReactive(): Promise<Output> {
       const runDataOut = await super.runReactive();
-      this.runOutputData = collectPropertyValues<SingleOutputType>(
-        runDataOut.outputs
-      ) as PluralOutputType;
+      if (runDataOut.outputs) {
+        const collected = collectPropertyValues<SingleOutputType>(
+          runDataOut.outputs as SingleOutputType[]
+        );
+        this.runOutputData = collected as unknown as Output;
+      }
       return this.runOutputData;
     }
 
@@ -235,13 +244,13 @@ export function arrayTaskFactory<
      * Runs the task synchronously, collecting outputs from all child tasks into arrays
      * @returns Combined output with arrays of values from all child tasks
      */
-    async runFull(): Promise<TaskOutput> {
+    async runFull(): Promise<Output> {
       const runDataOut = await super.runFull();
-      const outputs = runDataOut.outputs.map(
-        (result: GraphSingleResult) => result.data
+      const outputs = (runDataOut.outputs ?? []).map(
+        (result: any) => result.data as SingleOutputType
       ) as SingleOutputType[];
-      const results = collectPropertyValues<SingleOutputType>(outputs);
-      return results as TaskOutput;
+      const collected = collectPropertyValues<SingleOutputType>(outputs);
+      return collected as unknown as Output;
     }
 
     toJSON(): JsonTaskItem {
@@ -259,7 +268,8 @@ export function arrayTaskFactory<
     }
   }
 
-  TaskRegistry.registerTask(ArrayTask);
+  // Use type assertion to make TypeScript accept the registration
+  TaskRegistry.registerTask(ArrayTask as unknown as typeof CompoundTask);
 
   return ArrayTask;
 }

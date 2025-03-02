@@ -21,13 +21,6 @@ export interface JobQueueTaskConfig extends TaskConfig {
 }
 
 /**
- * Configuration interface for job queue tasks with ids
- */
-interface JobQueueTaskWithIdsConfig extends JobQueueTaskConfig {
-  id: unknown;
-}
-
-/**
  * Event listeners for job queue tasks
  */
 export type JobQueueTaskEventListeners = Omit<TaskEventListeners, "progress"> & {
@@ -37,21 +30,24 @@ export type JobQueueTaskEventListeners = Omit<TaskEventListeners, "progress"> & 
 /**
  * Base class for job queue tasks
  */
-export abstract class JobQueueTask extends SingleTask {
+export abstract class JobQueueTask<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends JobQueueTaskConfig = JobQueueTaskConfig,
+> extends SingleTask<Input, Output, Config> {
   static readonly type: string = "JobQueueTask";
   static canRunDirectly = true;
 
   public jobClass: any;
 
-  declare config: JobQueueTaskWithIdsConfig;
   declare events: EventEmitter<JobQueueTaskEventListeners>;
 
-  constructor(config: JobQueueTaskConfig) {
-    super(config);
-    this.jobClass = Job<TaskInput, TaskOutput>;
+  constructor(input: Input = {} as Input, config: Config = {} as Config) {
+    super(input, config);
+    this.jobClass = Job<Input, Output>;
   }
 
-  async runFull(): Promise<TaskOutput> {
+  async runFull(): Promise<Output> {
     let cleanup: () => void = () => {};
 
     try {
@@ -83,7 +79,7 @@ export abstract class JobQueueTask extends SingleTask {
         this.runOutputData = await queue.waitFor(jobId);
       }
 
-      this.runOutputData ??= {};
+      this.runOutputData ??= {} as Output;
       this.runOutputData = await this.runReactive();
 
       return this.runOutputData;

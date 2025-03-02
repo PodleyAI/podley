@@ -25,9 +25,9 @@ describe("TaskGraph", () => {
   beforeEach(() => {
     graph = new TaskGraph();
     tasks = [
-      new TestTask({ id: "task1" }),
-      new TestTask({ id: "task2" }),
-      new TestTask({ id: "task3" }),
+      new TestTask({}, { id: "task1" }),
+      new TestTask({}, { id: "task2" }),
+      new TestTask({}, { id: "task3" }),
     ];
   });
 

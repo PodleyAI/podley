@@ -8,24 +8,30 @@
 import { TaskGraph, type TaskGraphItemJson } from "../task-graph/TaskGraph";
 import { TaskGraphRunner } from "../task-graph/TaskGraphRunner";
 import type { ICompoundTask } from "./ITask";
-import {
-  type TaskTypeName,
-  type TaskOutput,
-  type JsonTaskItem,
-  type TaskConfig,
-} from "./TaskTypes";
+import type { TaskTypeName, TaskInput, TaskOutput, JsonTaskItem, TaskConfig } from "./TaskTypes";
 import { TaskBase } from "./TaskBase";
+
+export type CompoundTaskOutput = {
+  outputs?: TaskOutput[];
+  [key: string]: TaskOutput[] | undefined;
+};
 
 /**
  * Represents a compound task, which is a task that contains other tasks.
  * This is the base class for all compound tasks that manage subtasks.
  */
-export class CompoundTask extends TaskBase implements ICompoundTask {
+export class CompoundTask<
+    Input extends TaskInput = TaskInput,
+    Output extends CompoundTaskOutput = CompoundTaskOutput,
+    Config extends TaskConfig = TaskConfig,
+  >
+  extends TaskBase<Input, Output, Config>
+  implements ICompoundTask<Input, Output>
+{
   static readonly type: TaskTypeName = "CompoundTask";
   static readonly category: string = "Hidden";
   static readonly sideeffects: boolean = false;
 
-  declare runOutputData: TaskOutput;
   readonly isCompound = true;
 
   public _subGraph: TaskGraph | null = null;
@@ -63,7 +69,7 @@ export class CompoundTask extends TaskBase implements ICompoundTask {
    * @param repository The repository to use for caching task outputs
    * @returns The output of the compound task
    */
-  public async runFull(): Promise<TaskOutput> {
+  public async runFull(): Promise<Output> {
     const runner = new TaskGraphRunner(this.subGraph, this.outputCache);
     this.runOutputData.outputs = await runner.runGraph(
       this.nodeProvenance,
@@ -75,7 +81,7 @@ export class CompoundTask extends TaskBase implements ICompoundTask {
   /**
    * Runs the compound all its subtasks reactively
    */
-  public async runReactive(): Promise<TaskOutput> {
+  public async runReactive(): Promise<Output> {
     const runner = new TaskGraphRunner(this.subGraph);
     this.runOutputData.outputs = await runner.runGraphReactive();
     return this.runOutputData;
@@ -102,10 +108,14 @@ export class CompoundTask extends TaskBase implements ICompoundTask {
  * Represents a regenerative compound task, which is a task that contains other tasks
  * and can regenerate its subtasks.
  */
-export class RegenerativeCompoundTask extends CompoundTask {
+export class RegenerativeCompoundTask<
+  Input extends TaskInput = TaskInput,
+  Output extends CompoundTaskOutput = CompoundTaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends CompoundTask<Input, Output, Config> {
   static readonly type: TaskTypeName = "RegenerativeCompoundTask";
-  constructor(config: TaskConfig) {
-    super(config);
+  constructor(input: Input = {} as Input, config: Config = {} as Config) {
+    super(input, config);
     this.regenerateGraph();
   }
   /**
