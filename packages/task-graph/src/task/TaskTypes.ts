@@ -100,7 +100,7 @@ export type TaskEventListeners = {
   error: (error: TaskError) => void;
 
   /** Fired when a task reports progress */
-  progress: (progress: number) => void;
+  progress: (progress: number, message?: string, ...args: any[]) => void;
 
   /** Fired when a regenerative task regenerates its graph */
   regenerate: () => void;

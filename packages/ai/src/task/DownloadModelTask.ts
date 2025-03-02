@@ -139,7 +139,7 @@ export class DownloadModelTask<
     } else {
       this.progress = progress;
     }
-    this.events.emit("progress", this.progress, message, details);
+    this.emit("progress", this.progress, message, details);
   }
 
   handleStart(): void {

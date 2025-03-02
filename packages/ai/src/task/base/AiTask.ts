@@ -13,9 +13,9 @@ import {
   getTaskQueueRegistry,
   JobQueueTask,
   JobQueueTaskConfig,
-  type TaskOutput,
   type TaskInput,
   TaskInvalidInputError,
+  type TaskOutput,
 } from "@ellmers/task-graph";
 import { AiJob } from "../../job/AiJob";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
@@ -42,6 +42,10 @@ export class AiTask<
     super(input, config);
     this.jobClass = AiJob<Input, Output>;
   }
+
+  // ========================================================================
+  // Job creation
+  // ========================================================================
 
   /**
    * Creates a new Job instance for the task

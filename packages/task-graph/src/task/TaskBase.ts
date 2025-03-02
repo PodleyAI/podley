@@ -366,12 +366,8 @@ export abstract class TaskBase<
    */
   public handleProgress(progress: number, ...args: any[]): void {
     this.progress = progress;
-    this.events.emit("progress", progress);
+    this.events.emit("progress", progress, ...args);
   }
-
-  // ========================================================================
-  // Task execution methods
-  // ========================================================================
 
   /**
    * Runs the task and returns the output
@@ -405,6 +401,10 @@ export abstract class TaskBase<
       throw err;
     }
   }
+
+  // ========================================================================
+  // Task execution methods
+  // ========================================================================
 
   /**
    * Runs the full task implementation

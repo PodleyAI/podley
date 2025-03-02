@@ -6,29 +6,38 @@
 //    *******************************************************************************
 
 import { getTaskQueueRegistry } from "./TaskQueueRegistry";
-import { TaskConfig, TaskOutput, TaskEventListeners, TaskStatus, TaskInput } from "./TaskTypes";
+import { TaskConfig, TaskOutput, TaskEventListeners, TaskInput } from "./TaskTypes";
 import { SingleTask } from "./SingleTask";
 import { EventEmitter } from "@ellmers/util";
 import { Job } from "@ellmers/job-queue";
 import { TaskConfigurationError } from "./TaskError";
 
 /**
- * Configuration interface for job queue tasks
+ * Configuration interface for JobQueueTask.
+ * Extends the base TaskConfig with job queue specific properties.
  */
 export interface JobQueueTaskConfig extends TaskConfig {
+  /** Name of the queue to use for this task */
   queueName?: string;
-  currentJobId?: unknown;
+  /** ID of the current job being processed */
+  currentJobId?: string | unknown;
 }
 
 /**
- * Event listeners for job queue tasks
+ * Extended event listeners for JobQueueTask.
+ * Adds progress event handling to base task event listeners.
  */
 export type JobQueueTaskEventListeners = Omit<TaskEventListeners, "progress"> & {
   progress: (progress: number, message: string, details: Record<string, any> | null) => void;
 };
 
 /**
- * Base class for job queue tasks
+ * Abstract base class for tasks that operate within a job queue.
+ * Provides functionality for managing job execution, progress tracking, and queue integration.
+ *
+ * @template Input - Type of input data for the task
+ * @template Output - Type of output data produced by the task
+ * @template Config - Type of configuration object for the task
  */
 export abstract class JobQueueTask<
   Input extends TaskInput = TaskInput,

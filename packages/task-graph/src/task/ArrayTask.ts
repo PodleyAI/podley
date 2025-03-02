@@ -273,6 +273,8 @@ export function arrayTaskFactory<
     declare abortController: AbortController;
     declare nodeProvenance: Provenance;
     declare outputCache: TaskOutputRepository;
+    declare queueName: string;
+    declare currentJobId: string;
   }
 
   // Use type assertion to make TypeScript accept the registration
