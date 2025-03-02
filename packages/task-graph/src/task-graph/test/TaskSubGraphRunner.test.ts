@@ -18,6 +18,7 @@ import {
 import { SingleTask } from "../../task/SingleTask";
 import { Task, TaskOutput, TaskStatus } from "../../task/TaskTypes";
 import { TaskAbortedError, TaskErrorGroup, TaskFailedError } from "../../task/TaskError";
+import { ITask } from "../../task/ITask";
 
 type TestSquareTaskInput = {
   input: number;
@@ -49,7 +50,9 @@ class TestSquareTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutpu
 
 export const TestSquareMultiInputTask = arrayTaskFactory<
   ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>
+  ConvertAllToArrays<TestSquareTaskOutput>,
+  TestSquareTaskInput,
+  TestSquareTaskOutput
 >(TestSquareTask, ["input"]);
 
 type TestDoubleTaskInput = {
@@ -124,7 +127,7 @@ describe("TaskSubGraphRunner", () => {
   });
 
   describe("runGraph array input", () => {
-    let nodes: Task[];
+    let nodes: ITask[];
     beforeEach(() => {
       nodes = [
         new TestSquareMultiInputTask({ input: [6, 7] }, { id: "task0" }),

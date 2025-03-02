@@ -71,7 +71,9 @@ type TextQuestionAnswerCompoundTaskInput = ConvertSomeToOptionalArray<
 export const TextQuestionAnswerCompoundTask = arrayTaskFactory<
   TextQuestionAnswerCompoundTaskInput,
   TextQuestionAnswerCompoundTaskOutput,
-  TextQuestionAnswerTaskOutput
+  TextQuestionAnswerTaskInput,
+  TextQuestionAnswerTaskOutput,
+  JobQueueTaskConfig
 >(TextQuestionAnswerTask, ["model", "context", "question"]);
 
 export const TextQuestionAnswer = (input: TextQuestionAnswerCompoundTaskInput) => {

@@ -17,10 +17,8 @@ import {
   TaskRegistry,
   TaskInputDefinition,
   TaskOutputDefinition,
-  SingleTask,
   TaskInput,
   TaskOutput,
-  TaskBase,
   TaskConfigurationError,
 } from "@ellmers/task-graph";
 
@@ -71,7 +69,7 @@ export class JsonTask<
     if (item.provenance && (Array.isArray(item.provenance) || typeof item.provenance !== "object"))
       throw new Error("Task provenance must be an object");
 
-    const taskClass = TaskRegistry.all.get(item.type) as typeof SingleTask | typeof CompoundTask;
+    const taskClass = TaskRegistry.all.get(item.type);
     if (!taskClass) throw new Error(`Task type ${item.type} not found`);
     if (!(taskClass instanceof CompoundTask) && item.subtasks) {
       throw new TaskConfigurationError("Subgraph is only supported for CompoundTasks");
@@ -135,7 +133,7 @@ export class JsonTask<
 }
 
 // Register JsonTask with the task registry
-TaskRegistry.registerTask(JsonTask as any);
+TaskRegistry.registerTask(JsonTask);
 
 /**
  * Convenience function to create and run a JsonTask
@@ -151,4 +149,4 @@ declare module "@ellmers/task-graph" {
   }
 }
 
-Workflow.prototype.Json = CreateWorkflow(JsonTask as any);
+Workflow.prototype.Json = CreateWorkflow(JsonTask);

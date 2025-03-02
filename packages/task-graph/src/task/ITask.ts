@@ -23,23 +23,50 @@ import type {
 } from "./TaskTypes";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskError } from "./TaskError";
+
+interface ITaskStaticProperties {
+  type: string;
+  category: string;
+  sideeffects: boolean;
+  inputs: readonly TaskInputDefinition[];
+  outputs: readonly TaskOutputDefinition[];
+}
+
+// Define the constructor type separately
+type ITaskConstructorType<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> = new (input: Input, config: Config) => ITask<Input, Output, Config>;
+
+// Combine the constructor type with the static properties
+export type ITaskConstructor<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> = ITaskConstructorType<Input, Output, Config> & ITaskStaticProperties;
+
 /**
  * Core interface that all tasks must implement
  */
-export interface ITask<Input extends TaskInput, Output extends TaskOutput> {
+export interface ITask<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> {
+  // getters for static properties
+  get inputs(): TaskInputDefinition[];
+  get outputs(): TaskOutputDefinition[];
+
   // Instance properties
   readonly isCompound: boolean;
-  readonly config: TaskConfig;
+  readonly config: Config;
   status: TaskStatus;
   progress: number;
   createdAt: Date;
   startedAt?: Date;
   completedAt?: Date;
   error?: TaskError;
-
-  // Input/Output definitions
-  readonly inputs: TaskInputDefinition[];
-  readonly outputs: TaskOutputDefinition[];
 
   // Runtime data
   defaults: TaskInput;
@@ -64,6 +91,7 @@ export interface ITask<Input extends TaskInput, Output extends TaskOutput> {
   handleComplete(): void;
   handleError(err: any): void;
   handleAbort(): void;
+  handleProgress(progress: number, ...args: any[]): void;
   getProvenance(): TaskInput;
   resetInputData(): void;
   setInput(input: Partial<Input>): void;
@@ -77,8 +105,11 @@ export interface ITask<Input extends TaskInput, Output extends TaskOutput> {
 /**
  * Interface for tasks that can contain subtasks
  */
-export interface ICompoundTask<Input extends TaskInput, Output extends TaskOutput>
-  extends ITask<Input, Output> {
+export interface ICompoundTask<
+  Input extends TaskInput,
+  Output extends TaskOutput,
+  Config extends TaskConfig,
+> extends ITask<Input, Output, Config> {
   readonly isCompound: true;
   readonly subGraph: TaskGraph;
 }
@@ -86,7 +117,10 @@ export interface ICompoundTask<Input extends TaskInput, Output extends TaskOutpu
 /**
  * Interface for simple tasks without subtasks
  */
-export interface ISimpleTask<Input extends TaskInput, Output extends TaskOutput>
-  extends ITask<Input, Output> {
+export interface ISimpleTask<
+  Input extends TaskInput,
+  Output extends TaskOutput,
+  Config extends TaskConfig,
+> extends ITask<Input, Output, Config> {
   readonly isCompound: false;
 }

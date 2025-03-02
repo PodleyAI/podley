@@ -186,10 +186,13 @@ export class DownloadModelTask<
 TaskRegistry.registerTask(DownloadModelTask);
 
 type DownloadModelCompoundTaskInput = ConvertSomeToOptionalArray<DownloadModelTaskInput, "model">;
+type DownloadModelCompoundTaskOutput = ConvertAllToArrays<DownloadModelTaskOutput>;
 export const DownloadModelCompoundTask = arrayTaskFactory<
   DownloadModelCompoundTaskInput,
-  ConvertAllToArrays<DownloadModelTaskOutput>,
-  DownloadModelTaskOutput
+  DownloadModelCompoundTaskOutput,
+  DownloadModelTaskInput,
+  DownloadModelTaskOutput,
+  JobQueueTaskConfig
 >(DownloadModelTask, ["model"]);
 
 export const DownloadModel = (input: DownloadModelCompoundTaskInput) => {
@@ -204,7 +207,7 @@ declare module "@ellmers/task-graph" {
   interface Workflow {
     DownloadModel: CreateWorkflow<
       DownloadModelCompoundTaskInput,
-      DownloadModelTaskOutput,
+      DownloadModelCompoundTaskOutput,
       TaskConfig
     >;
   }

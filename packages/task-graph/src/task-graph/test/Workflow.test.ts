@@ -9,13 +9,13 @@ import { describe, expect, it, beforeEach, afterEach, spyOn } from "bun:test";
 import { SingleTask } from "../../task/SingleTask";
 import { CompoundTask } from "../../task/CompoundTask";
 import { TaskOutputRepository } from "../../storage/taskoutput/TaskOutputRepository";
-import { TaskInputDefinition, TaskOutputDefinition } from "../../task/TaskTypes";
+import { TaskInputDefinition, TaskOutputDefinition, TaskConfig } from "../../task/TaskTypes";
 import { TaskAbortedError, TaskError, WorkflowError } from "../../task/TaskError";
 import { CreateWorkflow, Workflow } from "../Workflow";
 import { sleep } from "@ellmers/util";
 
 // Mock task classes for testing
-class TestSingleTask extends SingleTask {
+class TestSingleTask extends SingleTask<{ input: string }, { output: string }> {
   static type = "TestSingleTask";
   declare runInputData: { input: string };
   declare runOutputData: { output: string };
@@ -28,7 +28,7 @@ class TestSingleTask extends SingleTask {
   }
 }
 
-class TestOutputTask extends SingleTask {
+class TestOutputTask extends SingleTask<{ input: string }, { customOutput: string }> {
   static type = "TestOutputTask";
   declare runInputData: { input: string };
   declare runOutputData: { customOutput: string };
@@ -43,7 +43,7 @@ class TestOutputTask extends SingleTask {
   }
 }
 
-class TestInputTask extends SingleTask {
+class TestInputTask extends SingleTask<{ customInput: string }, { output: string }> {
   static type = "TestInputTask";
   declare runInputData: { customInput: string };
   declare runOutputData: { output: string };
@@ -86,11 +86,11 @@ class LongRunningTask extends SingleTask {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    TestSingleTask: CreateWorkflow<{ input: string }>;
-    TestOutputTask: CreateWorkflow<{ input: string }>;
-    TestInputTask: CreateWorkflow<{ customInput: string }>;
-    FailingTask: CreateWorkflow<{}>;
-    LongRunningTask: CreateWorkflow<{}>;
+    TestSingleTask: CreateWorkflow<{ input: string }, { output: string }, TaskConfig>;
+    TestOutputTask: CreateWorkflow<{ input: string }, { customOutput: string }, TaskConfig>;
+    TestInputTask: CreateWorkflow<{ customInput: string }, { output: string }, TaskConfig>;
+    FailingTask: CreateWorkflow<{}, {}, TaskConfig>;
+    LongRunningTask: CreateWorkflow<{}, {}, TaskConfig>;
   }
 }
 
@@ -100,16 +100,20 @@ Workflow.prototype.TestInputTask = CreateWorkflow(TestInputTask);
 Workflow.prototype.FailingTask = CreateWorkflow(FailingTask);
 Workflow.prototype.LongRunningTask = CreateWorkflow(LongRunningTask);
 
+const colsoleError = globalThis.console.error;
+
 describe("Workflow", () => {
   let workflow: Workflow;
   let repository: TaskOutputRepository;
 
   beforeEach(() => {
     workflow = new Workflow();
+    globalThis.console.error = () => {};
   });
 
   afterEach(() => {
     workflow.reset();
+    globalThis.console.error = colsoleError;
   });
 
   describe("constructor", () => {
@@ -127,7 +131,9 @@ describe("Workflow", () => {
 
   describe("createWorkflow", () => {
     it("should create a helper function for adding tasks", () => {
-      const addTestTask = CreateWorkflow<{ input: string }>(TestSingleTask);
+      const addTestTask = CreateWorkflow<{ input: string }, { output: string }, TaskConfig>(
+        TestSingleTask
+      );
 
       expect(addTestTask).toBeInstanceOf(Function);
       // @ts-ignore
@@ -137,7 +143,11 @@ describe("Workflow", () => {
     });
 
     it("should add a task to the workflow when called", () => {
-      const addTestTask = Workflow.createWorkflow<{ input: string }>(TestSingleTask);
+      const addTestTask = Workflow.createWorkflow<
+        { input: string },
+        { output: string },
+        TaskConfig
+      >(TestSingleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
 
@@ -206,7 +216,11 @@ describe("Workflow", () => {
 
   describe("toJSON and toDependencyJSON", () => {
     it("should convert the task graph to JSON", () => {
-      const addTestTask = Workflow.createWorkflow<{ input: string }>(TestSingleTask);
+      const addTestTask = Workflow.createWorkflow<
+        { input: string },
+        { output: string },
+        TaskConfig
+      >(TestSingleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
 
@@ -218,7 +232,11 @@ describe("Workflow", () => {
     });
 
     it("should convert the task graph to dependency JSON", () => {
-      const addTestTask = Workflow.createWorkflow<{ input: string }>(TestSingleTask);
+      const addTestTask = Workflow.createWorkflow<
+        { input: string },
+        { output: string },
+        TaskConfig
+      >(TestSingleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
 
@@ -231,7 +249,11 @@ describe("Workflow", () => {
 
   describe("parallel", () => {
     it("should create a compound task with parallel workflows", () => {
-      const addTestTask = Workflow.createWorkflow<{ input: string }>(TestSingleTask);
+      const addTestTask = Workflow.createWorkflow<
+        { input: string },
+        { output: string },
+        TaskConfig
+      >(TestSingleTask);
 
       workflow.parallel(
         (w) => addTestTask.call(w, { input: "test1" }),
@@ -248,9 +270,16 @@ describe("Workflow", () => {
 
   describe("rename", () => {
     it("should rename an output to a new target input", () => {
-      const addOutputTask = Workflow.createWorkflow<{ input: string }>(TestOutputTask);
-      const addInputTask = Workflow.createWorkflow<{ customInput: string }>(TestInputTask);
-
+      const addOutputTask = Workflow.createWorkflow<
+        { input: string },
+        { customOutput: string },
+        TaskConfig
+      >(TestOutputTask);
+      const addInputTask = Workflow.createWorkflow<
+        { customInput: string },
+        { output: string },
+        TaskConfig
+      >(TestInputTask);
       workflow = addOutputTask.call(workflow, { input: "test" });
       workflow.rename("customOutput", "customInput");
       workflow = addInputTask.call(workflow);
@@ -269,7 +298,11 @@ describe("Workflow", () => {
     });
 
     it("should throw error when source output doesn't exist", () => {
-      const addTestTask = Workflow.createWorkflow<{ input: string }>(TestSingleTask);
+      const addTestTask = Workflow.createWorkflow<
+        { input: string },
+        { output: string },
+        TaskConfig
+      >(TestSingleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
 
@@ -280,7 +313,11 @@ describe("Workflow", () => {
 
   describe("reset", () => {
     it("should reset the workflow to its initial state", () => {
-      const addTestTask = Workflow.createWorkflow<{ input: string }>(TestSingleTask);
+      const addTestTask = Workflow.createWorkflow<
+        { input: string },
+        { output: string },
+        TaskConfig
+      >(TestSingleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
       expect(workflow.graph.getNodes()).toHaveLength(1);
@@ -305,7 +342,11 @@ describe("Workflow", () => {
       );
       workflow.on("changed", changedHandler);
 
-      const addTestTask = Workflow.createWorkflow<{ input: string }>(TestSingleTask);
+      const addTestTask = Workflow.createWorkflow<
+        { input: string },
+        { output: string },
+        TaskConfig
+      >(TestSingleTask);
       workflow = addTestTask.call(workflow, { input: "test" });
 
       expect(changedHandler).toHaveBeenCalled();
@@ -350,9 +391,16 @@ describe("Workflow", () => {
 
   describe("auto-connection behavior", () => {
     it("should auto-connect tasks with matching input/output types and ids", () => {
-      const addTestTask1 = Workflow.createWorkflow<{ input: string }>(TestSingleTask);
-      const addTestTask2 = Workflow.createWorkflow<{ input: string }>(TestSingleTask);
-
+      const addTestTask1 = Workflow.createWorkflow<
+        { input: string },
+        { output: string },
+        TaskConfig
+      >(TestSingleTask);
+      const addTestTask2 = Workflow.createWorkflow<
+        { input: string },
+        { output: string },
+        TaskConfig
+      >(TestSingleTask);
       workflow = addTestTask1.call(workflow, { input: "test" });
       workflow = addTestTask2.call(workflow);
 
@@ -363,7 +411,7 @@ describe("Workflow", () => {
     });
 
     it("should not auto-connect when types don't match", () => {
-      class StringTask extends SingleTask {
+      class StringTask extends SingleTask<{ input: string }, { output: string }, TaskConfig> {
         static type = "StringTask";
         static inputs: TaskInputDefinition[] = [
           { id: "input", valueType: "string", name: "Input" },
@@ -376,7 +424,7 @@ describe("Workflow", () => {
         }
       }
 
-      class NumberTask extends SingleTask {
+      class NumberTask extends SingleTask<{ input: number }, { output: number }, TaskConfig> {
         static type = "NumberTask";
         static inputs: TaskInputDefinition[] = [
           { id: "input", valueType: "number", name: "Input" },
@@ -389,9 +437,16 @@ describe("Workflow", () => {
         }
       }
 
-      const addStringTask = Workflow.createWorkflow<{ input: string }>(StringTask);
-      const addNumberTask = Workflow.createWorkflow<{ input: number }>(NumberTask);
-
+      const addStringTask = Workflow.createWorkflow<
+        { input: string },
+        { output: string },
+        TaskConfig
+      >(StringTask);
+      const addNumberTask = Workflow.createWorkflow<
+        { input: number },
+        { output: number },
+        TaskConfig
+      >(NumberTask);
       workflow = addStringTask.call(workflow, { input: "test" });
 
       // This should set an error because types don't match

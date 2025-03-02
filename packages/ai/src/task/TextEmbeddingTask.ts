@@ -70,7 +70,9 @@ type TextEmbeddingCompoundTaskInput = ConvertSomeToOptionalArray<TextEmbeddingTa
 export const TextEmbeddingCompoundTask = arrayTaskFactory<
   TextEmbeddingCompoundTaskInput,
   TextEmbeddingCompoundTaskOutput,
-  TextEmbeddingTaskOutput
+  TextEmbeddingTaskInput,
+  TextEmbeddingTaskOutput,
+  JobQueueTaskConfig
 >(TextEmbeddingTask, ["model", "text"]);
 
 /**

@@ -83,8 +83,6 @@ export interface ITaskCompound {
   subGraph: TaskGraph;
 }
 
-export type ITask = ITaskSimple | ITaskCompound;
-
 export type TaskTypeName = string;
 
 export type TaskConfig = Partial<IConfig>;

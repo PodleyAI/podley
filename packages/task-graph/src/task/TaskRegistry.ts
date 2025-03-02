@@ -5,12 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { SingleTask } from "./SingleTask";
-import { CompoundTask } from "./CompoundTask";
+import type { ITaskConstructor } from "./ITask";
 
-const all = new Map<string, typeof SingleTask | typeof CompoundTask>();
+const all = new Map<string, ITaskConstructor>();
 
-const registerTask = (baseClass: any) => {
+const registerTask = (baseClass: ITaskConstructor<any, any, any>) => {
   all.set(baseClass.type, baseClass);
 };
 

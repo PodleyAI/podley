@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import {
-  ConvertAllToArrays,
+  ConvertSomeToArray,
   ConvertSomeToOptionalArray,
   TaskInputDefinition,
   TaskInvalidInputError,
@@ -81,7 +81,7 @@ export class TextTranslationTask extends AiTask {
 }
 TaskRegistry.registerTask(TextTranslationTask);
 
-type TextTranslationCompoundOutput = ConvertAllToArrays<TextTranslationTaskOutput>;
+type TextTranslationCompoundOutput = ConvertSomeToArray<TextTranslationTaskOutput, "text">;
 
 type TextTranslationCompoundTaskInput = ConvertSomeToOptionalArray<
   TextTranslationTaskInput,
@@ -90,8 +90,10 @@ type TextTranslationCompoundTaskInput = ConvertSomeToOptionalArray<
 export const TextTranslationCompoundTask = arrayTaskFactory<
   TextTranslationCompoundTaskInput,
   TextTranslationCompoundOutput,
-  TextTranslationTaskOutput
->(TextTranslationTask, ["model", "text"]);
+  TextTranslationTaskInput,
+  TextTranslationTaskOutput,
+  JobQueueTaskConfig
+>(TextTranslationTask as any, ["model", "text"]);
 
 export const TextTranslation = (input: TextTranslationCompoundTaskInput) => {
   if (Array.isArray(input.model) || Array.isArray(input.text)) {

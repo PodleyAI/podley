@@ -12,10 +12,11 @@ import { ConvertSomeToOptionalArray } from "../ArrayTask";
 import { arrayTaskFactory } from "../ArrayTask";
 import { TaskGraph } from "../../task-graph/TaskGraph";
 import { TaskGraphRunner } from "../../task-graph/TaskGraphRunner";
-import { TaskEvents, TaskStatus } from "../TaskTypes";
+import { TaskEvents, TaskStatus, TaskOutputDefinition, TaskInputDefinition } from "../TaskTypes";
 import { Task } from "../TaskTypes";
 import { TaskError } from "../TaskError";
-
+import { ITask } from "../ITask";
+import { JobQueueTaskConfig } from "../../node";
 type TestSquareTaskInput = {
   input: number;
 };
@@ -24,7 +25,7 @@ type TestSquareTaskOutput = {
 };
 class TestSquareTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareTask";
-  static inputs = [
+  static readonly inputs: TaskInputDefinition[] = [
     {
       id: "input",
       name: "Input",
@@ -32,7 +33,7 @@ class TestSquareTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutpu
       defaultValue: 0,
     },
   ] as const;
-  static outputs = [
+  static readonly outputs: TaskOutputDefinition[] = [
     {
       id: "output",
       name: "Output",
@@ -46,7 +47,10 @@ class TestSquareTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutpu
 
 export const TestSquareMultiInputTask = arrayTaskFactory<
   ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>
+  ConvertAllToArrays<TestSquareTaskOutput>,
+  TestSquareTaskInput,
+  TestSquareTaskOutput,
+  JobQueueTaskConfig
 >(TestSquareTask, ["input"]);
 
 // Create an error-throwing task for testing error handling
@@ -77,7 +81,9 @@ class TestSquareErrorTask extends SingleTask<TestSquareTaskInput, TestSquareTask
 
 export const TestErrorMultiInputTask = arrayTaskFactory<
   ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>
+  ConvertAllToArrays<TestSquareTaskOutput>,
+  TestSquareTaskInput,
+  TestSquareTaskOutput
 >(TestSquareErrorTask, ["input"]);
 
 describe("ArrayTask", () => {
@@ -205,7 +211,7 @@ describe("ArrayTask", () => {
     task.regenerateGraph();
 
     // Set up event listeners on child tasks
-    task.subGraph.getNodes().forEach((childTask: Task) => {
+    task.subGraph.getNodes().forEach((childTask: ITask) => {
       childTask.on("start", () => {
         childEvents.start++;
       });
@@ -224,7 +230,7 @@ describe("ArrayTask", () => {
     task.handleProgress(0.5);
 
     // Manually trigger progress events on child tasks
-    task.subGraph.getNodes().forEach((childTask: Task) => {
+    task.subGraph.getNodes().forEach((childTask: ITask) => {
       childTask.handleStart();
       childTask.handleProgress(0.5);
     });

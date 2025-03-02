@@ -212,7 +212,7 @@ export class FetchTask<
   }
 }
 
-TaskRegistry.registerTask(FetchTask as any);
+TaskRegistry.registerTask(FetchTask);
 
 export const Fetch = (input: FetchTaskInput) => {
   return new FetchTask(input).run();
@@ -224,4 +224,4 @@ declare module "@ellmers/task-graph" {
   }
 }
 
-Workflow.prototype.Fetch = CreateWorkflow(FetchTask as any);
+Workflow.prototype.Fetch = CreateWorkflow(FetchTask);

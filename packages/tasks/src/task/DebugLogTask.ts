@@ -93,7 +93,7 @@ export class DebugLogTask<
   }
 }
 
-TaskRegistry.registerTask(DebugLogTask as any);
+TaskRegistry.registerTask(DebugLogTask);
 
 export const DebugLog = (input: DebugLogTaskInput) => {
   return new DebugLogTask(input).run();
@@ -105,4 +105,4 @@ declare module "@ellmers/task-graph" {
   }
 }
 
-Workflow.prototype.DebugLog = CreateWorkflow(DebugLogTask as any);
+Workflow.prototype.DebugLog = CreateWorkflow(DebugLogTask);

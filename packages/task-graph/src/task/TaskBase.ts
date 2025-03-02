@@ -33,7 +33,7 @@ export abstract class TaskBase<
   Input extends TaskInput,
   Output extends TaskOutput,
   Config extends TaskConfig,
-> implements ITask<Input, Output>
+> implements ITask<Input, Output, Config>
 {
   //    ========>     Static properties that should be overridden by subclasses       <=======
   public static readonly type: TaskTypeName = "TaskBase";

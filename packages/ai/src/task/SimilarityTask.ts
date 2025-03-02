@@ -84,10 +84,18 @@ export class SimilarityTask<
 
   async validateItem(valueType: string, item: any): Promise<boolean> {
     if (valueType === "similarity_fn") {
-      return similarity_fn.includes(item);
+      if (!similarity_fn.includes(item)) {
+        throw new TaskInvalidInputError(
+          `similarity must be one of: ${similarity_fn.join(", ")} but gave ${item}`
+        );
+      }
+      return true;
     }
     if (valueType === "vector") {
-      return item instanceof ElVector;
+      if (!(item instanceof ElVector)) {
+        throw new TaskInvalidInputError(`vector must be an instance of ElVector: ${item}`);
+      }
+      return true;
     }
     return super.validateItem(valueType, item);
   }
@@ -126,7 +134,7 @@ export class SimilarityTask<
         return true;
       }
       default:
-        return super.validateInputItem(input, inputId);
+        return super.validateInputItem(input as Partial<Input>, inputId);
     }
   }
 
@@ -146,10 +154,13 @@ export class SimilarityTask<
     similarities = similarities
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, this.runInputData.k);
+
+    const output = similarities.map((s) => s.embedding) as ElVector<AnyNumberArray>[];
+    const score = similarities.map((s) => s.similarity) as number[];
     this.runOutputData = {
-      output: similarities.map((s) => s.embedding),
-      score: similarities.map((s) => s.similarity),
-    };
+      output,
+      score,
+    } as Output;
     return this.runOutputData;
   }
 }

@@ -76,7 +76,7 @@ export abstract class JobQueueTask<
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
           this.handleProgress(progress, message, details);
         });
-        this.runOutputData = await queue.waitFor(jobId);
+        this.runOutputData = await queue.waitFor<Output>(jobId);
       }
 
       this.runOutputData ??= {} as Output;

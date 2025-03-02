@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Task } from "../task/TaskTypes";
+import { ITask } from "../task/ITask";
 import { TaskGraph } from "./TaskGraph";
 
 /**
@@ -16,7 +16,7 @@ export interface ITaskGraphScheduler {
    * Gets an async iterator of tasks that can be executed
    * @returns AsyncIterator of tasks that resolves to each task when it's ready
    */
-  tasks(): AsyncIterableIterator<Task>;
+  tasks(): AsyncIterableIterator<ITask>;
 
   /**
    * Notifies the scheduler that a task has completed
@@ -35,7 +35,7 @@ export interface ITaskGraphScheduler {
  * Useful for debugging and understanding task execution flow
  */
 export class TopologicalScheduler implements ITaskGraphScheduler {
-  private sortedNodes: Task[];
+  private sortedNodes: ITask[];
   private currentIndex: number;
 
   constructor(private dag: TaskGraph) {
@@ -44,7 +44,7 @@ export class TopologicalScheduler implements ITaskGraphScheduler {
     this.reset();
   }
 
-  async *tasks(): AsyncIterableIterator<Task> {
+  async *tasks(): AsyncIterableIterator<ITask> {
     while (this.currentIndex < this.sortedNodes.length) {
       yield this.sortedNodes[this.currentIndex++];
     }
@@ -66,8 +66,8 @@ export class TopologicalScheduler implements ITaskGraphScheduler {
  */
 export class DependencyBasedScheduler implements ITaskGraphScheduler {
   private completedTasks: Set<unknown>;
-  private pendingTasks: Set<Task>;
-  private nextResolver: ((task: Task | null) => void) | null = null;
+  private pendingTasks: Set<ITask>;
+  private nextResolver: ((task: ITask | null) => void) | null = null;
 
   constructor(private dag: TaskGraph) {
     this.completedTasks = new Set();
@@ -75,12 +75,12 @@ export class DependencyBasedScheduler implements ITaskGraphScheduler {
     this.reset();
   }
 
-  private isTaskReady(task: Task): boolean {
+  private isTaskReady(task: ITask): boolean {
     const dependencies = this.dag.inEdges(task.config.id).map(([from]) => from);
     return dependencies.every((dep) => this.completedTasks.has(dep));
   }
 
-  private async waitForNextTask(): Promise<Task | null> {
+  private async waitForNextTask(): Promise<ITask | null> {
     if (this.pendingTasks.size === 0) return null;
 
     const readyTask = Array.from(this.pendingTasks).find((task) => this.isTaskReady(task));
@@ -99,7 +99,7 @@ export class DependencyBasedScheduler implements ITaskGraphScheduler {
     return null;
   }
 
-  async *tasks(): AsyncIterableIterator<Task> {
+  async *tasks(): AsyncIterableIterator<ITask> {
     while (this.pendingTasks.size > 0) {
       const task = await this.waitForNextTask();
       if (task) {

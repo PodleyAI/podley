@@ -19,7 +19,7 @@ export class SingleTask<
     Config extends TaskConfig = TaskConfig,
   >
   extends TaskBase<Input, Output, Config>
-  implements ISimpleTask<Input, Output>
+  implements ISimpleTask<Input, Output, Config>
 {
   static readonly type: TaskTypeName = "SingleTask";
 

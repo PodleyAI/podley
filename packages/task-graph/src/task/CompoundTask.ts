@@ -11,10 +11,13 @@ import type { ICompoundTask } from "./ITask";
 import type { TaskTypeName, TaskInput, TaskOutput, JsonTaskItem, TaskConfig } from "./TaskTypes";
 import { TaskBase } from "./TaskBase";
 
-export type CompoundTaskOutput = {
-  outputs?: TaskOutput[];
-  [key: string]: TaskOutput[] | undefined;
-};
+export type CompoundTaskOutput =
+  | {
+      outputs: TaskOutput[];
+    }
+  | {
+      [key: string]: TaskOutput[] | undefined;
+    };
 
 /**
  * Represents a compound task, which is a task that contains other tasks.
@@ -26,11 +29,10 @@ export class CompoundTask<
     Config extends TaskConfig = TaskConfig,
   >
   extends TaskBase<Input, Output, Config>
-  implements ICompoundTask<Input, Output>
+  implements ICompoundTask<Input, Output, Config>
 {
   static readonly type: TaskTypeName = "CompoundTask";
   static readonly category: string = "Hidden";
-  static readonly sideeffects: boolean = false;
 
   readonly isCompound = true;
 

@@ -71,7 +71,7 @@ export class DelayTask<
 }
 
 // Register DelayTask with the task registry
-TaskRegistry.registerTask(DelayTask as any);
+TaskRegistry.registerTask(DelayTask);
 
 /**
  * DelayTask
@@ -91,4 +91,4 @@ declare module "@ellmers/task-graph" {
   }
 }
 
-Workflow.prototype.Delay = CreateWorkflow(DelayTask as any);
+Workflow.prototype.Delay = CreateWorkflow(DelayTask);

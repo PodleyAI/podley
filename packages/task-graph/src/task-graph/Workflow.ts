@@ -22,6 +22,7 @@ import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph, TaskGraphJson } from "./TaskGraph";
 import { TaskGraphRunner } from "./TaskGraphRunner";
 import { WorkflowError } from "../task/TaskError";
+import { ITaskConstructor } from "../task/ITask";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
@@ -76,7 +77,7 @@ export class Workflow {
    * @returns A function that adds the specified task type to a Workflow
    */
   public static createWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig>(
-    taskClass: typeof CompoundTask | typeof SingleTask
+    taskClass: ITaskConstructor<I, O, C>
   ): CreateWorkflow<I, O, C> {
     const helper = function (
       this: Workflow,

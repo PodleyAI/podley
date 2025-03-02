@@ -6,20 +6,18 @@
 //    *******************************************************************************
 
 import { TaskGraph } from "../task-graph/TaskGraph";
-import {
-  TaskInput,
-  TaskConfig,
-  TaskOutput,
-  TaskTypeName,
-  TaskInputDefinition,
-  TaskOutputDefinition,
-  JsonTaskItem,
-} from "./TaskTypes";
-import { SingleTask } from "./SingleTask";
-import { CompoundTask, CompoundTaskOutput, RegenerativeCompoundTask } from "./CompoundTask";
+import { RegenerativeCompoundTask } from "./CompoundTask";
+import { ITaskConstructor } from "./ITask";
 import { TaskRegistry } from "./TaskRegistry";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
-import { GraphSingleResult } from "../task-graph/TaskGraphRunner";
+import {
+  JsonTaskItem,
+  TaskConfig,
+  TaskInput,
+  TaskInputDefinition,
+  TaskOutput,
+  TaskOutputDefinition,
+  TaskTypeName,
+} from "./TaskTypes";
 
 // Type utilities for array transformations
 // Makes specified properties optional arrays
@@ -166,14 +164,13 @@ function generateCombinations<T, K extends keyof T>(input: T, inputMakeArray: K[
  * @returns New task class that handles array inputs
  */
 export function arrayTaskFactory<
-  PluralInputType extends TaskInput = TaskInput,
-  PluralOutputType extends CompoundTaskOutput = CompoundTaskOutput,
-  SingleOutputType extends TaskOutput = TaskOutput,
-  ArrayConfig extends TaskConfig = TaskConfig,
+  PluralInputType extends TaskInput,
+  PluralOutputType extends TaskOutput,
+  SingleInputType extends TaskInput,
+  SingleOutputType extends TaskOutput,
+  SingleConfig extends TaskConfig = TaskConfig,
 >(
-  taskClass:
-    | typeof SingleTask<PluralInputType, PluralOutputType, ArrayConfig>
-    | typeof CompoundTask<PluralInputType, PluralOutputType, ArrayConfig>,
+  taskClass: ITaskConstructor<SingleInputType, SingleOutputType, SingleConfig>,
   inputMakeArray: Array<keyof PluralInputType>,
   name?: string
 ) {
@@ -193,7 +190,7 @@ export function arrayTaskFactory<
   class ArrayTask<
     Input extends PluralInputType = PluralInputType,
     Output extends PluralOutputType = PluralOutputType,
-    Config extends ArrayConfig = ArrayConfig,
+    Config extends SingleConfig = SingleConfig,
   > extends RegenerativeCompoundTask<Input, Output, Config> {
     static readonly type: TaskTypeName = name!;
     static readonly runtype = taskClass.type;
@@ -217,9 +214,12 @@ export function arrayTaskFactory<
         inputMakeArray as (keyof Input)[]
       );
       combinations.forEach((input, index) => {
-        const current = new taskClass(input, {
-          id: this.config.id + "-child-" + (index + 1),
-        } as ArrayConfig);
+        const current = new taskClass(
+          input as unknown as SingleInputType,
+          {
+            id: this.config.id + "-child-" + (index + 1),
+          } as SingleConfig
+        );
         this.subGraph.addTask(current);
       });
       super.regenerateGraph();
@@ -269,7 +269,7 @@ export function arrayTaskFactory<
   }
 
   // Use type assertion to make TypeScript accept the registration
-  TaskRegistry.registerTask(ArrayTask as unknown as typeof CompoundTask);
+  TaskRegistry.registerTask(ArrayTask);
 
   return ArrayTask;
 }

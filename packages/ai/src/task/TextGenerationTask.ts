@@ -65,7 +65,9 @@ type TextGenerationCompoundTaskInput = ConvertSomeToOptionalArray<
 export const TextGenerationCompoundTask = arrayTaskFactory<
   TextGenerationCompoundTaskInput,
   TextGenerationCompoundOutput,
-  TextGenerationTaskOutput
+  TextGenerationTaskInput,
+  TextGenerationTaskOutput,
+  JobQueueTaskConfig
 >(TextGenerationTask, ["model", "prompt"]);
 
 /**

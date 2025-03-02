@@ -67,7 +67,9 @@ type TextRewriterCompoundTaskInput = ConvertSomeToOptionalArray<
 export const TextRewriterCompoundTask = arrayTaskFactory<
   TextRewriterCompoundTaskInput,
   TextRewriterCompoundTaskOutput,
-  TextRewriterTaskOutput
+  TextRewriterTaskInput,
+  TextRewriterTaskOutput,
+  JobQueueTaskConfig
 >(TextRewriterTask, ["model", "text", "prompt"]);
 
 export const TextRewriter = (input: TextRewriterCompoundTaskInput) => {

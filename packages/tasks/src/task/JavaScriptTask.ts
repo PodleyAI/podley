@@ -63,7 +63,7 @@ export class JavaScriptTask extends SingleTask<JavaScriptTaskInput, JavaScriptTa
     return this.runOutputData;
   }
 }
-TaskRegistry.registerTask(JavaScriptTask as any);
+TaskRegistry.registerTask(JavaScriptTask);
 
 export const JavaScript = (input: JavaScriptTaskInput) => {
   return new JavaScriptTask({ input }).run();
@@ -75,4 +75,4 @@ declare module "@ellmers/task-graph" {
   }
 }
 
-Workflow.prototype.JavaScript = CreateWorkflow(JavaScriptTask as any);
+Workflow.prototype.JavaScript = CreateWorkflow(JavaScriptTask);

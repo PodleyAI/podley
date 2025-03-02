@@ -49,6 +49,9 @@ export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTas
   public static outputs: TaskOutputDefinition[] = [
     { id: "text", name: "Text", valueType: "text" },
   ] as const;
+  constructor(input: TextSummaryTaskInput, config: JobQueueTaskConfig) {
+    super(input, config);
+  }
 }
 TaskRegistry.registerTask(TextSummaryTask);
 
@@ -61,14 +64,20 @@ type TextSummaryCompoundTaskInput = ConvertSomeToOptionalArray<
 export const TextSummaryCompoundTask = arrayTaskFactory<
   TextSummaryCompoundTaskInput,
   TextSummaryCompoundTaskOutput,
-  TextSummaryTaskOutput
+  TextSummaryTaskInput,
+  TextSummaryTaskOutput,
+  JobQueueTaskConfig
 >(TextSummaryTask, ["model", "text"]);
 
-export const TextSummary = (input: TextSummaryCompoundTaskInput) => {
+export const TextSummary = (
+  input: TextSummaryCompoundTaskInput,
+  config: JobQueueTaskConfig = {}
+) => {
   if (Array.isArray(input.model) || Array.isArray(input.text)) {
-    return new TextSummaryCompoundTask(input).run();
+    return new TextSummaryCompoundTask(input, config).run();
   } else {
-    return new TextSummaryTask(input as TextSummaryTaskInput).run();
+    // ts not getting that input.text is not an array
+    return new TextSummaryTask(input as TextSummaryTaskInput, config).run();
   }
 };
 
