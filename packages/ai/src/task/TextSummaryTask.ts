@@ -74,7 +74,11 @@ export const TextSummary = (input: TextSummaryCompoundTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    TextSummary: CreateWorkflow<TextSummaryCompoundTaskInput>;
+    TextSummary: CreateWorkflow<
+      TextSummaryCompoundTaskInput,
+      TextSummaryCompoundTaskOutput,
+      JobQueueTaskConfig
+    >;
   }
 }
 

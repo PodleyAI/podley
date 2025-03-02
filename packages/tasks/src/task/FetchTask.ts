@@ -220,7 +220,7 @@ export const Fetch = (input: FetchTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    Fetch: CreateWorkflow<FetchTaskInput>;
+    Fetch: CreateWorkflow<FetchTaskInput, FetchTaskOutput, TaskConfig>;
   }
 }
 

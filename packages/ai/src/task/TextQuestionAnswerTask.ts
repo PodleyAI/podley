@@ -32,7 +32,8 @@ export type TextQuestionAnswerTaskOutput = {
  */
 export class TextQuestionAnswerTask extends AiTask<
   TextQuestionAnswerTaskInput,
-  TextQuestionAnswerTaskOutput
+  TextQuestionAnswerTaskOutput,
+  JobQueueTaskConfig
 > {
   public static type = "TextQuestionAnswerTask";
   public static category = "Text Model";
@@ -83,7 +84,11 @@ export const TextQuestionAnswer = (input: TextQuestionAnswerCompoundTaskInput) =
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    TextQuestionAnswer: CreateWorkflow<TextQuestionAnswerCompoundTaskInput>;
+    TextQuestionAnswer: CreateWorkflow<
+      TextQuestionAnswerCompoundTaskInput,
+      TextQuestionAnswerCompoundTaskOutput,
+      JobQueueTaskConfig
+    >;
   }
 }
 

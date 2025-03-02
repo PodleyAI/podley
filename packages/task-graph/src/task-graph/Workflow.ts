@@ -6,11 +6,12 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import { GraphEvents } from "@sroussey/typescript-graph";
 import type { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { CompoundTask } from "../task/CompoundTask";
 import { SingleTask } from "../task/SingleTask";
 import {
+  TaskConfig,
+  TaskOutput,
   type JsonTaskItem,
   type TaskInput,
   type TaskInputDefinition,
@@ -23,7 +24,10 @@ import { TaskGraphRunner } from "./TaskGraphRunner";
 import { WorkflowError } from "../task/TaskError";
 
 // Type definitions for the workflow
-export type CreateWorkflow<I extends TaskInput> = (input?: Partial<I>) => Workflow;
+export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
+  input?: Partial<I>,
+  config?: Partial<C>
+) => Workflow;
 
 // Event types
 export type WorkflowEventListeners = {
@@ -71,10 +75,14 @@ export class Workflow {
    * @param taskClass - The task class to create a helper for
    * @returns A function that adds the specified task type to a Workflow
    */
-  public static createWorkflow<I extends TaskInput>(
+  public static createWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig>(
     taskClass: typeof CompoundTask | typeof SingleTask
-  ): CreateWorkflow<I> {
-    const helper = function (this: Workflow, input?: Partial<I>): Workflow {
+  ): CreateWorkflow<I, O, C> {
+    const helper = function (
+      this: Workflow,
+      input: Partial<I> = {},
+      config: Partial<C> = {}
+    ): Workflow {
       this._error = "";
 
       // Get the parent node if it exists
@@ -84,9 +92,10 @@ export class Workflow {
       // Create and add the new task
       taskIdCounter++;
       // @ts-expect-error -  TODO: fix
-      const task: SingleTask<I> = new taskClass(input, {
+      const task: SingleTask<I, O, C> = new taskClass(input, {
         id: String(taskIdCounter),
-      }) as SingleTask<I>;
+        ...config,
+      }) as SingleTask<I, O, C>;
       this.graph.addTask(task);
 
       // Process any pending data flows
@@ -402,6 +411,10 @@ export class Workflow {
 /**
  * Helper function for backward compatibility
  */
-export function CreateWorkflow<I extends TaskInput>(taskClass: any): CreateWorkflow<I> {
-  return Workflow.createWorkflow<I>(taskClass);
+export function CreateWorkflow<
+  I extends TaskInput,
+  O extends TaskOutput,
+  C extends TaskConfig = TaskConfig,
+>(taskClass: any): CreateWorkflow<I, O, C> {
+  return Workflow.createWorkflow<I, O, C>(taskClass);
 }

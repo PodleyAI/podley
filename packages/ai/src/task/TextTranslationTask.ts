@@ -103,10 +103,12 @@ export const TextTranslation = (input: TextTranslationCompoundTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    TextTranslation: CreateWorkflow<TextTranslationCompoundTaskInput>;
+    TextTranslation: CreateWorkflow<
+      TextTranslationCompoundTaskInput,
+      TextTranslationCompoundOutput,
+      JobQueueTaskConfig
+    >;
   }
 }
 
 Workflow.prototype.TextTranslation = CreateWorkflow(TextTranslationCompoundTask);
-
-// console.log("TextTranslationTask.ts", TextTranslationCompoundTask);

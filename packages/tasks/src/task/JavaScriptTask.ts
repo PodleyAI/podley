@@ -71,7 +71,7 @@ export const JavaScript = (input: JavaScriptTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    JavaScript: CreateWorkflow<JavaScriptTaskInput>;
+    JavaScript: CreateWorkflow<JavaScriptTaskInput, JavaScriptTaskOutput, TaskConfig>;
   }
 }
 

@@ -12,6 +12,7 @@ import {
   TaskInputDefinition,
   TaskOutputDefinition,
   TaskRegistry,
+  JobQueueTaskConfig,
 } from "@ellmers/task-graph";
 import { Document, DocumentFragment } from "../source/Document";
 
@@ -25,7 +26,8 @@ export type DocumentSplitterTaskOutput = {
 
 export class DocumentSplitterTask extends SingleTask<
   DocumentSplitterTaskInput,
-  DocumentSplitterTaskOutput
+  DocumentSplitterTaskOutput,
+  JobQueueTaskConfig
 > {
   public static type = "DocumentSplitterTask";
   public static category = "Input";
@@ -81,7 +83,11 @@ export const DocumentSplitter = (input: DocumentSplitterTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    DocumentSplitter: CreateWorkflow<DocumentSplitterTask>;
+    DocumentSplitter: CreateWorkflow<
+      DocumentSplitterTaskInput,
+      DocumentSplitterTaskOutput,
+      JobQueueTaskConfig
+    >;
   }
 }
 

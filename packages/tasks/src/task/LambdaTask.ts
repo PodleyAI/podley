@@ -14,7 +14,6 @@ import {
   TaskInput,
   TaskInputDefinition,
   TaskOutputDefinition,
-  IConfig,
   TaskConfig,
 } from "@ellmers/task-graph";
 
@@ -124,7 +123,7 @@ export const Lambda = (input: TaskInput, config: LambdaTaskConfig) => {
 // Add Lambda task workflow to Workflow interface
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    Lambda: CreateWorkflow<LambdaTaskConfig>;
+    Lambda: CreateWorkflow<TaskInput, TaskOutput, LambdaTaskConfig>;
   }
 }
 

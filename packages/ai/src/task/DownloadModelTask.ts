@@ -16,6 +16,7 @@ import {
   JobQueueTaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
+  TaskConfig,
 } from "@ellmers/task-graph";
 import { getGlobalModelRepository } from "../model/ModelRegistry";
 import { AiTask } from "./base/AiTask";
@@ -201,9 +202,12 @@ export const DownloadModel = (input: DownloadModelCompoundTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    DownloadModel: CreateWorkflow<DownloadModelCompoundTaskInput>;
+    DownloadModel: CreateWorkflow<
+      DownloadModelCompoundTaskInput,
+      DownloadModelTaskOutput,
+      TaskConfig
+    >;
   }
 }
 
-Workflow.prototype.DownloadModel =
-  CreateWorkflow<DownloadModelCompoundTaskInput>(DownloadModelCompoundTask);
+Workflow.prototype.DownloadModel = CreateWorkflow(DownloadModelCompoundTask);

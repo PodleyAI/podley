@@ -88,7 +88,11 @@ export const TextEmbedding = (input: TextEmbeddingCompoundTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    TextEmbedding: CreateWorkflow<TextEmbeddingCompoundTaskInput>;
+    TextEmbedding: CreateWorkflow<
+      TextEmbeddingCompoundTaskInput,
+      TextEmbeddingCompoundTaskOutput,
+      JobQueueTaskConfig
+    >;
   }
 }
 

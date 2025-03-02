@@ -143,7 +143,7 @@ export const Json = (input: JsonTaskInput) => {
 // Add Json task workflow to Workflow interface
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    Json: CreateWorkflow<JsonTaskInput>;
+    Json: CreateWorkflow<JsonTaskInput, JsonTaskOutput, TaskConfig>;
   }
 }
 

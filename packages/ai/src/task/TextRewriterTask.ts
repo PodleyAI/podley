@@ -80,7 +80,11 @@ export const TextRewriter = (input: TextRewriterCompoundTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    TextRewriter: CreateWorkflow<TextRewriterCompoundTaskInput>;
+    TextRewriter: CreateWorkflow<
+      TextRewriterCompoundTaskInput,
+      TextRewriterCompoundTaskOutput,
+      JobQueueTaskConfig
+    >;
   }
 }
 

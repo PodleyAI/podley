@@ -84,7 +84,11 @@ export const TextGeneration = (input: TextGenerationCompoundTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    TextGeneration: CreateWorkflow<TextGenerationCompoundTaskInput>;
+    TextGeneration: CreateWorkflow<
+      TextGenerationCompoundTaskInput,
+      TextGenerationCompoundOutput,
+      JobQueueTaskConfig
+    >;
   }
 }
 

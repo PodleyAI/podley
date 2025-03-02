@@ -101,7 +101,7 @@ export const DebugLog = (input: DebugLogTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    DebugLog: CreateWorkflow<DebugLogTaskInput>;
+    DebugLog: CreateWorkflow<DebugLogTaskInput, DebugLogTaskOutput, TaskConfig>;
   }
 }
 

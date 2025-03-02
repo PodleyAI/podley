@@ -87,7 +87,7 @@ export const Delay = (input: DelayTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    Delay: CreateWorkflow<DelayTaskInput>;
+    Delay: CreateWorkflow<DelayTaskInput, DelayTaskOutput, TaskConfig>;
   }
 }
 
