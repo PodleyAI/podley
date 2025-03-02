@@ -28,10 +28,12 @@ describe("DelayTask", () => {
 
   it("should pass through input to output", async () => {
     // Create a task with input
-    const taskWithInput = new DelayTask({
-      id: "delayed-with-input",
-      input: { delay: 10, pass_through: { something: "test-value" } },
-    });
+    const taskWithInput = new DelayTask(
+      { delay: 10, pass_through: { something: "test-value" } },
+      {
+        id: "delayed-with-input",
+      }
+    );
 
     // Run the task
     const result = await taskWithInput.run();

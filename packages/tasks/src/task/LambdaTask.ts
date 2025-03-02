@@ -116,8 +116,8 @@ TaskRegistry.registerTask(LambdaTask);
 /**
  * Convenience function to create and run a LambdaTask
  */
-export const Lambda = (config: LambdaTaskConfig) => {
-  const task = new LambdaTask(config);
+export const Lambda = (input: TaskInput, config: LambdaTaskConfig) => {
+  const task = new LambdaTask(input, config);
   return task.run();
 };
 
