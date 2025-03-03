@@ -6,11 +6,12 @@
 //    *******************************************************************************
 
 import { getTaskQueueRegistry } from "./TaskQueueRegistry";
-import { TaskConfig, TaskOutput, TaskEventListeners, TaskInput } from "./TaskTypes";
-import { SingleTask } from "./SingleTask";
+import { TaskConfig, TaskOutput, TaskInput } from "./TaskTypes";
+import { TaskEventListeners } from "./TaskEvents";
 import { EventEmitter } from "@ellmers/util";
 import { Job } from "@ellmers/job-queue";
 import { TaskConfigurationError } from "./TaskError";
+import { Task } from "./Task";
 
 /**
  * Configuration interface for JobQueueTask.
@@ -43,7 +44,7 @@ export abstract class JobQueueTask<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends JobQueueTaskConfig = JobQueueTaskConfig,
-> extends SingleTask<Input, Output, Config> {
+> extends Task<Input, Output, Config> {
   static readonly type: string = "JobQueueTask";
   static canRunDirectly = true;
 

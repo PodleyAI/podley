@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FC } from "react";
 import { Text, Box } from "tuir";
-import { TaskStatus, TaskGraph, Task, CompoundTask, TaskError } from "@ellmers/task-graph";
+import { TaskStatus, TaskGraph, Task, TaskError, ITask } from "@ellmers/task-graph";
 import spinners from "cli-spinners";
 import TaskGraphUI from "./TaskGraphUI";
 import { createBar, symbols, Spinner } from "./Elements";
@@ -35,7 +35,7 @@ const getSymbol = (state: TaskStatus) => {
 };
 
 export const TaskUI: FC<{
-  task: Task;
+  task: ITask;
   graph: TaskGraph;
 }> = ({ task, graph }) => {
   const [count, setCount] = useState<number>(0);
@@ -45,9 +45,9 @@ export const TaskUI: FC<{
   const [details, setDetails] = useState<any>(undefined);
   const [text, setText] = useState<string>("");
   const [subGraph, setSubGraph] = useState<TaskGraph | null>(
-    task instanceof CompoundTask ? task.subGraph : null
+    task.isCompound ? task.subGraph : null
   );
-  const [dependantChildren, setDependantChildren] = useState<Task[]>(
+  const [dependantChildren, setDependantChildren] = useState<ITask[]>(
     graph.getTargetTasks(task.config.id)
   );
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +89,7 @@ export const TaskUI: FC<{
 
     const onRegenerate = () => {
       setCount((counter) => counter + 1);
-      setSubGraph(task instanceof CompoundTask ? task.subGraph : null);
+      setSubGraph(task.isCompound ? task.subGraph : null);
       setDependantChildren(graph.getTargetTasks(task.config.id));
     };
 

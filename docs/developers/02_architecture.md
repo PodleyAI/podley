@@ -1,17 +1,13 @@
-- [Architecture Documentation](#architecture-documentation)
-  - [Design Principles](#design-principles)
-- [Overview](#overview)
-  - [Storage](#storage)
-  - [Source Data](#source-data)
-  - [LLM Providers](#llm-providers)
-  - [Job Queue](#job-queue)
-  - [Tasks](#tasks)
-- [Tasks](#tasks-1)
-  - [Task Classes](#task-classes)
-  - [TaskGraph](#taskgraph)
-  - [TaskGraphRunner](#taskgraphrunner)
-  - [Workflow](#workflow)
-- [Warnings / ToDo](#warnings--todo)
+- [Design Principles](#design-principles)
+- [Storage](#storage)
+- [Source Data](#source-data)
+- [LLM Providers](#llm-providers)
+- [Job Queue](#job-queue)
+- [Tasks](#tasks)
+- [Task Classes](#task-classes)
+- [TaskGraph](#taskgraph)
+- [TaskGraphRunner](#taskgraphrunner)
+- [Workflow](#workflow)
 
 # Architecture Documentation
 
@@ -79,7 +75,7 @@ Tasks are the main building blocks of the system. They are simple or compound ta
 ```mermaid
 
 flowchart LR
-  subgraph CompoundTask
+  subgraph Task
     direction LR
     subgraph DownloadModelCompoundTask
         direction LR
@@ -99,10 +95,10 @@ flowchart LR
   end
 
   A[Load document] --> B[Split document into paragraphs]
-  B --> CompoundTask
+  B --> Task
   DownloadModelCompoundTask --> RewriteTextCompoundTask
   RewriteTextCompoundTask --> TextEmeddingCompoundTask
-  CompoundTask --> C[Save to Database]
+  Task --> C[Save to Database]
 
 
 ```
@@ -112,51 +108,24 @@ flowchart LR
 ```mermaid
 classDiagram
 
-    note "Task = SimpleTask | CompoundTask"
-
-    class TaskBase{
+    class Task{
       string id
       string name
       static string type$
       static string category$
       static TaskInputDefinition[] inputs$
       static TaskOutputDefinition[] outputs$
-      static readonly sideeffects = false$
+      static readonly isCompound = false$
       run() TaskOutput
       runReactive() TaskOutput
     }
-    <<abstract>> TaskBase
-    style TaskBase type:abstract,stroke-dasharray: 5 5
-
-    class SimpleTask{
-      bool isCompound = false
-    }
-    <<abstract>> SimpleTask
-    TaskBase <|-- SimpleTask
-    style SimpleTask type:abstract,stroke-dasharray: 5 5
-
-    class CompoundTask{
-      bool isCompound = true
-      TaskGraph subGraph
-      static readonly sideeffects = true$
-    }
-    <<abstract>> CompoundTask
-    TaskBase <|-- CompoundTask
-    style CompoundTask type:abstract,stroke-dasharray: 5 5
-
-    class OutputTask{
-      static readonly sideeffects = true$
-    }
-    <<abstract>> OutputTask
-    SimpleTask <|-- OutputTask
-    style OutputTask type:abstract,stroke-dasharray: 5 5
 
     class JobQueueTask{
       string queue
       string currentJobId
     }
     <<abstract>> JobQueueTask
-    SimpleTask <|-- JobQueueTask
+    Task <|-- JobQueueTask
     style JobQueueTask type:abstract,stroke-dasharray: 5 5
 
     class AiTask{
@@ -165,7 +134,6 @@ classDiagram
     <<abstract>> AiTask
     JobQueueTask <|-- AiTask
     style AiTask type:abstract,stroke-dasharray: 5 5
-
 
 
   class DownloadModelTask{
@@ -253,7 +221,7 @@ classDiagram
 classDiagram
 
   class TaskGraph{
-    TaskBase[] tasks
+    Task[] tasks
   }
 
 Task *-- TaskGraph

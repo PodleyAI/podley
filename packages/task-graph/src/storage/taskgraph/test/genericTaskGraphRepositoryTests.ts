@@ -9,18 +9,10 @@ import { expect, it, beforeEach, afterEach } from "bun:test";
 import { TaskGraphRepository } from "../TaskGraphRepository";
 import { Dataflow } from "../../../task-graph/Dataflow";
 import { TaskGraph } from "../../../task-graph/TaskGraph";
-import { TaskOutput } from "../../../task/TaskTypes";
-import { SingleTask } from "../../../task/SingleTask";
 import { TaskRegistry } from "../../../task/TaskRegistry";
+import { TestIOTask } from "../../../task/test/TestTasks";
 
-class TestTask extends SingleTask {
-  static readonly type = "TestTask";
-  async runReactive(): Promise<TaskOutput> {
-    return {};
-  }
-}
-
-TaskRegistry.registerTask(TestTask);
+TaskRegistry.registerTask(TestIOTask);
 
 export function runGenericTaskGraphRepositoryTests(
   createRepository: () => Promise<TaskGraphRepository>
@@ -43,20 +35,20 @@ export function runGenericTaskGraphRepositoryTests(
   it("should fail if the task is not registered", async () => {
     const id: string = "g0";
     const graph = new TaskGraph();
-    const tasks = [new TestTask({}, { id: "task1" })];
+    const tasks = [new TestIOTask({}, { id: "task1" })];
     graph.addTasks(tasks);
     await repository.saveTaskGraph(id, graph);
     expect(repository.getTaskGraph(id)).rejects.toThrow();
   });
 
   it("should store and retrieve task graph", async () => {
-    TaskRegistry.registerTask(TestTask);
+    TaskRegistry.registerTask(TestIOTask);
     const id: string = "g1";
     const graph = new TaskGraph();
     const tasks = [
-      new TestTask({}, { id: "task1" }),
-      new TestTask({}, { id: "task2" }),
-      new TestTask({}, { id: "task3" }),
+      new TestIOTask({}, { id: "task1" }),
+      new TestIOTask({}, { id: "task2" }),
+      new TestIOTask({}, { id: "task3" }),
     ];
     const edges: Dataflow[] = [
       new Dataflow("task1", "output1", "task2", "input1"),

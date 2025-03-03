@@ -6,100 +6,19 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach, afterEach, spyOn } from "bun:test";
-import { SingleTask } from "../../task/SingleTask";
-import { CompoundTask } from "../../task/CompoundTask";
 import { TaskOutputRepository } from "../../storage/taskoutput/TaskOutputRepository";
-import { TaskInputDefinition, TaskOutputDefinition, TaskConfig } from "../../task/TaskTypes";
-import { TaskAbortedError, TaskError, WorkflowError } from "../../task/TaskError";
+import { TaskConfig } from "../../task/TaskTypes";
+import { TaskError, WorkflowError } from "../../task/TaskError";
 import { CreateWorkflow, Workflow } from "../Workflow";
 import { sleep } from "@ellmers/util";
-
-// Mock task classes for testing
-class TestSingleTask extends SingleTask<{ input: string }, { output: string }> {
-  static type = "TestSingleTask";
-  declare runInputData: { input: string };
-  declare runOutputData: { output: string };
-
-  static inputs: TaskInputDefinition[] = [{ id: "input", name: "Input", valueType: "string" }];
-  static outputs: TaskOutputDefinition[] = [{ id: "output", name: "Output", valueType: "string" }];
-
-  async runFull(): Promise<any> {
-    return { output: `processed-${this.runInputData?.input}` };
-  }
-}
-
-class TestOutputTask extends SingleTask<{ input: string }, { customOutput: string }> {
-  static type = "TestOutputTask";
-  declare runInputData: { input: string };
-  declare runOutputData: { customOutput: string };
-
-  static inputs: TaskInputDefinition[] = [{ id: "input", name: "Input", valueType: "string" }];
-  static outputs: TaskOutputDefinition[] = [
-    { id: "customOutput", name: "Custom Output", valueType: "string" },
-  ];
-
-  async runFull(): Promise<any> {
-    return { customOutput: `processed-${this.runInputData?.input}` };
-  }
-}
-
-class TestInputTask extends SingleTask<{ customInput: string }, { output: string }> {
-  static type = "TestInputTask";
-  declare runInputData: { customInput: string };
-  declare runOutputData: { output: string };
-
-  static inputs: TaskInputDefinition[] = [
-    { id: "customInput", name: "Custom Input", valueType: "string" },
-  ];
-  static outputs: TaskOutputDefinition[] = [{ id: "output", name: "Output", valueType: "string" }];
-
-  async runFull(): Promise<any> {
-    return { output: `processed-${this.runInputData?.customInput}` };
-  }
-}
-
-class FailingTask extends SingleTask {
-  static type = "FailingTask";
-  static inputs: TaskInputDefinition[] = [];
-  static outputs: TaskOutputDefinition[] = [];
-
-  async runFull(): Promise<any> {
-    throw new Error("Task failed");
-  }
-}
-
-class LongRunningTask extends SingleTask {
-  static type = "LongRunningTask";
-  static inputs: TaskInputDefinition[] = [];
-  static outputs: TaskOutputDefinition[] = [];
-
-  async runFull(): Promise<any> {
-    for (let i = 0; i < 10; i++) {
-      if (this.abortController?.signal.aborted) {
-        throw new TaskAbortedError("Task aborted");
-      }
-      await sleep(10);
-      this.handleProgress(i / 10);
-    }
-  }
-}
-
-declare module "@ellmers/task-graph" {
-  interface Workflow {
-    TestSingleTask: CreateWorkflow<{ input: string }, { output: string }, TaskConfig>;
-    TestOutputTask: CreateWorkflow<{ input: string }, { customOutput: string }, TaskConfig>;
-    TestInputTask: CreateWorkflow<{ customInput: string }, { output: string }, TaskConfig>;
-    FailingTask: CreateWorkflow<{}, {}, TaskConfig>;
-    LongRunningTask: CreateWorkflow<{}, {}, TaskConfig>;
-  }
-}
-
-Workflow.prototype.TestSingleTask = CreateWorkflow(TestSingleTask);
-Workflow.prototype.TestOutputTask = CreateWorkflow(TestOutputTask);
-Workflow.prototype.TestInputTask = CreateWorkflow(TestInputTask);
-Workflow.prototype.FailingTask = CreateWorkflow(FailingTask);
-Workflow.prototype.LongRunningTask = CreateWorkflow(LongRunningTask);
-
+import {
+  NumberTask,
+  StringTask,
+  TestInputTask,
+  TestOutputTask,
+  TestSimpleTask,
+} from "../../task/test/TestTasks";
+import { Task } from "../../task/Task";
 const colsoleError = globalThis.console.error;
 
 describe("Workflow", () => {
@@ -132,14 +51,14 @@ describe("Workflow", () => {
   describe("createWorkflow", () => {
     it("should create a helper function for adding tasks", () => {
       const addTestTask = CreateWorkflow<{ input: string }, { output: string }, TaskConfig>(
-        TestSingleTask
+        TestSimpleTask
       );
 
       expect(addTestTask).toBeInstanceOf(Function);
       // @ts-ignore
-      expect(addTestTask.inputs).toEqual(TestSingleTask.inputs);
+      expect(addTestTask.inputs).toEqual(TestSimpleTask.inputs);
       // @ts-ignore
-      expect(addTestTask.outputs).toEqual(TestSingleTask.outputs);
+      expect(addTestTask.outputs).toEqual(TestSimpleTask.outputs);
     });
 
     it("should add a task to the workflow when called", () => {
@@ -147,18 +66,18 @@ describe("Workflow", () => {
         { input: string },
         { output: string },
         TaskConfig
-      >(TestSingleTask);
+      >(TestSimpleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
 
       expect(workflow.graph.getNodes()).toHaveLength(1);
-      expect(workflow.graph.getNodes()[0]).toBeInstanceOf(TestSingleTask);
+      expect(workflow.graph.getNodes()[0]).toBeInstanceOf(TestSimpleTask);
     });
   });
 
   describe("run", () => {
     it("should run the task graph and return output", async () => {
-      workflow = workflow.TestSingleTask({ input: "test" });
+      workflow = workflow.TestSimpleTask({ input: "test" });
 
       const startSpy = spyOn(workflow.events, "emit");
       const result = await workflow.run();
@@ -197,7 +116,7 @@ describe("Workflow", () => {
 
   describe("pop", () => {
     it("should remove the last task from the graph", () => {
-      workflow = workflow.TestSingleTask({ input: "test1" }).TestSingleTask({ input: "test2" });
+      workflow = workflow.TestSimpleTask({ input: "test1" }).TestSimpleTask({ input: "test2" });
 
       expect(workflow.graph.getNodes()).toHaveLength(2);
 
@@ -220,7 +139,7 @@ describe("Workflow", () => {
         { input: string },
         { output: string },
         TaskConfig
-      >(TestSingleTask);
+      >(TestSimpleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
 
@@ -236,7 +155,7 @@ describe("Workflow", () => {
         { input: string },
         { output: string },
         TaskConfig
-      >(TestSingleTask);
+      >(TestSimpleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
 
@@ -253,7 +172,7 @@ describe("Workflow", () => {
         { input: string },
         { output: string },
         TaskConfig
-      >(TestSingleTask);
+      >(TestSimpleTask);
 
       workflow.parallel(
         (w) => addTestTask.call(w, { input: "test1" }),
@@ -261,9 +180,9 @@ describe("Workflow", () => {
       );
 
       expect(workflow.graph.getNodes()).toHaveLength(1);
-      expect(workflow.graph.getNodes()[0]).toBeInstanceOf(CompoundTask);
+      expect(workflow.graph.getNodes()[0]).toBeInstanceOf(Task);
 
-      const compoundTask = workflow.graph.getNodes()[0] as CompoundTask;
+      const compoundTask = workflow.graph.getNodes()[0];
       expect(compoundTask.subGraph?.getNodes()).toHaveLength(2);
     });
   });
@@ -302,7 +221,7 @@ describe("Workflow", () => {
         { input: string },
         { output: string },
         TaskConfig
-      >(TestSingleTask);
+      >(TestSimpleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
 
@@ -317,7 +236,7 @@ describe("Workflow", () => {
         { input: string },
         { output: string },
         TaskConfig
-      >(TestSingleTask);
+      >(TestSimpleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
       expect(workflow.graph.getNodes()).toHaveLength(1);
@@ -346,7 +265,7 @@ describe("Workflow", () => {
         { input: string },
         { output: string },
         TaskConfig
-      >(TestSingleTask);
+      >(TestSimpleTask);
       workflow = addTestTask.call(workflow, { input: "test" });
 
       expect(changedHandler).toHaveBeenCalled();
@@ -395,12 +314,12 @@ describe("Workflow", () => {
         { input: string },
         { output: string },
         TaskConfig
-      >(TestSingleTask);
+      >(TestSimpleTask);
       const addTestTask2 = Workflow.createWorkflow<
         { input: string },
         { output: string },
         TaskConfig
-      >(TestSingleTask);
+      >(TestSimpleTask);
       workflow = addTestTask1.call(workflow, { input: "test" });
       workflow = addTestTask2.call(workflow);
 
@@ -411,32 +330,6 @@ describe("Workflow", () => {
     });
 
     it("should not auto-connect when types don't match", () => {
-      class StringTask extends SingleTask<{ input: string }, { output: string }, TaskConfig> {
-        static type = "StringTask";
-        static inputs: TaskInputDefinition[] = [
-          { id: "input", valueType: "string", name: "Input" },
-        ];
-        static outputs: TaskOutputDefinition[] = [
-          { id: "output", valueType: "string", name: "Output" },
-        ];
-        async runFull(): Promise<any> {
-          return { output: "string" };
-        }
-      }
-
-      class NumberTask extends SingleTask<{ input: number }, { output: number }, TaskConfig> {
-        static type = "NumberTask";
-        static inputs: TaskInputDefinition[] = [
-          { id: "input", valueType: "number", name: "Input" },
-        ];
-        static outputs: TaskOutputDefinition[] = [
-          { id: "output", valueType: "number", name: "Output" },
-        ];
-        async runFull(): Promise<any> {
-          return { output: 123 };
-        }
-      }
-
       const addStringTask = Workflow.createWorkflow<
         { input: string },
         { output: string },

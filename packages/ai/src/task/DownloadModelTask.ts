@@ -12,7 +12,6 @@ import {
   ConvertAllToArrays,
   ConvertSomeToOptionalArray,
   arrayTaskFactory,
-  TaskOutput,
   JobQueueTaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,

@@ -7,33 +7,37 @@
 
 import { EventEmitter } from "@ellmers/util";
 import { nanoid } from "nanoid";
+import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskGraph } from "../task-graph/TaskGraph";
+import { TaskGraphRunner } from "../task-graph/TaskGraphRunner";
 import type { ITask } from "./ITask";
+import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 import {
-  TaskStatus,
-  type TaskTypeName,
-  type TaskInputDefinition,
-  type TaskOutputDefinition,
+  type TaskEventListener,
+  type TaskEventListeners,
+  type TaskEventParameters,
   type TaskEvents,
+} from "./TaskEvents";
+import type { TaskGraphItemJson, JsonTaskItem } from "./TaskJSON";
+import {
+  Provenance,
+  TaskStatus,
   type TaskConfig,
   type TaskInput,
+  type TaskInputDefinition,
   type TaskOutput,
-  type JsonTaskItem,
-  type TaskEventListener,
-  type TaskEventParameters,
-  type TaskEventListeners,
-  Provenance,
+  type TaskOutputDefinition,
+  type TaskTypeName,
 } from "./TaskTypes";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
-import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 
 /**
  * Base class for all tasks that implements the ITask interface.
- * This abstract class provides common functionality for both single and compound tasks.
+ * This abstract class provides common functionality for both simple and compound tasks.
  */
-export abstract class TaskBase<
-  Input extends TaskInput,
-  Output extends TaskOutput,
-  Config extends TaskConfig,
+export class Task<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
 > implements ITask<Input, Output, Config>
 {
   // ========================================================================
@@ -43,7 +47,7 @@ export abstract class TaskBase<
   /**
    * The type identifier for this task class
    */
-  public static readonly type: TaskTypeName = "TaskBase";
+  public static readonly type: TaskTypeName = "Task";
 
   /**
    * The category this task belongs to
@@ -65,14 +69,39 @@ export abstract class TaskBase<
    */
   public static readonly outputs: readonly TaskOutputDefinition[] = [];
 
-  // ========================================================================
-  // Instance properties - some to be overridden by subclasses
-  // ========================================================================
-
   /**
    * Whether this task is a compound task (contains subtasks)
    */
-  abstract readonly isCompound: boolean;
+  public static readonly isCompound: boolean = false;
+
+  // ========================================================================
+  // Static to Instance conversion methods
+  // ========================================================================
+
+  /**
+   * Gets input definitions for this task
+   */
+  get inputs(): readonly TaskInputDefinition[] {
+    return (this.constructor as typeof Task).inputs;
+  }
+
+  /**
+   * Gets output definitions for this task
+   */
+  get outputs(): readonly TaskOutputDefinition[] {
+    return (this.constructor as typeof Task).outputs ?? [];
+  }
+
+  /**
+   * Gets whether this task is a compound task (contains subtasks)
+   */
+  public get isCompound(): boolean {
+    return (this.constructor as typeof Task).isCompound;
+  }
+
+  // ========================================================================
+  // Instance properties - some to be overridden by subclasses
+  // ========================================================================
 
   /**
    * Default input values for this task.
@@ -178,6 +207,10 @@ export abstract class TaskBase<
       config
     );
 
+    if (this.isCompound) {
+      this.regenerateGraph();
+    }
+
     // Prevent serialization of events
     Object.defineProperty(this, "events", { enumerable: false });
   }
@@ -199,20 +232,6 @@ export abstract class TaskBase<
   }
 
   /**
-   * Gets input definitions for this task
-   */
-  get inputs(): TaskInputDefinition[] {
-    return ((this.constructor as typeof TaskBase).inputs as TaskInputDefinition[]) ?? [];
-  }
-
-  /**
-   * Gets output definitions for this task
-   */
-  get outputs(): TaskOutputDefinition[] {
-    return ((this.constructor as typeof TaskBase).outputs as TaskOutputDefinition[]) ?? [];
-  }
-
-  /**
    * Resets input data to defaults
    */
   public resetInputData(): void {
@@ -221,6 +240,11 @@ export abstract class TaskBase<
       this.runInputData = structuredClone(this.defaults) as Input;
     } catch (err) {
       this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as Input;
+    }
+    if (this.isCompound) {
+      this.subGraph!.getNodes().forEach((node) => {
+        node.resetInputData();
+      });
     }
   }
 
@@ -407,16 +431,87 @@ export abstract class TaskBase<
   // ========================================================================
 
   /**
-   * Runs the full task implementation
-   * @returns The output of the task
+   * Default implementation of runFull that just returns the current output data.
+   * Subclasses should override this to provide actual task functionality.
+   *
+   * @returns The task output
    */
-  public abstract runFull(): Promise<Output>;
+
+  public async runFull(): Promise<Output> {
+    if (!this.isCompound) {
+      this.runOutputData = await this.runReactive();
+    } else {
+      const runner = new TaskGraphRunner(this.subGraph!, this.outputCache);
+      // @ts-ignore TODO: fix this
+      this.runOutputData.outputs = await runner.runGraph(
+        this.nodeProvenance,
+        this.abortController!.signal
+      );
+    }
+    return this.runOutputData;
+  }
 
   /**
-   * Runs the task "reactively" for UI updates
-   * @returns The output of the task
+   * Default implementation of runReactive that just returns the current output data.
+   * Subclasses should override this to provide actual reactive functionality.
+   *
+   * This is generally for UI updating, and should be lightweight.
+   *
+   * @returns The task output
    */
-  public abstract runReactive(): Promise<Output>;
+  public async runReactive(): Promise<Output> {
+    if (!this.isCompound) {
+      if (Object.keys(this.runOutputData).length === 0) {
+        this.runOutputData = Object.assign({}, this.defaults) as Output;
+      }
+      return this.runOutputData;
+    } else {
+      const runner = new TaskGraphRunner(this.subGraph!);
+      // @ts-ignore TODO: fix this
+      this.runOutputData.outputs = await runner.runGraphReactive();
+      return this.runOutputData;
+    }
+  }
+
+  // ========================================================================
+  //  Compound task methods
+  // ========================================================================
+
+  /**
+   * The internal task graph containing subtasks
+   */
+  protected _subGraph: TaskGraph | null = null;
+
+  /**
+   * Sets the subtask graph for the compound task
+   * @param subGraph The subtask graph to set
+   */
+  set subGraph(subGraph: TaskGraph) {
+    this._subGraph = subGraph;
+  }
+
+  /**
+   * Gets the subtask graph for the compound task.
+   * Creates a new graph if one doesn't exist.
+   * @returns The subtask graph
+   */
+  get subGraph(): TaskGraph | null {
+    if (!this._subGraph && this.isCompound) {
+      this._subGraph = new TaskGraph();
+    }
+    return this._subGraph;
+  }
+
+  /**
+   * Regenerates the subtask graph and emits a "regenerate" event
+   *
+   * Subclasses should override this method to implement the actual graph
+   * regeneration logic, but all they need to do is call this method to
+   * emit the "regenerate" event.
+   */
+  public regenerateGraph(): void {
+    this.events.emit("regenerate");
+  }
 
   // ========================================================================
   // Input validation methods
@@ -477,7 +572,7 @@ export abstract class TaskBase<
    * @throws TaskInvalidInputError if the input is invalid
    */
   public async validateInputItem(input: Partial<Input>, inputId: keyof Input): Promise<boolean> {
-    const classRef = this.constructor as typeof TaskBase;
+    const classRef = this.constructor as typeof Task;
     const inputdef = this.inputs.find((def) => def.id === inputId);
 
     if (!inputdef) {
@@ -543,22 +638,34 @@ export abstract class TaskBase<
   // ========================================================================
 
   /**
-   * Converts the task to a JSON format
+   * Serializes the task and its subtasks into a format that can be stored
+   * @returns The serialized task and subtasks
    */
-  public toJSON(): JsonTaskItem {
+  public toJSON(): JsonTaskItem | TaskGraphItemJson {
+    this.resetInputData();
     const provenance = this.getProvenance();
-    return {
+    let json: JsonTaskItem | TaskGraphItemJson = {
       id: this.config.id,
-      type: (this.constructor as typeof TaskBase).type,
+      type: (this.constructor as typeof Task).type,
       input: this.defaults,
       ...(Object.keys(provenance).length ? { provenance } : {}),
     };
+    if (!this.isCompound) {
+      return json;
+    }
+    return { ...json, subgraph: this.subGraph!.toJSON() };
   }
 
   /**
    * Converts the task to a JSON format suitable for dependency tracking
+   * @returns The task and subtasks in JSON thats easier for humans to read
    */
-  toDependencyJSON(): JsonTaskItem {
-    return this.toJSON();
+  public toDependencyJSON(): JsonTaskItem {
+    this.resetInputData();
+    const json = this.toJSON();
+    if (this.isCompound) {
+      return { ...json, subtasks: this.subGraph!.toDependencyJSON() };
+    }
+    return json;
   }
 }

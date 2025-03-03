@@ -14,7 +14,7 @@ describe("DelayTask", () => {
   let task: DelayTask;
 
   beforeEach(() => {
-    task = new DelayTask({ id: "delayed", input: { delay: 10 } });
+    task = new DelayTask({ delay: 10 }, { id: "delayed" });
   });
 
   it("should complete successfully with short delay", async () => {

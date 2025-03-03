@@ -8,21 +8,24 @@
 import type { EventEmitter } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import type { TaskGraph } from "../task-graph/TaskGraph";
+import type { TaskGraphItemJson } from "./TaskJSON";
 import { TaskError } from "./TaskError";
 import type {
-  JsonTaskItem,
   Provenance,
   TaskConfig,
-  TaskEventListener,
-  TaskEventListeners,
-  TaskEventParameters,
-  TaskEvents,
   TaskInput,
   TaskInputDefinition,
   TaskOutput,
   TaskOutputDefinition,
   TaskStatus,
 } from "./TaskTypes";
+import type { JsonTaskItem } from "./TaskJSON";
+import type {
+  TaskEventListener,
+  TaskEventListeners,
+  TaskEventParameters,
+  TaskEvents,
+} from "./TaskEvents";
 
 /**
  * Interface for task static property metadata
@@ -35,6 +38,7 @@ export interface ITaskStaticProperties {
   readonly sideeffects: boolean;
   readonly inputs: readonly TaskInputDefinition[];
   readonly outputs: readonly TaskOutputDefinition[];
+  isCompound: boolean;
 }
 
 /**
@@ -69,14 +73,20 @@ export interface ITaskIO<
   runInputData: Input;
   runOutputData: Output;
 
-  get inputs(): TaskInputDefinition[]; // this gets local access for static input definition property
-  get outputs(): TaskOutputDefinition[]; // this gets local access for static output definition property
+  get inputs(): readonly TaskInputDefinition[]; // this gets local access for static input definition property
+  get outputs(): readonly TaskOutputDefinition[]; // this gets local access for static output definition property
 
   resetInputData(): void;
   setInput(input: Partial<Input>): void;
   validateItem(valueType: string, item: any): Promise<boolean>;
   validateInputItem(input: Partial<Input>, inputId: keyof Input): Promise<boolean>;
   validateInputData(input: Partial<Input>): Promise<boolean>;
+}
+
+export interface ITaskCompound {
+  get isCompound(): boolean; // this gets local access for static isCompound property
+  subGraph: TaskGraph | null;
+  regenerateGraph(): void;
 }
 
 /**
@@ -110,7 +120,7 @@ export interface ITaskLifecycle<Output extends TaskOutput = TaskOutput> {
  */
 export interface ITaskSerialization {
   getProvenance(): Provenance;
-  toJSON(): JsonTaskItem;
+  toJSON(): JsonTaskItem | TaskGraphItemJson;
   toDependencyJSON(): JsonTaskItem;
 }
 
@@ -126,9 +136,8 @@ export interface ITask<
     ITaskIO<Input, Output>,
     ITaskEvents,
     ITaskLifecycle<Output>,
-    ITaskSerialization {
-  readonly isCompound: boolean;
-}
+    ITaskCompound,
+    ITaskSerialization {}
 
 /**
  * Type for task constructor
@@ -147,26 +156,3 @@ export type ITaskConstructor<
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
 > = ITaskConstructorType<Input, Output, Config> & ITaskStaticProperties;
-
-/**
- * Interface for compound tasks
- */
-export interface ICompoundTask<
-  Input extends TaskInput,
-  Output extends TaskOutput,
-  Config extends TaskConfig,
-> extends ITask<Input, Output, Config> {
-  readonly isCompound: true;
-  readonly subGraph: TaskGraph;
-}
-
-/**
- * Interface for simple tasks
- */
-export interface ISimpleTask<
-  Input extends TaskInput,
-  Output extends TaskOutput,
-  Config extends TaskConfig,
-> extends ITask<Input, Output, Config> {
-  readonly isCompound: false;
-}

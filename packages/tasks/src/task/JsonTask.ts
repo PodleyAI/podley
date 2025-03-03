@@ -6,8 +6,6 @@
 // //    *******************************************************************************
 
 import {
-  CompoundTask,
-  RegenerativeCompoundTask,
   TaskConfig,
   JsonTaskItem,
   Dataflow,
@@ -20,6 +18,7 @@ import {
   TaskInput,
   TaskOutput,
   TaskConfigurationError,
+  Task,
 } from "@ellmers/task-graph";
 
 interface JsonTaskInput extends TaskInput {
@@ -38,9 +37,10 @@ export class JsonTask<
   Input extends JsonTaskInput = JsonTaskInput,
   Output extends JsonTaskOutput = JsonTaskOutput,
   Config extends TaskConfig = TaskConfig,
-> extends RegenerativeCompoundTask<Input, Output, Config> {
+> extends Task<Input, Output, Config> {
   static readonly type = "JsonTask";
   static readonly category = "Utility";
+  static readonly isCompound = true;
   public static inputs: TaskInputDefinition[] = [
     {
       id: "json",
@@ -71,7 +71,7 @@ export class JsonTask<
 
     const taskClass = TaskRegistry.all.get(item.type);
     if (!taskClass) throw new Error(`Task type ${item.type} not found`);
-    if (!(taskClass instanceof CompoundTask) && item.subtasks) {
+    if (!taskClass.isCompound && item.subtasks) {
       throw new TaskConfigurationError("Subgraph is only supported for CompoundTasks");
     }
 
@@ -82,7 +82,7 @@ export class JsonTask<
     };
 
     const task = new taskClass({}, taskConfig);
-    if (task instanceof CompoundTask && item.subtasks) {
+    if (task.isCompound && item.subtasks) {
       task.subGraph = this.createSubGraph(item.subtasks);
     }
     return task;

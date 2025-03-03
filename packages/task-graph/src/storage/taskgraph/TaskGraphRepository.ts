@@ -8,8 +8,8 @@
 import { EventEmitter, EventParameters } from "@ellmers/util";
 import type { TabularRepository } from "@ellmers/storage";
 import { Dataflow } from "../../task-graph/Dataflow";
-import { TaskGraph, TaskGraphItemJson, TaskGraphJson } from "../../task-graph/TaskGraph";
-import { CompoundTask } from "../../task/CompoundTask";
+import { TaskGraph } from "../../task-graph/TaskGraph";
+import { TaskGraphItemJson, TaskGraphJson } from "task/TaskJSON";
 import { TaskRegistry } from "../../task/TaskRegistry";
 import { TaskConfigurationError } from "../../task/TaskError";
 
@@ -101,7 +101,7 @@ export abstract class TaskGraphRepository {
 
     const taskClass = TaskRegistry.all.get(item.type);
     if (!taskClass) throw new TaskConfigurationError(`Task type ${item.type} not found`);
-    if (!(taskClass instanceof CompoundTask) && item.subgraph) {
+    if (!taskClass.isCompound && item.subgraph) {
       throw new TaskConfigurationError("Subgraph is only supported for CompoundTasks");
     }
 
@@ -112,7 +112,7 @@ export abstract class TaskGraphRepository {
     };
 
     const task = new taskClass(item.input ?? {}, taskConfig);
-    if (task instanceof CompoundTask && item.subgraph) {
+    if (task.isCompound && item.subgraph) {
       task.subGraph = this.createSubGraph(item.subgraph);
     }
     return task;

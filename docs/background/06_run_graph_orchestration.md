@@ -2,7 +2,7 @@
 
 ## Introduction
 
-We have Tasks (preprammed to do some action), Simple TaskList types (these get posted to job queues), and Compound task types that contain a whole graph. These are all internal and must be defined in code.
+We have Tasks (preprammed to do some action), JobQueueTask types (these get posted to job queues), and Compound task types (a task with isCompound=true that contains a subgraph) that contain a whole graph. These are all internal and must be defined in code.
 
 When an end user want to build a pipeline, they need to be able to define a list of tasks to run. This is where Graphs come in. The directed acyclic graph (DAG) is more flexible than simple chains.
 
@@ -16,8 +16,7 @@ We might want to have events based on what happens in the graph (and a suspend/r
 
 ### Node
 
-- SimpleTask
-- CompoundTask (has a sub-graph)
+- Task
 
 Notes about requirements for the nodes:
 
@@ -37,7 +36,7 @@ Notes about requirements for the edges:
 
 ### Graph Runner
 
-The graph runner is a simple recursive function that takes a graph and a node and runs the node. If the node is a task, it runs the task. If the node is a CompoundTask, it runs the subgraph.
+The graph runner is a simple recursive function that takes a graph and a node and runs the node. If the node is a task, it runs the task. If the node has a sub-graph, it runs the sub-graph.
 
 # User Task Graph
 
