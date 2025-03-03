@@ -7,7 +7,7 @@
 
 import { TaskGraph, TaskGraphRunner } from "@ellmers/task-graph";
 import React from "react";
-import { render } from "ink";
+import { render } from "tuir";
 import App from "./components/App";
 import { sleep } from "@ellmers/util";
 

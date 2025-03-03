@@ -13,7 +13,7 @@ const App: React.FC<AppProps> = ({ runner }) => {
       <Box marginBottom={1}>
         <Text bold>Ellmers Task Graph Runner</Text>
       </Box>
-      <TaskGraphUI graph={runner.dag} />
+      <TaskGraphUI graph={runner.graph} />
     </Box>
   );
 };

@@ -7,19 +7,19 @@
 
 import React, { useState, useEffect } from "react";
 import { Box } from "tuir";
-import { Task, TaskGraph } from "@ellmers/task-graph";
+import { ITask, TaskGraph } from "@ellmers/task-graph";
 import { TaskUI } from "./TaskUI";
 
 type TaskGraphUIProps = {
   graph: TaskGraph;
 };
 
-function findRootTasks(graph: TaskGraph): Task[] {
+function findRootTasks(graph: TaskGraph): ITask[] {
   return graph.getNodes().filter((task) => graph.getSourceTasks(task.config.id).length === 0);
 }
 
 const TaskGraphUI: React.FC<TaskGraphUIProps> = ({ graph }) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<ITask[]>([]);
   const [status, setStatus] = useState<number>(0);
 
   // Force a re-render
@@ -29,7 +29,7 @@ const TaskGraphUI: React.FC<TaskGraphUIProps> = ({ graph }) => {
 
   // Set up event listeners for task status changes
   useEffect(() => {
-    const setupTaskListeners = (currentTask: Task) => {
+    const setupTaskListeners = (currentTask: ITask) => {
       // Set up listeners for this task
       currentTask.on("regenerate", forceUpdate);
     };

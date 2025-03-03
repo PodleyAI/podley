@@ -22,7 +22,7 @@ import {
 } from "@ellmers/task-graph";
 
 interface JsonTaskInput extends TaskInput {
-  json?: string;
+  json: string;
 }
 
 interface JsonTaskOutput extends TaskOutput {
@@ -61,7 +61,7 @@ export class JsonTask<
    * Creates a task instance from a JSON task item configuration
    * Validates required fields and resolves task type from registry
    */
-  private createTask(item: JsonTaskItem) {
+  private createTaskFromJSON(item: JsonTaskItem) {
     if (!item.id) throw new Error("Task id required");
     if (!item.type) throw new Error("Task type required");
     if (item.input && (Array.isArray(item.input) || Array.isArray(item.provenance)))
@@ -80,8 +80,7 @@ export class JsonTask<
       name: item.name,
       provenance: item.provenance ?? {},
     };
-
-    const task = new taskClass({}, taskConfig);
+    const task = new taskClass(item.input ?? {}, taskConfig);
     if (task.isCompound && item.subtasks) {
       task.subGraph = this.createSubGraph(item.subtasks);
     }
@@ -95,7 +94,7 @@ export class JsonTask<
   private createSubGraph(jsonItems: JsonTaskItem[]) {
     const subGraph = new TaskGraph();
     for (const subitem of jsonItems) {
-      subGraph.addTask(this.createTask(subitem));
+      subGraph.addTask(this.createTaskFromJSON(subitem));
     }
     return subGraph;
   }

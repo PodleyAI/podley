@@ -22,7 +22,7 @@ export function AddBaseCommands(program: Command) {
       if (options.model) {
         const model = await getGlobalModelRepository().findByName(options.model);
         if (model) {
-          graph.addTask(new DownloadModelTask({ input: { model: model.name } }));
+          graph.addTask(new DownloadModelTask({ model: model.name }));
         } else {
           program.error(`Unknown model ${options.model}`);
         }
@@ -141,7 +141,7 @@ export function AddBaseCommands(program: Command) {
         ];
         json = JSON.stringify(exampleJson);
       }
-      const task = new JsonTask({ name: "JSON Task Example", input: { json } });
+      const task = new JsonTask({ json }, { name: "JSON Task Example" });
       const graph = new TaskGraph();
       graph.addTask(task);
       try {
@@ -161,7 +161,7 @@ export function AddBaseCommands(program: Command) {
         .TextEmbedding({
           text: "The quick brown fox jumps over the lazy dog.",
         })
-        .rename("vector", "message")
+        .rename("*", "messages")
         .DebugLog();
 
       try {
