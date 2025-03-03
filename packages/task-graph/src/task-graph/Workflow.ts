@@ -5,8 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter, EventParameters } from "@ellmers/util";
+import { EventEmitter, type EventParameters } from "@ellmers/util";
 import type { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import type { ITask, ITaskConstructor } from "../task/ITask";
+import { Task } from "../task/Task";
+import { WorkflowError } from "../task/TaskError";
+import type { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import {
   TaskConfig,
   TaskOutput,
@@ -14,14 +18,9 @@ import {
   type TaskInputDefinition,
   type TaskOutputDefinition,
 } from "../task/TaskTypes";
-import { type JsonTaskItem } from "task/TaskJSON";
-import { Task } from "../task/Task";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph } from "./TaskGraph";
-import { TaskGraphJson } from "task/TaskJSON";
 import { TaskGraphRunner } from "./TaskGraphRunner";
-import { WorkflowError } from "../task/TaskError";
-import { ITask, ITaskConstructor } from "../task/ITask";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
@@ -323,7 +322,7 @@ export class Workflow {
       fn(group);
     }
 
-    const groupTask = new Task({ input: {} });
+    const groupTask = new Task();
     groupTask.subGraph = group._graph;
     this._graph.addTask(groupTask);
 

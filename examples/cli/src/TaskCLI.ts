@@ -161,7 +161,7 @@ export function AddBaseCommands(program: Command) {
         .TextEmbedding({
           text: "The quick brown fox jumps over the lazy dog.",
         })
-        .rename("*", "messages")
+        .rename("*", "console")
         .DebugLog();
 
       try {

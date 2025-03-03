@@ -6,16 +6,10 @@
 //    *******************************************************************************
 
 import { TaskError } from "../task/TaskError";
+import { DataflowJson } from "../task/TaskJSON";
 import { Provenance, TaskIdType, TaskOutput, TaskStatus } from "../task/TaskTypes";
 
 export type DataflowIdType = `${string}.${string} -> ${string}.${string}`;
-
-export type DataflowJson = {
-  sourceTaskId: unknown;
-  sourceTaskPortId: string;
-  targetTaskId: unknown;
-  targetTaskPortId: string;
-};
 
 export const DATAFLOW_ALL_PORTS = "*";
 export const DATAFLOW_ERROR_PORT = "[error]";

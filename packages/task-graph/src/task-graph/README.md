@@ -46,8 +46,8 @@ npm install @ellmers/task-graph
 import { TaskGraph, Dataflow } from "@ellmers/task-graph";
 
 const graph = new TaskGraph();
-const task1 = new TestTask({ id: "task1" });
-const task2 = new TestTask({ id: "task2" });
+const task1 = new TestTask({ input: "hello" }, { id: "task1" });
+const task2 = new TestTask({ input: "world" }, { id: "task2" });
 
 graph.addTasks([task1, task2]);
 graph.addDataflow(new Dataflow("task1", "output", "task2", "input"));

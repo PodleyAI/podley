@@ -60,7 +60,7 @@ workflow
     text: "The quick brown fox jumps over the lazy dog.",
     prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
   })
-  .rename("text", "message")
+  .rename("text", "console")
   .DebugLog();
 await workflow.run();
 
@@ -89,19 +89,19 @@ registerHuggingfaceLocalTasksInMemory();
 
 // build and run graph
 const graph = new TaskGraph();
+graph.addTask(new DownloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" }, { id: "1" }));
 graph.addTask(
-  new DownloadModel({ id: "1", input: { model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" } })
-);
-graph.addTask(
-  new TextRewriterCompoundTask({
-    id: "2",
-    input: {
+  new TextRewriterCompoundTask(
+    {
       text: "The quick brown fox jumps over the lazy dog.",
       prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
     },
-  })
+    {
+      id: "2",
+    }
+  )
 );
-graph.addTask(new DebugLog({ id: "3" }));
+graph.addTask(new DebugLog({}, { id: "3" }));
 graph.addDataflow(
   new Dataflow({
     sourceTaskId: "1",
@@ -115,7 +115,7 @@ graph.addDataflow(
     sourceTaskId: "2",
     sourceTaskPortId: "text",
     targetTaskId: "3",
-    targetTaskPortId: "message",
+    targetTaskPortId: "console",
   })
 );
 
@@ -191,19 +191,17 @@ jobQueue.start();
 
 // build and run graph
 const graph = new TaskGraph();
+graph.addTask(new DownloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" }, { id: "1" }));
 graph.addTask(
-  new DownloadModel({ id: "1", input: { model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" } })
-);
-graph.addTask(
-  new TextRewriterCompoundTask({
-    id: "2",
-    input: {
+  new TextRewriterCompoundTask(
+    {
       text: "The quick brown fox jumps over the lazy dog.",
       prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
     },
-  })
+    { id: "2" }
+  )
 );
-graph.addTask(new DebugLog({ id: "3" }));
+graph.addTask(new DebugLog({}, { id: "3" }));
 graph.addDataflow(
   new Dataflow({
     sourceTaskId: "1",
@@ -217,7 +215,7 @@ graph.addDataflow(
     sourceTaskId: "2",
     sourceTaskPortId: "text",
     targetTaskId: "3",
-    targetTaskPortId: "message",
+    targetTaskPortId: "console",
   })
 );
 
@@ -292,7 +290,7 @@ workflow
   .TextEmbedding({
     text: "The quick brown fox jumps over the lazy dog.",
   });
-  .rename("vector", "message")
+  .rename("*", "console")
   .DebugLog();
 await workflow.run();
 ```
@@ -368,7 +366,7 @@ The JSON above is a good example as it shows how to use a compound task with mul
 ```ts
 import { JSONTask } from "@ellmers/task-graph";
 const json = require("./example.json");
-const task = new JSONTask({ input: { json } });
+const task = new JSONTask({ json });
 await task.run();
 ```
 
@@ -380,11 +378,8 @@ To use a task, instantiate it with some input and call `run()`:
 
 ```ts
 const task = new TextEmbeddingTask({
-  id: "1",
-  input: {
-    model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
-    text: "The quick brown fox jumps over the lazy dog.",
-  },
+  model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
+  text: "The quick brown fox jumps over the lazy dog.",
 });
 const result = await task.run();
 console.log(result);
@@ -402,11 +397,9 @@ Example:
 const graph = new TaskGraph();
 graph.addTask(
   new TextRewriterCompoundTask({
-    input: {
-      model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
-      text: "The quick brown fox jumps over the lazy dog.",
-      prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
-    },
+    model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
+    text: "The quick brown fox jumps over the lazy dog.",
+    prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
   })
 );
 ```
@@ -420,20 +413,16 @@ Example, adding a data flow to the graph similar to above:
 ```ts
 const graph = new TaskGraph();
 graph.addTask(
-  new TextRewriterCompoundTask({
-    id: "1",
-    input: {
+  new TextRewriterCompoundTask(
+    {
       model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
       text: "The quick brown fox jumps over the lazy dog.",
       prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
     },
-  })
+    { id: "1" }
+  )
 );
-graph.addTask(
-  new DebugLogTask({
-    id: "2",
-  })
-);
+graph.addTask(new DebugLogTask({}, { id: "2" }));
 graph.addDataflow(
   new Dataflow({
     sourceTaskId: "1",

@@ -11,6 +11,7 @@ import type { TaskGraph } from "../task-graph/TaskGraph";
 import type { TaskGraphItemJson } from "./TaskJSON";
 import { TaskError } from "./TaskError";
 import type {
+  IConfig,
   Provenance,
   TaskConfig,
   TaskInput,
@@ -53,7 +54,7 @@ export interface ITaskRunFunctions<Input extends TaskInput, Output extends TaskO
  * Interface for task configuration and state
  */
 export interface ITaskState<Config extends TaskConfig = TaskConfig> {
-  readonly config: Config;
+  readonly config: IConfig & Config;
   status: TaskStatus;
   progress: number;
   createdAt: Date;

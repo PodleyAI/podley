@@ -20,11 +20,11 @@ const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
 
 export type DebugLogTaskInput = {
-  messages: any;
+  console: any;
   log_level: LogLevel;
 };
 export type DebugLogTaskOutput = {
-  messages: any;
+  console: any;
 };
 
 const DEFAULT_LOG_LEVEL: LogLevel = "log";
@@ -50,7 +50,7 @@ export class DebugLogTask<
   static readonly sideeffects = true;
   public static inputs: TaskInputDefinition[] = [
     {
-      id: "messages",
+      id: "console",
       name: "Messages",
       valueType: "any",
       isArray: true,
@@ -64,20 +64,20 @@ export class DebugLogTask<
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
     {
-      id: "messages",
+      id: "console",
       name: "Messages",
       valueType: "any",
     },
   ] as const;
 
   async runReactive() {
-    const { log_level = DEFAULT_LOG_LEVEL, messages } = this.runInputData;
+    const { log_level = DEFAULT_LOG_LEVEL, console: messages } = this.runInputData;
     if (log_level == "dir") {
       console.dir(messages, { depth: null });
     } else {
       console[log_level](messages);
     }
-    this.runOutputData.messages = messages;
+    this.runOutputData.console = messages;
     return this.runOutputData;
   }
 

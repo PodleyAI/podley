@@ -20,6 +20,7 @@ import {
 } from "./TaskEvents";
 import type { TaskGraphItemJson, JsonTaskItem } from "./TaskJSON";
 import {
+  IConfig,
   Provenance,
   TaskStatus,
   type TaskConfig,
@@ -99,6 +100,14 @@ export class Task<
     return (this.constructor as typeof Task).isCompound;
   }
 
+  public get type(): TaskTypeName {
+    return (this.constructor as typeof Task).type;
+  }
+
+  public get category(): string {
+    return (this.constructor as typeof Task).category;
+  }
+
   // ========================================================================
   // Instance properties - some to be overridden by subclasses
   // ========================================================================
@@ -130,7 +139,7 @@ export class Task<
   /**
    * The configuration of the task
    */
-  config: Config;
+  config: IConfig & Config;
 
   /**
    * Current status of the task
@@ -198,7 +207,7 @@ export class Task<
     this.resetInputData();
 
     // Setup configuration defaults
-    const name = new.target.type || new.target.name;
+    const name = this.type || new.target.type || new.target.name;
     this.config = Object.assign(
       {
         id: nanoid(),
@@ -642,11 +651,11 @@ export class Task<
    * @returns The serialized task and subtasks
    */
   public toJSON(): JsonTaskItem | TaskGraphItemJson {
-    this.resetInputData();
+    // this.resetInputData();
     const provenance = this.getProvenance();
     let json: JsonTaskItem | TaskGraphItemJson = {
       id: this.config.id,
-      type: (this.constructor as typeof Task).type,
+      type: this.type,
       input: this.defaults,
       ...(Object.keys(provenance).length ? { provenance } : {}),
     };
@@ -661,7 +670,7 @@ export class Task<
    * @returns The task and subtasks in JSON thats easier for humans to read
    */
   public toDependencyJSON(): JsonTaskItem {
-    this.resetInputData();
+    // this.resetInputData();
     const json = this.toJSON();
     if (this.isCompound) {
       return { ...json, subtasks: this.subGraph!.toDependencyJSON() };

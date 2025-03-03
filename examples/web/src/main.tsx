@@ -48,7 +48,7 @@ console.log(
 
   workflow.%cDownloadModel%c({ %cmodel%c: [%c'ONNX Xenova/LaMini-Flan-T5-783M q8']%c });
   workflow.%cTextRewriter%c({ %ctext%c: %c'The quick brown fox jumps over the lazy dog.'%c, %cprompt%c: [%c'Rewrite the following text in reverse:'%c, %c'Rewrite this to sound like a pirate:'%c] });
-  workflow.%crename%c(%c'text'%c, %c'message'%c);
+  workflow.%crename%c(%c'*'%c, %c'console'%c);
   workflow.%cDebugLog%c({ %clevel%c: %c'info'%c });
   
   console.log(JSON.stringify(workflow.toJSON(),null,2));

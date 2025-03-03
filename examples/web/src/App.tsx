@@ -5,20 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { env } from "@huggingface/transformers";
 import { ReactFlowProvider } from "@xyflow/react";
-import { JsonTask } from "@ellmers/tasks";
-import {
-  JsonTaskItem,
-  TaskGraph,
-  Workflow,
-  TaskInput,
-  TaskOutput,
-  getTaskQueueRegistry,
-  IndexedDbTaskGraphRepository,
-  IndexedDbTaskOutputRepository,
-} from "@ellmers/task-graph";
-import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
+import { AiJob } from "@ellmers/ai";
 import {
   LOCAL_ONNX_TRANSFORMERJS,
   registerHuggingfaceLocalTasks,
@@ -27,16 +17,25 @@ import {
   MEDIA_PIPE_TFJS_MODEL,
   registerMediaPipeTfJsLocalTasks,
 } from "@ellmers/ai-provider/tf-mediapipe";
-import { registerMediaPipeTfJsLocalModels, registerHuggingfaceLocalModels } from "@ellmers/test";
-import { env } from "@huggingface/transformers";
-import { AiJob } from "@ellmers/ai";
-
-import { RunGraphFlow } from "./RunGraphFlow";
-import { JsonEditor } from "./JsonEditor";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
-import { QueuesStatus } from "./QueueStatus";
-import { OutputRepositoryStatus } from "./OutputRepositoryStatus";
+import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
+import {
+  getTaskQueueRegistry,
+  IndexedDbTaskGraphRepository,
+  IndexedDbTaskOutputRepository,
+  JsonTaskItem,
+  TaskGraph,
+  TaskInput,
+  TaskOutput,
+  Workflow,
+} from "@ellmers/task-graph";
+import { JsonTask } from "@ellmers/tasks";
+import { registerHuggingfaceLocalModels, registerMediaPipeTfJsLocalModels } from "@ellmers/test";
 import { GraphStoreStatus } from "./GraphStoreStatus";
+import { JsonEditor } from "./JsonEditor";
+import { OutputRepositoryStatus } from "./OutputRepositoryStatus";
+import { QueuesStatus } from "./QueueStatus";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
+import { RunGraphFlow } from "./RunGraphFlow";
 
 env.backends.onnx.wasm.proxy = true;
 
@@ -89,8 +88,8 @@ const resetGraph = () => {
       source_lang: "en",
       target_lang: "es",
     })
-    .rename("*", "messages")
-    .rename("*", "messages", -2)
+    .rename("*", "console")
+    .rename("*", "console", -2)
     .DebugLog({ log_level: "info" });
   taskGraphRepo.saveTaskGraph("default", workflow.graph);
 };
@@ -168,7 +167,7 @@ export const App = () => {
   }, []);
 
   const setNewJson = useCallback((json: string) => {
-    const task = new JsonTask({ input: { json: json } });
+    const task = new JsonTask({ json });
     workflow.graph = task.subGraph;
     setJsonData(json);
   }, []);

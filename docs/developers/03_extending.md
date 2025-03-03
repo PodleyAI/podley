@@ -20,7 +20,7 @@ Here we will write an example of a simple Task that prints a message to the cons
 
 ```ts
 export class SimpleDebugLogTask extends SimpleTask {
-  run() {
+  runFull() {
     console.dir(<something>, { depth: null });
   }
 }
@@ -50,12 +50,12 @@ export class SimpleDebugLogTask extends SimpleTask {
   ] as const;
   declare defaults: Partial<SimpleDebugLogTaskInputs>;
   declare runInputData: SimpleDebugLogTaskInputs;
-  run() {
+  runFull() {
     console.dir(this.runInputData.message, { depth: null });
   }
 }
 
-new SimpleDebugLogTask({ input: { message: "hello world" } }).run();
+new SimpleDebugLogTask({ message: "hello world" }).run();
 ```
 
 Since the code itself can't read the TypeScript types, we need to explain in the static value `inputs`. We still create a type `SimpleDebugLogTaskInputs` to help us since we are writing TypeScript code. We use it to re-type (`declare`) the `defaults` and `runInputData` properties.
@@ -92,14 +92,14 @@ export class SimpleDebugLogTask extends SimpleTask {
     },
   ] as const;
   declare runOutputData: SimpleDebugLogTaskOutputs;
-  run() {
+  runFull() {
     console.dir(this.runInputData.message, { depth: null });
     this.runOutputData.output = this.runInputData.message;
     return this.runOutputData;
   }
 }
 
-new SimpleDebugLogTask({ input: { message: "hello world" } }).run();
+new SimpleDebugLogTask({ message: "hello world" }).run();
 ```
 
 In the above code, we added an output to the Task. We also added `static sideeffects` flag to tell the system that this Task has side effects. This is important for the system to know if it can cache the output of the Task or not. If a Task has side effects, it should not be cached.

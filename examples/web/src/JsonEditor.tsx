@@ -41,7 +41,7 @@ export const JsonEditor: React.FC<PopupProps> = ({
       // this will throw an error if the JSON is invalid
       JSON.parse(jsonString);
       // this will throw an error if the JSON is not a valid task graph
-      new JsonTask({ name: "Test JSON", input: { json: jsonString } });
+      new JsonTask({ json: jsonString }, { name: "Test JSON" });
 
       setIsValidJSON(true);
       setCode(jsonString);

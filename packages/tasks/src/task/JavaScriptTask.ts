@@ -65,7 +65,7 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
 TaskRegistry.registerTask(JavaScriptTask);
 
 export const JavaScript = (input: JavaScriptTaskInput) => {
-  return new JavaScriptTask({ input }).run();
+  return new JavaScriptTask(input).run();
 };
 
 declare module "@ellmers/task-graph" {

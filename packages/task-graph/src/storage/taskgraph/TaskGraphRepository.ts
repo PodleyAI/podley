@@ -7,11 +7,8 @@
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
 import type { TabularRepository } from "@ellmers/storage";
-import { Dataflow } from "../../task-graph/Dataflow";
 import { TaskGraph } from "../../task-graph/TaskGraph";
-import { TaskGraphItemJson, TaskGraphJson } from "task/TaskJSON";
-import { TaskRegistry } from "../../task/TaskRegistry";
-import { TaskConfigurationError } from "../../task/TaskError";
+import { createGraphFromGraphJSON } from "../../task/TaskJSON";
 
 /**
  * Events that can be emitted by the TaskGraphRepository
@@ -86,62 +83,6 @@ export abstract class TaskGraphRepository {
   }
 
   /**
-   * Creates a task instance from a task graph item JSON representation
-   * @param item The JSON representation of the task
-   * @returns A new task instance
-   * @throws Error if required fields are missing or invalid
-   */
-  private createTaskFromJSON(item: TaskGraphItemJson) {
-    if (!item.id) throw new TaskConfigurationError("Task id required");
-    if (!item.type) throw new TaskConfigurationError("Task type required");
-    if (item.input && (Array.isArray(item.input) || Array.isArray(item.provenance)))
-      throw new TaskConfigurationError("Task input must be an object");
-    if (item.provenance && (Array.isArray(item.provenance) || typeof item.provenance !== "object"))
-      throw new TaskConfigurationError("Task provenance must be an object");
-
-    const taskClass = TaskRegistry.all.get(item.type);
-    if (!taskClass) throw new TaskConfigurationError(`Task type ${item.type} not found`);
-    if (!taskClass.isCompound && item.subgraph) {
-      throw new TaskConfigurationError("Subgraph is only supported for CompoundTasks");
-    }
-
-    const taskConfig = {
-      id: item.id,
-      name: item.name,
-      provenance: item.provenance ?? {},
-    };
-
-    const task = new taskClass(item.input ?? {}, taskConfig);
-    if (task.isCompound && item.subgraph) {
-      task.subGraph = this.createSubGraph(item.subgraph);
-    }
-    return task;
-  }
-
-  /**
-   * Creates a TaskGraph instance from its JSON representation
-   * @param graphJsonObj The JSON representation of the task graph
-   * @returns A new TaskGraph instance with all tasks and data flows
-   */
-  public createSubGraph(graphJsonObj: TaskGraphJson) {
-    const subGraph = new TaskGraph();
-    for (const subitem of graphJsonObj.nodes) {
-      subGraph.addTask(this.createTaskFromJSON(subitem));
-    }
-    for (const subitem of graphJsonObj.edges) {
-      subGraph.addDataflow(
-        new Dataflow(
-          subitem.sourceTaskId,
-          subitem.sourceTaskPortId,
-          subitem.targetTaskId,
-          subitem.targetTaskPortId
-        )
-      );
-    }
-    return subGraph;
-  }
-
-  /**
    * Saves a task graph to persistent storage
    * @param key The unique identifier for the task graph
    * @param output The task graph to save
@@ -166,8 +107,7 @@ export abstract class TaskGraphRepository {
       return undefined;
     }
     const jsonObj = JSON.parse(value);
-
-    const graph = this.createSubGraph(jsonObj);
+    const graph = createGraphFromGraphJSON(jsonObj);
 
     this.events.emit("graph_retrieved", key);
     return graph;
