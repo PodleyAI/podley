@@ -6,28 +6,20 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { TaskOutput } from "../../task/TaskTypes";
-import { SingleTask } from "../../task/SingleTask";
 import { Dataflow } from "../Dataflow";
 import { TaskGraph, serialGraph } from "../../task-graph/TaskGraph";
-
-class TestTask extends SingleTask {
-  static readonly type = "TestTask";
-  async runReactive(): Promise<TaskOutput> {
-    return {};
-  }
-}
+import { TestIOTask } from "../../task/test/TestTasks";
 
 describe("TaskGraph", () => {
   let graph = new TaskGraph();
-  let tasks: TestTask[];
+  let tasks: TestIOTask[];
 
   beforeEach(() => {
     graph = new TaskGraph();
     tasks = [
-      new TestTask({}, { id: "task1" }),
-      new TestTask({}, { id: "task2" }),
-      new TestTask({}, { id: "task3" }),
+      new TestIOTask({}, { id: "task1" }),
+      new TestIOTask({}, { id: "task2" }),
+      new TestIOTask({}, { id: "task3" }),
     ];
   });
 

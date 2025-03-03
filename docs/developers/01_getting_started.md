@@ -1,31 +1,28 @@
-- [Developer Getting Started](#developer-getting-started)
-- [Get Shit Done](#get-shit-done)
-  - [Using Workflow \& a config helper](#using-workflow--a-config-helper)
-  - [Using Task and TaskGraph directly (\& a config helper)](#using-task-and-taskgraph-directly--a-config-helper)
-  - [Using Task and TaskGraph directly (no config helper)](#using-task-and-taskgraph-directly-no-config-helper)
-  - [Preset Configs](#preset-configs)
-    - [Registering Providers](#registering-providers)
-    - [Registering Provider plus related Job Queue](#registering-provider-plus-related-job-queue)
-      - [In memory:](#in-memory)
-      - [Using Sqlite:](#using-sqlite)
-  - [Workflow](#workflow)
-  - [JSON Configuration](#json-configuration)
-- [Going Deeper](#going-deeper)
-  - [Tasks](#tasks)
-  - [TaskGraph](#taskgraph)
-  - [Dataflows](#dataflows)
-  - [TaskGraphRunner](#taskgraphrunner)
-- [Appendix](#appendix)
-  - [Source](#source)
-    - [`docs/`](#docs)
-    - [`packages/storage`](#packagesstorage)
-    - [`packages/job-queue`](#packagesjob-queue)
-    - [`packages/task-graph`](#packagestask-graph)
-    - [`packages/ai`](#packagesai)
-    - [`packages/ai-provider`](#packagesai-provider)
-    - [`examples/cli`](#examplescli)
-    - [`examples/web`](#examplesweb)
-    - [`examples/ngraph`](#examplesngraph)
+- [Using Workflow \& a config helper](#using-workflow--a-config-helper)
+- [Using Task and TaskGraph directly (\& a config helper)](#using-task-and-taskgraph-directly--a-config-helper)
+- [Using Task and TaskGraph directly (no config helper)](#using-task-and-taskgraph-directly-no-config-helper)
+- [Preset Configs](#preset-configs)
+  - [Registering Providers](#registering-providers)
+  - [Registering Provider plus related Job Queue](#registering-provider-plus-related-job-queue)
+    - [In memory:](#in-memory)
+    - [Using Sqlite:](#using-sqlite)
+- [Workflow](#workflow)
+- [JSON Configuration](#json-configuration)
+- [Tasks](#tasks)
+- [TaskGraph](#taskgraph)
+- [Dataflows](#dataflows)
+- [TaskGraphRunner](#taskgraphrunner)
+- [Source](#source)
+  - [`docs/`](#docs)
+  - [`packages/storage`](#packagesstorage)
+  - [`packages/job-queue`](#packagesjob-queue)
+  - [`packages/task-graph`](#packagestask-graph)
+  - [`packages/ai`](#packagesai)
+  - [`packages/ai-provider`](#packagesai-provider)
+  - [`packages/util`](#packagesutil)
+  - [`examples/cli`](#examplescli)
+  - [`examples/web`](#examplesweb)
+  - [`examples/ngraph`](#examplesngraph)
 
 # Developer Getting Started
 
@@ -257,7 +254,7 @@ LLM providers have long running functions. These are handled by a Job Queue. The
 
 Every task in the library has a corresponding method in the Workflow. The workflow is a simple way to build a graph. It is not meant to be a full replacement for the creating a TaskGraph directly, but it is a good way to get started.
 
-Tasks are the smallest unit of work, therefore they take simple inputs. Most Tasks has a corresponding CompoundTask version that takes arrays for some inputs. These are the ones that the task workflow uses.
+Tasks are the smallest unit of work, therefore they take simple inputs, but can indicate that they are compound tasks by having a `static isCompound` property.
 
 An example is TextEmbeddingTask and TextEmbeddingCompoundTask. The first takes a single model input, the second accepts an array of model inputs. Since models can have different providers, the Compound version creates a single task version for each model input. The workflow is smart enough to know that the Compound version is needed when an array is passed, and as such, you don't need to differentiate between the two:
 
@@ -485,6 +482,10 @@ These are the LLM tasks, models, etc. These tasks are agnostic to the provider a
 ### `packages/ai-provider`
 
 This is the Huggingface Transformers JS (using ONNX) and TensorFlow MediaPipe providers.
+
+### `packages/util`
+
+This is a collection of utility functions.
 
 ### `examples/cli`
 

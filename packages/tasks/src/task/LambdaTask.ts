@@ -6,7 +6,6 @@
 //    *******************************************************************************
 
 import {
-  SingleTask,
   TaskOutput,
   Workflow,
   CreateWorkflow,
@@ -15,6 +14,7 @@ import {
   TaskInputDefinition,
   TaskOutputDefinition,
   TaskConfig,
+  Task,
 } from "@ellmers/task-graph";
 
 type LambdaTaskConfig<
@@ -37,7 +37,7 @@ export class LambdaTask<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends LambdaTaskConfig<Input, Output> = LambdaTaskConfig<Input, Output>,
-> extends SingleTask<Input, Output, Config> {
+> extends Task<Input, Output, Config> {
   static readonly type = "LambdaTask";
 
   /**

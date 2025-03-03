@@ -66,9 +66,9 @@ const results = await runner.runGraph();
 
 ```typescript
 const workflow = new Workflow()
-  .TestSingleTask({ input: "start" })
+  .SimpleTask({ input: "start" })
   .rename("output", "input")
-  .TestProcessingTask()
+  .SimpleProcessingTask()
   .parallel(
     (w) => w.TestParallelTask1(),
     (w) => w.TestParallelTask2()
@@ -119,7 +119,7 @@ bun test:watch  # For development
 
 ### `TaskGraph` Class
 
-- `addTask(task: Task)`: Add a single task
+- `addTask(task: Task)`: Add a task
 - `addDataflow(dataflow: Dataflow)`: Connect tasks
 - `getSourceTasks()`/`getTargetTasks()`: Navigate dependencies
 - `toJSON()`: Serialize graph structure

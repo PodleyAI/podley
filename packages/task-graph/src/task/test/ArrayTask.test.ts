@@ -5,85 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, test, expect } from "bun:test";
-import { SingleTask } from "../SingleTask";
-import { ConvertAllToArrays } from "../ArrayTask";
-import { ConvertSomeToOptionalArray } from "../ArrayTask";
-import { arrayTaskFactory } from "../ArrayTask";
+import { describe, expect, test } from "bun:test";
 import { TaskGraph } from "../../task-graph/TaskGraph";
 import { TaskGraphRunner } from "../../task-graph/TaskGraphRunner";
-import { TaskEvents, TaskStatus, TaskOutputDefinition, TaskInputDefinition } from "../TaskTypes";
-import { TaskError } from "../TaskError";
 import { ITask } from "../ITask";
-import { JobQueueTaskConfig } from "../../node";
-type TestSquareTaskInput = {
-  input: number;
-};
-type TestSquareTaskOutput = {
-  output: number;
-};
-class TestSquareTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutput> {
-  static readonly type = "TestSquareTask";
-  static readonly inputs: TaskInputDefinition[] = [
-    {
-      id: "input",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
-  static readonly outputs: TaskOutputDefinition[] = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
-  async runReactive(): Promise<TestSquareTaskOutput> {
-    return { output: this.runInputData.input * this.runInputData.input };
-  }
-}
-
-export const TestSquareMultiInputTask = arrayTaskFactory<
-  ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>,
-  TestSquareTaskInput,
-  TestSquareTaskOutput,
-  JobQueueTaskConfig
->(TestSquareTask, ["input"]);
-
-// Create an error-throwing task for testing error handling
-class TestSquareErrorTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutput> {
-  static readonly type = "TestSquareErrorTask";
-  static inputs = [
-    {
-      id: "input",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
-  static outputs = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
-  async runReactive(): Promise<TestSquareTaskOutput> {
-    if (this.runInputData.input === 2) {
-      throw new TaskError("Test error");
-    }
-    return { output: this.runInputData.input * this.runInputData.input };
-  }
-}
-
-export const TestErrorMultiInputTask = arrayTaskFactory<
-  ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>,
-  TestSquareTaskInput,
-  TestSquareTaskOutput
->(TestSquareErrorTask, ["input"]);
+import { TaskError } from "../TaskError";
+import { TaskStatus } from "../TaskTypes";
+import { TestSquareMultiInputTask, TestErrorMultiInputTask } from "./TestTasks";
 
 describe("ArrayTask", () => {
   test("in task mode", async () => {
@@ -210,7 +138,7 @@ describe("ArrayTask", () => {
     task.regenerateGraph();
 
     // Set up event listeners on child tasks
-    task.subGraph.getNodes().forEach((childTask: ITask) => {
+    task.subGraph!.getNodes().forEach((childTask: ITask) => {
       childTask.on("start", () => {
         childEvents.start++;
       });
@@ -229,7 +157,7 @@ describe("ArrayTask", () => {
     task.handleProgress(0.5);
 
     // Manually trigger progress events on child tasks
-    task.subGraph.getNodes().forEach((childTask: ITask) => {
+    task.subGraph!.getNodes().forEach((childTask: ITask) => {
       childTask.handleStart();
       childTask.handleProgress(0.5);
     });

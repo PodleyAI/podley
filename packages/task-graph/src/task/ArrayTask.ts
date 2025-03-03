@@ -7,19 +7,19 @@
 
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { RegenerativeCompoundTask } from "./CompoundTask";
 import { ITaskConstructor } from "./ITask";
 import { TaskRegistry } from "./TaskRegistry";
 import {
-  JsonTaskItem,
   Provenance,
   TaskConfig,
   TaskInput,
-  TaskInputDefinition,
   TaskOutput,
   TaskOutputDefinition,
   TaskTypeName,
+  TaskInputDefinition,
 } from "./TaskTypes";
+import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
+import { Task } from "./Task";
 
 // Type utilities for array transformations
 // Makes specified properties optional arrays
@@ -183,7 +183,7 @@ export function arrayTaskFactory<
   const outputs = convertToArray<TaskOutputDefinition>(Array.from(taskClass.outputs));
 
   const nameWithoutTask = taskClass.type.slice(0, -4);
-  name ??= nameWithoutTask + "CompoundTask";
+  name ??= nameWithoutTask + "ArrayTask";
 
   /**
    * A task class that handles array-based processing by creating subtasks for each combination of inputs
@@ -193,16 +193,17 @@ export function arrayTaskFactory<
     Input extends PluralInputType = PluralInputType,
     Output extends PluralOutputType = PluralOutputType,
     Config extends SingleConfig = SingleConfig,
-  > extends RegenerativeCompoundTask<Input, Output, Config> {
+  > extends Task<Input, Output, Config> {
     static readonly type: TaskTypeName = name!;
     static readonly runtype = taskClass.type;
     static readonly category = taskClass.category;
     static readonly sideeffects = taskClass.sideeffects;
+    static readonly isCompound = true;
 
     itemClass = taskClass;
 
     static inputs = inputs;
-    static override outputs = outputs;
+    static outputs = outputs;
 
     /**
      * Regenerates the task graph by creating child tasks for each input combination
@@ -222,7 +223,7 @@ export function arrayTaskFactory<
             id: this.config.id + "-child-" + (index + 1),
           } as SingleConfig
         );
-        this.subGraph.addTask(current);
+        this.subGraph!.addTask(current);
       });
       super.regenerateGraph();
     }
@@ -256,12 +257,12 @@ export function arrayTaskFactory<
     }
 
     toJSON(): JsonTaskItem {
-      const { subgraph, ...result } = super.toJSON();
+      const { subgraph, ...result } = super.toJSON() as TaskGraphItemJson;
       return result;
     }
 
     toDependencyJSON(): JsonTaskItem {
-      const { subtasks, ...result } = super.toDependencyJSON();
+      const { subtasks, ...result } = super.toDependencyJSON() as JsonTaskItem;
       return result;
     }
 

@@ -11,114 +11,18 @@ import { Dataflow } from "../Dataflow";
 import { TaskGraph } from "../TaskGraph";
 import { GraphResult, TaskGraphRunner } from "../TaskGraphRunner";
 import {
-  ConvertAllToArrays,
-  ConvertSomeToOptionalArray,
-  arrayTaskFactory,
-} from "../../task/ArrayTask";
-import { SingleTask } from "../../task/SingleTask";
+  FailingTask,
+  FAILURE_MESSAGE,
+  TestDoubleTask,
+  TestSquareMultiInputTask,
+  TestSquareTask,
+} from "../../task/test/TestTasks";
 import { TaskStatus } from "../../task/TaskTypes";
 import { TaskAbortedError, TaskErrorGroup, TaskFailedError } from "../../task/TaskError";
 import { ITask } from "../../task/ITask";
 import { TaskRegistry } from "../../task/TaskRegistry";
 
 TaskRegistry.all.clear();
-
-type TestSquareTaskInput = {
-  input: number;
-};
-type TestSquareTaskOutput = {
-  output: number;
-};
-class TestSquareTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutput> {
-  static readonly type = "TestSquareTask";
-  static inputs = [
-    {
-      id: "input",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
-  static outputs = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
-  async runReactive() {
-    return { output: this.runInputData.input * this.runInputData.input };
-  }
-}
-
-export const TestSquareMultiInputTask = arrayTaskFactory<
-  ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>,
-  TestSquareTaskInput,
-  TestSquareTaskOutput
->(TestSquareTask, ["input"]);
-
-type TestDoubleTaskInput = {
-  input: number;
-};
-type TestDoubleTaskOutput = {
-  output: number;
-};
-class TestDoubleTask extends SingleTask<TestDoubleTaskInput, TestDoubleTaskOutput> {
-  static readonly type = "TestDoubleTask";
-  static inputs = [
-    {
-      id: "input",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
-  static outputs = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
-  async runReactive() {
-    return { output: this.runInputData.input * 2 };
-  }
-}
-
-// Constants for error messages
-const FAILURE_MESSAGE = "Task failed intentionally" as const;
-const ABORT_MESSAGE = "Task aborted intentionally" as const;
-
-class FailingTask extends SingleTask {
-  static readonly type = "FailingTask";
-  declare runInputData: { in: number };
-  declare runOutputData: { out: number };
-  static inputs = [
-    {
-      id: "in",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
-  static outputs = [
-    {
-      id: "out",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
-
-  async runFull(): Promise<{ out: number }> {
-    // Add a small delay to ensure abortion has time to take effect
-    await sleep(5);
-    if (this.abortController?.signal.aborted) {
-      throw new TaskAbortedError(ABORT_MESSAGE);
-    }
-    throw new TaskFailedError(FAILURE_MESSAGE);
-  }
-}
 
 describe("TaskSubGraphRunner", () => {
   let runner: TaskGraphRunner;

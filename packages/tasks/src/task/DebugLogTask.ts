@@ -8,13 +8,12 @@
 import {
   Workflow,
   TaskRegistry,
-  OutputTask,
   TaskInputDefinition,
   TaskOutputDefinition,
   CreateWorkflow,
   TaskInvalidInputError,
   TaskConfig,
-  TaskBase,
+  Task,
 } from "@ellmers/task-graph";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
@@ -45,9 +44,10 @@ export class DebugLogTask<
   Input extends DebugLogTaskInput = DebugLogTaskInput,
   Output extends DebugLogTaskOutput = DebugLogTaskOutput,
   Config extends TaskConfig = TaskConfig,
-> extends OutputTask<Input, Output, Config> {
+> extends Task<Input, Output, Config> {
   static type = "DebugLogTask";
   static category = "Output";
+  static readonly sideeffects = true;
   public static inputs: TaskInputDefinition[] = [
     {
       id: "messages",

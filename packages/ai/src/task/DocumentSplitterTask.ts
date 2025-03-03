@@ -6,13 +6,13 @@
 //    *******************************************************************************
 
 import {
-  SingleTask,
   Workflow,
   CreateWorkflow,
   TaskInputDefinition,
   TaskOutputDefinition,
   TaskRegistry,
   JobQueueTaskConfig,
+  Task,
 } from "@ellmers/task-graph";
 import { Document, DocumentFragment } from "../source/Document";
 
@@ -24,7 +24,7 @@ export type DocumentSplitterTaskOutput = {
   texts: string[];
 };
 
-export class DocumentSplitterTask extends SingleTask<
+export class DocumentSplitterTask extends Task<
   DocumentSplitterTaskInput,
   DocumentSplitterTaskOutput,
   JobQueueTaskConfig

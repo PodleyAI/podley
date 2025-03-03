@@ -20,13 +20,13 @@ bun add @ellmers/task-graph
 ## Basic Usage
 
 ```typescript
-import { TaskGraph, SingleTask, Dataflow, TaskGraphRunner } from "@ellmers/task-graph";
+import { TaskGraph, Dataflow, TaskGraphRunner } from "@ellmers/task-graph";
 
 // Define tasks
-class DataLoader extends SingleTask {
+class DataLoader extends Task {
   /* ... */
 }
-class ModelRunner extends SingleTask {
+class ModelRunner extends Task {
   /* ... */
 }
 
@@ -45,8 +45,8 @@ await runner.run(graph);
 
 ### Task Types
 
-- **SingleTask**: Atomic unit of work
-- **CompoundTask**: Group of tasks forming a subgraph
+- **Task**: Atomic unit of work
+- **Task (isCompound=true)**: Group of tasks forming a subgraph
 - **ArrayTask**: Parallel task execution
 - **JobQueueTask**: Integration with job queues
 

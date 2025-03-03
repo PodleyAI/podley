@@ -7,7 +7,7 @@
 
 import {
   CreateWorkflow,
-  SingleTask,
+  Task,
   TaskAbortedError,
   TaskConfig,
   TaskOutput,
@@ -27,7 +27,7 @@ export class DelayTask<
   Input extends DelayTaskInput = DelayTaskInput,
   Output extends DelayTaskOutput = DelayTaskOutput,
   Config extends TaskConfig = TaskConfig,
-> extends SingleTask<Input, Output, Config> {
+> extends Task<Input, Output, Config> {
   static readonly type = "DelayTask";
   static readonly category = "Utility";
   static inputs = [
@@ -47,7 +47,6 @@ export class DelayTask<
 
   async runFull(): Promise<Output> {
     const delay = this.runInputData.delay;
-    console.log("delay", delay, this.runInputData);
     if (delay > 100) {
       const iterations = Math.min(100, Math.floor(delay / 16)); // 1/60fps is about 16ms
       const chunkSize = delay / iterations;

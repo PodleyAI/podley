@@ -20,7 +20,7 @@ import {
 import { TurboNodeData, SingleNode, CompoundNode } from "./TurboNode";
 import TurboEdge from "./TurboEdge";
 import { FiFileText, FiClipboard, FiDownload, FiUpload } from "react-icons/fi";
-import { CompoundTask, ITask, TaskGraph, TaskStatus } from "@ellmers/task-graph";
+import { ITask, TaskGraph, TaskStatus } from "@ellmers/task-graph";
 import { GraphPipelineCenteredLayout, GraphPipelineLayout, computeLayout } from "./layout";
 
 import "@xyflow/react/dist/base.css";
@@ -83,7 +83,7 @@ function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
         targetPosition: Position.Left,
       },
     ];
-    if (task instanceof CompoundTask) {
+    if (task.isCompound) {
       const subNodes = convertGraphToNodes(task.subGraph).map((n) => {
         return {
           ...n,
@@ -245,7 +245,7 @@ function listenToTask(
     }, 16);
   };
 
-  if (task instanceof CompoundTask) {
+  if (task.isCompound) {
     const subTasks = task.subGraph.getNodes();
     for (const subTask of subTasks) {
       const subCleanupFns = listenToTask(subTask, setNodes, setEdges);
