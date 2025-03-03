@@ -12,21 +12,19 @@ import { ConvertSomeToOptionalArray } from "../ArrayTask";
 import { arrayTaskFactory } from "../ArrayTask";
 import { TaskGraph } from "../../task-graph/TaskGraph";
 import { TaskGraphRunner } from "../../task-graph/TaskGraphRunner";
-import { TaskEvents, TaskStatus } from "../TaskTypes";
-import { Task } from "../TaskTypes";
+import { TaskEvents, TaskStatus, TaskOutputDefinition, TaskInputDefinition } from "../TaskTypes";
 import { TaskError } from "../TaskError";
-
+import { ITask } from "../ITask";
+import { JobQueueTaskConfig } from "../../node";
 type TestSquareTaskInput = {
   input: number;
 };
 type TestSquareTaskOutput = {
   output: number;
 };
-class TestSquareTask extends SingleTask {
+class TestSquareTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareTask";
-  declare runInputData: TestSquareTaskInput;
-  declare runOutputData: TestSquareTaskOutput;
-  static inputs = [
+  static readonly inputs: TaskInputDefinition[] = [
     {
       id: "input",
       name: "Input",
@@ -34,7 +32,7 @@ class TestSquareTask extends SingleTask {
       defaultValue: 0,
     },
   ] as const;
-  static outputs = [
+  static readonly outputs: TaskOutputDefinition[] = [
     {
       id: "output",
       name: "Output",
@@ -48,14 +46,15 @@ class TestSquareTask extends SingleTask {
 
 export const TestSquareMultiInputTask = arrayTaskFactory<
   ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>
+  ConvertAllToArrays<TestSquareTaskOutput>,
+  TestSquareTaskInput,
+  TestSquareTaskOutput,
+  JobQueueTaskConfig
 >(TestSquareTask, ["input"]);
 
 // Create an error-throwing task for testing error handling
-class TestSquareErrorTask extends SingleTask {
+class TestSquareErrorTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareErrorTask";
-  declare runInputData: TestSquareTaskInput;
-  declare runOutputData: TestSquareTaskOutput;
   static inputs = [
     {
       id: "input",
@@ -81,17 +80,21 @@ class TestSquareErrorTask extends SingleTask {
 
 export const TestErrorMultiInputTask = arrayTaskFactory<
   ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>
+  ConvertAllToArrays<TestSquareTaskOutput>,
+  TestSquareTaskInput,
+  TestSquareTaskOutput
 >(TestSquareErrorTask, ["input"]);
 
 describe("ArrayTask", () => {
   test("in task mode", async () => {
-    const task = new TestSquareMultiInputTask({
-      id: "task1",
-      input: {
+    const task = new TestSquareMultiInputTask(
+      {
         input: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       },
-    });
+      {
+        id: "task1",
+      }
+    );
     const results = await task.run();
     expect(results).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100] });
   });
@@ -99,12 +102,14 @@ describe("ArrayTask", () => {
   test("in task graph mode", async () => {
     const graph = new TaskGraph();
     graph.addTask(
-      new TestSquareMultiInputTask({
-        id: "task1",
-        input: {
+      new TestSquareMultiInputTask(
+        {
           input: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11],
         },
-      })
+        {
+          id: "task1",
+        }
+      )
     );
     const runner = new TaskGraphRunner(graph);
     const results = await runner.runGraph();
@@ -113,12 +118,14 @@ describe("ArrayTask", () => {
 
   test("emits events correctly", async () => {
     // Create a task with a smaller array for testing events
-    const task = new TestSquareMultiInputTask({
-      id: "event-test-task",
-      input: {
+    const task = new TestSquareMultiInputTask(
+      {
         input: [1, 2, 3],
       },
-    });
+      {
+        id: "event-test-task",
+      }
+    );
 
     // Create event tracking variables
     const events: Record<string, number> = {
@@ -133,7 +140,7 @@ describe("ArrayTask", () => {
       expect(task.status).toBe(TaskStatus.PROCESSING);
     });
 
-    task.on("progress", (progress) => {
+    task.on("progress", (progress: number) => {
       events.progress++;
       expect(progress).toBeGreaterThanOrEqual(0);
       expect(progress).toBeLessThanOrEqual(1);
@@ -164,12 +171,14 @@ describe("ArrayTask", () => {
 
   test("child tasks emit events that bubble up to parent", async () => {
     // Create a task with a smaller array for testing events
-    const task = new TestSquareMultiInputTask({
-      id: "event-bubbling-test",
-      input: {
+    const task = new TestSquareMultiInputTask(
+      {
         input: [1, 2],
       },
-    });
+      {
+        id: "event-bubbling-test",
+      }
+    );
 
     // Create event tracking variables for parent and children
     const parentEvents: Record<string, number> = {
@@ -201,7 +210,7 @@ describe("ArrayTask", () => {
     task.regenerateGraph();
 
     // Set up event listeners on child tasks
-    task.subGraph.getNodes().forEach((childTask: Task) => {
+    task.subGraph.getNodes().forEach((childTask: ITask) => {
       childTask.on("start", () => {
         childEvents.start++;
       });
@@ -220,7 +229,7 @@ describe("ArrayTask", () => {
     task.handleProgress(0.5);
 
     // Manually trigger progress events on child tasks
-    task.subGraph.getNodes().forEach((childTask: Task) => {
+    task.subGraph.getNodes().forEach((childTask: ITask) => {
       childTask.handleStart();
       childTask.handleProgress(0.5);
     });
@@ -241,12 +250,14 @@ describe("ArrayTask", () => {
 
   test("handles errors correctly", async () => {
     // Create a task with inputs that will cause an error
-    const task = new TestErrorMultiInputTask({
-      id: "error-test-task",
-      input: {
+    const task = new TestErrorMultiInputTask(
+      {
         input: [1, 2, 3], // The value 2 will cause an error
       },
-    });
+      {
+        id: "error-test-task",
+      }
+    );
 
     // Create event tracking variables
     const events: Record<string, number> = {
@@ -265,7 +276,7 @@ describe("ArrayTask", () => {
       events.progress++;
     });
 
-    task.on("error", (error) => {
+    task.on("error", (error: TaskError) => {
       events.error++;
       expect(error).toBeDefined();
       expect(error.message).toContain("Test error");

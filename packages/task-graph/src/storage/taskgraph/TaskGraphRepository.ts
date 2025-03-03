@@ -91,7 +91,7 @@ export abstract class TaskGraphRepository {
    * @returns A new task instance
    * @throws Error if required fields are missing or invalid
    */
-  private createTask(item: TaskGraphItemJson) {
+  private createTaskFromJSON(item: TaskGraphItemJson) {
     if (!item.id) throw new TaskConfigurationError("Task id required");
     if (!item.type) throw new TaskConfigurationError("Task type required");
     if (item.input && (Array.isArray(item.input) || Array.isArray(item.provenance)))
@@ -101,16 +101,19 @@ export abstract class TaskGraphRepository {
 
     const taskClass = TaskRegistry.all.get(item.type);
     if (!taskClass) throw new TaskConfigurationError(`Task type ${item.type} not found`);
+    if (!(taskClass instanceof CompoundTask) && item.subgraph) {
+      throw new TaskConfigurationError("Subgraph is only supported for CompoundTasks");
+    }
 
     const taskConfig = {
       id: item.id,
       name: item.name,
-      input: item.input ?? {},
       provenance: item.provenance ?? {},
     };
-    const task = new taskClass(taskConfig);
-    if (item.subgraph) {
-      (task as CompoundTask).subGraph = this.createSubGraph(item.subgraph);
+
+    const task = new taskClass(item.input ?? {}, taskConfig);
+    if (task instanceof CompoundTask && item.subgraph) {
+      task.subGraph = this.createSubGraph(item.subgraph);
     }
     return task;
   }
@@ -123,7 +126,7 @@ export abstract class TaskGraphRepository {
   public createSubGraph(graphJsonObj: TaskGraphJson) {
     const subGraph = new TaskGraph();
     for (const subitem of graphJsonObj.nodes) {
-      subGraph.addTask(this.createTask(subitem));
+      subGraph.addTask(this.createTaskFromJSON(subitem));
     }
     for (const subitem of graphJsonObj.edges) {
       subGraph.addDataflow(

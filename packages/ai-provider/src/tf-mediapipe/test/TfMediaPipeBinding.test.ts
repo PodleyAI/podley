@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { afterAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 import {
   AiJob,
   getGlobalModelRepository,
@@ -30,6 +30,10 @@ import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";
 const db = new Sqlite.Database(":memory:");
 
 describe("TfMediaPipeBinding", () => {
+  beforeEach(() => {
+    setTaskQueueRegistry(null);
+  });
+
   describe("InMemoryJobQueue", () => {
     it("should initialize without errors", async () => {
       const queueRegistry = getTaskQueueRegistry();

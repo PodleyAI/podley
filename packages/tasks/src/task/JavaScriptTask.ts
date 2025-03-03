@@ -25,11 +25,9 @@ export type JavaScriptTaskOutput = {
   output: any;
 };
 
-export class JavaScriptTask extends SingleTask {
+export class JavaScriptTask extends SingleTask<JavaScriptTaskInput, JavaScriptTaskOutput> {
   static readonly type = "JavaScriptTask";
   static readonly category = "Utility";
-  declare runInputData: JavaScriptTaskInput;
-  declare runOutputData: TaskOutput;
   public static inputs: TaskInputDefinition[] = [
     {
       id: "code",
@@ -73,7 +71,7 @@ export const JavaScript = (input: JavaScriptTaskInput) => {
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    JavaScript: CreateWorkflow<JavaScriptTaskInput>;
+    JavaScript: CreateWorkflow<JavaScriptTaskInput, JavaScriptTaskOutput, TaskConfig>;
   }
 }
 

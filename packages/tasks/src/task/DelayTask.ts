@@ -9,6 +9,7 @@ import {
   CreateWorkflow,
   SingleTask,
   TaskAbortedError,
+  TaskConfig,
   TaskOutput,
   TaskRegistry,
   Workflow,
@@ -22,11 +23,13 @@ export type DelayTaskInput = {
 };
 export type DelayTaskOutput = TaskOutput;
 
-export class DelayTask extends SingleTask {
+export class DelayTask<
+  Input extends DelayTaskInput = DelayTaskInput,
+  Output extends DelayTaskOutput = DelayTaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends SingleTask<Input, Output, Config> {
   static readonly type = "DelayTask";
   static readonly category = "Utility";
-  declare runInputData: DelayTaskInput;
-  declare runOutputData: DelayTaskOutput;
   static inputs = [
     {
       id: "delay",
@@ -42,7 +45,7 @@ export class DelayTask extends SingleTask {
   ] as const;
   static outputs = [] as const;
 
-  async runFull(): Promise<DelayTaskOutput> {
+  async runFull(): Promise<Output> {
     const delay = this.runInputData.delay;
     console.log("delay", delay, this.runInputData);
     if (delay > 100) {
@@ -61,7 +64,7 @@ export class DelayTask extends SingleTask {
     return this.runReactive();
   }
 
-  async runReactive(): Promise<DelayTaskOutput> {
+  async runReactive(): Promise<Output> {
     this.runOutputData = this.runInputData.pass_through;
     return this.runOutputData;
   }
@@ -78,13 +81,13 @@ TaskRegistry.registerTask(DelayTask);
  * @param {delay} - The delay in milliseconds
  */
 export const Delay = (input: DelayTaskInput) => {
-  const task = new DelayTask({ input });
+  const task = new DelayTask(input);
   return task.run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    Delay: CreateWorkflow<DelayTaskInput>;
+    Delay: CreateWorkflow<DelayTaskInput, DelayTaskOutput, TaskConfig>;
   }
 }
 

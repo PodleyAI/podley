@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { sleep } from "@ellmers/util";
 import { SingleTask } from "../../task/SingleTask";
 import { TaskAbortedError } from "../../task/TaskError";
-import { Task, TaskOutput, TaskStatus } from "../../task/TaskTypes";
+import { TaskOutput, TaskStatus } from "../../task/TaskTypes";
 import { Dataflow, DataflowArrow } from "../Dataflow";
 import { TaskGraph } from "../TaskGraph";
 import { TaskGraphRunner } from "../TaskGraphRunner";
@@ -27,11 +27,8 @@ type TestSquareTaskInput = {
 type TestSquareTaskOutput = {
   output: number;
 };
-class TestSquareTask extends SingleTask {
+class TestSquareTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareTask";
-  declare runInputData: TestSquareTaskInput;
-  declare defaults: Partial<TestSquareTaskInput>;
-  declare runOutputData: TestSquareTaskOutput;
   static inputs = [
     {
       id: "input",
@@ -47,7 +44,7 @@ class TestSquareTask extends SingleTask {
       valueType: "number",
     },
   ] as const;
-  async runReactive(): Promise<TestSquareTaskOutput> {
+  async runReactive() {
     return { output: this.runInputData.input * this.runInputData.input };
   }
 }
@@ -58,10 +55,8 @@ type TestDoubleTaskInput = {
 type TestDoubleTaskOutput = {
   output: number;
 };
-class TestDoubleTask extends SingleTask {
+class TestDoubleTask extends SingleTask<TestDoubleTaskInput, TestDoubleTaskOutput> {
   static readonly type = "TestDoubleTask";
-  declare runInputData: TestDoubleTaskInput;
-  declare runOutputData: TestDoubleTaskOutput;
   static inputs = [
     {
       id: "input",
@@ -77,7 +72,7 @@ class TestDoubleTask extends SingleTask {
       valueType: "number",
     },
   ] as const;
-  async runReactive(): Promise<TestDoubleTaskOutput> {
+  async runReactive() {
     return { output: this.runInputData.input * 2 };
   }
 }
@@ -89,10 +84,8 @@ type TestAddTaskInput = {
 type TestAddTaskOutput = {
   output: number;
 };
-class TestAddTask extends SingleTask {
+class TestAddTask extends SingleTask<TestAddTaskInput, TestAddTaskOutput> {
   static readonly type = "TestAddTask";
-  declare runInputData: TestAddTaskInput;
-  declare runOutputData: TestAddTaskOutput;
   static inputs = [
     {
       id: "a",
@@ -114,7 +107,7 @@ class TestAddTask extends SingleTask {
       valueType: "number",
     },
   ] as const;
-  async runReactive(): Promise<TestAddTaskOutput> {
+  async runReactive() {
     const input = this.runInputData;
     return { output: input.a + input.b };
   }
@@ -123,14 +116,14 @@ class TestAddTask extends SingleTask {
 describe("TaskGraphRunner", () => {
   let runner: TaskGraphRunner;
   let graph: TaskGraph;
-  let nodes: Task[];
+  let nodes: TestTask[];
 
   beforeEach(() => {
     graph = new TaskGraph();
     nodes = [
-      new TestTask({ id: "task0" }),
-      new TestSquareTask({ id: "task1", input: { input: 5 } }),
-      new TestDoubleTask({ id: "task2", input: { input: 5 } }),
+      new TestTask({}, { id: "task0" }),
+      new TestSquareTask({ input: 5 }, { id: "task1" }),
+      new TestDoubleTask({ input: 5 }, { id: "task2" }),
     ];
     graph.addTasks(nodes);
     runner = new TaskGraphRunner(graph);
@@ -152,7 +145,7 @@ describe("TaskGraphRunner", () => {
     });
 
     it("should run the graph in the correct order with dependencies", async () => {
-      const task3 = new TestAddTask({ id: "task3" });
+      const task3 = new TestAddTask({}, { id: "task3" });
       graph.addTask(task3);
       graph.addDataflow(new Dataflow("task1", "output", "task3", "a"));
       graph.addDataflow(new Dataflow("task2", "output", "task3", "b"));
@@ -167,19 +160,17 @@ describe("TaskGraphRunner", () => {
   });
 
   describe("Status Dataflow Propagation", () => {
-    let errorTask: Task;
-    let targetTask: Task;
+    let errorTask: TestTask;
+    let targetTask: TestTask;
 
     beforeEach(() => {
       graph = new TaskGraph();
 
-      const sourceTask = new TestSquareTask({ id: "source", input: { input: 5 } });
-      targetTask = new TestDoubleTask({ id: "target" });
+      const sourceTask = new TestSquareTask({ input: 5 }, { id: "source" });
+      targetTask = new TestDoubleTask({ input: 5 }, { id: "target" });
 
       // Create a task that will throw an error
-      errorTask = new TestTask({
-        id: "error-source",
-      });
+      errorTask = new TestTask({}, { id: "error-source" });
       errorTask.runReactive = async () => {
         throw new Error("Test error");
       };
@@ -237,7 +228,7 @@ describe("TaskGraphRunner", () => {
     it("should propagate task abort status to dataflow edges", async () => {
       // Create a graph with a long-running task
       graph = new TaskGraph();
-      const longRunningTask = new TestTask({ id: "long-running" });
+      const longRunningTask = new TestTask({}, { id: "long-running" });
 
       // Override the runReactive method to be long-running and check for abort signal
       longRunningTask.runReactive = async () => {
@@ -245,6 +236,7 @@ describe("TaskGraphRunner", () => {
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(resolve, 1000);
             // Check if we're aborted and clean up
+            // @ts-expect-error ts(2445)
             longRunningTask.abortController?.signal.addEventListener("abort", () => {
               clearTimeout(timeout);
               reject(new TaskAbortedError("Aborted"));
@@ -258,7 +250,7 @@ describe("TaskGraphRunner", () => {
       };
 
       graph.addTask(longRunningTask);
-      const abortTargetTask = new TestTask({ id: "abort-target" });
+      const abortTargetTask = new TestTask({}, { id: "abort-target" });
       graph.addTask(abortTargetTask);
       graph.addDataflow(new Dataflow("long-running", "output", "abort-target", "input"));
 

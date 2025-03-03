@@ -6,11 +6,12 @@
 //    *******************************************************************************
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
-import { GraphEvents } from "@sroussey/typescript-graph";
 import type { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { CompoundTask } from "../task/CompoundTask";
 import { SingleTask } from "../task/SingleTask";
 import {
+  TaskConfig,
+  TaskOutput,
   type JsonTaskItem,
   type TaskInput,
   type TaskInputDefinition,
@@ -21,9 +22,13 @@ import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph, TaskGraphJson } from "./TaskGraph";
 import { TaskGraphRunner } from "./TaskGraphRunner";
 import { WorkflowError } from "../task/TaskError";
+import { ITask, ITaskConstructor } from "../task/ITask";
 
 // Type definitions for the workflow
-export type CreateWorkflow<I extends TaskInput> = (input?: Partial<I>) => Workflow;
+export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
+  input?: Partial<I>,
+  config?: Partial<C>
+) => Workflow;
 
 // Event types
 export type WorkflowEventListeners = {
@@ -71,10 +76,14 @@ export class Workflow {
    * @param taskClass - The task class to create a helper for
    * @returns A function that adds the specified task type to a Workflow
    */
-  public static createWorkflow<I extends TaskInput>(
-    taskClass: typeof CompoundTask | typeof SingleTask
-  ): CreateWorkflow<I> {
-    const helper = function (this: Workflow, input?: Partial<I>): Workflow {
+  public static createWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig>(
+    taskClass: ITaskConstructor<I, O, C>
+  ): CreateWorkflow<I, O, C> {
+    const helper = function (
+      this: Workflow,
+      input: Partial<I> = {},
+      config: Partial<C> = {}
+    ): Workflow {
       this._error = "";
 
       // Get the parent node if it exists
@@ -83,7 +92,14 @@ export class Workflow {
 
       // Create and add the new task
       taskIdCounter++;
-      const task = new taskClass({ id: String(taskIdCounter), input });
+
+      const task: ITask<I, O, C> = new taskClass(
+        input as I,
+        {
+          id: String(taskIdCounter),
+          ...config,
+        } as C
+      );
       this.graph.addTask(task);
 
       // Process any pending data flows
@@ -160,8 +176,10 @@ export class Workflow {
     // Copy metadata from the task class
     // @ts-expect-error - runtype is hack from ArrayTask TODO: fix
     helper.type = taskClass.runtype ?? taskClass.type;
+    helper.category = taskClass.category;
     helper.inputs = taskClass.inputs;
     helper.outputs = taskClass.outputs;
+    helper.sideeffects = taskClass.sideeffects;
 
     return helper;
   }
@@ -399,8 +417,10 @@ export class Workflow {
 /**
  * Helper function for backward compatibility
  */
-export function CreateWorkflow<I extends TaskInput>(
-  taskClass: typeof CompoundTask | typeof SingleTask
-): CreateWorkflow<I> {
-  return Workflow.createWorkflow<I>(taskClass);
+export function CreateWorkflow<
+  I extends TaskInput,
+  O extends TaskOutput,
+  C extends TaskConfig = TaskConfig,
+>(taskClass: any): CreateWorkflow<I, O, C> {
+  return Workflow.createWorkflow<I, O, C>(taskClass);
 }

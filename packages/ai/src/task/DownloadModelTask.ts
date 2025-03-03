@@ -16,6 +16,7 @@ import {
   JobQueueTaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
+  TaskConfig,
 } from "@ellmers/task-graph";
 import { getGlobalModelRepository } from "../model/ModelRegistry";
 import { AiTask } from "./base/AiTask";
@@ -46,7 +47,13 @@ export type DownloadModelTaskOutput = {
   model_classification: model_classification;
 };
 
-export class DownloadModelTask extends AiTask {
+export class DownloadModelTask<
+  Input extends DownloadModelTaskInput = DownloadModelTaskInput,
+  Output extends DownloadModelTaskOutput = DownloadModelTaskOutput,
+  Config extends JobQueueTaskConfig = JobQueueTaskConfig,
+> extends AiTask<Input, Output, Config> {
+  public static type = "DownloadModelTask";
+  public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "model",
@@ -107,13 +114,15 @@ export class DownloadModelTask extends AiTask {
     },
   ] as const;
   static sideeffects = true;
-  declare runInputData: DownloadModelTaskInput;
-  declare runOutputData: DownloadModelTaskOutput;
-  declare defaults: Partial<DownloadModelTaskInput>;
-  constructor(config: JobQueueTaskConfig & { input?: DownloadModelTaskInput } = {}) {
-    super(config);
-  }
+
   public files: { file: string; progress: number }[] = [];
+
+  /**
+   * Handles progress updates for the download task
+   * @param progress - The progress value (0-100)
+   * @param message - The message to display
+   * @param details - Additional details about the progress
+   */
   handleProgress(
     progress: number,
     message: string,
@@ -130,13 +139,15 @@ export class DownloadModelTask extends AiTask {
     } else {
       this.progress = progress;
     }
-    this.events.emit("progress", this.progress, message, details);
+    this.emit("progress", this.progress, message, details);
   }
+
   handleStart(): void {
     this.files = [];
     super.handleStart();
   }
-  async runReactive(): Promise<TaskOutput> {
+
+  async runReactive(): Promise<Output> {
     const model = await getGlobalModelRepository().findByName(this.runInputData.model);
     if (model) {
       const tasks = (await getGlobalModelRepository().findTasksByModel(model.name)) || [];
@@ -170,32 +181,36 @@ export class DownloadModelTask extends AiTask {
     }
     return this.runOutputData;
   }
-  static readonly type = "DownloadModelTask";
-  static readonly category = "Text Model";
 }
 
 TaskRegistry.registerTask(DownloadModelTask);
 
 type DownloadModelCompoundTaskInput = ConvertSomeToOptionalArray<DownloadModelTaskInput, "model">;
+type DownloadModelCompoundTaskOutput = ConvertAllToArrays<DownloadModelTaskOutput>;
 export const DownloadModelCompoundTask = arrayTaskFactory<
   DownloadModelCompoundTaskInput,
-  ConvertAllToArrays<DownloadModelTaskOutput>,
-  DownloadModelTaskOutput
+  DownloadModelCompoundTaskOutput,
+  DownloadModelTaskInput,
+  DownloadModelTaskOutput,
+  JobQueueTaskConfig
 >(DownloadModelTask, ["model"]);
 
 export const DownloadModel = (input: DownloadModelCompoundTaskInput) => {
   if (Array.isArray(input.model)) {
-    return new DownloadModelCompoundTask({ input }).run();
+    return new DownloadModelCompoundTask(input).run();
   } else {
-    return new DownloadModelTask({ input } as { input: DownloadModelTaskInput }).run();
+    return new DownloadModelTask(input as DownloadModelTaskInput).run();
   }
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    DownloadModel: CreateWorkflow<DownloadModelCompoundTaskInput>;
+    DownloadModel: CreateWorkflow<
+      DownloadModelCompoundTaskInput,
+      DownloadModelCompoundTaskOutput,
+      TaskConfig
+    >;
   }
 }
 
-Workflow.prototype.DownloadModel =
-  CreateWorkflow<DownloadModelCompoundTaskInput>(DownloadModelCompoundTask);
+Workflow.prototype.DownloadModel = CreateWorkflow(DownloadModelCompoundTask);

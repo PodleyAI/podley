@@ -8,7 +8,7 @@
 import { TaskError } from "../task/TaskError";
 import { Provenance, TaskIdType, TaskOutput, TaskStatus } from "../task/TaskTypes";
 
-export type DataflowIdType = string;
+export type DataflowIdType = `${string}.${string} -> ${string}.${string}`;
 
 export type DataflowJson = {
   sourceTaskId: unknown;
@@ -20,8 +20,6 @@ export type DataflowJson = {
 export const DATAFLOW_ALL_PORTS = "*";
 export const DATAFLOW_ERROR_PORT = "[error]";
 
-type DataflowId = `${string}.${string} -> ${string}.${string}`;
-
 /**
  * Represents a data flow between two tasks, indicating how one task's output is used as input for another task
  */
@@ -32,7 +30,7 @@ export class Dataflow {
     public targetTaskId: TaskIdType,
     public targetTaskPortId: string
   ) {}
-  get id(): DataflowId {
+  get id(): DataflowIdType {
     return `${this.sourceTaskId}.${this.sourceTaskPortId} -> ${this.targetTaskId}.${this.targetTaskPortId}`;
   }
   public value: any = undefined;
@@ -79,7 +77,7 @@ export class Dataflow {
  * @param dataflow - The data flow string, e.g. "sourceTaskId.sourceTaskPortId -> targetTaskId.targetTaskPortId"
  */
 export class DataflowArrow extends Dataflow {
-  constructor(dataflow: DataflowId) {
+  constructor(dataflow: DataflowIdType) {
     const [source, target] = dataflow.split(" -> ");
     const [sourceTaskId, sourceTaskPortId] = source.split(".");
     const [targetTaskId, targetTaskPortId] = target.split(".");

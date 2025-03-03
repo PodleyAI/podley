@@ -35,7 +35,13 @@ export type TextEmbeddingTaskOutput = {
  *
  * @extends AiTask
  */
-export class TextEmbeddingTask extends AiTask {
+export class TextEmbeddingTask<
+  Input extends TextEmbeddingTaskInput = TextEmbeddingTaskInput,
+  Output extends TextEmbeddingTaskOutput = TextEmbeddingTaskOutput,
+  Config extends JobQueueTaskConfig = JobQueueTaskConfig,
+> extends AiTask<Input, Output, Config> {
+  public static type = "TextEmbeddingTask";
+  public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "text",
@@ -51,15 +57,6 @@ export class TextEmbeddingTask extends AiTask {
   public static outputs: TaskOutputDefinition[] = [
     { id: "vector", name: "Embedding", valueType: "vector" },
   ] as const;
-  constructor(config: JobQueueTaskConfig & { input?: TextEmbeddingTaskInput } = {}) {
-    super(config);
-  }
-
-  declare runInputData: TextEmbeddingTaskInput;
-  declare runOutputData: TextEmbeddingTaskOutput;
-  declare defaults: Partial<TextEmbeddingTaskInput>;
-  static readonly type = "TextEmbeddingTask";
-  static readonly category = "Text Model";
 }
 TaskRegistry.registerTask(TextEmbeddingTask);
 
@@ -73,7 +70,9 @@ type TextEmbeddingCompoundTaskInput = ConvertSomeToOptionalArray<TextEmbeddingTa
 export const TextEmbeddingCompoundTask = arrayTaskFactory<
   TextEmbeddingCompoundTaskInput,
   TextEmbeddingCompoundTaskOutput,
-  TextEmbeddingTaskOutput
+  TextEmbeddingTaskInput,
+  TextEmbeddingTaskOutput,
+  JobQueueTaskConfig
 >(TextEmbeddingTask, ["model", "text"]);
 
 /**
@@ -82,12 +81,20 @@ export const TextEmbeddingCompoundTask = arrayTaskFactory<
  * @returns {Promise<TextEmbeddingCompoundTaskOutput>} Promise resolving to the generated embeddings
  */
 export const TextEmbedding = (input: TextEmbeddingCompoundTaskInput) => {
-  return new TextEmbeddingCompoundTask({ input }).run();
+  if (Array.isArray(input.model) || Array.isArray(input.text)) {
+    return new TextEmbeddingCompoundTask(input).run();
+  } else {
+    return new TextEmbeddingTask(input as TextEmbeddingTaskInput).run();
+  }
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    TextEmbedding: CreateWorkflow<TextEmbeddingCompoundTaskInput>;
+    TextEmbedding: CreateWorkflow<
+      TextEmbeddingCompoundTaskInput,
+      TextEmbeddingCompoundTaskOutput,
+      JobQueueTaskConfig
+    >;
   }
 }
 

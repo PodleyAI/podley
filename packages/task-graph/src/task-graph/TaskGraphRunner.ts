@@ -8,7 +8,7 @@
 import { nanoid } from "nanoid";
 import { deepEqual } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
-import { TaskInput, Task, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
+import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
 import { TaskGraph } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
 import { CompoundTask, RegenerativeCompoundTask } from "../task/CompoundTask";
@@ -18,6 +18,7 @@ import {
   TaskError,
   TaskErrorGroup,
 } from "../task/TaskError";
+import { ITask } from "../task/ITask";
 
 export type GraphSingleResult = { id: unknown; type: String; data: TaskOutput };
 export type GraphResult = Array<GraphSingleResult>;
@@ -57,7 +58,7 @@ export class TaskGraphRunner {
    * @param task The task to add input data to
    * @param overrides The input data to override (or add to if an array)
    */
-  public addInputData(task: Task, overrides: Partial<TaskInput> | undefined) {
+  public addInputData(task: ITask, overrides: Partial<TaskInput> | undefined) {
     let changed = false;
     for (const input of task.inputs) {
       if (overrides?.[input.id] !== undefined) {
@@ -96,7 +97,7 @@ export class TaskGraphRunner {
     }
   }
 
-  private copyInputFromEdgesToNode(task: Task) {
+  private copyInputFromEdgesToNode(task: ITask) {
     this.graph.getSourceDataflows(task.config.id).forEach((dataflow) => {
       this.addInputData(task, dataflow.getPortData());
     });
@@ -107,7 +108,7 @@ export class TaskGraphRunner {
    * @param node The task to retrieve provenance input for
    * @returns The provenance input for the task
    */
-  private getInputProvenance(node: Task): TaskInput {
+  private getInputProvenance(node: ITask): TaskInput {
     const nodeProvenance: Provenance = {};
     this.graph.getSourceDataflows(node.config.id).forEach((dataflow) => {
       Object.assign(nodeProvenance, dataflow.provenance);
@@ -121,7 +122,7 @@ export class TaskGraphRunner {
    * @param results The output of the task
    * @param nodeProvenance The provenance input for the task
    */
-  private pushOutputFromNodeToEdges(node: Task, results: TaskOutput, nodeProvenance?: Provenance) {
+  private pushOutputFromNodeToEdges(node: ITask, results: TaskOutput, nodeProvenance?: Provenance) {
     this.graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
       dataflow.setPortData(results, nodeProvenance);
     });
@@ -131,7 +132,7 @@ export class TaskGraphRunner {
    * Pushes the status of a task to its target edges
    * @param node The task that produced the status
    */
-  private pushStatusFromNodeToEdges(graph: TaskGraph, node: Task) {
+  private pushStatusFromNodeToEdges(graph: TaskGraph, node: ITask) {
     if (!node?.config?.id) return;
     graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
       dataflow.status = node.status;
@@ -142,7 +143,7 @@ export class TaskGraphRunner {
    * Pushes the error of a task to its target edges
    * @param node The task that produced the error
    */
-  private pushErrorFromNodeToEdges(graph: TaskGraph, node: Task) {
+  private pushErrorFromNodeToEdges(graph: TaskGraph, node: ITask) {
     if (!node?.config?.id) return;
     graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
       dataflow.error = node.error;
@@ -156,7 +157,7 @@ export class TaskGraphRunner {
    * @returns The output of the task
    */
   private async runTaskWithProvenance(
-    task: Task,
+    task: ITask,
     parentProvenance: Provenance
   ): Promise<GraphSingleResult> {
     // Update provenance for the current task
@@ -219,7 +220,6 @@ export class TaskGraphRunner {
       parentSignal?.addEventListener(
         "abort",
         () => {
-          console.log("runner parent signal sent abort, forwarding to local abort controller");
           this.abortController?.abort();
         },
         { once: true }
@@ -337,7 +337,7 @@ export class TaskGraphRunner {
 
   private handleError() {
     const abortPromise = Promise.allSettled(
-      this.graph.getNodes().map(async (task: Task) => {
+      this.graph.getNodes().map(async (task: ITask) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
           task.abort();
         }
@@ -347,7 +347,7 @@ export class TaskGraphRunner {
     return abortPromise;
   }
 
-  private resetTask(graph: TaskGraph, task: Task, runId: string) {
+  private resetTask(graph: TaskGraph, task: ITask, runId: string) {
     task.status = TaskStatus.PENDING;
     task.resetInputData();
     task.runOutputData = {};
@@ -394,7 +394,7 @@ export class TaskGraphRunner {
    */
   public handleAbort() {
     const abortPromise = Promise.allSettled(
-      this.graph.getNodes().map(async (task: Task) => {
+      this.graph.getNodes().map(async (task: ITask) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
           task.abort();
         }

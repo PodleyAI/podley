@@ -197,4 +197,11 @@ export abstract class ModelRepository {
   async size(): Promise<number> {
     return await this.modelTabularRepository.size();
   }
+
+  /**
+   * Clears all models from the repository
+   */
+  async clear() {
+    await this.modelTabularRepository.deleteAll();
+  }
 }

@@ -6,52 +6,57 @@
 //    *******************************************************************************
 
 import { getTaskQueueRegistry } from "./TaskQueueRegistry";
-import { TaskConfig, TaskOutput, TaskEventListeners, TaskStatus, TaskInput } from "./TaskTypes";
+import { TaskConfig, TaskOutput, TaskEventListeners, TaskInput } from "./TaskTypes";
 import { SingleTask } from "./SingleTask";
 import { EventEmitter } from "@ellmers/util";
 import { Job } from "@ellmers/job-queue";
 import { TaskConfigurationError } from "./TaskError";
 
 /**
- * Configuration interface for job queue tasks
+ * Configuration interface for JobQueueTask.
+ * Extends the base TaskConfig with job queue specific properties.
  */
 export interface JobQueueTaskConfig extends TaskConfig {
+  /** Name of the queue to use for this task */
   queueName?: string;
-  currentJobId?: unknown;
+  /** ID of the current job being processed */
+  currentJobId?: string | unknown;
 }
 
 /**
- * Configuration interface for job queue tasks with ids
- */
-interface JobQueueTaskWithIdsConfig extends JobQueueTaskConfig {
-  id: unknown;
-}
-
-/**
- * Event listeners for job queue tasks
+ * Extended event listeners for JobQueueTask.
+ * Adds progress event handling to base task event listeners.
  */
 export type JobQueueTaskEventListeners = Omit<TaskEventListeners, "progress"> & {
   progress: (progress: number, message: string, details: Record<string, any> | null) => void;
 };
 
 /**
- * Base class for job queue tasks
+ * Abstract base class for tasks that operate within a job queue.
+ * Provides functionality for managing job execution, progress tracking, and queue integration.
+ *
+ * @template Input - Type of input data for the task
+ * @template Output - Type of output data produced by the task
+ * @template Config - Type of configuration object for the task
  */
-export abstract class JobQueueTask extends SingleTask {
+export abstract class JobQueueTask<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends JobQueueTaskConfig = JobQueueTaskConfig,
+> extends SingleTask<Input, Output, Config> {
   static readonly type: string = "JobQueueTask";
   static canRunDirectly = true;
 
   public jobClass: any;
 
-  declare config: JobQueueTaskWithIdsConfig;
   declare events: EventEmitter<JobQueueTaskEventListeners>;
 
-  constructor(config: JobQueueTaskConfig) {
-    super(config);
-    this.jobClass = Job<TaskInput, TaskOutput>;
+  constructor(input: Input = {} as Input, config: Config = {} as Config) {
+    super(input, config);
+    this.jobClass = Job<Input, Output>;
   }
 
-  async runFull(): Promise<TaskOutput> {
+  async runFull(): Promise<Output> {
     let cleanup: () => void = () => {};
 
     try {
@@ -80,10 +85,10 @@ export abstract class JobQueueTask extends SingleTask {
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
           this.handleProgress(progress, message, details);
         });
-        this.runOutputData = await queue.waitFor(jobId);
+        this.runOutputData = await queue.waitFor<Output>(jobId);
       }
 
-      this.runOutputData ??= {};
+      this.runOutputData ??= {} as Output;
       this.runOutputData = await this.runReactive();
 
       return this.runOutputData;

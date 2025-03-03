@@ -14,30 +14,31 @@ import {
   TaskInput,
   TaskInputDefinition,
   TaskOutputDefinition,
-  IConfig,
-  TaskStatus,
+  TaskConfig,
 } from "@ellmers/task-graph";
 
-type LambdaTaskConfig = Partial<IConfig> & {
+type LambdaTaskConfig<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+> = Partial<TaskConfig> & {
   runFull?: (
-    input: TaskInput,
+    input: Input,
     updateProgress: (progress: number, message: string) => void,
     signal?: AbortSignal
-  ) => Promise<TaskOutput>;
-  runReactive?: (input: TaskInput) => Promise<TaskOutput>;
-  input?: TaskInput;
+  ) => Promise<Output>;
+  runReactive?: (input: Input) => Promise<Output>;
 };
 /**
  * LambdaTask provides a way to execute arbitrary functions within the task framework
  * It wraps a provided function and its input into a task that can be integrated
  * into task graphs and workflows
  */
-export class LambdaTask extends SingleTask {
+export class LambdaTask<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends LambdaTaskConfig<Input, Output> = LambdaTaskConfig<Input, Output>,
+> extends SingleTask<Input, Output, Config> {
   static readonly type = "LambdaTask";
-  declare runInputData: TaskInput;
-  declare defaults: Partial<TaskInput>;
-  declare runOutputData: TaskOutput;
-  declare config: LambdaTaskConfig & IConfig;
 
   /**
    * Input definition for LambdaTask
@@ -64,22 +65,6 @@ export class LambdaTask extends SingleTask {
     },
   ] as const;
 
-  constructor(config: LambdaTaskConfig) {
-    if (config.input?.runFull || config.input?.runReactive) {
-      if (config.input.runFull) {
-        config.runFull = config.input.runFull;
-        delete config.input.runFull;
-      }
-      if (config.input.runReactive) {
-        config.runReactive = config.input.runReactive;
-        delete config.input.runReactive;
-      }
-      config.input = config.input.input;
-      delete config?.input?.input;
-    }
-    super(config);
-  }
-
   resetInputData() {
     if (this.runInputData?.runFull || this.runInputData?.runReactive) {
       if (this.runInputData.runFull) {
@@ -96,7 +81,7 @@ export class LambdaTask extends SingleTask {
     super.resetInputData();
   }
 
-  async runFull(): Promise<TaskOutput> {
+  async runFull(): Promise<Output> {
     let updateProgress = (progress: number, message: string) => {
       this.handleProgress(progress, message);
     };
@@ -130,15 +115,15 @@ TaskRegistry.registerTask(LambdaTask);
 /**
  * Convenience function to create and run a LambdaTask
  */
-export const Lambda = (config: LambdaTaskConfig) => {
-  const task = new LambdaTask(config);
+export const Lambda = (input: TaskInput, config: LambdaTaskConfig) => {
+  const task = new LambdaTask(input, config);
   return task.run();
 };
 
 // Add Lambda task workflow to Workflow interface
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    Lambda: CreateWorkflow<LambdaTaskConfig>;
+    Lambda: CreateWorkflow<TaskInput, TaskOutput, LambdaTaskConfig>;
   }
 }
 

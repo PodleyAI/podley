@@ -70,19 +70,13 @@ describe("FetchTask", () => {
       "https://api.example.com/3",
     ];
 
-    const results = await Promise.all(
-      urls.map((url) =>
-        Fetch({
-          url,
-        })
-      )
-    );
+    const results = await Promise.all(urls.map((url) => Fetch({ url })));
 
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results).toHaveLength(3);
-    expect(results[0].output).toEqual({ data: { id: 1, name: "Test 1" } });
-    expect(results[1].output).toEqual({ data: { id: 2, name: "Test 2" } });
-    expect(results[2].output).toEqual({ data: { id: 3, name: "Test 3" } });
+    expect(results[0].body).toEqual({ data: { id: 1, name: "Test 1" } });
+    expect(results[1].body).toEqual({ data: { id: 2, name: "Test 2" } });
+    expect(results[2].body).toEqual({ data: { id: 3, name: "Test 3" } });
   });
 
   test("respects rate limiting with InMemoryQueue", async () => {
@@ -209,7 +203,7 @@ describe("FetchTask", () => {
 
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results[0].status).toBe("fulfilled");
-    expect((results[0] as PromiseFulfilledResult<any>).value.output).toEqual({ data: "success" });
+    expect((results[0] as PromiseFulfilledResult<any>).value.body).toEqual({ data: "success" });
     expect(results[1].status).toBe("rejected");
     expect((results[1] as PromiseRejectedResult).reason.message).toBe("Network error");
     expect(results[2].status).toBe("rejected");

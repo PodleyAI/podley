@@ -253,7 +253,7 @@ export class SqliteTabularRepository<
       .map((key) => `${key} = ?`)
       .join(" AND ");
     const params = this.getPrimaryKeyAsOrderedArray(key);
-    const stmt = this.db.prepare(`DELETE FROM ${this.table} WHERE ${whereClauses}`);
+    const stmt = this.db.prepare(`DELETE FROM \`${this.table}\` WHERE ${whereClauses}`);
     stmt.run(...params);
     this.events.emit("delete", key);
   }
@@ -274,7 +274,7 @@ export class SqliteTabularRepository<
    * @emits 'clearall' event when successful
    */
   async deleteAll(): Promise<void> {
-    this.db.exec(`DELETE FROM ${this.table}`);
+    this.db.exec(`DELETE FROM \`${this.table}\``);
     this.events.emit("clearall");
   }
 
@@ -284,7 +284,7 @@ export class SqliteTabularRepository<
    */
   async size(): Promise<number> {
     const stmt = this.db.prepare<{ count: number }, []>(`
-      SELECT COUNT(*) AS count FROM ${this.table}
+      SELECT COUNT(*) AS count FROM \`${this.table}\`
     `);
     return stmt.get()?.count || 0;
   }

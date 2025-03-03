@@ -13,9 +13,9 @@ import {
   getTaskQueueRegistry,
   JobQueueTask,
   JobQueueTaskConfig,
-  type TaskOutput,
   type TaskInput,
   TaskInvalidInputError,
+  type TaskOutput,
 } from "@ellmers/task-graph";
 import { AiJob } from "../../job/AiJob";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
@@ -24,19 +24,28 @@ import { getGlobalModelRepository } from "../../model/ModelRegistry";
  * A base class for AI related tasks that run in a job queue.
  * Extends the JobQueueTask class to provide LLM-specific functionality.
  */
-export class AiTask extends JobQueueTask {
-  static readonly type: string = "AiTask";
+export class AiTask<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends JobQueueTaskConfig = JobQueueTaskConfig,
+> extends JobQueueTask<Input, Output, Config> {
+  public static type: string = "AiTask";
+
   /**
    * Creates a new AiTask instance
    * @param config - Configuration object for the task
    */
-  constructor(config: JobQueueTaskConfig = {}) {
+  constructor(input: Input = {} as Input, config: Config = {} as Config) {
     config.name ||= `${new.target.type || new.target.name}${
-      config.input?.model ? " with model " + config.input?.model : ""
+      input?.model ? " with model " + input?.model : ""
     }`;
-    super(config);
-    this.jobClass = AiJob<TaskInput, TaskOutput>;
+    super(input, config);
+    this.jobClass = AiJob<Input, Output>;
   }
+
+  // ========================================================================
+  // Job creation
+  // ========================================================================
 
   /**
    * Creates a new Job instance for the task

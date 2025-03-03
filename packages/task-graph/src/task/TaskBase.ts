@@ -21,198 +21,410 @@ import {
   type TaskEventListener,
   type TaskEventParameters,
   type TaskEventListeners,
-  type IConfig,
   Provenance,
 } from "./TaskTypes";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 
 /**
- * Base class for all tasks that implements the ITask interface
+ * Base class for all tasks that implements the ITask interface.
+ * This abstract class provides common functionality for both single and compound tasks.
  */
-export abstract class TaskBase implements ITask {
-  // Static properties that should be overridden by subclasses
-  static readonly type: TaskTypeName = "TaskBase";
-  static readonly category: string = "Hidden";
-  static readonly sideeffects: boolean = false;
+export abstract class TaskBase<
+  Input extends TaskInput,
+  Output extends TaskOutput,
+  Config extends TaskConfig,
+> implements ITask<Input, Output, Config>
+{
+  // ========================================================================
+  // Static properties - should be overridden by subclasses
+  // ========================================================================
 
-  // Instance properties from static
-  // readonly type: TaskTypeName = (this.constructor as typeof TaskBase).type;
-  // readonly category: string = (this.constructor as typeof TaskBase).category;
-  // readonly sideeffects: boolean = (this.constructor as typeof TaskBase).sideeffects;
+  /**
+   * The type identifier for this task class
+   */
+  public static readonly type: TaskTypeName = "TaskBase";
 
-  // Instance properties
+  /**
+   * The category this task belongs to
+   */
+  public static readonly category: string = "Hidden";
+
+  /**
+   * Whether this task has side effects
+   */
+  public static readonly sideeffects: boolean = false;
+
+  /**
+   * Input definitions for this task
+   */
+  public static readonly inputs: readonly TaskInputDefinition[] = [];
+
+  /**
+   * Output definitions for this task
+   */
+  public static readonly outputs: readonly TaskOutputDefinition[] = [];
+
+  // ========================================================================
+  // Instance properties - some to be overridden by subclasses
+  // ========================================================================
+
+  /**
+   * Whether this task is a compound task (contains subtasks)
+   */
   abstract readonly isCompound: boolean;
-  config: IConfig;
+
+  /**
+   * Default input values for this task.
+   * If no overrides at run time, then this would be equal to the input.
+   * resetInputData() will reset inputs to these defaults.
+   */
+  defaults: Partial<Input>;
+
+  /**
+   * The input to the task at the time of the task run.
+   * This takes defaults from construction time and overrides from run time.
+   * It is the input that created the output.
+   */
+  runInputData: Input = {} as Input;
+
+  /**
+   * The output of the task at the time of the task run.
+   * This is the result of the task execution.
+   */
+  runOutputData: Output = {} as Output;
+
+  // ========================================================================
+  // Task state properties
+  // ========================================================================
+
+  /**
+   * The configuration of the task
+   */
+  config: Config;
+
+  /**
+   * Current status of the task
+   */
   status: TaskStatus = TaskStatus.PENDING;
+
+  /**
+   * Progress of the task (0-100)
+   */
   progress: number = 0;
+
+  /**
+   * When the task was created
+   */
   createdAt: Date = new Date();
+
+  /**
+   * When the task started execution
+   */
   startedAt?: Date;
+
+  /**
+   * When the task completed execution
+   */
   completedAt?: Date;
+
+  /**
+   * Error that occurred during task execution, if any
+   */
   error?: TaskError;
 
-  // Event handling
+  /**
+   * Event emitter for task lifecycle events
+   */
   public readonly events = new EventEmitter<TaskEventListeners>();
 
-  constructor(config: TaskConfig = {}) {
-    // Extract input data from config
-    const { input = {}, ...rest } = config;
-    const inputDefaults = this.inputs.reduce<Record<string, any>>((acc, cur) => {
-      if (cur.defaultValue !== undefined) {
-        acc[cur.id] = cur.defaultValue;
-      }
-      return acc;
-    }, {});
-    this.defaults = Object.assign(inputDefaults, input);
+  /**
+   * AbortController for cancelling task execution
+   */
+  protected abortController: AbortController | undefined;
+
+  /**
+   * Cache for task outputs
+   */
+  protected outputCache: TaskOutputRepository | undefined;
+
+  /**
+   * Provenance information for the task
+   */
+  protected nodeProvenance: Provenance = {};
+
+  /**
+   * Creates a new task instance
+   *
+   * @param callerDefaultInputs Default input values provided by the caller
+   * @param config Configuration for the task
+   */
+  constructor(
+    callerDefaultInputs: Partial<Input> = {} as Partial<Input>,
+    config: Config = {} as Config
+  ) {
+    // Initialize input defaults
+    const inputDefaults = this.getDefaultInputsFromStaticInputDefinitions();
+    this.defaults = Object.assign(inputDefaults, callerDefaultInputs);
     this.resetInputData();
 
-    // Setup configuration
+    // Setup configuration defaults
     const name = new.target.type || new.target.name;
     this.config = Object.assign(
       {
         id: nanoid(),
         name: name,
       },
-      rest
+      config
     );
-    Object.defineProperty(this, "events", { enumerable: false }); // Prevent serialization
+
+    // Prevent serialization of events
+    Object.defineProperty(this, "events", { enumerable: false });
   }
 
-  // Input/Output definitions
-  public static inputs: readonly TaskInputDefinition[];
-  public static outputs: readonly TaskOutputDefinition[];
+  // ========================================================================
+  // Input/Output handling
+  // ========================================================================
 
+  /**
+   * Gets default input values from static input definitions
+   */
+  getDefaultInputsFromStaticInputDefinitions(): Partial<Input> {
+    return this.inputs.reduce<Record<string, any>>((acc, cur) => {
+      if (cur.defaultValue !== undefined) {
+        acc[cur.id] = cur.defaultValue;
+      }
+      return acc;
+    }, {}) as Partial<Input>;
+  }
+
+  /**
+   * Gets input definitions for this task
+   */
   get inputs(): TaskInputDefinition[] {
     return ((this.constructor as typeof TaskBase).inputs as TaskInputDefinition[]) ?? [];
   }
 
+  /**
+   * Gets output definitions for this task
+   */
   get outputs(): TaskOutputDefinition[] {
     return ((this.constructor as typeof TaskBase).outputs as TaskOutputDefinition[]) ?? [];
   }
 
+  /**
+   * Resets input data to defaults
+   */
+  public resetInputData(): void {
+    // Use deep clone to avoid state leakage
+    try {
+      this.runInputData = structuredClone(this.defaults) as Input;
+    } catch (err) {
+      this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as Input;
+    }
+  }
+
+  /**
+   * Sets input values for the task
+   *
+   * @param input Input values to set
+   */
+  public setInput(input: Partial<Input>): void {
+    for (const inputdef of this.inputs) {
+      const inputId = inputdef.id as keyof Input;
+      if (input[inputId] !== undefined) {
+        this.runInputData[inputId] = input[inputId];
+      }
+    }
+  }
+
+  // ========================================================================
   // Event handling methods
+  // ========================================================================
+
+  /**
+   * Registers an event listener
+   */
   public on<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void {
     this.events.on(name, fn);
   }
 
+  /**
+   * Removes an event listener
+   */
   public off<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void {
     this.events.off(name, fn);
   }
 
+  /**
+   * Registers a one-time event listener
+   */
   public once<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void {
     this.events.once(name, fn);
   }
 
+  /**
+   * Returns a promise that resolves when the specified event is emitted
+   */
   public emitted<Event extends TaskEvents>(name: Event): Promise<TaskEventParameters<Event>> {
     return this.events.emitted(name) as Promise<TaskEventParameters<Event>>;
   }
 
+  /**
+   * Emits an event
+   */
   public emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>): void {
     this.events.emit(name, ...args);
   }
 
-  // Runtime data
-  /**
-   * The defaults for the task. If no overrides at run time, then this would be equal to the
-   * input
-   */
-  defaults: TaskInput;
-  /**
-   * The input to the task at the time of the task run. This takes defaults from construction
-   * time and overrides from run time. It is the input that created the output.
-   */
-  runInputData: TaskInput = {};
-  /**
-   * The output of the task at the time of the task run. This is the result of the task.
-   * The the defaults and overrides are combined to match the required input of the task.
-   */
-  runOutputData: TaskOutput = {};
-  abortController: AbortController | undefined;
+  // ========================================================================
+  // Task lifecycle methods
+  // ========================================================================
 
+  /**
+   * Aborts task execution
+   */
   public abort(): void {
     this.abortController?.abort();
   }
 
-  // Core task methods
+  /**
+   * Handles task start
+   */
   public handleStart(): void {
     if (this.status === TaskStatus.PROCESSING) return;
-    // this.runOutputData = {};
+
     this.startedAt = new Date();
     this.nodeProvenance = {};
     this.outputCache = undefined;
     this.progress = 0;
     this.status = TaskStatus.PROCESSING;
+
     this.abortController = new AbortController();
     this.abortController.signal.addEventListener("abort", () => {
       this.handleAbort();
     });
+
     this.events.emit("start");
   }
 
+  /**
+   * Handles task abort
+   */
   public handleAbort(): void {
     if (this.status === TaskStatus.ABORTING) return;
+
     this.status = TaskStatus.ABORTING;
     this.progress = 100;
     this.error = new TaskAbortedError();
+
     this.events.emit("abort", this.error);
   }
 
+  /**
+   * Handles task completion
+   */
   public handleComplete(): void {
     if (this.status === TaskStatus.COMPLETED) return;
+
     this.completedAt = new Date();
     this.progress = 100;
     this.status = TaskStatus.COMPLETED;
     this.abortController = undefined;
     this.outputCache = undefined;
     this.nodeProvenance = {};
+
     this.events.emit("complete");
   }
 
+  /**
+   * Handles task error
+   *
+   * @param err Error that occurred
+   */
   public handleError(err: Error): void {
     if (err instanceof TaskAbortedError) return this.handleAbort();
     if (this.status === TaskStatus.FAILED) return;
+
     this.completedAt = new Date();
     this.progress = 100;
-    // console the stack trace
     this.status = TaskStatus.FAILED;
     this.error =
       err instanceof TaskError ? err : new TaskFailedError(err?.message || "Task failed");
     this.abortController = undefined;
     this.outputCache = undefined;
     this.nodeProvenance = {};
+
     this.events.emit("error", this.error);
   }
 
+  /**
+   * Handles task progress update
+   *
+   * @param progress Progress value (0-100)
+   * @param args Additional arguments
+   */
   public handleProgress(progress: number, ...args: any[]): void {
     this.progress = progress;
-    this.events.emit("progress", progress);
+    this.events.emit("progress", progress, ...args);
   }
 
-  public getProvenance(): TaskInput {
-    return this.config.provenance ?? {};
-  }
+  /**
+   * Runs the task and returns the output
+   *
+   * @param nodeProvenance Provenance information
+   * @param repository Repository for caching task outputs
+   * @returns Task output
+   */
+  async run(nodeProvenance: Provenance = {}, repository?: TaskOutputRepository): Promise<Output> {
+    this.handleStart();
+    this.nodeProvenance = nodeProvenance;
+    this.outputCache = repository;
 
-  public resetInputData(): void {
-    // Use deep clone to avoid state leakage
     try {
-      this.runInputData = structuredClone(this.defaults);
-    } catch (err) {
-      this.runInputData = JSON.parse(JSON.stringify(this.defaults));
+      const isValid = await this.validateInputData(this.runInputData);
+      if (!isValid) {
+        throw new TaskInvalidInputError("Invalid input data");
+      }
+
+      if (this.abortController?.signal.aborted) {
+        this.handleAbort();
+        throw new TaskAbortedError("Promise for task created and aborted before run");
+      }
+
+      this.runOutputData = await this.runFull();
+      this.handleComplete();
+
+      return this.runOutputData;
+    } catch (err: any) {
+      this.handleError(err);
+      throw err;
     }
   }
 
-  public setInput(input: Partial<TaskInput>): void {
-    for (const inputdef of this.inputs) {
-      if (input[inputdef.id] !== undefined) {
-        this.runInputData[inputdef.id] = input[inputdef.id];
-      }
-    }
-  }
+  // ========================================================================
+  // Task execution methods
+  // ========================================================================
+
+  /**
+   * Runs the full task implementation
+   * @returns The output of the task
+   */
+  public abstract runFull(): Promise<Output>;
+
+  /**
+   * Runs the task "reactively" for UI updates
+   * @returns The output of the task
+   */
+  public abstract runReactive(): Promise<Output>;
+
+  // ========================================================================
+  // Input validation methods
+  // ========================================================================
 
   /**
    * Validates an item against the task's input definition
    *
-   * By default, we only check "number", "text", "boolean", and "function"
    * @param valueType The type of the item
    * @param item The item to validate
    * @returns True if the item is valid, otherwise throws an error
@@ -258,54 +470,60 @@ export abstract class TaskBase implements ITask {
 
   /**
    * Validates an input item against the task's input definition
+   *
    * @param input The input to validate
    * @param inputId The id of the input to validate
    * @returns True if the input is valid, otherwise throws an error
    * @throws TaskInvalidInputError if the input is invalid
    */
-  public async validateInputItem(
-    input: Partial<TaskInput>,
-    inputId: keyof TaskInput
-  ): Promise<boolean> {
+  public async validateInputItem(input: Partial<Input>, inputId: keyof Input): Promise<boolean> {
     const classRef = this.constructor as typeof TaskBase;
     const inputdef = this.inputs.find((def) => def.id === inputId);
+
     if (!inputdef) {
-      throw new TaskInvalidInputError(`validateInputItem: Unknown input id: ${inputId}`);
+      throw new TaskInvalidInputError(`validateInputItem: Unknown input id: ${inputId as string}`);
     }
+
     if (typeof input !== "object") {
-      throw new TaskInvalidInputError(`validateInputItem: Input is not an object: ${inputId}`);
+      throw new TaskInvalidInputError(
+        `validateInputItem: Input is not an object: ${inputId as string}`
+      );
     }
+
     if (input[inputId] === undefined) {
       if (inputdef.defaultValue !== undefined) {
         input[inputId] = inputdef.defaultValue;
       } else {
         if (!inputdef.optional && inputdef.valueType !== "any") {
           throw new TaskInvalidInputError(
-            `No default value for '${inputId}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
+            `No default value for '${inputId as string}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
           );
         }
       }
     }
 
     if (inputdef.isArray && !Array.isArray(input[inputId])) {
-      input[inputId] = [input[inputId]];
+      input[inputId] = [input[inputId]] as any;
     }
-    const inputlist: any[] = inputdef.isArray ? input[inputId] : [input[inputId]];
+
+    const inputlist: any[] = inputdef.isArray ? (input[inputId] as any[]) : [input[inputId]];
 
     const validationPromises = inputlist.map((item) =>
       this.validateItem(inputdef.valueType as string, item)
     );
+
     const validationResults = await Promise.all(validationPromises);
     return validationResults.every((result) => result === true);
   }
 
   /**
    * Validates an input data object against the task's input definition
+   *
    * @param input The input to validate
    * @returns True if the input is valid, otherwise throws an error
    * @throws TaskInvalidInputError if the input is invalid
    */
-  public async validateInputData(input: Partial<TaskInput>): Promise<boolean> {
+  public async validateInputData(input: Partial<Input>): Promise<boolean> {
     for (const inputdef of this.inputs) {
       if (inputdef.optional && input[inputdef.id] === undefined) continue;
       await this.validateInputItem(input, inputdef.id);
@@ -313,70 +531,32 @@ export abstract class TaskBase implements ITask {
     return true;
   }
 
-  outputCache: TaskOutputRepository | undefined;
-  nodeProvenance: Provenance = {};
-
   /**
-   * Run will runFull() and return the output, wrapping the task in a try/catch block.
+   * Gets provenance information for the task
    */
-  async run(
-    nodeProvenance: Provenance = {},
-    repository?: TaskOutputRepository
-  ): Promise<TaskOutput> {
-    this.handleStart();
-    this.nodeProvenance = nodeProvenance;
-    this.outputCache = repository;
-
-    try {
-      const isValid = await this.validateInputData(this.runInputData);
-      if (!isValid) {
-        throw new TaskInvalidInputError("unsure");
-      }
-      // TODO: erase the following if the error not printed to console
-      if (this.abortController?.signal.aborted) {
-        this.handleAbort();
-        throw new TaskAbortedError("Promise for task created and aborted before run");
-      }
-      this.runOutputData = await this.runFull();
-
-      this.handleComplete();
-      return this.runOutputData;
-    } catch (err: any) {
-      this.handleError(err);
-      throw err;
-    }
+  public getProvenance(): Provenance {
+    return this.config.provenance ?? {};
   }
 
-  /**
-   * Runs the full task
-   * @returns The output of the task
-   */
-  public abstract runFull(): Promise<TaskOutput>;
+  // ========================================================================
+  // Serialization methods
+  // ========================================================================
 
   /**
-   * Runs the task "reactively", defaults to no-op
-   * This is generally for UI updating, and should
-   * be light weight.
-   * @returns The output of the task
-   */
-  public abstract runReactive(): Promise<TaskOutput>;
-
-  /**
-   * Converts the task to a JSON format suitable for dependency tracking
-   * @returns The task in JSON format
+   * Converts the task to a JSON format
    */
   public toJSON(): JsonTaskItem {
-    const p = this.getProvenance();
+    const provenance = this.getProvenance();
     return {
       id: this.config.id,
       type: (this.constructor as typeof TaskBase).type,
       input: this.defaults,
-      ...(Object.keys(p).length ? { provenance: p } : {}),
+      ...(Object.keys(provenance).length ? { provenance } : {}),
     };
   }
+
   /**
    * Converts the task to a JSON format suitable for dependency tracking
-   * @returns The task in JSON format
    */
   toDependencyJSON(): JsonTaskItem {
     return this.toJSON();

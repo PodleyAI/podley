@@ -31,7 +31,9 @@ export type TextSummaryTaskOutput = {
  * This summarizes a piece of text
  */
 
-export class TextSummaryTask extends AiTask {
+export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTaskOutput> {
+  public static type = "TextSummaryTask";
+  public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "text",
@@ -47,14 +49,9 @@ export class TextSummaryTask extends AiTask {
   public static outputs: TaskOutputDefinition[] = [
     { id: "text", name: "Text", valueType: "text" },
   ] as const;
-  constructor(config: JobQueueTaskConfig & { input?: TextSummaryTaskInput } = {}) {
-    super(config);
+  constructor(input: TextSummaryTaskInput, config: JobQueueTaskConfig) {
+    super(input, config);
   }
-  declare runInputData: TextSummaryTaskInput;
-  declare runOutputData: TextSummaryTaskOutput;
-  declare defaults: Partial<TextSummaryTaskInput>;
-  static readonly type = "TextSummaryTask";
-  static readonly category = "Text Model";
 }
 TaskRegistry.registerTask(TextSummaryTask);
 
@@ -67,16 +64,30 @@ type TextSummaryCompoundTaskInput = ConvertSomeToOptionalArray<
 export const TextSummaryCompoundTask = arrayTaskFactory<
   TextSummaryCompoundTaskInput,
   TextSummaryCompoundTaskOutput,
-  TextSummaryTaskOutput
+  TextSummaryTaskInput,
+  TextSummaryTaskOutput,
+  JobQueueTaskConfig
 >(TextSummaryTask, ["model", "text"]);
 
-export const TextSummary = (input: TextSummaryCompoundTaskInput) => {
-  return new TextSummaryCompoundTask({ input }).run();
+export const TextSummary = (
+  input: TextSummaryCompoundTaskInput,
+  config: JobQueueTaskConfig = {}
+) => {
+  if (Array.isArray(input.model) || Array.isArray(input.text)) {
+    return new TextSummaryCompoundTask(input, config).run();
+  } else {
+    // ts not getting that input.text is not an array
+    return new TextSummaryTask(input as TextSummaryTaskInput, config).run();
+  }
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    TextSummary: CreateWorkflow<TextSummaryCompoundTaskInput>;
+    TextSummary: CreateWorkflow<
+      TextSummaryCompoundTaskInput,
+      TextSummaryCompoundTaskOutput,
+      JobQueueTaskConfig
+    >;
   }
 }
 

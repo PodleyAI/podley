@@ -5,13 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { expect, it, beforeEach } from "bun:test";
+import { expect, it, beforeEach, afterEach } from "bun:test";
 import { TaskGraphRepository } from "../TaskGraphRepository";
 import { Dataflow } from "../../../task-graph/Dataflow";
 import { TaskGraph } from "../../../task-graph/TaskGraph";
-import { TaskRegistry } from "../../../task/TaskRegistry";
 import { TaskOutput } from "../../../task/TaskTypes";
 import { SingleTask } from "../../../task/SingleTask";
+import { TaskRegistry } from "../../../task/TaskRegistry";
 
 class TestTask extends SingleTask {
   static readonly type = "TestTask";
@@ -19,6 +19,7 @@ class TestTask extends SingleTask {
     return {};
   }
 }
+
 TaskRegistry.registerTask(TestTask);
 
 export function runGenericTaskGraphRepositoryTests(
@@ -27,20 +28,35 @@ export function runGenericTaskGraphRepositoryTests(
   let repository: TaskGraphRepository;
 
   beforeEach(async () => {
+    TaskRegistry.all.clear();
     repository = await createRepository();
+  });
+
+  afterEach(async () => {
+    await repository.clear();
   });
 
   it("should initialize the tabularRepository", () => {
     expect(repository.tabularRepository).toBeDefined();
   });
 
+  it("should fail if the task is not registered", async () => {
+    const id: string = "g0";
+    const graph = new TaskGraph();
+    const tasks = [new TestTask({}, { id: "task1" })];
+    graph.addTasks(tasks);
+    await repository.saveTaskGraph(id, graph);
+    expect(repository.getTaskGraph(id)).rejects.toThrow();
+  });
+
   it("should store and retrieve task graph", async () => {
+    TaskRegistry.registerTask(TestTask);
     const id: string = "g1";
     const graph = new TaskGraph();
     const tasks = [
-      new TestTask({ id: "task1" }),
-      new TestTask({ id: "task2" }),
-      new TestTask({ id: "task3" }),
+      new TestTask({}, { id: "task1" }),
+      new TestTask({}, { id: "task2" }),
+      new TestTask({}, { id: "task3" }),
     ];
     const edges: Dataflow[] = [
       new Dataflow("task1", "output1", "task2", "input1"),
@@ -54,6 +70,7 @@ export function runGenericTaskGraphRepositoryTests(
     expect(graph.getDataflow("task2.output2 -> task3.input2")).toBeDefined();
 
     await repository.saveTaskGraph(id, graph);
+
     const retrievedGraph = await repository.getTaskGraph(id);
 
     expect(retrievedGraph?.toJSON()).toEqual(graph?.toJSON());

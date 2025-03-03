@@ -38,18 +38,22 @@ export function runGenericTaskGraphJobQueueTests(
 
   it("should run a task via job queue", async () => {
     await jobQueue.start();
-    const task = new TestJobTask({
-      queueName: jobQueue.queueName,
-      input: { a: 1, b: 2 },
-    });
+    const task = new TestJobTask(
+      { a: 1, b: 2 },
+      {
+        queueName: jobQueue.queueName,
+      }
+    );
     const result = await task.run();
     expect(result).toEqual({ result: 3 });
   });
   it("should not run a task via job queue if not started", async () => {
-    const task = new TestJobTask({
-      queueName: jobQueue.queueName,
-      input: { a: 1, b: 2 },
-    });
+    const task = new TestJobTask(
+      { a: 1, b: 2 },
+      {
+        queueName: jobQueue.queueName,
+      }
+    );
     const wait = (ms: number, result: any) =>
       new Promise((resolve) => setTimeout(resolve, ms, result));
     const result = await Promise.race([task.run(), wait(10, "STOP")]);

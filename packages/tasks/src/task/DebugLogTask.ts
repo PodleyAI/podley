@@ -13,6 +13,8 @@ import {
   TaskOutputDefinition,
   CreateWorkflow,
   TaskInvalidInputError,
+  TaskConfig,
+  TaskBase,
 } from "@ellmers/task-graph";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
@@ -39,11 +41,13 @@ const DEFAULT_LOG_LEVEL: LogLevel = "log";
  * This task is particularly useful for debugging task graphs and monitoring
  * data flow between tasks during development and testing.
  */
-export class DebugLogTask extends OutputTask {
-  static readonly type: string = "DebugLogTask";
-  static readonly category = "Output";
-  declare runInputData: DebugLogTaskInput;
-  declare runOutputData: DebugLogTaskOutput;
+export class DebugLogTask<
+  Input extends DebugLogTaskInput = DebugLogTaskInput,
+  Output extends DebugLogTaskOutput = DebugLogTaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends OutputTask<Input, Output, Config> {
+  static type = "DebugLogTask";
+  static category = "Output";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "messages",
@@ -92,12 +96,12 @@ export class DebugLogTask extends OutputTask {
 TaskRegistry.registerTask(DebugLogTask);
 
 export const DebugLog = (input: DebugLogTaskInput) => {
-  return new DebugLogTask({ input }).run();
+  return new DebugLogTask(input).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    DebugLog: CreateWorkflow<DebugLogTaskInput>;
+    DebugLog: CreateWorkflow<DebugLogTaskInput, DebugLogTaskOutput, TaskConfig>;
   }
 }
 

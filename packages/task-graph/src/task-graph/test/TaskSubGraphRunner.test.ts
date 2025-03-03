@@ -16,8 +16,12 @@ import {
   arrayTaskFactory,
 } from "../../task/ArrayTask";
 import { SingleTask } from "../../task/SingleTask";
-import { Task, TaskOutput, TaskStatus } from "../../task/TaskTypes";
+import { TaskStatus } from "../../task/TaskTypes";
 import { TaskAbortedError, TaskErrorGroup, TaskFailedError } from "../../task/TaskError";
+import { ITask } from "../../task/ITask";
+import { TaskRegistry } from "../../task/TaskRegistry";
+
+TaskRegistry.all.clear();
 
 type TestSquareTaskInput = {
   input: number;
@@ -25,10 +29,8 @@ type TestSquareTaskInput = {
 type TestSquareTaskOutput = {
   output: number;
 };
-class TestSquareTask extends SingleTask {
+class TestSquareTask extends SingleTask<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareTask";
-  declare runInputData: TestSquareTaskInput;
-  declare runOutputData: TestSquareTaskOutput;
   static inputs = [
     {
       id: "input",
@@ -44,14 +46,16 @@ class TestSquareTask extends SingleTask {
       valueType: "number",
     },
   ] as const;
-  async runReactive(): Promise<TestSquareTaskOutput> {
+  async runReactive() {
     return { output: this.runInputData.input * this.runInputData.input };
   }
 }
 
 export const TestSquareMultiInputTask = arrayTaskFactory<
   ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>
+  ConvertAllToArrays<TestSquareTaskOutput>,
+  TestSquareTaskInput,
+  TestSquareTaskOutput
 >(TestSquareTask, ["input"]);
 
 type TestDoubleTaskInput = {
@@ -60,10 +64,8 @@ type TestDoubleTaskInput = {
 type TestDoubleTaskOutput = {
   output: number;
 };
-class TestDoubleTask extends SingleTask {
+class TestDoubleTask extends SingleTask<TestDoubleTaskInput, TestDoubleTaskOutput> {
   static readonly type = "TestDoubleTask";
-  declare runInputData: TestDoubleTaskInput;
-  declare runOutputData: TestDoubleTaskOutput;
   static inputs = [
     {
       id: "input",
@@ -79,7 +81,7 @@ class TestDoubleTask extends SingleTask {
       valueType: "number",
     },
   ] as const;
-  async runReactive(): Promise<TestDoubleTaskOutput> {
+  async runReactive() {
     return { output: this.runInputData.input * 2 };
   }
 }
@@ -128,12 +130,12 @@ describe("TaskSubGraphRunner", () => {
   });
 
   describe("runGraph array input", () => {
-    let nodes: Task[];
+    let nodes: ITask[];
     beforeEach(() => {
       nodes = [
-        new TestSquareMultiInputTask({ id: "task0", input: { input: [6, 7] } }),
-        new TestSquareTask({ id: "task1", input: { input: 5 } }),
-        new TestDoubleTask({ id: "task2", input: { input: 5 } }),
+        new TestSquareMultiInputTask({ input: [6, 7] }, { id: "task0" }),
+        new TestSquareTask({ input: 5 }, { id: "task1" }),
+        new TestDoubleTask({ input: 5 }, { id: "task2" }),
       ];
       graph.addTasks(nodes);
     });
@@ -147,7 +149,7 @@ describe("TaskSubGraphRunner", () => {
     });
 
     it("array input into ArrayTask", async () => {
-      const task = new TestSquareMultiInputTask({ id: "task3" });
+      const task = new TestSquareMultiInputTask({ input: [6, 7] }, { id: "task3" });
       graph.addTask(task);
       graph.addDataflow(new Dataflow("task1", "output", "task3", "input"));
       graph.addDataflow(new Dataflow("task2", "output", "task3", "input"));
@@ -171,7 +173,7 @@ describe("TaskSubGraphRunner", () => {
 
   describe("error handling", () => {
     it("should handle task failure", async () => {
-      const failingTask = new FailingTask({ id: "failingTaskId" });
+      const failingTask = new FailingTask({}, { id: "failingTaskId" });
       graph.addTask(failingTask);
 
       let error: TaskErrorGroup | undefined;
@@ -188,8 +190,8 @@ describe("TaskSubGraphRunner", () => {
     });
 
     it("should handle task failure in a chain", async () => {
-      const squareTask = new TestSquareTask({ id: "square", input: { input: 5 } });
-      const failingTask = new FailingTask({ id: "failing" });
+      const squareTask = new TestSquareTask({ input: 5 }, { id: "square" });
+      const failingTask = new FailingTask({}, { id: "failing" });
       graph.addTasks([squareTask, failingTask]);
       graph.addDataflow(new Dataflow("square", "output", "failing", "input"));
 
@@ -207,8 +209,8 @@ describe("TaskSubGraphRunner", () => {
     });
 
     it("should handle multiple task failures", async () => {
-      const failingTask1 = new FailingTask({ id: "failing1" });
-      const failingTask2 = new FailingTask({ id: "failing2" });
+      const failingTask1 = new FailingTask({}, { id: "failing1" });
+      const failingTask2 = new FailingTask({}, { id: "failing2" });
       graph.addTasks([failingTask1, failingTask2]);
       graph.addDataflow(new Dataflow("failing1", "out", "failing2", "in"));
 
@@ -246,7 +248,7 @@ describe("TaskSubGraphRunner", () => {
     });
 
     it("should handle task aborting after a delay", async () => {
-      const abortingTask = new FailingTask({ id: "abortingTaskId" });
+      const abortingTask = new FailingTask({}, { id: "abortingTaskId" });
       graph.addTask(abortingTask);
 
       let error: TaskErrorGroup | undefined;
@@ -264,8 +266,8 @@ describe("TaskSubGraphRunner", () => {
     });
 
     it("should handle task aborting in a chain, immediate abort", async () => {
-      const squareTask = new TestSquareTask({ id: "square", input: { input: 5 } });
-      const failingTask = new FailingTask({ id: "failing" });
+      const squareTask = new TestSquareTask({ input: 5 }, { id: "square" });
+      const failingTask = new FailingTask({}, { id: "failing" });
       graph.addTasks([squareTask, failingTask]);
       graph.addDataflow(new Dataflow("square", "output", "failing", "in"));
 
@@ -283,8 +285,8 @@ describe("TaskSubGraphRunner", () => {
     });
 
     it("should handle task aborting in a chain, delayed abort", async () => {
-      const squareTask = new TestSquareTask({ id: "square", input: { input: 5 } });
-      const failingTask = new FailingTask({ id: "failing" });
+      const squareTask = new TestSquareTask({ input: 5 }, { id: "square" });
+      const failingTask = new FailingTask({}, { id: "failing" });
       graph.addTasks([squareTask, failingTask]);
       graph.addDataflow(new Dataflow("square", "output", "failing", "in"));
 
@@ -303,8 +305,8 @@ describe("TaskSubGraphRunner", () => {
     });
 
     it("should handle multiple task abortings", async () => {
-      const abortingTask1 = new FailingTask({ id: "aborting1" });
-      const abortingTask2 = new FailingTask({ id: "aborting2" });
+      const abortingTask1 = new FailingTask({}, { id: "aborting1" });
+      const abortingTask2 = new FailingTask({}, { id: "aborting2" });
       graph.addTasks([abortingTask1, abortingTask2]);
       graph.addDataflow(new Dataflow("aborting1", "output", "aborting2", "input"));
 

@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { afterAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 import {
   AiJob,
   getGlobalModelRepository,
@@ -29,10 +29,12 @@ import { SqliteQueueStorage } from "@ellmers/storage";
 const db = new Sqlite.Database(":memory:");
 
 describe("HFTransformersBinding", () => {
+  beforeEach(() => {
+    setTaskQueueRegistry(null);
+  });
   describe("InMemoryJobQueue", () => {
     it("Should have an item queued", async () => {
       registerHuggingfaceLocalTasks();
-      setGlobalModelRepository(new InMemoryModelRepository());
       const queueRegistry = getTaskQueueRegistry();
       const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
         LOCAL_ONNX_TRANSFORMERJS,
@@ -52,6 +54,7 @@ describe("HFTransformersBinding", () => {
         pipeline: "text2text-generation",
       };
 
+      setGlobalModelRepository(new InMemoryModelRepository());
       await getGlobalModelRepository().addModel(model);
       await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
       await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
@@ -75,8 +78,20 @@ describe("HFTransformersBinding", () => {
   describe("SqliteJobQueue", () => {
     it("Should have an item queued", async () => {
       registerHuggingfaceLocalTasks();
-      setGlobalModelRepository(new InMemoryModelRepository());
+      const queueRegistry = getTaskQueueRegistry();
+      const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
+        LOCAL_ONNX_TRANSFORMERJS,
+        AiJob<TaskInput, TaskOutput>,
+        {
+          storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(db, "test"),
+          limiter: new SqliteRateLimiter(db, "test", 4, 1),
+          waitDurationInMilliseconds: 1,
+        }
+      );
 
+      queueRegistry.registerQueue(jobQueue);
+
+      setGlobalModelRepository(new InMemoryModelRepository());
       const model = {
         name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
         url: "Xenova/LaMini-Flan-T5-783M",
@@ -90,18 +105,7 @@ describe("HFTransformersBinding", () => {
       await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
       await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
 
-      const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
-        "test",
-        AiJob<TaskInput, TaskOutput>,
-        {
-          storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(db, "test"),
-          limiter: new SqliteRateLimiter(db, "test", 4, 1),
-          waitDurationInMilliseconds: 1,
-        }
-      );
-
-      getTaskQueueRegistry().registerQueue(jobQueue);
-      const queue = getTaskQueueRegistry().getQueue(LOCAL_ONNX_TRANSFORMERJS);
+      const queue = queueRegistry.getQueue(LOCAL_ONNX_TRANSFORMERJS);
       expect(queue).toBeDefined();
       expect(queue?.queueName).toEqual(LOCAL_ONNX_TRANSFORMERJS);
 

@@ -15,6 +15,7 @@ import {
   TaskInputDefinition,
   TaskOutputDefinition,
   TaskInvalidInputError,
+  JobQueueTaskConfig,
 } from "@ellmers/task-graph";
 import { AnyNumberArray, ElVector } from "./base/TaskIOTypes";
 
@@ -34,10 +35,12 @@ export type SimilarityTaskOutput = {
   score: number[];
 };
 
-export class SimilarityTask extends SingleTask {
+export class SimilarityTask<
+  Input extends SimilarityTaskInput = SimilarityTaskInput,
+  Output extends SimilarityTaskOutput = SimilarityTaskOutput,
+  Config extends JobQueueTaskConfig = JobQueueTaskConfig,
+> extends SingleTask<Input, Output, Config> {
   static readonly type = "SimilarityTask";
-  declare runInputData: SimilarityTaskInput;
-  declare runOutputData: TaskOutput;
   public static inputs: TaskInputDefinition[] = [
     {
       id: "input",
@@ -79,16 +82,20 @@ export class SimilarityTask extends SingleTask {
     },
   ] as const;
 
-  constructor(config: TaskConfig & { input?: SimilarityTaskInput } = {}) {
-    super(config);
-  }
-
   async validateItem(valueType: string, item: any): Promise<boolean> {
     if (valueType === "similarity_fn") {
-      return similarity_fn.includes(item);
+      if (!similarity_fn.includes(item)) {
+        throw new TaskInvalidInputError(
+          `similarity must be one of: ${similarity_fn.join(", ")} but gave ${item}`
+        );
+      }
+      return true;
     }
     if (valueType === "vector") {
-      return item instanceof ElVector;
+      if (!(item instanceof ElVector)) {
+        throw new TaskInvalidInputError(`vector must be an instance of ElVector: ${item}`);
+      }
+      return true;
     }
     return super.validateItem(valueType, item);
   }
@@ -127,7 +134,7 @@ export class SimilarityTask extends SingleTask {
         return true;
       }
       default:
-        return super.validateInputItem(input, inputId);
+        return super.validateInputItem(input as Partial<Input>, inputId);
     }
   }
 
@@ -147,26 +154,29 @@ export class SimilarityTask extends SingleTask {
     similarities = similarities
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, this.runInputData.k);
+
+    const output = similarities.map((s) => s.embedding) as ElVector<AnyNumberArray>[];
+    const score = similarities.map((s) => s.similarity) as number[];
     this.runOutputData = {
-      output: similarities.map((s) => s.embedding),
-      score: similarities.map((s) => s.similarity),
-    };
+      output,
+      score,
+    } as Output;
     return this.runOutputData;
   }
 }
 TaskRegistry.registerTask(SimilarityTask);
 
-const SimilarityBuilder = (input: SimilarityTaskInput) => {
-  return new SimilarityTask({ input });
-};
-
 export const Similarity = (input: SimilarityTaskInput) => {
-  return SimilarityBuilder(input).run();
+  // if (Array.isArray(input.input) || Array.isArray(input.query)) {
+  //   return new SimilarityCompoundTask(input).run();
+  // } else {
+  return new SimilarityTask(input as SimilarityTaskInput).run();
+  // }
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    Similarity: CreateWorkflow<SimilarityTaskInput>;
+    Similarity: CreateWorkflow<SimilarityTaskInput, SimilarityTaskOutput, JobQueueTaskConfig>;
   }
 }
 

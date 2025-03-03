@@ -5,8 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, expect, it, beforeEach } from "bun:test";
-import { ValueSchema, KeySchema, ITabularRepository } from "../ITabularRepository";
+import { describe, expect, it, beforeEach, afterEach } from "bun:test";
+import { ValueSchema, ITabularRepository } from "../ITabularRepository";
 
 export const CompoundPrimaryKeyNames = ["name", "type"] as const;
 export const CompoundSchema: ValueSchema = {
@@ -39,6 +39,10 @@ export function runGenericTabularRepositoryTests(
       repository = await createCompoundPkRepository();
     });
 
+    afterEach(async () => {
+      await repository.deleteAll();
+    });
+
     it("should store and retrieve values for a key", async () => {
       const key = { name: "key1", type: "string1" };
       const entity = { ...key, option: "value1", success: true };
@@ -64,6 +68,10 @@ export function runGenericTabularRepositoryTests(
 
       beforeEach(async () => {
         repository = await createSearchableRepository();
+      });
+
+      afterEach(async () => {
+        await repository.deleteAll();
       });
 
       it("should store and search using compound indexes", async () => {

@@ -463,7 +463,7 @@ export function runGenericJobQueueTests(
       cleanup();
 
       // Verify progress updates
-      if (jobQueue instanceof IndexedDbQueueStorage) {
+      if (storage instanceof IndexedDbQueueStorage) {
         if (progressUpdates.length == 5) {
           console.error(progressUpdates);
         }
@@ -518,7 +518,7 @@ export function runGenericJobQueueTests(
       }
 
       cleanup();
-      if (jobQueue instanceof IndexedDbQueueStorage) {
+      if (storage instanceof IndexedDbQueueStorage) {
         if (listenerCalls == 5) {
           console.log("listenerCalls", listenerArgs);
         }
@@ -602,7 +602,7 @@ export function runGenericJobQueueTests(
       expect(pendingAfterBurst).toBeGreaterThan(0);
       // Wait longer for IndexedDB operations to complete
       // @ts-ignore - Accessing protected property for testing
-      await sleep(jobQueue.storage instanceof IndexedDbQueueStorage ? 30 : 3);
+      await sleep(storage instanceof IndexedDbQueueStorage ? 30 : 3);
 
       // Helper function to get job counts with runAttempts
       async function getJobCounts(
