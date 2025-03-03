@@ -67,7 +67,7 @@ export class TaskInvalidInputError extends TaskError {
 /**
  * Compound tasks can have multiple errors, and this error is used to group them together.
  *
- * Examples: CompoundTask, ArrayTask, TaskRunner, etc.
+ * Examples: Task with isCompound=true, ArrayTask, TaskRunner, etc.
  */
 export class TaskErrorGroup extends TaskError {
   constructor(private errors: { key: unknown; type: string; error: TaskError }[]) {

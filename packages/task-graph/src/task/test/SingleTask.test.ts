@@ -6,105 +6,46 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { SingleTask } from "../SingleTask";
+import { Task } from "../Task";
 import { TaskStatus } from "../TaskTypes";
 import { TaskAbortedError, TaskError } from "../TaskError";
+import { EventTestTask, SimpleProcessingTask, TestIOTask } from "./TestTasks";
 
-// Define test types
-type TestTaskInput = {
-  value: string;
-};
+describe("Task", () => {
+  describe("TestIOTask", () => {
+    it("should create with input data and run the task", async () => {
+      const input = { key: "value" };
+      const task = new TestIOTask(input);
+      const output = await task.run();
+      expect(output).toEqual({ key: "full", reactiveOnly: false, all: true });
+      expect(task.runInputData).toEqual(input);
+    });
 
-type TestTaskOutput = {
-  processed: boolean;
-  result: string;
-};
+    it("should set input data and run the task", async () => {
+      const task = new TestIOTask({ key: "value" });
+      const output = await task.run();
+      expect(output).toEqual({ key: "full", reactiveOnly: false, all: true });
+      expect(task.runInputData).toEqual({ key: "value" });
+    });
 
-// Create a test implementation of SingleTask
-class TestSingleTask extends SingleTask<TestTaskInput, TestTaskOutput> {
-  static readonly type = "TestSingleTask";
-
-  // Define input/output definitions
-  static readonly inputs = [
-    {
-      id: "value",
-      name: "Input Value",
-      valueType: "text",
-      defaultValue: "default",
-    },
-  ] as const;
-
-  static readonly outputs = [
-    {
-      id: "processed",
-      name: "Processed Flag",
-      valueType: "boolean",
-    },
-    {
-      id: "result",
-      name: "Result Value",
-      valueType: "text",
-    },
-  ] as const;
-
-  // Override runFull to provide actual implementation
-  async runFull(): Promise<TestTaskOutput> {
-    this.handleProgress(0.5);
-    // Process the input value
-    const result = `Processed: ${this.runInputData.value}`;
-    return { processed: true, result };
-  }
-
-  // Override runReactive to provide reactive implementation
-  async runReactive(): Promise<TestTaskOutput> {
-    // For testing purposes, just return a different result
-    return { processed: false, result: `Reactive: ${this.runInputData.value}` };
-  }
-
-  // Method to simulate an error
-  async simulateError(): Promise<void> {
-    this.handleError(new Error("Test error"));
-  }
-}
-
-// Create a test implementation of SingleTask with controllable behavior for event testing
-class EventTestTask extends SingleTask<TestTaskInput, TestTaskOutput> {
-  static readonly type = "EventTestTask";
-
-  // Control flags for testing
-  shouldThrowError = false;
-  shouldEmitProgress = false;
-  progressValue = 0.5;
-  delayMs = 0;
-
-  async runFull(): Promise<any> {
-    if (this.shouldEmitProgress) {
-      this.handleProgress(this.progressValue);
-    }
-
-    if (this.delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, this.delayMs));
-    }
-
-    if (this.shouldThrowError) {
-      throw new Error("Controlled test error");
-    }
-
-    return { success: true };
-  }
-}
-
-describe("SingleTask", () => {
-  describe("Implementation Tests", () => {
-    let task: TestSingleTask;
+    it("should run the task reactively", async () => {
+      const task = new TestIOTask();
+      const input = { key: "value" };
+      task.setInput(input);
+      const output = await task.runReactive();
+      expect(output).toEqual({ key: "value", reactiveOnly: true, all: false });
+    });
+  });
+  describe("SimpleProcessingTask", () => {
+    let task: SimpleProcessingTask;
 
     beforeEach(() => {
-      task = new TestSingleTask();
+      task = new SimpleProcessingTask();
     });
 
     describe("Basic functionality", () => {
       it("should have correct type", () => {
-        expect(TestSingleTask.type).toBe("TestSingleTask");
+        expect(SimpleProcessingTask.type).toBe("SimpleProcessingTask");
       });
 
       it("should not be a compound task", () => {
@@ -270,59 +211,59 @@ describe("SingleTask", () => {
   });
 
   describe("Base Class Tests", () => {
-    // Test the SingleTask class directly
+    // Test the Task class directly
     describe("Core properties", () => {
       it("should have the correct type", () => {
-        expect(SingleTask.type).toBe("SingleTask");
+        expect(Task.type).toBe("Task");
       });
 
       it("should be instantiable", () => {
-        const task = new SingleTask();
-        expect(task).toBeInstanceOf(SingleTask);
+        const task = new Task();
+        expect(task).toBeInstanceOf(Task);
       });
 
       it("should not be a compound task", () => {
-        const task = new SingleTask();
+        const task = new Task();
         expect(task.isCompound).toBe(false);
       });
     });
 
     describe("Default implementations", () => {
-      let task: SingleTask;
+      let task: Task;
 
       beforeEach(() => {
-        task = new SingleTask();
+        task = new Task({ processed: false, result: "" });
       });
 
-      it("should have default runFull implementation that returns empty object", async () => {
+      it("should have default runFull implementation that returns default object", async () => {
         const result = await task.runFull();
-        expect(result).toEqual({});
+        expect(result).toEqual({ processed: false, result: "" });
       });
 
-      it("should have default runReactive implementation that returns empty object", async () => {
+      it("should have default runReactive implementation that returns default object", async () => {
         const result = await task.runReactive();
-        expect(result).toEqual({});
+        expect(result).toEqual({ processed: false, result: "" });
       });
 
       it("should preserve runOutputData between calls", async () => {
-        // First call should return empty object
+        // First call should return default initialized object
         let result = await task.runFull();
-        expect(result).toEqual({});
+        expect(result).toEqual({ processed: false, result: "" });
 
         // Modify runOutputData
-        task.runOutputData = { testKey: "testValue" };
+        task.runOutputData = { processed: true, result: "testValue" };
 
         // Second call should return the modified object
         result = await task.runFull();
-        expect(result).toEqual({ testKey: "testValue" });
+        expect(result).toEqual({ processed: true, result: "testValue" });
       });
     });
 
     describe("Task execution flow", () => {
-      let task: SingleTask;
+      let task: Task;
 
       beforeEach(() => {
-        task = new SingleTask();
+        task = new Task();
       });
 
       it("should call runReactive when run is called", async () => {
@@ -355,10 +296,10 @@ describe("SingleTask", () => {
     });
 
     describe("Event propagation", () => {
-      let task: SingleTask;
+      let task: Task;
 
       beforeEach(() => {
-        task = new SingleTask();
+        task = new Task();
       });
 
       it("should emit events in the correct order during execution", async () => {
@@ -394,10 +335,10 @@ describe("SingleTask", () => {
     });
 
     describe("Error handling", () => {
-      let task: SingleTask;
+      let task: Task;
 
       beforeEach(() => {
-        task = new SingleTask();
+        task = new Task();
       });
 
       it("should handle errors during execution", async () => {
@@ -428,7 +369,7 @@ describe("SingleTask", () => {
         };
         const input = { testKey: "testValue" };
 
-        const task = new SingleTask(input, config);
+        const task = new Task(input, config);
 
         expect(task.config.id).toBe("test-id");
         expect(task.config.name).toBe("Test Task");
@@ -436,7 +377,7 @@ describe("SingleTask", () => {
       });
 
       it("should generate an ID if not provided", () => {
-        const task = new SingleTask();
+        const task = new Task();
         expect(task.config.id).toBeDefined();
       });
     });

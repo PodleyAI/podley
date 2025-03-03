@@ -6,26 +6,10 @@
 //    *******************************************************************************
 
 import { DirectedAcyclicGraph } from "@sroussey/typescript-graph";
-import { TaskIdType, TaskInput, JsonTaskItem, Provenance } from "../task/TaskTypes";
-import { Dataflow, DataflowIdType, DataflowJson } from "./Dataflow";
+import { TaskIdType } from "../task/TaskTypes";
+import { JsonTaskItem, TaskGraphJson } from "task/TaskJSON";
+import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
-
-/**
- * Represents a task graph item, which can be a task or a subgraph
- */
-export type TaskGraphItemJson = {
-  id: unknown;
-  type: string;
-  name?: string;
-  input?: TaskInput;
-  provenance?: Provenance;
-  subgraph?: TaskGraphJson;
-};
-
-export type TaskGraphJson = {
-  nodes: TaskGraphItemJson[];
-  edges: DataflowJson[];
-};
 
 /**
  * Represents a task graph, a directed acyclic graph of tasks and data flows

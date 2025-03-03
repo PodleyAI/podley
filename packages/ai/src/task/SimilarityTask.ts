@@ -9,13 +9,11 @@ import {
   TaskRegistry,
   Workflow,
   CreateWorkflow,
-  SingleTask,
-  TaskOutput,
-  TaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
   TaskInvalidInputError,
   JobQueueTaskConfig,
+  Task,
 } from "@ellmers/task-graph";
 import { AnyNumberArray, ElVector } from "./base/TaskIOTypes";
 
@@ -39,7 +37,7 @@ export class SimilarityTask<
   Input extends SimilarityTaskInput = SimilarityTaskInput,
   Output extends SimilarityTaskOutput = SimilarityTaskOutput,
   Config extends JobQueueTaskConfig = JobQueueTaskConfig,
-> extends SingleTask<Input, Output, Config> {
+> extends Task<Input, Output, Config> {
   static readonly type = "SimilarityTask";
   public static inputs: TaskInputDefinition[] = [
     {

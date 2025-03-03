@@ -7,19 +7,18 @@
 
 import { EventEmitter, EventParameters } from "@ellmers/util";
 import type { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
-import { CompoundTask } from "../task/CompoundTask";
-import { SingleTask } from "../task/SingleTask";
 import {
   TaskConfig,
   TaskOutput,
-  type JsonTaskItem,
   type TaskInput,
   type TaskInputDefinition,
   type TaskOutputDefinition,
 } from "../task/TaskTypes";
-import { TaskBase } from "../task/TaskBase";
+import { type JsonTaskItem } from "task/TaskJSON";
+import { Task } from "../task/Task";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
-import { TaskGraph, TaskGraphJson } from "./TaskGraph";
+import { TaskGraph } from "./TaskGraph";
+import { TaskGraphJson } from "task/TaskJSON";
 import { TaskGraphRunner } from "./TaskGraphRunner";
 import { WorkflowError } from "../task/TaskError";
 import { ITask, ITaskConstructor } from "../task/ITask";
@@ -324,7 +323,7 @@ export class Workflow {
       fn(group);
     }
 
-    const groupTask = new CompoundTask({ input: {} });
+    const groupTask = new Task({ input: {} });
     groupTask.subGraph = group._graph;
     this._graph.addTask(groupTask);
 
@@ -351,7 +350,7 @@ export class Workflow {
     }
 
     const lastNode = nodes[nodes.length + index];
-    const sourceTaskOutputs = (lastNode?.constructor as typeof TaskBase)?.outputs;
+    const sourceTaskOutputs = (lastNode?.constructor as typeof Task)?.outputs;
 
     if (!sourceTaskOutputs.find((o) => o.id === source) && source !== DATAFLOW_ALL_PORTS) {
       const errorMsg = `Output ${source} not found on task ${lastNode.config.id}`;

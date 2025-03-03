@@ -7,14 +7,13 @@
 
 import { Interpreter } from "../util/interpreter";
 import {
-  SingleTask,
   TaskConfig,
-  TaskOutput,
   Workflow,
   CreateWorkflow,
   TaskRegistry,
   TaskInputDefinition,
   TaskOutputDefinition,
+  Task,
 } from "@ellmers/task-graph";
 
 export type JavaScriptTaskInput = {
@@ -25,7 +24,7 @@ export type JavaScriptTaskOutput = {
   output: any;
 };
 
-export class JavaScriptTask extends SingleTask<JavaScriptTaskInput, JavaScriptTaskOutput> {
+export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutput> {
   static readonly type = "JavaScriptTask";
   static readonly category = "Utility";
   public static inputs: TaskInputDefinition[] = [

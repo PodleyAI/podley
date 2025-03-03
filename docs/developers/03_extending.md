@@ -1,19 +1,18 @@
-- [Extending the System](#extending-the-system)
-  - [Write a new Task](#write-a-new-task)
-    - [Tasks must have a `run()` method](#tasks-must-have-a-run-method)
-    - [Define Inputs and Outputs](#define-inputs-and-outputs)
-    - [Register the Task](#register-the-task)
-  - [Job Queues and LLM tasks](#job-queues-and-llm-tasks)
-  - [Write a new Compound Task](#write-a-new-compound-task)
-  - [Reactive Task UIs](#reactive-task-uis)
-
 # Extending the System
 
 This document covers how to write your own tasks. For a more practical guide to getting started, see the [Developer Getting Started](./01_getting_started.md) guide. Reviewing the [Architecture](02_architecture.md) is required reading before attempting to write your own Tasks.
 
+- [Write a new Task](#write-a-new-task)
+  - [Tasks must have a `run()` method](#tasks-must-have-a-run-method)
+  - [Define Inputs and Outputs](#define-inputs-and-outputs)
+  - [Register the Task](#register-the-task)
+- [Job Queues and LLM tasks](#job-queues-and-llm-tasks)
+- [Write a new Compound Task](#write-a-new-compound-task)
+- [Reactive Task UIs](#reactive-task-uis)
+
 ## Write a new Task
 
-To write a new Task, you need to create a new class that extends the `SingleTask` class. We will leave Compound Tasks for a later section.
+To write a new Task, you need to create a new class that extends the `Task` class.
 
 ### Tasks must have a `run()` method
 
@@ -141,7 +140,7 @@ To add a new embedding source, for example, you would not create a new task, but
 
 ## Write a new Compound Task
 
-You can organize a group of tasks to look like one task (think of a grouping UI in an Illustrator type program). This default is referred to as a static `CompoundTask` since the sub graph is always the same. A `RegenerativeCompoundTask` rebuilds the subgraph based on the input data, and will emit a `'regenerate'` event after the subgraph has been rebuilt. This is useful for tasks that have a variable number of subtasks. An example would be the `TextEmbeddingCompoundTask` which takes a list of strings and returns a list of embeddings. Or it can take a list of models and return a list of embeddings for each model.
+You can organize a group of tasks to look like one task (think of a grouping UI in an Illustrator type program). The task will build the subgraph based on the input data, and will emit a `'regenerate'` event after the subgraph has been rebuilt. This is useful for tasks that have a variable number of subtasks. An example would be the `TextEmbeddingCompoundTask` which takes a list of strings and returns a list of embeddings. Or it can take a list of models and return a list of embeddings for each model.
 
 Compound Tasks are not cached (though any or all of their children may be).
 

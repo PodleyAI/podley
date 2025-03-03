@@ -11,7 +11,6 @@ import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository
 import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
 import { TaskGraph } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
-import { CompoundTask, RegenerativeCompoundTask } from "../task/CompoundTask";
 import {
   TaskAbortedError,
   TaskConfigurationError,
@@ -92,7 +91,7 @@ export class TaskGraphRunner {
         }
       }
     }
-    if (changed && task instanceof RegenerativeCompoundTask) {
+    if (changed && task.isCompound) {
       task.regenerateGraph();
     }
   }
@@ -367,13 +366,9 @@ export class TaskGraphRunner {
   private resetGraph(graph: TaskGraph, runnerId: string) {
     graph.getNodes().forEach((node) => {
       this.resetTask(graph, node, runnerId);
-      if (node.isCompound && node instanceof CompoundTask) {
-        if (node instanceof RegenerativeCompoundTask) {
-          node.regenerateGraph();
-        }
-        if (node.subGraph) {
-          this.resetGraph(node.subGraph, runnerId);
-        }
+      if (node.isCompound) {
+        node.regenerateGraph();
+        this.resetGraph(node.subGraph!, runnerId);
       }
     });
   }

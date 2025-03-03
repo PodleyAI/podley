@@ -26,6 +26,6 @@ A task is a single step in the chain where most tasks output will be input for t
 
 Tasks get posted to a job queue and are run by a job queue runner.
 
-## CompoundTask
+## Compound Task
 
-A compound task is a groups of tasks (in DAG format) that are chained together to look like a single task.
+A compound task is Task with isCompound = true that contains a groups of tasks (in DAG format) that are chained together to look like a single task.

@@ -5,8 +5,8 @@ This module provides a flexible task processing system with support for various 
 - [Key Components](#key-components)
   - [Core Classes](#core-classes)
 - [Task Types](#task-types)
-  - [SingleTask](#singletask)
-  - [Compound Tasks](#compound-tasks)
+  - [A Simple Task](#a-simple-task)
+  - [isCompound = true](#iscompound--true)
   - [Job Queue Tasks](#job-queue-tasks)
 - [Task Lifecycle](#task-lifecycle)
 - [Event Handling](#event-handling)
@@ -20,16 +20,13 @@ This module provides a flexible task processing system with support for various 
 
 ### Core Classes
 
-- `TaskBase`: Abstract base class implementing core task functionality
-- `SingleTask`: Base class for simple atomic tasks
-- `CompoundTask`: Handles tasks containing subtasks (TaskGraph)
+- `Task`: Base class implementing core task functionality
 - `ArrayTask`: Processes arrays of inputs using parallel subtasks
 - `JobQueueTask`: Integrates with job queue system for distributed processing
-- `OutputTask`: Specialized task for handling side effects
 
 ## Task Types
 
-### SingleTask
+### A Simple Task
 
 ```typescript
 interface MyTaskInput {
@@ -38,13 +35,14 @@ interface MyTaskInput {
 interface MyTaskOutput {
   result: number;
 }
-class MyTask extends SingleTask {
+class MyTask extends Task {
   static readonly type = "MyTask"; // Required, unique identifier for the task
   static readonly category = "Utility"; // Optional, used for grouping tasks in UI
   declare runInputData: MyTaskInput;
   declare runOutputData: MyTaskOutput;
   static inputs = [{ id: "input", valueType: "number" }];
   static outputs = [{ id: "result", valueType: "number" }];
+  static isCompound = false;
 
   async runFull() {
     // Do something with the input that takes a long time
@@ -58,10 +56,10 @@ class MyTask extends SingleTask {
 }
 ```
 
-### Compound Tasks
+### isCompound = true
 
-- Compound tasks are tasks that contain other tasks. They are represented as a TaskGraph internally.
-- A regerative task is a compound task that can regenerate its own subtasks.
+- Compound tasks are tasks that contain other tasks. They are represented as an internal TaskGraph.
+- Compound tasks can regenerate its own subtasks based on changes to its inputs.
 - An ArrayTask is a regenerative task based on a single task that processes an array of inputs in parallel by creating a new subtask for each input, and then combining the results into a single array output.
 
 ### Job Queue Tasks
