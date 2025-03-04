@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./index";
+export * from "./common";
 
 export * from "./storage/taskgraph/InMemoryTaskGraphRepository";
 export * from "./storage/taskgraph/IndexedDbTaskGraphRepository";
