@@ -20,7 +20,7 @@ bun add @ellmers/task-graph
 ## Basic Usage
 
 ```typescript
-import { TaskGraph, Dataflow, TaskGraphRunner } from "@ellmers/task-graph";
+import { TaskGraph, Dataflow } from "@ellmers/task-graph";
 
 // Define tasks
 class DataLoader extends Task {
@@ -37,8 +37,7 @@ const graph = new TaskGraph()
   .addDataflow(new Dataflow("loader", "data", "model", "input"));
 
 // Execute graph
-const runner = new TaskGraphRunner(graph);
-await runner.run(graph);
+await graph.run();
 ```
 
 ## Core Concepts

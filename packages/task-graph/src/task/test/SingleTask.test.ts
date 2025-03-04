@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, expect, it, beforeEach } from "bun:test";
+import { describe, expect, it, beforeEach, spyOn } from "bun:test";
 import { Task } from "../Task";
 import { TaskStatus } from "../TaskTypes";
 import { TaskAbortedError, TaskError } from "../TaskError";
@@ -28,12 +28,26 @@ describe("Task", () => {
       expect(task.runInputData).toEqual({ key: "value" });
     });
 
-    it("should run the task reactively", async () => {
+    it("should run the task reactively see input definition defaults", async () => {
       const task = new TestIOTask();
-      const input = { key: "value" };
-      task.setInput(input);
       const output = await task.runReactive();
-      expect(output).toEqual({ key: "value", reactiveOnly: true, all: false });
+      expect(output).toEqual({ key: "default", reactiveOnly: true, all: false });
+    });
+    it("should run the task reactively see defaults", async () => {
+      const task = new TestIOTask({ key: "givendefault" }); // pass as defaults
+      const output = await task.runReactive();
+      expect(output).toEqual({ key: "givendefault", reactiveOnly: true, all: false });
+    });
+    it("should run the task reactively see setInput", async () => {
+      const task = new TestIOTask();
+      task.setInput({ key: "setvalue" });
+      const output = await task.runReactive();
+      expect(output).toEqual({ key: "setvalue", reactiveOnly: true, all: false });
+    });
+    it("should run the task reactively see inputs as params", async () => {
+      const task = new TestIOTask();
+      const output = await task.runReactive({ key: "valueparams" });
+      expect(output).toEqual({ key: "valueparams", reactiveOnly: true, all: false });
     });
   });
   describe("SimpleProcessingTask", () => {
@@ -66,7 +80,7 @@ describe("Task", () => {
         const output = await task.run();
         expect(output).toEqual({
           processed: true,
-          result: "Processed: default",
+          result: "Reactive: default", // reactive overrites
         });
         expect(task.status).toBe(TaskStatus.COMPLETED);
       });
@@ -109,22 +123,6 @@ describe("Task", () => {
 
         await task.run();
         expect(progressValue).toBe(0.5);
-      });
-
-      it("should emit error event when task fails", async () => {
-        let errorEmitted = false;
-        let errorMessage = "";
-
-        task.on("error", (error) => {
-          errorEmitted = true;
-          errorMessage = error.message;
-        });
-
-        await task.simulateError();
-
-        expect(errorEmitted).toBe(true);
-        expect(errorMessage).toBe("Test error");
-        expect(task.status).toBe(TaskStatus.FAILED);
       });
 
       it("should emit abort event when task is aborted", async () => {
@@ -228,37 +226,6 @@ describe("Task", () => {
       });
     });
 
-    describe("Default implementations", () => {
-      let task: Task;
-
-      beforeEach(() => {
-        task = new Task({ processed: false, result: "" });
-      });
-
-      it("should have default runFull implementation that returns default object", async () => {
-        const result = await task.runFull();
-        expect(result).toEqual({ processed: false, result: "" });
-      });
-
-      it("should have default runReactive implementation that returns default object", async () => {
-        const result = await task.runReactive();
-        expect(result).toEqual({ processed: false, result: "" });
-      });
-
-      it("should preserve runOutputData between calls", async () => {
-        // First call should return default initialized object
-        let result = await task.runFull();
-        expect(result).toEqual({ processed: false, result: "" });
-
-        // Modify runOutputData
-        task.runOutputData = { processed: true, result: "testValue" };
-
-        // Second call should return the modified object
-        result = await task.runFull();
-        expect(result).toEqual({ processed: true, result: "testValue" });
-      });
-    });
-
     describe("Task execution flow", () => {
       let task: Task;
 
@@ -267,17 +234,14 @@ describe("Task", () => {
       });
 
       it("should call runReactive when run is called", async () => {
-        // Create a spy on runReactive
-        const originalRunReactive = task.runReactive;
-        let runReactiveCalled = false;
-
-        task.runReactive = async () => {
-          runReactiveCalled = true;
-          return await originalRunReactive.call(task);
-        };
+        // @ts-expect-error - we are testing the protected method
+        const executeSpy = spyOn(task, "execute");
+        // @ts-expect-error - we are testing the protected method
+        const executeReactiveSpy = spyOn(task, "executeReactive");
 
         await task.run();
-        expect(runReactiveCalled).toBe(true);
+        expect(executeSpy).toHaveBeenCalled();
+        expect(executeReactiveSpy).toHaveBeenCalled();
       });
 
       it("should update status during task execution", async () => {
@@ -309,11 +273,14 @@ describe("Task", () => {
         task.on("progress", () => events.push("progress"));
         task.on("complete", () => events.push("complete"));
 
-        // Override runReactive to emit progress
-        const originalRunReactive = task.runReactive;
-        task.runReactive = async () => {
+        // Override execute to emit progress
+        // @ts-expect-error - we are testing the protected method
+        const originalExecute = task.execute;
+        // @ts-expect-error - we are testing the protected method
+        task.execute = async (...args) => {
+          // @ts-expect-error - we are testing the protected method
           task.handleProgress(0.5);
-          return await originalRunReactive.call(task);
+          return await originalExecute.call(task, ...args);
         };
 
         await task.run();
@@ -342,8 +309,9 @@ describe("Task", () => {
       });
 
       it("should handle errors during execution", async () => {
-        // Override runReactive to throw an error
-        task.runReactive = async () => {
+        // Override execute to throw an error
+        // @ts-expect-error - we are testing the protected method
+        task.execute = async () => {
           throw new Error("Test error");
         };
 

@@ -71,7 +71,7 @@ export class DocumentSplitterTask extends Task<
     }
   }
 
-  async runReactive(): Promise<DocumentSplitterTaskOutput> {
+  async executeReactive(): Promise<DocumentSplitterTaskOutput> {
     return { texts: this.flattenFragmentsToTexts(this.runInputData.file) };
   }
 }

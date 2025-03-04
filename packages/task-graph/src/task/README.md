@@ -44,14 +44,12 @@ class MyTask extends Task {
   static outputs = [{ id: "result", valueType: "number" }];
   static isCompound = false;
 
-  async runFull() {
+  async execute() {
     // Do something with the input that takes a long time
     await sleep(1000);
-    // Return the reactive result
-    return this.runReactive();
   }
-  async runReactive() {
-    return { result: this.runInputData.input * 2 };
+  async executeReactive(input: MyTaskInput) {
+    return { result: input.input * 2 };
   }
 }
 ```
@@ -81,8 +79,8 @@ class MyJobTask extends JobQueueTask {
 
 - **Statuses**: `Pending` → `Processing` → (`Completed`|`Failed`|`Aborted`)
 - **Methods**:
-  - `run()`: Full execution with caching
-  - `runReactive()`: Lightweight execution for UI updates
+  - `run()`: Full execution with caching, calls the subclass `execute` method
+  - `runReactive()`: Lightweight execution for UI updates, calls the subclass `executeReactive` method
   - `abort()`: Cancel running task
 
 ## Event Handling

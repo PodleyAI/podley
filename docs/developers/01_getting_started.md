@@ -11,7 +11,6 @@
 - [Tasks](#tasks)
 - [TaskGraph](#taskgraph)
 - [Dataflows](#dataflows)
-- [TaskGraphRunner](#taskgraphrunner)
 - [Source](#source)
   - [`docs/`](#docs)
   - [`packages/storage`](#packagesstorage)
@@ -80,7 +79,6 @@ import {
   DebugLog,
   Dataflow,
   TaskGraph,
-  TaskGraphRunner,
 } from "@ellmers/task-graph";
 import { registerHuggingfaceLocalTasksInMemory } from "@ellmers/test";
 
@@ -119,8 +117,7 @@ graph.addDataflow(
   })
 );
 
-const runner = new TaskGraphRunner(graph);
-await runner.run();
+await graph.run();
 ```
 
 ## Using Task and TaskGraph directly (no config helper)
@@ -132,7 +129,6 @@ import {
   DebugLog,
   Dataflow,
   TaskGraph,
-  TaskGraphRunner,
   ConcurrencyLimiter,
   TaskInput,
   TaskOutput,
@@ -219,8 +215,7 @@ graph.addDataflow(
   })
 );
 
-const runner = new TaskGraphRunner(graph);
-runner.run();
+await graph.run();
 ```
 
 You can use as much or as little "magic" as you want. The config helpers are there to make it easier to get started, but eventually you will want to do it yourself.
@@ -434,15 +429,6 @@ graph.addDataflow(
 ```
 
 This links the output of the TextRewriterCompoundTask (id 1) to the input of the DebugLogTask (id 2). The output of the TextRewriterCompoundTask is the `text` field, and the input of the DebugLogTask is the `message` field.
-
-## TaskGraphRunner
-
-The TaskGraphRunner is used to run the graph. It understands that some tasks depend on others, and will run them in the correct order. It also handles compound tasks which have sub graphs.
-
-```ts
-const runner = new TaskGraphRunner(graph);
-runner.run();
-```
 
 # Appendix
 

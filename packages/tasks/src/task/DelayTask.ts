@@ -7,6 +7,7 @@
 
 import {
   CreateWorkflow,
+  IExecuteConfig,
   Task,
   TaskAbortedError,
   TaskConfig,
@@ -45,27 +46,26 @@ export class DelayTask<
   ] as const;
   static outputs = [] as const;
 
-  async runFull(): Promise<Output> {
-    const delay = this.runInputData.delay;
+  async execute(input: Input, executeConfig: IExecuteConfig): Promise<Output> {
+    const delay = input.delay;
     if (delay > 100) {
       const iterations = Math.min(100, Math.floor(delay / 16)); // 1/60fps is about 16ms
       const chunkSize = delay / iterations;
       for (let i = 0; i < iterations; i++) {
-        if (this.abortController?.signal.aborted) {
+        if (executeConfig.signal.aborted) {
           throw new TaskAbortedError("Task aborted");
         }
         await sleep(chunkSize);
-        this.handleProgress(i / iterations);
+        executeConfig.updateProgress(i / iterations);
       }
     } else {
       await sleep(delay);
     }
-    return this.runReactive();
+    return input.pass_through;
   }
 
-  async runReactive(): Promise<Output> {
-    this.runOutputData = this.runInputData.pass_through;
-    return this.runOutputData;
+  async executeReactive(input: Input): Promise<Output> {
+    return input.pass_through;
   }
 }
 

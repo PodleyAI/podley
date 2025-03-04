@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import type { TaskGraph } from "../task-graph/TaskGraph";
+import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import type { Task } from "./Task";
 
 /**
@@ -74,6 +74,9 @@ export interface IConfig {
 
   /** Optional ID of the runner to use for this task */
   runnerId?: string;
+
+  /** Optional output cache to use for this task */
+  outputCache?: TaskOutputRepository;
 }
 
 /**

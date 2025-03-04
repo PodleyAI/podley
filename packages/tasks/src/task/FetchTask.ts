@@ -169,7 +169,7 @@ export class FetchTask<
     this.jobClass = FetchJob;
   }
 
-  async runReactive(): Promise<Output> {
+  async executeReactive(): Promise<Output> {
     return this.runOutputData ?? { body: null };
   }
 

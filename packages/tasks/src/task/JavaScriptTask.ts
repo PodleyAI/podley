@@ -49,7 +49,7 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
   constructor(config: TaskConfig & { input?: JavaScriptTaskInput } = {}) {
     super(config);
   }
-  async runReactive() {
+  async executeReactive() {
     if (this.runInputData.code) {
       try {
         const myInterpreter = new Interpreter(this.runInputData.code);

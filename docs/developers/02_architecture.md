@@ -197,8 +197,8 @@ classDiagram
   style DebugLogTask type:output,stroke-width:1px
 
   class LambdaTask{
-    Function runFull
-    Function runReactive
+    Function execute
+    Function executeReactive
     TaskInput input
     run() output
   }

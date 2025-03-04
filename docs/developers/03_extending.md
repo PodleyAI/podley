@@ -19,8 +19,8 @@ To write a new Task, you need to create a new class that extends the `Task` clas
 Here we will write an example of a simple Task that prints a message to the console. Below if the starting code for the Task:
 
 ```ts
-export class SimpleDebugLogTask extends SimpleTask {
-  runFull() {
+export class SimpleDebugLogTask extends Task {
+  execute() {
     console.dir(<something>, { depth: null });
   }
 }
@@ -40,7 +40,7 @@ Here is the code for the `SimpleDebugLogTask` with the inputs defined:
 type SimpleDebugLogTaskInputs = {
   message: any;
 };
-export class SimpleDebugLogTask extends SimpleTask {
+export class SimpleDebugLogTask extends Task<SimpleDebugLogTaskInputs> {
   public static inputs: TaskInputDefinition[] = [
     {
       id: "message",
@@ -48,9 +48,7 @@ export class SimpleDebugLogTask extends SimpleTask {
       valueType: "any",
     },
   ] as const;
-  declare defaults: Partial<SimpleDebugLogTaskInputs>;
-  declare runInputData: SimpleDebugLogTaskInputs;
-  runFull() {
+  execute() {
     console.dir(this.runInputData.message, { depth: null });
   }
 }
@@ -73,7 +71,7 @@ type SimpleDebugLogTaskInputs = {
 type SimpleDebugLogTaskOutputs = {
   output: any;
 };
-export class SimpleDebugLogTask extends SimpleTask {
+export class SimpleDebugLogTask extends Task<SimpleDebugLogTaskInputs, SimpleDebugLogTaskOutputs> {
   public static sideeffects = true;
   public static inputs: TaskInputDefinition[] = [
     {
@@ -82,8 +80,6 @@ export class SimpleDebugLogTask extends SimpleTask {
       valueType: "any",
     },
   ] as const;
-  declare defaults: Partial<SimpleDebugLogTaskInputs>;
-  declare runInputData: SimpleDebugLogTaskInputs;
   public static outputs: TaskOutputDefinition[] = [
     {
       id: "output",
@@ -91,8 +87,7 @@ export class SimpleDebugLogTask extends SimpleTask {
       valueType: "any",
     },
   ] as const;
-  declare runOutputData: SimpleDebugLogTaskOutputs;
-  runFull() {
+  execute() {
     console.dir(this.runInputData.message, { depth: null });
     this.runOutputData.output = this.runInputData.message;
     return this.runOutputData;
@@ -116,7 +111,7 @@ To use the Task in Workflow, there are a few steps:
 
 ```ts
 export const SimpleDebug = (input: DebugLogTaskInput) => {
-  return new SimpleDebugTask({ input }).run();
+  return new SimpleDebugTask(input).run();
 };
 
 declare module "./base/Workflow" {

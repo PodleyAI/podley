@@ -146,7 +146,7 @@ export class DownloadModelTask<
     super.handleStart();
   }
 
-  async runReactive(): Promise<Output> {
+  async executeReactive(): Promise<Output> {
     const model = await getGlobalModelRepository().findByName(this.runInputData.model);
     if (model) {
       const tasks = (await getGlobalModelRepository().findTasksByModel(model.name)) || [];

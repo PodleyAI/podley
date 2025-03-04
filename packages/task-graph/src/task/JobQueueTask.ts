@@ -12,6 +12,7 @@ import { EventEmitter } from "@ellmers/util";
 import { Job } from "@ellmers/job-queue";
 import { TaskConfigurationError } from "./TaskError";
 import { Task } from "./Task";
+import { IExecuteConfig } from "./ITask";
 
 /**
  * Configuration interface for JobQueueTask.
@@ -57,7 +58,7 @@ export abstract class JobQueueTask<
     this.jobClass = Job<Input, Output>;
   }
 
-  async runFull(): Promise<Output> {
+  async execute(input: Input, executeConfig: IExecuteConfig): Promise<Output> {
     let cleanup: () => void = () => {};
 
     try {
@@ -65,14 +66,16 @@ export abstract class JobQueueTask<
 
       const queue = getTaskQueueRegistry().getQueue(this.config.queueName!);
 
+      let output: Output;
+
       if (!queue) {
         if ((this.constructor as typeof JobQueueTask).canRunDirectly) {
           cleanup = job.onJobProgress(
             (progress: number, message: string, details: Record<string, any> | null) => {
-              this.handleProgress(progress, message, details);
+              executeConfig.updateProgress(progress, message, details);
             }
           );
-          this.runOutputData = await job.execute(this.abortController!.signal);
+          output = await job.execute(executeConfig.signal);
         } else {
           throw new TaskConfigurationError(
             `Queue ${this.config.queueName} not found, and ${this.constructor.name} cannot run directly`
@@ -86,13 +89,10 @@ export abstract class JobQueueTask<
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
           this.handleProgress(progress, message, details);
         });
-        this.runOutputData = await queue.waitFor<Output>(jobId);
+        output = await queue.waitFor<Output>(jobId);
       }
 
-      this.runOutputData ??= {} as Output;
-      this.runOutputData = await this.runReactive();
-
-      return this.runOutputData;
+      return output;
     } catch (err: any) {
       throw err;
     } finally {

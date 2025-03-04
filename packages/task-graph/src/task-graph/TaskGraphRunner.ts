@@ -9,7 +9,7 @@ import { nanoid } from "nanoid";
 import { deepEqual } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
-import { TaskGraph } from "./TaskGraph";
+import { TaskGraph, TaskGraphRunConfig } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
 import {
   TaskAbortedError,
@@ -39,17 +39,18 @@ export class TaskGraphRunner {
   /**
    * Constructor for TaskGraphRunner
    * @param graph The task graph to run
-   * @param repository The task output repository to use for caching task outputs
+   * @param outputCache The task output repository to use for caching task outputs
    * @param processScheduler The scheduler to use for task execution
    * @param reactiveScheduler The scheduler to use for reactive task execution
    */
   constructor(
     public graph: TaskGraph,
-    public repository?: TaskOutputRepository,
+    public outputCache?: TaskOutputRepository,
     public processScheduler = new DependencyBasedScheduler(graph),
     public reactiveScheduler = new TopologicalScheduler(graph)
   ) {
     this.provenanceInput = new Map();
+    graph.outputCache = outputCache;
   }
 
   /**
@@ -172,18 +173,24 @@ export class TaskGraphRunner {
 
     let results;
     if (shouldUseRepository) {
-      results = await this.repository?.getOutput((task.constructor as any).type, task.runInputData);
+      results = await this.outputCache?.getOutput(
+        (task.constructor as any).type,
+        task.runInputData
+      );
       if (results) {
+        //@ts-expect-error - using internals
         task.handleStart();
         task.runOutputData = results;
         await task.runReactive();
+        //@ts-expect-error - using internals
         task.handleComplete();
       }
     }
     if (!results) {
-      results = await task.run(nodeProvenance, this.repository);
+      //@ts-expect-error - using internals
+      results = await task.runInternal({ nodeProvenance, repository: this.outputCache });
       if (shouldUseRepository) {
-        await this.repository?.saveOutput(
+        await this.outputCache?.saveOutput(
           (task.constructor as any).type,
           task.runInputData,
           results
@@ -247,11 +254,12 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public async runGraph(
-    parentProvenance: Provenance = {},
-    parentSignal?: AbortSignal
-  ): Promise<GraphResult> {
-    this.handleStart(parentSignal);
+  public async runGraph(config?: TaskGraphRunConfig): Promise<GraphResult> {
+    if (config?.outputCache) {
+      this.outputCache = config.outputCache;
+      this.graph.outputCache = config.outputCache;
+    }
+    this.handleStart(config?.parentSignal);
 
     const results: GraphResult = [];
     let error: TaskError | undefined;
@@ -277,7 +285,7 @@ export class TaskGraphRunner {
 
         const runAsync = async () => {
           try {
-            const taskPromise = this.runTaskWithProvenance(task, parentProvenance);
+            const taskPromise = this.runTaskWithProvenance(task, config?.parentProvenance || {});
             this.inProgressTasks!.set(task.config.id, taskPromise);
             const taskResult = await taskPromise;
 
@@ -331,7 +339,7 @@ export class TaskGraphRunner {
 
     this.handleComplete();
 
-    return results;
+    return results || [];
   }
 
   private handleError() {
@@ -424,6 +432,7 @@ export class TaskGraphRunner {
           task.resetInputData();
           this.copyInputFromEdgesToNode(task);
           const taskResult = await task.runReactive();
+
           this.pushOutputFromNodeToEdges(task, taskResult);
           if (this.graph.getTargetDataflows(task.config.id).length === 0) {
             results.push({

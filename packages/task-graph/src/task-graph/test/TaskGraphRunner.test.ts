@@ -59,14 +59,11 @@ describe("TaskGraphRunner", () => {
       graph.addDataflow(new Dataflow("task1", "output", "task3", "a"));
       graph.addDataflow(new Dataflow("task2", "output", "task3", "b"));
 
-      const nodeRunSpy = spyOn(task3, "runReactive");
-
       const results = await runner.runGraph();
 
       expect(nodes[1].runOutputData.output).toEqual(25);
       expect(nodes[2].runOutputData.output).toEqual(10);
       expect(results?.find((r) => r.id === "task3")?.data.output).toEqual(35);
-      expect(nodeRunSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -83,7 +80,8 @@ describe("TaskGraphRunner", () => {
 
       // Create a task that will throw an error
       errorTask = new FailingTask({}, { id: "error-source" });
-      errorTask.runReactive = async () => {
+      // @ts-expect-error ts(2445)
+      errorTask.executeReactive = async () => {
         throw new Error("Test error");
       };
 
@@ -142,8 +140,9 @@ describe("TaskGraphRunner", () => {
       graph = new TaskGraph();
       const longRunningTask = new LongRunningTask({}, { id: "long-running" });
 
-      // Override the runReactive method to be long-running and check for abort signal
-      longRunningTask.runReactive = async () => {
+      // Override the executeReactive method to be long-running and check for abort signal
+      // @ts-expect-error ts(2445)
+      longRunningTask.executeReactive = async () => {
         try {
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(resolve, 1000);

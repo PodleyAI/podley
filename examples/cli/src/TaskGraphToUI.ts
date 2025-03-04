@@ -11,12 +11,11 @@ import { render } from "tuir";
 import App from "./components/App";
 import { sleep } from "@ellmers/util";
 
-export async function runTask(dag: TaskGraph) {
-  const runner = new TaskGraphRunner(dag);
+export async function runTask(graph: TaskGraph) {
   if (process.stdout.isTTY) {
-    await runTaskToInk(runner);
+    await runTaskToInk(graph.runner);
   } else {
-    const result = await runner.runGraph();
+    const result = await graph.run();
     console.log(JSON.stringify(result, null, 2));
   }
 }

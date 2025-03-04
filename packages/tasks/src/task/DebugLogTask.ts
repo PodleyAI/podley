@@ -70,15 +70,15 @@ export class DebugLogTask<
     },
   ] as const;
 
-  async runReactive() {
-    const { log_level = DEFAULT_LOG_LEVEL, console: messages } = this.runInputData;
+  async executeReactive(input: Input, output: Output) {
+    const { log_level = DEFAULT_LOG_LEVEL, console: messages } = input;
     if (log_level == "dir") {
       console.dir(messages, { depth: null });
     } else {
       console[log_level](messages);
     }
-    this.runOutputData.console = messages;
-    return this.runOutputData;
+    output.console = input.console;
+    return output;
   }
 
   async validateItem(valueType: string, item: any) {

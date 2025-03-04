@@ -252,7 +252,11 @@ export class Workflow {
     this._abortController = new AbortController();
 
     try {
-      const output = await this._runner.runGraph({}, this._abortController.signal);
+      const output = await this._runner.runGraph({
+        parentSignal: this._abortController.signal,
+        parentProvenance: {},
+        outputCache: this._repository,
+      });
       this.events.emit("complete");
       return output;
     } catch (error) {

@@ -1,4 +1,5 @@
 //    *******************************************************************************
+import { TaskInput } from "../TaskTypes";
 //    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
@@ -11,7 +12,7 @@
  * of different task behaviors like error handling and progress reporting.
  */
 
-import { TaskOutputRepository, CreateWorkflow } from "@ellmers/task-graph";
+import { TaskOutputRepository, CreateWorkflow, IExecuteConfig } from "@ellmers/task-graph";
 import { sleep } from "@ellmers/util";
 import { Workflow } from "../../browser";
 import { arrayTaskFactory, ConvertSomeToOptionalArray, ConvertAllToArrays } from "../ArrayTask";
@@ -40,11 +41,7 @@ export type TestIOTaskOutput = {
  * Basic implementation of a test task with both reactive and full run modes
  * Used as a foundation for testing task execution and data flow
  */
-export class TestIOTask<
-  Input extends TestIOTaskInput = TestIOTaskInput,
-  Output extends TestIOTaskOutput = TestIOTaskOutput,
-  Config extends TaskConfig = TaskConfig,
-> extends Task<Input, Output, Config> {
+export class TestIOTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   static readonly type = "TestIOTask";
   static readonly isCompound = false;
 
@@ -54,7 +51,7 @@ export class TestIOTask<
       id: "key",
       name: "Input",
       valueType: "text",
-      defaultValue: "",
+      defaultValue: "default",
     },
   ] as const;
 
@@ -74,25 +71,31 @@ export class TestIOTask<
       id: "key",
       name: "Output",
       valueType: "text",
+      optional: true,
     },
   ] as const;
 
   /**
-   * Implementation of reactive run mode - returns quickly with partial results
+   * Implementation of reactive run mode
+   * if execute ran then there will be output data
+   * if not then we send the input data
    */
-  async runReactive(): Promise<Output> {
+  async executeReactive(
+    input: TestIOTaskInput,
+    output: TestIOTaskOutput
+  ): Promise<TestIOTaskOutput> {
     return {
-      all: false,
-      key: this.runOutputData.key ?? this.runInputData.key,
-      reactiveOnly: true,
-    } as Output;
+      all: output.all ?? false,
+      key: output.key !== "default" && output.key !== undefined ? output.key : input.key,
+      reactiveOnly: output.reactiveOnly ?? true,
+    };
   }
 
   /**
    * Implementation of full run mode - returns complete results
    */
-  async runFull(): Promise<Output> {
-    return { all: true, key: "full", reactiveOnly: false } as Output;
+  async execute(): Promise<TestIOTaskOutput> {
+    return { all: true, key: "full", reactiveOnly: false };
   }
 }
 
@@ -116,11 +119,7 @@ type SimpleProcessingOutput = {
  * A more complex test task implementation that demonstrates
  * progress reporting and error simulation capabilities
  */
-export class SimpleProcessingTask<
-  Input extends SimpleProcessingInput = SimpleProcessingInput,
-  Output extends SimpleProcessingOutput = SimpleProcessingOutput,
-  Config extends TaskConfig = TaskConfig,
-> extends Task<Input, Output, Config> {
+export class SimpleProcessingTask extends Task<SimpleProcessingInput, SimpleProcessingOutput> {
   static readonly type = "SimpleProcessingTask";
 
   // Define input/output definitions
@@ -150,26 +149,22 @@ export class SimpleProcessingTask<
    * Full implementation for processing input values
    * Demonstrates progress reporting
    */
-  async runFull() {
-    this.handleProgress(0.5);
+  async execute(
+    input: SimpleProcessingInput,
+    { updateProgress }: IExecuteConfig
+  ): Promise<SimpleProcessingOutput> {
+    updateProgress(0.5);
     // Process the input value
-    const result = `Processed: ${this.runInputData.value}`;
-    return { processed: true, result } as Output;
+    const result = `Processed: ${input.value}`;
+    return { processed: true, result };
   }
 
   /**
    * Reactive implementation for real-time feedback
    */
-  async runReactive() {
+  async executeReactive(input: SimpleProcessingInput, output: SimpleProcessingOutput) {
     // For testing purposes, just return a different result
-    return { processed: false, result: `Reactive: ${this.runInputData.value}` } as Output;
-  }
-
-  /**
-   * Helper method to simulate error conditions for testing
-   */
-  async simulateError(): Promise<void> {
-    this.handleError(new Error("Test error"));
+    return { processed: output.processed ?? false, result: `Reactive: ${input.value}` };
   }
 }
 
@@ -207,10 +202,10 @@ export class FailingTask extends Task {
   /**
    * Implementation that always throws an error after checking for abort signals
    */
-  async runFull(): Promise<{ out: number }> {
+  async execute(input: TaskInput, executeConfig: IExecuteConfig): Promise<{ out: number }> {
     // Add a small delay to ensure abortion has time to take effect
     await sleep(5);
-    if (this.abortController?.signal.aborted) {
+    if (executeConfig.signal.aborted) {
       throw new TaskAbortedError(ABORT_MESSAGE);
     }
     throw new TaskFailedError(FAILURE_MESSAGE);
@@ -233,9 +228,9 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   /**
    * Implementation with configurable behavior based on instance properties
    */
-  async runFull(): Promise<any> {
+  async execute(input: TaskInput, { updateProgress }: IExecuteConfig): Promise<any> {
     if (this.shouldEmitProgress) {
-      this.handleProgress(this.progressValue);
+      updateProgress(this.progressValue);
     }
 
     if (this.delayMs > 0) {
@@ -290,8 +285,8 @@ export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutp
   /**
    * Squares the input number
    */
-  async runReactive(): Promise<TestSquareTaskOutput> {
-    return { output: this.runInputData.input * this.runInputData.input };
+  async executeReactive(input: TestSquareTaskInput): Promise<TestSquareTaskOutput> {
+    return { output: input.input * input.input };
   }
 }
 
@@ -306,6 +301,49 @@ export const TestSquareMultiInputTask = arrayTaskFactory<
   TestSquareTaskOutput,
   JobQueueTaskConfig
 >(TestSquareTask, ["input"]);
+
+/**
+ * Task that squares a number - simple mathematical operation example
+ */
+export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
+  static readonly type = "TestSquareNonReactiveTask";
+
+  static readonly inputs: TaskInputDefinition[] = [
+    {
+      id: "input",
+      name: "Input",
+      valueType: "number",
+      defaultValue: 0,
+    },
+  ] as const;
+
+  static readonly outputs: TaskOutputDefinition[] = [
+    {
+      id: "output",
+      name: "Output",
+      valueType: "number",
+    },
+  ] as const;
+
+  /**
+   * Squares the input number
+   */
+  async execute(input: TestSquareTaskInput): Promise<TestSquareTaskOutput> {
+    return { output: input.input * input.input };
+  }
+}
+
+/**
+ * Multi-input version of the square task created using the array task factory
+ * Allows processing multiple inputs in parallel
+ */
+export const TestSquareNonReactiveMultiInputTask = arrayTaskFactory<
+  ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
+  ConvertAllToArrays<TestSquareTaskOutput>,
+  TestSquareTaskInput,
+  TestSquareTaskOutput,
+  JobQueueTaskConfig
+>(TestSquareNonReactiveTask, ["input"]);
 
 /**
  * Input type for the double task
@@ -348,8 +386,8 @@ export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutp
   /**
    * Should double the input number but currently squares it
    */
-  async runReactive(): Promise<TestDoubleTaskOutput> {
-    return { output: this.runInputData.input * 2 };
+  async executeReactive(input: TestDoubleTaskInput): Promise<TestDoubleTaskOutput> {
+    return { output: input.input * 2 };
   }
 }
 
@@ -391,11 +429,11 @@ export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTas
   /**
    * Throws an error when input is 2, otherwise squares the input
    */
-  async runReactive(): Promise<TestSquareTaskOutput> {
-    if (this.runInputData.input === 2) {
+  async executeReactive(input: TestSquareTaskInput): Promise<TestSquareTaskOutput> {
+    if (input.input === 2) {
       throw new TaskError("Test error");
     }
-    return { output: this.runInputData.input * this.runInputData.input };
+    return { output: input.input * input.input };
   }
 }
 
@@ -423,8 +461,8 @@ export class TestSimpleTask extends Task<{ input: string }, { output: string }> 
   /**
    * Processes input by adding a prefix
    */
-  async runFull(): Promise<any> {
-    return { output: `processed-${this.runInputData?.input}` };
+  async execute(input: TaskInput): Promise<any> {
+    return { output: `processed-${input.input}` };
   }
 }
 
@@ -444,8 +482,8 @@ export class TestOutputTask extends Task<{ input: string }, { customOutput: stri
   /**
    * Processes input and outputs to a custom field name
    */
-  async runFull(): Promise<any> {
-    return { customOutput: `processed-${this.runInputData?.input}` };
+  async execute(input: TaskInput): Promise<any> {
+    return { customOutput: `processed-${input.input}` };
   }
 }
 
@@ -465,8 +503,8 @@ export class TestInputTask extends Task<{ customInput: string }, { output: strin
   /**
    * Processes custom input field and returns standard output
    */
-  async runFull(): Promise<any> {
-    return { output: `processed-${this.runInputData?.customInput}` };
+  async execute(input: TaskInput): Promise<any> {
+    return { output: `processed-${input.customInput}` };
   }
 }
 
@@ -482,13 +520,13 @@ export class LongRunningTask extends Task {
    * Simulates a long-running operation with progress updates
    * Checks for abort signals to demonstrate proper cancellation
    */
-  async runFull(): Promise<any> {
+  async execute(input: TaskInput, executeConfig: IExecuteConfig): Promise<any> {
     for (let i = 0; i < 10; i++) {
-      if (this.abortController?.signal.aborted) {
+      if (executeConfig.signal.aborted) {
         throw new TaskAbortedError("Task aborted");
       }
       await sleep(10);
-      this.handleProgress(i / 10);
+      executeConfig.updateProgress(i / 10);
     }
   }
 }
@@ -501,7 +539,7 @@ export class StringTask extends Task<{ input: string }, { output: string }, Task
   static inputs: TaskInputDefinition[] = [{ id: "input", valueType: "string", name: "Input" }];
   static outputs: TaskOutputDefinition[] = [{ id: "output", valueType: "string", name: "Output" }];
 
-  async runFull(): Promise<any> {
+  async execute() {
     return { output: "string" };
   }
 }
@@ -514,7 +552,7 @@ export class NumberTask extends Task<{ input: number }, { output: number }, Task
   static inputs: TaskInputDefinition[] = [{ id: "input", valueType: "number", name: "Input" }];
   static outputs: TaskOutputDefinition[] = [{ id: "output", valueType: "number", name: "Output" }];
 
-  async runFull(): Promise<any> {
+  async execute() {
     return { output: 123 };
   }
 }
@@ -564,8 +602,7 @@ export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
   /**
    * Adds two input numbers
    */
-  async runReactive() {
-    const input = this.runInputData;
+  async executeReactive(input: TestAddTaskInput) {
     return { output: input.a + input.b };
   }
 }
