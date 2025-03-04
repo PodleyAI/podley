@@ -23,3 +23,6 @@ export * from "./task/RunOrReplicateTask";
 
 export * from "./storage/taskoutput/TaskOutputRepository";
 export * from "./storage/taskgraph/TaskGraphRepository";
+
+export * from "./util/diTokens";
+export * from "./util/diServiceProvider";

@@ -5,10 +5,16 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./common";
+export * from "./tabular/ITabularRepository";
+export * from "./tabular/TabularRepository";
+export * from "./tabular/InMemoryTabularRepository";
 
-export * from "./storage/taskgraph/InMemoryTaskGraphRepository";
-export * from "./storage/taskgraph/IndexedDbTaskGraphRepository";
+export * from "./kv/IKvRepository";
+export * from "./kv/KvRepository";
+export * from "./kv/InMemoryKvRepository";
 
-export * from "./storage/taskoutput/InMemoryTaskOutputRepository";
-export * from "./storage/taskoutput/IndexedDbTaskOutputRepository";
+export * from "./queue/IQueueStorage";
+export * from "./queue/InMemoryQueueStorage";
+
+export * from "./util/diTokens";
+export * from "./util/diServiceProvider";
