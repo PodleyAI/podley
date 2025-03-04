@@ -11,10 +11,16 @@ import { TaskGraphRunner } from "../../task-graph/TaskGraphRunner";
 import { ITask } from "../ITask";
 import { TaskError } from "../TaskError";
 import { TaskStatus } from "../TaskTypes";
-import { TestSquareMultiInputTask, TestErrorMultiInputTask } from "./TestTasks";
+import {
+  TestSquareMultiInputTask,
+  TestErrorMultiInputTask,
+  TestSquareNonReactiveMultiInputTask,
+  TestSquareNonReactiveTask,
+  TestSquareTaskOutput,
+} from "./TestTasks";
 
 describe("ArrayTask", () => {
-  test("in task mode", async () => {
+  test("in task mode reactive run", async () => {
     const task = new TestSquareMultiInputTask(
       {
         input: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -25,6 +31,57 @@ describe("ArrayTask", () => {
     );
     const results = await task.run();
     expect(results).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100] });
+  });
+
+  test("in task mode reactive runReactive", async () => {
+    const task = new TestSquareMultiInputTask(
+      {
+        input: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      },
+      {
+        id: "task1",
+      }
+    );
+    const results = await task.runReactive();
+    expect(results).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100] });
+  });
+
+  test("in task mode reactive run with single", async () => {
+    const task = new TestSquareNonReactiveTask({ input: 5 });
+    const results = await task.run();
+    expect(results).toEqual({ output: 25 });
+  });
+
+  test("in task mode reactive runReactive single", async () => {
+    const task = new TestSquareNonReactiveTask({ input: 5 });
+    const results = await task.runReactive();
+    expect(results).toEqual({} as TestSquareTaskOutput);
+  });
+
+  test("in task mode non-reactive run", async () => {
+    const task = new TestSquareNonReactiveMultiInputTask(
+      {
+        input: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      },
+      {
+        id: "task1",
+      }
+    );
+    const results = await task.run();
+    expect(results).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100] });
+  });
+
+  test("in task mode non-reactive runReactive", async () => {
+    const task = new TestSquareNonReactiveMultiInputTask(
+      {
+        input: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      },
+      {
+        id: "task1",
+      }
+    );
+    const results = await task.runReactive();
+    expect(results).toEqual({} as any);
   });
 
   test("in task graph mode", async () => {
@@ -39,8 +96,7 @@ describe("ArrayTask", () => {
         }
       )
     );
-    const runner = new TaskGraphRunner(graph);
-    const results = await runner.runGraph();
+    const results = await graph.run();
     expect(results![0].data).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 121] });
   });
 
@@ -158,7 +214,9 @@ describe("ArrayTask", () => {
 
     // Manually trigger progress events on child tasks
     task.subGraph!.getNodes().forEach((childTask: ITask) => {
+      // @ts-expect-error - we are testing the protected method
       childTask.handleStart();
+      // @ts-expect-error - we are testing the protected method
       childTask.handleProgress(0.5);
     });
 

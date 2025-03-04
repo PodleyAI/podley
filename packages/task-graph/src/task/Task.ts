@@ -9,8 +9,7 @@ import { EventEmitter } from "@ellmers/util";
 import { nanoid } from "nanoid";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { TaskGraphRunner } from "../task-graph/TaskGraphRunner";
-import type { ITask } from "./ITask";
+import type { IExecuteConfig, IRunConfig, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 import {
   type TaskEventListener,
@@ -76,6 +75,138 @@ export class Task<
   public static readonly isCompound: boolean = false;
 
   // ========================================================================
+  // Methods to be overridden by subclasses
+  // ========================================================================
+
+  /**
+   * The actual task execution logic for subclasses to override
+   *
+   * @param input The input to the task
+   * @param config The configuration for the task
+   * @returns The output of the task or undefined if no changes
+   */
+  protected async execute(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
+    if (this.isCompound) {
+      const results = await this.subGraph!.run({
+        parentProvenance: config.nodeProvenance || {},
+        parentSignal: config.signal || undefined,
+        outputCache: this.outputCache,
+      });
+      // TODO: listen for sub-task complete events and update progress
+    } else {
+      return undefined;
+    }
+  }
+
+  /**
+   * The reactive task execution logic for subclasses to override
+   *
+   * This is generally for UI updating, and should be lightweight.
+   * It generally augments the output of the task with additional data.
+   *
+   * @param input The input to the task
+   * @param output The output of the task
+   * @returns The output of the task or undefined if no changes
+   */
+  protected async executeReactive(input: Input, output: Output): Promise<Output | undefined> {
+    if (this.isCompound) {
+      const results = await this.subGraph!.runReactive();
+      return { outputs: results } as unknown as Output;
+    } else {
+      return output;
+    }
+  }
+
+  // ========================================================================
+  // Task execution methods
+  // ========================================================================
+
+  protected async runInternal(config: IRunConfig): Promise<Output> {
+    this.nodeProvenance = config.nodeProvenance ?? {};
+    this.outputCache = config.repository || this.outputCache || this.config.outputCache;
+    return this.run();
+  }
+
+  /**
+   * Runs the task and returns the output
+   *
+   * @param nodeProvenance Provenance information
+   * @param repository Repository for caching task outputs
+   * @returns Task output
+   */
+  async run(overrides: Partial<Input> = {}): Promise<Output> {
+    this.handleStart();
+
+    try {
+      this.setInput(overrides);
+      const isValid = await this.validateInputData(this.runInputData);
+      if (!isValid) {
+        throw new TaskInvalidInputError("Invalid input data");
+      }
+
+      if (this.abortController?.signal.aborted) {
+        this.handleAbort();
+        throw new TaskAbortedError("Promise for task created and aborted before run");
+      }
+
+      const results = await this.execute(this.runInputData, {
+        signal: this.abortController!.signal,
+        updateProgress: this.handleProgress.bind(this),
+        nodeProvenance: this.nodeProvenance,
+      });
+
+      if (results && Object.keys(results).length > 0) {
+        this.runOutputData = results;
+      } else {
+        this.runOutputData = this.runOutputData || ({} as Output);
+      }
+
+      this.outputCache = this.config.outputCache;
+
+      if (this.isCompound) {
+        // compound tasks have each of the children's reactive  called
+        // so we don't need to call here
+      } else {
+        const results = await this.executeReactive(this.runInputData, this.runOutputData);
+        if (results && Object.keys(results).length > 0) {
+          this.runOutputData = results;
+        }
+      }
+
+      this.handleComplete();
+
+      return this.runOutputData;
+    } catch (err: any) {
+      this.handleError(err);
+      throw err;
+    }
+  }
+
+  /**
+   * Default implementation of runReactive that just returns the current output data.
+   * Subclasses should override this to provide actual reactive functionality.
+   *
+   * This is generally for UI updating, and should be lightweight.
+   *
+   * @returns The task output
+   */
+  public async runReactive(overrides: Partial<Input> = {}): Promise<Output> {
+    try {
+      this.setInput(overrides);
+      await this.validateInputData(this.runInputData);
+    } catch {
+      return {} as Output;
+    }
+    const results = await this.executeReactive(this.runInputData, this.runOutputData);
+    if (results && Object.keys(results).length > 0) {
+      this.runOutputData = results;
+    } else {
+      this.runOutputData = this.runOutputData || ({} as Output);
+    }
+    return this.runOutputData;
+  }
+
+  // ========================================================================
   // Static to Instance conversion methods
   // ========================================================================
 
@@ -109,7 +240,7 @@ export class Task<
   }
 
   // ========================================================================
-  // Instance properties - some to be overridden by subclasses
+  // Instance properties using @template types
   // ========================================================================
 
   /**
@@ -267,6 +398,8 @@ export class Task<
       const inputId = inputdef.id as keyof Input;
       if (input[inputId] !== undefined) {
         this.runInputData[inputId] = input[inputId];
+      } else if (this.runInputData[inputId] === undefined && inputdef.defaultValue !== undefined) {
+        this.runInputData[inputId] = inputdef.defaultValue;
       }
     }
   }
@@ -324,12 +457,12 @@ export class Task<
   /**
    * Handles task start
    */
-  public handleStart(): void {
+  protected handleStart(): void {
     if (this.status === TaskStatus.PROCESSING) return;
 
     this.startedAt = new Date();
     this.nodeProvenance = {};
-    this.outputCache = undefined;
+    // this.outputCache = this.config.outputCache;
     this.progress = 0;
     this.status = TaskStatus.PROCESSING;
 
@@ -357,14 +490,14 @@ export class Task<
   /**
    * Handles task completion
    */
-  public handleComplete(): void {
+  protected handleComplete(): void {
     if (this.status === TaskStatus.COMPLETED) return;
 
     this.completedAt = new Date();
     this.progress = 100;
     this.status = TaskStatus.COMPLETED;
     this.abortController = undefined;
-    this.outputCache = undefined;
+    // this.outputCache = this.config.outputCache;
     this.nodeProvenance = {};
 
     this.events.emit("complete");
@@ -375,7 +508,7 @@ export class Task<
    *
    * @param err Error that occurred
    */
-  public handleError(err: Error): void {
+  protected handleError(err: Error): void {
     if (err instanceof TaskAbortedError) return this.handleAbort();
     if (this.status === TaskStatus.FAILED) return;
 
@@ -385,7 +518,7 @@ export class Task<
     this.error =
       err instanceof TaskError ? err : new TaskFailedError(err?.message || "Task failed");
     this.abortController = undefined;
-    this.outputCache = undefined;
+    // this.outputCache = this.config.outputCache;
     this.nodeProvenance = {};
 
     this.events.emit("error", this.error);
@@ -397,89 +530,9 @@ export class Task<
    * @param progress Progress value (0-100)
    * @param args Additional arguments
    */
-  public handleProgress(progress: number, ...args: any[]): void {
+  protected handleProgress(progress: number, ...args: any[]): void {
     this.progress = progress;
     this.events.emit("progress", progress, ...args);
-  }
-
-  /**
-   * Runs the task and returns the output
-   *
-   * @param nodeProvenance Provenance information
-   * @param repository Repository for caching task outputs
-   * @returns Task output
-   */
-  async run(nodeProvenance: Provenance = {}, repository?: TaskOutputRepository): Promise<Output> {
-    this.handleStart();
-    this.nodeProvenance = nodeProvenance;
-    this.outputCache = repository;
-
-    try {
-      const isValid = await this.validateInputData(this.runInputData);
-      if (!isValid) {
-        throw new TaskInvalidInputError("Invalid input data");
-      }
-
-      if (this.abortController?.signal.aborted) {
-        this.handleAbort();
-        throw new TaskAbortedError("Promise for task created and aborted before run");
-      }
-
-      this.runOutputData = await this.runFull();
-      this.handleComplete();
-
-      return this.runOutputData;
-    } catch (err: any) {
-      this.handleError(err);
-      throw err;
-    }
-  }
-
-  // ========================================================================
-  // Task execution methods
-  // ========================================================================
-
-  /**
-   * Default implementation of runFull that just returns the current output data.
-   * Subclasses should override this to provide actual task functionality.
-   *
-   * @returns The task output
-   */
-
-  public async runFull(): Promise<Output> {
-    if (!this.isCompound) {
-      this.runOutputData = await this.runReactive();
-    } else {
-      const runner = new TaskGraphRunner(this.subGraph!, this.outputCache);
-      // @ts-ignore TODO: fix this
-      this.runOutputData.outputs = await runner.runGraph(
-        this.nodeProvenance,
-        this.abortController!.signal
-      );
-    }
-    return this.runOutputData;
-  }
-
-  /**
-   * Default implementation of runReactive that just returns the current output data.
-   * Subclasses should override this to provide actual reactive functionality.
-   *
-   * This is generally for UI updating, and should be lightweight.
-   *
-   * @returns The task output
-   */
-  public async runReactive(): Promise<Output> {
-    if (!this.isCompound) {
-      if (Object.keys(this.runOutputData).length === 0) {
-        this.runOutputData = Object.assign({}, this.defaults) as Output;
-      }
-      return this.runOutputData;
-    } else {
-      const runner = new TaskGraphRunner(this.subGraph!);
-      // @ts-ignore TODO: fix this
-      this.runOutputData.outputs = await runner.runGraphReactive();
-      return this.runOutputData;
-    }
   }
 
   // ========================================================================
@@ -616,8 +669,8 @@ export class Task<
       this.validateItem(inputdef.valueType as string, item)
     );
 
-    const validationResults = await Promise.all(validationPromises);
-    return validationResults.every((result) => result === true);
+    const validationResults = await Promise.allSettled(validationPromises);
+    return validationResults.every((result) => result.status === "fulfilled");
   }
 
   /**

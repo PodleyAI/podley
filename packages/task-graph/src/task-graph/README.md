@@ -56,10 +56,7 @@ graph.addDataflow(new Dataflow("task1", "output", "task2", "input"));
 ### Executing Tasks
 
 ```typescript
-import { TaskGraphRunner } from "@ellmers/task-graph";
-
-const runner = new TaskGraphRunner(graph);
-const results = await runner.runGraph();
+const results = await graph.run();
 ```
 
 ### Workflow API

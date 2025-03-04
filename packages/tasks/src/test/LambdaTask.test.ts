@@ -8,15 +8,14 @@
 import { describe, test, expect } from "bun:test";
 import { Lambda, LambdaTask } from "../task/LambdaTask";
 import { TaskGraph } from "@ellmers/task-graph";
-import { TaskGraphRunner } from "@ellmers/task-graph";
 import { Workflow } from "@ellmers/task-graph";
 
 describe("LambdaTask", () => {
   test("in command mode", async () => {
     const results = await Lambda(
-      {},
+      { data: null },
       {
-        runFull: async () => {
+        execute: async () => {
           return { output: "Hello, world!" };
         },
       }
@@ -31,7 +30,7 @@ describe("LambdaTask", () => {
         b: 2,
       },
       {
-        runReactive: async (input) => {
+        executeReactive: async (input) => {
           return { output: input.a + input.b };
         },
       }
@@ -43,7 +42,7 @@ describe("LambdaTask", () => {
     const task = new LambdaTask(
       {},
       {
-        runReactive: async () => {
+        executeReactive: async () => {
           return { output: "Hello, world!" };
         },
       }
@@ -59,14 +58,13 @@ describe("LambdaTask", () => {
         {},
         {
           id: "lambdaReactiveTest",
-          runReactive: async () => {
+          executeReactive: async () => {
             return { output: "Hello, world!" };
           },
         }
       )
     );
-    const runner = new TaskGraphRunner(graph);
-    const results = await runner.runGraph();
+    const results = await graph.run();
     expect(results[0]).toEqual({
       id: "lambdaReactiveTest",
       type: "LambdaTask",
@@ -79,7 +77,7 @@ describe("LambdaTask", () => {
     workflow.Lambda(
       {},
       {
-        runFull: async () => {
+        execute: async () => {
           return { output: "Hello, world!" };
         },
       }
@@ -90,7 +88,7 @@ describe("LambdaTask", () => {
     });
   });
 
-  test("in task workflow mode with input runFull", async () => {
+  test("in task workflow mode with input execute", async () => {
     const workflow = new Workflow();
     workflow.Lambda(
       {
@@ -98,7 +96,7 @@ describe("LambdaTask", () => {
         b: 2,
       },
       {
-        runFull: async (input) => {
+        execute: async (input) => {
           return { output: input.a + input.b };
         },
       }
@@ -107,7 +105,7 @@ describe("LambdaTask", () => {
     expect(results[0].data).toEqual({ output: 3 });
   });
 
-  test("in task workflow mode with input runReactive", async () => {
+  test("in task workflow mode with input executeReactive", async () => {
     const workflow = new Workflow();
     workflow.Lambda(
       {
@@ -115,7 +113,7 @@ describe("LambdaTask", () => {
         b: 2,
       },
       {
-        runReactive: async (input) => {
+        executeReactive: async (input) => {
           return { output: input.a + input.b };
         },
       }
@@ -129,19 +127,18 @@ describe("LambdaTask", () => {
     const task = new LambdaTask(
       {},
       {
-        runFull: async (input, updateProgress) => {
+        execute: async (input, { updateProgress }) => {
           updateProgress(0.5, "Halfway there");
           return { output: "Hello, world!" };
         },
       }
     );
     graph.addTask(task);
-    const runner = new TaskGraphRunner(graph);
     let progressCounter = 0;
     task.on("progress", (progress: number) => {
       progressCounter++;
     });
-    const results = await runner.runGraph();
+    const results = await graph.run();
     expect(results[0].data).toEqual({ output: "Hello, world!" });
     expect(progressCounter).toEqual(1);
   });

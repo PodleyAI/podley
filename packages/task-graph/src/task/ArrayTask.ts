@@ -7,7 +7,7 @@
 
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { ITaskConstructor } from "./ITask";
+import { ITaskConstructor, IRunConfig, IExecuteConfig } from "./ITask";
 import { TaskRegistry } from "./TaskRegistry";
 import {
   Provenance,
@@ -17,9 +17,11 @@ import {
   TaskOutputDefinition,
   TaskTypeName,
   TaskInputDefinition,
+  TaskStatus,
 } from "./TaskTypes";
 import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { Task } from "./Task";
+import { TaskGraphRunner } from "../task-graph/TaskGraphRunner";
 
 // Type utilities for array transformations
 // Makes specified properties optional arrays
@@ -210,8 +212,12 @@ export function arrayTaskFactory<
      * Each child task processes a single combination of the array inputs
      */
     regenerateGraph() {
+      if (this.status !== TaskStatus.PENDING) {
+        console.warn("ArrayTask.regenerateGraph called on non-pending task", this.status);
+        return;
+      }
       //TODO: only regenerate if we need to
-      this.subGraph = new TaskGraph();
+      this.subGraph = new TaskGraph(this.outputCache);
       const combinations = generateCombinations<Input, keyof Input>(
         this.runInputData,
         inputMakeArray as (keyof Input)[]
@@ -221,6 +227,7 @@ export function arrayTaskFactory<
           input as unknown as SingleInputType,
           {
             id: this.config.id + "-child-" + (index + 1),
+            outputCache: this.outputCache,
           } as SingleConfig
         );
         this.subGraph!.addTask(current);
@@ -232,28 +239,48 @@ export function arrayTaskFactory<
      * Runs the task reactively, collecting outputs from all child tasks into arrays
      * @returns Combined output with arrays of values from all child tasks
      */
-    async runReactive(): Promise<Output> {
-      const runDataOut = await super.runReactive();
-      if (runDataOut.outputs) {
-        const collected = collectPropertyValues<SingleOutputType>(
-          runDataOut.outputs as SingleOutputType[]
-        );
-        this.runOutputData = collected as unknown as Output;
+    public async execute(input: Input, config: IExecuteConfig): Promise<Output> {
+      const results = await this.subGraph!.run({
+        parentProvenance: config.nodeProvenance || {},
+        parentSignal: config.signal || undefined,
+        outputCache: this.outputCache,
+      });
+      const outputs = results.map((result: any) => result.data);
+      if (outputs.length > 0) {
+        const collected = collectPropertyValues<SingleOutputType>(outputs as SingleOutputType[]);
+        if (Object.keys(collected).length > 0) {
+          this.runOutputData = collected as unknown as Output;
+        }
       }
       return this.runOutputData;
     }
 
+    // Task runs this on compound tasks
+    public async executeReactive(input: Input, output: Output): Promise<Output> {
+      return output;
+    }
     /**
-     * Runs the task synchronously, collecting outputs from all child tasks into arrays
-     * @returns Combined output with arrays of values from all child tasks
+     * Default implementation of runReactive that just returns the current output data.
+     * Subclasses should override this to provide actual reactive functionality.
+     *
+     * This is generally for UI updating, and should be lightweight.
+     *
+     * @returns The task output
      */
-    async runFull(): Promise<Output> {
-      const runDataOut = await super.runFull();
-      const outputs = (runDataOut.outputs ?? []).map(
-        (result: any) => result.data as SingleOutputType
-      ) as SingleOutputType[];
-      const collected = collectPropertyValues<SingleOutputType>(outputs);
-      return collected as unknown as Output;
+    public async runReactive(overrides: Partial<Input> = {}): Promise<Output> {
+      this.setInput(overrides);
+      try {
+        await this.validateInputData(this.runInputData);
+      } catch {
+        return {} as Output;
+      }
+
+      const results = await this.subGraph!.runReactive();
+      const mapped = results.map((result) => result.data) as SingleOutputType[];
+      const collected = collectPropertyValues<SingleOutputType>(mapped);
+      this.runOutputData = collected as unknown as Output;
+
+      return this.runOutputData;
     }
 
     toJSON(): JsonTaskItem {
@@ -276,6 +303,12 @@ export function arrayTaskFactory<
     declare outputCache: TaskOutputRepository;
     declare queueName: string;
     declare currentJobId: string;
+    declare handleComplete: () => void;
+    declare handleError: (error: Error) => void;
+    declare handleProgress: (progress: number) => void;
+    declare handleStart: () => void;
+    declare runInternal: (config: IRunConfig) => Promise<Output>;
+    declare validateInputData: (input: Partial<Input>) => Promise<boolean>;
   }
 
   // Use type assertion to make TypeScript accept the registration

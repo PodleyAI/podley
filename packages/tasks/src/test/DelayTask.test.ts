@@ -23,7 +23,7 @@ describe("DelayTask", () => {
 
     // Verify the task completed successfully
     expect(task.status).toBe(TaskStatus.COMPLETED);
-    expect(result).toBeUndefined();
+    expect(result).toEqual({});
   });
 
   it("should pass through input to output", async () => {

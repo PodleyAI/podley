@@ -6,20 +6,58 @@
 //    *******************************************************************************
 
 import { DirectedAcyclicGraph } from "@sroussey/typescript-graph";
-import { TaskIdType } from "../task/TaskTypes";
+import { Provenance, TaskIdType } from "../task/TaskTypes";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
+import { TaskGraphRunner } from "./TaskGraphRunner";
+import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { IRunConfig } from "../task/ITask";
+
+/**
+ * Configuration for running a task graph
+ */
+export interface TaskGraphRunConfig {
+  /** Optional output cache to use for this task graph */
+  outputCache?: TaskOutputRepository;
+  /** Optional signal to abort the task graph */
+  parentSignal?: AbortSignal;
+  /** Optional provenance to use for this task graph */
+  parentProvenance?: Provenance;
+}
 
 /**
  * Represents a task graph, a directed acyclic graph of tasks and data flows
  */
 export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType> {
-  constructor() {
+  constructor(public outputCache?: TaskOutputRepository) {
     super(
       (task: ITask) => task.config.id,
       (dataflow: Dataflow) => dataflow.id
     );
+  }
+
+  private _runner: TaskGraphRunner | undefined;
+  public get runner(): TaskGraphRunner {
+    if (!this._runner) {
+      this._runner = new TaskGraphRunner(this, this.outputCache);
+    }
+    return this._runner;
+  }
+
+  public run(config?: TaskGraphRunConfig) {
+    if (config?.outputCache) {
+      this.outputCache = config.outputCache;
+    }
+    return this.runner.runGraph({
+      outputCache: config?.outputCache || this.outputCache,
+      parentProvenance: config?.parentProvenance || {},
+      parentSignal: config?.parentSignal || undefined,
+    });
+  }
+
+  public runReactive() {
+    return this.runner.runGraphReactive();
   }
 
   /**

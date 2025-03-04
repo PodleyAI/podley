@@ -28,6 +28,17 @@ import type {
   TaskEvents,
 } from "./TaskEvents";
 
+export interface IExecuteConfig {
+  signal: AbortSignal;
+  nodeProvenance: Provenance;
+  updateProgress: (progress: number, message?: string, ...args: any[]) => void;
+}
+
+export interface IRunConfig {
+  nodeProvenance?: Provenance;
+  repository?: TaskOutputRepository;
+}
+
 /**
  * Interface for task static property metadata
  *
@@ -43,24 +54,15 @@ export interface ITaskStaticProperties {
 }
 
 /**
- *   ==== These should be overriden by every new Task class ====
+ * Interface for task lifecycle management
  */
-export interface ITaskRunFunctions<Input extends TaskInput, Output extends TaskOutput> {
-  runFull(): Promise<Output>;
-  runReactive(): Promise<Output>;
-}
-
-/**
- * Interface for task configuration and state
- */
-export interface ITaskState<Config extends TaskConfig = TaskConfig> {
-  readonly config: IConfig & Config;
-  status: TaskStatus;
-  progress: number;
-  createdAt: Date;
-  startedAt?: Date;
-  completedAt?: Date;
-  error?: TaskError;
+export interface ITaskLifecycle<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+> {
+  run(overrides?: Partial<Input>): Promise<Output>;
+  runReactive(overrides?: Partial<Input>): Promise<Output>;
+  abort(): void;
 }
 
 /**
@@ -104,25 +106,25 @@ export interface ITaskEvents {
 }
 
 /**
- * Interface for task lifecycle management
- */
-export interface ITaskLifecycle<Output extends TaskOutput = TaskOutput> {
-  abort(): void;
-  handleStart(): void;
-  handleComplete(): void;
-  handleError(err: any): void;
-  handleAbort(): void;
-  handleProgress(progress: number, ...args: any[]): void;
-  run(nodeProvenance: Provenance, repository?: TaskOutputRepository): Promise<Output>;
-}
-
-/**
  * Interface for task serialization
  */
 export interface ITaskSerialization {
   getProvenance(): Provenance;
   toJSON(): JsonTaskItem | TaskGraphItemJson;
   toDependencyJSON(): JsonTaskItem;
+}
+
+/**
+ * Interface for task configuration and state
+ */
+export interface ITaskState<Config extends TaskConfig = TaskConfig> {
+  readonly config: IConfig & Config;
+  status: TaskStatus;
+  progress: number;
+  createdAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  error?: TaskError;
 }
 
 /**
@@ -133,10 +135,9 @@ export interface ITask<
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
 > extends ITaskState<Config>,
-    ITaskRunFunctions<Input, Output>,
     ITaskIO<Input, Output>,
     ITaskEvents,
-    ITaskLifecycle<Output>,
+    ITaskLifecycle<Input, Output>,
     ITaskCompound,
     ITaskSerialization {}
 

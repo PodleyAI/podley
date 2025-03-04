@@ -15,18 +15,15 @@ import {
   TaskOutputDefinition,
   TaskConfig,
   Task,
+  IExecuteConfig,
 } from "@ellmers/task-graph";
 
 type LambdaTaskConfig<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
 > = Partial<TaskConfig> & {
-  runFull?: (
-    input: Input,
-    updateProgress: (progress: number, message: string) => void,
-    signal?: AbortSignal
-  ) => Promise<Output>;
-  runReactive?: (input: Input) => Promise<Output>;
+  execute?: (input: Input, config: IExecuteConfig) => Promise<Output>;
+  executeReactive?: (input: Input, output: Output) => Promise<Output>;
 };
 /**
  * LambdaTask provides a way to execute arbitrary functions within the task framework
@@ -65,47 +62,24 @@ export class LambdaTask<
     },
   ] as const;
 
-  resetInputData() {
-    if (this.runInputData?.runFull || this.runInputData?.runReactive) {
-      if (this.runInputData.runFull) {
-        this.config.runFull = this.runInputData.runFull;
-        delete this.runInputData.runFull;
-      }
-      if (this.runInputData.runReactive) {
-        this.config.runReactive = this.runInputData.runReactive;
-        delete this.runInputData.runReactive;
-      }
-      this.runInputData = this.runInputData.input;
-      delete this.runInputData?.input;
+  async execute(input: Input, config: IExecuteConfig): Promise<Output> {
+    let results: Output = {} as Output;
+    if (typeof this.config.execute === "function") {
+      results = await this.config.execute(input, config);
     }
-    super.resetInputData();
-  }
-
-  async runFull(): Promise<Output> {
-    let updateProgress = (progress: number, message: string) => {
-      this.handleProgress(progress, message);
-    };
-    if (typeof this.config.runFull === "function") {
-      this.runOutputData = await this.config.runFull(
-        this.runInputData ?? {},
-        updateProgress,
-        this.abortController?.signal
-      );
-    }
-    this.runOutputData = await this.runReactive();
-    return this.runOutputData;
+    return results;
   }
 
   /**
    * Executes the provided function with the given input
    * Throws an error if no function is provided or if the provided value is not callable
    */
-  async runReactive() {
-    if (typeof this.config.runReactive === "function") {
-      const result = await this.config.runReactive(this.runInputData ?? {});
-      this.runOutputData = result;
+  async executeReactive(input: Input, output: Output) {
+    let results: Output = {} as Output;
+    if (typeof this.config.executeReactive === "function") {
+      results = await this.config.executeReactive(input, output);
     }
-    return super.runReactive();
+    return results;
   }
 }
 
