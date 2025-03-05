@@ -10,7 +10,7 @@ import { env } from "@huggingface/transformers";
 import { ReactFlowProvider } from "@xyflow/react";
 import { AiJob } from "@ellmers/ai";
 import {
-  LOCAL_ONNX_TRANSFORMERJS,
+  ONNX_TRANSFORMERJS,
   registerHuggingfaceLocalTasks,
 } from "@ellmers/ai-provider/hf-transformers";
 import {
@@ -43,7 +43,7 @@ const queueRegistry = getTaskQueueRegistry();
 
 registerHuggingfaceLocalTasks();
 queueRegistry.registerQueue(
-  new JobQueue<TaskInput, TaskOutput>(LOCAL_ONNX_TRANSFORMERJS, AiJob<TaskInput, TaskOutput>, {
+  new JobQueue<TaskInput, TaskOutput>(ONNX_TRANSFORMERJS, AiJob<TaskInput, TaskOutput>, {
     limiter: new ConcurrencyLimiter(1, 10),
   })
 );

@@ -7,7 +7,7 @@
 
 import { AiJob, AiProviderInput } from "@ellmers/ai";
 import {
-  LOCAL_ONNX_TRANSFORMERJS,
+  ONNX_TRANSFORMERJS,
   registerHuggingfaceLocalTasks,
 } from "@ellmers/ai-provider/hf-transformers";
 import {
@@ -23,12 +23,10 @@ export * from "./sample/ONNXModelSamples";
 export async function registerHuggingfaceLocalTasksInMemory() {
   registerHuggingfaceLocalTasks();
   const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
-    LOCAL_ONNX_TRANSFORMERJS,
+    ONNX_TRANSFORMERJS,
     AiJob<TaskInput, TaskOutput>,
     {
-      storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
-        LOCAL_ONNX_TRANSFORMERJS
-      ),
+      storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(ONNX_TRANSFORMERJS),
       limiter: new ConcurrencyLimiter(1, 10),
     }
   );

@@ -156,7 +156,7 @@ await getGlobalModelRepository().addModel({
   url: "Xenova/LaMini-Flan-T5-783M",
   availableOnBrowser: true,
   availableOnServer: true,
-  provider: LOCAL_ONNX_TRANSFORMERJS,
+  provider: ONNX_TRANSFORMERJS,
   pipeline: "text2text-generation",
 });
 await getGlobalModelRepository().connectTaskToModel(
@@ -171,12 +171,12 @@ await getGlobalModelRepository().connectTaskToModel(
 const aiProviderRegistry = getAiProviderRegistry();
 aiProviderRegistry.registerRunFn(
   DownloadModelTask.type,
-  LOCAL_ONNX_TRANSFORMERJS,
+  ONNX_TRANSFORMERJS,
   HuggingFaceLocal_DownloadRun
 );
 aiProviderRegistry.registerRunFn(
   TextRewriterTask.type,
-  LOCAL_ONNX_TRANSFORMERJS,
+  ONNX_TRANSFORMERJS,
   HuggingFaceLocal_TextRewriterRun
 );
 const jobQueue = new JobQueue<TaskInput, TaskOutput>("test", Job, {

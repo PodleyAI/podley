@@ -1,14 +1,11 @@
-import {
-  LOCAL_ONNX_TRANSFORMERJS,
-  QUANTIZATION_DATA_TYPES,
-} from "@ellmers/ai-provider/hf-transformers";
+import { ONNX_TRANSFORMERJS, QUANTIZATION_DATA_TYPES } from "@ellmers/ai-provider/hf-transformers";
 import { getGlobalModelRepository, Model } from "@ellmers/ai";
 
 export async function addONNXModel(info: Partial<Model>, tasks: string[]) {
   const model = Object.assign(
     {
       name: "onnx:" + info.url + ":" + (info.quantization ?? QUANTIZATION_DATA_TYPES.q8),
-      provider: LOCAL_ONNX_TRANSFORMERJS,
+      provider: ONNX_TRANSFORMERJS,
       quantization: QUANTIZATION_DATA_TYPES.q8,
       normalize: true,
       contextWindow: 4096,

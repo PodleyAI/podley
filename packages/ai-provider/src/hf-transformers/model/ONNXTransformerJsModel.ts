@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export const LOCAL_ONNX_TRANSFORMERJS = "LOCAL_ONNX_TRANSFORMERJS";
+export const ONNX_TRANSFORMERJS = "ONNX_TRANSFORMERJS";
 
 export enum QUANTIZATION_DATA_TYPES {
   auto = "auto", // Auto-detect based on environment

@@ -10,7 +10,7 @@ import { getGlobalModelRepository } from "../../ModelRegistry";
 import { ModelRepository } from "../../ModelRepository";
 import { setGlobalModelRepository } from "../../ModelRegistry";
 
-const LOCAL_ONNX_TRANSFORMERJS = "LOCAL_ONNX_TRANSFORMERJS";
+const ONNX_TRANSFORMERJS = "ONNX_TRANSFORMERJS";
 
 export const runGenericModelRepositoryTests = (
   createRepository: () => Promise<ModelRepository>
@@ -32,7 +32,7 @@ export const runGenericModelRepositoryTests = (
       url: "Xenova/LaMini-Flan-T5-783M",
       availableOnBrowser: true,
       availableOnServer: true,
-      provider: LOCAL_ONNX_TRANSFORMERJS,
+      provider: ONNX_TRANSFORMERJS,
       pipeline: "text2text-generation",
     });
 
@@ -50,7 +50,7 @@ export const runGenericModelRepositoryTests = (
       url: "Xenova/LaMini-Flan-T5-783M",
       availableOnBrowser: true,
       availableOnServer: true,
-      provider: LOCAL_ONNX_TRANSFORMERJS,
+      provider: ONNX_TRANSFORMERJS,
       pipeline: "text2text-generation",
     });
     await getGlobalModelRepository().connectTaskToModel(
@@ -76,7 +76,7 @@ export const runGenericModelRepositoryTests = (
       url: "Xenova/LaMini-Flan-T5-783M",
       availableOnBrowser: true,
       availableOnServer: true,
-      provider: LOCAL_ONNX_TRANSFORMERJS,
+      provider: ONNX_TRANSFORMERJS,
       pipeline: "text2text-generation",
     });
 
@@ -89,7 +89,7 @@ export const runGenericModelRepositoryTests = (
     expect(models).toBeDefined();
     expect(models?.length).toEqual(1);
     expect(models?.[0].name).toEqual("onnx:Xenova/LaMini-Flan-T5-783M:q8");
-    expect(models?.[0].provider).toEqual(LOCAL_ONNX_TRANSFORMERJS);
+    expect(models?.[0].provider).toEqual(ONNX_TRANSFORMERJS);
     expect(models?.[0].pipeline).toEqual("text2text-generation");
   });
 };
