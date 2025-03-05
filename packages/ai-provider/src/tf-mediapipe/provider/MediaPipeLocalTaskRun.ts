@@ -19,15 +19,15 @@ import {
  */
 export async function MediaPipeTfJsLocal_Download(
   job: AiJob,
-  runInputData: DownloadModelTaskInput,
+  input: DownloadModelTaskInput,
   signal?: AbortSignal
 ) {
   const textFiles = await FilesetResolver.forTextTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@latest/wasm"
   );
-  const model = (await getGlobalModelRepository().findByName(runInputData.model))!;
+  const model = (await getGlobalModelRepository().findByName(input.model))!;
   if (!model) {
-    throw `MediaPipeTfJsLocal_Download: Model ${runInputData.model} not found`;
+    throw `MediaPipeTfJsLocal_Download: Model ${input.model} not found`;
   }
   const results = await TextEmbedder.createFromOptions(textFiles, {
     baseOptions: {
@@ -45,15 +45,15 @@ export async function MediaPipeTfJsLocal_Download(
  */
 export async function MediaPipeTfJsLocal_Embedding(
   job: AiJob,
-  runInputData: TextEmbeddingTaskInput,
+  input: TextEmbeddingTaskInput,
   signal?: AbortSignal
 ) {
   const textFiles = await FilesetResolver.forTextTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@latest/wasm"
   );
-  const model = (await getGlobalModelRepository().findByName(runInputData.model))!;
+  const model = (await getGlobalModelRepository().findByName(input.model))!;
   if (!model) {
-    throw `MediaPipeTfJsLocal_Embedding: Model ${runInputData.model} not found`;
+    throw `MediaPipeTfJsLocal_Embedding: Model ${input.model} not found`;
   }
   const textEmbedder = await TextEmbedder.createFromOptions(textFiles, {
     baseOptions: {
@@ -62,7 +62,7 @@ export async function MediaPipeTfJsLocal_Embedding(
     quantize: true,
   });
 
-  const output = textEmbedder.embed(runInputData.text);
+  const output = textEmbedder.embed(input.text);
   const vector = output.embeddings[0].floatEmbedding;
 
   if (vector?.length !== model.nativeDimensions) {

@@ -75,7 +75,7 @@ function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
           title: (task.constructor as any).type,
           subline: task.config.name,
         },
-        type: task.isCompound ? "compound" : "single",
+        type: task.hasChildren() ? "compound" : "single",
         selectable: true,
         connectable: false,
         draggable: false,
@@ -83,7 +83,7 @@ function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
         targetPosition: Position.Left,
       },
     ];
-    if (task.isCompound) {
+    if (task.hasChildren()) {
       const subNodes = convertGraphToNodes(task.subGraph).map((n) => {
         return {
           ...n,
@@ -245,6 +245,45 @@ function listenToTask(
     }, 16);
   };
 
+  const handleRegenerate = () => {
+    setNodes((nodes) => {
+      let children = convertGraphToNodes(task.subGraph).map(
+        (n) =>
+          ({
+            ...n,
+            parentId: task.config.id as string,
+            extent: "parent",
+            selectable: false,
+            connectable: false,
+          }) as Node<TurboNodeData>
+      );
+      let returnNodes = nodes.filter((n) => n.parentId !== task.config.id); // remove old children
+      const self = returnNodes.find((n) => n.id === task.config.id);
+      if (self?.type !== "compound" && children.length > 0) {
+        // update to true compound
+        returnNodes = nodes.filter((n) => n.id !== task.config.id); // remove old self
+        const newSelf: Node<TurboNodeData> = {
+          ...self,
+          type: "compound",
+          data: {
+            ...self.data,
+          },
+        };
+        children = [...children, newSelf];
+      }
+      returnNodes = [...returnNodes, ...children]; // add new children
+      returnNodes = sortNodes(returnNodes); // sort all nodes
+      return returnNodes;
+    });
+
+    // Set up listeners for new subtasks
+    const newCleanupFns = listenToGraphTasks(task.subGraph, setNodes, setEdges);
+    cleanupFns.push(...newCleanupFns);
+    cleanupFns.push(() => {
+      task.off("regenerate", () => {});
+    });
+  };
+
   if (task.isCompound) {
     const subTasks = task.subGraph.getNodes();
     for (const subTask of subTasks) {
@@ -253,49 +292,25 @@ function listenToTask(
     }
 
     // Listen for regeneration of compound tasks
-    task.events.on("regenerate", () => {
-      setNodes((nodes) => {
-        const children = convertGraphToNodes(task.subGraph).map(
-          (n) =>
-            ({
-              ...n,
-              parentId: task.config.id as string,
-              extent: "parent",
-              selectable: false,
-              connectable: false,
-            }) as Node<TurboNodeData>
-        );
-        let returnNodes = nodes.filter((n) => n.parentId !== task.config.id); // remove old children
-        returnNodes = [...returnNodes, ...children]; // add new children
-        returnNodes = sortNodes(returnNodes); // sort all nodes
-        return returnNodes;
-      });
-
-      // Set up listeners for new subtasks
-      const newCleanupFns = listenToGraphTasks(task.subGraph, setNodes, setEdges);
-      cleanupFns.push(...newCleanupFns);
-      cleanupFns.push(() => {
-        task.events.off("regenerate", () => {});
-      });
-    });
-  } else {
-    // Register event handlers
-    task.events.on("start", handleStatusChange);
-    task.events.on("complete", handleStatusChange);
-    task.events.on("error", handleStatusChange);
-    task.events.on("abort", handleStatusChange);
-    // @ts-ignore
-    task.events.on("progress", handleProgress);
-    // Add cleanup function
+    task.on("regenerate", handleRegenerate);
     cleanupFns.push(() => {
-      task.events.off("start", handleStatusChange);
-      task.events.off("complete", handleStatusChange);
-      task.events.off("error", handleStatusChange);
-      task.events.off("abort", handleStatusChange);
-      // @ts-ignore
-      task.events.off("progress", handleProgress);
+      task.off("regenerate", handleRegenerate);
     });
   }
+  // Register event handlers
+  task.on("start", handleStatusChange);
+  task.on("complete", handleStatusChange);
+  task.on("error", handleStatusChange);
+  task.on("abort", handleStatusChange);
+  task.on("progress", handleProgress);
+  // Add cleanup function
+  cleanupFns.push(() => {
+    task.off("start", handleStatusChange);
+    task.off("complete", handleStatusChange);
+    task.off("error", handleStatusChange);
+    task.off("abort", handleStatusChange);
+    task.off("progress", handleProgress);
+  });
 
   return cleanupFns;
 }

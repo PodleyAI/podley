@@ -5,14 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { getTaskQueueRegistry } from "./TaskQueueRegistry";
-import { TaskConfig, TaskOutput, TaskInput } from "./TaskTypes";
-import { TaskEventListeners } from "./TaskEvents";
-import { EventEmitter } from "@ellmers/util";
 import { Job } from "@ellmers/job-queue";
-import { TaskConfigurationError } from "./TaskError";
-import { Task } from "./Task";
+import { EventEmitter } from "@ellmers/util";
 import { IExecuteConfig } from "./ITask";
+import { RunOrReplicateTask } from "./RunOrReplicateTask";
+import { TaskConfigurationError } from "./TaskError";
+import { TaskEventListeners } from "./TaskEvents";
+import { getTaskQueueRegistry } from "./TaskQueueRegistry";
+import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 
 /**
  * Configuration interface for JobQueueTask.
@@ -45,7 +45,7 @@ export abstract class JobQueueTask<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends JobQueueTaskConfig = JobQueueTaskConfig,
-> extends Task<Input, Output, Config> {
+> extends RunOrReplicateTask<Input, Output, Config> {
   static readonly type: string = "JobQueueTask";
   static canRunDirectly = true;
 
@@ -84,7 +84,7 @@ export abstract class JobQueueTask<
       } else {
         const jobId = await queue.add(job);
         this.config.currentJobId = jobId;
-        // this.config.runnerId = job.jobRunId; // ??
+        this.config.runnerId = job.jobRunId; // TODO: think about this more
 
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
           this.handleProgress(progress, message, details);

@@ -13,10 +13,10 @@ import {
   TaskOutputDefinition,
   TaskInvalidInputError,
   JobQueueTaskConfig,
-  Task,
+  RunOrReplicateTask,
 } from "@ellmers/task-graph";
 import { AnyNumberArray, ElVector } from "./base/TaskIOTypes";
-
+import { ConvertAllToOptionalArray } from "@ellmers/util";
 // ===============================================================================
 
 export const similarity_fn = ["cosine", "jaccard", "hamming"] as const;
@@ -33,23 +33,27 @@ export type SimilarityTaskOutput = {
   score: number[];
 };
 
-export class SimilarityTask<
-  Input extends SimilarityTaskInput = SimilarityTaskInput,
-  Output extends SimilarityTaskOutput = SimilarityTaskOutput,
-  Config extends JobQueueTaskConfig = JobQueueTaskConfig,
-> extends Task<Input, Output, Config> {
+type SimilarityTaskInputReplicate = ConvertAllToOptionalArray<SimilarityTaskInput>;
+type SimilarityTaskOutputReplicate = ConvertAllToOptionalArray<SimilarityTaskOutput>;
+
+export class SimilarityTask extends RunOrReplicateTask<
+  SimilarityTaskInputReplicate,
+  SimilarityTaskOutputReplicate,
+  JobQueueTaskConfig
+> {
   static readonly type = "SimilarityTask";
   public static inputs: TaskInputDefinition[] = [
     {
       id: "input",
       name: "Inputs",
       valueType: "vector",
-      isArray: true,
+      isArray: "replicate",
     },
     {
       id: "query",
       name: "Query",
       valueType: "vector",
+      isArray: "replicate",
     },
     {
       id: "k",
@@ -57,12 +61,14 @@ export class SimilarityTask<
       valueType: "number",
       defaultValue: 10,
       optional: true,
+      isArray: "replicate",
     },
     {
       id: "similarity",
       name: "Similarity",
       valueType: "similarity_fn",
       defaultValue: "cosine",
+      isArray: "replicate",
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
@@ -132,49 +138,46 @@ export class SimilarityTask<
         return true;
       }
       default:
-        return super.validateInputItem(input as Partial<Input>, inputId);
+        return super.validateInputItem(input, inputId);
     }
   }
 
-  async executeReactive() {
-    const query = this.runInputData.query as ElVector<Float32Array>;
+  async executeReactive(input: SimilarityTaskInput, output: SimilarityTaskOutput) {
+    const query = input.query as ElVector<Float32Array>;
     let similarities = [];
     const fns = { cosine_similarity };
-    const fnName = (this.runInputData.similarity + "_similarity") as keyof typeof fns;
+    const fnName = (input.similarity + "_similarity") as keyof typeof fns;
     const fn = fns[fnName];
 
-    for (const embedding of this.runInputData.input) {
+    for (const embedding of input.input) {
       similarities.push({
         similarity: fn(embedding, query),
         embedding,
       });
     }
-    similarities = similarities
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, this.runInputData.k);
+    similarities = similarities.sort((a, b) => b.similarity - a.similarity).slice(0, input.k);
 
-    const output = similarities.map((s) => s.embedding) as ElVector<AnyNumberArray>[];
-    const score = similarities.map((s) => s.similarity) as number[];
-    this.runOutputData = {
-      output,
-      score,
-    } as Output;
-    return this.runOutputData;
+    const outputs = similarities.map((s) => s.embedding) as ElVector<AnyNumberArray>[];
+    const scores = similarities.map((s) => s.similarity) as number[];
+    output.output = outputs;
+    output.score = scores;
+    return output;
   }
 }
+
 TaskRegistry.registerTask(SimilarityTask);
 
-export const Similarity = (input: SimilarityTaskInput) => {
-  // if (Array.isArray(input.input) || Array.isArray(input.query)) {
-  //   return new SimilarityCompoundTask(input).run();
-  // } else {
-  return new SimilarityTask(input as SimilarityTaskInput).run();
-  // }
+export const Similarity = (input: SimilarityTaskInputReplicate, config?: JobQueueTaskConfig) => {
+  return new SimilarityTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    Similarity: CreateWorkflow<SimilarityTaskInput, SimilarityTaskOutput, JobQueueTaskConfig>;
+    Similarity: CreateWorkflow<
+      SimilarityTaskInputReplicate,
+      SimilarityTaskOutputReplicate,
+      JobQueueTaskConfig
+    >;
   }
 }
 

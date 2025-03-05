@@ -6,16 +6,14 @@
 //    *******************************************************************************
 
 import {
-  ConvertAllToArrays,
-  ConvertSomeToOptionalArray,
+  CreateWorkflow,
+  JobQueueTaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
-  arrayTaskFactory,
   TaskRegistry,
-  JobQueueTaskConfig,
   Workflow,
-  CreateWorkflow,
 } from "@ellmers/task-graph";
+import { ConvertAllToOptionalArray } from "@ellmers/util";
 import { AiTask } from "./base/AiTask";
 import { model_rewriting } from "./base/TaskIOTypes";
 
@@ -27,12 +25,16 @@ export type TextRewriterTaskInput = {
 export type TextRewriterTaskOutput = {
   text: string;
 };
+type TextRewriterTaskInputReplicate = ConvertAllToOptionalArray<TextRewriterTaskInput>;
+type TextRewriterTaskOutputReplicate = ConvertAllToOptionalArray<TextRewriterTaskOutput>;
 
 /**
  * This is a special case of text generation that takes a prompt and text to rewrite
  */
-
-export class TextRewriterTask extends AiTask<TextRewriterTaskInput, TextRewriterTaskOutput> {
+export class TextRewriterTask extends AiTask<
+  TextRewriterTaskInputReplicate,
+  TextRewriterTaskOutputReplicate
+> {
   public static type = "TextRewriterTask";
   public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
@@ -40,54 +42,48 @@ export class TextRewriterTask extends AiTask<TextRewriterTaskInput, TextRewriter
       id: "text",
       name: "Text",
       valueType: "text",
+      isArray: "replicate",
     },
     {
       id: "prompt",
       name: "Prompt",
       valueType: "text",
+      isArray: "replicate",
     },
     {
       id: "model",
       name: "Model",
       valueType: "model_rewriting",
+      isArray: "replicate",
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
-    { id: "text", name: "Text", valueType: "text" },
+    { id: "text", name: "Text", valueType: "text", isArray: "replicate" },
   ] as const;
 }
 TaskRegistry.registerTask(TextRewriterTask);
 
-type TextRewriterCompoundTaskOutput = ConvertAllToArrays<TextRewriterTaskOutput>;
-
-type TextRewriterCompoundTaskInput = ConvertSomeToOptionalArray<
-  TextRewriterTaskInput,
-  "model" | "text" | "prompt"
->;
-export const TextRewriterCompoundTask = arrayTaskFactory<
-  TextRewriterCompoundTaskInput,
-  TextRewriterCompoundTaskOutput,
-  TextRewriterTaskInput,
-  TextRewriterTaskOutput,
-  JobQueueTaskConfig
->(TextRewriterTask, ["model", "text", "prompt"]);
-
-export const TextRewriter = (input: TextRewriterCompoundTaskInput) => {
-  if (Array.isArray(input.model) || Array.isArray(input.text) || Array.isArray(input.prompt)) {
-    return new TextRewriterCompoundTask(input).run();
-  } else {
-    return new TextRewriterTask(input as TextRewriterTaskInput).run();
-  }
+/**
+ * Convenience function to run text rewriter tasks.
+ * Creates and executes a TextRewriterCompoundTask with the provided input.
+ * @param input The input parameters for text rewriting (text, prompt, and model)
+ * @returns Promise resolving to the rewritten text output(s)
+ */
+export const TextRewriter = (
+  input: TextRewriterTaskInputReplicate,
+  config?: JobQueueTaskConfig
+) => {
+  return new TextRewriterTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
     TextRewriter: CreateWorkflow<
-      TextRewriterCompoundTaskInput,
-      TextRewriterCompoundTaskOutput,
+      TextRewriterTaskInputReplicate,
+      TextRewriterTaskOutputReplicate,
       JobQueueTaskConfig
     >;
   }
 }
 
-Workflow.prototype.TextRewriter = CreateWorkflow(TextRewriterCompoundTask);
+Workflow.prototype.TextRewriter = CreateWorkflow(TextRewriterTask);

@@ -14,6 +14,28 @@ export async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Takes an array of objects and collects values for each property into arrays
+ * @param input Array of objects to process
+ * @returns Object with arrays of values for each property
+ */
+export function collectPropertyValues<Input>(input: Input[]): { [K in keyof Input]: Input[K][] } {
+  const output = {} as { [K in keyof Input]: Input[K][] };
+
+  (input || []).forEach((item) => {
+    Object.keys(item as object).forEach((key) => {
+      const value = item[key as keyof Input];
+      if (output[key as keyof Input]) {
+        output[key as keyof Input].push(value);
+      } else {
+        output[key as keyof Input] = [value];
+      }
+    });
+  });
+
+  return output;
+}
+
 export function toSQLiteTimestamp(date: Date | null | undefined) {
   if (!date) return null;
   const pad = (number: number) => (number < 10 ? "0" + number : number);

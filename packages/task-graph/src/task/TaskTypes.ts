@@ -93,7 +93,7 @@ export type TaskInputDefinition = {
   readonly valueType: string;
 
   /** Whether this input accepts an array of values */
-  readonly isArray?: boolean;
+  readonly isArray?: boolean | "replicate";
 
   /** Default value for this input */
   readonly defaultValue?: any;
@@ -116,7 +116,7 @@ export type TaskOutputDefinition = {
   readonly valueType: string;
 
   /** Whether this output produces an array of values */
-  readonly isArray?: boolean;
+  readonly isArray?: boolean | "replicate";
 };
 
 /** Type for task ID */

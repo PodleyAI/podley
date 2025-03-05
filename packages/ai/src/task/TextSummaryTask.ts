@@ -9,15 +9,13 @@ import {
   Workflow,
   CreateWorkflow,
   TaskRegistry,
-  ConvertAllToArrays,
-  ConvertSomeToOptionalArray,
   TaskInputDefinition,
   TaskOutputDefinition,
-  arrayTaskFactory,
   JobQueueTaskConfig,
 } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
 import { model_summarization } from "./base/TaskIOTypes";
+import { ConvertAllToOptionalArray } from "@ellmers/util";
 
 export type TextSummaryTaskInput = {
   text: string;
@@ -26,12 +24,17 @@ export type TextSummaryTaskInput = {
 export type TextSummaryTaskOutput = {
   text: string;
 };
+type TextSummaryTaskInputReplicate = ConvertAllToOptionalArray<TextSummaryTaskInput>;
+type TextSummaryTaskOutputReplicate = ConvertAllToOptionalArray<TextSummaryTaskOutput>;
 
 /**
  * This summarizes a piece of text
  */
 
-export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTaskOutput> {
+export class TextSummaryTask extends AiTask<
+  TextSummaryTaskInputReplicate,
+  TextSummaryTaskOutputReplicate
+> {
   public static type = "TextSummaryTask";
   public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
@@ -39,56 +42,42 @@ export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTas
       id: "text",
       name: "Text",
       valueType: "text",
+      isArray: "replicate",
     },
     {
       id: "model",
       name: "Model",
       valueType: "model_summarization",
+      isArray: "replicate",
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
-    { id: "text", name: "Text", valueType: "text" },
+    { id: "text", name: "Text", valueType: "text", isArray: "replicate" },
   ] as const;
-  constructor(input: TextSummaryTaskInput, config: JobQueueTaskConfig) {
-    super(input, config);
-  }
 }
 TaskRegistry.registerTask(TextSummaryTask);
 
-type TextSummaryCompoundTaskOutput = ConvertAllToArrays<TextSummaryTaskOutput>;
-
-type TextSummaryCompoundTaskInput = ConvertSomeToOptionalArray<
-  TextSummaryTaskInput,
-  "model" | "text"
->;
-export const TextSummaryCompoundTask = arrayTaskFactory<
-  TextSummaryCompoundTaskInput,
-  TextSummaryCompoundTaskOutput,
-  TextSummaryTaskInput,
-  TextSummaryTaskOutput,
-  JobQueueTaskConfig
->(TextSummaryTask, ["model", "text"]);
-
-export const TextSummary = (
-  input: TextSummaryCompoundTaskInput,
-  config: JobQueueTaskConfig = {}
+/**
+ * Convenience function to run text summary tasks.
+ * Creates and executes a text summary task with the provided input.
+ * @param input The input parameters for text summary (text and model)
+ * @returns Promise resolving to the summarized text output(s)
+ */
+export const TextSummary = async (
+  input: TextSummaryTaskInputReplicate,
+  config?: JobQueueTaskConfig
 ) => {
-  if (Array.isArray(input.model) || Array.isArray(input.text)) {
-    return new TextSummaryCompoundTask(input, config).run();
-  } else {
-    // ts not getting that input.text is not an array
-    return new TextSummaryTask(input as TextSummaryTaskInput, config).run();
-  }
+  return new TextSummaryTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
     TextSummary: CreateWorkflow<
-      TextSummaryCompoundTaskInput,
-      TextSummaryCompoundTaskOutput,
+      TextSummaryTaskInputReplicate,
+      TextSummaryTaskOutputReplicate,
       JobQueueTaskConfig
     >;
   }
 }
 
-Workflow.prototype.TextSummary = CreateWorkflow(TextSummaryCompoundTask);
+Workflow.prototype.TextSummary = CreateWorkflow(TextSummaryTask);

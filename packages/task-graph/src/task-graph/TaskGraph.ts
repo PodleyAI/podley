@@ -12,7 +12,6 @@ import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
 import { TaskGraphRunner } from "./TaskGraphRunner";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
-import { IRunConfig } from "../task/ITask";
 
 /**
  * Configuration for running a task graph

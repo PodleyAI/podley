@@ -6,18 +6,17 @@
 //    *******************************************************************************
 
 import {
-  ConvertAllToArrays,
-  ConvertSomeToOptionalArray,
+  arrayTaskFactory,
+  CreateWorkflow,
+  JobQueueTaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
-  arrayTaskFactory,
   TaskRegistry,
-  JobQueueTaskConfig,
   Workflow,
-  CreateWorkflow,
 } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
 import { model_generation } from "./base/TaskIOTypes";
+import { ConvertAllToOptionalArray } from "@ellmers/util";
 
 export type TextGenerationTaskInput = {
   prompt: string;
@@ -26,11 +25,16 @@ export type TextGenerationTaskInput = {
 export type TextGenerationTaskOutput = {
   text: string;
 };
+type TextGenerationTaskInputReplicate = ConvertAllToOptionalArray<TextGenerationTaskInput>;
+type TextGenerationTaskOutputReplicate = ConvertAllToOptionalArray<TextGenerationTaskOutput>;
 
 /**
  * This generates text from a prompt
  */
-export class TextGenerationTask extends AiTask<TextGenerationTaskInput, TextGenerationTaskOutput> {
+export class TextGenerationTask extends AiTask<
+  TextGenerationTaskInputReplicate,
+  TextGenerationTaskOutputReplicate
+> {
   public static type = "TextGenerationTask";
   public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
@@ -38,37 +42,20 @@ export class TextGenerationTask extends AiTask<TextGenerationTaskInput, TextGene
       id: "prompt",
       name: "Prompt",
       valueType: "text",
+      isArray: "replicate",
     },
     {
       id: "model",
       name: "Model",
       valueType: "model_generation",
+      isArray: "replicate",
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
-    { id: "text", name: "Text", valueType: "text" },
+    { id: "text", name: "Text", valueType: "text", isArray: "replicate" },
   ] as const;
 }
 TaskRegistry.registerTask(TextGenerationTask);
-
-type TextGenerationCompoundOutput = ConvertAllToArrays<TextGenerationTaskOutput>;
-
-type TextGenerationCompoundTaskInput = ConvertSomeToOptionalArray<
-  TextGenerationTaskInput,
-  "model" | "prompt"
->;
-
-/**
- * Factory-generated task class for handling batch text generation operations.
- * Created using arrayTaskFactory to support processing multiple prompts/models simultaneously.
- */
-export const TextGenerationCompoundTask = arrayTaskFactory<
-  TextGenerationCompoundTaskInput,
-  TextGenerationCompoundOutput,
-  TextGenerationTaskInput,
-  TextGenerationTaskOutput,
-  JobQueueTaskConfig
->(TextGenerationTask, ["model", "prompt"]);
 
 /**
  * Convenience function to run text generation tasks.
@@ -76,22 +63,21 @@ export const TextGenerationCompoundTask = arrayTaskFactory<
  * @param input The input parameters for text generation (prompts and models)
  * @returns Promise resolving to the generated text output(s)
  */
-export const TextGeneration = (input: TextGenerationCompoundTaskInput) => {
-  if (Array.isArray(input.model) || Array.isArray(input.prompt)) {
-    return new TextGenerationCompoundTask(input).run();
-  } else {
-    return new TextGenerationTask(input as TextGenerationTaskInput).run();
-  }
+export const TextGeneration = (
+  input: TextGenerationTaskInputReplicate,
+  config?: JobQueueTaskConfig
+) => {
+  return new TextGenerationTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
     TextGeneration: CreateWorkflow<
-      TextGenerationCompoundTaskInput,
-      TextGenerationCompoundOutput,
+      TextGenerationTaskInputReplicate,
+      TextGenerationTaskOutputReplicate,
       JobQueueTaskConfig
     >;
   }
 }
 
-Workflow.prototype.TextGeneration = CreateWorkflow(TextGenerationCompoundTask);
+Workflow.prototype.TextGeneration = CreateWorkflow(TextGenerationTask);

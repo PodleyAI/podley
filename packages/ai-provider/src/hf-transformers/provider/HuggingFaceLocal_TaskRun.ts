@@ -136,12 +136,12 @@ function generateProgressCallback(job: AiJob) {
 
 export async function HuggingFaceLocal_DownloadRun(
   job: AiJob,
-  runInputData: DownloadModelTaskInput,
+  input: DownloadModelTaskInput,
   signal?: AbortSignal
 ) {
-  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
-    throw `Model ${runInputData.model} not found`;
+    throw `Model ${input.model} not found`;
   }
   await getPipeline(job, model, { abort_signal: signal });
   return {
@@ -158,12 +158,12 @@ export async function HuggingFaceLocal_DownloadRun(
  */
 export async function HuggingFaceLocal_EmbeddingRun(
   job: AiJob,
-  runInputData: TextEmbeddingTaskInput,
+  input: TextEmbeddingTaskInput,
   signal?: AbortSignal
 ): Promise<TextEmbeddingTaskOutput> {
-  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
-    throw `Model ${runInputData.model} not found`;
+    throw `Model ${input.model} not found`;
   }
   if (signal?.aborted) {
     throw new PermanentJobError("Embedding run aborted");
@@ -174,7 +174,7 @@ export async function HuggingFaceLocal_EmbeddingRun(
   if (signal?.aborted) {
     throw new PermanentJobError("Embedding run aborted");
   }
-  const hfVector = await generateEmbedding(runInputData.text, {
+  const hfVector = await generateEmbedding(input.text, {
     pooling: "mean",
     normalize: model.normalize,
     ...(signal ? { abort_signal: signal } : {}),
@@ -183,7 +183,7 @@ export async function HuggingFaceLocal_EmbeddingRun(
   if (hfVector.size !== model.nativeDimensions) {
     console.warn(
       `HuggingFaceLocal Embedding vector length does not match model dimensions v${hfVector.size} != m${model.nativeDimensions}`,
-      runInputData,
+      input,
       hfVector
     );
     throw `HuggingFaceLocal Embedding vector length does not match model dimensions v${hfVector.size} != m${model.nativeDimensions}`;
@@ -199,12 +199,12 @@ export async function HuggingFaceLocal_EmbeddingRun(
  */
 export async function HuggingFaceLocal_TextGenerationRun(
   job: AiJob,
-  runInputData: TextGenerationTaskInput,
+  input: TextGenerationTaskInput,
   signal?: AbortSignal
 ): Promise<TextGenerationTaskOutput> {
-  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
-    throw `Model ${runInputData.model} not found`;
+    throw `Model ${input.model} not found`;
   }
   if (signal?.aborted) {
     throw new PermanentJobError("Text generation run aborted");
@@ -222,7 +222,7 @@ export async function HuggingFaceLocal_TextGenerationRun(
     ...(signal ? { abort_signal: signal } : {}),
   });
 
-  let results = await generateText(runInputData.prompt, {
+  let results = await generateText(input.prompt, {
     streamer,
   } as any);
   if (!Array.isArray(results)) {
@@ -246,12 +246,12 @@ export async function HuggingFaceLocal_TextGenerationRun(
  */
 export async function HuggingFaceLocal_TextTranslationRun(
   job: AiJob,
-  runInputData: TextTranslationTaskInput,
+  input: TextTranslationTaskInput,
   signal?: AbortSignal
 ): Promise<Partial<TextTranslationTaskOutput>> {
-  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
-    throw `Model ${runInputData.model} not found`;
+    throw `Model ${input.model} not found`;
   }
   if (signal?.aborted) {
     throw new PermanentJobError("Text translation run aborted");
@@ -269,9 +269,9 @@ export async function HuggingFaceLocal_TextTranslationRun(
     ...(signal ? { abort_signal: signal } : {}),
   });
 
-  let results = await translate(runInputData.text, {
-    src_lang: runInputData.source_lang,
-    tgt_lang: runInputData.target_lang,
+  let results = await translate(input.text, {
+    src_lang: input.source_lang,
+    tgt_lang: input.target_lang,
     streamer,
   } as any);
   if (!Array.isArray(results)) {
@@ -289,12 +289,12 @@ export async function HuggingFaceLocal_TextTranslationRun(
  */
 export async function HuggingFaceLocal_TextRewriterRun(
   job: AiJob,
-  runInputData: TextRewriterTaskInput,
+  input: TextRewriterTaskInput,
   signal?: AbortSignal
 ): Promise<TextRewriterTaskOutput> {
-  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
-    throw `Model ${runInputData.model} not found`;
+    throw `Model ${input.model} not found`;
   }
   if (signal?.aborted) {
     throw new PermanentJobError("Text rewriter run aborted");
@@ -313,7 +313,7 @@ export async function HuggingFaceLocal_TextRewriterRun(
   });
 
   // This lib doesn't support this kind of rewriting with a separate prompt vs text
-  const promptedtext = (runInputData.prompt ? runInputData.prompt + "\n" : "") + runInputData.text;
+  const promptedtext = (input.prompt ? input.prompt + "\n" : "") + input.text;
   let results = await generateText(promptedtext, {
     streamer,
     ...(signal ? { abort_signal: signal } : {}),
@@ -341,12 +341,12 @@ export async function HuggingFaceLocal_TextRewriterRun(
 
 export async function HuggingFaceLocal_TextSummaryRun(
   job: AiJob,
-  runInputData: TextSummaryTaskInput,
+  input: TextSummaryTaskInput,
   signal?: AbortSignal
 ): Promise<TextSummaryTaskOutput> {
-  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
-    throw `Model ${runInputData.model} not found`;
+    throw `Model ${input.model} not found`;
   }
   if (signal?.aborted) {
     throw new PermanentJobError("Text summary run aborted");
@@ -364,7 +364,7 @@ export async function HuggingFaceLocal_TextSummaryRun(
     ...(signal ? { abort_signal: signal } : {}),
   });
 
-  let results = await generateSummary(runInputData.text, {
+  let results = await generateSummary(input.text, {
     streamer,
   } as any);
   if (!Array.isArray(results)) {
@@ -382,12 +382,12 @@ export async function HuggingFaceLocal_TextSummaryRun(
  */
 export async function HuggingFaceLocal_TextQuestionAnswerRun(
   job: AiJob,
-  runInputData: TextQuestionAnswerTaskInput,
+  input: TextQuestionAnswerTaskInput,
   signal?: AbortSignal
 ): Promise<TextQuestionAnswerTaskOutput> {
-  const model = await getGlobalModelRepository().findByName(runInputData.model);
+  const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
-    throw `Model ${runInputData.model} not found`;
+    throw `Model ${input.model} not found`;
   }
   if (signal?.aborted) {
     throw new PermanentJobError("Text question answer run aborted");
@@ -405,7 +405,7 @@ export async function HuggingFaceLocal_TextQuestionAnswerRun(
     ...(signal ? { abort_signal: signal } : {}),
   });
 
-  let results = await generateAnswer(runInputData.question, runInputData.context, {
+  let results = await generateAnswer(input.question, input.context, {
     streamer,
   } as any);
   if (!Array.isArray(results)) {

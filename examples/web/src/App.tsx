@@ -68,13 +68,12 @@ workflow.run = async () => {
     console.log("Task graph complete.");
     return result;
   } catch (error) {
-    console.error("Task graph error:", error);
+    console.error("Task graph error:", error.message, error.errors, error);
     throw error;
   }
 };
 
 const taskGraphRepo = new IndexedDbTaskGraphRepository();
-const graph = await taskGraphRepo.getTaskGraph("default");
 const resetGraph = () => {
   workflow
     .reset()
@@ -83,8 +82,8 @@ const resetGraph = () => {
       text: "The quick brown fox jumps over the lazy dog.",
       prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
     })
+    .rename("model_translation", "model", -2)
     .TextTranslation({
-      model: "onnx:Xenova/m2m100_418M:q8",
       source_lang: "en",
       target_lang: "es",
     })
@@ -93,6 +92,14 @@ const resetGraph = () => {
     .DebugLog({ log_level: "info" });
   taskGraphRepo.saveTaskGraph("default", workflow.graph);
 };
+let graph: TaskGraph | undefined;
+try {
+  graph = await taskGraphRepo.getTaskGraph("default");
+} catch (error) {
+  console.error("Task graph loading error, going to reset:", error.message);
+  resetGraph();
+  graph = workflow.graph;
+}
 
 if (graph) {
   workflow.graph = graph;
@@ -168,7 +175,11 @@ export const App = () => {
 
   const setNewJson = useCallback((json: string) => {
     const task = new JsonTask({ json });
-    workflow.graph = task.subGraph;
+    if (task.hasChildren()) {
+      workflow.graph = task.subGraph;
+    } else {
+      workflow.graph = new TaskGraph();
+    }
     setJsonData(json);
   }, []);
 

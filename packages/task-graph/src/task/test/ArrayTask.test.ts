@@ -7,7 +7,6 @@
 
 import { describe, expect, test } from "bun:test";
 import { TaskGraph } from "../../task-graph/TaskGraph";
-import { TaskGraphRunner } from "../../task-graph/TaskGraphRunner";
 import { ITask } from "../ITask";
 import { TaskError } from "../TaskError";
 import { TaskStatus } from "../TaskTypes";

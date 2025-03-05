@@ -90,6 +90,7 @@ export interface ITaskCompound {
   get isCompound(): boolean; // this gets local access for static isCompound property
   subGraph: TaskGraph | null;
   regenerateGraph(): void;
+  hasChildren(): boolean;
 }
 
 /**
