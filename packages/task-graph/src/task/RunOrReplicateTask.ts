@@ -48,22 +48,17 @@ export class RunOrReplicateTask<
   public static readonly isCompound = true;
 
   /**
-   * Input definitions for this task
-   * Note: Subclasses should override this with their own specific inputs
+   * Constructor for the RunOrReplicateTask class
+   * @param defaultInputs - The default input values for the task
+   * @param config - The configuration for the task
    */
-  public static inputs: TaskInputDefinition[] = [];
-
-  /**
-   * Output definitions for this task
-   * Note: Subclasses should override this with their own specific outputs
-   */
-  public static outputs: TaskOutputDefinition[] = [];
-
   constructor(defaultInputs?: Partial<Input>, config?: Config) {
     super(defaultInputs, config);
     if (this.execute === RunOrReplicateTask.prototype.execute) {
       // @ts-ignore
-      this.execute = (input: Input, config: IExecuteConfig) => undefined;
+      this.execute = (input: Input, config: IExecuteConfig) => {
+        return this.executeReactive(input, this.runOutputData);
+      };
     } else {
       // @ts-ignore
       this.executeDirectly = this.execute;
@@ -179,17 +174,22 @@ export class RunOrReplicateTask<
     return fixedOutput;
   }
 
-  private async executeLocally(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
+  private async executeWithoutGraph(
+    input: Input,
+    config: IExecuteConfig
+  ): Promise<Output | undefined> {
     // @ts-ignore
     if (this.executeDirectly) {
       // @ts-ignore
       const result = await this.executeDirectly(this.runInputData, config);
-      this.runOutputData = result;
+      if (result !== undefined) {
+        this.runOutputData = result;
+      }
     }
     // @ts-ignore
     if (this.executeReactiveDirectly) {
       // @ts-ignore
-      return this.executeReactiveDirectly(this.runInputData, config);
+      return this.executeReactiveDirectly(this.runInputData, this.runOutputData);
     } else {
       return this.runOutputData;
     }
@@ -211,9 +211,10 @@ export class RunOrReplicateTask<
    */
   protected async execute(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
     const hasArrayInputs = this.hasChildren();
+    debugger;
     if (!hasArrayInputs) {
       this.runInputData = this.fixInput(input);
-      return this.executeLocally(this.runInputData, config);
+      return this.executeWithoutGraph(this.runInputData, config);
     }
     return this.executeGraph(input, config);
   }
@@ -222,6 +223,7 @@ export class RunOrReplicateTask<
    * Execute the task reactively
    */
   protected async executeReactive(input: Input, output: Output): Promise<Output | undefined> {
+    debugger;
     const hasArrayInputs = this.hasChildren();
     // If no array inputs, execute directly
     if (!hasArrayInputs) {

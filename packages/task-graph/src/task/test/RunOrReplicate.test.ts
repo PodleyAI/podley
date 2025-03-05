@@ -16,34 +16,40 @@ import {
 } from "../TaskTypes";
 import { describe, expect, spyOn, test } from "bun:test";
 import { TaskGraph } from "../../task-graph/TaskGraph";
+import { ConvertAllToOptionalArray } from "@ellmers/util";
 
 // Define our input and output types
 interface MultiplyInput extends TaskInput {
-  a: number | number[];
-  b: number | number[];
+  a: number;
+  b: number;
 }
 
 interface MultiplyOutput extends TaskOutput {
-  result: number | number[];
+  result: number;
 }
 
 /**
  * Create a task that multiplies two numbers
  * This is a direct subclass of RunOrReplicate
  */
-class MultiplyRunTask extends RunOrReplicateTask<MultiplyInput, MultiplyOutput> {
+class MultiplyRunTask extends RunOrReplicateTask<
+  ConvertAllToOptionalArray<MultiplyInput>,
+  ConvertAllToOptionalArray<MultiplyOutput>
+> {
   public static readonly inputs: readonly TaskInputDefinition[] = [
     {
       id: "a",
       name: "First Number",
       valueType: "number",
       isArray: "replicate", // This can be a single number or an array of numbers
+      defaultValue: 0,
     },
     {
       id: "b",
       name: "Second Number",
       valueType: "number",
       isArray: "replicate", // This can be a single number or an array of numbers
+      defaultValue: 0,
     },
   ];
   public static readonly outputs: readonly TaskOutputDefinition[] = [
@@ -57,7 +63,7 @@ class MultiplyRunTask extends RunOrReplicateTask<MultiplyInput, MultiplyOutput> 
   protected async execute(input: MultiplyInput, config: IExecuteConfig): Promise<MultiplyOutput> {
     // Simple multiplication - at this point, we know the inputs are not arrays
     return {
-      result: (input.a as number) * (input.b as number),
+      result: input.a * input.b,
     };
   }
 }
@@ -65,19 +71,24 @@ class MultiplyRunTask extends RunOrReplicateTask<MultiplyInput, MultiplyOutput> 
  * Create a task that multiplies two numbers
  * This is a direct subclass of RunOrReplicate
  */
-class MultiplyRunReactiveTask extends RunOrReplicateTask<MultiplyInput, MultiplyOutput> {
+class MultiplyRunReactiveTask extends RunOrReplicateTask<
+  ConvertAllToOptionalArray<MultiplyInput>,
+  ConvertAllToOptionalArray<MultiplyOutput>
+> {
   public static readonly inputs: readonly TaskInputDefinition[] = [
     {
       id: "a",
       name: "First Number",
       valueType: "number",
       isArray: "replicate", // This can be a single number or an array of numbers
+      defaultValue: 0,
     },
     {
       id: "b",
       name: "Second Number",
       valueType: "number",
       isArray: "replicate", // This can be a single number or an array of numbers
+      defaultValue: 0,
     },
   ];
   public static readonly outputs: readonly TaskOutputDefinition[] = [
@@ -94,22 +105,25 @@ class MultiplyRunReactiveTask extends RunOrReplicateTask<MultiplyInput, Multiply
   ): Promise<MultiplyOutput> {
     // Simple multiplication - at this point, we know the inputs are not arrays
     return {
-      result: (input.a as number) * (input.b as number),
+      result: input.a * input.b,
     };
   }
 }
 
 interface SquareInput extends TaskInput {
-  a: number | number[];
+  a: number;
 }
 interface SquareOutput extends TaskOutput {
-  result: number | number[];
+  result: number;
 }
 /**
  * Create a task that squares a number
  * This is a direct subclass of RunOrReplicate
  */
-class SquareRunTask extends RunOrReplicateTask<SquareInput, SquareOutput> {
+class SquareRunTask extends RunOrReplicateTask<
+  ConvertAllToOptionalArray<SquareInput>,
+  ConvertAllToOptionalArray<SquareOutput>
+> {
   public static readonly inputs: readonly TaskInputDefinition[] = [
     {
       id: "a",
@@ -129,13 +143,16 @@ class SquareRunTask extends RunOrReplicateTask<SquareInput, SquareOutput> {
   ];
 
   protected async execute(input: SquareInput, config: IExecuteConfig): Promise<SquareOutput> {
-    // Simple multiplication - at this point, we know the inputs are not arrays
+    // Simple square - at this point, we know the inputs are not arrays
     return {
-      result: (input.a as number) * (input.a as number),
+      result: input.a * input.a,
     };
   }
 }
-class SquareRunReactiveTask extends RunOrReplicateTask<SquareInput, SquareOutput> {
+class SquareRunReactiveTask extends RunOrReplicateTask<
+  ConvertAllToOptionalArray<SquareInput>,
+  ConvertAllToOptionalArray<SquareOutput>
+> {
   public static readonly inputs: readonly TaskInputDefinition[] = [
     {
       id: "a",
@@ -155,15 +172,15 @@ class SquareRunReactiveTask extends RunOrReplicateTask<SquareInput, SquareOutput
   ];
 
   protected async executeReactive(input: SquareInput, output: SquareOutput): Promise<SquareOutput> {
-    // Simple multiplication - at this point, we know the inputs are not arrays
+    // Simple square - at this point, we know the inputs are not arrays
     return {
-      result: (input.a as number) * (input.a as number),
+      result: input.a * input.a,
     };
   }
 }
 
 describe("RunOrReplicate", () => {
-  test.only("in task mode run plain", async () => {
+  test("MultiplyRunTask in task mode run plain", async () => {
     const task = new MultiplyRunTask({
       a: 4,
       b: 5,
@@ -175,7 +192,7 @@ describe("RunOrReplicate", () => {
     expect(executeGraphSpy).not.toHaveBeenCalled();
   });
 
-  test("in task mode run array", async () => {
+  test("MultiplyRunTask in task mode run array", async () => {
     const task = new MultiplyRunTask({
       a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       b: 1,
@@ -186,7 +203,7 @@ describe("RunOrReplicate", () => {
     expect(results).toEqual({ result: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] });
     expect(executeGraphSpy).toHaveBeenCalled();
   });
-  test("in task mode run array x array", async () => {
+  test("MultiplyRunTask in task mode run array x array", async () => {
     const task = new MultiplyRunTask({
       a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       b: [1, 2],
@@ -196,7 +213,7 @@ describe("RunOrReplicate", () => {
       result: [0, 0, 1, 2, 2, 4, 3, 6, 4, 8, 5, 10, 6, 12, 7, 14, 8, 16, 9, 18, 10, 20],
     });
   });
-  test("in task mode reactive run", async () => {
+  test("MultiplyRunTask in task mode reactive run", async () => {
     const task = new MultiplyRunTask({
       a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       b: 10,
@@ -212,7 +229,35 @@ describe("RunOrReplicate", () => {
     }
   });
 
-  test("in task mode reactive runReactive", async () => {
+  test("MultiplyRunReactiveTask in task mode reactive run", async () => {
+    const task = new MultiplyRunReactiveTask({
+      a: 2,
+      b: 10,
+    });
+    debugger;
+    const results = await task.run();
+    expect(results).toEqual({ result: 20 });
+  });
+
+  test("MultiplyRunReactiveTask in task mode reactive runReactive", async () => {
+    const task = new MultiplyRunReactiveTask({
+      a: 2,
+      b: 10,
+    });
+    const results = await task.runReactive();
+    expect(results).toEqual({ result: 20 });
+  });
+
+  test("MultiplyRunReactiveTask in task mode reactive runReactive array", async () => {
+    const task = new MultiplyRunReactiveTask({
+      a: [2],
+      b: [10],
+    });
+    const results = await task.runReactive();
+    expect(results).toEqual({ result: [20] });
+  });
+
+  test("MultiplyRunReactiveTask in task mode reactive runReactive", async () => {
     const task = new MultiplyRunReactiveTask({
       a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       b: 10,
@@ -221,30 +266,37 @@ describe("RunOrReplicate", () => {
     expect(results).toEqual({ result: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100] });
   });
 
-  // test("in task mode reactive run with single", async () => {
-  //   const task = new TestSquareNonReactiveTask({ input: 5 });
-  //   const results = await task.run();
-  //   expect(results).toEqual({ output: 25 });
-  // });
+  test("SquareRunTask in task mode run with single", async () => {
+    const task = new SquareRunTask({ a: 5 });
+    const results = await task.run();
+    expect(results).toEqual({ result: 25 });
+  });
 
-  // test("in task mode reactive runReactive single", async () => {
-  //   const task = new TestSquareNonReactiveTask({ input: 5 });
-  //   const results = await task.runReactive();
-  //   expect(results).toEqual({} as TestSquareTaskOutput);
-  // });
+  test("SquareRunTask in task mode reactive run with single", async () => {
+    const task = new SquareRunTask({ a: 5 });
+    const results = await task.runReactive();
+    expect(results).toEqual({} as SquareOutput);
+  });
 
-  // test("in task mode non-reactive run", async () => {
-  //   const task = new TestSquareNonReactiveMultiInputTask(
-  //     {
-  //       input: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-  //     },
-  //     {
-  //       id: "task1",
-  //     }
-  //   );
-  //   const results = await task.run();
-  //   expect(results).toEqual({ result: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100] });
-  // });
+  test("SquareRunReactiveTask in task mode run with single", async () => {
+    const task = new SquareRunReactiveTask({ a: 5 });
+    const results = await task.run();
+    expect(results).toEqual({ result: 25 });
+  });
+
+  test("SquareRunReactiveTask in task mode reactive run with single", async () => {
+    const task = new SquareRunReactiveTask({ a: 5 });
+    const results = await task.runReactive();
+    expect(results).toEqual({ result: 25 } as SquareOutput);
+  });
+
+  test("in task mode non-reactive run", async () => {
+    const task = new SquareRunTask({
+      a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    });
+    const results = await task.run();
+    expect(results).toEqual({ result: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100] });
+  });
 
   test("in task mode non-reactive runReactive", async () => {
     const task = new SquareRunReactiveTask({

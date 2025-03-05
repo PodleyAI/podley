@@ -47,27 +47,27 @@ export class Task<
   /**
    * The type identifier for this task class
    */
-  public static readonly type: TaskTypeName = "Task";
+  public static type: TaskTypeName = "Task";
 
   /**
    * The category this task belongs to
    */
-  public static readonly category: string = "Hidden";
+  public static category: string = "Hidden";
 
   /**
    * Whether this task has side effects
    */
-  public static readonly sideeffects: boolean = false;
+  public static sideeffects: boolean = false;
 
   /**
    * Input definitions for this task
    */
-  public static readonly inputs: readonly TaskInputDefinition[] = [];
+  public static inputs: readonly TaskInputDefinition[] = [];
 
   /**
    * Output definitions for this task
    */
-  public static readonly outputs: readonly TaskOutputDefinition[] = [];
+  public static outputs: readonly TaskOutputDefinition[] = [];
 
   /**
    * Whether this task is a compound task (contains subtasks)
