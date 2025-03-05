@@ -6,29 +6,27 @@
 //    *******************************************************************************
 
 import {
-  Workflow,
   CreateWorkflow,
-  TaskRegistry,
-  ConvertAllToArrays,
-  ConvertSomeToOptionalArray,
-  arrayTaskFactory,
   JobQueueTaskConfig,
+  TaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
-  TaskConfig,
+  TaskRegistry,
+  Workflow,
 } from "@ellmers/task-graph";
+import { ConvertAllToOptionalArray } from "@ellmers/util";
 import { getGlobalModelRepository } from "../model/ModelRegistry";
-import { AiTask } from "./base/AiTask";
 import {
+  model,
+  model_classification,
   model_embedding,
   model_generation,
-  model,
   model_question_answering,
+  model_rewriting,
   model_summarization,
   model_translation,
-  model_classification,
-  model_rewriting,
 } from "./base/TaskIOTypes";
+import { AiTask } from "./base/AiTask";
 
 export type DownloadModelTaskInput = {
   model: string;
@@ -45,12 +43,19 @@ export type DownloadModelTaskOutput = {
   model_translation: model_translation;
   model_classification: model_classification;
 };
+type DownloadModelTaskInputReplicate = ConvertAllToOptionalArray<DownloadModelTaskInput>;
+type DownloadModelTaskOutputReplicate = ConvertAllToOptionalArray<DownloadModelTaskOutput>;
 
-export class DownloadModelTask<
-  Input extends DownloadModelTaskInput = DownloadModelTaskInput,
-  Output extends DownloadModelTaskOutput = DownloadModelTaskOutput,
-  Config extends JobQueueTaskConfig = JobQueueTaskConfig,
-> extends AiTask<Input, Output, Config> {
+/**
+ * Download a model from a remote source and cache it locally.
+ *
+ * @remarks
+ * This task has a side effect of downloading the model and caching it locally outside of the task system
+ */
+export class DownloadModelTask extends AiTask<
+  DownloadModelTaskInputReplicate,
+  DownloadModelTaskOutputReplicate
+> {
   public static type = "DownloadModelTask";
   public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
@@ -58,6 +63,7 @@ export class DownloadModelTask<
       id: "model",
       name: "Model",
       valueType: "model",
+      isArray: "replicate",
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
@@ -65,54 +71,64 @@ export class DownloadModelTask<
       id: "model",
       name: "Model",
       valueType: "model",
+      isArray: "replicate",
     },
     {
       id: "dimensions",
       name: "Dimensions",
       valueType: "number",
+      isArray: "replicate",
     },
     {
       id: "normalize",
       name: "Normalize",
       valueType: "boolean",
+      isArray: "replicate",
     },
     {
       id: "model_embedding",
       name: "",
       valueType: "model_embedding",
+      isArray: "replicate",
     },
     {
       id: "model_generation",
       name: "",
       valueType: "model_generation",
+      isArray: "replicate",
     },
     {
       id: "model_summarization",
       name: "",
       valueType: "model_summarization",
+      isArray: "replicate",
     },
     {
       id: "model_question_answering",
       name: "",
       valueType: "model_question_answering",
+      isArray: "replicate",
     },
     {
       id: "model_rewriting",
       name: "",
       valueType: "model_rewriting",
+      isArray: "replicate",
     },
     {
       id: "model_translation",
       name: "",
       valueType: "model_translation",
+      isArray: "replicate",
     },
     {
       id: "model_classification",
       name: "",
       valueType: "model_classification",
+      isArray: "replicate",
     },
   ] as const;
-  static sideeffects = true;
+  static sideeffects = true; // the download and its cache is a side effect of the task
 
   public files: { file: string; progress: number }[] = [];
 
@@ -146,70 +162,69 @@ export class DownloadModelTask<
     super.handleStart();
   }
 
-  async executeReactive(): Promise<Output> {
-    const model = await getGlobalModelRepository().findByName(this.runInputData.model);
+  async executeReactive(
+    input: DownloadModelTaskInput,
+    output: DownloadModelTaskOutput
+  ): Promise<DownloadModelTaskOutput> {
+    const model = await getGlobalModelRepository().findByName(input.model);
     if (model) {
       const tasks = (await getGlobalModelRepository().findTasksByModel(model.name)) || [];
       tasks.forEach((task) => {
-        // this.runOutputData[String(task).toLowerCase()] = model.name;
+        // output[String(task).toLowerCase()] = model.name;
       });
-      this.runOutputData.model = model.name;
-      this.runOutputData.dimensions = model.usingDimensions!;
-      this.runOutputData.normalize = model.normalize!;
+      output.model = model.name;
+      output.dimensions = model.usingDimensions!;
+      output.normalize = model.normalize!;
       if (tasks.includes("TextEmbeddingTask")) {
-        this.runOutputData.model_embedding = model.name;
+        output.model_embedding = model.name;
       }
       if (tasks.includes("TextGenerationTask")) {
-        this.runOutputData.model_generation = model.name;
+        output.model_generation = model.name;
       }
       if (tasks.includes("TextSummaryTask")) {
-        this.runOutputData.model_summarization = model.name;
+        output.model_summarization = model.name;
       }
       if (tasks.includes("TextQuestionAnswerTask")) {
-        this.runOutputData.model_question_answering = model.name;
+        output.model_question_answering = model.name;
       }
       if (tasks.includes("TextTranslationTask")) {
-        this.runOutputData.model_translation = model.name;
+        output.model_translation = model.name;
       }
       if (tasks.includes("TextRewriterTask")) {
-        this.runOutputData.model_rewriting = model.name;
+        output.model_rewriting = model.name;
       }
       if (tasks.includes("TextClassificationTask")) {
-        this.runOutputData.model_classification = model.name;
+        output.model_classification = model.name;
       }
     }
-    return this.runOutputData;
+
+    return output;
   }
 }
 
 TaskRegistry.registerTask(DownloadModelTask);
 
-type DownloadModelCompoundTaskInput = ConvertSomeToOptionalArray<DownloadModelTaskInput, "model">;
-type DownloadModelCompoundTaskOutput = ConvertAllToArrays<DownloadModelTaskOutput>;
-export const DownloadModelCompoundTask = arrayTaskFactory<
-  DownloadModelCompoundTaskInput,
-  DownloadModelCompoundTaskOutput,
-  DownloadModelTaskInput,
-  DownloadModelTaskOutput,
-  JobQueueTaskConfig
->(DownloadModelTask, ["model"]);
-
-export const DownloadModel = (input: DownloadModelCompoundTaskInput) => {
-  if (Array.isArray(input.model)) {
-    return new DownloadModelCompoundTask(input).run();
-  } else {
-    return new DownloadModelTask(input as DownloadModelTaskInput).run();
-  }
+/**
+ * Download a model from a remote source and cache it locally.
+ *
+ * @param input - Input containing model(s) to download
+ * @returns Promise resolving to the downloaded model(s)
+ */
+export const DownloadModel = (
+  input: DownloadModelTaskInputReplicate,
+  config?: JobQueueTaskConfig
+) => {
+  return new DownloadModelTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
     DownloadModel: CreateWorkflow<
-      DownloadModelCompoundTaskInput,
-      DownloadModelCompoundTaskOutput,
-      TaskConfig
+      DownloadModelTaskInputReplicate,
+      DownloadModelTaskOutputReplicate,
+      JobQueueTaskConfig
     >;
   }
 }
 
-Workflow.prototype.DownloadModel = CreateWorkflow(DownloadModelCompoundTask);
+Workflow.prototype.DownloadModel = CreateWorkflow(DownloadModelTask);

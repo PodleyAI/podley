@@ -6,19 +6,16 @@
 //    *******************************************************************************
 
 import {
-  ConvertAllToArrays,
-  ConvertSomeToOptionalArray,
+  CreateWorkflow,
+  JobQueueTaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
-  arrayTaskFactory,
   TaskRegistry,
-  JobQueueTaskConfig,
   Workflow,
-  CreateWorkflow,
 } from "@ellmers/task-graph";
+import { ConvertAllToOptionalArray } from "@ellmers/util";
 import { AiTask } from "./base/AiTask";
-import { AnyNumberArray, model_embedding } from "./base/TaskIOTypes";
-import { ElVector } from "./base/TaskIOTypes";
+import { AnyNumberArray, ElVector, model_embedding } from "./base/TaskIOTypes";
 
 export type TextEmbeddingTaskInput = {
   text: string;
@@ -27,6 +24,8 @@ export type TextEmbeddingTaskInput = {
 export type TextEmbeddingTaskOutput = {
   vector: ElVector<AnyNumberArray>;
 };
+type TextEmbeddingTaskInputReplicate = ConvertAllToOptionalArray<TextEmbeddingTaskInput>;
+type TextEmbeddingTaskOutputReplicate = ConvertAllToOptionalArray<TextEmbeddingTaskOutput>;
 
 /**
  * A task that generates vector embeddings for text using a specified embedding model.
@@ -35,11 +34,10 @@ export type TextEmbeddingTaskOutput = {
  *
  * @extends AiTask
  */
-export class TextEmbeddingTask<
-  Input extends TextEmbeddingTaskInput = TextEmbeddingTaskInput,
-  Output extends TextEmbeddingTaskOutput = TextEmbeddingTaskOutput,
-  Config extends JobQueueTaskConfig = JobQueueTaskConfig,
-> extends AiTask<Input, Output, Config> {
+export class TextEmbeddingTask extends AiTask<
+  TextEmbeddingTaskInputReplicate,
+  TextEmbeddingTaskOutputReplicate
+> {
   public static type = "TextEmbeddingTask";
   public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
@@ -47,55 +45,41 @@ export class TextEmbeddingTask<
       id: "text",
       name: "Text",
       valueType: "text",
+      isArray: "replicate",
     },
     {
       id: "model",
       name: "Model",
       valueType: "model_embedding",
+      isArray: "replicate",
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
-    { id: "vector", name: "Embedding", valueType: "vector" },
+    { id: "vector", name: "Embedding", valueType: "vector", isArray: "replicate" },
   ] as const;
 }
 TaskRegistry.registerTask(TextEmbeddingTask);
 
-type TextEmbeddingCompoundTaskOutput = ConvertAllToArrays<TextEmbeddingTaskOutput>;
-type TextEmbeddingCompoundTaskInput = ConvertSomeToOptionalArray<TextEmbeddingTaskInput, "model">;
-
 /**
- * A compound task factory that creates a task capable of processing multiple texts
- * and generating embeddings in parallel
+ * Convenience function to create and run a text embedding task.
+ * @param input - Input containing text(s) and model(s) for embedding
+ * @returns  Promise resolving to the generated embeddings
  */
-export const TextEmbeddingCompoundTask = arrayTaskFactory<
-  TextEmbeddingCompoundTaskInput,
-  TextEmbeddingCompoundTaskOutput,
-  TextEmbeddingTaskInput,
-  TextEmbeddingTaskOutput,
-  JobQueueTaskConfig
->(TextEmbeddingTask, ["model", "text"]);
-
-/**
- * Convenience function to create and run a TextEmbeddingCompoundTask
- * @param {TextEmbeddingCompoundTaskInput} input - Input containing text(s) and model(s) for embedding
- * @returns {Promise<TextEmbeddingCompoundTaskOutput>} Promise resolving to the generated embeddings
- */
-export const TextEmbedding = (input: TextEmbeddingCompoundTaskInput) => {
-  if (Array.isArray(input.model) || Array.isArray(input.text)) {
-    return new TextEmbeddingCompoundTask(input).run();
-  } else {
-    return new TextEmbeddingTask(input as TextEmbeddingTaskInput).run();
-  }
+export const TextEmbedding = async (
+  input: TextEmbeddingTaskInputReplicate,
+  config?: JobQueueTaskConfig
+) => {
+  return new TextEmbeddingTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
     TextEmbedding: CreateWorkflow<
-      TextEmbeddingCompoundTaskInput,
-      TextEmbeddingCompoundTaskOutput,
+      TextEmbeddingTaskInputReplicate,
+      TextEmbeddingTaskOutputReplicate,
       JobQueueTaskConfig
     >;
   }
 }
 
-Workflow.prototype.TextEmbedding = CreateWorkflow(TextEmbeddingCompoundTask);
+Workflow.prototype.TextEmbedding = CreateWorkflow(TextEmbeddingTask);

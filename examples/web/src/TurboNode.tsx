@@ -67,12 +67,12 @@ export const CompoundNode = ({ data }: NodeProps<Node<TurboNodeData>>) => {
           <Handle type="target" position={Position.Left} />
           <Handle type="source" position={Position.Right} />
           <div className="progress">
-            {data.progressItems?.map((item) => (
+            {/* {data.progressItems?.map((item) => (
               <React.Fragment key={item.id}>
                 <div className="bar" style={{ width: `${item.progress}%` }} />
                 <div className="subline">{item.text}</div>
               </React.Fragment>
-            ))}
+            ))} */}
           </div>
         </div>
       </div>

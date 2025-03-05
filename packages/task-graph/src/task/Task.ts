@@ -47,32 +47,32 @@ export class Task<
   /**
    * The type identifier for this task class
    */
-  public static readonly type: TaskTypeName = "Task";
+  public static type: TaskTypeName = "Task";
 
   /**
    * The category this task belongs to
    */
-  public static readonly category: string = "Hidden";
+  public static category: string = "Hidden";
 
   /**
    * Whether this task has side effects
    */
-  public static readonly sideeffects: boolean = false;
+  public static sideeffects: boolean = false;
 
   /**
    * Input definitions for this task
    */
-  public static readonly inputs: readonly TaskInputDefinition[] = [];
+  public static inputs: readonly TaskInputDefinition[] = [];
 
   /**
    * Output definitions for this task
    */
-  public static readonly outputs: readonly TaskOutputDefinition[] = [];
+  public static outputs: readonly TaskOutputDefinition[] = [];
 
   /**
    * Whether this task is a compound task (contains subtasks)
    */
-  public static readonly isCompound: boolean = false;
+  public static isCompound: boolean = false;
 
   // ========================================================================
   // Methods to be overridden by subclasses
@@ -86,7 +86,7 @@ export class Task<
    * @returns The output of the task or undefined if no changes
    */
   protected async execute(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
-    if (this.isCompound) {
+    if (this.hasChildren()) {
       const results = await this.subGraph!.run({
         parentProvenance: config.nodeProvenance || {},
         parentSignal: config.signal || undefined,
@@ -110,8 +110,12 @@ export class Task<
    */
   protected async executeReactive(input: Input, output: Output): Promise<Output | undefined> {
     if (this.isCompound) {
-      const results = await this.subGraph!.runReactive();
-      return { outputs: results } as unknown as Output;
+      if (this.hasChildren()) {
+        const results = await this.subGraph!.runReactive();
+        return { outputs: results || [] } as unknown as Output;
+      } else {
+        return { outputs: [] } as unknown as Output;
+      }
     } else {
       return output;
     }
@@ -237,6 +241,10 @@ export class Task<
 
   public get category(): string {
     return (this.constructor as typeof Task).category;
+  }
+
+  public hasChildren(): boolean {
+    return this.isCompound && this.subGraph !== null && this.subGraph.getNodes().length > 0;
   }
 
   // ========================================================================
@@ -381,7 +389,7 @@ export class Task<
     } catch (err) {
       this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as Input;
     }
-    if (this.isCompound) {
+    if (this.hasChildren()) {
       this.subGraph!.getNodes().forEach((node) => {
         node.resetInputData();
       });
@@ -520,7 +528,6 @@ export class Task<
     this.abortController = undefined;
     // this.outputCache = this.config.outputCache;
     this.nodeProvenance = {};
-
     this.events.emit("error", this.error);
   }
 
@@ -659,11 +666,12 @@ export class Task<
       }
     }
 
-    if (inputdef.isArray && !Array.isArray(input[inputId])) {
+    if (inputdef.isArray === true && !Array.isArray(input[inputId])) {
       input[inputId] = [input[inputId]] as any;
     }
 
-    const inputlist: any[] = inputdef.isArray ? (input[inputId] as any[]) : [input[inputId]];
+    const inputlist: any[] =
+      inputdef.isArray === true ? (input[inputId] as any[]) : [input[inputId]];
 
     const validationPromises = inputlist.map((item) =>
       this.validateItem(inputdef.valueType as string, item)
@@ -712,10 +720,10 @@ export class Task<
       input: this.defaults,
       ...(Object.keys(provenance).length ? { provenance } : {}),
     };
-    if (!this.isCompound) {
-      return json;
+    if (this.hasChildren()) {
+      return { ...json, subgraph: this.subGraph!.toJSON() };
     }
-    return { ...json, subgraph: this.subGraph!.toJSON() };
+    return json;
   }
 
   /**
@@ -725,7 +733,7 @@ export class Task<
   public toDependencyJSON(): JsonTaskItem {
     // this.resetInputData();
     const json = this.toJSON();
-    if (this.isCompound) {
+    if (this.hasChildren()) {
       return { ...json, subtasks: this.subGraph!.toDependencyJSON() };
     }
     return json;

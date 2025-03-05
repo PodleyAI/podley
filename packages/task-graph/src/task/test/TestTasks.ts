@@ -13,9 +13,9 @@ import { TaskInput } from "../TaskTypes";
  */
 
 import { TaskOutputRepository, CreateWorkflow, IExecuteConfig } from "@ellmers/task-graph";
-import { sleep } from "@ellmers/util";
+import { ConvertAllToArrays, ConvertSomeToOptionalArray, sleep } from "@ellmers/util";
 import { Workflow } from "../../browser";
-import { arrayTaskFactory, ConvertSomeToOptionalArray, ConvertAllToArrays } from "../ArrayTask";
+import { arrayTaskFactory } from "../ArrayTask";
 import { JobQueueTaskConfig } from "../JobQueueTask";
 import { Task } from "../Task";
 import { TaskAbortedError, TaskError, TaskFailedError } from "../TaskError";

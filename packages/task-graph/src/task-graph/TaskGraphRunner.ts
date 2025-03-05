@@ -70,7 +70,7 @@ export class TaskGraphRunner {
           isArray = true;
         }
 
-        if (isArray) {
+        if (isArray === true) {
           const existingItems = Array.isArray(task.runInputData[input.id])
             ? task.runInputData[input.id]
             : [];
@@ -169,7 +169,7 @@ export class TaskGraphRunner {
     this.provenanceInput.set(task.config.id, nodeProvenance);
     this.copyInputFromEdgesToNode(task);
 
-    const shouldUseRepository = !(task.constructor as any).sideeffects && !task.isCompound;
+    const shouldUseRepository = !(task.constructor as any).sideeffects && !task.hasChildren();
 
     let results;
     if (shouldUseRepository) {
@@ -328,7 +328,7 @@ export class TaskGraphRunner {
         error,
       }));
       const errorGroup = new TaskErrorGroup(errors);
-      this.handleError();
+      await this.handleError();
       throw errorGroup;
     }
     if (this.abortController?.signal.aborted) {
@@ -337,21 +337,20 @@ export class TaskGraphRunner {
       ]);
     }
 
-    this.handleComplete();
+    await this.handleComplete();
 
     return results || [];
   }
 
-  private handleError() {
-    const abortPromise = Promise.allSettled(
+  private async handleError() {
+    await Promise.allSettled(
       this.graph.getNodes().map(async (task: ITask) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
           task.abort();
         }
       })
     );
-    this.inProgressFunctions.set(Symbol("handleError"), abortPromise);
-    return abortPromise;
+    this.running = false;
   }
 
   private resetTask(graph: TaskGraph, task: ITask, runId: string) {
@@ -395,16 +394,15 @@ export class TaskGraphRunner {
    *
    * @returns A promise that resolves when the abort is complete
    */
-  public handleAbort() {
-    const abortPromise = Promise.allSettled(
+  public async handleAbort() {
+    await Promise.allSettled(
       this.graph.getNodes().map(async (task: ITask) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
           task.abort();
         }
       })
     );
-    this.inProgressTasks.set(Symbol("handleAbort"), abortPromise);
-    return abortPromise;
+    this.running = false;
   }
 
   /**

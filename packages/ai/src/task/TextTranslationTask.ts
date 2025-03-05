@@ -6,19 +6,17 @@
 //    *******************************************************************************
 
 import {
-  ConvertSomeToArray,
-  ConvertSomeToOptionalArray,
+  CreateWorkflow,
+  JobQueueTaskConfig,
   TaskInputDefinition,
   TaskInvalidInputError,
   TaskOutputDefinition,
-  arrayTaskFactory,
+  TaskRegistry,
+  Workflow,
 } from "@ellmers/task-graph";
-import { TaskRegistry } from "@ellmers/task-graph";
-import { JobQueueTaskConfig } from "@ellmers/task-graph";
-import { Workflow, CreateWorkflow } from "@ellmers/task-graph";
+import { ConvertAllToOptionalArray } from "@ellmers/util";
 import { AiTask } from "./base/AiTask";
-import { language } from "./base/TaskIOTypes";
-import { model_translation } from "./base/TaskIOTypes";
+import { language, model_translation } from "./base/TaskIOTypes";
 
 export type TextTranslationTaskInput = {
   text: string;
@@ -30,11 +28,16 @@ export type TextTranslationTaskOutput = {
   text: string;
   target_lang: language;
 };
+type TextTranslationTaskInputReplicate = ConvertAllToOptionalArray<TextTranslationTaskInput>;
+type TextTranslationTaskOutputReplicate = ConvertAllToOptionalArray<TextTranslationTaskOutput>;
 
 /**
  * This generates text from a prompt
  */
-export class TextTranslationTask extends AiTask {
+export class TextTranslationTask extends AiTask<
+  TextTranslationTaskInputReplicate,
+  TextTranslationTaskOutputReplicate
+> {
   public static type = "TextTranslationTask";
   public static category = "Text Model";
   public static inputs: TaskInputDefinition[] = [
@@ -42,21 +45,25 @@ export class TextTranslationTask extends AiTask {
       id: "text",
       name: "Text",
       valueType: "text",
+      isArray: "replicate",
     },
     {
       id: "model",
       name: "Model",
       valueType: "model_translation",
+      isArray: "replicate",
     },
     {
       id: "source_lang",
       name: "Input Language",
       valueType: "language",
+      isArray: "replicate",
     },
     {
       id: "target_lang",
       name: "Output Language",
       valueType: "language",
+      isArray: "replicate",
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
@@ -65,6 +72,7 @@ export class TextTranslationTask extends AiTask {
       id: "target_lang",
       name: "Output Language",
       valueType: "language",
+      isArray: "replicate",
     },
   ] as const;
 
@@ -81,36 +89,27 @@ export class TextTranslationTask extends AiTask {
 }
 TaskRegistry.registerTask(TextTranslationTask);
 
-type TextTranslationCompoundOutput = ConvertSomeToArray<TextTranslationTaskOutput, "text">;
-
-type TextTranslationCompoundTaskInput = ConvertSomeToOptionalArray<
-  TextTranslationTaskInput,
-  "model" | "text"
->;
-export const TextTranslationCompoundTask = arrayTaskFactory<
-  TextTranslationCompoundTaskInput,
-  TextTranslationCompoundOutput,
-  TextTranslationTaskInput,
-  TextTranslationTaskOutput,
-  JobQueueTaskConfig
->(TextTranslationTask as any, ["model", "text"]);
-
-export const TextTranslation = (input: TextTranslationCompoundTaskInput) => {
-  if (Array.isArray(input.model) || Array.isArray(input.text)) {
-    return new TextTranslationCompoundTask(input).run();
-  } else {
-    return new TextTranslationTask(input as TextTranslationTaskInput).run();
-  }
+/**
+ * Convenience function to run text translation tasks.
+ * Creates and executes a TextTranslationCompoundTask with the provided input.
+ * @param input The input parameters for text translation (text, model, source_lang, and target_lang)
+ * @returns Promise resolving to the translated text output(s)
+ */
+export const TextTranslation = (
+  input: TextTranslationTaskInputReplicate,
+  config?: JobQueueTaskConfig
+) => {
+  return new TextTranslationTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
     TextTranslation: CreateWorkflow<
-      TextTranslationCompoundTaskInput,
-      TextTranslationCompoundOutput,
+      TextTranslationTaskInputReplicate,
+      TextTranslationTaskOutputReplicate,
       JobQueueTaskConfig
     >;
   }
 }
 
-Workflow.prototype.TextTranslation = CreateWorkflow(TextTranslationCompoundTask);
+Workflow.prototype.TextTranslation = CreateWorkflow(TextTranslationTask);

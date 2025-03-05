@@ -5,6 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { collectPropertyValues, Writeable } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { ITaskConstructor, IRunConfig, IExecuteConfig } from "./ITask";
@@ -21,53 +22,6 @@ import {
 } from "./TaskTypes";
 import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { Task } from "./Task";
-import { TaskGraphRunner } from "../task-graph/TaskGraphRunner";
-
-// Type utilities for array transformations
-// Makes specified properties optional arrays
-export type ConvertSomeToOptionalArray<T, K extends keyof T> = {
-  [P in keyof T]: P extends K ? Array<T[P]> | T[P] : T[P];
-};
-
-// Makes all properties optional arrays
-export type ConvertAllToOptionalArray<T> = {
-  [P in keyof T]: Array<T[P]> | T[P];
-};
-
-// Makes specified properties required arrays
-export type ConvertSomeToArray<T, K extends keyof T> = {
-  [P in keyof T]: P extends K ? Array<T[P]> : T[P];
-};
-
-// Makes all properties required arrays
-export type ConvertAllToArrays<T> = {
-  [P in keyof T]: Array<T[P]>;
-};
-
-// Removes readonly modifiers from object properties
-type Writeable<T> = { -readonly [P in keyof T]: T[P] };
-
-/**
- * Takes an array of objects and collects values for each property into arrays
- * @param input Array of objects to process
- * @returns Object with arrays of values for each property
- */
-function collectPropertyValues<Input>(input: Input[]): { [K in keyof Input]: Input[K][] } {
-  const output = {} as { [K in keyof Input]: Input[K][] };
-
-  (input || []).forEach((item) => {
-    Object.keys(item as object).forEach((key) => {
-      const value = item[key as keyof Input];
-      if (output[key as keyof Input]) {
-        output[key as keyof Input].push(value);
-      } else {
-        output[key as keyof Input] = [value];
-      }
-    });
-  });
-
-  return output;
-}
 
 /**
  * Converts specified IO definitions to array type
