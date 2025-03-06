@@ -74,8 +74,8 @@ export abstract class TaskOutputRepository {
    * @param name The event name to listen for
    * @returns a promise that resolves to the event parameters
    */
-  emitted<Event extends TaskOutputEvents>(name: Event) {
-    return this.events.emitted(name) as Promise<TaskOutputEventParameters<Event>>;
+  waitOn<Event extends TaskOutputEvents>(name: Event) {
+    return this.events.waitOn(name) as Promise<TaskOutputEventParameters<Event>>;
   }
 
   /**

@@ -176,7 +176,7 @@ describe("Task", () => {
 
       it("should support emitted to wait for events", async () => {
         const runPromise = task.run();
-        const completePromise = task.emitted("complete");
+        const completePromise = task.waitOn("complete");
 
         await runPromise;
         await completePromise;
@@ -234,9 +234,7 @@ describe("Task", () => {
       });
 
       it("should call runReactive when run is called", async () => {
-        // @ts-expect-error - we are testing the protected method
         const executeSpy = spyOn(task, "execute");
-        // @ts-expect-error - we are testing the protected method
         const executeReactiveSpy = spyOn(task, "executeReactive");
 
         await task.run();
@@ -274,13 +272,11 @@ describe("Task", () => {
         task.on("complete", () => events.push("complete"));
 
         // Override execute to emit progress
-        // @ts-expect-error - we are testing the protected method
         const originalExecute = task.execute;
-        // @ts-expect-error - we are testing the protected method
-        task.execute = async (...args) => {
-          // @ts-expect-error - we are testing the protected method
-          task.handleProgress(0.5);
-          return await originalExecute.call(task, ...args);
+        task.execute = async (input, config) => {
+          // Use the updateProgress callback from config instead of directly calling handleProgress
+          config.updateProgress(0.5);
+          return await originalExecute.call(task, input, config);
         };
 
         await task.run();
@@ -310,7 +306,6 @@ describe("Task", () => {
 
       it("should handle errors during execution", async () => {
         // Override execute to throw an error
-        // @ts-expect-error - we are testing the protected method
         task.execute = async () => {
           throw new Error("Test error");
         };
@@ -489,14 +484,14 @@ describe("Task", () => {
 
     describe("Event promise API", () => {
       it("should resolve emitted promise when event is fired", async () => {
-        const emittedPromise = task.emitted("start");
+        const emittedPromise = task.waitOn("start");
         task.emit("start");
 
         await expect(emittedPromise).resolves.toEqual([]);
       });
 
       it("should resolve emitted promise with event parameters", async () => {
-        const emittedPromise = task.emitted("progress");
+        const emittedPromise = task.waitOn("progress");
         task.emit("progress", 0.42);
 
         await expect(emittedPromise).resolves.toEqual([0.42]);
@@ -504,7 +499,7 @@ describe("Task", () => {
 
       it("should allow waiting for task completion via events", async () => {
         const runPromise = task.run();
-        const completePromise = task.emitted("complete");
+        const completePromise = task.waitOn("complete");
 
         await Promise.all([runPromise, completePromise]);
         expect(task.status).toBe(TaskStatus.COMPLETED);

@@ -179,16 +179,15 @@ export class TaskGraphRunner {
       );
       if (results) {
         //@ts-expect-error - using internals
-        task.handleStart();
+        task.runner.handleStart();
         task.runOutputData = results;
         await task.runReactive();
         //@ts-expect-error - using internals
-        task.handleComplete();
+        task.runner.handleComplete();
       }
     }
     if (!results) {
-      //@ts-expect-error - using internals
-      results = await task.runInternal({ nodeProvenance, repository: this.outputCache });
+      results = await task.run({}, { nodeProvenance, repository: this.outputCache });
       if (shouldUseRepository) {
         await this.outputCache?.saveOutput(
           (task.constructor as any).type,

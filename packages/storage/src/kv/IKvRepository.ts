@@ -90,7 +90,7 @@ export interface IKvRepository<
     name: Event,
     fn: KvEventListener<Event, Key, Value, Combined>
   ): void;
-  emitted<Event extends KvEventName>(
+  waitOn<Event extends KvEventName>(
     name: Event
   ): Promise<KvEventParameters<Event, Key, Value, Combined>>;
 }

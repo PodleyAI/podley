@@ -187,9 +187,9 @@ export abstract class KvRepository<
    * @param name The name of the event to check
    * @returns true if the event has listeners, false otherwise
    */
-  emitted<Event extends KvEventName>(
+  waitOn<Event extends KvEventName>(
     name: Event
   ): Promise<KvEventParameters<Event, Key, Value, Combined>> {
-    return this.events.emitted(name) as Promise<KvEventParameters<Event, Key, Value, Combined>>;
+    return this.events.waitOn(name) as Promise<KvEventParameters<Event, Key, Value, Combined>>;
   }
 }

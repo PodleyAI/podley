@@ -105,8 +105,8 @@ export abstract class ModelRepository {
    * @param name - The event name to check
    * @returns a promise that resolves to the event listener parameters
    */
-  emitted<Event extends ModelEvents>(name: Event) {
-    return this.events.emitted(name);
+  waitOn<Event extends ModelEvents>(name: Event) {
+    return this.events.waitOn(name);
   }
 
   /**

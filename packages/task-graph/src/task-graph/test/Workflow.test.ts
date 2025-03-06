@@ -300,7 +300,7 @@ describe("Workflow", () => {
     });
 
     it("should allow waiting for events with emitted", async () => {
-      const resetPromise = workflow.emitted("reset");
+      const resetPromise = workflow.waitOn("reset");
 
       setTimeout(() => workflow.reset(), 10);
 

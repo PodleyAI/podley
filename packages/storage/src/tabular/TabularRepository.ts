@@ -202,10 +202,10 @@ export abstract class TabularRepository<
    * @param name The name of the event to check
    * @returns true if the event has listeners, false otherwise
    */
-  emitted<Event extends TabularEventName>(
+  waitOn<Event extends TabularEventName>(
     name: Event
   ): Promise<TabularEventParameters<Event, PrimaryKey, Entity>> {
-    return this.events.emitted(name) as Promise<TabularEventParameters<Event, PrimaryKey, Entity>>;
+    return this.events.waitOn(name) as Promise<TabularEventParameters<Event, PrimaryKey, Entity>>;
   }
 
   /**

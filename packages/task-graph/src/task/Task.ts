@@ -18,6 +18,7 @@ import {
   type TaskEvents,
 } from "./TaskEvents";
 import type { TaskGraphItemJson, JsonTaskItem } from "./TaskJSON";
+import { TaskRunner } from "./TaskRunner";
 import {
   IConfig,
   Provenance,
@@ -33,6 +34,11 @@ import {
 /**
  * Base class for all tasks that implements the ITask interface.
  * This abstract class provides common functionality for both simple and compound tasks.
+ *
+ * The Task class is responsible for:
+ * 1. Defining what a task is (inputs, outputs, configuration)
+ * 2. Providing the execution logic (via execute and executeReactive)
+ * 3. Delegating the running logic to a TaskRunner
  */
 export class Task<
   Input extends TaskInput = TaskInput,
@@ -75,7 +81,7 @@ export class Task<
   public static isCompound: boolean = false;
 
   // ========================================================================
-  // Methods to be overridden by subclasses
+  // Task Execution Methods - Core logic provided by subclasses
   // ========================================================================
 
   /**
@@ -85,129 +91,73 @@ export class Task<
    * @param config The configuration for the task
    * @returns The output of the task or undefined if no changes
    */
-  protected async execute(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
-    if (this.hasChildren()) {
-      const results = await this.subGraph!.run({
-        parentProvenance: config.nodeProvenance || {},
-        parentSignal: config.signal || undefined,
-        outputCache: this.outputCache,
-      });
-      // TODO: listen for sub-task complete events and update progress
-    } else {
-      return undefined;
-    }
+  public async execute(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
+    // TODO: listen for sub-task complete events and update progress
+    return undefined;
   }
 
   /**
-   * The reactive task execution logic for subclasses to override
+   * Default implementation of executeReactive that does nothing.
+   * Subclasses should override this to provide actual reactive functionality.
    *
    * This is generally for UI updating, and should be lightweight.
-   * It generally augments the output of the task with additional data.
-   *
    * @param input The input to the task
-   * @param output The output of the task
-   * @returns The output of the task or undefined if no changes
+   * @param output The current output of the task
+   * @returns The updated output of the task or undefined if no changes
    */
-  protected async executeReactive(input: Input, output: Output): Promise<Output | undefined> {
-    if (this.isCompound) {
-      if (this.hasChildren()) {
-        const results = await this.subGraph!.runReactive();
-        return { outputs: results || [] } as unknown as Output;
-      } else {
-        return { outputs: [] } as unknown as Output;
-      }
-    } else {
-      return output;
-    }
+  public async executeReactive(input: Input, output: Output): Promise<Output | undefined> {
+    return output;
   }
 
   // ========================================================================
-  // Task execution methods
+  // TaskRunner delegation - Executes and manages the task
   // ========================================================================
 
-  protected async runInternal(config: IRunConfig): Promise<Output> {
-    this.nodeProvenance = config.nodeProvenance ?? {};
-    this.outputCache = config.repository || this.outputCache || this.config.outputCache;
-    return this.run();
+  /**
+   * Task runner for handling the task execution
+   */
+  protected _runner: TaskRunner<Input, Output, Config> | undefined;
+
+  /**
+   * Gets the task runner instance
+   * Creates a new one if it doesn't exist
+   */
+  public get runner(): TaskRunner<Input, Output, Config> {
+    if (!this._runner) {
+      this._runner = new TaskRunner<Input, Output, Config>(this, this.outputCache);
+    }
+    return this._runner;
   }
 
   /**
    * Runs the task and returns the output
+   * Delegates to the task runner
    *
-   * @param nodeProvenance Provenance information
-   * @param repository Repository for caching task outputs
-   * @returns Task output
+   * @param overrides Optional input overrides
+   * @param config Optional configuration overrides
+   * @returns The task output
    */
-  async run(overrides: Partial<Input> = {}): Promise<Output> {
-    this.handleStart();
-
-    try {
-      this.setInput(overrides);
-      const isValid = await this.validateInputData(this.runInputData);
-      if (!isValid) {
-        throw new TaskInvalidInputError("Invalid input data");
-      }
-
-      if (this.abortController?.signal.aborted) {
-        this.handleAbort();
-        throw new TaskAbortedError("Promise for task created and aborted before run");
-      }
-
-      const results = await this.execute(this.runInputData, {
-        signal: this.abortController!.signal,
-        updateProgress: this.handleProgress.bind(this),
-        nodeProvenance: this.nodeProvenance,
-      });
-
-      if (results && Object.keys(results).length > 0) {
-        this.runOutputData = results;
-      } else {
-        this.runOutputData = this.runOutputData || ({} as Output);
-      }
-
-      this.outputCache = this.config.outputCache;
-
-      if (this.isCompound) {
-        // compound tasks have each of the children's reactive  called
-        // so we don't need to call here
-      } else {
-        const results = await this.executeReactive(this.runInputData, this.runOutputData);
-        if (results && Object.keys(results).length > 0) {
-          this.runOutputData = results;
-        }
-      }
-
-      this.handleComplete();
-
-      return this.runOutputData;
-    } catch (err: any) {
-      this.handleError(err);
-      throw err;
-    }
+  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<Output> {
+    return this.runner.run(overrides, config);
   }
 
   /**
-   * Default implementation of runReactive that just returns the current output data.
-   * Subclasses should override this to provide actual reactive functionality.
+   * Runs the task in reactive mode
+   * Delegates to the task runner
    *
-   * This is generally for UI updating, and should be lightweight.
-   *
+   * @param overrides Optional input overrides
    * @returns The task output
    */
   public async runReactive(overrides: Partial<Input> = {}): Promise<Output> {
-    try {
-      this.setInput(overrides);
-      await this.validateInputData(this.runInputData);
-    } catch {
-      return {} as Output;
-    }
-    const results = await this.executeReactive(this.runInputData, this.runOutputData);
-    if (results && Object.keys(results).length > 0) {
-      this.runOutputData = results;
-    } else {
-      this.runOutputData = this.runOutputData || ({} as Output);
-    }
-    return this.runOutputData;
+    return this.runner.runReactive(overrides);
+  }
+
+  /**
+   * Aborts task execution
+   * Delegates to the task runner
+   */
+  public abort(): void {
+    this.runner.abort();
   }
 
   // ========================================================================
@@ -314,11 +264,6 @@ export class Task<
    * Event emitter for task lifecycle events
    */
   public readonly events = new EventEmitter<TaskEventListeners>();
-
-  /**
-   * AbortController for cancelling task execution
-   */
-  protected abortController: AbortController | undefined;
 
   /**
    * Cache for task outputs
@@ -440,8 +385,8 @@ export class Task<
   /**
    * Returns a promise that resolves when the specified event is emitted
    */
-  public emitted<Event extends TaskEvents>(name: Event): Promise<TaskEventParameters<Event>> {
-    return this.events.emitted(name) as Promise<TaskEventParameters<Event>>;
+  public waitOn<Event extends TaskEvents>(name: Event): Promise<TaskEventParameters<Event>> {
+    return this.events.waitOn(name) as Promise<TaskEventParameters<Event>>;
   }
 
   /**
@@ -449,97 +394,6 @@ export class Task<
    */
   public emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>): void {
     this.events.emit(name, ...args);
-  }
-
-  // ========================================================================
-  // Task lifecycle methods
-  // ========================================================================
-
-  /**
-   * Aborts task execution
-   */
-  public abort(): void {
-    this.abortController?.abort();
-  }
-
-  /**
-   * Handles task start
-   */
-  protected handleStart(): void {
-    if (this.status === TaskStatus.PROCESSING) return;
-
-    this.startedAt = new Date();
-    this.nodeProvenance = {};
-    // this.outputCache = this.config.outputCache;
-    this.progress = 0;
-    this.status = TaskStatus.PROCESSING;
-
-    this.abortController = new AbortController();
-    this.abortController.signal.addEventListener("abort", () => {
-      this.handleAbort();
-    });
-
-    this.events.emit("start");
-  }
-
-  /**
-   * Handles task abort
-   */
-  public handleAbort(): void {
-    if (this.status === TaskStatus.ABORTING) return;
-
-    this.status = TaskStatus.ABORTING;
-    this.progress = 100;
-    this.error = new TaskAbortedError();
-
-    this.events.emit("abort", this.error);
-  }
-
-  /**
-   * Handles task completion
-   */
-  protected handleComplete(): void {
-    if (this.status === TaskStatus.COMPLETED) return;
-
-    this.completedAt = new Date();
-    this.progress = 100;
-    this.status = TaskStatus.COMPLETED;
-    this.abortController = undefined;
-    // this.outputCache = this.config.outputCache;
-    this.nodeProvenance = {};
-
-    this.events.emit("complete");
-  }
-
-  /**
-   * Handles task error
-   *
-   * @param err Error that occurred
-   */
-  protected handleError(err: Error): void {
-    if (err instanceof TaskAbortedError) return this.handleAbort();
-    if (this.status === TaskStatus.FAILED) return;
-
-    this.completedAt = new Date();
-    this.progress = 100;
-    this.status = TaskStatus.FAILED;
-    this.error =
-      err instanceof TaskError ? err : new TaskFailedError(err?.message || "Task failed");
-    this.abortController = undefined;
-    // this.outputCache = this.config.outputCache;
-    this.nodeProvenance = {};
-    this.events.emit("error", this.error);
-  }
-
-  /**
-   * Handles task progress update
-   *
-   * @param progress Progress value (0-100)
-   * @param args Additional arguments
-   */
-  protected handleProgress(progress: number, ...args: any[]): void {
-    this.progress = progress;
-    this.events.emit("progress", progress, ...args);
   }
 
   // ========================================================================
@@ -666,12 +520,17 @@ export class Task<
       }
     }
 
+    // force the input to be an array if the input definition says it is an array
     if (inputdef.isArray === true && !Array.isArray(input[inputId])) {
       input[inputId] = [input[inputId]] as any;
     }
 
-    const inputlist: any[] =
-      inputdef.isArray === true ? (input[inputId] as any[]) : [input[inputId]];
+    let inputlist: any[] = [];
+    if (inputdef.isArray && Array.isArray(input[inputId])) {
+      inputlist = input[inputId] as any[];
+    } else {
+      inputlist = [input[inputId]];
+    }
 
     const validationPromises = inputlist.map((item) =>
       this.validateItem(inputdef.valueType as string, item)

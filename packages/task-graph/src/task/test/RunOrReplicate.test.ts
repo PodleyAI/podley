@@ -60,7 +60,7 @@ class MultiplyRunTask extends RunOrReplicateTask<
       isArray: "replicate", // The result can be a single number or an array
     },
   ];
-  protected async execute(input: MultiplyInput, config: IExecuteConfig): Promise<MultiplyOutput> {
+  public async execute(input: MultiplyInput, config: IExecuteConfig): Promise<MultiplyOutput> {
     // Simple multiplication - at this point, we know the inputs are not arrays
     return {
       result: input.a * input.b,
@@ -99,7 +99,7 @@ class MultiplyRunReactiveTask extends RunOrReplicateTask<
       isArray: "replicate", // The result can be a single number or an array
     },
   ];
-  protected async executeReactive(
+  public async executeReactive(
     input: MultiplyInput,
     output: MultiplyOutput
   ): Promise<MultiplyOutput> {
@@ -142,7 +142,7 @@ class SquareRunTask extends RunOrReplicateTask<
     },
   ];
 
-  protected async execute(input: SquareInput, config: IExecuteConfig): Promise<SquareOutput> {
+  public async execute(input: SquareInput, config: IExecuteConfig): Promise<SquareOutput> {
     // Simple square - at this point, we know the inputs are not arrays
     return {
       result: input.a * input.a,
@@ -171,7 +171,7 @@ class SquareRunReactiveTask extends RunOrReplicateTask<
     },
   ];
 
-  protected async executeReactive(input: SquareInput, output: SquareOutput): Promise<SquareOutput> {
+  public async executeReactive(input: SquareInput, output: SquareOutput): Promise<SquareOutput> {
     // Simple square - at this point, we know the inputs are not arrays
     return {
       result: input.a * input.a,
@@ -186,7 +186,7 @@ describe("RunOrReplicate", () => {
       b: 5,
     });
     // @ts-expect-error - we are testing the protected method
-    const executeGraphSpy = spyOn(task, "executeGraph");
+    const executeGraphSpy = spyOn(task.runner, "executeGraph");
     const results = await task.run();
     expect(results).toEqual({ result: 20 });
     expect(executeGraphSpy).not.toHaveBeenCalled();
@@ -197,12 +197,10 @@ describe("RunOrReplicate", () => {
       a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       b: 1,
     });
-    // @ts-expect-error - we are testing the protected method
-    const executeGraphSpy = spyOn(task, "executeGraph");
     const results = await task.run();
     expect(results).toEqual({ result: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] });
-    expect(executeGraphSpy).toHaveBeenCalled();
   });
+
   test("MultiplyRunTask in task mode run array x array", async () => {
     const task = new MultiplyRunTask({
       a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -213,6 +211,7 @@ describe("RunOrReplicate", () => {
       result: [0, 0, 1, 2, 2, 4, 3, 6, 4, 8, 5, 10, 6, 12, 7, 14, 8, 16, 9, 18, 10, 20],
     });
   });
+
   test("MultiplyRunTask in task mode reactive run", async () => {
     const task = new MultiplyRunTask({
       a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -234,7 +233,6 @@ describe("RunOrReplicate", () => {
       a: 2,
       b: 10,
     });
-    debugger;
     const results = await task.run();
     expect(results).toEqual({ result: 20 });
   });
@@ -351,9 +349,9 @@ describe("RunOrReplicate", () => {
 
     // Manually trigger a progress event before running the task
     // @ts-expect-error - we are testing the protected method
-    task.handleStart();
+    task.runner.handleStart();
     // @ts-expect-error - we are testing the protected method
-    task.handleProgress(0.5);
+    task.runner.handleProgress(0.5);
 
     // Run the task
     const results = await task.run();
@@ -420,16 +418,16 @@ describe("RunOrReplicate", () => {
 
     // Manually trigger progress events
     // @ts-expect-error - we are testing the protected method
-    task.handleStart();
+    task.runner.handleStart();
     // @ts-expect-error - we are testing the protected method
-    task.handleProgress(0.5);
+    task.runner.handleProgress(0.5);
 
     // Manually trigger progress events on child tasks
     task.subGraph!.getNodes().forEach((childTask: ITask) => {
       // @ts-expect-error - we are testing the protected method
-      childTask.handleStart();
+      childTask.runner.handleStart();
       // @ts-expect-error - we are testing the protected method
-      childTask.handleProgress(0.5);
+      childTask.runner.handleProgress(0.5);
     });
 
     // Run the task

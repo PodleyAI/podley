@@ -88,7 +88,10 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   protected activeJobAbortSignals: Map<unknown, AbortController> = new Map();
   protected activeJobPromises: Map<
     unknown,
-    Array<{ resolve: (out: Output) => void; reject: (err: JobError) => void }>
+    Array<{
+      resolve: (value?: any) => void;
+      reject: (err: JobError) => void;
+    }>
   > = new Map();
   protected processingTimes: Map<unknown, number> = new Map();
   protected mode: QueueMode = QueueMode.BOTH;
@@ -251,10 +254,10 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   /**
    * Returns a promise that resolves when the event is emitted
    */
-  public emitted<Event extends JobQueueEvents>(
+  public waitOn<Event extends JobQueueEvents>(
     event: Event
   ): Promise<JobQueueEventParameters<Event, Input, Output>> {
-    return this.events.emitted(event) as Promise<JobQueueEventParameters<Event, Input, Output>>;
+    return this.events.waitOn(event) as Promise<JobQueueEventParameters<Event, Input, Output>>;
   }
 
   /**
@@ -327,13 +330,13 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   /**
    * Returns a promise that resolves when the job completes
    */
-  public async waitFor<O extends Output>(jobId: unknown): Promise<O> {
+  public async waitFor<Output>(jobId: unknown): Promise<Output> {
     if (!jobId) throw new JobNotFoundError("Cannot wait for undefined job");
     const job = await this.get(jobId);
     if (!job) throw new JobNotFoundError(`Job ${jobId} not found`);
 
     if (job.status === JobStatus.COMPLETED) {
-      return job.output as O;
+      return job.output as Output;
     }
     if (job.status === JobStatus.FAILED) {
       throw job.error;
@@ -342,7 +345,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     const promises = this.activeJobPromises.get(job.id) || [];
     promises.push({ resolve, reject });
     this.activeJobPromises.set(job.id, promises);
-    return promise as Promise<O>;
+    return promise as Promise<Output>;
   }
 
   /**

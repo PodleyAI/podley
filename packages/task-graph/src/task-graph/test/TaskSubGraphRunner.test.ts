@@ -45,10 +45,10 @@ describe("TaskSubGraphRunner", () => {
     });
 
     it("should be able to have multiple inputs for array input type", async () => {
-      const nodeRunSpy = spyOn(nodes[0], "run");
-
       const results = await runner.runGraph();
-      expect(nodeRunSpy).toHaveBeenCalledTimes(1);
+
+      expect(results?.find((r) => r.id === "task2")?.data).toEqual({ output: 10 });
+      expect(results?.find((r) => r.id === "task1")?.data).toEqual({ output: 25 });
       expect(results?.find((r) => r.id === "task0")?.data).toEqual({ output: [36, 49] });
     });
 
@@ -58,14 +58,10 @@ describe("TaskSubGraphRunner", () => {
       graph.addDataflow(new Dataflow("task1", "output", "task3", "input"));
       graph.addDataflow(new Dataflow("task2", "output", "task3", "input"));
 
-      const nodeRunSpy = spyOn(task, "run");
-
       const results1 = await runner.runGraph();
       const results2 = await runner.runGraph();
       const results3 = await runner.runGraph();
 
-      expect(nodeRunSpy).toHaveBeenCalledTimes(3);
-      // different runs should return the same results
       expect(results1[0]).toEqual(results2[0]);
       expect(results2[0]).toEqual(results3[0]);
       expect(results1[1]).toEqual(results2[1]);

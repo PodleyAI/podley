@@ -236,10 +236,10 @@ export class Workflow {
     this.events.once(name, fn);
   }
 
-  public emitted<Event extends WorkflowEvents>(
+  public waitOn<Event extends WorkflowEvents>(
     name: Event
   ): Promise<WorkflowEventParameters<Event>> {
-    return this.events.emitted(name) as Promise<WorkflowEventParameters<Event>>;
+    return this.events.waitOn(name) as Promise<WorkflowEventParameters<Event>>;
   }
 
   /**
