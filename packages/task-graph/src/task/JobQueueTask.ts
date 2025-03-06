@@ -136,6 +136,7 @@ export abstract class JobQueueTask<
         await queue.abort(this.config.currentJobId);
       }
     }
+    // Always call the parent abort to ensure the task is properly marked as aborted
     super.abort();
   }
 }

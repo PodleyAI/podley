@@ -10,7 +10,7 @@ import { nanoid } from "nanoid";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteConfig, IRunConfig, ITask } from "./ITask";
-import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
+import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
 import {
   type TaskEventListener,
   type TaskEventListeners,
@@ -89,10 +89,13 @@ export class Task<
    *
    * @param input The input to the task
    * @param config The configuration for the task
+   * @throws TaskError if the task fails
    * @returns The output of the task or undefined if no changes
    */
   public async execute(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
-    // TODO: listen for sub-task complete events and update progress
+    if (config.signal?.aborted) {
+      throw new TaskAbortedError("Task aborted");
+    }
     return undefined;
   }
 
@@ -135,6 +138,7 @@ export class Task<
    *
    * @param overrides Optional input overrides
    * @param config Optional configuration overrides
+   * @throws TaskError if the task fails
    * @returns The task output
    */
   async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<Output> {

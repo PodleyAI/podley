@@ -518,7 +518,10 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     if (job.status === JobStatus.FAILED) {
       throw new PermanentJobError(`Job ${job.id} has failed`);
     }
-    if (job.status === JobStatus.ABORTING) {
+    if (
+      job.status === JobStatus.ABORTING ||
+      this.activeJobAbortControllers.get(job.id)?.signal.aborted
+    ) {
       throw new AbortSignalJobError(`Job ${job.id} is being aborted`);
     }
     if (job.deadlineAt && job.deadlineAt < new Date()) {
@@ -694,7 +697,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       promises.forEach(({ reject }) => reject(error!));
       this.activeJobPromises.delete(job.id);
     } catch (err) {
-      console.error("failJob", err);
+      console.error("failJob errored out?", err);
     }
 
     // Clear any remaining state
@@ -729,7 +732,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       }
       this.activeJobPromises.delete(job.id);
     } catch (err) {
-      console.error("completeJob", err);
+      console.error("completeJob errored out?", err);
     }
     // Clear any remaining state
     this.activeJobAbortControllers.delete(job.id);
@@ -739,7 +742,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   }
 
   /**
-   * Aborts a job
+   * Signals the abort of a job
    * @param jobId The ID of the job to abort
    */
   public async abort(jobId: unknown) {
@@ -751,14 +754,14 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
 
     // if we are server too, we need to abort the job
     // the abort controller will issue a a call to handleAbort
-    const controller = this.activeJobAbortControllers.get(jobId);
-    if (controller) {
-      if (!controller.signal.aborted) {
-        try {
-          controller.abort();
-        } catch (err) {}
-      }
+    let controller = this.activeJobAbortControllers.get(jobId);
+    if (!controller) {
+      controller = this.createAbortController(jobId);
     }
+    if (!controller.signal.aborted) {
+      controller.abort();
+    }
+
     this.events.emit("job_aborting", this.queueName, jobId);
   }
 
@@ -796,12 +799,12 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       this.emitStatsUpdate();
 
       const abortController = this.createAbortController(job.id);
-      this.events.emit("job_start", this.queueName, job.id);
       this.lastKnownProgress.set(job.id, {
         progress: 0,
         message: "",
         details: null,
       });
+      this.events.emit("job_start", this.queueName, job.id);
       const output = await this.executeJob(job, abortController.signal);
       await this.completeJob(job, output);
       this.processingTimes.set(job.id, Date.now() - startTime);
@@ -851,6 +854,10 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   }
 
   protected async cleanUpJobs(): Promise<void> {
+    const abortingJobs = await this.peek(JobStatus.ABORTING);
+    for (const job of abortingJobs) {
+      await this.handleAbort(job.id);
+    }
     // delete any completed or failed jobs
     if (this.options.deleteAfterCompletionMs) {
       await this.storage.deleteJobsByStatusAndAge(
@@ -898,7 +905,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
             lastProgress.message !== currentProgress.message;
           // || JSON.stringify(lastProgress.details) !== JSON.stringify(currentProgress.details);
 
-          if (hasChanged) {
+          if (hasChanged && currentProgress.progress !== 0 && currentProgress.message !== "") {
             this.announceProgress(
               jobId,
               currentProgress.progress,
