@@ -22,9 +22,20 @@ export class TaskRunner<
 > implements ITaskRunner<Input, Output, Config>
 {
   /**
+   * Whether the task is currently running
+   */
+  protected running = false;
+  protected reactiveRunning = false;
+
+  /**
    * Provenance information for the task
    */
   protected nodeProvenance: Provenance = {};
+
+  /**
+   * The task to run
+   */
+  public readonly task: ITask<Input, Output, Config>;
 
   /**
    * Output cache repository
@@ -41,10 +52,8 @@ export class TaskRunner<
    * @param task The task to run
    * @param outputCache Optional output cache repository
    */
-  constructor(
-    public readonly task: ITask<Input, Output, Config>,
-    outputCache?: TaskOutputRepository
-  ) {
+  constructor(task: ITask<Input, Output, Config>, outputCache?: TaskOutputRepository) {
+    this.task = task;
     this.outputCache = outputCache;
   }
 
@@ -72,7 +81,7 @@ export class TaskRunner<
       }
 
       if (this.abortController?.signal.aborted) {
-        this.handleAbort();
+        await this.handleAbort();
         throw new TaskAbortedError("Promise for task created and aborted before run");
       }
 
@@ -103,11 +112,11 @@ export class TaskRunner<
         }
       }
 
-      this.handleComplete();
+      await this.handleComplete();
 
       return this.task.runOutputData;
     } catch (err: any) {
-      this.handleError(err);
+      await this.handleError(err);
       throw err;
     }
   }
@@ -123,7 +132,7 @@ export class TaskRunner<
       return this.task.runOutputData;
     }
 
-    this.handleStart();
+    await this.handleStartReactive();
 
     try {
       const isValid = await this.task.validateInputData(this.task.runInputData);
@@ -145,10 +154,10 @@ export class TaskRunner<
         }
       }
 
-      this.handleComplete();
+      await this.handleCompleteReactive();
       return this.task.runOutputData;
     } catch (err: any) {
-      this.handleError(err);
+      await this.handleErrorReactive();
       throw err;
     }
   }
@@ -207,11 +216,13 @@ export class TaskRunner<
   /**
    * Handles task start
    */
-  protected handleStart(): void {
+  protected async handleStart(): Promise<void> {
     if (this.task.status === TaskStatus.PROCESSING) return;
 
-    this.task.startedAt = new Date();
     this.nodeProvenance = {};
+    this.running = true;
+
+    this.task.startedAt = new Date();
     this.task.progress = 0;
     this.task.status = TaskStatus.PROCESSING;
 
@@ -223,10 +234,14 @@ export class TaskRunner<
     this.task.emit("start");
   }
 
+  protected async handleStartReactive(): Promise<void> {
+    this.reactiveRunning = true;
+  }
+
   /**
    * Handles task abort
    */
-  public handleAbort(): void {
+  public async handleAbort(): Promise<void> {
     if (this.task.status === TaskStatus.ABORTING) return;
 
     this.task.status = TaskStatus.ABORTING;
@@ -236,10 +251,14 @@ export class TaskRunner<
     this.task.emit("abort", this.task.error);
   }
 
+  protected async handleAbortReactive(): Promise<void> {
+    this.reactiveRunning = false;
+  }
+
   /**
    * Handles task completion
    */
-  protected handleComplete(): void {
+  protected async handleComplete(): Promise<void> {
     if (this.task.status === TaskStatus.COMPLETED) return;
 
     this.task.completedAt = new Date();
@@ -251,11 +270,15 @@ export class TaskRunner<
     this.task.emit("complete");
   }
 
+  protected async handleCompleteReactive(): Promise<void> {
+    this.reactiveRunning = false;
+  }
+
   /**
    * Handles task error
    * @param err Error that occurred
    */
-  protected handleError(err: Error): void {
+  protected async handleError(err: Error): Promise<void> {
     if (err instanceof TaskAbortedError) return this.handleAbort();
     if (this.task.status === TaskStatus.FAILED) return;
 
@@ -266,7 +289,14 @@ export class TaskRunner<
       err instanceof TaskError ? err : new TaskFailedError(err?.message || "Task failed");
     this.abortController = undefined;
     this.nodeProvenance = {};
+    if (this.task.hasChildren()) {
+      this.task.subGraph!.abort();
+    }
     this.task.emit("error", this.task.error);
+  }
+
+  protected async handleErrorReactive(): Promise<void> {
+    this.reactiveRunning = false;
   }
 
   /**

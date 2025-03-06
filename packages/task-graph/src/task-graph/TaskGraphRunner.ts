@@ -28,13 +28,36 @@ export type GraphResult = Array<GraphSingleResult>;
  */
 export class TaskGraphRunner {
   /**
-   * Map of provenance input for each task
-   * @type {Map<unknown, TaskInput>}
+   * Whether the task graph is currently running
    */
-  public provenanceInput: Map<unknown, TaskInput>;
+  protected running = false;
+  protected reactiveRunning = false;
 
-  private running = false;
-  private reactiveRunning = false;
+  /**
+   * Map of provenance input for each task
+   */
+  protected provenanceInput: Map<unknown, TaskInput>;
+
+  /**
+   * The task graph to run
+   */
+  public readonly graph: TaskGraph;
+
+  /**
+   * Output cache repository
+   */
+  protected outputCache?: TaskOutputRepository;
+  /**
+   * AbortController for cancelling graph execution
+   */
+  protected abortController: AbortController | undefined;
+
+  /**
+   * Maps to track task execution state
+   */
+  protected inProgressTasks: Map<unknown, Promise<TaskOutput>> = new Map();
+  protected inProgressFunctions: Map<unknown, Promise<any>> = new Map();
+  protected failedTaskErrors: Map<unknown, TaskError> = new Map();
 
   /**
    * Constructor for TaskGraphRunner
@@ -44,13 +67,155 @@ export class TaskGraphRunner {
    * @param reactiveScheduler The scheduler to use for reactive task execution
    */
   constructor(
-    public graph: TaskGraph,
-    public outputCache?: TaskOutputRepository,
-    public processScheduler = new DependencyBasedScheduler(graph),
-    public reactiveScheduler = new TopologicalScheduler(graph)
+    graph: TaskGraph,
+    outputCache?: TaskOutputRepository,
+    protected processScheduler = new DependencyBasedScheduler(graph),
+    protected reactiveScheduler = new TopologicalScheduler(graph)
   ) {
+    this.graph = graph;
     this.provenanceInput = new Map();
     graph.outputCache = outputCache;
+  }
+
+  // ========================================================================
+  // Public methods
+  // ========================================================================
+  /**
+   * Runs the task graph
+   * @param config Configuration for the graph run
+   * @returns A promise that resolves when all tasks are complete
+   * @throws TaskErrorGroup if any tasks have failed
+   */
+  public async runGraph(config?: TaskGraphRunConfig): Promise<GraphResult> {
+    if (config?.outputCache) {
+      this.outputCache = config.outputCache;
+      this.graph.outputCache = config.outputCache;
+    }
+    await this.handleStart(config?.parentSignal);
+
+    const results: GraphResult = [];
+    let error: TaskError | undefined;
+
+    try {
+      // TODO: A different graph runner may chunck tasks that are in parallel
+      // rather them all at once
+      for await (const task of this.processScheduler.tasks()) {
+        if (this.abortController?.signal.aborted) {
+          break;
+        }
+
+        // Check if any tasks have failed
+        if (this.failedTaskErrors.size > 0) {
+          throw new TaskErrorGroup(
+            Array.from(this.failedTaskErrors.entries()).map(([key, error]) => ({
+              key,
+              type: (error as any).name || (error as any).constructor.name,
+              error,
+            }))
+          );
+        }
+
+        const runAsync = async () => {
+          try {
+            const taskPromise = this.runTaskWithProvenance(task, config?.parentProvenance || {});
+            this.inProgressTasks!.set(task.config.id, taskPromise);
+            const taskResult = await taskPromise;
+
+            if (this.graph.getTargetDataflows(task.config.id).length === 0) {
+              // we save the results of all the leaves
+              results.push(taskResult);
+            }
+          } catch (error) {
+            this.failedTaskErrors.set(task.config.id, error as TaskError);
+            throw error;
+          } finally {
+            this.processScheduler.onTaskCompleted(task.config.id);
+            this.pushStatusFromNodeToEdges(this.graph, task);
+            this.pushErrorFromNodeToEdges(this.graph, task);
+          }
+        };
+
+        // Start task execution without awaiting
+        // so we can have many tasks running in parallel
+        // but keep track of them to make sure they get awaited
+        // otherwise, things will finish after this promise is resolved
+        this.inProgressFunctions.set(Symbol(task.config.id as string), runAsync());
+      }
+    } catch (err) {
+      error = err as Error;
+    }
+    // Wait for all tasks to complete since we did not await runAsync()/this.runTaskWithProvenance()
+    await Promise.allSettled(Array.from(this.inProgressTasks.values()));
+    // Clean up stragglers to avoid unhandled promise rejections
+    await Promise.allSettled(Array.from(this.inProgressFunctions.values()));
+
+    if (this.failedTaskErrors.size > 0) {
+      const errors = Array.from(this.failedTaskErrors.entries()).map(([key, error]) => ({
+        key,
+        type: (error as any).name || (error as any).constructor.name,
+        error,
+      }));
+      const errorGroup = new TaskErrorGroup(errors);
+      await this.handleError();
+      throw errorGroup;
+    }
+    if (this.abortController?.signal.aborted) {
+      throw new TaskErrorGroup([
+        { key: "*", type: "TaskAbortedError", error: new TaskAbortedError() },
+      ]);
+    }
+
+    await this.handleComplete();
+
+    return results || [];
+  }
+
+  /**
+   * Runs the task graph in a reactive manner
+   * @returns A promise that resolves when all tasks are complete
+   * @throws TaskConfigurationError if the graph is already running reactively
+   */
+  public async runGraphReactive(): Promise<GraphResult> {
+    await this.handleStartReactive();
+
+    if (!this.running) {
+      this.resetGraph(this.graph, nanoid());
+    }
+
+    this.reactiveScheduler.reset();
+    const results: GraphResult = [];
+
+    try {
+      for await (const task of this.reactiveScheduler.tasks()) {
+        if (task.status === TaskStatus.PENDING) {
+          task.resetInputData();
+          this.copyInputFromEdgesToNode(task);
+          const taskResult = await task.runReactive();
+
+          this.pushOutputFromNodeToEdges(task, taskResult);
+          if (this.graph.getTargetDataflows(task.config.id).length === 0) {
+            results.push({
+              id: task.config.id,
+              type: (task.constructor as any).runtype || (task.constructor as any).type,
+              data: taskResult,
+            });
+          }
+        }
+      }
+      await this.handleCompleteReactive();
+    } catch (error) {
+      await this.handleErrorReactive();
+      throw error;
+    } finally {
+    }
+    return results;
+  }
+
+  /**
+   * Aborts the task graph execution
+   */
+  public abort(): void {
+    this.abortController?.abort();
   }
 
   /**
@@ -97,7 +262,15 @@ export class TaskGraphRunner {
     }
   }
 
-  private copyInputFromEdgesToNode(task: ITask) {
+  // ========================================================================
+  // Protected Handlers
+  // ========================================================================
+
+  /**
+   * Copies input data from edges to a task
+   * @param task The task to copy input data to
+   */
+  protected copyInputFromEdgesToNode(task: ITask) {
     this.graph.getSourceDataflows(task.config.id).forEach((dataflow) => {
       this.addInputData(task, dataflow.getPortData());
     });
@@ -108,7 +281,7 @@ export class TaskGraphRunner {
    * @param node The task to retrieve provenance input for
    * @returns The provenance input for the task
    */
-  private getInputProvenance(node: ITask): TaskInput {
+  protected getInputProvenance(node: ITask): TaskInput {
     const nodeProvenance: Provenance = {};
     this.graph.getSourceDataflows(node.config.id).forEach((dataflow) => {
       Object.assign(nodeProvenance, dataflow.provenance);
@@ -122,7 +295,11 @@ export class TaskGraphRunner {
    * @param results The output of the task
    * @param nodeProvenance The provenance input for the task
    */
-  private pushOutputFromNodeToEdges(node: ITask, results: TaskOutput, nodeProvenance?: Provenance) {
+  protected pushOutputFromNodeToEdges(
+    node: ITask,
+    results: TaskOutput,
+    nodeProvenance?: Provenance
+  ) {
     this.graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
       dataflow.setPortData(results, nodeProvenance);
     });
@@ -132,7 +309,7 @@ export class TaskGraphRunner {
    * Pushes the status of a task to its target edges
    * @param node The task that produced the status
    */
-  private pushStatusFromNodeToEdges(graph: TaskGraph, node: ITask) {
+  protected pushStatusFromNodeToEdges(graph: TaskGraph, node: ITask) {
     if (!node?.config?.id) return;
     graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
       dataflow.status = node.status;
@@ -143,7 +320,7 @@ export class TaskGraphRunner {
    * Pushes the error of a task to its target edges
    * @param node The task that produced the error
    */
-  private pushErrorFromNodeToEdges(graph: TaskGraph, node: ITask) {
+  protected pushErrorFromNodeToEdges(graph: TaskGraph, node: ITask) {
     if (!node?.config?.id) return;
     graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
       dataflow.error = node.error;
@@ -156,7 +333,7 @@ export class TaskGraphRunner {
    * @param parentProvenance The provenance input for the task
    * @returns The output of the task
    */
-  private async runTaskWithProvenance(
+  protected async runTaskWithProvenance(
     task: ITask,
     parentProvenance: Provenance
   ): Promise<GraphSingleResult> {
@@ -179,11 +356,11 @@ export class TaskGraphRunner {
       );
       if (results) {
         //@ts-expect-error - using internals
-        task.runner.handleStart();
+        await task.runner.handleStart();
         task.runOutputData = results;
         await task.runReactive();
         //@ts-expect-error - using internals
-        task.runner.handleComplete();
+        await task.runner.handleComplete();
       }
     }
     if (!results) {
@@ -206,153 +383,13 @@ export class TaskGraphRunner {
     };
   }
 
-  private abortController: AbortController | undefined;
-
-  public handleStart(parentSignal?: AbortSignal) {
-    // no reentrancy
-    if (this.running || this.reactiveRunning) {
-      throw new TaskConfigurationError("Graph is already running");
-    }
-    this.running = true;
-    this.abortController = new AbortController();
-    this.abortController.signal.addEventListener("abort", () => {
-      this.handleAbort();
-    });
-    if (parentSignal?.aborted) {
-      this.abortController.abort(); // Immediately abort if the parent is already aborted
-      return;
-    } else {
-      parentSignal?.addEventListener(
-        "abort",
-        () => {
-          this.abortController?.abort();
-        },
-        { once: true }
-      );
-    }
-
-    this.running = true;
-    this.resetGraph(this.graph, nanoid());
-    this.processScheduler.reset();
-    this.inProgressTasks.clear();
-    this.inProgressFunctions.clear();
-    this.failedTaskErrors.clear();
-  }
-
-  public handleComplete() {
-    this.running = false;
-  }
-
-  private inProgressTasks: Map<unknown, Promise<TaskOutput>> = new Map();
-  private inProgressFunctions: Map<unknown, Promise<any>> = new Map();
-  private failedTaskErrors: Map<unknown, TaskError> = new Map();
-
   /**
-   * Runs the task graph
-   * @param parentProvenance The provenance input for the task graph
-   * @returns A promise that resolves when all tasks are complete
-   * @throws TaskErrorGroup if any tasks have failed
+   * Resets a task
+   * @param graph The task graph to reset
+   * @param task The task to reset
+   * @param runId The run ID
    */
-  public async runGraph(config?: TaskGraphRunConfig): Promise<GraphResult> {
-    if (config?.outputCache) {
-      this.outputCache = config.outputCache;
-      this.graph.outputCache = config.outputCache;
-    }
-    this.handleStart(config?.parentSignal);
-
-    const results: GraphResult = [];
-    let error: TaskError | undefined;
-
-    try {
-      // TODO: A different graph runner may chunck tasks that are in parallel
-      // rather them all at once
-      for await (const task of this.processScheduler.tasks()) {
-        if (this.abortController?.signal.aborted) {
-          break;
-        }
-
-        // Check if any tasks have failed
-        if (this.failedTaskErrors.size > 0) {
-          throw new TaskErrorGroup(
-            Array.from(this.failedTaskErrors.entries()).map(([key, error]) => ({
-              key,
-              type: (error as any).name || (error as any).constructor.name,
-              error,
-            }))
-          );
-        }
-
-        const runAsync = async () => {
-          try {
-            const taskPromise = this.runTaskWithProvenance(task, config?.parentProvenance || {});
-            this.inProgressTasks!.set(task.config.id, taskPromise);
-            const taskResult = await taskPromise;
-
-            if (this.graph.getTargetDataflows(task.config.id).length === 0) {
-              // we save the results of all the leaves
-              results.push(taskResult);
-            } else {
-              //  console.log("task intermediate result", taskResult);
-            }
-          } catch (error) {
-            this.failedTaskErrors.set(task.config.id, error as TaskError);
-            throw error;
-          } finally {
-            this.processScheduler.onTaskCompleted(task.config.id);
-            this.pushStatusFromNodeToEdges(this.graph, task);
-            this.pushErrorFromNodeToEdges(this.graph, task);
-          }
-        };
-
-        // Start task execution without awaiting
-        // so we can have many tasks running in parallel
-        // but keep track of them to make sure they get awaited
-        // otherwise, things will finish after this promise is resolved
-        this.inProgressFunctions.set(Symbol(task.config.id as string), runAsync());
-      }
-    } catch (err) {
-      // this.abort();
-      error = err as Error;
-    } finally {
-    }
-    // Wait for all tasks to complete since we did not await runAsync()/this.runTaskWithProvenance()
-    await Promise.allSettled(Array.from(this.inProgressTasks.values()));
-    // get the straglers. skipping this will show unhandled promise rejections in tests
-    await Promise.allSettled(Array.from(this.inProgressFunctions.values())); //cleanup
-
-    if (this.failedTaskErrors.size > 0) {
-      const errors = Array.from(this.failedTaskErrors.entries()).map(([key, error]) => ({
-        key,
-        type: (error as any).name || (error as any).constructor.name,
-        error,
-      }));
-      const errorGroup = new TaskErrorGroup(errors);
-      await this.handleError();
-      throw errorGroup;
-    }
-    if (this.abortController?.signal.aborted) {
-      throw new TaskErrorGroup([
-        { key: "*", type: "TaskAbortedError", error: new TaskAbortedError() },
-      ]);
-    }
-
-    await this.handleComplete();
-
-    return results || [];
-  }
-
-  private async handleError() {
-    await Promise.allSettled(
-      this.graph.getNodes().map(async (task: ITask) => {
-        if ([TaskStatus.PROCESSING].includes(task.status)) {
-          task.abort();
-        }
-      })
-    );
-    this.running = false;
-  }
-
-  private resetTask(graph: TaskGraph, task: ITask, runId: string) {
+  protected resetTask(graph: TaskGraph, task: ITask, runId: string) {
     task.status = TaskStatus.PENDING;
     task.resetInputData();
     task.runOutputData = {};
@@ -369,7 +406,7 @@ export class TaskGraphRunner {
    * Resets the task graph, recursively
    * @param graph The task graph to reset
    */
-  private resetGraph(graph: TaskGraph, runnerId: string) {
+  protected resetGraph(graph: TaskGraph, runnerId: string) {
     graph.getNodes().forEach((node) => {
       this.resetTask(graph, node, runnerId);
       if (node.isCompound) {
@@ -380,20 +417,63 @@ export class TaskGraphRunner {
   }
 
   /**
-   * Aborts the task graph
+   * Handles the start of task graph execution
+   * @param parentSignal Optional abort signal from parent
    */
-  public abort() {
-    this.abortController?.abort(); // this abort basically just calls handleAbort()
+  protected async handleStart(parentSignal?: AbortSignal): Promise<void> {
+    // Prevent reentrancy
+    if (this.running || this.reactiveRunning) {
+      throw new TaskConfigurationError("Graph is already running");
+    }
+
+    this.running = true;
+    this.abortController = new AbortController();
+    this.abortController.signal.addEventListener("abort", () => {
+      this.handleAbort();
+    });
+
+    if (parentSignal?.aborted) {
+      this.abortController.abort(); // Immediately abort if the parent is already aborted
+      return;
+    } else {
+      parentSignal?.addEventListener(
+        "abort",
+        () => {
+          this.abortController?.abort();
+        },
+        { once: true }
+      );
+    }
+
+    this.resetGraph(this.graph, nanoid());
+    this.processScheduler.reset();
+    this.inProgressTasks.clear();
+    this.inProgressFunctions.clear();
+    this.failedTaskErrors.clear();
+  }
+
+  protected async handleStartReactive(): Promise<void> {
+    if (this.reactiveRunning) {
+      throw new TaskConfigurationError("Graph is already running reactively");
+    }
+    this.reactiveRunning = true;
   }
 
   /**
-   * Handles the abort of the task graph via the abort controller
-   * The abort controller could be called via the abort() method above,
-   * or the via the abort controller by a parent graph runner, etc.
-   *
-   * @returns A promise that resolves when the abort is complete
+   * Handles the completion of task graph execution
    */
-  public async handleAbort() {
+  protected async handleComplete(): Promise<void> {
+    this.running = false;
+  }
+
+  protected async handleCompleteReactive(): Promise<void> {
+    this.reactiveRunning = false;
+  }
+
+  /**
+   * Handles errors during task graph execution
+   */
+  protected async handleError(): Promise<void> {
     await Promise.allSettled(
       this.graph.getNodes().map(async (task: ITask) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
@@ -404,47 +484,36 @@ export class TaskGraphRunner {
     this.running = false;
   }
 
+  protected async handleErrorReactive(): Promise<void> {
+    this.reactiveRunning = false;
+  }
+
   /**
-   * Runs the task graph in a reactive manner
-   * @returns A promise that resolves when all tasks are complete
-   * @throws TaskConfigurationError if the graph is already running reactively
+   * Handles task graph abortion
    */
-  public async runGraphReactive(): Promise<GraphResult> {
-    if (this.reactiveRunning) {
-      throw new TaskConfigurationError("Graph is already running reactively");
-    }
-    this.reactiveRunning = true;
-
-    if (!this.running) {
-      this.resetGraph(this.graph, nanoid());
-    }
-
-    this.reactiveScheduler.reset();
-
-    const results: GraphResult = [];
-
-    try {
-      for await (const task of this.reactiveScheduler.tasks()) {
-        if (task.status === TaskStatus.PENDING) {
-          task.resetInputData();
-          this.copyInputFromEdgesToNode(task);
-          const taskResult = await task.runReactive();
-
-          this.pushOutputFromNodeToEdges(task, taskResult);
-          if (this.graph.getTargetDataflows(task.config.id).length === 0) {
-            results.push({
-              id: task.config.id,
-              type: (task.constructor as any).runtype || (task.constructor as any).type,
-              data: taskResult,
-            });
-          }
+  protected async handleAbort(): Promise<void> {
+    await Promise.allSettled(
+      this.graph.getNodes().map(async (task: ITask) => {
+        if ([TaskStatus.PROCESSING].includes(task.status)) {
+          task.abort();
         }
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      this.reactiveRunning = false;
-    }
-    return results;
+      })
+    );
+    this.running = false;
+  }
+
+  protected async handleAbortReactive(): Promise<void> {
+    this.reactiveRunning = false;
+  }
+
+  /**
+   * Handles progress updates for the task graph
+   * Currently not implemented at the graph level
+   * @param progress Progress value (0-100)
+   * @param args Additional arguments
+   */
+  protected handleProgress(progress: number, ...args: any[]): void {
+    // Not currently implemented at the graph level
+    // Could be used to track overall graph progress
   }
 }

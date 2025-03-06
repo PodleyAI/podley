@@ -43,7 +43,16 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
     }
     return this._runner;
   }
+  // ========================================================================
+  // Public methods
+  // ========================================================================
 
+  /**
+   * Runs the task graph
+   * @param config Configuration for the graph run
+   * @returns A promise that resolves when all tasks are complete
+   * @throws TaskErrorGroup if any tasks have failed
+   */
   public run(config?: TaskGraphRunConfig) {
     if (config?.outputCache) {
       this.outputCache = config.outputCache;
@@ -55,8 +64,20 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
     });
   }
 
+  /**
+   * Runs the task graph reactively
+   * @returns A promise that resolves when all tasks are complete
+   * @throws TaskErrorGroup if any tasks have failed
+   */
   public runReactive() {
     return this.runner.runGraphReactive();
+  }
+
+  /**
+   * Aborts the task graph
+   */
+  public abort() {
+    this.runner.abort();
   }
 
   /**
@@ -126,6 +147,11 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
       }
     }
   }
+
+  /**
+   * Retrieves all data flows in the task graph
+   * @returns An array of data flows in the task graph
+   */
   public getDataflows(): Dataflow[] {
     return this.getEdges().map((edge) => edge[2]);
   }
