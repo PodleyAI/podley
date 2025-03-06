@@ -503,6 +503,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       return this.activeJobAbortControllers.get(jobId)!;
     }
     const abortController = new AbortController();
+    abortController.signal.addEventListener("abort", () => this.handleAbort(jobId));
     this.activeJobAbortControllers.set(jobId, abortController);
     return abortController;
   }
@@ -686,13 +687,8 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
         await this.delete(job.id);
       }
 
-      if (error instanceof AbortSignalJobError) {
-        this.events.emit("job_aborting", this.queueName, job.id);
-        this.stats.abortedJobs++;
-      } else {
-        this.stats.failedJobs++;
-        this.events.emit("job_error", this.queueName, job.id, `${error!.cause}: ${error!.message}`);
-      }
+      this.stats.failedJobs++;
+      this.events.emit("job_error", this.queueName, job.id, `${error!.cause}: ${error!.message}`);
 
       const promises = this.activeJobPromises.get(job.id) || [];
       promises.forEach(({ reject }) => reject(error!));
@@ -748,8 +744,13 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
    */
   public async abort(jobId: unknown) {
     if (!jobId) throw new JobNotFoundError("Cannot abort undefined job");
+    // we "store the abort signal" in the storage in case we are client
+    // and not server for this job. we could avoid this is we were definitely
+    // both, but better to have durability here.
     await this.storage.abort(jobId);
 
+    // if we are server too, we need to abort the job
+    // the abort controller will issue a a call to handleAbort
     const controller = this.activeJobAbortControllers.get(jobId);
     if (controller) {
       if (!controller.signal.aborted) {
@@ -758,12 +759,27 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
         } catch (err) {}
       }
     }
+    this.events.emit("job_aborting", this.queueName, jobId);
+  }
+
+  /**
+   * Handles the abort of a job
+   * @param jobId The ID of the job to abort
+   */
+  protected async handleAbort(jobId: unknown) {
     const promises = this.activeJobPromises.get(jobId);
     if (promises) {
-      promises.forEach(({ reject }) => reject(new PermanentJobError("Job Aborted")));
+      // we are both the client and the server, so we handle ourselfs
+      // right away. (a server will poll the storage for abort signals)
+      const job = await this.get(jobId);
+      if (!job) {
+        console.error("handleAbort: job not found", jobId);
+        return;
+      }
+      const error = new AbortSignalJobError("Job Aborted");
+      this.failJob(job, error);
     }
-    this.activeJobPromises.delete(jobId);
-    this.events.emit("job_aborting", this.queueName, jobId);
+    this.stats.abortedJobs++;
   }
 
   /**
