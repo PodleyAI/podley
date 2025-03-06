@@ -97,7 +97,7 @@ export interface IJobQueue<Input, Output> {
    * @param jobId The job ID to abort
    * @returns A promise that resolves to true if the job was aborted, false otherwise
    */
-  abort(jobId: unknown): Promise<boolean>;
+  abort(jobId: unknown): Promise<void>;
 
   /**
    * Peek at jobs in the queue
@@ -113,16 +113,6 @@ export interface IJobQueue<Input, Output> {
    * @returns A promise that resolves to the number of jobs
    */
   size(status?: JobStatus): Promise<number>;
-
-  /**
-   * Complete a job
-   * @param id The job ID
-   * @param output Optional output to set
-   * @param error Optional error to set
-   * @returns A promise that resolves when the job is completed
-   * @note If deleteCompletedJobs option is enabled, the job will be deleted after completion
-   */
-  complete(id: unknown, output?: Output, error?: JobError): Promise<void>;
 
   /**
    * Get the output for a job by its input
@@ -159,7 +149,6 @@ export interface IJobQueue<Input, Output> {
     details?: Record<string, any> | null
   ): Promise<void>;
   onJobProgress(jobId: unknown, listener: JobProgressListener): () => void;
-  removeAllJobProgressListeners(jobId: unknown): void;
 
   /**
    * Start the job queue

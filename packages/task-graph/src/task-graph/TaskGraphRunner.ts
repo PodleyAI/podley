@@ -120,7 +120,6 @@ export class TaskGraphRunner {
             }
           } catch (error) {
             this.failedTaskErrors.set(task.config.id, error as TaskError);
-            throw error;
           } finally {
             this.processScheduler.onTaskCompleted(task.config.id);
             this.pushStatusFromNodeToEdges(this.graph, task);

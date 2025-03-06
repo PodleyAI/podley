@@ -7,7 +7,7 @@
 
 import { IQueueStorage, InMemoryQueueStorage, JobStorageFormat } from "@ellmers/storage";
 import { EventEmitter, sleep } from "@ellmers/util";
-import { JobQueueOptions, QueueMode } from "./IJobQueue";
+import { IJobQueue, JobQueueOptions, QueueMode } from "./IJobQueue";
 import { ILimiter } from "./ILimiter";
 import { Job, JobConstructorParam, JobStatus } from "./Job";
 import {
@@ -39,25 +39,38 @@ export interface JobQueueStats {
   lastUpdateTime: Date;
 }
 
+type JobClass<Input, Output> = new (
+  param: JobConstructorParam<Input, Output>
+) => Job<Input, Output>;
+
 /**
  * Base class for implementing job queues with different storage backends.
  */
-export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<Input, Output>> {
-  protected options: JobQueueOptions<Input, Output>;
-  protected readonly limiter: ILimiter;
-  protected readonly storage: IQueueStorage<Input, Output>;
+export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<Input, Output>>
+  implements IJobQueue<Input, Output>
+{
+  /**
+   * The name of the queue
+   */
+  public readonly queueName: string;
 
   /**
-   * Creates a new job queue
-   * @param queueName The name of the queue
-   * @param jobClass The class of the job to be used in the queue
-   * @param options The options for the queue
+   * The class of the job to be used in the queue
    */
+  public readonly jobClass: JobClass<Input, Output>;
+
+  /**
+   * The options for the queue
+   */
+  protected options: JobQueueOptions<Input, Output>;
+
   constructor(
-    public readonly queueName: string,
-    public readonly jobClass: new (param: JobConstructorParam<Input, Output>) => QueueJob,
+    queueName: string,
+    jobClass: JobClass<Input, Output>,
     options: JobQueueOptions<Input, Output>
   ) {
+    this.queueName = queueName;
+    this.jobClass = jobClass;
     const { limiter, storage, ...rest } = options;
     this.options = {
       waitDurationInMilliseconds: 100,
@@ -75,35 +88,9 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     };
   }
 
-  protected running: boolean = false;
-  protected stats: JobQueueStats = {
-    totalJobs: 0,
-    completedJobs: 0,
-    failedJobs: 0,
-    abortedJobs: 0,
-    retriedJobs: 0,
-    lastUpdateTime: new Date(),
-  };
-  protected events = new EventEmitter<JobQueueEventListeners<Input, Output>>();
-  protected activeJobAbortSignals: Map<unknown, AbortController> = new Map();
-  protected activeJobPromises: Map<
-    unknown,
-    Array<{
-      resolve: (value?: any) => void;
-      reject: (err: JobError) => void;
-    }>
-  > = new Map();
-  protected processingTimes: Map<unknown, number> = new Map();
-  protected mode: QueueMode = QueueMode.BOTH;
-  protected jobProgressListeners: Map<unknown, Set<JobProgressListener>> = new Map();
-  protected lastKnownProgress: Map<
-    unknown,
-    {
-      progress: number;
-      message: string;
-      details: Record<string, any> | null;
-    }
-  > = new Map();
+  // ========================================================================
+  // Job Management public methods
+  // ========================================================================
 
   /**
    * Gets a job from the queue
@@ -162,13 +149,10 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   }
 
   /**
-   * Gets jobs by run ID
-   * @param runId The ID of the run to get jobs for
+   * Returns current queue statistics
    */
-  public async getByRunId(runId: string) {
-    if (!runId) throw new JobNotFoundError("Cannot get jobs by undefined runId");
-    const jobs = await this.storage.getByRunId(runId);
-    return jobs.map((job) => this.storageToClass(job));
+  public getStats(): JobQueueStats {
+    return { ...this.stats };
   }
 
   /**
@@ -181,28 +165,187 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   }
 
   /**
-   * Saves the progress for a job
-   * @param id The ID of the job to save progress for
-   * @param progress The progress of the job
-   * @param message The message of the job
-   * @param details The details of the job
+   * Executes a job with the provided abort signal.
+   * Can be overridden by implementations to add custom execution logic.
    */
-  private async saveProgress(
-    id: unknown,
-    progress: number,
-    message: string,
-    details: Record<string, any> | null
-  ) {
-    if (!id) throw new JobNotFoundError("Cannot save progress for undefined job");
-    await this.storage.saveProgress(id, progress, message, details);
+  public async executeJob(job: Job<Input, Output>, signal: AbortSignal): Promise<Output> {
+    if (!job) throw new JobNotFoundError("Cannot execute null or undefined job");
+    return await job.execute(signal);
   }
+
+  /**
+   * Returns a promise that resolves when the job completes
+   */
+  public async waitFor<Output>(jobId: unknown): Promise<Output> {
+    if (!jobId) throw new JobNotFoundError("Cannot wait for undefined job");
+    const job = await this.get(jobId);
+    if (!job) throw new JobNotFoundError(`Job ${jobId} not found`);
+
+    if (job.status === JobStatus.COMPLETED) {
+      return job.output as Output;
+    }
+    if (job.status === JobStatus.FAILED) {
+      throw job.error;
+    }
+    const { promise, resolve, reject } = Promise.withResolvers<Output>();
+    const promises = this.activeJobPromises.get(job.id) || [];
+    promises.push({ resolve, reject });
+    this.activeJobPromises.set(job.id, promises);
+    return promise as Promise<Output>;
+  }
+
+  /**
+   * Updates the progress of a job
+   * @param jobId - The ID of the job to update
+   * @param progress - Progress value between 0 and 100
+   * @param message - Optional message describing the current progress state
+   * @param details - Optional structured data about the progress
+   * @returns A promise that resolves when the progress is updated
+   * @note If the job is completed, failed, or aborted, the progress will not be updated
+   */
+  public async updateProgress(
+    jobId: unknown,
+    progress: number,
+    message: string = "",
+    details: Record<string, any> | null = null
+  ): Promise<void> {
+    const job = await this.get(jobId);
+    if (!job) throw new JobNotFoundError(`Job ${jobId} not found`);
+
+    if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.ABORTING].includes(job.status)) {
+      return;
+    }
+
+    // Validate progress value
+    progress = Math.max(0, Math.min(100, progress));
+
+    job.progress = progress;
+    job.progressMessage = message;
+    job.progressDetails = details;
+
+    await this.saveProgress(jobId, progress, message, details ?? null);
+    this.announceProgress(jobId, progress, message, details ?? null);
+  }
+
+  /**
+   * Adds a progress listener for a specific job
+   * @param jobId - The ID of the job to listen to
+   * @param listener - The callback function to be called when progress updates occur
+   * @returns A cleanup function to remove the listener
+   */
+  public onJobProgress(jobId: unknown, listener: JobProgressListener): () => void {
+    if (!this.jobProgressListeners.has(jobId)) {
+      this.jobProgressListeners.set(jobId, new Set());
+    }
+    const listeners = this.jobProgressListeners.get(jobId)!;
+    listeners.add(listener);
+
+    return () => {
+      const listeners = this.jobProgressListeners.get(jobId);
+      if (listeners) {
+        listeners.delete(listener);
+        if (listeners.size === 0) {
+          this.jobProgressListeners.delete(jobId);
+        }
+      }
+    };
+  }
+
+  /**
+   * Starts the job queue based on its operating mode
+   */
+  public async start(mode: QueueMode = QueueMode.BOTH) {
+    if (this.running) {
+      return this;
+    }
+    this.mode = mode;
+
+    this.running = true;
+    this.events.emit("queue_start", this.queueName);
+
+    // Start job processing if in SERVER or BOTH mode
+    if (this.mode === QueueMode.SERVER || this.mode === QueueMode.BOTH) {
+      await this.fixupJobs();
+      await this.processJobs();
+    }
+
+    // Start job monitoring if in CLIENT or BOTH mode
+    if (this.mode === QueueMode.CLIENT || this.mode === QueueMode.BOTH) {
+      await this.monitorJobs();
+    }
+
+    return this;
+  }
+
+  /**
+   * Stops the job queue and aborts all active jobs
+   */
+  public async stop() {
+    if (!this.running) return this;
+    this.running = false;
+
+    // Wait for pending operations to settle
+    const size = await this.size(JobStatus.PROCESSING);
+    const sleepTime = Math.max(100, size * 2);
+    await sleep(sleepTime);
+
+    // Abort all active jobs
+    for (const [jobId] of this.activeJobAbortControllers.entries()) {
+      this.abort(jobId);
+    }
+
+    // Reject all waiting promises
+    this.activeJobPromises.forEach((promises) =>
+      promises.forEach(({ reject }) => reject(new PermanentJobError("Queue Stopped")))
+    );
+
+    // Wait for abort operations to settle
+    await sleep(sleepTime);
+
+    this.events.emit("queue_stop", this.queueName);
+    return this;
+  }
+
+  /**
+   * Clears all jobs and resets queue state
+   */
+  public async clear() {
+    await this.storage.deleteAll();
+    this.activeJobAbortControllers.clear();
+    this.activeJobPromises.clear();
+    this.processingTimes.clear();
+    this.lastKnownProgress.clear();
+    this.jobProgressListeners.clear();
+    this.stats = {
+      totalJobs: 0,
+      completedJobs: 0,
+      failedJobs: 0,
+      abortedJobs: 0,
+      retriedJobs: 0,
+      lastUpdateTime: new Date(),
+    };
+    this.emitStatsUpdate();
+    return this;
+  }
+
+  /**
+   * Restarts the job queue
+   */
+  public async restart() {
+    await this.stop();
+    await this.clear();
+    await this.start();
+    return this;
+  }
+
+  // --------------  Job Run Management  --------------
 
   /**
    * Aborts all jobs in a job run
    */
   public async abortJobRun(jobRunId: string): Promise<void> {
     if (!jobRunId) throw new JobNotFoundError("Cannot abort job run with undefined jobRunId");
-    const jobs = await this.getByRunId(jobRunId);
+    const jobs = await this.getJobsByRunId(jobRunId);
     await Promise.allSettled(
       jobs.map((job) => {
         if ([JobStatus.PROCESSING, JobStatus.PENDING].includes(job.status)) {
@@ -213,13 +356,18 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   }
 
   /**
-   * Executes a job with the provided abort signal.
-   * Can be overridden by implementations to add custom execution logic.
+   * Gets jobs by run ID
+   * @param runId The ID of the run to get jobs for
    */
-  public async executeJob(job: Job<Input, Output>, signal: AbortSignal): Promise<Output> {
-    if (!job) throw new JobNotFoundError("Cannot execute null or undefined job");
-    return await job.execute(signal);
+  public async getJobsByRunId(runId: string): Promise<Job<Input, Output>[]> {
+    if (!runId) throw new JobNotFoundError("Cannot get jobs by undefined runId");
+    const jobs = await this.storage.getByRunId(runId);
+    return jobs.map((job) => this.storageToClass(job));
   }
+
+  // ========================================================================
+  // Event handling
+  // ========================================================================
 
   /**
    * Registers an event listener for job queue events
@@ -260,27 +408,103 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     return this.events.waitOn(event) as Promise<JobQueueEventParameters<Event, Input, Output>>;
   }
 
+  // ========================================================================
+  // Protected properties
+  // ========================================================================
+
+  /**
+   * The limiter for the queue
+   */
+  protected readonly limiter: ILimiter;
+
+  /**
+   * The storage for the queue
+   */
+  protected readonly storage: IQueueStorage<Input, Output>;
+
+  /**
+   * Whether the queue is running
+   */
+  protected running: boolean = false;
+
+  /**
+   * The stats for the queue
+   */
+  protected stats: JobQueueStats = {
+    totalJobs: 0,
+    completedJobs: 0,
+    failedJobs: 0,
+    abortedJobs: 0,
+    retriedJobs: 0,
+    lastUpdateTime: new Date(),
+  };
+
+  /**
+   * The event emitter for the queue
+   */
+  protected events = new EventEmitter<JobQueueEventListeners<Input, Output>>();
+
+  /**
+   * The map of jobs to their promises for this worker instance
+   */
+  protected activeJobAbortControllers: Map<unknown, AbortController> = new Map();
+  /**
+   * Map of jobs to their promises for this worker instance
+   * If this is both a server and client we can short-circuit
+   * job aborting, wait on job completion, etc.
+   */
+  protected activeJobPromises: Map<
+    unknown,
+    Array<{
+      resolve: (value?: any) => void;
+      reject: (err: JobError) => void;
+    }>
+  > = new Map();
+  protected processingTimes: Map<unknown, number> = new Map();
+  protected mode: QueueMode = QueueMode.BOTH;
+  protected jobProgressListeners: Map<unknown, Set<JobProgressListener>> = new Map();
+  protected lastKnownProgress: Map<
+    unknown,
+    {
+      progress: number;
+      message: string;
+      details: Record<string, any> | null;
+    }
+  > = new Map();
+
+  // ========================================================================
+  // Protected methods
+  // ========================================================================
+
+  /**
+   * Saves the progress for a job
+   * @param id The ID of the job to save progress for
+   * @param progress The progress of the job
+   * @param message The message of the job
+   * @param details The details of the job
+   */
+  private async saveProgress(
+    id: unknown,
+    progress: number,
+    message: string,
+    details: Record<string, any> | null
+  ) {
+    if (!id) throw new JobNotFoundError("Cannot save progress for undefined job");
+    await this.storage.saveProgress(id, progress, message, details);
+  }
+
   /**
    * Creates an abort controller for a job and adds it to the activeJobSignals map
    */
   protected createAbortController(jobId: unknown): AbortController {
     if (!jobId) throw new JobNotFoundError("Cannot create abort controller for undefined job");
-    if (this.activeJobAbortSignals.has(jobId)) {
+    if (this.activeJobAbortControllers.has(jobId)) {
       // retries reuse the same abort controller
-      return this.activeJobAbortSignals.get(jobId)!;
+      return this.activeJobAbortControllers.get(jobId)!;
     }
     const abortController = new AbortController();
-    this.activeJobAbortSignals.set(jobId, abortController);
+    this.activeJobAbortControllers.set(jobId, abortController);
     return abortController;
-  }
-
-  /**
-   * Gets jobs by run ID
-   * @param runId The ID of the run to get jobs for
-   */
-  async getJobsByRunId(runId: string): Promise<Job<Input, Output>[]> {
-    const jobs = await this.storage.getByRunId(runId);
-    return jobs.map((job) => this.storageToClass(job));
   }
 
   /**
@@ -332,61 +556,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     this.events.emit("queue_stats_update", this.queueName, { ...this.stats });
   }
 
-  /**
-   * Returns a promise that resolves when the job completes
-   */
-  public async waitFor<Output>(jobId: unknown): Promise<Output> {
-    if (!jobId) throw new JobNotFoundError("Cannot wait for undefined job");
-    const job = await this.get(jobId);
-    if (!job) throw new JobNotFoundError(`Job ${jobId} not found`);
-
-    if (job.status === JobStatus.COMPLETED) {
-      return job.output as Output;
-    }
-    if (job.status === JobStatus.FAILED) {
-      throw job.error;
-    }
-    const { promise, resolve, reject } = Promise.withResolvers<Output>();
-    const promises = this.activeJobPromises.get(job.id) || [];
-    promises.push({ resolve, reject });
-    this.activeJobPromises.set(job.id, promises);
-    return promise as Promise<Output>;
-  }
-
-  /**
-   * Updates the progress of a job
-   * @param jobId - The ID of the job to update
-   * @param progress - Progress value between 0 and 100
-   * @param message - Optional message describing the current progress state
-   * @param details - Optional structured data about the progress
-   */
-  public async updateProgress(
-    jobId: unknown,
-    progress: number,
-    message: string = "",
-    details: Record<string, any> | null = null
-  ): Promise<void> {
-    const job = await this.get(jobId);
-    if (!job) {
-      throw new JobNotFoundError(`Job ${jobId} not found`);
-    }
-
-    if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.ABORTING].includes(job.status)) {
-      return;
-    }
-
-    // Validate progress value
-    progress = Math.max(0, Math.min(100, progress));
-
-    job.progress = progress;
-    job.progressMessage = message;
-    job.progressDetails = details;
-
-    await this.saveProgress(jobId, progress, message, details ?? null);
-    this.announceProgress(jobId, progress, message, details ?? null);
-  }
-
-  private announceProgress(
+  protected announceProgress(
     jobId: unknown,
     progress: number,
     message: string,
@@ -408,37 +578,6 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
         listener(progress, message, details);
       }
     }
-  }
-
-  /**
-   * Returns current queue statistics
-   */
-  public getStats(): JobQueueStats {
-    return { ...this.stats };
-  }
-
-  /**
-   * Adds a progress listener for a specific job
-   * @param jobId - The ID of the job to listen to
-   * @param listener - The callback function to be called when progress updates occur
-   * @returns A cleanup function to remove the listener
-   */
-  public onJobProgress(jobId: unknown, listener: JobProgressListener): () => void {
-    if (!this.jobProgressListeners.has(jobId)) {
-      this.jobProgressListeners.set(jobId, new Set());
-    }
-    const listeners = this.jobProgressListeners.get(jobId)!;
-    listeners.add(listener);
-
-    return () => {
-      const listeners = this.jobProgressListeners.get(jobId);
-      if (listeners) {
-        listeners.delete(listener);
-        if (listeners.size === 0) {
-          this.jobProgressListeners.delete(jobId);
-        }
-      }
-    };
   }
 
   /**
@@ -513,7 +652,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     };
   }
 
-  private async rescheduleJob(job: Job<Input, Output>, retryDate?: Date) {
+  protected async rescheduleJob(job: Job<Input, Output>, retryDate?: Date) {
     try {
       job.status = JobStatus.PENDING;
       const nextAvailableTime = await this.limiter.getNextAvailableTime();
@@ -531,7 +670,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     }
   }
 
-  private async failJob(job: Job<Input, Output>, error: JobError) {
+  protected async failJob(job: Job<Input, Output>, error: JobError) {
     try {
       job.status = JobStatus.FAILED;
       job.progress = 100;
@@ -557,18 +696,19 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
 
       const promises = this.activeJobPromises.get(job.id) || [];
       promises.forEach(({ reject }) => reject(error!));
+      this.activeJobPromises.delete(job.id);
     } catch (err) {
       console.error("failJob", err);
     }
 
     // Clear any remaining state
-    this.activeJobAbortSignals.delete(job.id);
+    this.activeJobAbortControllers.delete(job.id);
     this.lastKnownProgress.delete(job.id);
     this.jobProgressListeners.delete(job.id);
     this.activeJobPromises.delete(job.id);
   }
 
-  private async completeJob(job: Job<Input, Output>, output?: Output) {
+  protected async completeJob(job: Job<Input, Output>, output?: Output) {
     try {
       job.status = JobStatus.COMPLETED;
       job.progress = 100;
@@ -591,11 +731,12 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       if (promises) {
         promises.forEach(({ resolve }) => resolve(output!));
       }
+      this.activeJobPromises.delete(job.id);
     } catch (err) {
       console.error("completeJob", err);
     }
     // Clear any remaining state
-    this.activeJobAbortSignals.delete(job.id);
+    this.activeJobAbortControllers.delete(job.id);
     this.lastKnownProgress.delete(job.id);
     this.jobProgressListeners.delete(job.id);
     this.activeJobPromises.delete(job.id);
@@ -609,7 +750,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     if (!jobId) throw new JobNotFoundError("Cannot abort undefined job");
     await this.storage.abort(jobId);
 
-    const controller = this.activeJobAbortSignals.get(jobId);
+    const controller = this.activeJobAbortControllers.get(jobId);
     if (controller) {
       if (!controller.signal.aborted) {
         try {
@@ -628,7 +769,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   /**
    * Processes a job and handles its lifecycle including runAttempts and error handling
    */
-  private async processSingleJob(job: Job<Input, Output>): Promise<void> {
+  protected async processSingleJob(job: Job<Input, Output>): Promise<void> {
     if (!job || !job.id) throw new JobNotFoundError("Invalid job provided for processing");
 
     const startTime = Date.now();
@@ -670,7 +811,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   /**
    * Main job processing loop
    */
-  private async processJobs(): Promise<void> {
+  protected async processJobs(): Promise<void> {
     if (!this.running) {
       return;
     }
@@ -693,7 +834,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     }
   }
 
-  private async cleanUpJobs(): Promise<void> {
+  protected async cleanUpJobs(): Promise<void> {
     // delete any completed or failed jobs
     if (this.options.deleteAfterCompletionMs) {
       await this.storage.deleteJobsByStatusAndAge(
@@ -714,7 +855,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
    * Polls for updates to jobs being processed elsewhere
    * Only emits events when progress state has changed
    */
-  private async monitorJobs(): Promise<void> {
+  protected async monitorJobs(): Promise<void> {
     if (!this.running) {
       return;
     }
@@ -768,35 +909,9 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   }
 
   /**
-   * Starts the job queue based on its operating mode
-   */
-  public async start(mode: QueueMode = QueueMode.BOTH) {
-    if (this.running) {
-      return this;
-    }
-    this.mode = mode;
-
-    this.running = true;
-    this.events.emit("queue_start", this.queueName);
-
-    // Start job processing if in SERVER or BOTH mode
-    if (this.mode === QueueMode.SERVER || this.mode === QueueMode.BOTH) {
-      await this.fixupJobs();
-      await this.processJobs();
-    }
-
-    // Start job monitoring if in CLIENT or BOTH mode
-    if (this.mode === QueueMode.CLIENT || this.mode === QueueMode.BOTH) {
-      await this.monitorJobs();
-    }
-
-    return this;
-  }
-
-  /**
    * Fixes stuck jobs when the server restarts
    */
-  private async fixupJobs() {
+  protected async fixupJobs() {
     const stuckProcessingJobs = await this.peek(JobStatus.PROCESSING);
     const stuckAbortingJobs = await this.peek(JobStatus.ABORTING);
     const stuckJobs = [...stuckProcessingJobs, ...stuckAbortingJobs];
@@ -812,66 +927,5 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
 
       await this.rescheduleJob(job, job.lastRanAt!);
     }
-  }
-
-  /**
-   * Stops the job queue and aborts all active jobs
-   */
-  public async stop() {
-    if (!this.running) return this;
-    this.running = false;
-
-    // Wait for pending operations to settle
-    const size = await this.size(JobStatus.PROCESSING);
-    const sleepTime = Math.max(100, size * 2);
-    await sleep(sleepTime);
-
-    // Abort all active jobs
-    for (const [jobId] of this.activeJobAbortSignals.entries()) {
-      this.abort(jobId);
-    }
-
-    // Reject all waiting promises
-    this.activeJobPromises.forEach((promises) =>
-      promises.forEach(({ reject }) => reject(new PermanentJobError("Queue Stopped")))
-    );
-
-    // Wait for abort operations to settle
-    await sleep(sleepTime);
-
-    this.events.emit("queue_stop", this.queueName);
-    return this;
-  }
-
-  /**
-   * Clears all jobs and resets queue state
-   */
-  public async clear() {
-    await this.storage.deleteAll();
-    this.activeJobAbortSignals.clear();
-    this.activeJobPromises.clear();
-    this.processingTimes.clear();
-    this.lastKnownProgress.clear();
-    this.jobProgressListeners.clear();
-    this.stats = {
-      totalJobs: 0,
-      completedJobs: 0,
-      failedJobs: 0,
-      abortedJobs: 0,
-      retriedJobs: 0,
-      lastUpdateTime: new Date(),
-    };
-    this.emitStatsUpdate();
-    return this;
-  }
-
-  /**
-   * Restarts the job queue
-   */
-  public async restart() {
-    await this.stop();
-    await this.clear();
-    await this.start();
-    return this;
   }
 }
