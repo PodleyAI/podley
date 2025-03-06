@@ -22,6 +22,8 @@ import {
 } from "./TaskTypes";
 import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { Task } from "./Task";
+import { TaskRunner } from "./TaskRunner";
+import { RunOrReplicateTaskRunner } from "./RunOrReplicateTask";
 
 /**
  * Converts specified IO definitions to array type
@@ -166,10 +168,6 @@ export function arrayTaskFactory<
      * Each child task processes a single combination of the array inputs
      */
     regenerateGraph() {
-      if (this.status !== TaskStatus.PENDING) {
-        console.warn("ArrayTask.regenerateGraph called on non-pending task", this.status);
-        return;
-      }
       //TODO: only regenerate if we need to
       this.subGraph = new TaskGraph(this.outputCache);
       const combinations = generateCombinations<Input, keyof Input>(
@@ -189,54 +187,6 @@ export function arrayTaskFactory<
       super.regenerateGraph();
     }
 
-    /**
-     * Runs the task reactively, collecting outputs from all child tasks into arrays
-     * @returns Combined output with arrays of values from all child tasks
-     */
-    public async execute(input: Input, config: IExecuteConfig): Promise<Output> {
-      const results = await this.subGraph!.run({
-        parentProvenance: config.nodeProvenance || {},
-        parentSignal: config.signal || undefined,
-        outputCache: this.outputCache,
-      });
-      const outputs = results.map((result: any) => result.data);
-      if (outputs.length > 0) {
-        const collected = collectPropertyValues<SingleOutputType>(outputs as SingleOutputType[]);
-        if (Object.keys(collected).length > 0) {
-          this.runOutputData = collected as unknown as Output;
-        }
-      }
-      return this.runOutputData;
-    }
-
-    // Task runs this on compound tasks
-    public async executeReactive(input: Input, output: Output): Promise<Output> {
-      return output;
-    }
-    /**
-     * Default implementation of runReactive that just returns the current output data.
-     * Subclasses should override this to provide actual reactive functionality.
-     *
-     * This is generally for UI updating, and should be lightweight.
-     *
-     * @returns The task output
-     */
-    public async runReactive(overrides: Partial<Input> = {}): Promise<Output> {
-      this.setInput(overrides);
-      try {
-        await this.validateInputData(this.runInputData);
-      } catch {
-        return {} as Output;
-      }
-
-      const results = await this.subGraph!.runReactive();
-      const mapped = results.map((result) => result.data) as SingleOutputType[];
-      const collected = collectPropertyValues<SingleOutputType>(mapped);
-      this.runOutputData = collected as unknown as Output;
-
-      return this.runOutputData;
-    }
-
     toJSON(): JsonTaskItem {
       const { subgraph, ...result } = super.toJSON() as TaskGraphItemJson;
       return result;
@@ -247,7 +197,7 @@ export function arrayTaskFactory<
       return result;
     }
 
-    async validateItem(valueType: string, item: any) {
+    async validateInputValue(valueType: string, item: any) {
       return true; // let children validate
     }
 
@@ -257,12 +207,15 @@ export function arrayTaskFactory<
     declare outputCache: TaskOutputRepository;
     declare queueName: string;
     declare currentJobId: string;
-    declare handleComplete: () => void;
-    declare handleError: (error: Error) => void;
-    declare handleProgress: (progress: number) => void;
-    declare handleStart: () => void;
-    declare runInternal: (config: IRunConfig) => Promise<Output>;
-    declare validateInputData: (input: Partial<Input>) => Promise<boolean>;
+    declare validateInput: (input: Partial<Input>) => Promise<boolean>;
+    // Declare specific _runner type for this class
+    declare _runner: RunOrReplicateTaskRunner<Input, Output, Config>;
+    override get runner(): RunOrReplicateTaskRunner<Input, Output, Config> {
+      if (!this._runner) {
+        this._runner = new RunOrReplicateTaskRunner<Input, Output, Config>(this);
+      }
+      return this._runner;
+    }
   }
 
   // Use type assertion to make TypeScript accept the registration

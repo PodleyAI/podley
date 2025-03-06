@@ -76,7 +76,7 @@ export class TextTranslationTask extends AiTask<
     },
   ] as const;
 
-  async validateItem(valueType: string, item: any) {
+  async validateInputValue(valueType: string, item: any) {
     if (valueType == "language") {
       const valid = typeof item == "string" && item.length == 2;
       if (!valid) {
@@ -84,7 +84,7 @@ export class TextTranslationTask extends AiTask<
       }
       return valid;
     }
-    return super.validateItem(valueType, item);
+    return super.validateInputValue(valueType, item);
   }
 }
 TaskRegistry.registerTask(TextTranslationTask);

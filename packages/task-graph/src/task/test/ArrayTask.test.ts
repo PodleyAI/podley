@@ -135,9 +135,12 @@ describe("ArrayTask", () => {
       expect(task.completedAt).toBeDefined();
     });
 
-    // Manually trigger a progress event before running the task
-    task.handleStart(); // Ensure task is in PROCESSING state
-    task.handleProgress(0.5);
+    // Manually trigger progress events
+    const runner = task.runner;
+    // @ts-expect-error ts(2445)
+    runner.handleStart();
+    // @ts-expect-error ts(2445)
+    runner.handleProgress(0.5);
 
     // Run the task
     const results = await task.run();
@@ -207,16 +210,19 @@ describe("ArrayTask", () => {
       });
     });
 
-    // Manually trigger progress events
-    task.handleStart();
-    task.handleProgress(0.5);
+    // Manually trigger progress events via the runner
+    const runner = task._runner || (task as any).runner;
+    // @ts-expect-error - calling protected method for testing
+    runner.handleStart();
+    // @ts-expect-error - calling protected method for testing
+    runner.handleProgress(0.5);
 
     // Manually trigger progress events on child tasks
     task.subGraph!.getNodes().forEach((childTask: ITask) => {
-      // @ts-expect-error - we are testing the protected method
-      childTask.handleStart();
-      // @ts-expect-error - we are testing the protected method
-      childTask.handleProgress(0.5);
+      // @ts-expect-error - accessing protected property for testing
+      const childRunner = childTask._runner || (childTask as any).runner;
+      childRunner.handleStart();
+      childRunner.handleProgress(0.5);
     });
 
     // Run the task
@@ -272,8 +278,12 @@ describe("ArrayTask", () => {
     });
 
     // Manually trigger a progress event
-    task.handleStart();
-    task.handleProgress(0.5);
+    // Access the runner to trigger lifecycle methods
+    const taskRunner = task._runner || (task as any).runner;
+    // @ts-expect-error - calling protected method for testing
+    taskRunner.handleStart();
+    // @ts-expect-error - calling protected method for testing
+    taskRunner.handleProgress(0.5);
 
     // Run the task and catch the error
     try {

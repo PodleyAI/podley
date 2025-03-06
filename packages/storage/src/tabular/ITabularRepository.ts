@@ -127,7 +127,7 @@ export interface ITabularRepository<
     name: Event,
     fn: TabularEventListener<Event, PrimaryKey, Entity>
   ): void;
-  emitted<Event extends TabularEventName>(
+  waitOn<Event extends TabularEventName>(
     name: Event
   ): Promise<TabularEventParameters<Event, PrimaryKey, Entity>>;
 

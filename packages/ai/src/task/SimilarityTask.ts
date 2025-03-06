@@ -86,7 +86,7 @@ export class SimilarityTask extends RunOrReplicateTask<
     },
   ] as const;
 
-  async validateItem(valueType: string, item: any): Promise<boolean> {
+  async validateInputValue(valueType: string, item: any): Promise<boolean> {
     if (valueType === "similarity_fn") {
       if (!similarity_fn.includes(item)) {
         throw new TaskInvalidInputError(
@@ -101,10 +101,13 @@ export class SimilarityTask extends RunOrReplicateTask<
       }
       return true;
     }
-    return super.validateItem(valueType, item);
+    return super.validateInputValue(valueType, item);
   }
 
-  async validateInputItem(input: Partial<SimilarityTaskInput>, inputId: keyof SimilarityTaskInput) {
+  async validateInputDefinition(
+    input: Partial<SimilarityTaskInput>,
+    inputId: keyof SimilarityTaskInput
+  ) {
     switch (inputId) {
       case "k": {
         const val = input[inputId];
@@ -138,7 +141,7 @@ export class SimilarityTask extends RunOrReplicateTask<
         return true;
       }
       default:
-        return super.validateInputItem(input, inputId);
+        return super.validateInputDefinition(input, inputId);
     }
   }
 

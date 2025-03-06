@@ -155,7 +155,7 @@ describe("EventEmitter", () => {
 
   describe("emitted", () => {
     it("should return a promise that resolves when the event is emitted with an array containing the argument", async () => {
-      const promise = emitter.emitted("test");
+      const promise = emitter.waitOn("test");
       emitter.emit("test", "hello");
 
       const result = await promise;
@@ -164,7 +164,7 @@ describe("EventEmitter", () => {
     });
 
     it("should handle events with multiple arguments and return all arguments as an array", async () => {
-      const promise = emitter.emitted("multipleArgs");
+      const promise = emitter.waitOn("multipleArgs");
       emitter.emit("multipleArgs", "test", 42, true);
 
       const result = await promise;
@@ -173,7 +173,7 @@ describe("EventEmitter", () => {
     });
 
     it("should handle events with no arguments and return an empty array", async () => {
-      const promise = emitter.emitted("noArgs");
+      const promise = emitter.waitOn("noArgs");
       emitter.emit("noArgs");
 
       const result = await promise;

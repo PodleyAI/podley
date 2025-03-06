@@ -87,7 +87,7 @@ export abstract class JobQueueTask<
         this.config.runnerId = job.jobRunId; // TODO: think about this more
 
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
-          this.handleProgress(progress, message, details);
+          executeConfig.updateProgress(progress, message, details);
         });
         output = await queue.waitFor<Output>(jobId);
       }
@@ -98,13 +98,6 @@ export abstract class JobQueueTask<
     } finally {
       cleanup();
     }
-  }
-
-  handleProgress(progress: number, ...args: any[]): void {
-    this.progress = progress;
-    const message = args.shift();
-    const details = args.shift();
-    this.events.emit("progress", progress, message, details);
   }
 
   /**
@@ -137,17 +130,13 @@ export abstract class JobQueueTask<
    * @returns A promise that resolves when the task is aborted
    */
   async abort(): Promise<void> {
-    // Direct running jobs
-    if (this.abortController && !this.abortController.signal.aborted) {
-      this.abortController.abort();
-    }
-    // Queue running jobs
     if (this.config.queueName) {
       const queue = getTaskQueueRegistry().getQueue(this.config.queueName);
       if (queue) {
         await queue.abort(this.config.currentJobId);
       }
     }
+    // Always call the parent abort to ensure the task is properly marked as aborted
     super.abort();
   }
 }

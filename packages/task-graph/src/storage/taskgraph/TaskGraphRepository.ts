@@ -78,8 +78,8 @@ export abstract class TaskGraphRepository {
    * @param name The event name to check
    * @returns true if the event has listeners, false otherwise
    */
-  emitted<Event extends TaskGraphEvents>(name: Event) {
-    return this.events.emitted(name) as Promise<TaskGraphEventParameters<Event>>;
+  waitOn<Event extends TaskGraphEvents>(name: Event) {
+    return this.events.waitOn(name) as Promise<TaskGraphEventParameters<Event>>;
   }
 
   /**

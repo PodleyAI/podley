@@ -5,21 +5,15 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { nanoid } from "nanoid";
-import { TaskGraph } from "../task-graph/TaskGraph";
-import { Task } from "./Task";
-import { IExecuteConfig } from "./ITask";
-import {
-  TaskConfig,
-  TaskInput,
-  TaskInputDefinition,
-  TaskOutput,
-  TaskOutputDefinition,
-} from "./TaskTypes";
-import { GraphResult } from "../task-graph/TaskGraphRunner";
-import { TaskGraphItemJson } from "../node";
-import { JsonTaskItem } from "../node";
 import { collectPropertyValues } from "@ellmers/util";
+import { nanoid } from "nanoid";
+import { JsonTaskItem, TaskGraphItemJson } from "../node";
+import { TaskGraph } from "../task-graph/TaskGraph";
+import { GraphResult } from "../task-graph/TaskGraphRunner";
+import { IExecuteConfig } from "./ITask";
+import { Task } from "./Task";
+import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
+import { TaskRunner } from "./TaskRunner";
 
 /**
  * RunOrReplicate is a compound task that either:
@@ -46,35 +40,6 @@ export class RunOrReplicateTask<
    * Whether this task is a compound task (contains subtasks)
    */
   public static readonly isCompound = true;
-
-  /**
-   * Constructor for the RunOrReplicateTask class
-   * @param defaultInputs - The default input values for the task
-   * @param config - The configuration for the task
-   */
-  constructor(defaultInputs?: Partial<Input>, config?: Config) {
-    super(defaultInputs, config);
-    if (this.execute === RunOrReplicateTask.prototype.execute) {
-      // @ts-ignore
-      this.execute = (input: Input, config: IExecuteConfig) => {
-        return this.executeReactive(input, this.runOutputData);
-      };
-    } else {
-      // @ts-ignore
-      this.executeDirectly = this.execute;
-      // @ts-ignore
-      this.execute = RunOrReplicateTask.prototype.execute;
-    }
-    if (this.executeReactive === RunOrReplicateTask.prototype.executeReactive) {
-      // @ts-ignore
-      this.executeReactive = (input: Input, output: Output) => output;
-    } else {
-      // @ts-ignore
-      this.executeReactiveDirectly = this.executeReactive;
-      // @ts-ignore
-      this.executeReactive = RunOrReplicateTask.prototype.executeReactive;
-    }
-  }
 
   /**
    * Regenerates the task subgraph based on input arrays
@@ -151,6 +116,36 @@ export class RunOrReplicateTask<
     return combinations;
   }
 
+  toJSON(): JsonTaskItem {
+    const { subgraph, ...result } = super.toJSON() as TaskGraphItemJson;
+    return result;
+  }
+
+  toDependencyJSON(): JsonTaskItem {
+    const { subtasks, ...result } = super.toDependencyJSON() as JsonTaskItem;
+    return result;
+  }
+
+  // Declare specific _runner type for this class
+  declare _runner: RunOrReplicateTaskRunner<Input, Output, Config>;
+
+  override get runner(): RunOrReplicateTaskRunner<Input, Output, Config> {
+    if (!this._runner) {
+      this._runner = new RunOrReplicateTaskRunner<Input, Output, Config>(this);
+    }
+    return this._runner;
+  }
+}
+
+export class RunOrReplicateTaskRunner<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends TaskRunner<Input, Output, Config> {
+  // ========================================================================
+  // Utility methods
+  // ========================================================================
+
   private fixInput(input: Input): Input {
     // inputs has turned each property into an array, so we need to flatten the input
     const flattenedInput = Object.entries(input).reduce((acc, [key, value]) => {
@@ -174,82 +169,47 @@ export class RunOrReplicateTask<
     return fixedOutput;
   }
 
-  private async executeWithoutGraph(
-    input: Input,
-    config: IExecuteConfig
-  ): Promise<Output | undefined> {
-    // @ts-ignore
-    if (this.executeDirectly) {
-      // @ts-ignore
-      const result = await this.executeDirectly(this.runInputData, config);
-      if (result !== undefined) {
-        this.runOutputData = result;
-      }
-    }
-    // @ts-ignore
-    if (this.executeReactiveDirectly) {
-      // @ts-ignore
-      return this.executeReactiveDirectly(this.runInputData, this.runOutputData);
-    } else {
-      return this.runOutputData;
-    }
-  }
-
-  private async executeGraph(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
-    // Run subgraph
-    const results = await this.subGraph!.run({
-      parentProvenance: config.nodeProvenance || {},
-      parentSignal: config.signal,
-      outputCache: this.outputCache,
-    });
-    this.runOutputData = this.fixOutput(results);
-    return this.runOutputData as unknown as Output;
-  }
+  // ========================================================================
+  // TaskRunner method overrides and helpers
+  // ========================================================================
 
   /**
    * Execute the task
    */
-  protected async execute(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
-    const hasArrayInputs = this.hasChildren();
-    debugger;
-    if (!hasArrayInputs) {
-      this.runInputData = this.fixInput(input);
-      return this.executeWithoutGraph(this.runInputData, config);
+  protected async executeTask(): Promise<Output | GraphResult | undefined> {
+    this.task.runInputData = this.fixInput(this.task.runInputData);
+    const result = await super.executeTask();
+    if (result !== undefined) {
+      this.task.runOutputData = result as Output;
     }
-    return this.executeGraph(input, config);
+    return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
+  }
+
+  /**
+   * Private method to execute a task subgraphby delegating back to the task itself.
+   */
+  protected async executeTaskChildren(): Promise<Output | GraphResult | undefined> {
+    const results = await super.executeTaskChildren();
+    this.task.runOutputData = this.fixOutput(results as GraphResult);
+    return this.task.runOutputData as unknown as Output;
   }
 
   /**
    * Execute the task reactively
    */
-  protected async executeReactive(input: Input, output: Output): Promise<Output | undefined> {
-    debugger;
-    const hasArrayInputs = this.hasChildren();
-    // If no array inputs, execute directly
-    if (!hasArrayInputs) {
-      this.runInputData = this.fixInput(input);
-      // @ts-ignore
-      if (this.executeReactiveDirectly) {
-        // @ts-ignore
-        return this.executeReactiveDirectly(this.runInputData, output);
-      } else {
-        return output;
-      }
+  public async executeTaskReactive(): Promise<Output | GraphResult | undefined> {
+    if (!this.task.hasChildren()) {
+      this.task.runInputData = this.fixInput(this.task.runInputData);
+      return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
     }
-
-    // Run subgraph
-    const results = await this.subGraph!.runReactive();
-    this.runOutputData = this.fixOutput(results);
-    return this.runOutputData as unknown as Output;
+    return this.executeTaskChildrenReactive();
   }
 
-  toJSON(): JsonTaskItem {
-    const { subgraph, ...result } = super.toJSON() as TaskGraphItemJson;
-    return result;
-  }
-
-  toDependencyJSON(): JsonTaskItem {
-    const { subtasks, ...result } = super.toDependencyJSON() as JsonTaskItem;
-    return result;
+  /**
+   * Override protected method for reactive execution delegation
+   */
+  protected async executeTaskChildrenReactive(): Promise<Output | GraphResult | undefined> {
+    const results = await super.executeTaskChildrenReactive();
+    return this.fixOutput(results as GraphResult);
   }
 }

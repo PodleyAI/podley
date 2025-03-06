@@ -123,7 +123,7 @@ export class EventEmitter<EventListenerTypes extends Record<string, (...args: an
    * @param event - The event name to listen for
    * @returns a promise that resolves to an array of all parameters of the event (empty array for events with no parameters)
    */
-  emitted<Event extends keyof EventListenerTypes>(
+  waitOn<Event extends keyof EventListenerTypes>(
     event: Event
   ): Promise<EmittedReturnType<EventListenerTypes, Event>> {
     return new Promise((resolve, reject) => {

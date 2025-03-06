@@ -28,12 +28,18 @@ import type {
   TaskEvents,
 } from "./TaskEvents";
 
+/**
+ * Configuration for task execution
+ */
 export interface IExecuteConfig {
   signal: AbortSignal;
   nodeProvenance: Provenance;
   updateProgress: (progress: number, message?: string, ...args: any[]) => void;
 }
 
+/**
+ * Configuration for running a task
+ */
 export interface IRunConfig {
   nodeProvenance?: Provenance;
   repository?: TaskOutputRepository;
@@ -54,14 +60,55 @@ export interface ITaskStaticProperties {
 }
 
 /**
+ * Interface for task execution logic
+ * These methods define how tasks are executed and should be implemented by Task subclasses
+ */
+export interface ITaskExecution<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+> {
+  /**
+   * The actual task execution logic for subclasses to override
+   * @param input The input to the task
+   * @param config The configuration for the task
+   * @returns The output of the task or undefined if no changes
+   */
+  execute(input: Input, config: IExecuteConfig): Promise<Output | undefined>;
+
+  /**
+   * Reactive execution logic for updating UI or responding to changes
+   * @param input The input to the task
+   * @param output The current output of the task
+   * @returns The updated output of the task or undefined if no changes
+   */
+  executeReactive(input: Input, output: Output): Promise<Output | undefined>;
+}
+
+/**
  * Interface for task lifecycle management
+ * These methods define how tasks are run and are usually delegated to a TaskRunner
  */
 export interface ITaskLifecycle<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
 > {
-  run(overrides?: Partial<Input>): Promise<Output>;
+  /**
+   * Runs the task with the provided input overrides
+   * @param overrides Optional input overrides
+   * @returns Promise resolving to the task output
+   */
+  run(overrides?: Partial<Input>, config?: IRunConfig): Promise<Output>;
+
+  /**
+   * Runs the task in reactive mode
+   * @param overrides Optional input overrides
+   * @returns Promise resolving to the task output
+   */
   runReactive(overrides?: Partial<Input>): Promise<Output>;
+
+  /**
+   * Aborts the task execution
+   */
   abort(): void;
 }
 
@@ -81,9 +128,9 @@ export interface ITaskIO<
 
   resetInputData(): void;
   setInput(input: Partial<Input>): void;
-  validateItem(valueType: string, item: any): Promise<boolean>;
-  validateInputItem(input: Partial<Input>, inputId: keyof Input): Promise<boolean>;
-  validateInputData(input: Partial<Input>): Promise<boolean>;
+  validateInputValue(valueType: string, item: any): Promise<boolean>;
+  validateInputDefinition(input: Partial<Input>, inputId: keyof Input): Promise<boolean>;
+  validateInput(input: Partial<Input>): Promise<boolean>;
 }
 
 export interface ITaskCompound {
@@ -102,7 +149,7 @@ export interface ITaskEvents {
   on<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void;
   off<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void;
   once<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void;
-  emitted<Event extends TaskEvents>(name: Event): Promise<TaskEventParameters<Event>>;
+  waitOn<Event extends TaskEvents>(name: Event): Promise<TaskEventParameters<Event>>;
   emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>): void;
 }
 
@@ -139,6 +186,7 @@ export interface ITask<
     ITaskIO<Input, Output>,
     ITaskEvents,
     ITaskLifecycle<Input, Output>,
+    ITaskExecution<Input, Output>,
     ITaskCompound,
     ITaskSerialization {}
 

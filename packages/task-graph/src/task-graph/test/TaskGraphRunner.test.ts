@@ -39,7 +39,7 @@ describe("TaskGraphRunner", () => {
   });
 
   describe("Basic", () => {
-    it("should run", async () => {
+    it("should run runReactive", async () => {
       const runReactiveSpy = spyOn(nodes[0], "runReactive");
 
       await runner.runGraphReactive();
@@ -80,7 +80,6 @@ describe("TaskGraphRunner", () => {
 
       // Create a task that will throw an error
       errorTask = new FailingTask({}, { id: "error-source" });
-      // @ts-expect-error ts(2445)
       errorTask.executeReactive = async () => {
         throw new Error("Test error");
       };
@@ -141,7 +140,6 @@ describe("TaskGraphRunner", () => {
       const longRunningTask = new LongRunningTask({}, { id: "long-running" });
 
       // Override the executeReactive method to be long-running and check for abort signal
-      // @ts-expect-error ts(2445)
       longRunningTask.executeReactive = async () => {
         try {
           await new Promise((resolve, reject) => {

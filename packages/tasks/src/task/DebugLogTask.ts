@@ -81,7 +81,7 @@ export class DebugLogTask<
     return output;
   }
 
-  async validateItem(valueType: string, item: any) {
+  async validateInputValue(valueType: string, item: any) {
     if (valueType == "log_level") {
       const valid = log_levels.includes(item);
       if (!valid) {
@@ -89,7 +89,7 @@ export class DebugLogTask<
       }
       return valid;
     }
-    return super.validateItem(valueType, item);
+    return super.validateInputValue(valueType, item);
   }
 }
 

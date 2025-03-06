@@ -173,7 +173,7 @@ export class FetchTask<
     return this.runOutputData ?? { body: null };
   }
 
-  async validateItem(valueType: string, item: any) {
+  async validateInputValue(valueType: string, item: any) {
     if (valueType === "url") {
       try {
         if (item instanceof URL) {
@@ -208,7 +208,7 @@ export class FetchTask<
       }
       return valid;
     }
-    return await super.validateItem(valueType, item);
+    return await super.validateInputValue(valueType, item);
   }
 }
 

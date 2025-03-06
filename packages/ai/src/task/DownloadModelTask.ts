@@ -8,7 +8,6 @@
 import {
   CreateWorkflow,
   JobQueueTaskConfig,
-  TaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
   TaskRegistry,
@@ -132,16 +131,24 @@ export class DownloadModelTask extends AiTask<
 
   public files: { file: string; progress: number }[] = [];
 
+  constructor(input: Partial<DownloadModelTaskInputReplicate>, config: JobQueueTaskConfig = {}) {
+    super(input as DownloadModelTaskInputReplicate, config);
+    this.on("progress", this.processProgress.bind(this));
+    this.on("start", () => {
+      this.files = [];
+    });
+  }
+
   /**
    * Handles progress updates for the download task
    * @param progress - The progress value (0-100)
    * @param message - The message to display
    * @param details - Additional details about the progress
    */
-  handleProgress(
+  processProgress(
     progress: number,
-    message: string,
-    details: { file?: string; progress: number; text?: number }
+    message?: string,
+    details?: { file?: string; progress: number; text?: number }
   ): void {
     if (details?.file) {
       const file = this.files.find((f) => f.file === details.file);
@@ -154,12 +161,6 @@ export class DownloadModelTask extends AiTask<
     } else {
       this.progress = progress;
     }
-    this.emit("progress", this.progress, message, details);
-  }
-
-  handleStart(): void {
-    this.files = [];
-    super.handleStart();
   }
 
   async executeReactive(

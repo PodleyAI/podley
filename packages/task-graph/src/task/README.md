@@ -7,6 +7,7 @@ This module provides a flexible task processing system with support for various 
 - [Task Types](#task-types)
   - [A Simple Task](#a-simple-task)
   - [isCompound = true](#iscompound--true)
+  - [RunOrReplicateTask](#runorreplicatetask)
   - [Job Queue Tasks](#job-queue-tasks)
 - [Task Lifecycle](#task-lifecycle)
 - [Event Handling](#event-handling)
@@ -45,11 +46,18 @@ class MyTask extends Task {
   static outputs = [{ id: "result", valueType: "number" }];
   static isCompound = false;
 
-  async execute() {
+  // typically you either override execute or executeReactive, but not both
+  async execute(input: MyTaskInput, config: IExecuteConfig) {
+    await sleep(1000);
+    if (config.signal?.aborted) {
+      throw new TaskAbortedError("Task aborted");
+    }
+    config.updateProgress(0.5, "Processing...");
     // Do something with the input that takes a long time
     await sleep(1000);
+    return { result: input.input * 2 };
   }
-  async executeReactive(input: MyTaskInput) {
+  async executeReactive(input: MyTaskInput, output: MyTaskOutput) {
     return { result: input.input * 2 };
   }
 }
@@ -59,7 +67,8 @@ class MyTask extends Task {
 
 - Compound tasks are tasks that contain other tasks. They are represented as an internal TaskGraph.
 - Compound tasks can regenerate its own subtasks based on changes to its inputs.
-- An ArrayTask is a regenerative task based on a single task that processes an array of inputs in parallel by creating a new subtask for each input, and then combining the results into a single array output.
+- A RunOrReplicateTask is a compound task that can run a task as normal, or if the inputs are an array and the input definition has isArray="replicate" defined for that input, then the task will run parallel copies with a subGraph.
+- An ArrayTask is a regenerative task based on a single task that processes an array of inputs in parallel by creating a new subtask for each input, and then combining the results into a single array output. (deprecated)
 
 ### RunOrReplicateTask
 
