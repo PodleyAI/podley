@@ -26,16 +26,38 @@ export class AiJob<
     if (signal?.aborted || this.status === JobStatus.ABORTING) {
       throw new AbortSignalJobError("Abort signal aborted before execution of job");
     }
-    const fn = getAiProviderRegistry().getDirectRunFn<Input, Output>(
-      this.input.taskType,
-      this.input.modelProvider
-    );
-    if (!fn) {
-      throw new PermanentJobError(
-        `No run function found for task type ${this.input.taskType} and model provider ${this.input.modelProvider}`
-      );
+
+    let abortHandler: (() => void) | undefined;
+
+    try {
+      const abortPromise = new Promise<never>((_resolve, reject) => {
+        const handler = () => {
+          reject(new AbortSignalJobError("Abort signal seen, ending job"));
+        };
+
+        signal.addEventListener("abort", handler, { once: true });
+        abortHandler = () => signal.removeEventListener("abort", handler);
+      });
+
+      const fnPromise = (async () => {
+        const fn = getAiProviderRegistry().getDirectRunFn<Input, Output>(
+          this.input.taskType,
+          this.input.modelProvider
+        );
+        if (!fn) {
+          throw new PermanentJobError(
+            `No run function found for task type ${this.input.taskType} and model provider ${this.input.modelProvider}`
+          );
+        }
+        return await fn(this, this.input.taskInput, signal);
+      })();
+
+      return await Promise.race([fnPromise, abortPromise]);
+    } finally {
+      // Clean up the abort event listener to prevent memory leaks
+      if (abortHandler) {
+        abortHandler();
+      }
     }
-    const result = await fn(this, this.input.taskInput, signal);
-    return result;
   }
 }

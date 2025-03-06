@@ -87,8 +87,7 @@ export abstract class JobQueueTask<
         this.config.runnerId = job.jobRunId; // TODO: think about this more
 
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
-          //@ts-expect-error - using internals
-          this.runner.handleProgress(progress, message, details);
+          executeConfig.updateProgress(progress, message, details);
         });
         output = await queue.waitFor<Output>(jobId);
       }

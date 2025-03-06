@@ -104,15 +104,8 @@ export class TaskGraphRunner {
           break;
         }
 
-        // Check if any tasks have failed
         if (this.failedTaskErrors.size > 0) {
-          throw new TaskErrorGroup(
-            Array.from(this.failedTaskErrors.entries()).map(([key, error]) => ({
-              key,
-              type: (error as any).name || (error as any).constructor.name,
-              error,
-            }))
-          );
+          break;
         }
 
         const runAsync = async () => {

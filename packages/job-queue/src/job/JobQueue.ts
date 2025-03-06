@@ -274,10 +274,15 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     return abortController;
   }
 
+  /**
+   * Gets jobs by run ID
+   * @param runId The ID of the run to get jobs for
+   */
   async getJobsByRunId(runId: string): Promise<Job<Input, Output>[]> {
     const jobs = await this.storage.getByRunId(runId);
     return jobs.map((job) => this.storageToClass(job));
   }
+
   /**
    * Validates the state of a job before processing
    */

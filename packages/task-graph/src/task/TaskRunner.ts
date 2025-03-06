@@ -68,7 +68,7 @@ export class TaskRunner<
    * @returns The task output
    */
   async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<Output> {
-    this.handleStart();
+    await this.handleStart();
 
     this.nodeProvenance = config.nodeProvenance ?? {};
     this.outputCache = config.repository || this.outputCache || this.task.config.outputCache;
@@ -243,11 +243,12 @@ export class TaskRunner<
    */
   public async handleAbort(): Promise<void> {
     if (this.task.status === TaskStatus.ABORTING) return;
-
     this.task.status = TaskStatus.ABORTING;
     this.task.progress = 100;
     this.task.error = new TaskAbortedError();
-
+    if (this.task.isCompound) {
+      this.task.subGraph?.abort();
+    }
     this.task.emit("abort", this.task.error);
   }
 
