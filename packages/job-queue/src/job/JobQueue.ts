@@ -612,6 +612,11 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
         } catch (err) {}
       }
     }
+    const promises = this.activeJobPromises.get(jobId);
+    if (promises) {
+      promises.forEach(({ reject }) => reject(new PermanentJobError("Job Aborted")));
+    }
+    this.activeJobPromises.delete(jobId);
     this.events.emit("job_aborting", this.queueName, jobId);
   }
 
