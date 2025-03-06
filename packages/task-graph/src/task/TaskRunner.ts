@@ -75,7 +75,7 @@ export class TaskRunner<
 
     try {
       this.task.setInput(overrides);
-      const isValid = await this.task.validateInputData(this.task.runInputData);
+      const isValid = await this.task.validateInput(this.task.runInputData);
       if (!isValid) {
         throw new TaskInvalidInputError("Invalid input data");
       }
@@ -135,7 +135,7 @@ export class TaskRunner<
     await this.handleStartReactive();
 
     try {
-      const isValid = await this.task.validateInputData(this.task.runInputData);
+      const isValid = await this.task.validateInput(this.task.runInputData);
       if (!isValid) {
         throw new TaskInvalidInputError("Invalid input data");
       }

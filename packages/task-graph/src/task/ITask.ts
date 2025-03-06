@@ -128,9 +128,9 @@ export interface ITaskIO<
 
   resetInputData(): void;
   setInput(input: Partial<Input>): void;
-  validateItem(valueType: string, item: any): Promise<boolean>;
-  validateInputItem(input: Partial<Input>, inputId: keyof Input): Promise<boolean>;
-  validateInputData(input: Partial<Input>): Promise<boolean>;
+  validateInputValue(valueType: string, item: any): Promise<boolean>;
+  validateInputDefinition(input: Partial<Input>, inputId: keyof Input): Promise<boolean>;
+  validateInput(input: Partial<Input>): Promise<boolean>;
 }
 
 export interface ITaskCompound {

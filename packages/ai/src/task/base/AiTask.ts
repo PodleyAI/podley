@@ -83,7 +83,7 @@ export class AiTask<
    * @param item The item to validate
    * @returns True if the item is valid, false otherwise
    */
-  async validateItem(valueType: string, item: any) {
+  async validateInputValue(valueType: string, item: any) {
     const modelRepo = getGlobalModelRepository();
 
     if (valueType === "model" || valueType.startsWith("model_")) {
@@ -100,6 +100,6 @@ export class AiTask<
       return valid;
     }
 
-    return super.validateItem(valueType, item);
+    return super.validateInputValue(valueType, item);
   }
 }

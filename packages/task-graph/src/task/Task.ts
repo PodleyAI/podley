@@ -448,7 +448,7 @@ export class Task<
    * @returns True if the item is valid, otherwise throws an error
    * @throws TaskInvalidInputError if the item is invalid
    */
-  async validateItem(valueType: string, item: any): Promise<boolean> {
+  async validateInputValue(valueType: string, item: any): Promise<boolean> {
     switch (valueType) {
       case "any":
         return true;
@@ -482,7 +482,7 @@ export class Task<
         return valid;
       }
       default:
-        throw new TaskInvalidInputError(`validateItem: Unknown value type: ${valueType}`);
+        throw new TaskInvalidInputError(`validateInputValue: Unknown value type: ${valueType}`);
     }
   }
 
@@ -494,17 +494,22 @@ export class Task<
    * @returns True if the input is valid, otherwise throws an error
    * @throws TaskInvalidInputError if the input is invalid
    */
-  public async validateInputItem(input: Partial<Input>, inputId: keyof Input): Promise<boolean> {
+  public async validateInputDefinition(
+    input: Partial<Input>,
+    inputId: keyof Input
+  ): Promise<boolean> {
     const classRef = this.constructor as typeof Task;
     const inputdef = this.inputs.find((def) => def.id === inputId);
 
     if (!inputdef) {
-      throw new TaskInvalidInputError(`validateInputItem: Unknown input id: ${inputId as string}`);
+      throw new TaskInvalidInputError(
+        `validateInputDefinition: Unknown input id: ${inputId as string}`
+      );
     }
 
     if (typeof input !== "object") {
       throw new TaskInvalidInputError(
-        `validateInputItem: Input is not an object: ${inputId as string}`
+        `validateInputDefinition: Input is not an object: ${inputId as string}`
       );
     }
 
@@ -533,7 +538,7 @@ export class Task<
     }
 
     const validationPromises = inputlist.map((item) =>
-      this.validateItem(inputdef.valueType as string, item)
+      this.validateInputValue(inputdef.valueType as string, item)
     );
 
     const validationResults = await Promise.allSettled(validationPromises);
@@ -547,10 +552,10 @@ export class Task<
    * @returns True if the input is valid, otherwise throws an error
    * @throws TaskInvalidInputError if the input is invalid
    */
-  public async validateInputData(input: Partial<Input>): Promise<boolean> {
+  public async validateInput(input: Partial<Input>): Promise<boolean> {
     for (const inputdef of this.inputs) {
       if (inputdef.optional && input[inputdef.id] === undefined) continue;
-      await this.validateInputItem(input, inputdef.id);
+      await this.validateInputDefinition(input, inputdef.id);
     }
     return true;
   }

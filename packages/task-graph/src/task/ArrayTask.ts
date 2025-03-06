@@ -197,7 +197,7 @@ export function arrayTaskFactory<
       return result;
     }
 
-    async validateItem(valueType: string, item: any) {
+    async validateInputValue(valueType: string, item: any) {
       return true; // let children validate
     }
 
@@ -207,7 +207,7 @@ export function arrayTaskFactory<
     declare outputCache: TaskOutputRepository;
     declare queueName: string;
     declare currentJobId: string;
-    declare validateInputData: (input: Partial<Input>) => Promise<boolean>;
+    declare validateInput: (input: Partial<Input>) => Promise<boolean>;
     // Declare specific _runner type for this class
     declare _runner: RunOrReplicateTaskRunner<Input, Output, Config>;
     override get runner(): RunOrReplicateTaskRunner<Input, Output, Config> {
