@@ -7,7 +7,7 @@
 
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import { Workflow } from "@ellmers/task-graph";
+import { Task, TaskGraph, Workflow } from "@ellmers/task-graph";
 import "./main.css";
 import {
   TaskConsoleFormatter,
@@ -16,6 +16,13 @@ import {
   WorkflowAPIConsoleFormatter,
   isDarkMode,
 } from "./ConsoleFormatters";
+import {
+  DownloadModelTask,
+  TextRewriterTask,
+  TextEmbeddingTask,
+  TextTranslationTask,
+} from "@ellmers/ai";
+import { DebugLogTask, DelayTask, FetchTask, JsonTask, LambdaTask } from "@ellmers/tasks";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   // <React.StrictMode>
@@ -23,13 +30,29 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   // </React.StrictMode>
 );
 
-window["Workflow"] = Workflow;
 window["devtoolsFormatters"] = [
   new WorkflowAPIConsoleFormatter(),
   new CreateWorkflowConsoleFormatter(),
   new WorkflowConsoleFormatter(),
   new TaskConsoleFormatter(),
 ];
+[
+  Workflow,
+  DownloadModelTask,
+  TextRewriterTask,
+  TextEmbeddingTask,
+  TextTranslationTask,
+  TextRewriterTask,
+  DebugLogTask,
+  Task,
+  TaskGraph,
+  JsonTask,
+  DelayTask,
+  FetchTask,
+  LambdaTask,
+].forEach((item) => {
+  window[item.name] = item;
+});
 
 const dark = isDarkMode();
 const grey = dark ? "#aaa" : "#333";
@@ -93,4 +116,6 @@ console.log(
   `color: ${orange}; font-weight: normal;`,
   `color: ${grey}; font-weight: normal;`
 );
-console.log("console.log(workflow):", window["workflow"]);
+setTimeout(() => {
+  console.log("console.log(workflow):", window["workflow"]);
+}, 100);

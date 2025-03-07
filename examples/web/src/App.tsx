@@ -59,25 +59,14 @@ queueRegistry.clearQueues();
 queueRegistry.startQueues();
 
 const taskOutputCache = new IndexedDbTaskOutputRepository();
-const workflow = new Workflow(taskOutputCache);
-const run = workflow.run.bind(workflow);
-workflow.run = async () => {
-  console.log("Running task graph...");
-  try {
-    const result = await run();
-    console.log("Task graph complete.");
-    return result;
-  } catch (error) {
-    console.error("Task graph error:", error.message, error.errors, error);
-    throw error;
-  }
-};
-
 const taskGraphRepo = new IndexedDbTaskGraphRepository();
 const resetGraph = () => {
+  const workflow = window["workflow"];
   workflow
     .reset()
-    .DownloadModel({ model: ["onnx:Xenova/LaMini-Flan-T5-783M:q8", "onnx:Xenova/m2m100_418M:q8"] })
+    .DownloadModel({
+      model: ["onnx:Xenova/LaMini-Flan-T5-783M:q8", "onnx:Xenova/m2m100_418M:q8"],
+    })
     .TextRewriter({
       text: "The quick brown fox jumps over the lazy dog.",
       prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
@@ -92,54 +81,78 @@ const resetGraph = () => {
     .DebugLog({ log_level: "info" });
   taskGraphRepo.saveTaskGraph("default", workflow.graph);
 };
+
+window["workflow"] = new Workflow(taskOutputCache);
 let graph: TaskGraph | undefined;
 try {
   graph = await taskGraphRepo.getTaskGraph("default");
 } catch (error) {
   console.error("Task graph loading error, going to reset:", error.message);
   resetGraph();
-  graph = workflow.graph;
+  graph = window["workflow"].graph;
 }
 
 if (graph) {
-  workflow.graph = graph;
+  window["workflow"].graph = graph;
 } else {
   resetGraph();
 }
 
-workflow.on("changed", () => {
-  taskGraphRepo.saveTaskGraph("default", workflow.graph);
-});
-workflow.on("reset", () => {
-  taskGraphRepo.saveTaskGraph("default", workflow.graph);
-});
-taskGraphRepo.on("graph_cleared", () => {
-  resetGraph();
-});
+// console access. what happens there will be reflected in the UI
+const setupWorkflow = async () => {
+  const workflow = window["workflow"];
+  const run = workflow.run.bind(workflow);
+  workflow.run = async () => {
+    console.log("Running task graph...");
+    try {
+      const result = await run();
+      console.log("Task graph complete.", workflow);
+      return result;
+    } catch (error) {
+      console.error("Task graph error:", error.message, error.errors, error);
+      throw error;
+    }
+  };
+
+  workflow.on("changed", () => {
+    taskGraphRepo.saveTaskGraph("default", workflow.graph);
+  });
+  workflow.on("reset", () => {
+    taskGraphRepo.saveTaskGraph("default", workflow.graph);
+  });
+  taskGraphRepo.on("graph_cleared", () => {
+    resetGraph();
+  });
+};
+setupWorkflow();
+let workflow = window["workflow"];
+
 const initialJsonObj: JsonTaskItem[] = workflow.toDependencyJSON();
 const initialJson = JSON.stringify(initialJsonObj, null, 2);
-
-// console access. what happens there will be reflected in the UI
-window["workflow"] = workflow;
-window["workflow"] = workflow;
+await registerHuggingfaceLocalModels();
+await registerMediaPipeTfJsLocalModels();
 
 export const App = () => {
+  const [graph, setGraph] = useState<TaskGraph>(workflow.graph);
+  const [w, setWorkflow] = useState<Workflow>(window["workflow"]);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [isAborting, setIsAborting] = useState<boolean>(false);
-  const [graph, setGraph] = useState<TaskGraph>(workflow.graph);
   const [jsonData, setJsonData] = useState<string>(initialJson);
 
   // changes coming from workflow in console
   useEffect(() => {
-    async function init() {
-      await registerHuggingfaceLocalModels();
-      await registerMediaPipeTfJsLocalModels();
-    }
-    init();
+    const interval = setInterval(() => {
+      if (workflow !== window["workflow"] && window["workflow"] instanceof Workflow) {
+        workflow = window["workflow"];
+        setWorkflow(workflow);
+        workflow.graph.outputCache = taskOutputCache;
+        setupWorkflow();
+      }
+    }, 10);
 
     function listen() {
-      setJsonData(JSON.stringify(workflow.toDependencyJSON(), null, 2));
-      setGraph(workflow.graph);
+      setJsonData(JSON.stringify(w.toDependencyJSON(), null, 2));
+      setGraph(w.graph);
     }
     workflow.on("changed", listen);
     workflow.on("reset", listen);
@@ -147,8 +160,9 @@ export const App = () => {
     return () => {
       workflow.off("changed", listen);
       workflow.off("reset", listen);
+      clearInterval(interval);
     };
-  }, []);
+  }, [w]);
 
   useEffect(() => {
     function start() {
@@ -171,17 +185,20 @@ export const App = () => {
       workflow.off("error", complete);
       workflow.off("abort", abort);
     };
-  }, []);
+  }, [workflow]);
 
-  const setNewJson = useCallback((json: string) => {
-    const task = new JsonTask({ json });
-    if (task.hasChildren()) {
-      workflow.graph = task.subGraph;
-    } else {
-      workflow.graph = new TaskGraph();
-    }
-    setJsonData(json);
-  }, []);
+  const setNewJson = useCallback(
+    (json: string) => {
+      const task = new JsonTask({ json });
+      if (task.hasChildren()) {
+        workflow.graph = task.subGraph;
+      } else {
+        workflow.graph = new TaskGraph();
+      }
+      setJsonData(json);
+    },
+    [workflow]
+  );
 
   return (
     <ResizablePanelGroup direction="horizontal">

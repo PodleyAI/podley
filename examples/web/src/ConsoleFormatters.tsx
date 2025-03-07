@@ -97,7 +97,7 @@ export class WorkflowConsoleFormatter extends ConsoleFormatter {
 // New formatter for Workflow API methods
 export class WorkflowAPIConsoleFormatter extends ConsoleFormatter {
   header(obj: any, config?: Config) {
-    if (obj == Workflow.prototype) {
+    if (obj === Workflow.prototype || obj === Workflow) {
       const header = new JsonMLElement("div");
       header.sectionHeader("Workflow API");
       return header.toJsonML();
@@ -187,7 +187,7 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
           return { name: i.id, value: task.runOutputData[i.id] };
         });
 
-      header.highlightText(name + "TASK");
+      header.highlightText(name);
       header.functionCall((el) => {
         el.objectBraces((obj) => {
           obj.parameterList(inputs);
