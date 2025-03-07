@@ -9,7 +9,7 @@ import {
   registerMediaPipeTfJsLocalInMemory,
   registerMediaPipeTfJsLocalModels,
 } from "@ellmers/test";
-import "@huggingface/transformers";
+import "@sroussey/transformers";
 import { getTaskQueueRegistry } from "@ellmers/task-graph";
 
 program.version("1.0.0").description("A CLI to run Ellmers.");

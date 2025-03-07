@@ -21,7 +21,7 @@ import {
   TextStreamer,
   // @ts-ignore temporary "fix"
   type PretrainedModelOptions,
-} from "@huggingface/transformers";
+} from "@sroussey/transformers";
 import { ElVector, getGlobalModelRepository } from "@ellmers/ai";
 import { PermanentJobError } from "@ellmers/job-queue";
 import type {

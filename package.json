@@ -34,7 +34,7 @@
     "bun-types": "^1.2.4"
   },
   "peerDependencies": {
-    "@huggingface/transformers": "^3.3.3",
+    "@sroussey/transformers": "^3.3.3",
     "@mediapipe/tasks-text": "^0.10.21",
     "@types/pg": "^8.11.11",
     "pg": "^8.13.2",

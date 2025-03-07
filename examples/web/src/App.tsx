@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { useCallback, useEffect, useState } from "react";
-import { env } from "@huggingface/transformers";
+import { env } from "@sroussey/transformers";
 import { ReactFlowProvider } from "@xyflow/react";
 import { AiJob } from "@ellmers/ai";
 import {
@@ -44,14 +44,14 @@ const queueRegistry = getTaskQueueRegistry();
 registerHuggingfaceLocalTasks();
 queueRegistry.registerQueue(
   new JobQueue<TaskInput, TaskOutput>(ONNX_TRANSFORMERJS, AiJob<TaskInput, TaskOutput>, {
-    limiter: new ConcurrencyLimiter(1, 10),
+    limiter: new ConcurrencyLimiter(2, 100),
   })
 );
 
 registerMediaPipeTfJsLocalTasks();
 queueRegistry.registerQueue(
   new JobQueue<TaskInput, TaskOutput>(MEDIA_PIPE_TFJS_MODEL, AiJob<TaskInput, TaskOutput>, {
-    limiter: new ConcurrencyLimiter(1, 10),
+    limiter: new ConcurrencyLimiter(2, 100),
   })
 );
 

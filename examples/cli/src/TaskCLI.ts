@@ -7,7 +7,7 @@
 
 import type { Command } from "commander";
 import { runTask } from "./TaskGraphToUI";
-import "@huggingface/transformers";
+import "@sroussey/transformers";
 import { TaskGraph, Workflow, JsonTaskItem } from "@ellmers/task-graph";
 import { DownloadModelTask, getGlobalModelRepository } from "@ellmers/ai";
 import { JsonTask } from "@ellmers/tasks";
