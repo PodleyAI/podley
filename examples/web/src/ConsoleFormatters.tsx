@@ -11,6 +11,7 @@ import {
   TaskOutputDefinition,
   TaskStatus,
   Task,
+  TaskGraph,
 } from "@ellmers/task-graph";
 
 type Config = Record<string, any>;
@@ -87,7 +88,7 @@ export class WorkflowConsoleFormatter extends ConsoleFormatter {
             if (num !== -1) el.greyText(`, ${num}`);
           });
         }
-        nodeTag.createObjectTag(node);
+        nodeTag.createObjectTag(node, { graph: obj._graph });
       }
     }
     return body.toJsonML();
@@ -176,8 +177,11 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
       const inputs = task.inputs
         .filter((i) => task.runInputData[i.id] !== undefined)
         .map((i: TaskInputDefinition) => {
-          return { name: i.id, value: task.runInputData[i.id] };
+          const name = i.id;
+          let value = task.runInputData[i.id];
+          return { name, value };
         });
+      //
       const outputs = task.outputs
         .filter((i) => task.runOutputData[i.id] !== undefined && task.runOutputData[i.id] !== "")
         .filter(
@@ -215,11 +219,43 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
     const body = new JsonMLElement("div").setStyle("padding-left: 10px;");
 
     const inputs = body.createStyledList("Inputs:");
+    const inboundEdges = (config?.graph as TaskGraph)?.getSourceDataflows(task.config.id);
+
     for (const input of task.inputs) {
       const value = task.runInputData[input.id];
       const li = inputs.createListItem("", "padding-left: 20px;");
       li.inputText(`${input.id}: `);
-      li.createValueObject(value);
+      const inboundEdge = inboundEdges?.filter((e) => e.targetTaskPortId === input.id);
+      if (inboundEdge) {
+        let sources: string[] = [];
+        let sourceValues: any[] = [];
+        inboundEdge.forEach((e) => {
+          const sourceTask = config?.graph?.getTask(e.sourceTaskId);
+          sources.push(`${sourceTask?.type}->Output{${e.sourceTaskPortId}}`);
+          const sourceValue = sourceTask?.runOutputData[e.sourceTaskPortId];
+          if (sourceValue) {
+            sourceValues.push(sourceValue);
+          }
+        });
+        if (sources.length > 1) {
+          li.createTextChild(`[${sources.join(", ")}]`);
+          if (sourceValues.length > 0) {
+            li.createValueObject(sourceValues);
+            li.createTextChild(" ");
+          }
+          li.createTextChild(`from [${sources.join(", ")}]`);
+        } else if (sources.length === 1) {
+          if (sourceValues.length > 0) {
+            li.createValueObject(sourceValues[0]);
+            li.createTextChild(" ");
+          }
+          li.createTextChild("from " + sources[0]);
+        } else {
+          li.createValueObject(value);
+        }
+      } else {
+        li.createValueObject(value);
+      }
     }
 
     const outputs = body.createStyledList("Outputs:");
@@ -367,14 +403,17 @@ class JsonMLElement {
     return c;
   }
 
-  createObjectTag(object: any) {
+  createObjectTag(object: any, config?: Config) {
     const tag = this.createChild("object");
     tag.addAttribute("object", object);
+    if (config) {
+      tag.addAttribute("config", config);
+    }
     return tag;
   }
 
-  createValueObject(value: any) {
-    if (Array.isArray(value)) return this.createArrayChild(value);
+  createValueObject(value: any, config?: Config) {
+    if (Array.isArray(value)) return this.createArrayChild(value, config);
     if (typeof value === "undefined") {
       const colors = JsonMLElement.getColors();
       return this.createChild("span")
@@ -382,7 +421,7 @@ class JsonMLElement {
         .createTextChild("undefined");
     }
 
-    return this.createObjectTag(value);
+    return this.createObjectTag(value, config);
   }
 
   setStyle(style: string) {
@@ -400,12 +439,12 @@ class JsonMLElement {
     return this;
   }
 
-  createArrayChild(array: any[]) {
+  createArrayChild(array: any[], config?: Config) {
     const j = new JsonMLElement("span");
     j.createTextChild("[");
     for (let i = 0; i < array.length; ++i) {
       if (i != 0) j.createTextChild(", ");
-      j.createValueObject(array[i]);
+      j.createValueObject(array[i], config);
     }
     j.createTextChild("]");
     this._jsonML.push(j.toJsonML());
