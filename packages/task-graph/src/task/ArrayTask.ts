@@ -169,7 +169,7 @@ export function arrayTaskFactory<
      */
     regenerateGraph() {
       //TODO: only regenerate if we need to
-      this.subGraph = new TaskGraph(this.outputCache);
+      this.subGraph = new TaskGraph({ outputCache: this.outputCache });
       const combinations = generateCombinations<Input, keyof Input>(
         this.runInputData,
         inputMakeArray as (keyof Input)[]

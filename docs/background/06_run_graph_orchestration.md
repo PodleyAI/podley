@@ -14,17 +14,17 @@ The graph is a DAG. It is a list of nodes and a list of edges. The nodes are the
 
 We might want to have events based on what happens in the graph (and a suspend/resume for bulk creation/etc). This will be needed to keep UI in sync with the as it runs.
 
-### Node
+### Node / Task
 
 - Task
 
-Notes about requirements for the nodes:
+Notes about requirements for the tasks:
 
 - Must have input list and output list
   - the input or output will have a type object that JS can read, and not a TS type (though that should get derived from the type object)
 - We need to convert the inputs/outputs to a TypeScript type (or write them separately)
 
-### Edge
+### Edge / Dataflow
 
 - Dataflow
 - Instrumentation
@@ -42,8 +42,8 @@ The graph runner is a simple recursive function that takes a graph and a node an
 
 ```mermaid
 erDiagram
-    TaskGraph ||--o{ Task : nodes
-    TaskGraph ||--o{ Dataflow : edges
+    TaskGraph ||--o{ Task : tasks
+    TaskGraph ||--o{ Dataflow : dataflows
     Task ||--o{ TaskInput : inputs
     Task ||--o{ TaskOutput: outputs
     TaskInput ||--|| ValueType : valueType
@@ -54,8 +54,8 @@ erDiagram
     Dataflow ||--|| Task : target
 
     TaskGraph{
-      Task[] nodes
-      Dataflow[] edges
+      Task[] tasks
+      Dataflow[] dataflows
     }
 
     Task{

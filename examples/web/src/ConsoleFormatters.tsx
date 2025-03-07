@@ -44,7 +44,7 @@ export class WorkflowConsoleFormatter extends ConsoleFormatter {
       const header = new JsonMLElement("div");
       header.sectionHeader("Workflow");
       header.styledText(
-        `(${workflow.graph.getNodes().length} nodes)`,
+        `(${workflow.graph.getTasks().length} tasks)`,
         "color: green; margin-left: 10px;"
       );
       if (workflow.error) {
@@ -66,7 +66,7 @@ export class WorkflowConsoleFormatter extends ConsoleFormatter {
     // Move API methods to a separate section in the WorkflowAPIConsoleFormatter
 
     const nodes = body.createStyledList();
-    const tasks = obj._graph.getNodes();
+    const tasks = obj._graph.getTasks();
     if (tasks.length) {
       nodes.createTextChild("Tasks:");
       for (const node of tasks) {

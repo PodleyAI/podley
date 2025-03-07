@@ -198,7 +198,7 @@ export class Task<
   }
 
   public hasChildren(): boolean {
-    return this.isCompound && this.subGraph !== null && this.subGraph.getNodes().length > 0;
+    return this.isCompound && this.subGraph !== null && this.subGraph.getTasks().length > 0;
   }
 
   // ========================================================================
@@ -339,7 +339,7 @@ export class Task<
       this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as Input;
     }
     if (this.hasChildren()) {
-      this.subGraph!.getNodes().forEach((node) => {
+      this.subGraph!.getTasks().forEach((node) => {
         node.resetInputData();
       });
     }

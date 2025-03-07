@@ -70,8 +70,8 @@ describe("Workflow", () => {
 
       workflow = addTestTask.call(workflow, { input: "test" });
 
-      expect(workflow.graph.getNodes()).toHaveLength(1);
-      expect(workflow.graph.getNodes()[0]).toBeInstanceOf(TestSimpleTask);
+      expect(workflow.graph.getTasks()).toHaveLength(1);
+      expect(workflow.graph.getTasks()[0]).toBeInstanceOf(TestSimpleTask);
     });
   });
 
@@ -118,12 +118,12 @@ describe("Workflow", () => {
     it("should remove the last task from the graph", () => {
       workflow = workflow.TestSimpleTask({ input: "test1" }).TestSimpleTask({ input: "test2" });
 
-      expect(workflow.graph.getNodes()).toHaveLength(2);
+      expect(workflow.graph.getTasks()).toHaveLength(2);
 
       workflow.pop();
 
-      expect(workflow.graph.getNodes()).toHaveLength(1);
-      expect(workflow.graph.getNodes()[0].runInputData).toEqual({ input: "test1" });
+      expect(workflow.graph.getTasks()).toHaveLength(1);
+      expect(workflow.graph.getTasks()[0].runInputData).toEqual({ input: "test1" });
     });
 
     it("should set error when trying to pop from empty graph", () => {
@@ -145,9 +145,9 @@ describe("Workflow", () => {
 
       const json = workflow.toJSON();
 
-      expect(json).toHaveProperty("nodes");
-      expect(json).toHaveProperty("edges");
-      expect(json.nodes).toHaveLength(1);
+      expect(json).toHaveProperty("tasks");
+      expect(json).toHaveProperty("dataflows");
+      expect(json.tasks).toHaveLength(1);
     });
 
     it("should convert the task graph to dependency JSON", () => {
@@ -179,11 +179,11 @@ describe("Workflow", () => {
         (w) => addTestTask.call(w, { input: "test2" })
       );
 
-      expect(workflow.graph.getNodes()).toHaveLength(1);
-      expect(workflow.graph.getNodes()[0]).toBeInstanceOf(Task);
+      expect(workflow.graph.getTasks()).toHaveLength(1);
+      expect(workflow.graph.getTasks()[0]).toBeInstanceOf(Task);
 
-      const compoundTask = workflow.graph.getNodes()[0];
-      expect(compoundTask.subGraph?.getNodes()).toHaveLength(2);
+      const compoundTask = workflow.graph.getTasks()[0];
+      expect(compoundTask.subGraph?.getTasks()).toHaveLength(2);
     });
   });
 
@@ -203,17 +203,17 @@ describe("Workflow", () => {
       workflow.rename("customOutput", "customInput");
       workflow = addInputTask.call(workflow);
 
-      const nodes = workflow.graph.getNodes();
+      const nodes = workflow.graph.getTasks();
       expect(nodes).toHaveLength(2);
 
       // Check that the dataflow was created correctly
-      const edges = workflow.graph.getDataflows();
-      expect(edges).toHaveLength(1);
-      const edge = edges[0];
-      expect(edge.sourceTaskId).toBe(nodes[0].config.id);
-      expect(edge.sourceTaskPortId).toBe("customOutput");
-      expect(edge.targetTaskId).toBe(nodes[1].config.id);
-      expect(edge.targetTaskPortId).toBe("customInput");
+      const dataflows = workflow.graph.getDataflows();
+      expect(dataflows).toHaveLength(1);
+      const dataflow = dataflows[0];
+      expect(dataflow.sourceTaskId).toBe(nodes[0].config.id);
+      expect(dataflow.sourceTaskPortId).toBe("customOutput");
+      expect(dataflow.targetTaskId).toBe(nodes[1].config.id);
+      expect(dataflow.targetTaskPortId).toBe("customInput");
     });
 
     it("should throw error when source output doesn't exist", () => {
@@ -239,12 +239,12 @@ describe("Workflow", () => {
       >(TestSimpleTask);
 
       workflow = addTestTask.call(workflow, { input: "test" });
-      expect(workflow.graph.getNodes()).toHaveLength(1);
+      expect(workflow.graph.getTasks()).toHaveLength(1);
 
       const changedSpy = spyOn(workflow.events, "emit");
       workflow.reset();
 
-      expect(workflow.graph.getNodes()).toHaveLength(0);
+      expect(workflow.graph.getTasks()).toHaveLength(0);
       expect(workflow.error).toBe("");
       expect(changedSpy).toHaveBeenCalledWith("changed", undefined);
       expect(changedSpy).toHaveBeenCalledWith("reset");
@@ -346,7 +346,7 @@ describe("Workflow", () => {
       workflow = addNumberTask.call(workflow);
 
       expect(workflow.error).toContain("Could not find a match");
-      expect(workflow.graph.getNodes()).toHaveLength(1); // Second task not added
+      expect(workflow.graph.getTasks()).toHaveLength(1); // Second task not added
     });
   });
 });

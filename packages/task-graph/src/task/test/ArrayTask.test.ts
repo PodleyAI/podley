@@ -196,7 +196,7 @@ describe("ArrayTask", () => {
     task.regenerateGraph();
 
     // Set up event listeners on child tasks
-    task.subGraph!.getNodes().forEach((childTask: ITask) => {
+    task.subGraph!.getTasks().forEach((childTask: ITask) => {
       childTask.on("start", () => {
         childEvents.start++;
       });
@@ -218,7 +218,7 @@ describe("ArrayTask", () => {
     runner.handleProgress(0.5);
 
     // Manually trigger progress events on child tasks
-    task.subGraph!.getNodes().forEach((childTask: ITask) => {
+    task.subGraph!.getTasks().forEach((childTask: ITask) => {
       // @ts-expect-error - accessing protected property for testing
       const childRunner = childTask._runner || (childTask as any).runner;
       childRunner.handleStart();

@@ -399,7 +399,7 @@ export class TaskGraphRunner {
    * @param graph The task graph to reset
    */
   protected resetGraph(graph: TaskGraph, runnerId: string) {
-    graph.getNodes().forEach((node) => {
+    graph.getTasks().forEach((node) => {
       this.resetTask(graph, node, runnerId);
       if (node.isCompound) {
         node.regenerateGraph();
@@ -467,7 +467,7 @@ export class TaskGraphRunner {
    */
   protected async handleError(): Promise<void> {
     await Promise.allSettled(
-      this.graph.getNodes().map(async (task: ITask) => {
+      this.graph.getTasks().map(async (task: ITask) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
           task.abort();
         }
@@ -485,7 +485,7 @@ export class TaskGraphRunner {
    */
   protected async handleAbort(): Promise<void> {
     await Promise.allSettled(
-      this.graph.getNodes().map(async (task: ITask) => {
+      this.graph.getTasks().map(async (task: ITask) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
           task.abort();
         }

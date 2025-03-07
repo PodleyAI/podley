@@ -13,20 +13,19 @@ import { createGraphFromGraphJSON } from "../../task/TaskJSON";
 /**
  * Events that can be emitted by the TaskGraphRepository
  */
-export type TaskGraphEvents = keyof TaskGraphEventListeners;
+export type TaskGraphRepositoryEvents = keyof TaskGraphRepositoryEventListeners;
 
-export type TaskGraphEventListeners = {
+export type TaskGraphRepositoryEventListeners = {
   graph_saved: (key: string) => void;
   graph_retrieved: (key: string) => void;
   graph_cleared: () => void;
 };
 
-export type TaskGraphEventListener<Event extends TaskGraphEvents> = TaskGraphEventListeners[Event];
+export type TaskGraphRepositoryEventListener<Event extends TaskGraphRepositoryEvents> =
+  TaskGraphRepositoryEventListeners[Event];
 
-export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParameters<
-  TaskGraphEventListeners,
-  Event
->;
+export type TaskGraphRepositoryEventParameters<Event extends TaskGraphRepositoryEvents> =
+  EventParameters<TaskGraphRepositoryEventListeners, Event>;
 
 export const TaskGraphSchema = {
   key: "string",
@@ -44,14 +43,17 @@ export abstract class TaskGraphRepository {
     typeof TaskGraphSchema,
     typeof TaskGraphPrimaryKeyNames
   >;
-  protected events = new EventEmitter<TaskGraphEventListeners>();
+  protected events = new EventEmitter<TaskGraphRepositoryEventListeners>();
 
   /**
    * Registers an event listener for the specified event
    * @param name The event name to listen for
    * @param fn The callback function to execute when the event occurs
    */
-  on<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
+  on<Event extends TaskGraphRepositoryEvents>(
+    name: Event,
+    fn: TaskGraphRepositoryEventListener<Event>
+  ) {
     this.events.on(name, fn);
   }
 
@@ -60,7 +62,10 @@ export abstract class TaskGraphRepository {
    * @param name The event name to stop listening for
    * @param fn The callback function to remove
    */
-  off<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
+  off<Event extends TaskGraphRepositoryEvents>(
+    name: Event,
+    fn: TaskGraphRepositoryEventListener<Event>
+  ) {
     this.events.off(name, fn);
   }
 
@@ -69,7 +74,10 @@ export abstract class TaskGraphRepository {
    * @param name The event name to listen for
    * @param fn The callback function to execute when the event occurs
    */
-  once<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
+  once<Event extends TaskGraphRepositoryEvents>(
+    name: Event,
+    fn: TaskGraphRepositoryEventListener<Event>
+  ) {
     this.events.once(name, fn);
   }
 
@@ -78,8 +86,8 @@ export abstract class TaskGraphRepository {
    * @param name The event name to check
    * @returns true if the event has listeners, false otherwise
    */
-  waitOn<Event extends TaskGraphEvents>(name: Event) {
-    return this.events.waitOn(name) as Promise<TaskGraphEventParameters<Event>>;
+  waitOn<Event extends TaskGraphRepositoryEvents>(name: Event) {
+    return this.events.waitOn(name) as Promise<TaskGraphRepositoryEventParameters<Event>>;
   }
 
   /**

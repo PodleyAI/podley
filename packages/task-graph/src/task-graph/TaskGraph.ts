@@ -5,13 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DirectedAcyclicGraph } from "@sroussey/typescript-graph";
+import { DirectedAcyclicGraph, GraphEvents } from "@sroussey/typescript-graph";
 import { Provenance, TaskIdType } from "../task/TaskTypes";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
 import { TaskGraphRunner } from "./TaskGraphRunner";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { EventParameters } from "@ellmers/util";
 
 /**
  * Configuration for running a task graph
@@ -26,15 +27,67 @@ export interface TaskGraphRunConfig {
 }
 
 /**
+ * Events that can be emitted by the TaskGraph
+ */
+export type TaskGraphEvents = keyof TaskGraphEventListeners;
+
+export type TaskGraphEventListeners = {
+  task_added: (task: ITask) => void;
+  task_removed: (task: ITask) => void;
+  task_replaced: (task: ITask) => void;
+  dataflow_added: (dataflow: Dataflow) => void;
+  dataflow_removed: (dataflow: Dataflow) => void;
+  dataflow_replaced: (dataflow: Dataflow) => void;
+};
+
+export type TaskGraphEventListener<Event extends TaskGraphEvents> = TaskGraphEventListeners[Event];
+
+export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParameters<
+  TaskGraphEventListeners,
+  Event
+>;
+
+const EventDagToTaskGraphMapping: Record<GraphEvents, TaskGraphEvents> = {
+  "node-added": "task_added",
+  "node-removed": "task_removed",
+  "node-replaced": "task_replaced",
+  "edge-added": "dataflow_added",
+  "edge-removed": "dataflow_removed",
+  "edge-replaced": "dataflow_replaced",
+} as const;
+
+const EventTaskGraphToDagMapping: Record<TaskGraphEvents, GraphEvents> = {
+  task_added: "node-added",
+  task_removed: "node-removed",
+  task_replaced: "node-replaced",
+  dataflow_added: "edge-added",
+  dataflow_removed: "edge-removed",
+  dataflow_replaced: "edge-replaced",
+} as const;
+
+/**
  * Represents a task graph, a directed acyclic graph of tasks and data flows
  */
-export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType> {
-  constructor(public outputCache?: TaskOutputRepository) {
-    super(
-      (task: ITask) => task.config.id,
-      (dataflow: Dataflow) => dataflow.id
-    );
+export class TaskGraph {
+  /** Optional output cache to use for this task graph */
+  public outputCache?: TaskOutputRepository;
+  constructor({
+    outputCache,
+    dag,
+  }: {
+    outputCache?: TaskOutputRepository;
+    dag?: DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType>;
+  } = {}) {
+    this.outputCache = outputCache;
+    this._dag =
+      dag ||
+      new DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType>(
+        (task: ITask) => task.config.id,
+        (dataflow: Dataflow) => dataflow.id
+      );
   }
+
+  private _dag: DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType>;
 
   private _runner: TaskGraphRunner | undefined;
   public get runner(): TaskGraphRunner {
@@ -86,7 +139,23 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns The task with the given id, or undefined if not found
    */
   public getTask(id: TaskIdType): ITask | undefined {
-    return super.getNode(id);
+    return this._dag.getNode(id);
+  }
+
+  /**
+   * Retrieves all tasks in the task graph
+   * @returns An array of tasks in the task graph
+   */
+  public getTasks(): ITask[] {
+    return this._dag.getNodes();
+  }
+
+  /**
+   * Retrieves all tasks in the task graph topologically sorted
+   * @returns An array of tasks in the task graph topologically sorted
+   */
+  public topologicallySortedNodes(): ITask[] {
+    return this._dag.topologicallySortedNodes();
   }
 
   /**
@@ -95,7 +164,7 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns The current task graph
    */
   public addTask(task: ITask) {
-    return super.addNode(task);
+    return this._dag.addNode(task);
   }
 
   /**
@@ -104,7 +173,7 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns The current task graph
    */
   public addTasks(tasks: ITask[]) {
-    return super.addNodes(tasks);
+    return this._dag.addNodes(tasks);
   }
 
   /**
@@ -113,7 +182,7 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns The current task graph
    */
   public addDataflow(dataflow: Dataflow) {
-    return super.addEdge(dataflow.sourceTaskId, dataflow.targetTaskId, dataflow);
+    return this._dag.addEdge(dataflow.sourceTaskId, dataflow.targetTaskId, dataflow);
   }
 
   /**
@@ -125,7 +194,7 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
     const addedEdges = dataflows.map<[s: unknown, t: unknown, e: Dataflow]>((edge) => {
       return [edge.sourceTaskId, edge.targetTaskId, edge];
     });
-    return super.addEdges(addedEdges);
+    return this._dag.addEdges(addedEdges);
   }
 
   /**
@@ -134,12 +203,16 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns The data flow with the given id, or undefined if not found
    */
   public getDataflow(id: DataflowIdType): Dataflow | undefined {
-    for (const i in this.adjacency) {
-      for (const j in this.adjacency[i]) {
-        const maybeEdges = this.adjacency[i][j];
+    // @ts-ignore
+    for (const i in this._dag.adjacency) {
+      // @ts-ignore
+      for (const j in this._dag.adjacency[i]) {
+        // @ts-ignore
+        const maybeEdges = this._dag.adjacency[i][j];
         if (maybeEdges !== null) {
           for (const edge of maybeEdges) {
-            if (this.edgeIdentity(edge, "", "") == id) {
+            // @ts-ignore
+            if (this._dag.edgeIdentity(edge, "", "") == id) {
               return edge;
             }
           }
@@ -153,7 +226,7 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns An array of data flows in the task graph
    */
   public getDataflows(): Dataflow[] {
-    return this.getEdges().map((edge) => edge[2]);
+    return this._dag.getEdges().map((edge) => edge[2]);
   }
 
   /**
@@ -162,7 +235,7 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns An array of data flows that are sources of the given task
    */
   public getSourceDataflows(taskId: unknown): Dataflow[] {
-    return this.inEdges(taskId).map(([, , dataflow]) => dataflow);
+    return this._dag.inEdges(taskId).map(([, , dataflow]) => dataflow);
   }
 
   /**
@@ -171,7 +244,7 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns An array of data flows that are targets of the given task
    */
   public getTargetDataflows(taskId: unknown): Dataflow[] {
-    return this.outEdges(taskId).map(([, , dataflow]) => dataflow);
+    return this._dag.outEdges(taskId).map(([, , dataflow]) => dataflow);
   }
 
   /**
@@ -180,7 +253,7 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns An array of tasks that are sources of the given task
    */
   public getSourceTasks(taskId: unknown): ITask[] {
-    return this.getSourceDataflows(taskId).map((dataflow) => this.getNode(dataflow.sourceTaskId)!);
+    return this.getSourceDataflows(taskId).map((dataflow) => this.getTask(dataflow.sourceTaskId)!);
   }
 
   /**
@@ -189,7 +262,16 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns An array of tasks that are targets of the given task
    */
   public getTargetTasks(taskId: unknown): ITask[] {
-    return this.getTargetDataflows(taskId).map((dataflow) => this.getNode(dataflow.targetTaskId)!);
+    return this.getTargetDataflows(taskId).map((dataflow) => this.getTask(dataflow.targetTaskId)!);
+  }
+
+  /**
+   * Removes a task from the task graph
+   * @param taskId The id of the task to remove
+   * @returns The current task graph
+   */
+  public removeTask(taskId: unknown) {
+    return this._dag.removeNode(taskId);
   }
 
   /**
@@ -197,11 +279,11 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns An array of JsonTaskItem objects, each representing a task and its dependencies
    */
   public toJSON(): TaskGraphJson {
-    const nodes = this.getNodes().map((node) => node.toJSON());
-    const edges = this.getDataflows().map((df) => df.toJSON());
+    const tasks = this.getTasks().map((node) => node.toJSON());
+    const dataflows = this.getDataflows().map((df) => df.toJSON());
     return {
-      nodes,
-      edges,
+      tasks,
+      dataflows,
     };
   }
 
@@ -210,33 +292,60 @@ export class TaskGraph extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType,
    * @returns An array of JsonTaskItem objects, each representing a task and its dependencies
    */
   public toDependencyJSON(): JsonTaskItem[] {
-    const nodes = this.getNodes().flatMap((node) => node.toDependencyJSON());
-    this.getDataflows().forEach((edge) => {
-      const target = nodes.find((node) => node.id === edge.targetTaskId)!;
+    const tasks = this.getTasks().flatMap((node) => node.toDependencyJSON());
+    this.getDataflows().forEach((df) => {
+      const target = tasks.find((node) => node.id === df.targetTaskId)!;
       if (!target.dependencies) {
         target.dependencies = {};
       }
-      const targetDeps = target.dependencies[edge.targetTaskPortId];
+      const targetDeps = target.dependencies[df.targetTaskPortId];
       if (!targetDeps) {
-        target.dependencies[edge.targetTaskPortId] = {
-          id: edge.sourceTaskId,
-          output: edge.sourceTaskPortId,
+        target.dependencies[df.targetTaskPortId] = {
+          id: df.sourceTaskId,
+          output: df.sourceTaskPortId,
         };
       } else {
         if (Array.isArray(targetDeps)) {
           targetDeps.push({
-            id: edge.sourceTaskId,
-            output: edge.sourceTaskPortId,
+            id: df.sourceTaskId,
+            output: df.sourceTaskPortId,
           });
         } else {
-          target.dependencies[edge.targetTaskPortId] = [
+          target.dependencies[df.targetTaskPortId] = [
             targetDeps,
-            { id: edge.sourceTaskId, output: edge.sourceTaskPortId },
+            { id: df.sourceTaskId, output: df.sourceTaskPortId },
           ];
         }
       }
     });
-    return nodes;
+    return tasks;
+  }
+
+  /**
+   * Registers an event listener for the specified event
+   * @param name - The event name to listen for
+   * @param fn - The callback function to execute when the event occurs
+   */
+  on<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
+    this._dag.on(EventTaskGraphToDagMapping[name], fn);
+  }
+
+  /**
+   * Removes an event listener for the specified event
+   * @param name - The event name to listen for
+   * @param fn - The callback function to execute when the event occurs
+   */
+  off<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
+    this._dag.off(EventTaskGraphToDagMapping[name], fn);
+  }
+
+  /**
+   * Emits an event for the specified event
+   * @param name - The event name to emit
+   * @param args - The arguments to pass to the event listener
+   */
+  emit<Event extends TaskGraphEvents>(name: Event, ...args: TaskGraphEventParameters<Event>) {
+    this._dag.emit(EventTaskGraphToDagMapping[name], ...args);
   }
 }
 
