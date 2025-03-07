@@ -13,6 +13,7 @@ import {
   TaskConsoleFormatter,
   CreateWorkflowConsoleFormatter,
   WorkflowConsoleFormatter,
+  WorkflowAPIConsoleFormatter,
   isDarkMode,
 } from "./ConsoleFormatters";
 
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 
 window["Workflow"] = Workflow;
 window["devtoolsFormatters"] = [
+  new WorkflowAPIConsoleFormatter(),
   new CreateWorkflowConsoleFormatter(),
   new WorkflowConsoleFormatter(),
   new TaskConsoleFormatter(),
@@ -39,12 +41,13 @@ console.log(
   "%cOpen DevTools settings, and under Console, turn on 'enable custom formatters' for best experience. Then reload the page.",
   "color: red;"
 );
+console.log("console.log(Workflow.prototype):", Workflow.prototype);
 console.log(
   "To get started, type 'workflow.reset()' in the console. Then you can build a task graph using the workflow API, and it will be reflected in the web page. For example, here is how the page started: "
 );
 console.log(
-  `  %cworkflow.%creset%c();
-
+  `  %cworkflow = new Workflow();
+  workflow.%creset%c();
   workflow.%cDownloadModel%c({ %cmodel%c: [%c'onnx:Xenova/LaMini-Flan-T5-783M:q8']%c });
   workflow.%cTextRewriter%c({ %ctext%c: %c'The quick brown fox jumps over the lazy dog.'%c, %cprompt%c: [%c'Rewrite the following text in reverse:'%c, %c'Rewrite this to sound like a pirate:'%c] });
   workflow.%crename%c(%c'*'%c, %c'console'%c);
@@ -90,4 +93,4 @@ console.log(
   `color: ${orange}; font-weight: normal;`,
   `color: ${grey}; font-weight: normal;`
 );
-console.log(window["workflow"]);
+console.log("console.log(workflow):", window["workflow"]);

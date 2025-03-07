@@ -376,7 +376,7 @@ export const RunGraphFlow: React.FC<{
       cleanupRef.current = [];
 
       graphRef.current = graph;
-      console.log("Graph changed", graph);
+      // console.log("Graph changed", graph);
       const nodes = sortNodes(convertGraphToNodes(graph));
       setNodes(
         nodes.map((n) => ({

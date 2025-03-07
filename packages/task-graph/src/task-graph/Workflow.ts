@@ -178,6 +178,7 @@ export class Workflow {
     helper.inputs = taskClass.inputs;
     helper.outputs = taskClass.outputs;
     helper.sideeffects = taskClass.sideeffects;
+    helper.workflowCreate = true;
 
     return helper;
   }
