@@ -88,7 +88,7 @@ export class WorkflowConsoleFormatter extends ConsoleFormatter {
             if (num !== -1) el.greyText(`, ${num}`);
           });
         }
-        nodeTag.createObjectTag(node, { graph: obj._graph });
+        nodeTag.createObjectTag(node, { graph: obj._graph, workspace: obj });
       }
     }
     return body.toJsonML();
@@ -169,11 +169,17 @@ export class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
 export class TaskConsoleFormatter extends ConsoleFormatter {
   header(task: Task, config?: Config) {
     if (!task) return null;
-    if (!(task instanceof Task)) return null;
 
-    if (task.inputs && task.outputs) {
+    if (
+      task instanceof Task &&
+      task.inputs &&
+      task.outputs &&
+      task.runInputData &&
+      task.runOutputData
+    ) {
       const header = new JsonMLElement("div");
-      const name = task.type ?? task.type.replace(/Task$/, "");
+      let name = task.type ?? task.constructor.name;
+      if (config?.workspace) name = name.replace(/Task$/, "");
       const inputs = task.inputs
         .filter((i) => task.runInputData[i.id] !== undefined)
         .map((i: TaskInputDefinition) => {
@@ -181,7 +187,7 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
           let value = task.runInputData[i.id];
           return { name, value };
         });
-      //
+
       const outputs = task.outputs
         .filter((i) => task.runOutputData[i.id] !== undefined && task.runOutputData[i.id] !== "")
         .filter(
@@ -209,12 +215,13 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
     return null;
   }
 
-  hasBody(value: any, config?: Config) {
-    return true;
+  hasBody(task: any, config?: Config) {
+    return task instanceof Task;
   }
 
   body(task: Task, config?: Config) {
     if (!task) return null;
+    if (!(task instanceof Task)) return null;
 
     const body = new JsonMLElement("div").setStyle("padding-left: 10px;");
 
