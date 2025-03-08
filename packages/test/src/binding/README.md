@@ -1,6 +1,6 @@
-# Task Graph Storage Module
+# TaskGraph Storage Module Bindings
 
-This module provides persistent storage solutions for task graphs and task outputs using various storage backends. The implementation follows a repository pattern with multiple concrete implementations for different storage technologies.
+These are bindings for the task graph storage module for use in the test suite and getting started guides.
 
 - [Task Output Repositories](#task-output-repositories)
 - [Task Graph Repositories](#task-graph-repositories)
@@ -10,9 +10,9 @@ This module provides persistent storage solutions for task graphs and task outpu
 
 ## Task Output Repositories
 
-TaskOutputRepository is a repository for task caching. If a task has the same input it is assumed to return the same output. The task graph runner does not resume, but i can quickly get to the aborted state by using the output repository.
+TaskOutputRepository is a repository for task caching.
 
-Available Implementations:
+Available Binding Implementations:
 
 - **InMemoryTaskOutputRepository**: Volatile in-memory storage
 - **FsFolderTaskOutputRepository**: File system storage
@@ -35,7 +35,7 @@ await outputRepo.saveOutput("MyTaskType", { param: "value" }, { result: "data" }
 
 TaskGraphRepository is a repository for task graphs themselves. It is used to save and load task graphs.
 
-Available Implementations:
+Available Binding Implementations:
 
 - **InMemoryTaskGraphRepository**: Volatile in-memory storage (good for testing)
 - **FsFolderTaskGraphRepository**: File system storage using JSON files
@@ -43,11 +43,7 @@ Available Implementations:
 - **SqliteTaskGraphRepository**: SQLite database storage
 - **PostgresTaskGraphRepository**: PostgreSQL database storage
 
-All implementations extend `TaskGraphRepository` abstract class and provide:
-
-- CRUD operations for task graphs
-- Event emitters for storage operations
-- Serialization/deserialization of task graphs with data flows
+All implementations extend `TaskGraphRepository` class and provide storage for task graphs.
 
 ```typescript
 // Example usage

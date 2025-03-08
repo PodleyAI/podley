@@ -17,16 +17,9 @@ import { InMemoryTabularRepository } from "@ellmers/storage";
  * Provides storage and retrieval for task graphs.
  */
 export class InMemoryTaskGraphRepository extends TaskGraphRepository {
-  tabularRepository: InMemoryTabularRepository<
-    typeof TaskGraphSchema,
-    typeof TaskGraphPrimaryKeyNames
-  >;
-  public type = "InMemoryTaskGraphRepository" as const;
   constructor() {
-    super();
-    this.tabularRepository = new InMemoryTabularRepository(
-      TaskGraphSchema,
-      TaskGraphPrimaryKeyNames
-    );
+    super({
+      tabularRepository: new InMemoryTabularRepository(TaskGraphSchema, TaskGraphPrimaryKeyNames),
+    });
   }
 }

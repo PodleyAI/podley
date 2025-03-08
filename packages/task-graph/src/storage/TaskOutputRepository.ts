@@ -39,16 +39,35 @@ export const TaskOutputSchema = {
 
 export const TaskOutputPrimaryKeyNames = ["key", "taskType"] as const;
 
+export type TaskOutputRepositoryStorage = TabularRepository<
+  typeof TaskOutputSchema,
+  typeof TaskOutputPrimaryKeyNames
+>;
+
+export type TaskOutputRepositoryOptions = {
+  tabularRepository: TaskOutputRepositoryStorage;
+};
+
 /**
  * Abstract class for managing task outputs in a repository
  * Provides methods for saving, retrieving, and clearing task outputs
  */
 export abstract class TaskOutputRepository {
-  public type = "TaskOutputRepository";
-  abstract tabularRepository: TabularRepository<
-    typeof TaskOutputSchema,
-    typeof TaskOutputPrimaryKeyNames
-  >;
+  /**
+   * The tabular repository for the task outputs
+   */
+  tabularRepository: TaskOutputRepositoryStorage;
+
+  /**
+   * Constructor for the TaskOutputRepository
+   * @param options The options for the repository
+   */
+  constructor({ tabularRepository }: TaskOutputRepositoryOptions) {
+    this.tabularRepository = tabularRepository;
+  }
+
+  /**
+   * The event emitter for the task outputs */
   protected events = new EventEmitter<TaskOutputEventListeners>();
 
   /**

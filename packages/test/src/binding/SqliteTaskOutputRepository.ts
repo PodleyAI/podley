@@ -17,18 +17,14 @@ import {
  * Provides storage and retrieval for task outputs using SQLite.
  */
 export class SqliteTaskOutputRepository extends TaskOutputRepository {
-  tabularRepository: SqliteTabularRepository<
-    typeof TaskOutputSchema,
-    typeof TaskOutputPrimaryKeyNames
-  >;
-  public type = "SqliteTaskOutputRepository" as const;
   constructor(dbOrPath: string, table: string = "task_outputs") {
-    super();
-    this.tabularRepository = new SqliteTabularRepository(
-      dbOrPath,
-      table,
-      TaskOutputSchema,
-      TaskOutputPrimaryKeyNames
-    );
+    super({
+      tabularRepository: new SqliteTabularRepository(
+        dbOrPath,
+        table,
+        TaskOutputSchema,
+        TaskOutputPrimaryKeyNames
+      ),
+    });
   }
 }

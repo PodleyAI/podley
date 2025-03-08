@@ -17,16 +17,9 @@ import {
  * Provides storage and retrieval for task outputs.
  */
 export class InMemoryTaskOutputRepository extends TaskOutputRepository {
-  tabularRepository: InMemoryTabularRepository<
-    typeof TaskOutputSchema,
-    typeof TaskOutputPrimaryKeyNames
-  >;
-  public type = "InMemoryTaskOutputRepository" as const;
   constructor() {
-    super();
-    this.tabularRepository = new InMemoryTabularRepository(
-      TaskOutputSchema,
-      TaskOutputPrimaryKeyNames
-    );
+    super({
+      tabularRepository: new InMemoryTabularRepository(TaskOutputSchema, TaskOutputPrimaryKeyNames),
+    });
   }
 }

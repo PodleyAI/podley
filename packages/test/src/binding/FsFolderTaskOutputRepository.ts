@@ -17,17 +17,13 @@ import {
  * Provides storage and retrieval for task outputs using the file system.
  */
 export class FsFolderTaskOutputRepository extends TaskOutputRepository {
-  tabularRepository: FsFolderTabularRepository<
-    typeof TaskOutputSchema,
-    typeof TaskOutputPrimaryKeyNames
-  >;
-  public type = "FsFolderTaskOutputRepository" as const;
   constructor(folderPath: string) {
-    super();
-    this.tabularRepository = new FsFolderTabularRepository(
-      folderPath,
-      TaskOutputSchema,
-      TaskOutputPrimaryKeyNames
-    );
+    super({
+      tabularRepository: new FsFolderTabularRepository(
+        folderPath,
+        TaskOutputSchema,
+        TaskOutputPrimaryKeyNames
+      ),
+    });
   }
 }

@@ -17,17 +17,13 @@ import {
  * Provides storage and retrieval for task graphs using a file system.
  */
 export class FsFolderTaskGraphRepository extends TaskGraphRepository {
-  tabularRepository: FsFolderTabularRepository<
-    typeof TaskGraphSchema,
-    typeof TaskGraphPrimaryKeyNames
-  >;
-  public type = "FsFolderTaskGraphRepository" as const;
   constructor(folderPath: string) {
-    super();
-    this.tabularRepository = new FsFolderTabularRepository(
-      folderPath,
-      TaskGraphSchema,
-      TaskGraphPrimaryKeyNames
-    );
+    super({
+      tabularRepository: new FsFolderTabularRepository(
+        folderPath,
+        TaskGraphSchema,
+        TaskGraphPrimaryKeyNames
+      ),
+    });
   }
 }

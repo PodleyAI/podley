@@ -17,17 +17,13 @@ import { IndexedDbTabularRepository } from "@ellmers/storage";
  * Provides storage and retrieval for task graphs using IndexedDB.
  */
 export class IndexedDbTaskGraphRepository extends TaskGraphRepository {
-  tabularRepository: IndexedDbTabularRepository<
-    typeof TaskGraphSchema,
-    typeof TaskGraphPrimaryKeyNames
-  >;
-  public type = "IndexedDbTaskGraphRepository" as const;
   constructor(table: string = "task_graphs") {
-    super();
-    this.tabularRepository = new IndexedDbTabularRepository(
-      table,
-      TaskGraphSchema,
-      TaskGraphPrimaryKeyNames
-    );
+    super({
+      tabularRepository: new IndexedDbTabularRepository(
+        table,
+        TaskGraphSchema,
+        TaskGraphPrimaryKeyNames
+      ),
+    });
   }
 }

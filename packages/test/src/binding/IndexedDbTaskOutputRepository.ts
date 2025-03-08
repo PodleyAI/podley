@@ -17,17 +17,13 @@ import {
  * Provides storage and retrieval for task outputs using IndexedDB.
  */
 export class IndexedDbTaskOutputRepository extends TaskOutputRepository {
-  tabularRepository: IndexedDbTabularRepository<
-    typeof TaskOutputSchema,
-    typeof TaskOutputPrimaryKeyNames
-  >;
-  public type = "IndexedDbTaskOutputRepository" as const;
   constructor(table: string = "task_outputs") {
-    super();
-    this.tabularRepository = new IndexedDbTabularRepository(
-      table,
-      TaskOutputSchema,
-      TaskOutputPrimaryKeyNames
-    );
+    super({
+      tabularRepository: new IndexedDbTabularRepository(
+        table,
+        TaskOutputSchema,
+        TaskOutputPrimaryKeyNames
+      ),
+    });
   }
 }

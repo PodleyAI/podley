@@ -17,18 +17,14 @@ import { SqliteTabularRepository } from "@ellmers/storage";
  * Provides storage and retrieval for task graphs using SQLite.
  */
 export class SqliteTaskGraphRepository extends TaskGraphRepository {
-  tabularRepository: SqliteTabularRepository<
-    typeof TaskGraphSchema,
-    typeof TaskGraphPrimaryKeyNames
-  >;
-  public type = "SqliteTaskGraphRepository" as const;
   constructor(dbOrPath: string, table: string = "task_graphs") {
-    super();
-    this.tabularRepository = new SqliteTabularRepository(
-      dbOrPath,
-      table,
-      TaskGraphSchema,
-      TaskGraphPrimaryKeyNames
-    );
+    super({
+      tabularRepository: new SqliteTabularRepository(
+        dbOrPath,
+        table,
+        TaskGraphSchema,
+        TaskGraphPrimaryKeyNames
+      ),
+    });
   }
 }

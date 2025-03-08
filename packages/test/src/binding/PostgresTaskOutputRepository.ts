@@ -18,18 +18,14 @@ import type { Pool } from "pg";
  * Provides storage and retrieval for task outputs using PostgreSQL.
  */
 export class PostgresTaskOutputRepository extends TaskOutputRepository {
-  tabularRepository: PostgresTabularRepository<
-    typeof TaskOutputSchema,
-    typeof TaskOutputPrimaryKeyNames
-  >;
-  public type = "PostgresTaskOutputRepository" as const;
   constructor(db: Pool, table: string = "task_outputs") {
-    super();
-    this.tabularRepository = new PostgresTabularRepository(
-      db,
-      table,
-      TaskOutputSchema,
-      TaskOutputPrimaryKeyNames
-    );
+    super({
+      tabularRepository: new PostgresTabularRepository(
+        db,
+        table,
+        TaskOutputSchema,
+        TaskOutputPrimaryKeyNames
+      ),
+    });
   }
 }

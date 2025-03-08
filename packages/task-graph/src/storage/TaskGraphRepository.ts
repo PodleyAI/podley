@@ -33,16 +33,44 @@ export const TaskGraphSchema = {
 } as const;
 
 export const TaskGraphPrimaryKeyNames = ["key"] as const;
+
 /**
- * Abstract repository class for managing task graphs persistence and retrieval.
+ * Options for the TaskGraphRepository
+ */
+export type TaskGraphRepositoryStorage = TabularRepository<
+  typeof TaskGraphSchema,
+  typeof TaskGraphPrimaryKeyNames
+>;
+type TaskGraphRepositoryOptions = {
+  tabularRepository: TaskGraphRepositoryStorage;
+};
+
+/**
+ * Repository class for managing task graphs persistence and retrieval.
  * Provides functionality to save, load, and manipulate task graphs with their associated tasks and data flows.
  */
-export abstract class TaskGraphRepository {
+export class TaskGraphRepository {
+  /**
+   * The type of the repository
+   */
   public type = "TaskGraphRepository";
-  abstract tabularRepository: TabularRepository<
-    typeof TaskGraphSchema,
-    typeof TaskGraphPrimaryKeyNames
-  >;
+
+  /**
+   * The tabular repository for the task graphs
+   */
+  tabularRepository: TaskGraphRepositoryStorage;
+
+  /**
+   * Constructor for the TaskGraphRepository
+   * @param options The options for the repository
+   */
+  constructor({ tabularRepository }: TaskGraphRepositoryOptions) {
+    this.tabularRepository = tabularRepository;
+  }
+
+  /**
+   * The event emitter for the task graphs
+   */
   protected events = new EventEmitter<TaskGraphRepositoryEventListeners>();
 
   /**

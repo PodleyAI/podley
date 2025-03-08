@@ -18,18 +18,14 @@ import type { Pool } from "pg";
  * Provides storage and retrieval for task graphs using PostgreSQL.
  */
 export class PostgresTaskGraphRepository extends TaskGraphRepository {
-  tabularRepository: PostgresTabularRepository<
-    typeof TaskGraphSchema,
-    typeof TaskGraphPrimaryKeyNames
-  >;
-  public type = "PostgresTaskGraphRepository" as const;
-  constructor(db: Pool) {
-    super();
-    this.tabularRepository = new PostgresTabularRepository(
-      db,
-      "task_graphs",
-      TaskGraphSchema,
-      TaskGraphPrimaryKeyNames
-    );
+  constructor(db: Pool, table: string = "task_graphs") {
+    super({
+      tabularRepository: new PostgresTabularRepository(
+        db,
+        table,
+        TaskGraphSchema,
+        TaskGraphPrimaryKeyNames
+      ),
+    });
   }
 }
