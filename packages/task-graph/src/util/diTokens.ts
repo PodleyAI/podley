@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import { createServiceToken } from "@ellmers/util";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
-import { TaskGraphRepository } from "../storage/taskgraph/TaskGraphRepository";
+import { TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { TaskGraphRepository } from "../storage/TaskGraphRepository";
 
 /**
  * Service token for TaskOutputRepository

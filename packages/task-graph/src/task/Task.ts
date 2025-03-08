@@ -7,7 +7,7 @@
 
 import { EventEmitter } from "@ellmers/util";
 import { uuid4 } from "@ellmers/util";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteConfig, IRunConfig, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";

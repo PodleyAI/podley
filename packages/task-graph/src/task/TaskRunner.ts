@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { ITask, IRunConfig } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";

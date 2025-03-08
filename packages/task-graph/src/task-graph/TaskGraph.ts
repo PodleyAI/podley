@@ -11,7 +11,7 @@ import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
 import { TaskGraphRunner } from "./TaskGraphRunner";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { EventParameters } from "@ellmers/util";
 
 /**

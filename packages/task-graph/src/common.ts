@@ -21,8 +21,8 @@ export * from "./task/JobQueueTask";
 export * from "./task/TaskQueueRegistry";
 export * from "./task/RunOrReplicateTask";
 
-export * from "./storage/taskoutput/TaskOutputRepository";
-export * from "./storage/taskgraph/TaskGraphRepository";
+export * from "./storage/TaskOutputRepository";
+export * from "./storage/TaskGraphRepository";
 
 export * from "./util/diTokens";
 export * from "./util/diServiceProvider";

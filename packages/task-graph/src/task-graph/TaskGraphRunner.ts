@@ -7,7 +7,7 @@
 
 import { uuid4 } from "@ellmers/util";
 import { deepEqual } from "@ellmers/util";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
 import { TaskGraph, TaskGraphRunConfig } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";

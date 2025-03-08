@@ -20,8 +20,6 @@ import {
 import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
 import {
   getTaskQueueRegistry,
-  IndexedDbTaskGraphRepository,
-  IndexedDbTaskOutputRepository,
   JsonTaskItem,
   TaskGraph,
   TaskInput,
@@ -29,7 +27,12 @@ import {
   Workflow,
 } from "@ellmers/task-graph";
 import { JsonTask } from "@ellmers/tasks";
-import { registerHuggingfaceLocalModels, registerMediaPipeTfJsLocalModels } from "@ellmers/test";
+import {
+  IndexedDbTaskGraphRepository,
+  IndexedDbTaskOutputRepository,
+  registerHuggingfaceLocalModels,
+  registerMediaPipeTfJsLocalModels,
+} from "@ellmers/test";
 import { GraphStoreStatus } from "./GraphStoreStatus";
 import { JsonEditor } from "./JsonEditor";
 import { OutputRepositoryStatus } from "./OutputRepositoryStatus";

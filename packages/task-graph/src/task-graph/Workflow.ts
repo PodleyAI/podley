@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, type EventParameters } from "@ellmers/util";
-import type { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import type { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import type { ITask, ITaskConstructor } from "../task/ITask";
 import { Task } from "../task/Task";
 import { WorkflowError } from "../task/TaskError";

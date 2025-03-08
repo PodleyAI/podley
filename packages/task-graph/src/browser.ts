@@ -6,9 +6,3 @@
 //    *******************************************************************************
 
 export * from "./common";
-
-export * from "./storage/taskgraph/InMemoryTaskGraphRepository";
-export * from "./storage/taskgraph/IndexedDbTaskGraphRepository";
-
-export * from "./storage/taskoutput/InMemoryTaskOutputRepository";
-export * from "./storage/taskoutput/IndexedDbTaskOutputRepository";

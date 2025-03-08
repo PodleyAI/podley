@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import type { EventEmitter } from "@ellmers/util";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import type { TaskGraph } from "../task-graph/TaskGraph";
 import type { TaskGraphItemJson } from "./TaskJSON";
 import { TaskError } from "./TaskError";
