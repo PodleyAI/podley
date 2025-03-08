@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter } from "@ellmers/util";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteConfig, IRunConfig, ITask } from "./ITask";
@@ -198,7 +198,7 @@ export class Task<
   }
 
   public hasChildren(): boolean {
-    return this.isCompound && this.subGraph !== null && this.subGraph.getNodes().length > 0;
+    return this.isCompound && this.subGraph !== null && this.subGraph.getTasks().length > 0;
   }
 
   // ========================================================================
@@ -298,7 +298,7 @@ export class Task<
     const name = this.type || new.target.type || new.target.name;
     this.config = Object.assign(
       {
-        id: nanoid(),
+        id: uuid4(),
         name: name,
       },
       config
@@ -339,7 +339,7 @@ export class Task<
       this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as Input;
     }
     if (this.hasChildren()) {
-      this.subGraph!.getNodes().forEach((node) => {
+      this.subGraph!.getTasks().forEach((node) => {
         node.resetInputData();
       });
     }

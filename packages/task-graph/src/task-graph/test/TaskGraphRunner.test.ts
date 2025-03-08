@@ -105,7 +105,7 @@ describe("TaskGraphRunner", () => {
       const sourceDataflows = graph.getTargetDataflows("source");
       expect(sourceDataflows.length).toBe(1);
 
-      const sourceTask = graph.getNode("source");
+      const sourceTask = graph.getTask("source");
       expect(sourceTask).toBeDefined();
       if (sourceTask) {
         expect(sourceTask.status).toBe(TaskStatus.COMPLETED);

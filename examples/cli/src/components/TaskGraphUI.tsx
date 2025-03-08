@@ -15,7 +15,7 @@ type TaskGraphUIProps = {
 };
 
 function findRootTasks(graph: TaskGraph): ITask[] {
-  return graph.getNodes().filter((task) => graph.getSourceTasks(task.config.id).length === 0);
+  return graph.getTasks().filter((task) => graph.getSourceTasks(task.config.id).length === 0);
 }
 
 const TaskGraphUI: React.FC<TaskGraphUIProps> = ({ graph }) => {

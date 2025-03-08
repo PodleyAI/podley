@@ -85,8 +85,8 @@ export class Workflow {
       this._error = "";
 
       // Get the parent node if it exists
-      const nodes = this.graph.getNodes();
-      const parent = nodes.length > 0 ? nodes[nodes.length - 1] : undefined;
+      const tasks = this.graph.getTasks();
+      const parent = tasks.length > 0 ? tasks[tasks.length - 1] : undefined;
 
       // Create and add the new task
       taskIdCounter++;
@@ -120,7 +120,7 @@ export class Workflow {
       }
 
       // Auto-connect to parent if needed
-      if (parent && this.graph.outEdges(parent.config.id).length === 0) {
+      if (parent && this.graph.getTargetDataflows(parent.config.id).length === 0) {
         // Find matches between parent outputs and task inputs based on valueType
         const matches = new Map<string, string>();
 
@@ -164,7 +164,7 @@ export class Workflow {
             `You now need to connect the outputs to the inputs via connect() manually before adding this task. Task not added.`;
 
           console.error(this._error);
-          this.graph.removeNode(task.config.id);
+          this.graph.removeTask(task.config.id);
         }
       }
 
@@ -282,7 +282,7 @@ export class Workflow {
    */
   public pop(): Workflow {
     this._error = "";
-    const nodes = this._graph.getNodes();
+    const nodes = this._graph.getTasks();
 
     if (nodes.length === 0) {
       this._error = "No tasks to remove";
@@ -291,7 +291,7 @@ export class Workflow {
     }
 
     const lastNode = nodes[nodes.length - 1];
-    this._graph.removeNode(lastNode.config.id);
+    this._graph.removeTask(lastNode.config.id);
     return this;
   }
 
@@ -345,7 +345,7 @@ export class Workflow {
   public rename(source: string, target: string, index: number = -1): Workflow {
     this._error = "";
 
-    const nodes = this._graph.getNodes();
+    const nodes = this._graph.getTasks();
     if (-index > nodes.length) {
       const errorMsg = `Back index greater than number of tasks`;
       this._error = errorMsg;
@@ -389,24 +389,24 @@ export class Workflow {
    * Sets up event listeners for the task graph
    */
   private setupEvents(): void {
-    this._graph.events.on("node-added", this._onChanged);
-    this._graph.events.on("node-replaced", this._onChanged);
-    this._graph.events.on("node-removed", this._onChanged);
-    this._graph.events.on("edge-added", this._onChanged);
-    this._graph.events.on("edge-replaced", this._onChanged);
-    this._graph.events.on("edge-removed", this._onChanged);
+    this._graph.on("task_added", this._onChanged);
+    this._graph.on("task_replaced", this._onChanged);
+    this._graph.on("task_removed", this._onChanged);
+    this._graph.on("dataflow_added", this._onChanged);
+    this._graph.on("dataflow_replaced", this._onChanged);
+    this._graph.on("dataflow_removed", this._onChanged);
   }
 
   /**
    * Clears event listeners for the task graph
    */
   private clearEvents(): void {
-    this._graph.events.off("node-added", this._onChanged);
-    this._graph.events.off("node-replaced", this._onChanged);
-    this._graph.events.off("node-removed", this._onChanged);
-    this._graph.events.off("edge-added", this._onChanged);
-    this._graph.events.off("edge-replaced", this._onChanged);
-    this._graph.events.off("edge-removed", this._onChanged);
+    this._graph.off("task_added", this._onChanged);
+    this._graph.off("task_replaced", this._onChanged);
+    this._graph.off("task_removed", this._onChanged);
+    this._graph.off("dataflow_added", this._onChanged);
+    this._graph.off("dataflow_replaced", this._onChanged);
+    this._graph.off("dataflow_removed", this._onChanged);
   }
 
   /**

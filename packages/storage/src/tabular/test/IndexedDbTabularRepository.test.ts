@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import "fake-indexeddb/auto";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { afterEach, describe } from "bun:test";
 import { IndexedDbTabularRepository } from "../IndexedDbTabularRepository";
 import {
@@ -18,7 +18,7 @@ import {
 } from "./genericTabularRepositoryTests";
 
 describe("IndexedDbTabularRepository", () => {
-  const dbName = `idx_test_${nanoid()}`;
+  const dbName = `idx_test_${uuid4()}`;
 
   // Clean up after each test
   afterEach(async () => {

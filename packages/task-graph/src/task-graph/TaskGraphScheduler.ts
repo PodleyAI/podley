@@ -76,7 +76,9 @@ export class DependencyBasedScheduler implements ITaskGraphScheduler {
   }
 
   private isTaskReady(task: ITask): boolean {
-    const dependencies = this.dag.inEdges(task.config.id).map(([from]) => from);
+    const dependencies = this.dag
+      .getSourceDataflows(task.config.id)
+      .map((dataflow) => dataflow.sourceTaskId);
     return dependencies.every((dep) => this.completedTasks.has(dep));
   }
 

@@ -22,9 +22,9 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
       "bun": "./dist/bun.js",
-      "import": "./dist/node.js",
       "node": "./dist/node.js",
       "types": "./dist/bun.d.ts"
     }

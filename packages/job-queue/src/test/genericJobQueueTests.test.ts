@@ -8,7 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { sleep } from "@ellmers/util";
 import { IQueueStorage, IndexedDbQueueStorage } from "@ellmers/storage";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { AbortSignalJobError, JobError, PermanentJobError } from "../job/JobError";
 import { JobQueueOptions } from "../job/IJobQueue";
 import { ILimiter } from "../job/ILimiter";
@@ -88,7 +88,7 @@ export function runGenericJobQueueTests(
   let jobQueue: JobQueue<TInput, TOutput, TestJob>;
   console.log("running generic job queue tests for", storage.name, limiter?.name);
   beforeEach(async () => {
-    const queueName = `test-queue-${nanoid()}`;
+    const queueName = `test-queue-${uuid4()}`;
     jobQueue = new JobQueue<TInput, TOutput, TestJob>(queueName, TestJob as any, {
       storage: storage(queueName),
       limiter: limiter?.(queueName, 4, 60),

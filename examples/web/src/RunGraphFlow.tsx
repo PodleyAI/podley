@@ -64,7 +64,7 @@ function sortNodes(nodes: Node<TurboNodeData>[]): Node<TurboNodeData>[] {
 }
 
 function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
-  const tasks = graph.getNodes();
+  const tasks = graph.getTasks();
   const nodes = tasks.flatMap((task, index) => {
     let n: Node<TurboNodeData>[] = [
       {
@@ -285,7 +285,7 @@ function listenToTask(
   };
 
   if (task.isCompound) {
-    const subTasks = task.subGraph.getNodes();
+    const subTasks = task.subGraph.getTasks();
     for (const subTask of subTasks) {
       const subCleanupFns = listenToTask(subTask, setNodes, setEdges);
       cleanupFns.push(...subCleanupFns);
@@ -321,7 +321,7 @@ function listenToGraphTasks(
   setEdges: Dispatch<SetStateAction<Edge[]>>
 ) {
   const cleanupFns: (() => void)[] = [];
-  const nodes = graph.getNodes();
+  const nodes = graph.getTasks();
   for (const node of nodes) {
     const taskCleanupFns = listenToTask(node, setNodes, setEdges);
     cleanupFns.push(...taskCleanupFns);
@@ -386,10 +386,10 @@ export const RunGraphFlow: React.FC<{
       );
 
       setEdges(
-        graph.getEdges().map(([source, target, edge]) => ({
-          id: edge.id,
-          source: source as string,
-          target: target as string,
+        graph.getDataflows().map((df) => ({
+          id: df.id,
+          source: df.sourceTaskId as string,
+          target: df.targetTaskId as string,
           style: { opacity: 0 },
         }))
       );

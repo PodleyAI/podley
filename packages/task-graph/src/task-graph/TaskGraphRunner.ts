@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { deepEqual } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
@@ -171,7 +171,7 @@ export class TaskGraphRunner {
     await this.handleStartReactive();
 
     if (!this.running) {
-      this.resetGraph(this.graph, nanoid());
+      this.resetGraph(this.graph, uuid4());
     }
 
     this.reactiveScheduler.reset();
@@ -399,7 +399,7 @@ export class TaskGraphRunner {
    * @param graph The task graph to reset
    */
   protected resetGraph(graph: TaskGraph, runnerId: string) {
-    graph.getNodes().forEach((node) => {
+    graph.getTasks().forEach((node) => {
       this.resetTask(graph, node, runnerId);
       if (node.isCompound) {
         node.regenerateGraph();
@@ -437,7 +437,7 @@ export class TaskGraphRunner {
       );
     }
 
-    this.resetGraph(this.graph, nanoid());
+    this.resetGraph(this.graph, uuid4());
     this.processScheduler.reset();
     this.inProgressTasks.clear();
     this.inProgressFunctions.clear();
@@ -467,7 +467,7 @@ export class TaskGraphRunner {
    */
   protected async handleError(): Promise<void> {
     await Promise.allSettled(
-      this.graph.getNodes().map(async (task: ITask) => {
+      this.graph.getTasks().map(async (task: ITask) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
           task.abort();
         }
@@ -485,7 +485,7 @@ export class TaskGraphRunner {
    */
   protected async handleAbort(): Promise<void> {
     await Promise.allSettled(
-      this.graph.getNodes().map(async (task: ITask) => {
+      this.graph.getTasks().map(async (task: ITask) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
           task.abort();
         }

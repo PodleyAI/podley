@@ -402,7 +402,7 @@ describe("RunOrReplicate", () => {
     task.regenerateGraph();
 
     // Set up event listeners on child tasks
-    task.subGraph!.getNodes().forEach((childTask: ITask) => {
+    task.subGraph!.getTasks().forEach((childTask: ITask) => {
       childTask.on("start", () => {
         childEvents.start++;
       });
@@ -423,7 +423,7 @@ describe("RunOrReplicate", () => {
     task.runner.handleProgress(0.5);
 
     // Manually trigger progress events on child tasks
-    task.subGraph!.getNodes().forEach((childTask: ITask) => {
+    task.subGraph!.getTasks().forEach((childTask: ITask) => {
       // @ts-expect-error - we are testing the protected method
       childTask.runner.handleStart();
       // @ts-expect-error - we are testing the protected method

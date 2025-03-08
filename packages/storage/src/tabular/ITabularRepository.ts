@@ -37,7 +37,6 @@ export type MapSchemaTypes<T extends keyof SchemaTypeMap> = SchemaTypeMap[T];
 // Type definitions for specialized string types
 export type uuid4 = string;
 export type uuid7 = string;
-export type nanoid = string;
 export type JSONValue =
   | string
   | number
@@ -50,7 +49,6 @@ export type JSONValue =
 export type SchemaTypeMap = {
   uuid4: uuid4;
   uuid7: uuid7;
-  nanoid: nanoid;
   string: string;
   number: number;
   bigint: bigint;
@@ -60,7 +58,7 @@ export type SchemaTypeMap = {
   date: Date;
 };
 
-export type KeyOption = "string" | "number" | "bigint" | "uuid4" | "uuid7" | "nanoid";
+export type KeyOption = "string" | "number" | "bigint" | "uuid4" | "uuid7";
 export type KeySchema = Record<string, KeyOption>;
 export type KeyOptionType = MapSchemaTypes<KeyOption>;
 

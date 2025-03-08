@@ -10,13 +10,13 @@ import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 import { describe } from "bun:test";
 import type { Pool } from "pg";
 import { PGlite } from "@electric-sql/pglite";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 
 const db = new PGlite() as unknown as Pool;
 
 describe("PostgresKvRepository", () => {
   runGenericKvRepositoryTests(async (keyType, valueType) => {
-    const dbName = `pg_test_${nanoid()}`;
+    const dbName = `pg_test_${uuid4()}`;
     return new PostgresKvRepository(db, dbName, keyType, valueType);
   });
 });

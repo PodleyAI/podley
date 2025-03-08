@@ -68,8 +68,8 @@ export type TaskGraphItemJson = {
 };
 
 export type TaskGraphJson = {
-  nodes: TaskGraphItemJson[];
-  edges: DataflowJson[];
+  tasks: TaskGraphItemJson[];
+  dataflows: DataflowJson[];
 };
 
 export type DataflowJson = {
@@ -150,10 +150,10 @@ export const createTaskFromGraphJSON = (item: TaskGraphItemJson) => {
  */
 export const createGraphFromGraphJSON = (graphJsonObj: TaskGraphJson) => {
   const subGraph = new TaskGraph();
-  for (const subitem of graphJsonObj.nodes) {
+  for (const subitem of graphJsonObj.tasks) {
     subGraph.addTask(createTaskFromGraphJSON(subitem));
   }
-  for (const subitem of graphJsonObj.edges) {
+  for (const subitem of graphJsonObj.dataflows) {
     subGraph.addDataflow(
       new Dataflow(
         subitem.sourceTaskId,

@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { makeFingerprint, sleep } from "@ellmers/util";
 import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
 /**
@@ -43,8 +43,8 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
   public async add(job: JobStorageFormat<Input, Output>) {
     await sleep(0);
     const now = new Date().toISOString();
-    job.id = job.id ?? nanoid();
-    job.job_run_id = job.job_run_id ?? nanoid();
+    job.id = job.id ?? uuid4();
+    job.job_run_id = job.job_run_id ?? uuid4();
     job.queue = this.queueName;
     job.fingerprint = await makeFingerprint(job.input);
     job.status = JobStatus.PENDING;

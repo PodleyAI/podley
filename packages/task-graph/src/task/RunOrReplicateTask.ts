@@ -6,11 +6,10 @@
 //    *******************************************************************************
 
 import { collectPropertyValues } from "@ellmers/util";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { GraphResult } from "../task-graph/TaskGraphRunner";
-import { IExecuteConfig } from "./ITask";
 import { Task } from "./Task";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 import { TaskRunner } from "./TaskRunner";
@@ -73,7 +72,7 @@ export class RunOrReplicateTask<
       const { id, name, ...rest } = this.config;
       const task = new (this.constructor as any)(
         { ...this.defaults, ...combination },
-        { ...rest, id: `${id}_${nanoid(8)}` }
+        { ...rest, id: `${id}_${uuid4()}` }
       );
       return task;
     });
