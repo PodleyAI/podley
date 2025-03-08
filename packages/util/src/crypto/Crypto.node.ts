@@ -5,12 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-// Bun environment
-
-import { serialize } from "./Misc";
+// Node.js environment
+import { createHash } from "node:crypto";
+import { serialize } from "../utilities/Misc";
 
 export async function sha256(data: string) {
-  return new Bun.CryptoHasher("sha256").update(data).digest("hex");
+  return createHash("sha256").update(data).digest("hex");
 }
 
 export async function makeFingerprint(input: any): Promise<string> {

@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DirectedAcyclicGraph, GraphEvents } from "@sroussey/typescript-graph";
+import { DirectedAcyclicGraph, GraphEvents } from "@ellmers/util";
 import { Provenance, TaskIdType } from "../task/TaskTypes";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import { Dataflow, DataflowIdType } from "./Dataflow";
@@ -47,7 +47,7 @@ export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParam
   Event
 >;
 
-const EventDagToTaskGraphMapping: Record<GraphEvents, TaskGraphEvents> = {
+const EventDagToTaskGraphMapping: Record<GraphEvents<ITask, Dataflow>, TaskGraphEvents> = {
   "node-added": "task_added",
   "node-removed": "task_removed",
   "node-replaced": "task_replaced",
@@ -56,7 +56,7 @@ const EventDagToTaskGraphMapping: Record<GraphEvents, TaskGraphEvents> = {
   "edge-replaced": "dataflow_replaced",
 } as const;
 
-const EventTaskGraphToDagMapping: Record<TaskGraphEvents, GraphEvents> = {
+const EventTaskGraphToDagMapping: Record<TaskGraphEvents, GraphEvents<ITask, Dataflow>> = {
   task_added: "node-added",
   task_removed: "node-removed",
   task_replaced: "node-replaced",

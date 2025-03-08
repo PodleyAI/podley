@@ -29,7 +29,6 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@sroussey/typescript-graph": "^0.3.14",
     "nanoid": "^5.1.2",
     "bun-types": "^1.2.4"
   },

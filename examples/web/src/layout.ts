@@ -5,8 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Edge, Node, Position } from "@xyflow/react";
-import { DirectedAcyclicGraph } from "@sroussey/typescript-graph";
+import { Edge, Node } from "@xyflow/react";
+import { DirectedAcyclicGraph } from "@ellmers/util";
 
 type PositionXY = {
   x: number;
@@ -160,7 +160,10 @@ export function computeLayout(
   nodes = nodes.filter((node) => !node.hidden);
 
   const subgraphSize = new Map<string, { height: number; width: number }>();
-  const subgraphDAG = new DirectedAcyclicGraph<Node, boolean, string, string>((node) => node.id);
+  const subgraphDAG = new DirectedAcyclicGraph<Node, boolean, string, string>(
+    (node) => node.id,
+    (edge, node1Identity, node2Identity) => `${node1Identity}-${node2Identity}-${edge}` as string
+  );
 
   nodes.forEach((node) => {
     subgraphDAG.insert(node);
@@ -191,7 +194,9 @@ export function computeLayout(
       const subgraphNodes = graphs[parentId];
 
       const dataflowDAG = new DirectedAcyclicGraph<Node, boolean, string, string>(
-        (node) => node.id
+        (node) => node.id,
+        (edge, node1Identity, node2Identity) =>
+          `${node1Identity}-${node2Identity}-${edge}` as string
       );
 
       subgraphNodes.forEach((node) => {

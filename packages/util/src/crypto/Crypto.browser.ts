@@ -7,7 +7,7 @@
 
 // Browser environment
 
-import { serialize } from "./Misc";
+import { serialize } from "../utilities/Misc";
 
 export async function sha256(data: string) {
   const encoder = new TextEncoder();
