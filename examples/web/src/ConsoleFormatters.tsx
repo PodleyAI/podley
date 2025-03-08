@@ -71,19 +71,19 @@ export class WorkflowConsoleFormatter extends ConsoleFormatter {
       nodes.createTextChild("Tasks:");
       for (const node of tasks) {
         const nodeTag = nodes.createListItem("", "list-style-type: none;");
-        for (const [, , edge] of obj._graph.inEdges(node.config.id)) {
+        for (const df of obj._graph.getSourceDataflows(node.config.id)) {
           const edgeTag = nodeTag.createChild("li").setStyle("padding-left: 20px;");
-          if (edge.sourceTaskPortId === edge.targetTaskPortId) continue;
+          if (df.sourceTaskPortId === df.targetTaskPortId) continue;
           const num =
-            tasks.findIndex((t) => t.config.id === edge.sourceTaskId) -
+            tasks.findIndex((t) => t.config.id === df.sourceTaskId) -
             tasks.findIndex((t) => t.config.id === node.config.id);
 
           edgeTag.highlightText("rename");
           edgeTag.functionCall((el) => {
             el.greyText('"');
-            el.outputText(`${edge.sourceTaskPortId}`);
+            el.outputText(`${df.sourceTaskPortId}`);
             el.greyText('", "');
-            el.inputText(`${edge.targetTaskPortId}`);
+            el.inputText(`${df.targetTaskPortId}`);
             el.greyText('"');
             if (num !== -1) el.greyText(`, ${num}`);
           });
