@@ -28,9 +28,7 @@
     "release": "bun run build && bun publish",
     "test": "bun test"
   },
-  "dependencies": {
-    "bun-types": "^1.2.4"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "@sroussey/transformers": "^3.3.3",
     "@mediapipe/tasks-text": "^0.10.21",
@@ -40,17 +38,18 @@
     "better-sqlite3": "^11.8.1"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.24.1",
-    "@typescript-eslint/parser": "^8.24.1",
+    "bun-types": "^1.2.4",
+    "@typescript-eslint/eslint-plugin": "^8.26.0",
+    "@typescript-eslint/parser": "^8.26.0",
     "concurrently": "^9.1.2",
-    "eslint": "^9.20.1",
+    "eslint": "^9.22.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.4",
-    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-regexp": "^2.7.0",
-    "globals": "^15.15.0",
-    "prettier": "^3.5.1",
-    "typescript": "^5.7.3",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
     "fake-indexeddb": "^6.0.0",
     "@electric-sql/pglite": "^0.2.17",
     "react": "19.0.0",
