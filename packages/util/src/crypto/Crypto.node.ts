@@ -18,3 +18,7 @@ export async function makeFingerprint(input: any): Promise<string> {
   const hash = await sha256(serializedObj);
   return hash;
 }
+
+export function uuid4() {
+  return crypto.randomUUID();
+}

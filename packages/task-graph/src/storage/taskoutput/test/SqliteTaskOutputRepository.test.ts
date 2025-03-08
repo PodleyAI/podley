@@ -7,11 +7,11 @@
 
 import { SqliteTaskOutputRepository } from "../SqliteTaskOutputRepository";
 import { runGenericTaskOutputRepositoryTests } from "./genericTaskOutputRepositoryTests";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("SqliteTaskOutputRepository", () => {
   runGenericTaskOutputRepositoryTests(
-    async () => new SqliteTaskOutputRepository(":memory:", `task_output_test_${nanoid()}`)
+    async () => new SqliteTaskOutputRepository(":memory:", `task_output_test_${uuid4()}`)
   );
 });

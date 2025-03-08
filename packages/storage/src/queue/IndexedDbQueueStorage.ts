@@ -5,10 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { makeFingerprint } from "@ellmers/util";
-import { ensureIndexedDbTable, ExpectedIndexDefinition } from "@ellmers/storage";
 import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
+import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
 
 /**
  * IndexedDB implementation of a job queue storage.
@@ -55,8 +55,8 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    */
   public async add(job: JobStorageFormat<Input, Output>): Promise<unknown> {
     const now = new Date().toISOString();
-    job.id = job.id ?? nanoid();
-    job.job_run_id = job.job_run_id ?? nanoid();
+    job.id = job.id ?? uuid4();
+    job.job_run_id = job.job_run_id ?? uuid4();
     job.queue = this.queueName;
     job.fingerprint = await makeFingerprint(job.input);
     job.status = JobStatus.PENDING;

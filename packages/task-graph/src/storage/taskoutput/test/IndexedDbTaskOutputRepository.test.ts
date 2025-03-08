@@ -8,11 +8,11 @@
 import "fake-indexeddb/auto";
 import { IndexedDbTaskOutputRepository } from "../IndexedDbTaskOutputRepository";
 import { runGenericTaskOutputRepositoryTests } from "./genericTaskOutputRepositoryTests";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("IndexedDbTaskOutputRepository", () => {
   runGenericTaskOutputRepositoryTests(
-    async () => new IndexedDbTaskOutputRepository(`idx_test_${nanoid()}`)
+    async () => new IndexedDbTaskOutputRepository(`idx_test_${uuid4()}`)
   );
 });

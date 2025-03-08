@@ -13,7 +13,7 @@ import {
   SearchPrimaryKeyNames,
   SearchSchema,
 } from "./genericTabularRepositoryTests";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 import type { Pool } from "pg";
 import { PGlite } from "@electric-sql/pglite";
@@ -25,14 +25,14 @@ describe("PostgresTabularRepository", () => {
     async () =>
       new PostgresTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
         db,
-        `sql_test_${nanoid()}`,
+        `sql_test_${uuid4()}`,
         CompoundSchema,
         CompoundPrimaryKeyNames
       ),
     async () =>
       new PostgresTabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>(
         db,
-        `sql_test_${nanoid()}`,
+        `sql_test_${uuid4()}`,
         SearchSchema,
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]

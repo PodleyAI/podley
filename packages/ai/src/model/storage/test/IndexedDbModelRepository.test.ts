@@ -8,12 +8,12 @@
 import "fake-indexeddb/auto";
 import { IndexedDbModelRepository } from "../IndexedDbModelRepository";
 import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("IndexedDbModelRepository", () => {
   runGenericModelRepositoryTests(
     async () =>
-      new IndexedDbModelRepository(`idx_model_test_${nanoid()}`, `idx_task2model_test_${nanoid()}`)
+      new IndexedDbModelRepository(`idx_model_test_${uuid4()}`, `idx_task2model_test_${uuid4()}`)
   );
 });

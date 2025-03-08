@@ -13,7 +13,7 @@ import {
   CompoundSchema,
   SearchSchema,
 } from "./genericTabularRepositoryTests";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("SqliteTabularRepository", () => {
@@ -21,14 +21,14 @@ describe("SqliteTabularRepository", () => {
     async () =>
       new SqliteTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
         ":memory:",
-        `sql_test_${nanoid()}`,
+        `sql_test_${uuid4()}`,
         CompoundSchema,
         CompoundPrimaryKeyNames
       ),
     async () =>
       new SqliteTabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>(
         ":memory:",
-        `sql_test_${nanoid()}`,
+        `sql_test_${uuid4()}`,
         SearchSchema,
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]

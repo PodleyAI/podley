@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { makeFingerprint } from "@ellmers/util";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { Pool } from "pg";
 import { IQueueStorage } from "./IQueueStorage";
 import { JobStatus, JobStorageFormat } from "./IQueueStorage";
@@ -88,7 +88,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
     await this.dbPromise;
     const now = new Date().toISOString();
     job.queue = this.queueName;
-    job.job_run_id = job.job_run_id ?? nanoid();
+    job.job_run_id = job.job_run_id ?? uuid4();
     job.fingerprint = await makeFingerprint(job.input);
     job.status = JobStatus.PENDING;
     job.progress = 0;

@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter } from "@ellmers/util";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteConfig, IRunConfig, ITask } from "./ITask";
@@ -298,7 +298,7 @@ export class Task<
     const name = this.type || new.target.type || new.target.name;
     this.config = Object.assign(
       {
-        id: nanoid(),
+        id: uuid4(),
         name: name,
       },
       config

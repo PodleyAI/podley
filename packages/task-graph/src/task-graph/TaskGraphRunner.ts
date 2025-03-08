@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { deepEqual } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
 import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
@@ -171,7 +171,7 @@ export class TaskGraphRunner {
     await this.handleStartReactive();
 
     if (!this.running) {
-      this.resetGraph(this.graph, nanoid());
+      this.resetGraph(this.graph, uuid4());
     }
 
     this.reactiveScheduler.reset();
@@ -437,7 +437,7 @@ export class TaskGraphRunner {
       );
     }
 
-    this.resetGraph(this.graph, nanoid());
+    this.resetGraph(this.graph, uuid4());
     this.processScheduler.reset();
     this.inProgressTasks.clear();
     this.inProgressFunctions.clear();

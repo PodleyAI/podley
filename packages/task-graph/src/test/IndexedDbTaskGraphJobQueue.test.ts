@@ -8,13 +8,13 @@
 import "fake-indexeddb/auto";
 import { InMemoryRateLimiter, JobQueue } from "@ellmers/job-queue";
 import { describe } from "bun:test";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 import { IndexedDbQueueStorage } from "@ellmers/storage";
 
 describe("IndexedDbTaskGraphJobQueue", () => {
   runGenericTaskGraphJobQueueTests(async () => {
-    const queueName = `idx_test_queue_${nanoid()}`;
+    const queueName = `idx_test_queue_${uuid4()}`;
     return new JobQueue(queueName, TestJob, {
       storage: new IndexedDbQueueStorage(queueName),
       limiter: new InMemoryRateLimiter(1, 10),

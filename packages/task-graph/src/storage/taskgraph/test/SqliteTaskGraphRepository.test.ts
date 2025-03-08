@@ -7,11 +7,11 @@
 
 import { SqliteTaskGraphRepository } from "../SqliteTaskGraphRepository";
 import { runGenericTaskGraphRepositoryTests } from "./genericTaskGraphRepositoryTests";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("SqliteTaskGraphRepository", () => {
   runGenericTaskGraphRepositoryTests(
-    async () => new SqliteTaskGraphRepository(":memory:", `task_graph_test_${nanoid()}`)
+    async () => new SqliteTaskGraphRepository(":memory:", `task_graph_test_${uuid4()}`)
   );
 });

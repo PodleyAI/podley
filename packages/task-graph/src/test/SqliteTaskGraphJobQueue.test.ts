@@ -9,13 +9,13 @@ import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
 import { SqliteQueueStorage } from "@ellmers/storage";
 import { Sqlite } from "@ellmers/util";
 import { describe } from "bun:test";
-import { nanoid } from "nanoid";
+import { uuid4 } from "@ellmers/util";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 
 describe("SqliteTaskGraphJobQueue", () => {
   runGenericTaskGraphJobQueueTests(async () => {
     const db = new Sqlite.Database(":memory:");
-    const queueName = `sqlite_test_queue_${nanoid()}`;
+    const queueName = `sqlite_test_queue_${uuid4()}`;
     const queue = new JobQueue(queueName, TestJob, {
       storage: new SqliteQueueStorage(db, queueName),
       limiter: new ConcurrencyLimiter(1, 10),
