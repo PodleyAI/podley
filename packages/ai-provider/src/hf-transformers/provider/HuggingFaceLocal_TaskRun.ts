@@ -188,6 +188,7 @@ export async function HuggingFaceLocal_EmbeddingRun(
     );
     throw `HuggingFaceLocal Embedding vector length does not match model dimensions v${hfVector.size} != m${model.nativeDimensions}`;
   }
+  // @ts-ignore
   const vector = new ElVector(hfVector.data, model.normalize ?? true);
   return { vector };
 }

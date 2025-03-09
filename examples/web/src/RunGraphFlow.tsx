@@ -26,6 +26,8 @@ import { GraphPipelineCenteredLayout, GraphPipelineLayout, computeLayout } from 
 import "@xyflow/react/dist/base.css";
 import "./RunGraphFlow.css";
 
+let test = false;
+
 const categoryIcons = {
   "Text Model": <FiFileText />,
   Input: <FiUpload />,
@@ -409,6 +411,12 @@ export const RunGraphFlow: React.FC<{
   //   [setEdges]
   // );
 
+  const controls = <Controls showInteractive={false} />;
+  if (!test) {
+    console.log(controls);
+    test = true;
+  }
+
   return (
     <ReactFlow
       nodes={nodes}
@@ -421,7 +429,7 @@ export const RunGraphFlow: React.FC<{
       edgeTypes={edgeTypes}
       defaultEdgeOptions={defaultEdgeOptions}
     >
-      <Controls showInteractive={false} />
+      {controls}
 
       <svg>
         <defs>

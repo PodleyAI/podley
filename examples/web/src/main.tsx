@@ -9,13 +9,7 @@ import ReactDOM from "react-dom/client";
 import { App } from "./App";
 import { Task, TaskGraph, Workflow } from "@ellmers/task-graph";
 import "./main.css";
-import {
-  TaskConsoleFormatter,
-  CreateWorkflowConsoleFormatter,
-  WorkflowConsoleFormatter,
-  WorkflowAPIConsoleFormatter,
-  isDarkMode,
-} from "./ConsoleFormatters";
+import { isDarkMode, installDevToolsFormatters } from "./ConsoleFormatters";
 import {
   DownloadModelTask,
   TextRewriterTask,
@@ -30,12 +24,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   // </React.StrictMode>
 );
 
-window["devtoolsFormatters"] = [
-  new WorkflowAPIConsoleFormatter(),
-  new CreateWorkflowConsoleFormatter(),
-  new WorkflowConsoleFormatter(),
-  new TaskConsoleFormatter(),
-];
+installDevToolsFormatters();
+
 [
   Workflow,
   DownloadModelTask,

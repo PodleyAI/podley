@@ -277,6 +277,43 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
   }
 }
 
+export class ReactElementConsoleFormatter extends ConsoleFormatter {
+  header(obj: any, config?: Config) {
+    if (obj?.$$typeof?.toString() === "Symbol(react.transitional.element)" && !config?.parent) {
+      const header = new JsonMLElement("div");
+      const isMemo = obj.type?.$$typeof?.toString() === "Symbol(react.memo)";
+      const name = !isMemo
+        ? obj.displayName || obj.type?.displayName || obj.type?.name
+        : obj.type?.type?.displayName || obj.type?.type?.name;
+      header.greyText(`<`);
+      header.sectionHeader(`${name}`);
+      header.greyText(`/>`);
+      if (obj.key) {
+        header.createTextChild(" ");
+        header.inputText(`key={${obj.key}}`);
+      }
+      if (isMemo) {
+        header.createTextChild(" ");
+        header.pill(`Memo`);
+      }
+      // header.createObjectTag(obj, { parent: obj });
+      return header.toJsonML();
+    }
+    return null;
+  }
+
+  hasBody(value: any, config?: Config) {
+    return true;
+  }
+
+  body(obj: any, config?: Config) {
+    const body = new JsonMLElement("div");
+    const props = body.createStyledList("Props:");
+    props.propertyBlock(obj.props);
+    return body.toJsonML();
+  }
+}
+
 class JsonMLElement {
   _attributes: Record<string, any>;
   _jsonML: JsonMLElementDef;
@@ -339,6 +376,13 @@ class JsonMLElement {
     return this.styledText(text, "font-weight: bold;");
   }
 
+  pill(text: string): JsonMLElement {
+    return this.styledText(
+      text,
+      "color: #009; background-color: #ccf; padding: 2px 4px; border-radius: 4px; font-size: 0.7em;"
+    );
+  }
+
   // Helper for creating a method signature
   methodSignature(name: string, params: string = ""): JsonMLElement {
     const colors = JsonMLElement.getColors();
@@ -362,6 +406,17 @@ class JsonMLElement {
       this.greyText(`: `);
       this.createValueObject(param.value);
     });
+    return this;
+  }
+
+  // Helper for creating a parameter list with coloring
+  propertyBlock(params: Record<string, any>): JsonMLElement {
+    for (const [key, value] of Object.entries(params)) {
+      const item = this.createListItem("");
+      item.inputText(key);
+      item.greyText(`: `);
+      item.createValueObject(value);
+    }
     return this;
   }
 
@@ -461,4 +516,15 @@ class JsonMLElement {
   toJsonML() {
     return this._jsonML;
   }
+}
+
+export function installDevToolsFormatters() {
+  window["devtoolsFormatters"] = window["devtoolsFormatters"] || [];
+  window["devtoolsFormatters"].push(
+    new WorkflowAPIConsoleFormatter(),
+    new CreateWorkflowConsoleFormatter(),
+    new WorkflowConsoleFormatter(),
+    new TaskConsoleFormatter(),
+    new ReactElementConsoleFormatter()
+  );
 }
