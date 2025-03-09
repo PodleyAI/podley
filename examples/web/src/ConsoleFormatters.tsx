@@ -226,26 +226,26 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
     const body = new JsonMLElement("div").setStyle("padding-left: 10px;");
 
     const inputs = body.createStyledList("Inputs:");
-    const inboundEdges = (config?.graph as TaskGraph)?.getSourceDataflows(task.config.id);
+    const allInboundDataflows = (config?.graph as TaskGraph)?.getSourceDataflows(task.config.id);
 
     for (const input of task.inputs) {
       const value = task.runInputData[input.id];
       const li = inputs.createListItem("", "padding-left: 20px;");
       li.inputText(`${input.id}: `);
-      const inboundEdge = inboundEdges?.filter((e) => e.targetTaskPortId === input.id);
-      if (inboundEdge) {
+      const inputInboundDataflows = allInboundDataflows?.filter(
+        (e) => e.targetTaskPortId === input.id
+      );
+      if (inputInboundDataflows) {
         let sources: string[] = [];
         let sourceValues: any[] = [];
-        inboundEdge.forEach((e) => {
-          const sourceTask = config?.graph?.getTask(e.sourceTaskId);
-          sources.push(`${sourceTask?.type}->Output{${e.sourceTaskPortId}}`);
-          const sourceValue = sourceTask?.runOutputData[e.sourceTaskPortId];
-          if (sourceValue) {
-            sourceValues.push(sourceValue);
+        inputInboundDataflows.forEach((df) => {
+          const sourceTask = config?.graph?.getTask(df.sourceTaskId);
+          sources.push(`${sourceTask?.type}->Output{${df.sourceTaskPortId}}`);
+          if (df.status === TaskStatus.COMPLETED) {
+            sourceValues.push(df.value);
           }
         });
         if (sources.length > 1) {
-          li.createTextChild(`[${sources.join(", ")}]`);
           if (sourceValues.length > 0) {
             li.createValueObject(sourceValues);
             li.createTextChild(" ");
