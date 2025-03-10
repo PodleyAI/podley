@@ -280,6 +280,7 @@ export async function HuggingFaceLocal_TextTranslationRun(
   }
   return {
     text: (results[0] as TranslationSingle)?.translation_text,
+    target_lang: input.target_lang,
   };
 }
 
