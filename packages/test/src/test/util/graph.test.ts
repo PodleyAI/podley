@@ -2,11 +2,9 @@
 // previous fork: https://github.com/sroussey/typescript-graph
 // license: MIT
 
-import { describe, expect, it } from "bun:test";
-import { Graph } from "../graph";
-import { NodeAlreadyExistsError, NodeDoesntExistError } from "../errors";
+import { Graph, NodeAlreadyExistsError, NodeDoesntExistError, serialize } from "@ellmers/util";
 import { hash } from "bun";
-import { serialize } from "../../utilities/Misc";
+import { describe, expect, it } from "bun:test";
 
 export const nodeIdentity = (n: any) => hash(serialize(n as Record<string, any>)).toString(16);
 export const edgeIdentity = (edge: any, node1Identity: any, node2Identity: any) => {

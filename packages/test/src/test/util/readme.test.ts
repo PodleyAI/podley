@@ -3,10 +3,8 @@
 // license: MIT
 
 import { describe, expect, it } from "bun:test";
-import { Graph } from "../graph";
-import { DirectedGraph } from "../directedGraph";
-import { DirectedAcyclicGraph } from "../directedAcyclicGraph";
 import { edgeIdentity } from "./graph.test";
+import { Graph, DirectedGraph, DirectedAcyclicGraph } from "@ellmers/util";
 
 describe("The Readme", () => {
   it("runs the first example correctly", () => {

@@ -3,9 +3,9 @@
 // license: MIT
 
 import { describe, expect, it } from "bun:test";
-import { DirectedGraph } from "../directedGraph";
-import { NodeDoesntExistError } from "../errors";
 import { edgeIdentity, nodeIdentity } from "./graph.test";
+import { DirectedGraph, NodeDoesntExistError } from "@ellmers/util";
+
 /***
  * Directed Graph test
  */

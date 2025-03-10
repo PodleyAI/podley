@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach, mock } from "bun:test";
-import { EventEmitter } from "../EventEmitter";
+import { EventEmitter } from "@ellmers/util";
 
 // Define event types for testing
 interface TestEvents extends Record<string, (...args: any) => any> {
