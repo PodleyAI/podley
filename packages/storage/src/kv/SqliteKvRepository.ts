@@ -14,7 +14,13 @@ import {
 } from "../tabular/ITabularRepository";
 import { KvRepository } from "./KvRepository";
 import { SqliteTabularRepository } from "../tabular/SqliteTabularRepository";
-import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
+import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
+import { createServiceToken } from "@ellmers/util";
+
+export const SQLITE_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
+  "storage.kvRepository.sqlite"
+);
+
 /**
  * Abstract base class for key-value storage repositories.
  * Has a basic event emitter for listening to repository events.

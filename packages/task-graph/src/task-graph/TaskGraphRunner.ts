@@ -5,9 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { uuid4 } from "@ellmers/util";
+import { globalServiceRegistry, uuid4 } from "@ellmers/util";
 import { deepEqual } from "@ellmers/util";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
 import { TaskGraph, TaskGraphRunConfig } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
@@ -87,9 +87,17 @@ export class TaskGraphRunner {
    * @throws TaskErrorGroup if any tasks have failed
    */
   public async runGraph(config?: TaskGraphRunConfig): Promise<GraphResult> {
-    if (config?.outputCache) {
-      this.outputCache = config.outputCache;
-      this.graph.outputCache = config.outputCache;
+    if (config?.outputCache !== undefined) {
+      if (typeof config.outputCache === "boolean") {
+        if (config.outputCache === true) {
+          this.outputCache = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
+        } else {
+          this.outputCache = undefined;
+        }
+      } else {
+        this.outputCache = config.outputCache;
+      }
+      this.graph.outputCache = this.outputCache;
     }
     await this.handleStart(config?.parentSignal);
 
@@ -356,7 +364,7 @@ export class TaskGraphRunner {
       }
     }
     if (!results) {
-      results = await task.run({}, { nodeProvenance, repository: this.outputCache });
+      results = await task.run({}, { nodeProvenance, outputCache: this.outputCache });
       if (shouldUseRepository) {
         await this.outputCache?.saveOutput(
           (task.constructor as any).type,

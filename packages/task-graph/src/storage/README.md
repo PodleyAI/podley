@@ -10,23 +10,11 @@ This module provides persistent storage solutions for task graphs and task outpu
 
 ## Task Output Repositories
 
-TaskOutputRepository is a repository for task caching. If a task has the same input it is assumed to return the same output. The task graph runner does not resume, but i can quickly get to the aborted state by using the output repository.
-
-Available Implementations:
-
-- **InMemoryTaskOutputRepository**: Volatile in-memory storage
-- **FsFolderTaskOutputRepository**: File system storage
-- **IndexedDbTaskOutputRepository**: IndexedDB storage
-- **SqliteTaskOutputRepository**: SQLite storage
-- **PostgresTaskOutputRepository**: PostgreSQL storage
-
-All implementations extend `TaskOutputRepository` abstract class and provide:
-
-- Task-type specific storage
-- Event emitters for storage operations
+TaskOutputRepository is a repository for task caching. If a task has the same input it is assumed to return the same output. The task graph runner does not resume, but you can quickly get to the aborted state by using the output repository and re-running the task graph.
 
 ```typescript
 // Example usage
+import { SqliteTaskOutputRepository } from "@ellmers/test"; // pre-bound implementation for sqlite
 const outputRepo = new SqliteTaskOutputRepository(":memory:");
 await outputRepo.saveOutput("MyTaskType", { param: "value" }, { result: "data" });
 ```
@@ -35,15 +23,7 @@ await outputRepo.saveOutput("MyTaskType", { param: "value" }, { result: "data" }
 
 TaskGraphRepository is a repository for task graphs themselves. It is used to save and load task graphs.
 
-Available Implementations:
-
-- **InMemoryTaskGraphRepository**: Volatile in-memory storage (good for testing)
-- **FsFolderTaskGraphRepository**: File system storage using JSON files
-- **IndexedDbTaskGraphRepository**: Browser-based IndexedDB storage
-- **SqliteTaskGraphRepository**: SQLite database storage
-- **PostgresTaskGraphRepository**: PostgreSQL database storage
-
-All implementations extend `TaskGraphRepository` abstract class and provide:
+The `TaskGraphRepository` class provides:
 
 - CRUD operations for task graphs
 - Event emitters for storage operations
@@ -51,6 +31,7 @@ All implementations extend `TaskGraphRepository` abstract class and provide:
 
 ```typescript
 // Example usage
+import { SqliteTaskGraphRepository } from "@ellmers/test"; // pre-bound implementation for sqlite
 const fsRepo = new FsFolderTaskGraphRepository("./storage");
 const memoryRepo = new InMemoryTaskGraphRepository();
 ```

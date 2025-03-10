@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { collectPropertyValues, Writeable } from "@ellmers/util";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { ITaskConstructor, IRunConfig, IExecuteConfig } from "./ITask";
 import { TaskRegistry } from "./TaskRegistry";

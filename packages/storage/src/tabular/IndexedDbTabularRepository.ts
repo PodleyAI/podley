@@ -6,8 +6,20 @@
 //    *******************************************************************************
 
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
-import { ValueSchema, ExtractPrimaryKey, ExtractValue, SchemaToType } from "./ITabularRepository";
+import {
+  ValueSchema,
+  ExtractPrimaryKey,
+  ExtractValue,
+  SchemaToType,
+  ITabularRepository,
+} from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
+import { createServiceToken } from "@ellmers/util";
+
+export const IDB_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
+  "storage.tabularRepository.indexedDb"
+);
+
 /**
  * A tabular repository implementation using IndexedDB for browser-based storage.
  *

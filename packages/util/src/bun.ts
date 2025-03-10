@@ -10,4 +10,5 @@ export * from "./utilities/Misc";
 export * from "./events/EventEmitter";
 export * from "./crypto/Crypto.bun";
 export * from "./utilities/TypeUtilities";
+export * from "./di";
 export * as Sqlite from "bun:sqlite";

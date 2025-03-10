@@ -14,7 +14,12 @@ import {
 } from "../tabular/ITabularRepository";
 import { KvRepository } from "./KvRepository";
 import { FsFolderTabularRepository } from "../tabular/FsFolderTabularRepository";
-import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
+import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
+import { createServiceToken } from "@ellmers/util";
+
+export const FS_FOLDER_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
+  "storage.kvRepository.fsFolder"
+);
 
 /**
  * Abstract base class for key-value storage repositories.

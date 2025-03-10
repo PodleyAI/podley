@@ -10,3 +10,4 @@ export * from "./events/EventEmitter";
 export * from "./crypto/Crypto.browser";
 export * from "./utilities/TypeUtilities";
 export * from "./graph";
+export * from "./di";

@@ -8,6 +8,12 @@
 import { uuid4 } from "@ellmers/util";
 import { makeFingerprint, sleep } from "@ellmers/util";
 import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
+import { createServiceToken } from "@ellmers/util";
+
+export const IN_MEMORY_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
+  "jobqueue.storage.inMemory"
+);
+
 /**
  * In-memory implementation of a job queue that manages asynchronous tasks.
  * Supports job scheduling, status tracking, and result caching.

@@ -9,9 +9,21 @@ import path from "node:path";
 import { readFile, writeFile, rm, readdir } from "node:fs/promises";
 import { mkdirSync } from "node:fs";
 import { glob } from "glob";
-import { ValueSchema, ExtractPrimaryKey, ExtractValue, SchemaToType } from "./ITabularRepository";
+import {
+  ValueSchema,
+  ExtractPrimaryKey,
+  ExtractValue,
+  SchemaToType,
+  ITabularRepository,
+} from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 import { sleep } from "@ellmers/util";
+import { createServiceToken } from "@ellmers/util";
+
+export const FS_FOLDER_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
+  "storage.tabularRepository.fsFolder"
+);
+
 /**
  * A tabular repository implementation that uses the filesystem for storage.
  * Each row is stored as a separate JSON file in the specified directory.

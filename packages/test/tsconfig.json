@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src/**/*"],
-  "files": ["src/index.ts"],
+  "files": ["src/samples/index.ts"],
   "exclude": ["**/*.test.ts", "dist"],
   "compilerOptions": {
     "composite": true,

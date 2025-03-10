@@ -6,8 +6,19 @@
 //    *******************************************************************************
 
 import { makeFingerprint } from "@ellmers/util";
-import { ValueSchema, ExtractPrimaryKey, ExtractValue, SchemaToType } from "./ITabularRepository";
+import {
+  ValueSchema,
+  ExtractPrimaryKey,
+  ExtractValue,
+  SchemaToType,
+  ITabularRepository,
+} from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
+import { createServiceToken } from "@ellmers/util";
+
+export const MEMORY_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
+  "storage.tabularRepository.inMemory"
+);
 
 /**
  * A generic in-memory key-value repository implementation.

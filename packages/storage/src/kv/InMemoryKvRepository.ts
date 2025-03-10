@@ -14,7 +14,12 @@ import {
 } from "../tabular/ITabularRepository";
 import { KvRepository } from "./KvRepository";
 import { InMemoryTabularRepository } from "../tabular/InMemoryTabularRepository";
-import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
+import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
+import { createServiceToken } from "@ellmers/util";
+
+export const MEMORY_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
+  "storage.kvRepository.inMemory"
+);
 
 /**
  * Abstract base class for key-value storage repositories.

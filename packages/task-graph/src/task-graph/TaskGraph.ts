@@ -11,7 +11,7 @@ import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
 import { TaskGraphRunner } from "./TaskGraphRunner";
-import { TaskOutputRepository } from "../storage/taskoutput/TaskOutputRepository";
+import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { EventParameters } from "@ellmers/util";
 
 /**
@@ -19,7 +19,7 @@ import { EventParameters } from "@ellmers/util";
  */
 export interface TaskGraphRunConfig {
   /** Optional output cache to use for this task graph */
-  outputCache?: TaskOutputRepository;
+  outputCache?: TaskOutputRepository | boolean;
   /** Optional signal to abort the task graph */
   parentSignal?: AbortSignal;
   /** Optional provenance to use for this task graph */
@@ -107,9 +107,6 @@ export class TaskGraph {
    * @throws TaskErrorGroup if any tasks have failed
    */
   public run(config?: TaskGraphRunConfig) {
-    if (config?.outputCache) {
-      this.outputCache = config.outputCache;
-    }
     return this.runner.runGraph({
       outputCache: config?.outputCache || this.outputCache,
       parentProvenance: config?.parentProvenance || {},

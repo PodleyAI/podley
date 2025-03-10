@@ -5,10 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IQueueStorage, InMemoryQueueStorage, JobStorageFormat } from "@ellmers/storage";
-import { EventEmitter, sleep } from "@ellmers/util";
+import {
+  InMemoryQueueStorage,
+  IQueueStorage,
+  JobStorageFormat,
+  QUEUE_STORAGE,
+} from "@ellmers/storage";
+import { EventEmitter, globalServiceRegistry, sleep } from "@ellmers/util";
 import { IJobQueue, JobQueueOptions, QueueMode } from "./IJobQueue";
-import { ILimiter } from "./ILimiter";
 import { Job, JobConstructorParam, JobStatus } from "./Job";
 import {
   AbortSignalJobError,
@@ -24,7 +28,8 @@ import {
   JobQueueEventParameters,
   JobQueueEvents,
 } from "./JobQueueEventListeners";
-import { NullLimiter } from "./NullLimiter";
+import { ILimiter, JOB_LIMITER } from "../limiter/ILimiter";
+import { NullLimiter } from "../limiter/NullLimiter";
 
 /**
  * Statistics tracked for the job queue
@@ -76,8 +81,29 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       waitDurationInMilliseconds: 100,
       ...rest,
     };
-    this.limiter = limiter ?? new NullLimiter();
-    this.storage = storage ?? new InMemoryQueueStorage<Input, Output>(queueName);
+
+    if (limiter) {
+      this.limiter = limiter;
+    } else {
+      try {
+        this.limiter = globalServiceRegistry.get(JOB_LIMITER);
+      } catch (err) {
+        console.warn("Warning: did not find job limiter in global DI", err);
+        this.limiter = new NullLimiter();
+      }
+    }
+
+    if (storage) {
+      this.storage = storage;
+    } else {
+      try {
+        this.storage = globalServiceRegistry.get(QUEUE_STORAGE);
+      } catch (err) {
+        console.warn("Warning: did not find queue storage in global DI", err);
+        this.storage = new InMemoryQueueStorage<Input, Output>(queueName);
+      }
+    }
+
     this.stats = {
       totalJobs: 0,
       completedJobs: 0,
