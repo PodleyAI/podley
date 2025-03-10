@@ -9,7 +9,7 @@
 
 export async function compress(
   input: string | Buffer,
-  algorithm: "gzip" | "br" = "br"
+  algorithm: "gzip" | "br" = "gzip"
 ): Promise<Uint8Array> {
   const encoder = new TextEncoder();
   const stream = new CompressionStream(algorithm as CompressionFormat);
@@ -39,7 +39,7 @@ export async function compress(
 
 export async function decompress(
   input: Uint8Array,
-  algorithm: "gzip" | "br" = "br"
+  algorithm: "gzip" | "br" = "gzip"
 ): Promise<string> {
   const stream = new DecompressionStream(algorithm as CompressionFormat);
   const writer = stream.writable.getWriter();

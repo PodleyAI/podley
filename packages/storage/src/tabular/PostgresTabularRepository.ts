@@ -130,6 +130,8 @@ export class PostgresTabularRepository<
         return "BOOLEAN";
       case "number":
         return "INTEGER";
+      case "blob":
+        return "BYTEA";
       default:
         return "TEXT";
     }
@@ -195,6 +197,13 @@ export class PostgresTabularRepository<
     let val: Entity | undefined;
     if (result.rows.length > 0) {
       val = result.rows[0] as Entity;
+      // iterate through the schema and check if value is a blob base on the schema
+      for (const [key, type] of Object.entries(this.valueSchema)) {
+        if (type === "blob") {
+          // @ts-ignore
+          val[key as keyof Entity] = new Uint8Array(val[key as keyof Entity] as Buffer);
+        }
+      }
     } else {
       val = undefined;
     }

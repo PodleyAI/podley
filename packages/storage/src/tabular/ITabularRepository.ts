@@ -48,7 +48,6 @@ export type JSONValue =
 // Type mapping from schema type strings to actual types
 export type SchemaTypeMap = {
   uuid4: uuid4;
-  uuid7: uuid7;
   string: string;
   number: number;
   bigint: bigint;
@@ -56,13 +55,14 @@ export type SchemaTypeMap = {
   null: null;
   json: JSONValue;
   date: Date;
+  blob: Uint8Array;
 };
 
-export type KeyOption = "string" | "number" | "bigint" | "uuid4" | "uuid7";
+export type KeyOption = "string" | "number" | "bigint" | "uuid4";
 export type KeySchema = Record<string, KeyOption>;
 export type KeyOptionType = MapSchemaTypes<KeyOption>;
 
-export type ValueOption = KeyOption | "boolean" | "null" | "json" | "date";
+export type ValueOption = KeyOption | "boolean" | "null" | "json" | "date" | "blob";
 export type ValueSchema = Record<string, ValueOption>;
 export type ValueOptionType = MapSchemaTypes<ValueOption>;
 

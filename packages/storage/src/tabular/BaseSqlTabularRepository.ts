@@ -112,12 +112,15 @@ export abstract class BaseSqlTabularRepository<
    */
   protected getValueAsOrderedArray(value: Value): ValueOptionType[] {
     const orderedParams: ValueOptionType[] = [];
-
+    // Use a type assertion to ensure TypeScript recognizes value as an object with string keys
+    const valueAsRecord = value as Record<string, ValueOptionType>;
     for (const [key, type] of Object.entries(this.valueSchema)) {
-      // Use a type assertion to ensure TypeScript recognizes value as an object with string keys
-      const valueAsRecord = value as Record<string, ValueOptionType>;
       if (Object.prototype.hasOwnProperty.call(valueAsRecord, key)) {
-        orderedParams.push(valueAsRecord[key]);
+        if (type === "blob") {
+          orderedParams.push(Buffer.from(valueAsRecord[key] as Uint8Array));
+        } else {
+          orderedParams.push(valueAsRecord[key]);
+        }
       } else {
         throw new Error(`Missing required value field: ${key}`);
       }

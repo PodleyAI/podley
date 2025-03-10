@@ -13,6 +13,7 @@ import {
   ExtractValue,
   SchemaToType,
   ITabularRepository,
+  ValueOptionType,
 } from "./ITabularRepository";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import { createServiceToken } from "@ellmers/util";
@@ -135,6 +136,8 @@ export class SqliteTabularRepository<
       case "boolean": // SQLite uses INTEGER for boolean
       case "number":
         return "INTEGER";
+      case "blob":
+        return "BLOB";
       default:
         return "TEXT";
     }
@@ -185,8 +188,15 @@ export class SqliteTabularRepository<
     `;
     const stmt = this.db.prepare<Entity, KeyOptionType[]>(sql);
     const params = this.getPrimaryKeyAsOrderedArray(key);
-    const value = stmt.get(...params);
+    const value: Entity | null = stmt.get(...params);
     if (value) {
+      // iterate through the schema and check if value is a blob base on the schema
+      for (const [key, type] of Object.entries(this.valueSchema)) {
+        if (type === "blob") {
+          // @ts-ignore
+          value[key as keyof Entity] = new Uint8Array(value[key as keyof Entity] as Buffer);
+        }
+      }
       this.events.emit("get", key, value);
       return value;
     } else {

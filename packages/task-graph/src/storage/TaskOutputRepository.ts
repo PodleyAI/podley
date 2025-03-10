@@ -5,7 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken, EventEmitter, EventParameters } from "@ellmers/util";
+import {
+  compress,
+  createServiceToken,
+  decompress,
+  EventEmitter,
+  EventParameters,
+} from "@ellmers/util";
 import { type TabularRepository } from "@ellmers/storage";
 import { makeFingerprint } from "@ellmers/util";
 import { TaskInput, TaskOutput } from "../task/TaskTypes";
@@ -41,7 +47,7 @@ export type TaskOutputPrimaryKey = {
 export const TaskOutputSchema = {
   key: "string",
   taskType: "string",
-  value: "string",
+  value: "blob",
 } as const;
 
 export const TaskOutputPrimaryKeyNames = ["key", "taskType"] as const;
@@ -113,7 +119,8 @@ export abstract class TaskOutputRepository {
   async saveOutput(taskType: string, inputs: TaskInput, output: TaskOutput): Promise<void> {
     const key = await makeFingerprint(inputs);
     const value = JSON.stringify(output);
-    await this.tabularRepository.put({ taskType, key, value });
+    const compressedValue = await compress(value);
+    await this.tabularRepository.put({ taskType, key, value: compressedValue });
     this.events.emit("output_saved", taskType);
   }
 
@@ -127,7 +134,13 @@ export abstract class TaskOutputRepository {
     const key = await makeFingerprint(inputs);
     const output = await this.tabularRepository.get({ key, taskType });
     this.events.emit("output_retrieved", taskType);
-    return output?.value ? (JSON.parse(output.value) as TaskOutput) : undefined;
+    if (output?.value) {
+      const decompressedValue = await decompress(output.value);
+      const value = JSON.parse(decompressedValue) as TaskOutput;
+      return value as TaskOutput;
+    } else {
+      return undefined;
+    }
   }
 
   /**
