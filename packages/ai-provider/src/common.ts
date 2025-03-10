@@ -8,6 +8,3 @@
 // Export provider specific implementations
 export * from "./tf-mediapipe";
 export * from "./hf-transformers";
-
-// Export DI utilities
-export * from "./util";
