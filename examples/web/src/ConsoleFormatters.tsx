@@ -12,6 +12,7 @@ import {
   TaskStatus,
   Task,
   TaskGraph,
+  Dataflow,
 } from "@ellmers/task-graph";
 
 type Config = Record<string, any>;
@@ -39,16 +40,17 @@ export function isDarkMode() {
 }
 
 export class WorkflowConsoleFormatter extends ConsoleFormatter {
-  header(workflow: Workflow, config?: Config) {
-    if (workflow instanceof Workflow) {
+  header(workflow: Workflow | TaskGraph, config?: Config) {
+    // @ts-ignore
+    if (workflow instanceof Workflow || workflow instanceof TaskGraph) {
+      const graph: TaskGraph = workflow instanceof TaskGraph ? workflow : workflow.graph;
+      const error = workflow instanceof Workflow ? workflow.error : "";
+      const title = workflow instanceof Workflow ? "Workflow" : "TaskGraph";
       const header = new JsonMLElement("div");
-      header.sectionHeader("Workflow");
-      header.styledText(
-        `(${workflow.graph.getTasks().length} tasks)`,
-        "color: green; margin-left: 10px;"
-      );
-      if (workflow.error) {
-        header.styledText(workflow.error, "color: red; margin-left: 10px;");
+      header.sectionHeader(title);
+      header.styledText(`(${graph.getTasks().length} tasks)`, "color: green; margin-left: 10px;");
+      if (error) {
+        header.styledText(error, "color: red; margin-left: 10px;");
       }
 
       return header.toJsonML();
@@ -62,33 +64,40 @@ export class WorkflowConsoleFormatter extends ConsoleFormatter {
 
   body(obj: any, config?: Config) {
     const body = new JsonMLElement("div");
-
-    // Move API methods to a separate section in the WorkflowAPIConsoleFormatter
-
+    const graph: TaskGraph = obj instanceof TaskGraph ? obj : obj.graph;
     const nodes = body.createStyledList();
-    const tasks = obj._graph.getTasks();
+    const tasks = graph.getTasks();
     if (tasks.length) {
       nodes.createTextChild("Tasks:");
       for (const node of tasks) {
         const nodeTag = nodes.createListItem("", "list-style-type: none;");
-        for (const df of obj._graph.getSourceDataflows(node.config.id)) {
-          const edgeTag = nodeTag.createChild("li").setStyle("padding-left: 20px;");
-          if (df.sourceTaskPortId === df.targetTaskPortId) continue;
-          const num =
-            tasks.findIndex((t) => t.config.id === df.sourceTaskId) -
-            tasks.findIndex((t) => t.config.id === node.config.id);
+        if (obj instanceof Workflow) {
+          for (const df of graph.getSourceDataflows(node.config.id)) {
+            const edgeTag = nodeTag.createChild("li").setStyle("padding-left: 20px;");
+            if (df.sourceTaskPortId === df.targetTaskPortId) continue;
+            const num =
+              tasks.findIndex((t) => t.config.id === df.sourceTaskId) -
+              tasks.findIndex((t) => t.config.id === node.config.id);
 
-          edgeTag.highlightText("rename");
-          edgeTag.functionCall((el) => {
-            el.greyText('"');
-            el.outputText(`${df.sourceTaskPortId}`);
-            el.greyText('", "');
-            el.inputText(`${df.targetTaskPortId}`);
-            el.greyText('"');
-            if (num !== -1) el.greyText(`, ${num}`);
-          });
+            edgeTag.highlightText("rename");
+            edgeTag.functionCall((el) => {
+              el.greyText('"');
+              el.outputText(`${df.sourceTaskPortId}`);
+              el.greyText('", "');
+              el.inputText(`${df.targetTaskPortId}`);
+              el.greyText('"');
+              if (num !== -1) el.greyText(`, ${num}`);
+            });
+          }
         }
-        nodeTag.createObjectTag(node, { graph: obj._graph, workspace: obj });
+        nodeTag.createObjectTag(node, { graph, workflow: obj });
+      }
+    }
+    if (obj instanceof TaskGraph) {
+      nodes.createTextChild("Dataflows:");
+      for (const df of obj.getDataflows()) {
+        const dfTag = nodes.createListItem("", "list-style-type: none;");
+        dfTag.createObjectTag(df);
       }
     }
     return body.toJsonML();
@@ -179,7 +188,7 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
     ) {
       const header = new JsonMLElement("div");
       let name = task.type ?? task.constructor.name;
-      if (config?.workspace) name = name.replace(/Task$/, "");
+      if (config?.workflow) name = name.replace(/Task$/, "");
       const inputs = task.inputs
         .filter((i) => task.runInputData[i.id] !== undefined)
         .map((i: TaskInputDefinition) => {
@@ -201,6 +210,10 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
       header.functionCall((el) => {
         el.objectBraces((obj) => {
           obj.parameterList(inputs);
+        });
+        el.greyText(", ");
+        el.objectBraces((obj) => {
+          obj.parameterList([{ name: "id", value: task.config.id }]);
         });
       });
 
@@ -273,7 +286,44 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
       li.createValueObject(value);
     }
 
+    const taskConfig = body.createStyledList("Config:");
+    for (const [key, value] of Object.entries(task.config)) {
+      if (value === undefined) continue;
+      if (key == "provenance") continue;
+      const li = taskConfig.createListItem("", "padding-left: 20px;");
+      li.inputText(`${key}: `);
+      li.createValueObject(value);
+    }
+
+    body.createStatusListItem(task.status);
+
     return body.toJsonML();
+  }
+}
+
+export class DataflowConsoleFormatter extends ConsoleFormatter {
+  header(obj: any, config?: Config) {
+    if (obj instanceof Dataflow) {
+      const header = new JsonMLElement("div");
+      header.highlightText("Dataflow ");
+      header.inputText(`${obj.sourceTaskId}.${obj.sourceTaskPortId}`);
+      header.createTextChild(" -> ");
+      header.outputText(`${obj.targetTaskId}.${obj.targetTaskPortId}`);
+      if (obj.status === TaskStatus.COMPLETED) {
+        header.greyText(" = ");
+        header.createValueObject(obj.value);
+      }
+      return header.toJsonML();
+    }
+    return null;
+  }
+
+  hasBody(value: any, config?: Config) {
+    return true;
+  }
+
+  body(obj: any, config?: Config) {
+    return null;
   }
 }
 
@@ -436,6 +486,22 @@ class JsonMLElement {
     return this;
   }
 
+  createStatusListItem(text: string): JsonMLElement {
+    this.createStyledList("Status: ");
+    let color = "grey";
+    switch (text) {
+      case TaskStatus.COMPLETED:
+        color = "green";
+        break;
+      case TaskStatus.FAILED:
+        color = "red";
+        break;
+      default:
+        color = "grey";
+    }
+    return this.createListItem(text, `padding-left: 30px;color: ${color};`);
+  }
+
   // Helper for creating a styled list
   createStyledList(title?: string): JsonMLElement {
     const list = this.createChild("ol").setStyle("list-style-type: none; padding-left: 10px;");
@@ -525,6 +591,7 @@ export function installDevToolsFormatters() {
     new CreateWorkflowConsoleFormatter(),
     new WorkflowConsoleFormatter(),
     new TaskConsoleFormatter(),
-    new ReactElementConsoleFormatter()
+    new ReactElementConsoleFormatter(),
+    new DataflowConsoleFormatter()
   );
 }
