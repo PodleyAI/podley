@@ -11,7 +11,7 @@ import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
 import { createServiceToken } from "@ellmers/util";
 
 export const IN_MEMORY_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
-  "storage.queueStorage.inMemory"
+  "jobqueue.storage.inMemory"
 );
 
 /**

@@ -39,6 +39,7 @@ import { OutputRepositoryStatus } from "./OutputRepositoryStatus";
 import { QueuesStatus } from "./QueueStatus";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
 import { RunGraphFlow } from "./RunGraphFlow";
+import { InMemoryQueueStorage } from "@ellmers/storage";
 
 env.backends.onnx.wasm.proxy = true;
 
@@ -48,6 +49,7 @@ registerHuggingfaceLocalTasks();
 queueRegistry.registerQueue(
   new JobQueue<TaskInput, TaskOutput>(ONNX_TRANSFORMERJS, AiJob<TaskInput, TaskOutput>, {
     limiter: new ConcurrencyLimiter(2, 100),
+    storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(ONNX_TRANSFORMERJS),
   })
 );
 
@@ -55,6 +57,7 @@ registerMediaPipeTfJsLocalTasks();
 queueRegistry.registerQueue(
   new JobQueue<TaskInput, TaskOutput>(MEDIA_PIPE_TFJS_MODEL, AiJob<TaskInput, TaskOutput>, {
     limiter: new ConcurrencyLimiter(2, 100),
+    storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(MEDIA_PIPE_TFJS_MODEL),
   })
 );
 

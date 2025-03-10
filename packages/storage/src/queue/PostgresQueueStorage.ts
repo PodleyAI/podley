@@ -13,7 +13,7 @@ import { JobStatus, JobStorageFormat } from "./IQueueStorage";
 import { createServiceToken } from "@ellmers/util";
 
 export const POSTGRES_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
-  "storage.queueStorage.postgres"
+  "jobqueue.storage.postgres"
 );
 
 // TODO: prepared statements

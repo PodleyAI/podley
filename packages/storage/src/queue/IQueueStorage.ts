@@ -7,7 +7,7 @@
 
 import { createServiceToken } from "@ellmers/util";
 
-export const QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>("storage.queueStorage");
+export const QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>("jobqueue.storage");
 
 export enum JobStatus {
   PENDING = "PENDING",

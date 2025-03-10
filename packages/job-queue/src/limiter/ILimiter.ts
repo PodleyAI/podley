@@ -5,6 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { createServiceToken } from "@ellmers/util";
+
+export const JOB_LIMITER = createServiceToken<ILimiter>("jobqueue.limiter");
+
+/**
+ * Interface for a job limiter.
+ */
 export interface ILimiter {
   canProceed(): Promise<boolean>;
   recordJobStart(): Promise<void>;

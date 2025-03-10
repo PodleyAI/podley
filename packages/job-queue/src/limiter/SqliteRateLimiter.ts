@@ -6,8 +6,10 @@
 //    *******************************************************************************
 
 import type { Sqlite } from "@ellmers/util";
-import { toSQLiteTimestamp } from "@ellmers/util";
-import { ILimiter } from "../job/ILimiter";
+import { createServiceToken, toSQLiteTimestamp } from "@ellmers/util";
+import { ILimiter } from "@ellmers/job-queue";
+
+export const SQLITE_JOB_RATE_LIMITER = createServiceToken<ILimiter>("jobqueue.limiter.rate.sqlite");
 
 /**
  * SQLite implementation of a rate limiter.

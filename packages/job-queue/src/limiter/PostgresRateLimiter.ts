@@ -5,8 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { ILimiter } from "@ellmers/job-queue";
 import { Pool } from "pg";
-import { ILimiter } from "../job/ILimiter";
+import { createServiceToken } from "@ellmers/util";
+
+export const POSTGRES_JOB_RATE_LIMITER = createServiceToken<ILimiter>(
+  "jobqueue.limiter.rate.postgres"
+);
 
 /**
  * PostgreSQL implementation of a rate limiter.

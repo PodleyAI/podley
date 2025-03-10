@@ -6,11 +6,10 @@
 //    *******************************************************************************
 
 import { IQueueStorage } from "@ellmers/storage";
-import { ILimiter } from "./ILimiter";
+import { ILimiter } from "../limiter/ILimiter";
 import { Job, JobStatus } from "./Job";
 import { JobQueueStats } from "./JobQueue";
 import { JobProgressListener } from "./JobQueueEventListeners";
-import { JobError } from "./JobError";
 
 /**
  * Common options for all job queues

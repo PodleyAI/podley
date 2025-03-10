@@ -76,12 +76,11 @@ export class TaskRunner<
 
     if (config.outputCache === true) {
       let instance = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
-      if (!instance) {
-        throw new TaskError("No task output repository registered, but requested in run config");
-      }
       this.outputCache = instance;
+    } else if (config.outputCache === false) {
+      this.outputCache = undefined;
     } else {
-      this.outputCache = config.outputCache || this.outputCache || this.task.config.outputCache;
+      this.outputCache = config.outputCache;
     }
 
     try {

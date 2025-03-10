@@ -12,7 +12,7 @@ import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDb
 import { createServiceToken } from "@ellmers/util";
 
 export const INDEXED_DB_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
-  "storage.queueStorage.indexedDb"
+  "jobqueue.storage.indexedDb"
 );
 
 /**

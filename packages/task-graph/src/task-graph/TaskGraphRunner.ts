@@ -87,15 +87,15 @@ export class TaskGraphRunner {
    * @throws TaskErrorGroup if any tasks have failed
    */
   public async runGraph(config?: TaskGraphRunConfig): Promise<GraphResult> {
-    if (config?.outputCache) {
-      if (config.outputCache === true) {
-        let instance = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
-        if (!instance) {
-          throw new TaskError("No task output repository registered, but requested in run config");
+    if (config?.outputCache !== undefined) {
+      if (typeof config.outputCache === "boolean") {
+        if (config.outputCache === true) {
+          this.outputCache = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
+        } else {
+          this.outputCache = undefined;
         }
-        this.outputCache = instance;
       } else {
-        this.outputCache = config.outputCache || this.outputCache;
+        this.outputCache = config.outputCache;
       }
       this.graph.outputCache = this.outputCache;
     }

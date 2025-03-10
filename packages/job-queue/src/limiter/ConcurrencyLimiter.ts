@@ -6,7 +6,13 @@
 //    *******************************************************************************
 
 import { ILimiter } from "./ILimiter";
+import { createServiceToken } from "@ellmers/util";
 
+export const CONCURRENT_JOB_LIMITER = createServiceToken<ILimiter>("jobqueue.limiter.concurrent");
+
+/**
+ * Concurrency limiter that limits the number of concurrent jobs.
+ */
 export class ConcurrencyLimiter implements ILimiter {
   private currentRunningJobs: number = 0;
   private readonly maxConcurrentJobs: number;
