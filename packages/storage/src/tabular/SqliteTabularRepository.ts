@@ -12,8 +12,14 @@ import {
   ExtractPrimaryKey,
   ExtractValue,
   SchemaToType,
+  ITabularRepository,
 } from "./ITabularRepository";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
+import { createServiceToken } from "@ellmers/util";
+
+export const SQLITE_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
+  "storage.tabularRepository.sqlite"
+);
 
 const Database = Sqlite.Database;
 

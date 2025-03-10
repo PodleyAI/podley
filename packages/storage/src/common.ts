@@ -15,6 +15,3 @@ export * from "./kv/InMemoryKvRepository";
 
 export * from "./queue/IQueueStorage";
 export * from "./queue/InMemoryQueueStorage";
-
-export * from "./util/diTokens";
-export * from "./util/diServiceProvider";

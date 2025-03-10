@@ -9,6 +9,11 @@ import { uuid4 } from "@ellmers/util";
 import { makeFingerprint } from "@ellmers/util";
 import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
+import { createServiceToken } from "@ellmers/util";
+
+export const INDEXED_DB_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
+  "storage.queueStorage.indexedDb"
+);
 
 /**
  * IndexedDB implementation of a job queue storage.

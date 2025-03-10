@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter } from "@ellmers/util";
+import { createServiceToken, EventEmitter } from "@ellmers/util";
 import { makeFingerprint } from "@ellmers/util";
 import {
   KvEventName,
@@ -26,6 +26,9 @@ import {
   KeyOptionType,
 } from "../tabular/ITabularRepository";
 import type { TabularRepository } from "../tabular/TabularRepository";
+
+export const KV_REPOSITORY =
+  createServiceToken<IKvRepository<any, any, any>>("storage.kvRepository");
 
 /**
  * Abstract base class for key-value storage repositories.

@@ -6,9 +6,19 @@
 //    *******************************************************************************
 
 import type { Pool } from "pg";
-
+import { createServiceToken } from "@ellmers/util";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import { ValueSchema, ExtractValue, SchemaToType, ExtractPrimaryKey } from "./ITabularRepository";
+import {
+  ValueSchema,
+  ExtractValue,
+  SchemaToType,
+  ExtractPrimaryKey,
+  ITabularRepository,
+} from "./ITabularRepository";
+
+export const POSTGRES_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
+  "storage.tabularRepository.postgres"
+);
 
 /**
  * A PostgreSQL-based tabular repository implementation that extends BaseSqlTabularRepository.

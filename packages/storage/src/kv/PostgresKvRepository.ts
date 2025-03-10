@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { PostgresTabularRepository } from "../tabular/PostgresTabularRepository";
-import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
+import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import {
   JSONValue,
   KeyOptionType,
@@ -15,6 +15,11 @@ import {
   ValueOption,
 } from "../tabular/ITabularRepository";
 import { KvRepository } from "./KvRepository";
+import { createServiceToken } from "@ellmers/util";
+
+export const POSTGRES_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
+  "storage.kvRepository.postgres"
+);
 
 /**
  * Abstract base class for key-value storage repositories.

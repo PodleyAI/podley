@@ -5,6 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { createServiceToken } from "@ellmers/util";
+
+export const QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>("storage.queueStorage");
+
 export enum JobStatus {
   PENDING = "PENDING",
   PROCESSING = "PROCESSING",

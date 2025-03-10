@@ -10,6 +10,12 @@ import { uuid4 } from "@ellmers/util";
 import { Pool } from "pg";
 import { IQueueStorage } from "./IQueueStorage";
 import { JobStatus, JobStorageFormat } from "./IQueueStorage";
+import { createServiceToken } from "@ellmers/util";
+
+export const POSTGRES_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
+  "storage.queueStorage.postgres"
+);
+
 // TODO: prepared statements
 
 /**

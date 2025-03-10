@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter } from "@ellmers/util";
+import { createServiceToken, EventEmitter } from "@ellmers/util";
 import { makeFingerprint } from "@ellmers/util";
 import {
   TabularEventName,
@@ -21,6 +21,10 @@ import {
   KeyOption,
   KeySchema,
 } from "./ITabularRepository";
+
+export const TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
+  "storage.tabularRepository"
+);
 
 /**
  * Abstract base class for tabular storage repositories.
