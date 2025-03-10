@@ -59,6 +59,7 @@ export type TaskOutputRepositoryStorage = TabularRepository<
 
 export type TaskOutputRepositoryOptions = {
   tabularRepository: TaskOutputRepositoryStorage;
+  outputCompression?: boolean;
 };
 
 /**
@@ -72,11 +73,17 @@ export abstract class TaskOutputRepository {
   tabularRepository: TaskOutputRepositoryStorage;
 
   /**
+   * Whether to compress the output
+   */
+  outputCompression: boolean;
+
+  /**
    * Constructor for the TaskOutputRepository
    * @param options The options for the repository
    */
-  constructor({ tabularRepository }: TaskOutputRepositoryOptions) {
+  constructor({ tabularRepository, outputCompression = true }: TaskOutputRepositoryOptions) {
     this.tabularRepository = tabularRepository;
+    this.outputCompression = outputCompression;
   }
 
   /**
@@ -119,8 +126,12 @@ export abstract class TaskOutputRepository {
   async saveOutput(taskType: string, inputs: TaskInput, output: TaskOutput): Promise<void> {
     const key = await makeFingerprint(inputs);
     const value = JSON.stringify(output);
-    const compressedValue = await compress(value);
-    await this.tabularRepository.put({ taskType, key, value: compressedValue });
+    if (this.outputCompression) {
+      const compressedValue = await compress(value);
+      await this.tabularRepository.put({ taskType, key, value: compressedValue });
+    } else {
+      await this.tabularRepository.put({ taskType, key, value: Buffer.from(value) });
+    }
     this.events.emit("output_saved", taskType);
   }
 
@@ -135,9 +146,15 @@ export abstract class TaskOutputRepository {
     const output = await this.tabularRepository.get({ key, taskType });
     this.events.emit("output_retrieved", taskType);
     if (output?.value) {
-      const decompressedValue = await decompress(output.value);
-      const value = JSON.parse(decompressedValue) as TaskOutput;
-      return value as TaskOutput;
+      if (this.outputCompression) {
+        const decompressedValue = await decompress(output.value);
+        const value = JSON.parse(decompressedValue) as TaskOutput;
+        return value as TaskOutput;
+      } else {
+        const stringValue = output.value.toString();
+        const value = JSON.parse(stringValue) as TaskOutput;
+        return value as TaskOutput;
+      }
     } else {
       return undefined;
     }
