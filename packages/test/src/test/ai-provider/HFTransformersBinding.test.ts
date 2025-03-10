@@ -17,7 +17,7 @@ import {
   registerHuggingfaceLocalTasks,
 } from "@ellmers/ai-provider/hf-transformers";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
-import { SqliteQueueStorage } from "@ellmers/storage";
+import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
@@ -43,6 +43,9 @@ describe("HFTransformersBinding", () => {
         AiJob<TaskInput, TaskOutput>,
         {
           limiter: new ConcurrencyLimiter(1, 10),
+          storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
+            ONNX_TRANSFORMERJS
+          ),
         }
       );
       queueRegistry.registerQueue(jobQueue);

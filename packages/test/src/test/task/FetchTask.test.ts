@@ -16,6 +16,7 @@ import {
 import { JobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
 import { sleep } from "@ellmers/util";
 import { PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
+import { InMemoryQueueStorage } from "@ellmers/storage";
 
 // Create base mock response
 const createMockResponse = (jsonData: any = {}): Response => {
@@ -87,6 +88,7 @@ describe("FetchTask", () => {
     // Create a queue with the base Job type to match TaskQueueRegistry's expectations
     const queue = new JobQueue<TaskInput, TaskOutput>(queueName, FetchJob, {
       limiter: rateLimiter,
+      storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(queueName),
       waitDurationInMilliseconds: 1,
     });
 

@@ -147,8 +147,8 @@ import {
   HuggingFaceLocal_TextRewriterRun,
 } from "@ellmers/ai-provider/hf-transformers";
 
-import { JobQueue } from "@ellmers/job-queue";
-
+import { JobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
+import { InMemoryQueueStorage } from "@ellmers/storage";
 // config and start up
 getGlobalModelRepository(new InMemoryModelRepository());
 await getGlobalModelRepository().addModel({
@@ -181,6 +181,7 @@ aiProviderRegistry.registerRunFn(
 );
 const jobQueue = new JobQueue<TaskInput, TaskOutput>("test", Job, {
   limiter: new InMemoryRateLimiter(4, 1),
+  storage: new InMemoryQueueStorage<TaskInput, TaskOutput>("test"),
 });
 getTaskQueueRegistry().registerQueue(jobQueue);
 jobQueue.start();
