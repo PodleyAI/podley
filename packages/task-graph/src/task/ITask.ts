@@ -42,7 +42,7 @@ export interface IExecuteConfig {
  */
 export interface IRunConfig {
   nodeProvenance?: Provenance;
-  repository?: TaskOutputRepository;
+  outputCache?: TaskOutputRepository | boolean;
 }
 
 /**

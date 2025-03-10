@@ -11,6 +11,11 @@ import {
   TaskOutputPrimaryKeyNames,
   TaskOutputRepository,
 } from "@ellmers/task-graph";
+import { createServiceToken } from "@ellmers/util";
+
+export const MEMORY_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepository>(
+  "taskgraph.taskOutputRepository.inMemory"
+);
 
 /**
  * In-memory implementation of a task output repository.

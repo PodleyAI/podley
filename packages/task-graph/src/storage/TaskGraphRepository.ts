@@ -5,10 +5,17 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter, EventParameters } from "@ellmers/util";
+import { createServiceToken, EventEmitter, EventParameters } from "@ellmers/util";
 import type { TabularRepository } from "@ellmers/storage";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { createGraphFromGraphJSON } from "../task/TaskJSON";
+
+/**
+ * Service token for TaskGraphRepository
+ */
+export const TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>(
+  "taskgraph.taskGraphRepository"
+);
 
 /**
  * Events that can be emitted by the TaskGraphRepository

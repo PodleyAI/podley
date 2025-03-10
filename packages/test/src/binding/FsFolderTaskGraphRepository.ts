@@ -11,6 +11,11 @@ import {
   TaskGraphRepository,
   TaskGraphSchema,
 } from "@ellmers/task-graph";
+import { createServiceToken } from "@ellmers/util";
+
+export const FS_FOLDER_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>(
+  "taskgraph.taskGraphRepository.fsFolder"
+);
 
 /**
  * File-based implementation of a task graph repository.

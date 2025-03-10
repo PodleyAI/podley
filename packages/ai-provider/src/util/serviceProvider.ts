@@ -5,14 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { serviceRegistry } from "@ellmers/util";
+import { globalServiceRegistry } from "@ellmers/util";
 import { AIProviderRegistry, AI_PROVIDER_REGISTRY } from "./diTokens";
 
 /**
  * Get the AI provider registry
  */
 export function getAIProviderRegistry(): AIProviderRegistry {
-  return serviceRegistry.get(AI_PROVIDER_REGISTRY);
+  return globalServiceRegistry.get(AI_PROVIDER_REGISTRY);
 }
 
 /**

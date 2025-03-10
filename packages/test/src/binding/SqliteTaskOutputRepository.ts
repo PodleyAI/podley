@@ -11,6 +11,11 @@ import {
   TaskOutputPrimaryKeyNames,
   TaskOutputRepository,
 } from "@ellmers/task-graph";
+import { createServiceToken } from "@ellmers/util";
+
+export const SQLITE_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepository>(
+  "taskgraph.taskOutputRepository.sqlite"
+);
 
 /**
  * SQLite implementation of a task output repository.

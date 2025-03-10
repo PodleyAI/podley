@@ -5,9 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { uuid4 } from "@ellmers/util";
+import { globalServiceRegistry, uuid4 } from "@ellmers/util";
 import { deepEqual } from "@ellmers/util";
-import { TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
 import { TaskGraph, TaskGraphRunConfig } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
@@ -88,8 +88,16 @@ export class TaskGraphRunner {
    */
   public async runGraph(config?: TaskGraphRunConfig): Promise<GraphResult> {
     if (config?.outputCache) {
-      this.outputCache = config.outputCache;
-      this.graph.outputCache = config.outputCache;
+      if (config.outputCache === true) {
+        let instance = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
+        if (!instance) {
+          throw new TaskError("No task output repository registered, but requested in run config");
+        }
+        this.outputCache = instance;
+      } else {
+        this.outputCache = config.outputCache || this.outputCache;
+      }
+      this.graph.outputCache = this.outputCache;
     }
     await this.handleStart(config?.parentSignal);
 
@@ -356,7 +364,7 @@ export class TaskGraphRunner {
       }
     }
     if (!results) {
-      results = await task.run({}, { nodeProvenance, repository: this.outputCache });
+      results = await task.run({}, { nodeProvenance, outputCache: this.outputCache });
       if (shouldUseRepository) {
         await this.outputCache?.saveOutput(
           (task.constructor as any).type,

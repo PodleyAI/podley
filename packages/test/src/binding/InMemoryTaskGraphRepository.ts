@@ -11,6 +11,11 @@ import {
   TaskGraphPrimaryKeyNames,
 } from "@ellmers/task-graph";
 import { InMemoryTabularRepository } from "@ellmers/storage";
+import { createServiceToken } from "@ellmers/util";
+
+export const MEMORY_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>(
+  "taskgraph.taskGraphRepository.inMemory"
+);
 
 /**
  * In-memory implementation of a task graph repository.

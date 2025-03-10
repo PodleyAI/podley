@@ -11,6 +11,11 @@ import {
   TaskGraphSchema,
 } from "@ellmers/task-graph";
 import { IndexedDbTabularRepository } from "@ellmers/storage";
+import { createServiceToken } from "@ellmers/util";
+
+export const IDB_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>(
+  "taskgraph.taskGraphRepository.indexedDb"
+);
 
 /**
  * IndexedDB implementation of a task graph repository.

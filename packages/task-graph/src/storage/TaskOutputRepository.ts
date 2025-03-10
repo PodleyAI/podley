@@ -5,10 +5,17 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter, EventParameters } from "@ellmers/util";
+import { createServiceToken, EventEmitter, EventParameters } from "@ellmers/util";
 import { type TabularRepository } from "@ellmers/storage";
 import { makeFingerprint } from "@ellmers/util";
 import { TaskInput, TaskOutput } from "../task/TaskTypes";
+
+/**
+ * Service token for TaskOutputRepository
+ */
+export const TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepository>(
+  "taskgraph.taskOutputRepository"
+);
 
 export type TaskOutputEventListeners = {
   output_saved: (taskType: string) => void;

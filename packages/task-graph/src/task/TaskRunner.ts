@@ -5,12 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { TaskOutputRepository, TASK_OUTPUT_REPOSITORY } from "../storage/TaskOutputRepository";
 import { ITask, IRunConfig } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 import { TaskInput, TaskOutput, TaskConfig, TaskStatus, Provenance } from "./TaskTypes";
 import { GraphResult } from "../task-graph/TaskGraphRunner";
+import { globalServiceRegistry } from "@ellmers/util";
+
 /**
  * Responsible for running tasks
  * Manages the execution lifecycle of individual tasks
@@ -71,7 +73,16 @@ export class TaskRunner<
     await this.handleStart();
 
     this.nodeProvenance = config.nodeProvenance ?? {};
-    this.outputCache = config.repository || this.outputCache || this.task.config.outputCache;
+
+    if (config.outputCache === true) {
+      let instance = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
+      if (!instance) {
+        throw new TaskError("No task output repository registered, but requested in run config");
+      }
+      this.outputCache = instance;
+    } else {
+      this.outputCache = config.outputCache || this.outputCache || this.task.config.outputCache;
+    }
 
     try {
       this.task.setInput(overrides);

@@ -79,4 +79,4 @@ export class ServiceRegistry {
 /**
  * Global service registry instance
  */
-export const serviceRegistry = new ServiceRegistry(globalContainer);
+export const globalServiceRegistry = new ServiceRegistry(globalContainer);

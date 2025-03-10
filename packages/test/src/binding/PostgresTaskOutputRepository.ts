@@ -12,6 +12,11 @@ import {
   TaskOutputRepository,
 } from "@ellmers/task-graph";
 import type { Pool } from "pg";
+import { createServiceToken } from "@ellmers/util";
+
+export const POSTGRES_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepository>(
+  "taskgraph.taskOutputRepository.postgres"
+);
 
 /**
  * PostgreSQL implementation of a task output repository.

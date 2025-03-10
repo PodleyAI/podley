@@ -11,6 +11,11 @@ import {
   TaskGraphSchema,
 } from "@ellmers/task-graph";
 import { SqliteTabularRepository } from "@ellmers/storage";
+import { createServiceToken } from "@ellmers/util";
+
+export const SQLITE_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>(
+  "taskgraph.taskGraphRepository.sqlite"
+);
 
 /**
  * SQLite implementation of a task graph repository.

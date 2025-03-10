@@ -11,6 +11,11 @@ import {
   TaskOutputPrimaryKeyNames,
   TaskOutputRepository,
 } from "@ellmers/task-graph";
+import { createServiceToken } from "@ellmers/util";
+
+export const FS_FOLDER_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepository>(
+  "taskgraph.taskOutputRepository.fsFolder"
+);
 
 /**
  * File system folder implementation of a task output repository.

@@ -11,6 +11,11 @@ import {
   TaskOutputPrimaryKeyNames,
   TaskOutputRepository,
 } from "@ellmers/task-graph";
+import { createServiceToken } from "@ellmers/util";
+
+export const IDB_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepository>(
+  "taskgraph.taskOutputRepository.indexedDb"
+);
 
 /**
  * IndexedDB implementation of a task output repository.
