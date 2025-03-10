@@ -7,11 +7,13 @@
 
 import {
   AiJob,
+  AiProviderInput,
   AiProviderRegistry,
   getAiProviderRegistry,
   setAiProviderRegistry,
 } from "@ellmers/ai";
 import { InMemoryRateLimiter, JobQueue } from "@ellmers/job-queue";
+import { InMemoryQueueStorage } from "@ellmers/storage";
 import {
   TaskInput,
   TaskOutput,
@@ -38,15 +40,13 @@ describe("AiProviderRegistry", () => {
     return { result: "success with progress" };
   };
 
-  let queue = new JobQueue(TEST_PROVIDER, AiJob<TaskInput, TaskOutput>, {
-    limiter: new InMemoryRateLimiter(4, 1),
-    waitDurationInMilliseconds: 1,
-  });
+  let queue: JobQueue<AiProviderInput<TaskInput>, TaskOutput>;
   let aiProviderRegistry: AiProviderRegistry;
 
   beforeEach(() => {
     queue = new JobQueue(TEST_PROVIDER, AiJob<TaskInput, TaskOutput>, {
       limiter: new InMemoryRateLimiter(4, 1),
+      storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(TEST_PROVIDER),
       waitDurationInMilliseconds: 1,
     });
     setTaskQueueRegistry(new TaskQueueRegistry<TaskInput, TaskOutput>());
