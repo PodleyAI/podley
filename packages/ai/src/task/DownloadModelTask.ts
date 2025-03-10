@@ -127,7 +127,7 @@ export class DownloadModelTask extends AiTask<
       isArray: "replicate",
     },
   ] as const;
-  static sideeffects = true; // the download and its cache is a side effect of the task
+  static cacheable = false; // the download has its own cache
 
   public files: { file: string; progress: number }[] = [];
 

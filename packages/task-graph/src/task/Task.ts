@@ -63,7 +63,7 @@ export class Task<
   /**
    * Whether this task has side effects
    */
-  public static sideeffects: boolean = false;
+  public static cacheable: boolean = true;
 
   /**
    * Input definitions for this task

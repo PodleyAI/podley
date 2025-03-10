@@ -31,11 +31,6 @@ export class RunOrReplicateTask<
   public static type = "RunOrReplicate";
 
   /**
-   * Whether this task has side effects
-   */
-  public static sideeffects = false;
-
-  /**
    * Whether this task is a compound task (contains subtasks)
    */
   public static readonly isCompound = true;

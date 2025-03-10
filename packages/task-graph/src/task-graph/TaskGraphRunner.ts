@@ -346,7 +346,7 @@ export class TaskGraphRunner {
     this.provenanceInput.set(task.config.id, nodeProvenance);
     this.copyInputFromEdgesToNode(task);
 
-    const shouldUseRepository = !(task.constructor as any).sideeffects && !task.hasChildren();
+    const shouldUseRepository = (task.constructor as any).cacheable && !task.hasChildren();
 
     let results;
     if (shouldUseRepository) {

@@ -177,7 +177,7 @@ export class Workflow {
     helper.category = taskClass.category;
     helper.inputs = taskClass.inputs;
     helper.outputs = taskClass.outputs;
-    helper.sideeffects = taskClass.sideeffects;
+    helper.cacheable = taskClass.cacheable;
     helper.workflowCreate = true;
 
     return helper;

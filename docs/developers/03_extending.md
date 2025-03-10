@@ -72,7 +72,7 @@ type SimpleDebugLogTaskOutputs = {
   output: any;
 };
 export class SimpleDebugLogTask extends Task<SimpleDebugLogTaskInputs, SimpleDebugLogTaskOutputs> {
-  public static sideeffects = true;
+  public static cacheable = false;
   public static inputs: TaskInputDefinition[] = [
     {
       id: "message",
@@ -97,7 +97,7 @@ export class SimpleDebugLogTask extends Task<SimpleDebugLogTaskInputs, SimpleDeb
 new SimpleDebugLogTask({ message: "hello world" }).run();
 ```
 
-In the above code, we added an output to the Task. We also added `static sideeffects` flag to tell the system that this Task has side effects. This is important for the system to know if it can cache the output of the Task or not. If a Task has side effects, it should not be cached.
+In the above code, we added an output to the Task. We also added `static cacheable` flag to tell the system that this Task has side effects and should always run the execute method. This is important for the system to know if it can cache the output of the Task or not.
 
 ### Register the Task
 

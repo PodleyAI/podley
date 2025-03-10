@@ -53,7 +53,7 @@ export interface IRunConfig {
 export interface ITaskStaticProperties {
   readonly type: string;
   readonly category: string;
-  readonly sideeffects: boolean;
+  readonly cacheable: boolean;
   readonly inputs: readonly TaskInputDefinition[];
   readonly outputs: readonly TaskOutputDefinition[];
   isCompound: boolean;

@@ -155,7 +155,7 @@ export function arrayTaskFactory<
     static readonly type: TaskTypeName = name!;
     static readonly runtype = taskClass.type;
     static readonly category = taskClass.category;
-    static readonly sideeffects = taskClass.sideeffects;
+    static readonly cacheable = taskClass.cacheable;
     static readonly isCompound = true;
 
     itemClass = taskClass;

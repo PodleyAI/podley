@@ -47,7 +47,7 @@ export class DebugLogTask<
 > extends Task<Input, Output, Config> {
   static type = "DebugLogTask";
   static category = "Output";
-  static readonly sideeffects = true;
+  static readonly cacheable = false;
   public static inputs: TaskInputDefinition[] = [
     {
       id: "console",
