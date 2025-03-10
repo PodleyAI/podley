@@ -9,3 +9,5 @@ export * from "./common";
 
 export * from "./binding/IndexedDbTaskGraphRepository";
 export * from "./binding/IndexedDbTaskOutputRepository";
+export * from "./binding/InMemoryJobQueue";
+export * from "./binding/IndexedDbJobQueue";

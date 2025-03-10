@@ -18,10 +18,7 @@ export * from "./job/CompositeLimiter";
 export * from "./job/NullLimiter";
 
 export * from "./storage/InMemoryRateLimiter";
-export * from "./storage/InMemoryJobQueue";
 
 export * from "./storage/SqliteRateLimiter";
-export * from "./storage/SqliteJobQueue";
 
 export * from "./storage/PostgresRateLimiter";
-export * from "./storage/PostgresJobQueue";

@@ -14,3 +14,7 @@ export * from "./binding/SqliteTaskGraphRepository";
 export * from "./binding/PostgresTaskOutputRepository";
 export * from "./binding/SqliteTaskOutputRepository";
 export * from "./binding/FsFolderTaskOutputRepository";
+
+export * from "./binding/InMemoryJobQueue";
+export * from "./binding/PostgresJobQueue";
+export * from "./binding/SqliteJobQueue";
