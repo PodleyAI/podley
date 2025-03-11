@@ -12,7 +12,7 @@ import { IndexedDbKvRepository } from "@ellmers/storage";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests.test";
 
 describe("IndexedDbKvRepository", () => {
-  const dbName = `idx_test_${uuid4()}`;
+  const dbName = `idx_test_${uuid4().replace(/-/g, "_")}`;
 
   // Clean up after each test
   afterEach(async () => {

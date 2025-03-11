@@ -11,6 +11,8 @@ import {
   ExtractPrimaryKey,
   ExtractValue,
   SchemaToType,
+  ExcludeDateKeyOptionType,
+  ExcludeDateValueOptionType,
 } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
@@ -116,16 +118,55 @@ export abstract class BaseSqlTabularRepository<
     const valueAsRecord = value as Record<string, ValueOptionType>;
     for (const [key, type] of Object.entries(this.valueSchema)) {
       if (Object.prototype.hasOwnProperty.call(valueAsRecord, key)) {
-        if (type === "blob") {
-          orderedParams.push(Buffer.from(valueAsRecord[key] as Uint8Array));
-        } else {
-          orderedParams.push(valueAsRecord[key]);
-        }
+        orderedParams.push(this.jsToSqlValue(key, valueAsRecord[key]));
       } else {
         throw new Error(`Missing required value field: ${key}`);
       }
     }
     return orderedParams;
+  }
+
+  /**
+   * Converts a primary key object into an ordered array based on the schema
+   * This ensures consistent parameter ordering for storage operations
+   * @param key - The primary key object to convert
+   * @returns Array of key values ordered according to the schema
+   */
+  protected getPrimaryKeyAsOrderedArray(key: PrimaryKey): ExcludeDateKeyOptionType[] {
+    const orderedParams: ExcludeDateKeyOptionType[] = [];
+    const keyObj = key as Record<string, ExcludeDateKeyOptionType>;
+    for (const [k, type] of Object.entries(this.primaryKeySchema)) {
+      if (k in keyObj) {
+        const value = keyObj[k];
+        if (value === null) {
+          throw new Error(`Primary key field ${k} cannot be null`);
+        }
+        orderedParams.push(this.jsToSqlValue(k, value) as ExcludeDateKeyOptionType);
+      } else {
+        throw new Error(`Missing required primary key field: ${k}`);
+      }
+    }
+    return orderedParams;
+  }
+
+  protected jsToSqlValue(column: string, value: ValueOptionType): ExcludeDateValueOptionType {
+    if (this.valueSchema[column] === "blob" && typeof value === "string") {
+      return Buffer.from(value);
+    } else if (this.valueSchema[column] === "date" && value instanceof Date) {
+      return value.toISOString();
+    } else {
+      return value as ExcludeDateValueOptionType;
+    }
+  }
+
+  protected sqlToJsValue(column: string, value: ExcludeDateValueOptionType): ValueOptionType {
+    if (this.valueSchema[column] === "blob" && value instanceof Buffer) {
+      return new Uint8Array(value);
+    } else if (this.valueSchema[column] === "date" && typeof value === "string") {
+      return new Date(value);
+    } else {
+      return value;
+    }
   }
 
   /**
@@ -139,23 +180,26 @@ export abstract class BaseSqlTabularRepository<
    * @throws Error if validation fails
    */
   protected validateTableAndSchema(): void {
-    // Check for invalid characters in table name
-    if (!/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(this.table)) {
+    // Validate table name
+    if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(this.table)) {
       throw new Error(
-        `Invalid table name: ${this.table}. Must start with letter/underscore and contain only alphanumeric/underscore characters`
+        "Table name must start with a letter and contain only letters, digits, and underscores, got: " +
+          this.table
       );
     }
 
-    // Validate schema key naming
+    // Validate schema keys
     const validateSchemaKeys = (schema: Record<string, any>) => {
-      Object.keys(schema).forEach((key) => {
-        if (!/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(key)) {
+      for (const key of Object.keys(schema)) {
+        if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)) {
           throw new Error(
-            `Invalid schema key: ${key}. Must start with letter/underscore and contain only alphanumeric/underscore characters`
+            "Schema keys must start with a letter and contain only letters, digits, and underscores, got: " +
+              key
           );
         }
-      });
+      }
     };
+
     validateSchemaKeys(this.primaryKeySchema);
     validateSchemaKeys(this.valueSchema);
 

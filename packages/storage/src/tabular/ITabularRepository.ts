@@ -14,7 +14,7 @@ export type TabularEventListeners<PrimaryKey, Entity> = {
   put: (entity: Entity) => void;
   get: (key: PrimaryKey, entity: Entity | undefined) => void;
   search: (key: Partial<Entity>, entities: Entity[] | undefined) => void;
-  delete: (key: PrimaryKey) => void;
+  delete: (key: keyof Entity) => void;
   clearall: () => void;
 };
 
@@ -36,7 +36,6 @@ export type MapSchemaTypes<T extends keyof SchemaTypeMap> = SchemaTypeMap[T];
 
 // Type definitions for specialized string types
 export type uuid4 = string;
-export type uuid7 = string;
 export type JSONValue =
   | string
   | number
@@ -58,14 +57,15 @@ export type SchemaTypeMap = {
   blob: Uint8Array;
 };
 
-export type KeyOption = "string" | "number" | "bigint" | "uuid4";
+export type KeyOption = "string" | "number" | "bigint" | "uuid4" | "date";
 export type KeySchema = Record<string, KeyOption>;
 export type KeyOptionType = MapSchemaTypes<KeyOption>;
+export type ExcludeDateKeyOptionType = Exclude<KeyOptionType, Date>;
 
-export type ValueOption = KeyOption | "boolean" | "null" | "json" | "date" | "blob";
+export type ValueOption = KeyOption | "boolean" | "null" | "json" | "blob";
 export type ValueSchema = Record<string, ValueOption>;
 export type ValueOptionType = MapSchemaTypes<ValueOption>;
-
+export type ExcludeDateValueOptionType = Exclude<ValueOptionType, Date>;
 // Type to map schema to TypeScript types
 export type SchemaToType<T extends Record<string, keyof SchemaTypeMap>> = {
   [K in keyof T]: MapSchemaTypes<T[K]>;
@@ -107,6 +107,11 @@ export interface ITabularRepository<
   getAll(): Promise<Entity[] | undefined>;
   deleteAll(): Promise<void>;
   size(): Promise<number>;
+  deleteSearch(
+    column: keyof Entity,
+    value: ValueOptionType,
+    operator: "=" | "<" | "<=" | ">" | ">="
+  ): Promise<void>;
 
   // Event handling methods
   on<Event extends TabularEventName>(

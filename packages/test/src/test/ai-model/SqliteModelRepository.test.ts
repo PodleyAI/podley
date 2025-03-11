@@ -11,12 +11,8 @@ import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("SqliteModelRepository", () => {
-  runGenericModelRepositoryTests(
-    async () =>
-      new SqliteModelRepository(
-        ":memory:",
-        `aimodel_test_${uuid4()}`,
-        `aitask2aimodel_test_${uuid4()}`
-      )
-  );
+  runGenericModelRepositoryTests(async () => {
+    const id = uuid4().replace(/-/g, "_");
+    return new SqliteModelRepository(":memory:", `aimodel_test_${id}`, `aitask2aimodel_test_${id}`);
+  });
 });

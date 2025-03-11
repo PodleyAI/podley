@@ -22,6 +22,8 @@ export const SearchSchema: ValueSchema = {
   category: "string",
   subcategory: "string",
   value: "number",
+  createdAt: "date",
+  updatedAt: "date",
 } as const;
 
 export function runGenericTabularRepositoryTests(
@@ -175,6 +177,123 @@ export function runGenericTabularRepositoryTests(
         });
         expect(expensivePhones?.length).toBe(1);
         expect(expensivePhones?.[0].id).toBe("2");
+      });
+    });
+
+    describe(`deleteSearch tests`, () => {
+      let repository: ITabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>;
+
+      beforeEach(async () => {
+        repository = await createSearchableRepository();
+      });
+
+      afterEach(async () => {
+        await repository.deleteAll();
+      });
+
+      it("should delete entries older than a specified date using createdAt", async () => {
+        // Create test data with different dates
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+        const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+
+        // Add test entries
+        await repository.put({ id: "1", name: "Recent", createdAt: now, updatedAt: now });
+        await repository.put({
+          id: "2",
+          name: "Yesterday",
+          createdAt: yesterday,
+          updatedAt: yesterday,
+        });
+        await repository.put({
+          id: "3",
+          name: "Two days ago",
+          createdAt: twoDaysAgo,
+          updatedAt: twoDaysAgo,
+        });
+        await repository.put({
+          id: "4",
+          name: "Three days ago",
+          createdAt: threeDaysAgo,
+          updatedAt: threeDaysAgo,
+        });
+
+        // Verify all entries were added
+        expect((await repository.getAll())?.length).toBe(4);
+
+        // Delete entries older than yesterday
+        await repository.deleteSearch("createdAt", yesterday, "<");
+
+        // Verify only entries from yesterday and today remain
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(2);
+        expect(remaining?.map((item) => item.id).sort()).toEqual(["1", "2"]);
+      });
+
+      it("should delete entries older than a specified date using updatedAt", async () => {
+        // Create test data with different dates
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+
+        // Add test entries with mixed dates
+        await repository.put({ id: "1", name: "Recent both", createdAt: now, updatedAt: now });
+        await repository.put({
+          id: "2",
+          name: "Old created, recent updated",
+          createdAt: twoDaysAgo,
+          updatedAt: now,
+        });
+        await repository.put({
+          id: "3",
+          name: "Recent created, old updated",
+          createdAt: now,
+          updatedAt: twoDaysAgo,
+        });
+        await repository.put({
+          id: "4",
+          name: "Old both",
+          createdAt: twoDaysAgo,
+          updatedAt: twoDaysAgo,
+        });
+
+        // Verify all entries were added
+        expect((await repository.getAll())?.length).toBe(4);
+
+        // Delete entries with updatedAt older than yesterday
+        await repository.deleteSearch("updatedAt", yesterday, "<");
+
+        // Verify only entries with recent updatedAt remain
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(2);
+        expect(remaining?.map((item) => item.id).sort()).toEqual(["1", "2"]);
+      });
+
+      it("should handle empty repository gracefully", async () => {
+        // Verify repository is empty
+        expect(await repository.getAll()).toBeUndefined();
+
+        const result = await repository.deleteSearch("createdAt", new Date(), "<");
+        expect(result).toBeUndefined();
+      });
+
+      it("should not delete entries when none are older than the specified date", async () => {
+        // Create test data with recent dates
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+        // Add test entries
+        await repository.put({ id: "1", name: "Recent 1", createdAt: now, updatedAt: now });
+        await repository.put({ id: "2", name: "Recent 2", createdAt: now, updatedAt: yesterday });
+
+        // Try to delete entries older than 3 days ago
+        const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+        await repository.deleteSearch("createdAt", threeDaysAgo, "<");
+
+        // Verify all entries still exist
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(2);
       });
     });
   }

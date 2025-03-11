@@ -12,8 +12,10 @@ import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("IndexedDbModelRepository", () => {
-  runGenericModelRepositoryTests(
-    async () =>
-      new IndexedDbModelRepository(`idx_model_test_${uuid4()}`, `idx_task2model_test_${uuid4()}`)
-  );
+  runGenericModelRepositoryTests(async () => {
+    const id = uuid4().replace(/-/g, "_");
+    const modelDbName = `idx_model_test_${id}`;
+    const task2modelDbName = `idx_task2model_test_${id}`;
+    return new IndexedDbModelRepository(modelDbName, task2modelDbName);
+  });
 });

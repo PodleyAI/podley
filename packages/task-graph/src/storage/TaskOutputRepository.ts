@@ -27,6 +27,7 @@ export type TaskOutputEventListeners = {
   output_saved: (taskType: string) => void;
   output_retrieved: (taskType: string) => void;
   output_cleared: () => void;
+  output_pruned: () => void;
 };
 
 export type TaskOutputEvents = keyof TaskOutputEventListeners;
@@ -48,6 +49,7 @@ export const TaskOutputSchema = {
   key: "string",
   taskType: "string",
   value: "blob",
+  createdAt: "date",
 } as const;
 
 export const TaskOutputPrimaryKeyNames = ["key", "taskType"] as const;
@@ -123,14 +125,30 @@ export abstract class TaskOutputRepository {
    * @param inputs The input parameters for the task
    * @param output The task output to save
    */
-  async saveOutput(taskType: string, inputs: TaskInput, output: TaskOutput): Promise<void> {
+  async saveOutput(
+    taskType: string,
+    inputs: TaskInput,
+    output: TaskOutput,
+    createdAt = new Date() // for testing purposes
+  ): Promise<void> {
     const key = await makeFingerprint(inputs);
     const value = JSON.stringify(output);
     if (this.outputCompression) {
       const compressedValue = await compress(value);
-      await this.tabularRepository.put({ taskType, key, value: compressedValue });
+      await this.tabularRepository.put({
+        taskType,
+        key,
+        value: compressedValue,
+        createdAt: createdAt,
+      });
     } else {
-      await this.tabularRepository.put({ taskType, key, value: Buffer.from(value) });
+      const valueBuffer = Buffer.from(value);
+      await this.tabularRepository.put({
+        taskType,
+        key,
+        value: valueBuffer,
+        createdAt: createdAt,
+      });
     }
     this.events.emit("output_saved", taskType);
   }
@@ -175,5 +193,15 @@ export abstract class TaskOutputRepository {
    */
   async size(): Promise<number> {
     return await this.tabularRepository.size();
+  }
+
+  /**
+   * Clear all task outputs from the repository that are older than the given date
+   * @param olderThanInMs The time in milliseconds to clear task outputs older than
+   */
+  async clearOlderThan(olderThanInMs: number): Promise<void> {
+    const date = new Date(Date.now() - olderThanInMs);
+    await this.tabularRepository.deleteSearch("createdAt", date, "<");
+    this.events.emit("output_pruned");
   }
 }

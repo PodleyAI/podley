@@ -27,7 +27,8 @@ export class IndexedDbTaskOutputRepository extends TaskOutputRepository {
       tabularRepository: new IndexedDbTabularRepository(
         table,
         TaskOutputSchema,
-        TaskOutputPrimaryKeyNames
+        TaskOutputPrimaryKeyNames,
+        ["createdAt"]
       ),
     });
   }

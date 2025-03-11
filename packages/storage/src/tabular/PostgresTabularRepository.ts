@@ -14,6 +14,7 @@ import {
   SchemaToType,
   ExtractPrimaryKey,
   ITabularRepository,
+  ValueOptionType,
 } from "./ITabularRepository";
 
 export const POSTGRES_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
@@ -132,6 +133,8 @@ export class PostgresTabularRepository<
         return "INTEGER";
       case "blob":
         return "BYTEA";
+      case "date":
+        return "TIMESTAMP";
       default:
         return "TEXT";
     }
@@ -199,10 +202,8 @@ export class PostgresTabularRepository<
       val = result.rows[0] as Entity;
       // iterate through the schema and check if value is a blob base on the schema
       for (const [key, type] of Object.entries(this.valueSchema)) {
-        if (type === "blob") {
-          // @ts-ignore
-          val[key as keyof Entity] = new Uint8Array(val[key as keyof Entity] as Buffer);
-        }
+        // @ts-ignore
+        val[key] = this.sqlToJsValue(key, val[key]);
       }
     } else {
       val = undefined;
@@ -278,7 +279,7 @@ export class PostgresTabularRepository<
 
     const params = this.getPrimaryKeyAsOrderedArray(key);
     await this.db.query(`DELETE FROM "${this.table}" WHERE ${whereClauses}`, params);
-    this.events.emit("delete", key);
+    this.events.emit("delete", key as keyof Entity);
   }
 
   /**
@@ -311,5 +312,35 @@ export class PostgresTabularRepository<
     await this.dbPromise;
     const result = await this.db.query(`SELECT COUNT(*) FROM "${this.table}"`);
     return parseInt(result.rows[0].count, 10);
+  }
+
+  protected generateWhereClause(
+    column: keyof Entity,
+    operator: "=" | "<" | "<=" | ">" | ">=" = "="
+  ): string {
+    if (!this.schema[column as keyof Schema]) {
+      throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
+    }
+    return `${String(column)} ${operator} $1`;
+  }
+
+  /**
+   * Deletes all entries with a date column value older than the provided date
+   * @param column - The name of the date column to compare against
+   * @param value - The value to compare against
+   * @param operator - The operator to use for comparison
+   */
+  async deleteSearch(
+    column: keyof Entity,
+    value: ValueOptionType,
+    operator: "=" | "<" | "<=" | ">" | ">=" = "="
+  ): Promise<void> {
+    await this.dbPromise;
+    const whereClause = this.generateWhereClause(column, operator);
+
+    await this.db.query(`DELETE FROM "${this.table}" WHERE ${whereClause}`, [
+      this.jsToSqlValue(column as string, value),
+    ]);
+    this.events.emit("delete", column as keyof Entity);
   }
 }

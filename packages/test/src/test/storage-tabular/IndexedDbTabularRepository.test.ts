@@ -18,7 +18,7 @@ import {
 } from "./genericTabularRepositoryTests.test";
 
 describe("IndexedDbTabularRepository", () => {
-  const dbName = `idx_test_${uuid4()}`;
+  const dbName = `idx_test_${uuid4().replace(/-/g, "_")}`;
 
   // Clean up after each test
   afterEach(async () => {

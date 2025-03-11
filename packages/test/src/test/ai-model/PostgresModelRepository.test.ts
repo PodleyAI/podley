@@ -15,7 +15,7 @@ import { Pool } from "pg";
 const db = new PGlite() as unknown as Pool;
 
 async function createPostgresModelRepository() {
-  const id = uuid4();
+  const id = uuid4().replace(/-/g, "_");
   return new PostgresModelRepository(db, `aimodel_test_${id}`, `aitask2aimodel_test_${id}`);
 }
 

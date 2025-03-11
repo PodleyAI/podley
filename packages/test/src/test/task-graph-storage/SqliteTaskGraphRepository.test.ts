@@ -11,7 +11,8 @@ import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("SqliteTaskGraphRepository", () => {
-  runGenericTaskGraphRepositoryTests(
-    async () => new SqliteTaskGraphRepository(":memory:", `task_graph_test_${uuid4()}`)
-  );
+  runGenericTaskGraphRepositoryTests(async () => {
+    const table = `task_graph_test_${uuid4().replace(/-/g, "_")}`;
+    return new SqliteTaskGraphRepository(":memory:", table);
+  });
 });

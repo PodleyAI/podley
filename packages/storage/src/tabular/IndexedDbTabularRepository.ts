@@ -12,6 +12,7 @@ import {
   ExtractValue,
   SchemaToType,
   ITabularRepository,
+  ValueOptionType,
 } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 import { createServiceToken } from "@ellmers/util";
@@ -259,7 +260,7 @@ export class IndexedDbTabularRepository<
       const request = store.delete(this.getIndexedKey(key));
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
-        this.events.emit("delete", key);
+        this.events.emit("delete", key as keyof Entity);
         resolve();
       };
     });
@@ -297,6 +298,148 @@ export class IndexedDbTabularRepository<
       const request = store.count();
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
+    });
+  }
+
+  /**
+   * Deletes all entries with a date column value older than the provided date
+   * @param column - The name of the date column to compare against
+   * @param value - The value to compare against
+   * @param operator - The operator to use for comparison
+   */
+  async deleteSearch(
+    column: keyof Entity,
+    value: ValueOptionType,
+    operator: "=" | "<" | "<=" | ">" | ">=" = "="
+  ): Promise<void> {
+    if (!this.dbPromise) throw new Error("Database not initialized");
+    const db = await this.dbPromise;
+
+    return new Promise(async (resolve, reject) => {
+      try {
+        // For equality operator, we can use the search method directly
+        if (operator === "=") {
+          // Create a search key based on the column and value
+          const searchKey: Partial<Entity> = { [column]: value } as Partial<Entity>;
+
+          // Search for records to delete
+          const recordsToDelete = await this.search(searchKey);
+
+          if (!recordsToDelete || recordsToDelete.length === 0) {
+            // No records found to delete
+            this.events.emit("delete", column);
+            resolve();
+            return;
+          }
+
+          const transaction = db.transaction(this.table, "readwrite");
+          const store = transaction.objectStore(this.table);
+
+          // Set up transaction event handlers
+          transaction.oncomplete = () => {
+            this.events.emit("delete", column);
+            resolve();
+          };
+
+          transaction.onerror = () => {
+            reject(transaction.error);
+          };
+
+          // Delete each record that matches the criteria
+          for (const record of recordsToDelete) {
+            // Extract the primary key from the record
+            const primaryKey = this.primaryKeyColumns().reduce((key, column) => {
+              // @ts-ignore - We know these properties exist on the record
+              key[column] = record[column];
+              return key;
+            }, {} as PrimaryKey);
+
+            // Delete the record using the primary key
+            const request = store.delete(this.getIndexedKey(primaryKey));
+
+            request.onerror = () => {
+              console.error("Error deleting record:", request.error);
+            };
+          }
+        } else {
+          // For non-equality operators, we need to get all records and filter
+          const transaction = db.transaction(this.table, "readwrite");
+          const store = transaction.objectStore(this.table);
+
+          // Set up transaction event handlers
+          transaction.oncomplete = () => {
+            this.events.emit("delete", column);
+            resolve();
+          };
+
+          transaction.onerror = () => {
+            reject(transaction.error);
+          };
+
+          // Get all records
+          const getAllRequest = store.getAll();
+
+          getAllRequest.onsuccess = () => {
+            const allRecords: Entity[] = getAllRequest.result;
+
+            // Filter records based on the operator and value
+            const recordsToDelete = allRecords.filter((record) => {
+              const recordValue = record[column];
+
+              // Skip null values or handle them based on business logic
+              if (
+                recordValue === null ||
+                recordValue === undefined ||
+                value === null ||
+                value === undefined
+              ) {
+                return false;
+              }
+
+              switch (operator) {
+                case "<":
+                  return recordValue < value;
+                case "<=":
+                  return recordValue <= value;
+                case ">":
+                  return recordValue > value;
+                case ">=":
+                  return recordValue >= value;
+                default:
+                  return false;
+              }
+            });
+
+            if (recordsToDelete.length === 0) {
+              // No records to delete
+              return;
+            }
+
+            // Delete each record that matches the criteria
+            for (const record of recordsToDelete) {
+              // Extract the primary key from the record
+              const primaryKey = this.primaryKeyColumns().reduce((key, column) => {
+                // @ts-ignore - We know these properties exist on the record
+                key[column] = record[column];
+                return key;
+              }, {} as PrimaryKey);
+
+              // Delete the record using the primary key
+              const request = store.delete(this.getIndexedKey(primaryKey));
+
+              request.onerror = () => {
+                console.error("Error deleting record:", request.error);
+              };
+            }
+          };
+
+          getAllRequest.onerror = () => {
+            reject(getAllRequest.error);
+          };
+        }
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 }

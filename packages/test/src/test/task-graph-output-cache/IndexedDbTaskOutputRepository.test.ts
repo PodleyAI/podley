@@ -12,7 +12,9 @@ import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("IndexedDbTaskOutputRepository", () => {
-  runGenericTaskOutputRepositoryTests(
-    async () => new IndexedDbTaskOutputRepository(`idx_test_${uuid4()}`)
-  );
+  runGenericTaskOutputRepositoryTests(async () => {
+    const id = uuid4().replace(/-/g, "_");
+    const dbName = `idx_test_${id}`;
+    return new IndexedDbTaskOutputRepository(dbName);
+  });
 });

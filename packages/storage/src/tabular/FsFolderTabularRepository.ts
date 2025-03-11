@@ -15,6 +15,7 @@ import {
   ExtractValue,
   SchemaToType,
   ITabularRepository,
+  ValueOptionType,
 } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 import { sleep } from "@ellmers/util";
@@ -123,7 +124,7 @@ export class FsFolderTabularRepository<
     } catch (error) {
       console.error("Error deleting file", filePath, error);
     }
-    this.events.emit("delete", key);
+    this.events.emit("delete", key as keyof Entity);
   }
 
   /**
@@ -194,5 +195,19 @@ export class FsFolderTabularRepository<
     const filename = await this.getKeyAsIdString(key);
     const fullPath = path.join(this.folderPath, `${filename}.json`);
     return fullPath;
+  }
+
+  /**
+   * Deletes all entries with a date column value older than the provided date
+   * @param column - The name of the date column to compare against
+   * @param value - The value to compare against
+   * @param operator - The operator to use for comparison
+   */
+  async deleteSearch(
+    column: keyof Entity,
+    value: ValueOptionType,
+    operator: "=" | "<" | "<=" | ">" | ">=" = "="
+  ): Promise<void> {
+    throw new Error("Search not supported for FsFolderTabularRepository");
   }
 }

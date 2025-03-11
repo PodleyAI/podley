@@ -16,7 +16,7 @@ const db = new PGlite() as unknown as Pool;
 
 describe("PostgresKvRepository", () => {
   runGenericKvRepositoryTests(async (keyType, valueType) => {
-    const dbName = `pg_test_${uuid4()}`;
+    const dbName = `pg_test_${uuid4().replace(/-/g, "_")}`;
     return new PostgresKvRepository(db, dbName, keyType, valueType);
   });
 });

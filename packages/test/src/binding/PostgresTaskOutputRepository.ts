@@ -29,7 +29,8 @@ export class PostgresTaskOutputRepository extends TaskOutputRepository {
         db,
         table,
         TaskOutputSchema,
-        TaskOutputPrimaryKeyNames
+        TaskOutputPrimaryKeyNames,
+        ["createdAt"]
       ),
     });
   }

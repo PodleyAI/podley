@@ -21,14 +21,14 @@ describe("SqliteTabularRepository", () => {
     async () =>
       new SqliteTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
         ":memory:",
-        `sql_test_${uuid4()}`,
+        `sql_test_${uuid4().replace(/-/g, "_")}`,
         CompoundSchema,
         CompoundPrimaryKeyNames
       ),
     async () =>
       new SqliteTabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>(
         ":memory:",
-        `sql_test_${uuid4()}`,
+        `sql_test_${uuid4().replace(/-/g, "_")}`,
         SearchSchema,
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]

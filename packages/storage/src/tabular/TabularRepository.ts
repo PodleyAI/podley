@@ -20,6 +20,7 @@ import {
   ExtractValue,
   KeyOption,
   KeySchema,
+  ValueOptionType,
 } from "./ITabularRepository";
 
 export const TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
@@ -221,6 +222,11 @@ export abstract class TabularRepository<
   abstract getAll(): Promise<Entity[] | undefined>;
   abstract deleteAll(): Promise<void>;
   abstract size(): Promise<number>;
+  abstract deleteSearch(
+    column: keyof Entity,
+    value: ValueOptionType,
+    operator: "=" | "<" | "<=" | ">" | ">="
+  ): Promise<void>;
 
   /**
    * Abstract method to be implemented by concrete repositories to search for rows

@@ -12,7 +12,8 @@ import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("IndexedDbTaskGraphRepository", () => {
-  runGenericTaskGraphRepositoryTests(
-    async () => new IndexedDbTaskGraphRepository(`idx_test_${uuid4()}`)
-  );
+  runGenericTaskGraphRepositoryTests(async () => {
+    const table = `task_graph_test_${uuid4().replace(/-/g, "_")}`;
+    return new IndexedDbTaskGraphRepository(table);
+  });
 });

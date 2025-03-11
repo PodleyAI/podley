@@ -14,6 +14,7 @@ import {
   SchemaToType,
   ITabularRepository,
   ValueOptionType,
+  ExcludeDateKeyOptionType,
 } from "./ITabularRepository";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import { createServiceToken } from "@ellmers/util";
@@ -138,6 +139,8 @@ export class SqliteTabularRepository<
         return "INTEGER";
       case "blob":
         return "BLOB";
+      case "date":
+        return "TEXT";
       default:
         return "TEXT";
     }
@@ -186,16 +189,13 @@ export class SqliteTabularRepository<
     const sql = `
       SELECT * FROM \`${this.table}\` WHERE ${whereClauses}
     `;
-    const stmt = this.db.prepare<Entity, KeyOptionType[]>(sql);
+    const stmt = this.db.prepare<Entity, ExcludeDateKeyOptionType[]>(sql);
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const value: Entity | null = stmt.get(...params);
     if (value) {
-      // iterate through the schema and check if value is a blob base on the schema
       for (const [key, type] of Object.entries(this.valueSchema)) {
-        if (type === "blob") {
-          // @ts-ignore
-          value[key as keyof Entity] = new Uint8Array(value[key as keyof Entity] as Buffer);
-        }
+        // @ts-ignore
+        value[key] = this.sqlToJsValue(key, value[key]);
       }
       this.events.emit("get", key, value);
       return value;
@@ -246,7 +246,7 @@ export class SqliteTabularRepository<
     const sql = `
       SELECT * FROM \`${this.table}\` WHERE ${whereClauses}
     `;
-    const stmt = this.db.prepare<Entity, KeyOptionType[]>(sql);
+    const stmt = this.db.prepare<Entity, ExcludeDateKeyOptionType[]>(sql);
     // @ts-ignore
     const result = stmt.all(...whereClauseValues);
 
@@ -271,7 +271,7 @@ export class SqliteTabularRepository<
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const stmt = this.db.prepare(`DELETE FROM \`${this.table}\` WHERE ${whereClauses}`);
     stmt.run(...params);
-    this.events.emit("delete", key);
+    this.events.emit("delete", key as keyof Entity);
   }
 
   /**
@@ -303,5 +303,33 @@ export class SqliteTabularRepository<
       SELECT COUNT(*) AS count FROM \`${this.table}\`
     `);
     return stmt.get()?.count || 0;
+  }
+
+  protected generateWhereClause(
+    column: keyof Entity,
+    operator: "=" | "<" | "<=" | ">" | ">=" = "="
+  ): string {
+    if (!this.schema[column as keyof Schema]) {
+      throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
+    }
+    return `${String(column)} ${operator} ?`;
+  }
+
+  /**
+   * Deletes all entries with a date column value older than the provided date
+   * @param column - The name of the date column to compare against
+   * @param value - The value to compare against
+   * @param operator - The operator to use for comparison
+   */
+  async deleteSearch(
+    column: keyof Entity,
+    value: ValueOptionType,
+    operator: "=" | "<" | "<=" | ">" | ">=" = "="
+  ): Promise<void> {
+    const whereClause = this.generateWhereClause(column, operator);
+    const stmt = this.db.prepare(`DELETE FROM \`${this.table}\` WHERE ${whereClause}`);
+    // @ts-ignore
+    stmt.run(this.jsToSqlValue(column as string, value));
+    this.events.emit("delete", column as keyof Entity);
   }
 }

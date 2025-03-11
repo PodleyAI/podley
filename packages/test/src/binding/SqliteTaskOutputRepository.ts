@@ -28,7 +28,8 @@ export class SqliteTaskOutputRepository extends TaskOutputRepository {
         dbOrPath,
         table,
         TaskOutputSchema,
-        TaskOutputPrimaryKeyNames
+        TaskOutputPrimaryKeyNames,
+        ["createdAt"]
       ),
     });
   }

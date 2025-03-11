@@ -25,14 +25,14 @@ describe("PostgresTabularRepository", () => {
     async () =>
       new PostgresTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
         db,
-        `sql_test_${uuid4()}`,
+        `sql_test_${uuid4().replace(/-/g, "_")}`,
         CompoundSchema,
         CompoundPrimaryKeyNames
       ),
     async () =>
       new PostgresTabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>(
         db,
-        `sql_test_${uuid4()}`,
+        `sql_test_${uuid4().replace(/-/g, "_")}`,
         SearchSchema,
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]

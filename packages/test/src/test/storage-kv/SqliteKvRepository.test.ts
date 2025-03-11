@@ -13,6 +13,11 @@ import { describe } from "bun:test";
 describe("SqliteKvRepository", () => {
   runGenericKvRepositoryTests(
     async (keyType, valueType) =>
-      new SqliteKvRepository(":memory:", `sql_test_${uuid4()}`, keyType, valueType)
+      new SqliteKvRepository(
+        ":memory:",
+        `sql_test_${uuid4().replace(/-/g, "_")}`,
+        keyType,
+        valueType
+      )
   );
 });

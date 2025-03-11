@@ -12,6 +12,7 @@ import {
   ExtractValue,
   SchemaToType,
   ITabularRepository,
+  ValueOptionType,
 } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 import { createServiceToken } from "@ellmers/util";
@@ -126,7 +127,7 @@ export class InMemoryTabularRepository<
     const { key } = this.separateKeyValueFromCombined(value as Entity);
     const id = await makeFingerprint(key);
     this.values.delete(id);
-    this.events.emit("delete", key);
+    this.events.emit("delete", key as keyof Entity);
   }
 
   /**
@@ -143,7 +144,8 @@ export class InMemoryTabularRepository<
    * @returns Array of all entries in the repository
    */
   async getAll(): Promise<Entity[] | undefined> {
-    return Array.from(this.values.values());
+    const all = Array.from(this.values.values());
+    return all.length > 0 ? all : undefined;
   }
 
   /**
@@ -152,5 +154,47 @@ export class InMemoryTabularRepository<
    */
   async size(): Promise<number> {
     return this.values.size;
+  }
+
+  /**
+   * Deletes all entries with a date column value older than the provided date
+   * @param column - The name of the date column to compare against
+   * @param value - The value to compare against
+   * @param operator - The operator to use for comparison
+   */
+  async deleteSearch(
+    column: keyof Entity,
+    value: ValueOptionType,
+    operator: "=" | "<" | "<=" | ">" | ">=" = "="
+  ): Promise<void> {
+    // Get all entries
+    const entries = Array.from(this.values.entries());
+
+    const entriesToDelete = entries.filter(([_, entity]) => {
+      const columnValue = entity[column];
+      switch (operator) {
+        case "=":
+          return columnValue === value;
+        case "<":
+          return value !== null && columnValue < value;
+        case "<=":
+          return value !== null && columnValue <= value;
+        case ">":
+          return value !== null && columnValue > value;
+        case ">=":
+          return value !== null && columnValue >= value;
+        default:
+          return false;
+      }
+    });
+
+    // Delete the filtered entries
+    for (const [id, _] of entriesToDelete) {
+      this.values.delete(id);
+    }
+
+    if (entriesToDelete.length > 0) {
+      this.events.emit("delete", column);
+    }
   }
 }

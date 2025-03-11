@@ -11,7 +11,9 @@ import { uuid4 } from "@ellmers/util";
 import { describe } from "bun:test";
 
 describe("SqliteTaskOutputRepository", () => {
-  runGenericTaskOutputRepositoryTests(
-    async () => new SqliteTaskOutputRepository(":memory:", `task_output_test_${uuid4()}`)
-  );
+  runGenericTaskOutputRepositoryTests(async () => {
+    const id = uuid4().replace(/-/g, "_");
+    const dbName = `task_output_test_${id}`;
+    return new SqliteTaskOutputRepository(":memory:", dbName);
+  });
 });
