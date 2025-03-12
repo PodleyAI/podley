@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src/**/*"],
-  "files": ["src/hf-transformers/index.ts", "src/tf-mediapipe/index.ts"],
+  "files": ["src/hf-transformers/inline.ts", "src/tf-mediapipe/inline.ts"],
   "exclude": ["dist"],
   "compilerOptions": {
     "composite": true,

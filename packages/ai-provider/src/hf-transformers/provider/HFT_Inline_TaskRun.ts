@@ -40,6 +40,8 @@ import type {
   TextTranslationTaskOutput,
   Model,
   AiJob,
+  AiProviderRunFn,
+  DownloadModelTaskOutput,
 } from "@ellmers/ai";
 import { QUANTIZATION_DATA_TYPES } from "../model/ONNXTransformerJsModel";
 
@@ -92,13 +94,17 @@ const pipelines = new Map<string, any>();
  * @param model - The model to get the pipeline for
  * @param options - The options to pass to the pipeline
  */
-const getPipeline = async (job: AiJob, model: Model, options: PretrainedModelOptions = {}) => {
+const getPipeline = async (
+  update_progress: (progress: number, message?: string, details?: any) => void,
+  model: Model,
+  options: PretrainedModelOptions = {}
+) => {
   if (!pipelines.has(model.name)) {
     pipelines.set(
       model.name,
       pipeline(model.pipeline as PipelineType, model.url, {
         dtype: (model.quantization as QUANTIZATION_DATA_TYPES) || "q8",
-        progress_callback: downloadProgressCallback(job),
+        progress_callback: downloadProgressCallback(update_progress),
         ...(model.use_external_data_format
           ? { use_external_data_format: model.use_external_data_format }
           : {}),
@@ -110,21 +116,25 @@ const getPipeline = async (job: AiJob, model: Model, options: PretrainedModelOpt
   return await pipelines.get(model.name);
 };
 
-function downloadProgressCallback(job: AiJob) {
+function downloadProgressCallback(
+  update_progress: (progress: number, message?: string, details?: any) => void
+) {
   return (status: CallbackStatus) => {
     const progress = status.status === "progress" ? Math.round(status.progress) : 0;
     if (status.status === "progress") {
-      job.updateProgress(progress, "Downloading model", { file: status.file, progress });
+      update_progress(progress, "Downloading model", { file: status.file, progress });
     }
   };
 }
 
-function generateProgressCallback(job: AiJob) {
+function generateProgressCallback(
+  update_progress: (progress: number, message: string, details?: any) => void
+) {
   let count = 0;
   return (text: string) => {
     count++;
     const result = 100 * (1 - Math.exp(-0.05 * count));
-    job.updateProgress(Math.round(Math.min(result, 100)), "Generating", { text });
+    update_progress(Math.round(Math.min(result, 100)), "Generating", { text });
   };
 }
 
@@ -134,33 +144,31 @@ function generateProgressCallback(job: AiJob) {
  * This is a task that downloads and caches an onnx model.
  */
 
-export async function HuggingFaceLocal_DownloadRun(
-  job: AiJob,
-  input: DownloadModelTaskInput,
-  signal?: AbortSignal
-) {
+export const HuggingFaceLocal_DownloadRun: AiProviderRunFn<
+  DownloadModelTaskInput,
+  Pick<DownloadModelTaskOutput, "model" | "dimensions" | "normalize">
+> = async (update_progress, input, signal?) => {
   const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
     throw `Model ${input.model} not found`;
   }
-  await getPipeline(job, model, { abort_signal: signal });
+  await getPipeline(update_progress, model, { abort_signal: signal });
   return {
     model: model.name,
     dimensions: model.nativeDimensions || 0,
     normalize: model.normalize,
   };
-}
+};
 
 /**
  * This is a task that generates an embedding for a single piece of text
  *
  * Model pipeline must be "feature-extraction"
  */
-export async function HuggingFaceLocal_EmbeddingRun(
-  job: AiJob,
-  input: TextEmbeddingTaskInput,
-  signal?: AbortSignal
-): Promise<TextEmbeddingTaskOutput> {
+export const HuggingFaceLocal_EmbeddingRun: AiProviderRunFn<
+  TextEmbeddingTaskInput,
+  TextEmbeddingTaskOutput
+> = async (update_progress, input, signal?) => {
   const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
     throw `Model ${input.model} not found`;
@@ -168,7 +176,7 @@ export async function HuggingFaceLocal_EmbeddingRun(
   if (signal?.aborted) {
     throw new PermanentJobError("Embedding run aborted");
   }
-  const generateEmbedding: FeatureExtractionPipeline = await getPipeline(job, model, {
+  const generateEmbedding: FeatureExtractionPipeline = await getPipeline(update_progress, model, {
     abort_signal: signal,
   });
   if (signal?.aborted) {
@@ -191,18 +199,17 @@ export async function HuggingFaceLocal_EmbeddingRun(
   // @ts-ignore
   const vector = new ElVector(hfVector.data, model.normalize ?? true);
   return { vector };
-}
+};
 
 /**
  * This generates text from a prompt
  *
  * Model pipeline must be "text-generation" or "text2text-generation"
  */
-export async function HuggingFaceLocal_TextGenerationRun(
-  job: AiJob,
-  input: TextGenerationTaskInput,
-  signal?: AbortSignal
-): Promise<TextGenerationTaskOutput> {
+export const HuggingFaceLocal_TextGenerationRun: AiProviderRunFn<
+  TextGenerationTaskInput,
+  TextGenerationTaskOutput
+> = async (update_progress, input, signal?) => {
   const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
     throw `Model ${input.model} not found`;
@@ -210,7 +217,7 @@ export async function HuggingFaceLocal_TextGenerationRun(
   if (signal?.aborted) {
     throw new PermanentJobError("Text generation run aborted");
   }
-  const generateText: TextGenerationPipeline = await getPipeline(job, model, {
+  const generateText: TextGenerationPipeline = await getPipeline(update_progress, model, {
     abort_signal: signal,
   });
   if (signal?.aborted) {
@@ -219,7 +226,7 @@ export async function HuggingFaceLocal_TextGenerationRun(
   const streamer = new TextStreamer(generateText.tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
-    callback_function: generateProgressCallback(job),
+    callback_function: generateProgressCallback(update_progress),
     ...(signal ? { abort_signal: signal } : {}),
   });
 
@@ -238,18 +245,17 @@ export async function HuggingFaceLocal_TextGenerationRun(
   return {
     text,
   };
-}
+};
 
 /**
  * Text translation
  *
  * Model pipeline must be "translation"
  */
-export async function HuggingFaceLocal_TextTranslationRun(
-  job: AiJob,
-  input: TextTranslationTaskInput,
-  signal?: AbortSignal
-): Promise<Partial<TextTranslationTaskOutput>> {
+export const HuggingFaceLocal_TextTranslationRun: AiProviderRunFn<
+  TextTranslationTaskInput,
+  Partial<TextTranslationTaskOutput>
+> = async (update_progress, input, signal?) => {
   const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
     throw `Model ${input.model} not found`;
@@ -257,7 +263,7 @@ export async function HuggingFaceLocal_TextTranslationRun(
   if (signal?.aborted) {
     throw new PermanentJobError("Text translation run aborted");
   }
-  const translate: TranslationPipeline = await getPipeline(job, model, {
+  const translate: TranslationPipeline = await getPipeline(update_progress, model, {
     abort_signal: signal,
   });
   if (signal?.aborted) {
@@ -266,7 +272,7 @@ export async function HuggingFaceLocal_TextTranslationRun(
   const streamer = new TextStreamer(translate.tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
-    callback_function: generateProgressCallback(job),
+    callback_function: generateProgressCallback(update_progress),
     ...(signal ? { abort_signal: signal } : {}),
   });
 
@@ -282,18 +288,17 @@ export async function HuggingFaceLocal_TextTranslationRun(
     text: (results[0] as TranslationSingle)?.translation_text,
     target_lang: input.target_lang,
   };
-}
+};
 
 /**
  * This is a special case of text generation that takes a prompt and text to rewrite
  *
  * Model pipeline must be "text-generation" or "text2text-generation"
  */
-export async function HuggingFaceLocal_TextRewriterRun(
-  job: AiJob,
-  input: TextRewriterTaskInput,
-  signal?: AbortSignal
-): Promise<TextRewriterTaskOutput> {
+export const HuggingFaceLocal_TextRewriterRun: AiProviderRunFn<
+  TextRewriterTaskInput,
+  TextRewriterTaskOutput
+> = async (update_progress, input, signal?) => {
   const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
     throw `Model ${input.model} not found`;
@@ -301,7 +306,7 @@ export async function HuggingFaceLocal_TextRewriterRun(
   if (signal?.aborted) {
     throw new PermanentJobError("Text rewriter run aborted");
   }
-  const generateText: TextGenerationPipeline = await getPipeline(job, model, {
+  const generateText: TextGenerationPipeline = await getPipeline(update_progress, model, {
     abort_signal: signal,
   });
   if (signal?.aborted) {
@@ -310,7 +315,7 @@ export async function HuggingFaceLocal_TextRewriterRun(
   const streamer = new TextStreamer(generateText.tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
-    callback_function: generateProgressCallback(job),
+    callback_function: generateProgressCallback(update_progress),
     ...(signal ? { abort_signal: signal } : {}),
   });
 
@@ -333,7 +338,7 @@ export async function HuggingFaceLocal_TextRewriterRun(
   }
 
   return { text };
-}
+};
 
 /**
  * This summarizes a piece of text
@@ -341,11 +346,10 @@ export async function HuggingFaceLocal_TextRewriterRun(
  * Model pipeline must be "summarization"
  */
 
-export async function HuggingFaceLocal_TextSummaryRun(
-  job: AiJob,
-  input: TextSummaryTaskInput,
-  signal?: AbortSignal
-): Promise<TextSummaryTaskOutput> {
+export const HuggingFaceLocal_TextSummaryRun: AiProviderRunFn<
+  TextSummaryTaskInput,
+  TextSummaryTaskOutput
+> = async (update_progress, input, signal?) => {
   const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
     throw `Model ${input.model} not found`;
@@ -353,7 +357,7 @@ export async function HuggingFaceLocal_TextSummaryRun(
   if (signal?.aborted) {
     throw new PermanentJobError("Text summary run aborted");
   }
-  const generateSummary: SummarizationPipeline = await getPipeline(job, model, {
+  const generateSummary: SummarizationPipeline = await getPipeline(update_progress, model, {
     abort_signal: signal,
   });
   if (signal?.aborted) {
@@ -362,7 +366,7 @@ export async function HuggingFaceLocal_TextSummaryRun(
   const streamer = new TextStreamer(generateSummary.tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
-    callback_function: generateProgressCallback(job),
+    callback_function: generateProgressCallback(update_progress),
     ...(signal ? { abort_signal: signal } : {}),
   });
 
@@ -375,18 +379,17 @@ export async function HuggingFaceLocal_TextSummaryRun(
   return {
     text: (results[0] as SummarizationSingle)?.summary_text,
   };
-}
+};
 
 /**
  * This is a special case of text generation that takes a context and a question
  *
  * Model pipeline must be "question-answering"
  */
-export async function HuggingFaceLocal_TextQuestionAnswerRun(
-  job: AiJob,
-  input: TextQuestionAnswerTaskInput,
-  signal?: AbortSignal
-): Promise<TextQuestionAnswerTaskOutput> {
+export const HuggingFaceLocal_TextQuestionAnswerRun: AiProviderRunFn<
+  TextQuestionAnswerTaskInput,
+  TextQuestionAnswerTaskOutput
+> = async (update_progress, input, signal?) => {
   const model = await getGlobalModelRepository().findByName(input.model);
   if (!model) {
     throw `Model ${input.model} not found`;
@@ -394,7 +397,7 @@ export async function HuggingFaceLocal_TextQuestionAnswerRun(
   if (signal?.aborted) {
     throw new PermanentJobError("Text question answer run aborted");
   }
-  const generateAnswer: QuestionAnsweringPipeline = await getPipeline(job, model, {
+  const generateAnswer: QuestionAnsweringPipeline = await getPipeline(update_progress, model, {
     abort_signal: signal,
   });
   if (signal?.aborted) {
@@ -403,7 +406,7 @@ export async function HuggingFaceLocal_TextQuestionAnswerRun(
   const streamer = new TextStreamer(generateAnswer.tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
-    callback_function: generateProgressCallback(job),
+    callback_function: generateProgressCallback(update_progress),
     ...(signal ? { abort_signal: signal } : {}),
   });
 
@@ -417,4 +420,4 @@ export async function HuggingFaceLocal_TextQuestionAnswerRun(
   return {
     text: (results[0] as DocumentQuestionAnsweringSingle)?.answer,
   };
-}
+};

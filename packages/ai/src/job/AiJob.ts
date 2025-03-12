@@ -49,7 +49,7 @@ export class AiJob<
             `No run function found for task type ${this.input.taskType} and model provider ${this.input.modelProvider}`
           );
         }
-        return await fn(this, this.input.taskInput, signal);
+        return await fn(this.updateProgress.bind(this), this.input.taskInput, signal);
       })();
 
       return await Promise.race([fnPromise, abortPromise]);

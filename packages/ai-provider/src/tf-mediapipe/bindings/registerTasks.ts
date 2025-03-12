@@ -1,10 +1,14 @@
-import { getAiProviderRegistry } from "@ellmers/ai";
+import {
+  getAiProviderRegistry,
+  TextEmbeddingTaskInput,
+  TextEmbeddingTaskOutput,
+} from "@ellmers/ai";
 import { DownloadModelTask, TextEmbeddingTask } from "@ellmers/ai";
 import {
   MediaPipeTfJsLocal_Download,
   MediaPipeTfJsLocal_Embedding,
 } from "../provider/MediaPipeLocalTaskRun";
-import { MEDIA_PIPE_TFJS_MODEL } from "..";
+import { MEDIA_PIPE_TFJS_MODEL } from "../model/MediaPipeModel";
 
 export const registerMediaPipeTfJsLocalTasks = () => {
   const aiProviderRegistry = getAiProviderRegistry();
@@ -15,7 +19,7 @@ export const registerMediaPipeTfJsLocalTasks = () => {
     MediaPipeTfJsLocal_Download
   );
 
-  aiProviderRegistry.registerRunFn(
+  aiProviderRegistry.registerRunFn<TextEmbeddingTaskInput, TextEmbeddingTaskOutput>(
     TextEmbeddingTask.type,
     MEDIA_PIPE_TFJS_MODEL,
     MediaPipeTfJsLocal_Embedding

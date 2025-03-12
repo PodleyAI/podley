@@ -9,11 +9,11 @@ import { AiJob, AiProviderInput } from "@ellmers/ai";
 import {
   ONNX_TRANSFORMERJS,
   registerHuggingfaceLocalTasks,
-} from "@ellmers/ai-provider/hf-transformers";
+} from "@ellmers/ai-provider/hf-transformers/inline";
 import {
   MEDIA_PIPE_TFJS_MODEL,
   registerMediaPipeTfJsLocalTasks,
-} from "@ellmers/ai-provider/tf-mediapipe";
+} from "@ellmers/ai-provider/tf-mediapipe/inline";
 import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
 import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@ellmers/task-graph";
 import { InMemoryQueueStorage } from "@ellmers/storage";

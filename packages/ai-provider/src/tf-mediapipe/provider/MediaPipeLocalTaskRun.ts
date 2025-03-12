@@ -11,14 +11,14 @@ import {
   TextEmbeddingTaskInput,
   getGlobalModelRepository,
   ElVector,
-  AiJob,
+  TextEmbeddingTaskOutput,
 } from "@ellmers/ai";
 
 /**
  * This is a task that downloads and caches a MediaPipe TFJS model.
  */
 export async function MediaPipeTfJsLocal_Download(
-  job: AiJob,
+  update_progress: (progress: number, message?: string, details?: any) => void,
   input: DownloadModelTaskInput,
   signal?: AbortSignal
 ) {
@@ -44,10 +44,10 @@ export async function MediaPipeTfJsLocal_Download(
  * using a MediaPipe TFJS model.
  */
 export async function MediaPipeTfJsLocal_Embedding(
-  job: AiJob,
+  update_progress: (progress: number, message?: string, details?: any) => void,
   input: TextEmbeddingTaskInput,
   signal?: AbortSignal
-) {
+): Promise<TextEmbeddingTaskOutput> {
   const textFiles = await FilesetResolver.forTextTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@latest/wasm"
   );
@@ -68,5 +68,5 @@ export async function MediaPipeTfJsLocal_Embedding(
   if (vector?.length !== model.nativeDimensions) {
     throw `MediaPipeTfJsLocal Embedding vector length does not match model dimensions v${vector?.length} != m${model.nativeDimensions}`;
   }
-  return { vector: vector ? new ElVector(vector, true) : null };
+  return { vector: new ElVector(vector!, true) };
 }

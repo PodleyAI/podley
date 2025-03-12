@@ -6,7 +6,6 @@
 //    *******************************************************************************
 
 import { TaskInput, TaskOutput } from "@ellmers/task-graph";
-import { AiJob } from "../job/AiJob";
 
 /**
  * Type for the run function for the AiJob
@@ -14,7 +13,11 @@ import { AiJob } from "../job/AiJob";
 export type AiProviderRunFn<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
-> = (job: AiJob<Input, Output>, runInputData: Input, signal?: AbortSignal) => Promise<Output>;
+> = (
+  update_progress: (progress: number, message?: string, details?: any) => void,
+  runInputData: Input,
+  signal?: AbortSignal
+) => Promise<Output>;
 
 /**
  * Registry that manages provider-specific task execution functions and job queues.
@@ -23,7 +26,7 @@ export type AiProviderRunFn<
  */
 export class AiProviderRegistry {
   // Relaxing the generics using `any` allows us to register specialized run functions.
-  runFnRegistry: Record<string, Record<string, AiProviderRunFn>> = {};
+  runFnRegistry: Record<string, Record<string, AiProviderRunFn<any, any>>> = {};
 
   /**
    * Registers a task execution function for a specific task type and model provider
@@ -31,7 +34,11 @@ export class AiProviderRegistry {
    * @param modelProvider - The provider of the model (e.g., 'hf-transformers', 'tf-mediapipe', 'openai', etc)
    * @param runFn - The function that executes the task
    */
-  registerRunFn(taskType: string, modelProvider: string, runFn: any) {
+  registerRunFn<Input extends TaskInput = TaskInput, Output extends TaskOutput = TaskOutput>(
+    taskType: string,
+    modelProvider: string,
+    runFn: AiProviderRunFn<Input, Output>
+  ) {
     if (!this.runFnRegistry[taskType]) this.runFnRegistry[taskType] = {};
     this.runFnRegistry[taskType][modelProvider] = runFn;
   }
@@ -44,10 +51,7 @@ export class AiProviderRegistry {
     taskType: string,
     modelProvider: string
   ) {
-    return this.runFnRegistry[taskType]?.[modelProvider] as unknown as AiProviderRunFn<
-      Input,
-      Output
-    >;
+    return this.runFnRegistry[taskType]?.[modelProvider] as AiProviderRunFn<Input, Output>;
   }
 }
 
