@@ -5,19 +5,18 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Sqlite } from "@ellmers/util";
+import { Sqlite } from "@ellmers/sqlite";
+import { createServiceToken } from "@ellmers/util";
+import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import {
-  ValueSchema,
-  KeyOptionType,
+  ExcludeDateKeyOptionType,
   ExtractPrimaryKey,
   ExtractValue,
-  SchemaToType,
   ITabularRepository,
+  SchemaToType,
   ValueOptionType,
-  ExcludeDateKeyOptionType,
+  ValueSchema,
 } from "./ITabularRepository";
-import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import { createServiceToken } from "@ellmers/util";
 
 export const SQLITE_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository.sqlite"

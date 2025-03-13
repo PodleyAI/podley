@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import type { Sqlite } from "@ellmers/util";
+import type { Sqlite } from "@ellmers/sqlite";
 import { uuid4 } from "@ellmers/util";
 import { makeFingerprint, sleep } from "@ellmers/util";
 import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
