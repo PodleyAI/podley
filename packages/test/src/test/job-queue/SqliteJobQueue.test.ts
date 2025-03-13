@@ -8,7 +8,7 @@
 import { SqliteQueueStorage } from "@ellmers/storage";
 import { SqliteRateLimiter } from "@ellmers/job-queue";
 import { describe } from "bun:test";
-import { Sqlite } from "@ellmers/util";
+import { Sqlite } from "@ellmers/sqlite";
 import { runGenericJobQueueTests } from "./genericJobQueueTests.test";
 
 const db = new Sqlite.Database(":memory:");

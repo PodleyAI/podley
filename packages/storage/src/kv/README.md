@@ -88,7 +88,7 @@ await pgRepo.put("preferences:456", { lang: "en", fontSize: 16 });
 
 ```typescript
 import { SqliteKvRepository } from "@ellmers/storage/kv";
-import { Sqlite } from "@ellmers/util";
+import { Sqlite } from "@ellmers/sqlite";
 
 const db = new Sqlite(":memory:"); // In-memory database
 const sqliteRepo = new SqliteKvRepository(

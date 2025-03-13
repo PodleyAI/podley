@@ -7,7 +7,7 @@
 
 import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
 import { SqliteQueueStorage } from "@ellmers/storage";
-import { Sqlite } from "@ellmers/util";
+import { Sqlite } from "@ellmers/sqlite";
 import { describe } from "bun:test";
 import { uuid4 } from "@ellmers/util";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests.test";

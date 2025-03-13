@@ -16,8 +16,9 @@ import {
 import {
   MEDIA_PIPE_TFJS_MODEL,
   registerMediaPipeTfJsLocalTasks,
-} from "@ellmers/ai-provider/tf-mediapipe";
+} from "@ellmers/ai-provider/tf-mediapipe/inline";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
+import { Sqlite } from "@ellmers/sqlite";
 import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";
 import {
   getTaskQueueRegistry,
@@ -26,7 +27,7 @@ import {
   TaskOutput,
   Workflow,
 } from "@ellmers/task-graph";
-import { sleep, Sqlite } from "@ellmers/util";
+import { sleep } from "@ellmers/util";
 import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 
 const db = new Sqlite.Database(":memory:");

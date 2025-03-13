@@ -25,7 +25,8 @@ import {
   TaskOutput,
   Workflow,
 } from "@ellmers/task-graph";
-import { sleep, Sqlite } from "@ellmers/util";
+import { sleep } from "@ellmers/util";
+import { Sqlite } from "@ellmers/sqlite";
 import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 
 const db = new Sqlite.Database(":memory:");
