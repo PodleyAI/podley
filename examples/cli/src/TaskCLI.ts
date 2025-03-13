@@ -7,7 +7,6 @@
 
 import type { Command } from "commander";
 import { runTask } from "./TaskGraphToUI";
-import "@sroussey/transformers";
 import { TaskGraph, Workflow, JsonTaskItem } from "@ellmers/task-graph";
 import { DownloadModelTask, getGlobalModelRepository } from "@ellmers/ai";
 import { JsonTask } from "@ellmers/tasks";
@@ -142,8 +141,10 @@ export function AddBaseCommands(program: Command) {
         json = JSON.stringify(exampleJson);
       }
       const task = new JsonTask({ json }, { name: "JSON Task Example" });
-      const graph = new TaskGraph();
-      graph.addTask(task);
+      const graph = task.subGraph;
+      if (!graph) {
+        program.error("Task has no sub-graph");
+      }
       try {
         await runTask(graph);
       } catch (error) {

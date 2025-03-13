@@ -45,7 +45,7 @@ export const TaskUI: FC<{
   const [details, setDetails] = useState<any>(undefined);
   const [text, setText] = useState<string>("");
   const [subGraph, setSubGraph] = useState<TaskGraph | null>(
-    task.isCompound ? task.subGraph : null
+    task.hasChildren() ? task.subGraph : null
   );
   const [dependantChildren, setDependantChildren] = useState<ITask[]>(
     graph.getTargetTasks(task.config.id)
@@ -89,7 +89,7 @@ export const TaskUI: FC<{
 
     const onRegenerate = () => {
       setCount((counter) => counter + 1);
-      setSubGraph(task.isCompound ? task.subGraph : null);
+      setSubGraph(task.hasChildren() ? task.subGraph : null);
       setDependantChildren(graph.getTargetTasks(task.config.id));
     };
 
