@@ -13,11 +13,12 @@ import {
   ElVector,
   TextEmbeddingTaskOutput,
 } from "@ellmers/ai";
+import { PermanentJobError } from "@ellmers/job-queue";
 
 /**
  * This is a task that downloads and caches a MediaPipe TFJS model.
  */
-export async function MediaPipeTfJsLocal_Download(
+export async function TFMP_Inline_Download(
   update_progress: (progress: number, message?: string, details?: any) => void,
   input: DownloadModelTaskInput,
   signal?: AbortSignal
@@ -27,7 +28,7 @@ export async function MediaPipeTfJsLocal_Download(
   );
   const model = (await getGlobalModelRepository().findByName(input.model))!;
   if (!model) {
-    throw `MediaPipeTfJsLocal_Download: Model ${input.model} not found`;
+    throw new PermanentJobError(`Model ${input.model} not found`);
   }
   const results = await TextEmbedder.createFromOptions(textFiles, {
     baseOptions: {
@@ -43,7 +44,7 @@ export async function MediaPipeTfJsLocal_Download(
  * This is a task that generates an embedding for a single piece of text
  * using a MediaPipe TFJS model.
  */
-export async function MediaPipeTfJsLocal_Embedding(
+export async function TFMP_Inline_TextEmbedding(
   update_progress: (progress: number, message?: string, details?: any) => void,
   input: TextEmbeddingTaskInput,
   signal?: AbortSignal
@@ -53,7 +54,7 @@ export async function MediaPipeTfJsLocal_Embedding(
   );
   const model = (await getGlobalModelRepository().findByName(input.model))!;
   if (!model) {
-    throw `MediaPipeTfJsLocal_Embedding: Model ${input.model} not found`;
+    throw new PermanentJobError(`Model ${input.model} not found`);
   }
   const textEmbedder = await TextEmbedder.createFromOptions(textFiles, {
     baseOptions: {

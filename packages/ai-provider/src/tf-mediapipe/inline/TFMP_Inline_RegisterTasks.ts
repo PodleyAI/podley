@@ -4,11 +4,8 @@ import {
   TextEmbeddingTaskOutput,
 } from "@ellmers/ai";
 import { DownloadModelTask, TextEmbeddingTask } from "@ellmers/ai";
-import {
-  MediaPipeTfJsLocal_Download,
-  MediaPipeTfJsLocal_Embedding,
-} from "../provider/MediaPipeLocalTaskRun";
-import { MEDIA_PIPE_TFJS_MODEL } from "../model/MediaPipeModel";
+import { TFMP_Inline_Download, TFMP_Inline_TextEmbedding } from "./TFMP_Inline_TaskRun";
+import { MEDIA_PIPE_TFJS_MODEL } from "../common/TFMP_Constants";
 
 export const registerMediaPipeTfJsLocalTasks = () => {
   const aiProviderRegistry = getAiProviderRegistry();
@@ -16,12 +13,12 @@ export const registerMediaPipeTfJsLocalTasks = () => {
   aiProviderRegistry.registerRunFn(
     DownloadModelTask.type,
     MEDIA_PIPE_TFJS_MODEL,
-    MediaPipeTfJsLocal_Download
+    TFMP_Inline_Download
   );
 
   aiProviderRegistry.registerRunFn<TextEmbeddingTaskInput, TextEmbeddingTaskOutput>(
     TextEmbeddingTask.type,
     MEDIA_PIPE_TFJS_MODEL,
-    MediaPipeTfJsLocal_Embedding
+    TFMP_Inline_TextEmbedding
   );
 };

@@ -5,6 +5,6 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./provider/MediaPipeLocalTaskRun";
-export * from "./model/MediaPipeModel";
-export * from "./bindings/registerTasks";
+export * from "./common/TFMP_Constants";
+export * from "./inline/TFMP_Inline_TaskRun";
+export * from "./inline/TFMP_Inline_RegisterTasks";

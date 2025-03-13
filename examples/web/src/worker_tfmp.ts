@@ -5,10 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./utilities/Misc";
-export * from "./events/EventEmitter";
-export * from "./utilities/TypeUtilities";
-export * from "./graph";
-export * from "./di";
-export * from "./worker/WorkerManager";
-export * from "./worker/WorkerServer";
+import {
+  TFMP_WORKER_JOBRUN,
+  TFMP_WORKER_JOBRUN_REGISTER,
+} from "@ellmers/ai-provider/tf-mediapipe/worker";
+import { globalServiceRegistry } from "@ellmers/util";
+
+globalServiceRegistry.get(TFMP_WORKER_JOBRUN);
+console.log("worker_tfmp loaded", TFMP_WORKER_JOBRUN_REGISTER);

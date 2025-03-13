@@ -6,17 +6,16 @@
 //    *******************************************************************************
 
 import { useCallback, useEffect, useState } from "react";
-import { env } from "@sroussey/transformers";
 import { ReactFlowProvider } from "@xyflow/react";
 import { AiJob } from "@ellmers/ai";
 import {
   ONNX_TRANSFORMERJS,
   registerHuggingfaceLocalTasks,
-} from "@ellmers/ai-provider/hf-transformers/inline";
+} from "@ellmers/ai-provider/hf-transformers/client";
 import {
   MEDIA_PIPE_TFJS_MODEL,
   registerMediaPipeTfJsLocalTasks,
-} from "@ellmers/ai-provider/tf-mediapipe/inline";
+} from "@ellmers/ai-provider/tf-mediapipe/client";
 import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
 import {
   getTaskQueueRegistry,
@@ -40,8 +39,15 @@ import { QueuesStatus } from "./QueueStatus";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
 import { RunGraphFlow } from "./RunGraphFlow";
 import { InMemoryQueueStorage } from "@ellmers/storage";
+import { globalServiceRegistry } from "@ellmers/util";
+import { WORKER_MANAGER } from "@ellmers/util";
 
-env.backends.onnx.wasm.proxy = true;
+const workerManager = globalServiceRegistry.get(WORKER_MANAGER);
+const worker_tfmp = new Worker(new URL("./worker_tfmp.ts", import.meta.url), { type: "module" });
+const worker_hft = new Worker(new URL("./worker_hft.ts", import.meta.url), { type: "module" });
+workerManager.registerWorker(MEDIA_PIPE_TFJS_MODEL, worker_tfmp);
+workerManager.registerWorker(ONNX_TRANSFORMERJS, worker_hft);
+console.log("workerManager", workerManager);
 
 const queueRegistry = getTaskQueueRegistry();
 

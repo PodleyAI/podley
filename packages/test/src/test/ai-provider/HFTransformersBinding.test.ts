@@ -15,7 +15,7 @@ import {
 import {
   ONNX_TRANSFORMERJS,
   registerHuggingfaceLocalTasks,
-} from "@ellmers/ai-provider/hf-transformers";
+} from "@ellmers/ai-provider/hf-transformers/inline";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
 import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";
 import {

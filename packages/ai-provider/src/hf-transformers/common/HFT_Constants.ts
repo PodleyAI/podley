@@ -5,6 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { createServiceToken } from "@ellmers/util";
+
 export const ONNX_TRANSFORMERJS = "ONNX_TRANSFORMERJS";
 
 export enum QUANTIZATION_DATA_TYPES {
@@ -18,3 +20,4 @@ export enum QUANTIZATION_DATA_TYPES {
   bnb4 = "bnb4",
   q4f16 = "q4f16", // fp16 model with int4 block weight quantization
 }
+self.onerror = console.error;

@@ -39,49 +39,16 @@ import type {
   TextTranslationTaskInput,
   TextTranslationTaskOutput,
   Model,
-  AiJob,
   AiProviderRunFn,
   DownloadModelTaskOutput,
 } from "@ellmers/ai";
-import { QUANTIZATION_DATA_TYPES } from "../model/ONNXTransformerJsModel";
+import { QUANTIZATION_DATA_TYPES } from "../common/HFT_Constants";
+import { CallbackStatus } from "../common/HFT_CallbackStatus";
 
 // @ts-ignore
 const IS_WEBGPU_AVAILABLE = !!globalThis.navigator?.gpu;
 
 env.cacheDir = "./.cache";
-
-interface StatusFileBookends {
-  status: "initiate" | "download" | "done";
-  name: string;
-  file: string;
-}
-
-interface StatusFileProgress {
-  status: "progress";
-  name: string;
-  file: string;
-  loaded: number;
-  progress: number;
-  total: number;
-}
-
-interface StatusRunReady {
-  status: "ready";
-  model: string;
-  task: string;
-}
-interface StatusRunUpdate {
-  status: "update";
-  output: string;
-}
-interface StatusRunComplete {
-  status: "complete";
-  output: string[];
-}
-
-type StatusFile = StatusFileBookends | StatusFileProgress;
-type StatusRun = StatusRunReady | StatusRunUpdate | StatusRunComplete;
-export type CallbackStatus = StatusFile | StatusRun;
 
 const pipelines = new Map<string, any>();
 
@@ -144,7 +111,7 @@ function generateProgressCallback(
  * This is a task that downloads and caches an onnx model.
  */
 
-export const HuggingFaceLocal_DownloadRun: AiProviderRunFn<
+export const HFT_Inline_DownloadRun: AiProviderRunFn<
   DownloadModelTaskInput,
   Pick<DownloadModelTaskOutput, "model" | "dimensions" | "normalize">
 > = async (update_progress, input, signal?) => {
@@ -165,7 +132,7 @@ export const HuggingFaceLocal_DownloadRun: AiProviderRunFn<
  *
  * Model pipeline must be "feature-extraction"
  */
-export const HuggingFaceLocal_EmbeddingRun: AiProviderRunFn<
+export const HFT_Inline_EmbeddingRun: AiProviderRunFn<
   TextEmbeddingTaskInput,
   TextEmbeddingTaskOutput
 > = async (update_progress, input, signal?) => {
@@ -206,7 +173,7 @@ export const HuggingFaceLocal_EmbeddingRun: AiProviderRunFn<
  *
  * Model pipeline must be "text-generation" or "text2text-generation"
  */
-export const HuggingFaceLocal_TextGenerationRun: AiProviderRunFn<
+export const HFT_Inline_TextGenerationRun: AiProviderRunFn<
   TextGenerationTaskInput,
   TextGenerationTaskOutput
 > = async (update_progress, input, signal?) => {
@@ -252,7 +219,7 @@ export const HuggingFaceLocal_TextGenerationRun: AiProviderRunFn<
  *
  * Model pipeline must be "translation"
  */
-export const HuggingFaceLocal_TextTranslationRun: AiProviderRunFn<
+export const HFT_Inline_TextTranslationRun: AiProviderRunFn<
   TextTranslationTaskInput,
   Partial<TextTranslationTaskOutput>
 > = async (update_progress, input, signal?) => {
@@ -295,7 +262,7 @@ export const HuggingFaceLocal_TextTranslationRun: AiProviderRunFn<
  *
  * Model pipeline must be "text-generation" or "text2text-generation"
  */
-export const HuggingFaceLocal_TextRewriterRun: AiProviderRunFn<
+export const HFT_Inline_TextRewriterRun: AiProviderRunFn<
   TextRewriterTaskInput,
   TextRewriterTaskOutput
 > = async (update_progress, input, signal?) => {
@@ -346,7 +313,7 @@ export const HuggingFaceLocal_TextRewriterRun: AiProviderRunFn<
  * Model pipeline must be "summarization"
  */
 
-export const HuggingFaceLocal_TextSummaryRun: AiProviderRunFn<
+export const HFT_Inline_TextSummaryRun: AiProviderRunFn<
   TextSummaryTaskInput,
   TextSummaryTaskOutput
 > = async (update_progress, input, signal?) => {
@@ -386,7 +353,7 @@ export const HuggingFaceLocal_TextSummaryRun: AiProviderRunFn<
  *
  * Model pipeline must be "question-answering"
  */
-export const HuggingFaceLocal_TextQuestionAnswerRun: AiProviderRunFn<
+export const HFT_Inline_TextQuestionAnswerRun: AiProviderRunFn<
   TextQuestionAnswerTaskInput,
   TextQuestionAnswerTaskOutput
 > = async (update_progress, input, signal?) => {

@@ -5,10 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./utilities/Misc";
-export * from "./events/EventEmitter";
-export * from "./utilities/TypeUtilities";
-export * from "./graph";
-export * from "./di";
-export * from "./worker/WorkerManager";
-export * from "./worker/WorkerServer";
+import {
+  HFT_WORKER_JOBRUN,
+  HFT_WORKER_JOBRUN_REGISTER,
+} from "@ellmers/ai-provider/hf-transformers/worker";
+import { globalServiceRegistry } from "@ellmers/util";
+
+globalServiceRegistry.get(HFT_WORKER_JOBRUN);
+console.log("worker_htf loaded", HFT_WORKER_JOBRUN_REGISTER);
