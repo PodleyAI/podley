@@ -32,7 +32,7 @@ export function OutputRepositoryStatus({ repository }: { repository: TaskOutputR
 
   return (
     <div>
-      {repository.constructor.name}: {size}
+      <span title={repository.constructor.name}>Output Cache</span>: {size}
       <button onClick={clear} className="float-right">
         Clear
       </button>
