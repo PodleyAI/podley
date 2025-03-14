@@ -31,18 +31,18 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@sroussey/transformers": "^3.3.3",
+    "@sroussey/transformers": "^3.4.0",
     "@mediapipe/tasks-text": "^0.10.21",
     "@types/pg": "^8.11.11",
-    "pg": "^8.13.2",
+    "pg": "^8.13.3",
     "@types/better-sqlite3": "^7.6.12",
     "better-sqlite3": "^11.8.1",
     "@sqlite.org/sqlite-wasm": "^3.49.1-build2"
   },
   "devDependencies": {
-    "bun-types": "^1.2.4",
-    "@typescript-eslint/eslint-plugin": "^8.26.0",
-    "@typescript-eslint/parser": "^8.26.0",
+    "bun-types": "^1.2.5",
+    "@typescript-eslint/eslint-plugin": "^8.26.1",
+    "@typescript-eslint/parser": "^8.26.1",
     "concurrently": "^9.1.2",
     "eslint": "^9.22.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
@@ -61,7 +61,7 @@
     "tuir": "=1.0.1"
   },
   "engines": {
-    "bun": "^1.2.4"
+    "bun": "^1.2.5"
   },
   "trustedDependencies": [
     "better-sqlite3",

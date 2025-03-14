@@ -39,5 +39,7 @@
   "editor.wordWrapColumn": 100,
   "prettier.printWidth": 100,
   "bun.debugTerminal.enabled": true,
-  "markdown.extension.toc.levels": "2..6"
+  "markdown.extension.toc.levels": "2..6",
+  "js/ts.implicitProjectConfig.target": "ESNext",
+  "typescript.tsdk": "./node_modules/typescript/lib"
 }

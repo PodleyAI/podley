@@ -18,4 +18,3 @@ export enum QUANTIZATION_DATA_TYPES {
   bnb4 = "bnb4",
   q4f16 = "q4f16", // fp16 model with int4 block weight quantization
 }
-self.onerror = console.error;
