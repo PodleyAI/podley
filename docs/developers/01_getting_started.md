@@ -48,9 +48,9 @@ After this, plese read [Architecture](02_architecture.md) before attempting to [
 
 ```ts
 import { Workflow } from "@ellmers/task-graph";
-import { register_HFT_JobFnsInMemoryQueue } from "@ellmers/test";
+import { register_HFT_InMemoryQueue } from "@ellmers/test";
 // config and start up
-register_HFT_JobFnsInMemoryQueue();
+register_HFT_InMemoryQueue();
 
 const workflow = new Workflow();
 workflow
@@ -80,10 +80,10 @@ import {
   Dataflow,
   TaskGraph,
 } from "@ellmers/task-graph";
-import { register_HFT_JobFnsInMemoryQueue } from "@ellmers/test";
+import { register_HFT_InMemoryQueue } from "@ellmers/test";
 
 // config and start up
-register_HFT_JobFnsInMemoryQueue();
+register_HFT_InMemoryQueue();
 
 // build and run graph
 const graph = new TaskGraph();
@@ -236,7 +236,7 @@ LLM providers have long running functions. These are handled by a Job Queue. The
 
 #### In memory:
 
-- **`register_HFT_JobFnsInMemoryQueue`** function sets up the Huggingface Local provider (above), and a JobQueue with a Concurrency Limiter so the ONNX queue only runs one task/job at a time.
+- **`register_HFT_InMemoryQueue`** function sets up the Huggingface Local provider (above), and a JobQueue with a Concurrency Limiter so the ONNX queue only runs one task/job at a time.
 - **`register_TFMP_InMemoryQueue`** does the same for MediaPipe.
 
 #### Using Sqlite:
