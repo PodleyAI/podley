@@ -1,7 +1,4 @@
-import {
-  HF_TRANSFORMERS_ONNX,
-  QUANTIZATION_DATA_TYPES,
-} from "@ellmers/ai-provider/hf-transformers/client";
+import { HF_TRANSFORMERS_ONNX, QUANTIZATION_DATA_TYPES } from "@ellmers/ai-provider";
 import { getGlobalModelRepository, Model } from "@ellmers/ai";
 
 export async function addONNXModel(info: Partial<Model>, tasks: string[]) {

@@ -13,10 +13,7 @@ import {
   Model,
   setGlobalModelRepository,
 } from "@ellmers/ai";
-import {
-  TENSORFLOW_MEDIAPIPE,
-  register_TFMP_InlineJobFns,
-} from "@ellmers/ai-provider/tf-mediapipe/inline";
+import { TENSORFLOW_MEDIAPIPE, register_TFMP_InlineJobFns } from "@ellmers/ai-provider";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
 import { Sqlite } from "@ellmers/sqlite";
 import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";

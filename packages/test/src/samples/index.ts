@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { AiJob, AiProviderInput } from "@ellmers/ai";
-import { TENSORFLOW_MEDIAPIPE } from "@ellmers/ai-provider/tf-mediapipe/inline";
+import { TENSORFLOW_MEDIAPIPE } from "@ellmers/ai-provider";
 import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
 import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@ellmers/task-graph";
 import { InMemoryQueueStorage } from "@ellmers/storage";

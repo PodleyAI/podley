@@ -145,7 +145,7 @@ import {
 import {
   HuggingFaceLocal_DownloadRun,
   HuggingFaceLocal_TextRewriterRun,
-} from "@ellmers/ai-provider/hf-transformers";
+} from "@ellmers/ai-provider";
 
 import { JobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
 import { InMemoryQueueStorage } from "@ellmers/storage";

@@ -5,6 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./common/TFMP_Constants";
-export * from "./common/TFMP_JobRunFns";
-export * from "./registry/TFMP_Worker_RegisterJobFns";
+export * from "./common/HFT_Constants";
+export * from "./common/HFT_JobRunFns";
+export * from "./registry/HFT_Client_RegisterJobFns";
+export * from "./registry/HFT_Inline_RegisterJobFns";
+export * from "./registry/HFT_Worker_RegisterJobFns";

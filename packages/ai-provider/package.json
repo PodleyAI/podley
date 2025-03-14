@@ -5,52 +5,18 @@
   "description": "Ellmers is a tool for building and running DAG pipelines of AI tasks.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
-    "watch-hf-transformers-inline": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist/hf-transformers ./src/hf-transformers/inline.ts",
-    "watch-hf-transformers-client": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist/hf-transformers ./src/hf-transformers/client.ts",
-    "watch-hf-transformers-worker": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist/hf-transformers ./src/hf-transformers/worker.ts",
-    "watch-tf-mediapipe-inline": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist/tf-mediapipe ./src/tf-mediapipe/inline.ts",
-    "watch-tf-mediapipe-client": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist/tf-mediapipe ./src/tf-mediapipe/client.ts",
-    "watch-tf-mediapipe-worker": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist/tf-mediapipe ./src/tf-mediapipe/worker.ts",
+    "watch-code": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
-    "build": "bun run build-clean && bun run build-hf-transformers && bun run build-tf-mediapipe && bun run build-types",
+    "build": "bun run build-clean && bun run build-code && bun run build-types",
     "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
-    "build-hf-transformers": "bun run build-hf-transformers-inline && bun run build-hf-transformers-client && bun run build-hf-transformers-worker",
-    "build-hf-transformers-inline": "bun build --sourcemap=external --packages=external --outdir ./dist/hf-transformers ./src/hf-transformers/inline.ts",
-    "build-hf-transformers-client": "bun build --sourcemap=external --packages=external --outdir ./dist/hf-transformers ./src/hf-transformers/client.ts",
-    "build-hf-transformers-worker": "bun build --sourcemap=external --packages=external --outdir ./dist/hf-transformers ./src/hf-transformers/worker.ts",
-    "build-tf-mediapipe": "bun run build-tf-mediapipe-inline && bun run build-tf-mediapipe-client && bun run build-tf-mediapipe-worker",
-    "build-tf-mediapipe-inline": "bun build --sourcemap=external --packages=external --outdir ./dist/tf-mediapipe ./src/tf-mediapipe/inline.ts",
-    "build-tf-mediapipe-client": "bun build --sourcemap=external --packages=external --outdir ./dist/tf-mediapipe ./src/tf-mediapipe/client.ts",
-    "build-tf-mediapipe-worker": "bun build --sourcemap=external --packages=external --outdir ./dist/tf-mediapipe ./src/tf-mediapipe/worker.ts",
+    "build-code": "bun build --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
     "build-types": "tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "bun test"
   },
   "exports": {
-    "./hf-transformers/inline": {
-      "import": "./dist/hf-transformers/inline.js",
-      "types": "./dist/hf-transformers/inline.d.ts"
-    },
-    "./hf-transformers/client": {
-      "import": "./dist/hf-transformers/client.js",
-      "types": "./dist/hf-transformers/client.d.ts"
-    },
-    "./hf-transformers/worker": {
-      "import": "./dist/hf-transformers/worker.js",
-      "types": "./dist/hf-transformers/worker.d.ts"
-    },
-    "./tf-mediapipe/inline": {
-      "import": "./dist/tf-mediapipe/inline.js",
-      "types": "./dist/tf-mediapipe/inline.d.ts"
-    },
-    "./tf-mediapipe/client": {
-      "import": "./dist/tf-mediapipe/client.js",
-      "types": "./dist/tf-mediapipe/client.d.ts"
-    },
-    "./tf-mediapipe/worker": {
-      "import": "./dist/tf-mediapipe/worker.js",
-      "types": "./dist/tf-mediapipe/worker.d.ts"
-    }
+    "import": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
   "files": [
     "dist"

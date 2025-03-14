@@ -12,10 +12,7 @@ import {
   InMemoryModelRepository,
   setGlobalModelRepository,
 } from "@ellmers/ai";
-import {
-  HF_TRANSFORMERS_ONNX,
-  register_HFT_InlineJobFns,
-} from "@ellmers/ai-provider/hf-transformers/inline";
+import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@ellmers/ai-provider";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
 import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";
 import {

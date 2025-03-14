@@ -1,4 +1,4 @@
-import { TENSORFLOW_MEDIAPIPE } from "@ellmers/ai-provider/tf-mediapipe/inline";
+import { TENSORFLOW_MEDIAPIPE } from "@ellmers/ai-provider";
 import { getGlobalModelRepository, Model } from "@ellmers/ai";
 
 async function addMediaPipeModel(info: Partial<Model>, tasks: string[]) {

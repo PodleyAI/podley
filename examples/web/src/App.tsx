@@ -5,18 +5,15 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { useCallback, useEffect, useState } from "react";
-import { ReactFlowProvider } from "@xyflow/react";
 import { AiJob } from "@ellmers/ai";
 import {
   HF_TRANSFORMERS_ONNX,
-  register_HFT_InlineJobFns,
-} from "@ellmers/ai-provider/hf-transformers/inline";
-import {
-  TENSORFLOW_MEDIAPIPE,
+  register_HFT_ClientJobFns,
   register_TFMP_ClientJobFns,
-} from "@ellmers/ai-provider/tf-mediapipe/client";
+  TENSORFLOW_MEDIAPIPE,
+} from "@ellmers/ai-provider";
 import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
+import { InMemoryQueueStorage } from "@ellmers/storage";
 import {
   getTaskQueueRegistry,
   JsonTaskItem,
@@ -32,15 +29,15 @@ import {
   registerHuggingfaceLocalModels,
   registerMediaPipeTfJsLocalModels,
 } from "@ellmers/test";
+import { globalServiceRegistry, WORKER_MANAGER } from "@ellmers/util";
+import { ReactFlowProvider } from "@xyflow/react";
+import { useCallback, useEffect, useState } from "react";
 import { GraphStoreStatus } from "./GraphStoreStatus";
 import { JsonEditor } from "./JsonEditor";
 import { OutputRepositoryStatus } from "./OutputRepositoryStatus";
 import { QueuesStatus } from "./QueueStatus";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
 import { RunGraphFlow } from "./RunGraphFlow";
-import { InMemoryQueueStorage } from "@ellmers/storage";
-import { globalServiceRegistry } from "@ellmers/util";
-import { WORKER_MANAGER } from "@ellmers/util";
 
 const workerManager = globalServiceRegistry.get(WORKER_MANAGER);
 const worker_tfmp = new Worker(new URL("./worker_tfmp.ts", import.meta.url), { type: "module" });
@@ -51,7 +48,7 @@ console.log("workerManager", workerManager);
 
 const queueRegistry = getTaskQueueRegistry();
 
-register_HFT_InlineJobFns();
+register_HFT_ClientJobFns();
 queueRegistry.registerQueue(
   new JobQueue<TaskInput, TaskOutput>(HF_TRANSFORMERS_ONNX, AiJob<TaskInput, TaskOutput>, {
     limiter: new ConcurrencyLimiter(2, 100),

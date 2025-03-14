@@ -7,4 +7,6 @@
 
 export * from "./common/TFMP_Constants";
 export * from "./common/TFMP_JobRunFns";
+export * from "./registry/TFMP_Inline_RegisterJobFns";
 export * from "./registry/TFMP_Client_RegisterJobFns";
+export * from "./registry/TFMP_Worker_RegisterJobFns";

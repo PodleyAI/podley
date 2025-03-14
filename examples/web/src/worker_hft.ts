@@ -5,13 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  HFT_WORKER_JOBRUN,
-  HFT_WORKER_JOBRUN_REGISTER,
-} from "@ellmers/ai-provider/hf-transformers/worker";
+import { HFT_WORKER_JOBRUN, HFT_WORKER_JOBRUN_REGISTER } from "@ellmers/ai-provider";
 import { globalServiceRegistry } from "@ellmers/util";
 import { env } from "@sroussey/transformers";
 
 env.backends.onnx.wasm.proxy = true;
-const jobrun = globalServiceRegistry.get(HFT_WORKER_JOBRUN);
+globalServiceRegistry.get(HFT_WORKER_JOBRUN);
 console.log("worker_htf loaded", HFT_WORKER_JOBRUN_REGISTER);

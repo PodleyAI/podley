@@ -19,15 +19,14 @@ export default defineConfig({
           "tf-mediapipe": ["@mediapipe/tasks-text"],
           ellmers: [
             "@ellmers/ai",
-            "@ellmers/ai-provider/hf-transformers/client",
-            "@ellmers/ai-provider/tf-mediapipe/client",
-            "@ellmers/ai-provider/hf-transformers/worker",
-            "@ellmers/ai-provider/tf-mediapipe/worker",
+            "@ellmers/ai-provider",
             "@ellmers/job-queue",
             "@ellmers/storage",
             "@ellmers/task-graph",
             "@ellmers/tasks",
             "@ellmers/test",
+            "@ellmers/util",
+            "@ellmers/sqlite",
           ],
           react: [
             "react",

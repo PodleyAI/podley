@@ -5,10 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  TFMP_WORKER_JOBRUN,
-  TFMP_WORKER_JOBRUN_REGISTER,
-} from "@ellmers/ai-provider/tf-mediapipe/worker";
+import { TFMP_WORKER_JOBRUN, TFMP_WORKER_JOBRUN_REGISTER } from "@ellmers/ai-provider";
 import { globalServiceRegistry } from "@ellmers/util";
 
 globalServiceRegistry.get(TFMP_WORKER_JOBRUN);

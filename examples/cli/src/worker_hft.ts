@@ -5,10 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  HFT_WORKER_JOBRUN,
-  HFT_WORKER_JOBRUN_REGISTER,
-} from "@ellmers/ai-provider/hf-transformers/worker";
+import { HFT_WORKER_JOBRUN, HFT_WORKER_JOBRUN_REGISTER } from "@ellmers/ai-provider";
 import { globalServiceRegistry } from "@ellmers/util";
 
 globalServiceRegistry.get(HFT_WORKER_JOBRUN);
