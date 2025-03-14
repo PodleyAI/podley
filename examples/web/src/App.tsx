@@ -9,12 +9,12 @@ import { useCallback, useEffect, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { AiJob } from "@ellmers/ai";
 import {
-  ONNX_TRANSFORMERJS,
-  registerHuggingfaceLocalTasks,
-} from "@ellmers/ai-provider/hf-transformers/client";
+  HF_TRANSFORMERS_ONNX,
+  registerHFTInlineJobFns,
+} from "@ellmers/ai-provider/hf-transformers/inline";
 import {
-  MEDIA_PIPE_TFJS_MODEL,
-  registerMediaPipeTfJsLocalTasks,
+  TENSORFLOW_MEDIAPIPE,
+  registerTFMPClientJobFns,
 } from "@ellmers/ai-provider/tf-mediapipe/client";
 import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
 import {
@@ -45,25 +45,25 @@ import { WORKER_MANAGER } from "@ellmers/util";
 const workerManager = globalServiceRegistry.get(WORKER_MANAGER);
 const worker_tfmp = new Worker(new URL("./worker_tfmp.ts", import.meta.url), { type: "module" });
 const worker_hft = new Worker(new URL("./worker_hft.ts", import.meta.url), { type: "module" });
-workerManager.registerWorker(MEDIA_PIPE_TFJS_MODEL, worker_tfmp);
-workerManager.registerWorker(ONNX_TRANSFORMERJS, worker_hft);
+workerManager.registerWorker(TENSORFLOW_MEDIAPIPE, worker_tfmp);
+workerManager.registerWorker(HF_TRANSFORMERS_ONNX, worker_hft);
 console.log("workerManager", workerManager);
 
 const queueRegistry = getTaskQueueRegistry();
 
-registerHuggingfaceLocalTasks();
+registerHFTInlineJobFns();
 queueRegistry.registerQueue(
-  new JobQueue<TaskInput, TaskOutput>(ONNX_TRANSFORMERJS, AiJob<TaskInput, TaskOutput>, {
+  new JobQueue<TaskInput, TaskOutput>(HF_TRANSFORMERS_ONNX, AiJob<TaskInput, TaskOutput>, {
     limiter: new ConcurrencyLimiter(2, 100),
-    storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(ONNX_TRANSFORMERJS),
+    storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(HF_TRANSFORMERS_ONNX),
   })
 );
 
-registerMediaPipeTfJsLocalTasks();
+registerTFMPClientJobFns();
 queueRegistry.registerQueue(
-  new JobQueue<TaskInput, TaskOutput>(MEDIA_PIPE_TFJS_MODEL, AiJob<TaskInput, TaskOutput>, {
+  new JobQueue<TaskInput, TaskOutput>(TENSORFLOW_MEDIAPIPE, AiJob<TaskInput, TaskOutput>, {
     limiter: new ConcurrencyLimiter(2, 100),
-    storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(MEDIA_PIPE_TFJS_MODEL),
+    storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(TENSORFLOW_MEDIAPIPE),
   })
 );
 

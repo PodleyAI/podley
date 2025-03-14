@@ -5,6 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./common/TFMP_Constants";
-export * from "./common/TFMP_JobRunFns";
-export * from "./registry/TFMP_Client_RegisterJobFns";
+import { getAiProviderRegistry } from "@ellmers/ai";
+import { TFMP_Download, TFMP_TextEmbedding } from "../common/TFMP_JobRunFns";
+import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
+
+export const registerTFMPInlineJobFns = () => {
+  const aiProviderRegistry = getAiProviderRegistry();
+
+  aiProviderRegistry.registerRunFn(TENSORFLOW_MEDIAPIPE, "DownloadModelTask", TFMP_Download);
+  aiProviderRegistry.registerRunFn(TENSORFLOW_MEDIAPIPE, "TextEmbeddingTask", TFMP_TextEmbedding);
+};

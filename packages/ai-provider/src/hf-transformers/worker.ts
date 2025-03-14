@@ -6,7 +6,8 @@
 //    *******************************************************************************
 
 export * from "./common/HFT_Constants";
-export * from "./worker/HFT_Worker_TaskRun";
+export * from "./common/HFT_JobRunFns";
+export * from "./registry/HFT_Worker_RegisterJobFns";
 
 import { env } from "@sroussey/transformers";
 env.backends.onnx.logLevel = "error";

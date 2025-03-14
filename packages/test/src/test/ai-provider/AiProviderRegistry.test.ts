@@ -10,6 +10,8 @@ import {
   AiProviderInput,
   AiProviderRegistry,
   getAiProviderRegistry,
+  getGlobalModelRepository,
+  Model,
   setAiProviderRegistry,
 } from "@ellmers/ai";
 import { InMemoryRateLimiter, JobQueue } from "@ellmers/job-queue";
@@ -69,14 +71,14 @@ describe("AiProviderRegistry", () => {
   describe("registerRunFn", () => {
     test("should register a run function for a task type and model provider", () => {
       const mockRunFn = mock(() => Promise.resolve({ success: true }));
-      aiProviderRegistry.registerRunFn("text-generation", TEST_PROVIDER, mockRunFn);
+      aiProviderRegistry.registerRunFn(TEST_PROVIDER, "text-generation", mockRunFn);
 
       expect(aiProviderRegistry.runFnRegistry["text-generation"][TEST_PROVIDER]).toBe(mockRunFn);
     });
 
     test("should create task type object if it does not exist", () => {
       const mockRunFn = mock(() => Promise.resolve({ success: true }));
-      aiProviderRegistry.registerRunFn("new-task", TEST_PROVIDER, mockRunFn);
+      aiProviderRegistry.registerRunFn(TEST_PROVIDER, "new-task", mockRunFn);
 
       expect(aiProviderRegistry.runFnRegistry["new-task"]).toBeDefined();
       expect(aiProviderRegistry.runFnRegistry["new-task"][TEST_PROVIDER]).toBe(mockRunFn);
@@ -86,110 +88,43 @@ describe("AiProviderRegistry", () => {
   describe("getDirectRunFn", () => {
     test("should return registered run function", () => {
       const mockRunFn = mock(() => Promise.resolve({ success: true }));
-      aiProviderRegistry.registerRunFn("text-generation", TEST_PROVIDER, mockRunFn);
+      aiProviderRegistry.registerRunFn(TEST_PROVIDER, "text-generation", mockRunFn);
 
-      const retrievedFn = aiProviderRegistry.getDirectRunFn("text-generation", TEST_PROVIDER);
+      const retrievedFn = aiProviderRegistry.getDirectRunFn(TEST_PROVIDER, "text-generation");
       expect(retrievedFn).toBe(mockRunFn);
     });
 
-    test("should return undefined for unregistered task type", () => {
-      const retrievedFn = aiProviderRegistry.getDirectRunFn("nonexistent", TEST_PROVIDER);
-      expect(retrievedFn).toBeUndefined();
+    test("should throw error for unregistered task type", () => {
+      expect(() => {
+        aiProviderRegistry.getDirectRunFn(TEST_PROVIDER, "nonexistent");
+      }).toThrow(
+        "No run function found for task type nonexistent and model provider test-provider"
+      );
     });
   });
 
-  // describe("jobAsTaskRunFn", () => {
-  //   test("should create a job wrapper and queue it", async () => {
-  //     const mockRunFn = mock(() => Promise.resolve({ result: "success" }));
-  //     aiProviderRegistry.registerRunFn("text-generation", TEST_PROVIDER, mockRunFn);
-
-  //     // Create a mock task instance with a config that allows string assignments
-  //     const mockTask = {
-  //       config: {
-  //         runnerId: undefined as string | undefined,
-  //         queue: undefined as string | undefined,
-  //         currentJobId: undefined as string | undefined,
-  //       },
-  //     };
-
-  //     const wrappedFn = aiProviderRegistry.toTaskRunFn("text-generation", TEST_PROVIDER);
-  //     const result = await wrappedFn(mockTask as any, { text: "test input" });
-
-  //     expect(result).toEqual({ result: "success" });
-  //     expect(mockTask.config.queue).toBe(TEST_PROVIDER);
-  //     expect(mockTask.config.currentJobId).toBeDefined();
-  //     expect(mockRunFn).toHaveBeenCalled();
-  //   });
-
-  //   test("should handle progress updates in job execution", async () => {
-  //     const progressUpdates: number[] = [];
-
-  //     aiProviderRegistry.registerRunFn("text-generation", TEST_PROVIDER, mockLongRunningRunFn);
-
-  //     // Create a mock task instance
-  //     const mockTask = {
-  //       config: {
-  //         runnerId: undefined as string | undefined,
-  //         queue: undefined as string | undefined,
-  //         currentJobId: undefined as string | undefined,
-  //       },
-  //     };
-
-  //     // Subscribe to progress updates
-  //     queue.on("job_progress", (queueName: string, jobId: unknown, progress: number) => {
-  //       progressUpdates.push(progress);
-  //     });
-
-  //     const wrappedFn = aiProviderRegistry.toTaskRunFn("text-generation", TEST_PROVIDER);
-  //     const result = await wrappedFn(mockTask as any, { text: "test input with progress" });
-
-  //     // Give a small delay for all progress events to be processed
-  //     await sleep(1);
-
-  //     expect(result).toEqual({ result: "success with progress" });
-  //     expect(progressUpdates).toEqual([25, 50, 75, 100]);
-  //     expect(mockTask.config.queue).toBe(TEST_PROVIDER);
-  //     expect(mockTask.config.currentJobId).toBeDefined();
-  //   });
-
-  //   test("should be able to get job progress using onJobProgress", async () => {
-  //     aiProviderRegistry.registerRunFn("text-generation", TEST_PROVIDER, mockLongRunningRunFn);
-
-  //     // Create a mock task instance
-  //     const mockTask = {
-  //       config: {
-  //         runnerId: undefined as string | undefined,
-  //         queue: undefined as string | undefined,
-  //         currentJobId: undefined as string | undefined,
-  //       },
-  //     };
-
-  //     const wrappedFn = aiProviderRegistry.toTaskRunFn("text-generation", TEST_PROVIDER);
-
-  //     // Start the function but don't await it yet
-  //     const resultPromise = wrappedFn(mockTask as any, { text: "test input with progress" });
-
-  //     // Wait a bit for the job to be created and ID to be set
-  //     await sleep(1);
-
-  //     // Track progress using onJobProgress
-  //     const progressUpdates: number[] = [];
-  //     const cleanup = queue.onJobProgress(mockTask.config.currentJobId, (progress, message) => {
-  //       progressUpdates.push(progress);
-  //     });
-
-  //     const result = await resultPromise;
-  //     cleanup(); // Remove the progress listener
-
-  //     // Give a small delay for any final progress updates
-  //     await sleep(1);
-
-  //     expect(result).toEqual({ result: "success with progress" });
-  //     expect(progressUpdates).toEqual([25, 50, 75, 100]);
-  //     expect(mockTask.config.queue).toBe(TEST_PROVIDER);
-  //     expect(mockTask.config.currentJobId).toBeDefined();
-  //   });
-  // });
+  describe("jobAsTaskRunFn", () => {
+    test("should create a job wrapper and queue it", async () => {
+      const mockRunFn = mock(() => Promise.resolve({ result: "success" }));
+      aiProviderRegistry.registerRunFn(TEST_PROVIDER, "text-generation", mockRunFn);
+      const mockTask = {
+        config: {
+          runnerId: undefined as string | undefined,
+          queue: undefined as string | undefined,
+          currentJobId: undefined as string | undefined,
+        },
+      };
+      const wrappedFn = aiProviderRegistry.getDirectRunFn(TEST_PROVIDER, "text-generation");
+      const result = await wrappedFn(
+        { text: "test input" },
+        undefined,
+        () => {},
+        new AbortController().signal
+      );
+      expect(result).toEqual({ result: "success" });
+      expect(mockRunFn).toHaveBeenCalled();
+    });
+  });
 
   describe("singleton management", () => {
     test("should maintain a singleton instance", () => {
@@ -210,15 +145,24 @@ describe("AiProviderRegistry", () => {
       const mockRunFn = mock((...args) => {
         return Promise.resolve({ result: "success" });
       });
-      aiProviderRegistry.registerRunFn("text-generation", TEST_PROVIDER, mockRunFn);
+
+      aiProviderRegistry.registerRunFn(TEST_PROVIDER, "text-generation", mockRunFn);
+      const model = await getGlobalModelRepository().addModel({
+        name: "test-model",
+        provider: TEST_PROVIDER,
+        url: "test-model",
+        availableOnBrowser: true,
+        availableOnServer: true,
+        pipeline: "text-generation",
+      });
 
       const controller = new AbortController();
       const job = new AiJob({
         queueName: TEST_PROVIDER,
         input: {
+          aiProvider: TEST_PROVIDER,
           taskType: "text-generation",
-          modelProvider: TEST_PROVIDER,
-          taskInput: { text: "test" },
+          taskInput: { text: "test", model: "test-model" },
         },
       });
 

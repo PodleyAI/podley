@@ -1,13 +1,14 @@
 import { AbortSignalJobError, Job, JobStatus, PermanentJobError } from "@ellmers/job-queue";
 import { TaskInput, TaskOutput } from "@ellmers/task-graph";
 import { getAiProviderRegistry } from "../provider/AiProviderRegistry";
+import { getGlobalModelRepository } from "../model/ModelRegistry";
 
 /**
  * Input data for the AiJob
  */
 export interface AiProviderInput<Input extends TaskInput = TaskInput> {
   taskType: string;
-  modelProvider: string;
+  aiProvider: string;
   taskInput: Input;
 }
 
@@ -39,20 +40,29 @@ export class AiJob<
         abortHandler = () => signal.removeEventListener("abort", handler);
       });
 
-      const fnPromise = (async () => {
+      const runFn = async () => {
         const fn = getAiProviderRegistry().getDirectRunFn<Input, Output>(
-          this.input.taskType,
-          this.input.modelProvider
+          this.input.aiProvider,
+          this.input.taskType
         );
         if (!fn) {
           throw new PermanentJobError(
-            `No run function found for task type ${this.input.taskType} and model provider ${this.input.modelProvider}`
+            `No run function found for task type ${this.input.taskType} and model provider ${this.input.aiProvider}`
           );
         }
-        return await fn(this.updateProgress.bind(this), this.input.taskInput, signal);
-      })();
+        const modelName = this.input.taskInput.model;
+        const model = await getGlobalModelRepository().findByName(modelName);
+        if (modelName && !model) {
+          throw new PermanentJobError(`Model ${modelName} not found`);
+        }
+        if (signal?.aborted) {
+          throw new AbortSignalJobError("Job aborted");
+        }
+        return await fn(this.input.taskInput, model, this.updateProgress.bind(this), signal);
+      };
+      const runFnPromise = runFn();
 
-      return await Promise.race([fnPromise, abortPromise]);
+      return await Promise.race([runFnPromise, abortPromise]);
     } finally {
       // Clean up the abort event listener to prevent memory leaks
       if (abortHandler) {

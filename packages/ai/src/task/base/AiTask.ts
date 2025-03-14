@@ -70,7 +70,7 @@ export class AiTask<
       jobRunId: this.config.runnerId, // could be undefined
       input: {
         taskType: runtype,
-        modelProvider: model.provider,
+        aiProvider: model.provider,
         taskInput: this.runInputData,
       },
     });

@@ -6,5 +6,5 @@
 //    *******************************************************************************
 
 export * from "./common/TFMP_Constants";
-export * from "./inline/TFMP_Inline_TaskRun";
-export * from "./inline/TFMP_Inline_RegisterTasks";
+export * from "./common/TFMP_JobRunFns";
+export * from "./registry/TFMP_Inline_RegisterJobFns";

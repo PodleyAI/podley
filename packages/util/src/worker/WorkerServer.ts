@@ -41,11 +41,6 @@ export class WorkerServer {
 
   private functions: Record<string, (...args: any[]) => Promise<any>> = {};
 
-  // Utility functions to communicate with the main thread
-  private postProgress = (id: string, progress: number, message?: string, details?: any) => {
-    postMessage({ id, type: "progress", data: { progress, message, details } });
-  };
-
   private postResult = (id: string, result: any) => {
     const transferables = extractTransferables(result);
     // @ts-ignore - Ignore type mismatch between standard Transferable and Bun.Transferable
@@ -91,7 +86,10 @@ export class WorkerServer {
       this.requestControllers.set(id, abortController);
 
       const fn = this.functions[functionName];
-      const result = await fn(id, args, this.postProgress, abortController.signal);
+      const postProgress = (progress: number, message?: string, details?: any) => {
+        postMessage({ id, type: "progress", data: { progress, message, details } });
+      };
+      const result = await fn(id, args, postProgress, abortController.signal);
       this.postResult(id, result);
     } catch (error: any) {
       this.postError(id, error.message);

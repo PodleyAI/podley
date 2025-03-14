@@ -1,4 +1,4 @@
-import { MEDIA_PIPE_TFJS_MODEL } from "@ellmers/ai-provider/tf-mediapipe/inline";
+import { TENSORFLOW_MEDIAPIPE } from "@ellmers/ai-provider/tf-mediapipe/inline";
 import { getGlobalModelRepository, Model } from "@ellmers/ai";
 
 async function addMediaPipeModel(info: Partial<Model>, tasks: string[]) {
@@ -6,7 +6,7 @@ async function addMediaPipeModel(info: Partial<Model>, tasks: string[]) {
 
   const model = Object.assign(
     {
-      provider: MEDIA_PIPE_TFJS_MODEL,
+      provider: TENSORFLOW_MEDIAPIPE,
       quantization: null,
       normalize: true,
       contextWindow: 4096,

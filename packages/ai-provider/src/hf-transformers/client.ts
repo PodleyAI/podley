@@ -6,5 +6,5 @@
 //    *******************************************************************************
 
 export * from "./common/HFT_Constants";
-export * from "./worker/HFT_Client_TaskRun";
-export * from "./worker/HFT_Client_RegisterTasks";
+export * from "./common/HFT_JobRunFns";
+export * from "./registry/HFT_Client_RegisterJobFns";

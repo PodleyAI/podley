@@ -13,8 +13,8 @@ import {
   setGlobalModelRepository,
 } from "@ellmers/ai";
 import {
-  ONNX_TRANSFORMERJS,
-  registerHuggingfaceLocalTasks,
+  HF_TRANSFORMERS_ONNX,
+  registerHFTInlineJobFns,
 } from "@ellmers/ai-provider/hf-transformers/inline";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
 import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";
@@ -37,15 +37,15 @@ describe("HFTransformersBinding", () => {
   });
   describe("InMemoryJobQueue", () => {
     it("Should have an item queued", async () => {
-      registerHuggingfaceLocalTasks();
+      registerHFTInlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
       const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
-        ONNX_TRANSFORMERJS,
+        HF_TRANSFORMERS_ONNX,
         AiJob<TaskInput, TaskOutput>,
         {
           limiter: new ConcurrencyLimiter(1, 10),
           storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
-            ONNX_TRANSFORMERJS
+            HF_TRANSFORMERS_ONNX
           ),
         }
       );
@@ -56,7 +56,7 @@ describe("HFTransformersBinding", () => {
         url: "Xenova/LaMini-Flan-T5-783M",
         availableOnBrowser: true,
         availableOnServer: true,
-        provider: ONNX_TRANSFORMERJS,
+        provider: HF_TRANSFORMERS_ONNX,
         pipeline: "text2text-generation",
       };
 
@@ -65,9 +65,9 @@ describe("HFTransformersBinding", () => {
       await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
       await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
 
-      const queue = queueRegistry.getQueue(ONNX_TRANSFORMERJS);
+      const queue = queueRegistry.getQueue(HF_TRANSFORMERS_ONNX);
       expect(queue).toBeDefined();
-      expect(queue!.queueName).toEqual(ONNX_TRANSFORMERJS);
+      expect(queue!.queueName).toEqual(HF_TRANSFORMERS_ONNX);
 
       const workflow = new Workflow();
       workflow.DownloadModel({
@@ -83,10 +83,10 @@ describe("HFTransformersBinding", () => {
 
   describe("SqliteJobQueue", () => {
     it("Should have an item queued", async () => {
-      registerHuggingfaceLocalTasks();
+      registerHFTInlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
       const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
-        ONNX_TRANSFORMERJS,
+        HF_TRANSFORMERS_ONNX,
         AiJob<TaskInput, TaskOutput>,
         {
           storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(db, "test"),
@@ -103,7 +103,7 @@ describe("HFTransformersBinding", () => {
         url: "Xenova/LaMini-Flan-T5-783M",
         availableOnBrowser: true,
         availableOnServer: true,
-        provider: ONNX_TRANSFORMERJS,
+        provider: HF_TRANSFORMERS_ONNX,
         pipeline: "text2text-generation",
       };
 
@@ -111,9 +111,9 @@ describe("HFTransformersBinding", () => {
       await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
       await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
 
-      const queue = queueRegistry.getQueue(ONNX_TRANSFORMERJS);
+      const queue = queueRegistry.getQueue(HF_TRANSFORMERS_ONNX);
       expect(queue).toBeDefined();
-      expect(queue?.queueName).toEqual(ONNX_TRANSFORMERJS);
+      expect(queue?.queueName).toEqual(HF_TRANSFORMERS_ONNX);
 
       const workflow = new Workflow();
       workflow.DownloadModel({

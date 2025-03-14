@@ -48,9 +48,9 @@ After this, plese read [Architecture](02_architecture.md) before attempting to [
 
 ```ts
 import { Workflow } from "@ellmers/task-graph";
-import { registerHuggingfaceLocalTasksInMemory } from "@ellmers/test";
+import { registerHFTJobFnsInMemoryQueue } from "@ellmers/test";
 // config and start up
-registerHuggingfaceLocalTasksInMemory();
+registerHFTJobFnsInMemoryQueue();
 
 const workflow = new Workflow();
 workflow
@@ -80,10 +80,10 @@ import {
   Dataflow,
   TaskGraph,
 } from "@ellmers/task-graph";
-import { registerHuggingfaceLocalTasksInMemory } from "@ellmers/test";
+import { registerHFTJobFnsInMemoryQueue } from "@ellmers/test";
 
 // config and start up
-registerHuggingfaceLocalTasksInMemory();
+registerHFTJobFnsInMemoryQueue();
 
 // build and run graph
 const graph = new TaskGraph();
@@ -156,7 +156,7 @@ await getGlobalModelRepository().addModel({
   url: "Xenova/LaMini-Flan-T5-783M",
   availableOnBrowser: true,
   availableOnServer: true,
-  provider: ONNX_TRANSFORMERJS,
+  provider: HF_TRANSFORMERS_ONNX,
   pipeline: "text2text-generation",
 });
 await getGlobalModelRepository().connectTaskToModel(
@@ -170,13 +170,13 @@ await getGlobalModelRepository().connectTaskToModel(
 
 const aiProviderRegistry = getAiProviderRegistry();
 aiProviderRegistry.registerRunFn(
+  HF_TRANSFORMERS_ONNX,
   DownloadModelTask.type,
-  ONNX_TRANSFORMERJS,
   HuggingFaceLocal_DownloadRun
 );
 aiProviderRegistry.registerRunFn(
+  HF_TRANSFORMERS_ONNX,
   TextRewriterTask.type,
-  ONNX_TRANSFORMERJS,
   HuggingFaceLocal_TextRewriterRun
 );
 const jobQueue = new JobQueue<TaskInput, TaskOutput>("test", Job, {
@@ -227,8 +227,8 @@ You can use as much or as little "magic" as you want. The config helpers are the
 
 Tasks are agnostic to the provider. Text embedding can me done with several providers, such as Huggingface / ONNX or MediaPipe locally, or OpenAI etc via API calls.
 
-- **`registerHuggingfaceLocalTasks()`** - Registers the Huggingface Local provider. Now you can use a onnx model name for TextEmbedding, etc.
-- **`registerMediaPipeTfJsLocalTasks()`** - Registers the MediaPipe TfJs Local provider. Now you can use one of the MediaPipe models.
+- **`registerHFTInlineJobFns()`** - Registers the Huggingface Local provider. Now you can use a onnx model name for TextEmbedding, etc.
+- **`registerTFMPInlineJobFns()`** - Registers the MediaPipe TfJs Local provider. Now you can use one of the MediaPipe models.
 
 ### Registering Provider plus related Job Queue
 
@@ -236,12 +236,12 @@ LLM providers have long running functions. These are handled by a Job Queue. The
 
 #### In memory:
 
-- **`registerHuggingfaceLocalTasksInMemory`** function sets up the Huggingface Local provider (above), and a JobQueue with a Concurrency Limiter so the ONNX queue only runs one task/job at a time.
-- **`registerMediaPipeTfJsLocalInMemory`** does the same for MediaPipe.
+- **`registerHFTJobFnsInMemoryQueue`** function sets up the Huggingface Local provider (above), and a JobQueue with a Concurrency Limiter so the ONNX queue only runs one task/job at a time.
+- **`registerTFMPInMemoryQueue`** does the same for MediaPipe.
 
 #### Using Sqlite:
 
-- **`registerHuggingfaceLocalTasksSqlite`** function sets up the Huggingface Local provider, and a SqliteJobQueue with a Concurrency Limiter
+- **`registerHFTInlineJobFnsSqlite`** function sets up the Huggingface Local provider, and a SqliteJobQueue with a Concurrency Limiter
 - **`registerMediaPipeTfJsLocalSqlite`** does the same for MediaPipe.
 
 ## Workflow

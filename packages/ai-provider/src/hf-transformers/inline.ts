@@ -6,5 +6,5 @@
 //    *******************************************************************************
 
 export * from "./common/HFT_Constants";
-export * from "./inline/HFT_Inline_TaskRun";
-export * from "./inline/HFT_Inline_RegisterTasks";
+export * from "./common/HFT_JobRunFns";
+export * from "./registry/HFT_Inline_RegisterJobFns";

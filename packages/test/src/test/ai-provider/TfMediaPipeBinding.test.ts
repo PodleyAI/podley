@@ -14,8 +14,8 @@ import {
   setGlobalModelRepository,
 } from "@ellmers/ai";
 import {
-  MEDIA_PIPE_TFJS_MODEL,
-  registerMediaPipeTfJsLocalTasks,
+  TENSORFLOW_MEDIAPIPE,
+  registerTFMPInlineJobFns,
 } from "@ellmers/ai-provider/tf-mediapipe/inline";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
 import { Sqlite } from "@ellmers/sqlite";
@@ -41,11 +41,11 @@ describe("TfMediaPipeBinding", () => {
     it("should initialize without errors", async () => {
       const queueRegistry = getTaskQueueRegistry();
       const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
-        MEDIA_PIPE_TFJS_MODEL,
+        TENSORFLOW_MEDIAPIPE,
         AiJob<TaskInput, TaskOutput>,
         {
           storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
-            MEDIA_PIPE_TFJS_MODEL
+            TENSORFLOW_MEDIAPIPE
           ),
           limiter: new ConcurrencyLimiter(1, 10),
           waitDurationInMilliseconds: 1,
@@ -53,7 +53,7 @@ describe("TfMediaPipeBinding", () => {
       );
       queueRegistry.registerQueue(jobQueue);
 
-      registerMediaPipeTfJsLocalTasks();
+      registerTFMPInlineJobFns();
       setGlobalModelRepository(new InMemoryModelRepository());
 
       const universal_sentence_encoder: Model = {
@@ -62,7 +62,7 @@ describe("TfMediaPipeBinding", () => {
         nativeDimensions: 100,
         availableOnBrowser: true,
         availableOnServer: false,
-        provider: MEDIA_PIPE_TFJS_MODEL,
+        provider: TENSORFLOW_MEDIAPIPE,
       };
       await getGlobalModelRepository().addModel(universal_sentence_encoder);
       await getGlobalModelRepository().connectTaskToModel(
@@ -70,9 +70,9 @@ describe("TfMediaPipeBinding", () => {
         universal_sentence_encoder.name
       );
 
-      const queue = queueRegistry.getQueue(MEDIA_PIPE_TFJS_MODEL);
+      const queue = queueRegistry.getQueue(TENSORFLOW_MEDIAPIPE);
       expect(queue).toBeDefined();
-      expect(queue?.queueName).toEqual(MEDIA_PIPE_TFJS_MODEL);
+      expect(queue?.queueName).toEqual(TENSORFLOW_MEDIAPIPE);
 
       const workflow = new Workflow();
       workflow.DownloadModel({
@@ -88,7 +88,7 @@ describe("TfMediaPipeBinding", () => {
 
   describe("SqliteJobQueue", () => {
     it("should not fail", async () => {
-      registerMediaPipeTfJsLocalTasks();
+      registerTFMPInlineJobFns();
       setGlobalModelRepository(new InMemoryModelRepository());
       const universal_sentence_encoder: Model = {
         name: "media-pipe:Universal Sentence Encoder",
@@ -96,7 +96,7 @@ describe("TfMediaPipeBinding", () => {
         nativeDimensions: 100,
         availableOnBrowser: true,
         availableOnServer: false,
-        provider: MEDIA_PIPE_TFJS_MODEL,
+        provider: TENSORFLOW_MEDIAPIPE,
       };
       await getGlobalModelRepository().addModel(universal_sentence_encoder);
       await getGlobalModelRepository().connectTaskToModel(
@@ -105,22 +105,22 @@ describe("TfMediaPipeBinding", () => {
       );
 
       const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
-        MEDIA_PIPE_TFJS_MODEL,
+        TENSORFLOW_MEDIAPIPE,
         AiJob<TaskInput, TaskOutput>,
         {
           storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
             db,
-            MEDIA_PIPE_TFJS_MODEL
+            TENSORFLOW_MEDIAPIPE
           ),
-          limiter: new SqliteRateLimiter(db, MEDIA_PIPE_TFJS_MODEL, 4, 1),
+          limiter: new SqliteRateLimiter(db, TENSORFLOW_MEDIAPIPE, 4, 1),
           waitDurationInMilliseconds: 1,
         }
       );
 
       getTaskQueueRegistry().registerQueue(jobQueue);
-      const queue = getTaskQueueRegistry().getQueue(MEDIA_PIPE_TFJS_MODEL);
+      const queue = getTaskQueueRegistry().getQueue(TENSORFLOW_MEDIAPIPE);
       expect(queue).toBeDefined();
-      expect(queue?.queueName).toEqual(MEDIA_PIPE_TFJS_MODEL);
+      expect(queue?.queueName).toEqual(TENSORFLOW_MEDIAPIPE);
 
       const workflow = new Workflow();
       workflow.DownloadModel({

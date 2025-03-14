@@ -7,7 +7,7 @@
 
 import { createServiceToken } from "@ellmers/util";
 
-export const ONNX_TRANSFORMERJS = "ONNX_TRANSFORMERJS";
+export const HF_TRANSFORMERS_ONNX = "HF_TRANSFORMERS_ONNX";
 
 export enum QUANTIZATION_DATA_TYPES {
   auto = "auto", // Auto-detect based on environment

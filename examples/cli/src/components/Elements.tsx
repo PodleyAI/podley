@@ -5,7 +5,6 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import chalk from "chalk";
 import React, { useState, useEffect } from "react";
 import type { FC } from "react";
 import { Text } from "tuir";
