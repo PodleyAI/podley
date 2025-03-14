@@ -400,6 +400,7 @@ export class TaskGraphRunner {
     }
     this.pushStatusFromNodeToEdges(graph, task);
     this.pushErrorFromNodeToEdges(graph, task);
+    task.emit("reset");
   }
 
   /**

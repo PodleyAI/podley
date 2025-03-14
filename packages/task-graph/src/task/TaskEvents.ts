@@ -33,6 +33,9 @@ export type TaskEventListeners = {
 
   /** Fired when a regenerative task regenerates its graph */
   regenerate: () => void;
+
+  /** Fired when a task is reset to original state */
+  reset: () => void;
 };
 /** Union type of all possible task event names */
 

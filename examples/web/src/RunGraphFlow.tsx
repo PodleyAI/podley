@@ -304,6 +304,7 @@ function listenToTask(
   task.on("complete", handleStatusChange);
   task.on("error", handleStatusChange);
   task.on("abort", handleStatusChange);
+  task.on("reset", handleStatusChange);
   task.on("progress", handleProgress);
   // Add cleanup function
   cleanupFns.push(() => {
@@ -311,6 +312,7 @@ function listenToTask(
     task.off("complete", handleStatusChange);
     task.off("error", handleStatusChange);
     task.off("abort", handleStatusChange);
+    task.off("reset", handleStatusChange);
     task.off("progress", handleProgress);
   });
 

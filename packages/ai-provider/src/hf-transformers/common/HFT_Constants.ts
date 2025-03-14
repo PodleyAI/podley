@@ -5,8 +5,6 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken } from "@ellmers/util";
-
 export const HF_TRANSFORMERS_ONNX = "HF_TRANSFORMERS_ONNX";
 
 export enum QUANTIZATION_DATA_TYPES {
