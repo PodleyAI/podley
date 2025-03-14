@@ -8,7 +8,7 @@
 import { getAiProviderRegistry } from "@ellmers/ai";
 import { HF_TRANSFORMERS_ONNX } from "../common/HFT_Constants";
 
-export async function registerHFTClientJobFns() {
+export async function register_HFT_ClientJobFns() {
   const ProviderRegistry = getAiProviderRegistry();
 
   const names = [

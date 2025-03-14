@@ -15,7 +15,7 @@ import {
 } from "@ellmers/ai";
 import {
   TENSORFLOW_MEDIAPIPE,
-  registerTFMPInlineJobFns,
+  register_TFMP_InlineJobFns,
 } from "@ellmers/ai-provider/tf-mediapipe/inline";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
 import { Sqlite } from "@ellmers/sqlite";
@@ -53,7 +53,7 @@ describe("TfMediaPipeBinding", () => {
       );
       queueRegistry.registerQueue(jobQueue);
 
-      registerTFMPInlineJobFns();
+      register_TFMP_InlineJobFns();
       setGlobalModelRepository(new InMemoryModelRepository());
 
       const universal_sentence_encoder: Model = {
@@ -88,7 +88,7 @@ describe("TfMediaPipeBinding", () => {
 
   describe("SqliteJobQueue", () => {
     it("should not fail", async () => {
-      registerTFMPInlineJobFns();
+      register_TFMP_InlineJobFns();
       setGlobalModelRepository(new InMemoryModelRepository());
       const universal_sentence_encoder: Model = {
         name: "media-pipe:Universal Sentence Encoder",

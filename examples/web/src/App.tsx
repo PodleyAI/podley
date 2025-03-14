@@ -10,11 +10,11 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { AiJob } from "@ellmers/ai";
 import {
   HF_TRANSFORMERS_ONNX,
-  registerHFTInlineJobFns,
+  register_HFT_InlineJobFns,
 } from "@ellmers/ai-provider/hf-transformers/inline";
 import {
   TENSORFLOW_MEDIAPIPE,
-  registerTFMPClientJobFns,
+  register_TFMP_ClientJobFns,
 } from "@ellmers/ai-provider/tf-mediapipe/client";
 import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
 import {
@@ -51,7 +51,7 @@ console.log("workerManager", workerManager);
 
 const queueRegistry = getTaskQueueRegistry();
 
-registerHFTInlineJobFns();
+register_HFT_InlineJobFns();
 queueRegistry.registerQueue(
   new JobQueue<TaskInput, TaskOutput>(HF_TRANSFORMERS_ONNX, AiJob<TaskInput, TaskOutput>, {
     limiter: new ConcurrencyLimiter(2, 100),
@@ -59,7 +59,7 @@ queueRegistry.registerQueue(
   })
 );
 
-registerTFMPClientJobFns();
+register_TFMP_ClientJobFns();
 queueRegistry.registerQueue(
   new JobQueue<TaskInput, TaskOutput>(TENSORFLOW_MEDIAPIPE, AiJob<TaskInput, TaskOutput>, {
     limiter: new ConcurrencyLimiter(2, 100),

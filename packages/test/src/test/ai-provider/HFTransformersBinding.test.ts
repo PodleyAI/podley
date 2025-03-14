@@ -14,7 +14,7 @@ import {
 } from "@ellmers/ai";
 import {
   HF_TRANSFORMERS_ONNX,
-  registerHFTInlineJobFns,
+  register_HFT_InlineJobFns,
 } from "@ellmers/ai-provider/hf-transformers/inline";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
 import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";
@@ -37,7 +37,7 @@ describe("HFTransformersBinding", () => {
   });
   describe("InMemoryJobQueue", () => {
     it("Should have an item queued", async () => {
-      registerHFTInlineJobFns();
+      register_HFT_InlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
       const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
         HF_TRANSFORMERS_ONNX,
@@ -83,7 +83,7 @@ describe("HFTransformersBinding", () => {
 
   describe("SqliteJobQueue", () => {
     it("Should have an item queued", async () => {
-      registerHFTInlineJobFns();
+      register_HFT_InlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
       const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
         HF_TRANSFORMERS_ONNX,

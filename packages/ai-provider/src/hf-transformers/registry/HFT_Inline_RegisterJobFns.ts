@@ -17,7 +17,7 @@ import {
 } from "../common/HFT_JobRunFns";
 import { HF_TRANSFORMERS_ONNX } from "../common/HFT_Constants";
 
-export async function registerHFTInlineJobFns() {
+export async function register_HFT_InlineJobFns() {
   const ProviderRegistry = getAiProviderRegistry();
   const fns = {
     ["DownloadModelTask"]: HFT_Download,

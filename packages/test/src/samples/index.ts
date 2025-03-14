@@ -13,7 +13,7 @@ import { InMemoryQueueStorage } from "@ellmers/storage";
 export * from "./MediaPipeModelSamples";
 export * from "./ONNXModelSamples";
 
-export async function registerHFTJobFnsInMemoryQueue() {
+export async function register_HFT_JobFnsInMemoryQueue() {
   const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
     "HF_TRANSFORMERS_ONNX",
     AiJob<TaskInput, TaskOutput>,
@@ -28,7 +28,7 @@ export async function registerHFTJobFnsInMemoryQueue() {
   jobQueue.start();
 }
 
-export async function registerTFMPInMemoryQueue() {
+export async function register_TFMP_InMemoryQueue() {
   const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
     TENSORFLOW_MEDIAPIPE,
     AiJob<TaskInput, TaskOutput>,

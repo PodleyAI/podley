@@ -48,9 +48,9 @@ After this, plese read [Architecture](02_architecture.md) before attempting to [
 
 ```ts
 import { Workflow } from "@ellmers/task-graph";
-import { registerHFTJobFnsInMemoryQueue } from "@ellmers/test";
+import { register_HFT_JobFnsInMemoryQueue } from "@ellmers/test";
 // config and start up
-registerHFTJobFnsInMemoryQueue();
+register_HFT_JobFnsInMemoryQueue();
 
 const workflow = new Workflow();
 workflow
@@ -80,10 +80,10 @@ import {
   Dataflow,
   TaskGraph,
 } from "@ellmers/task-graph";
-import { registerHFTJobFnsInMemoryQueue } from "@ellmers/test";
+import { register_HFT_JobFnsInMemoryQueue } from "@ellmers/test";
 
 // config and start up
-registerHFTJobFnsInMemoryQueue();
+register_HFT_JobFnsInMemoryQueue();
 
 // build and run graph
 const graph = new TaskGraph();
@@ -227,8 +227,8 @@ You can use as much or as little "magic" as you want. The config helpers are the
 
 Tasks are agnostic to the provider. Text embedding can me done with several providers, such as Huggingface / ONNX or MediaPipe locally, or OpenAI etc via API calls.
 
-- **`registerHFTInlineJobFns()`** - Registers the Huggingface Local provider. Now you can use a onnx model name for TextEmbedding, etc.
-- **`registerTFMPInlineJobFns()`** - Registers the MediaPipe TfJs Local provider. Now you can use one of the MediaPipe models.
+- **`register_HFT_InlineJobFns()`** - Registers the Huggingface Local provider. Now you can use a onnx model name for TextEmbedding, etc.
+- **`register_TFMP_InlineJobFns()`** - Registers the MediaPipe TfJs Local provider. Now you can use one of the MediaPipe models.
 
 ### Registering Provider plus related Job Queue
 
@@ -236,12 +236,12 @@ LLM providers have long running functions. These are handled by a Job Queue. The
 
 #### In memory:
 
-- **`registerHFTJobFnsInMemoryQueue`** function sets up the Huggingface Local provider (above), and a JobQueue with a Concurrency Limiter so the ONNX queue only runs one task/job at a time.
-- **`registerTFMPInMemoryQueue`** does the same for MediaPipe.
+- **`register_HFT_JobFnsInMemoryQueue`** function sets up the Huggingface Local provider (above), and a JobQueue with a Concurrency Limiter so the ONNX queue only runs one task/job at a time.
+- **`register_TFMP_InMemoryQueue`** does the same for MediaPipe.
 
 #### Using Sqlite:
 
-- **`registerHFTInlineJobFnsSqlite`** function sets up the Huggingface Local provider, and a SqliteJobQueue with a Concurrency Limiter
+- **`register_HFT_InlineJobFnsSqlite`** function sets up the Huggingface Local provider, and a SqliteJobQueue with a Concurrency Limiter
 - **`registerMediaPipeTfJsLocalSqlite`** does the same for MediaPipe.
 
 ## Workflow

@@ -4,13 +4,13 @@ import { program } from "commander";
 import { AddBaseCommands } from "./TaskCLI";
 import {
   registerHuggingfaceLocalModels,
-  registerHFTJobFnsInMemoryQueue,
-  registerTFMPInMemoryQueue,
+  register_HFT_JobFnsInMemoryQueue,
+  register_TFMP_InMemoryQueue,
   registerMediaPipeTfJsLocalModels,
 } from "@ellmers/test";
 import { getTaskQueueRegistry } from "@ellmers/task-graph";
-import { registerHFTInlineJobFns } from "@ellmers/ai-provider/hf-transformers/inline";
-import { registerTFMPInlineJobFns } from "@ellmers/ai-provider/tf-mediapipe/inline";
+import { register_HFT_InlineJobFns } from "@ellmers/ai-provider/hf-transformers/inline";
+import { register_TFMP_InlineJobFns } from "@ellmers/ai-provider/tf-mediapipe/inline";
 import { argv } from "bun";
 
 program.version("1.0.0").description("A CLI to run Ellmers.");
@@ -25,12 +25,12 @@ AddBaseCommands(program);
 // workerManager.registerWorker(HF_TRANSFORMERS_ONNX, worker);
 
 await registerHuggingfaceLocalModels();
-await registerHFTInlineJobFns();
-await registerHFTJobFnsInMemoryQueue();
+await register_HFT_InlineJobFns();
+await register_HFT_JobFnsInMemoryQueue();
 
 await registerMediaPipeTfJsLocalModels();
-await registerTFMPInlineJobFns();
-await registerTFMPInMemoryQueue();
+await register_TFMP_InlineJobFns();
+await register_TFMP_InMemoryQueue();
 
 await program.parseAsync(argv);
 

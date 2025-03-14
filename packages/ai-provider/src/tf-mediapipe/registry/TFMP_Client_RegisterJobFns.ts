@@ -8,7 +8,7 @@
 import { getAiProviderRegistry } from "@ellmers/ai";
 import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
 
-export const registerTFMPClientJobFns = () => {
+export const register_TFMP_ClientJobFns = () => {
   const aiProviderRegistry = getAiProviderRegistry();
   const names = ["DownloadModelTask", "TextEmbeddingTask"];
   for (const name of names) {
