@@ -62,7 +62,7 @@ export abstract class JobQueueTask<
     let cleanup: () => void = () => {};
 
     try {
-      const job = await this.createJob();
+      const job = await this.createJob(input);
 
       const queue = getTaskQueueRegistry().getQueue(this.config.queueName!);
 
@@ -85,7 +85,6 @@ export abstract class JobQueueTask<
         const jobId = await queue.add(job);
         this.config.currentJobId = jobId;
         this.config.runnerId = job.jobRunId; // TODO: think about this more
-
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
           executeConfig.updateProgress(progress, message, details);
         });
@@ -104,7 +103,7 @@ export abstract class JobQueueTask<
    * Override this method to create the right job class for the queue for this task
    * @returns Promise<Job> - The created job
    */
-  async createJob() {
+  async createJob(input: Input) {
     const queue = getTaskQueueRegistry().getQueue(this.config.queueName!);
     if (!queue) {
       if ((this.constructor as typeof JobQueueTask).canRunDirectly) {
@@ -120,7 +119,7 @@ export abstract class JobQueueTask<
     const job = new queue.jobClass({
       queueName: queue.queueName,
       jobRunId: this.config.runnerId, // could be undefined
-      input: this.runInputData,
+      input: input,
     });
     return job;
   }

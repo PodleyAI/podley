@@ -44,7 +44,6 @@ const worker_tfmp = new Worker(new URL("./worker_tfmp.ts", import.meta.url), { t
 const worker_hft = new Worker(new URL("./worker_hft.ts", import.meta.url), { type: "module" });
 workerManager.registerWorker(TENSORFLOW_MEDIAPIPE, worker_tfmp);
 workerManager.registerWorker(HF_TRANSFORMERS_ONNX, worker_hft);
-console.log("workerManager", workerManager);
 
 const queueRegistry = getTaskQueueRegistry();
 

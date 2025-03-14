@@ -60,7 +60,15 @@ const getPipeline = async (
   }
 
   // Create a callback status object for progress tracking
-  const progressCallback = downloadProgressCallback(onProgress);
+  const progressCallback = (status: CallbackStatus) => {
+    const progress = status.status === "progress" ? Math.round(status.progress) : 0;
+    if (status.status === "progress") {
+      onProgress(progress, "Downloading model", {
+        file: status.file,
+        progress: status.progress,
+      });
+    }
+  };
 
   const pipelineOptions: PretrainedModelOptions = {
     dtype: (model.quantization as QUANTIZATION_DATA_TYPES) || "q8",
@@ -300,41 +308,28 @@ export const HFT_TextQuestionAnswer: AiProviderRunFn<
   };
 };
 
-function generateProgressCallback(
-  updateProgress: (progress: number, message?: string, details?: any) => void
-) {
-  let count = 0;
-  return (text: string) => {
-    count++;
-    const result = 100 * (1 - Math.exp(-0.05 * count));
-    const progress = Math.round(Math.min(result, 100));
-    updateProgress(progress, "Generating", { text, progress });
-  };
-}
-
+/**
+ * Create a text streamer for a given tokenizer and update progress function
+ * @param tokenizer - The tokenizer to use for the streamer
+ * @param updateProgress - The function to call to update the progress
+ * @param signal - The signal to use for the streamer for aborting
+ * @returns The text streamer
+ */
 function createTextStreamer(
   tokenizer: any,
   updateProgress: (progress: number, message?: string, details?: any) => void,
   signal?: AbortSignal
 ) {
+  let count = 0;
   return new TextStreamer(tokenizer, {
     skip_prompt: true,
     decode_kwargs: { skip_special_tokens: true },
-    callback_function: generateProgressCallback(updateProgress),
+    callback_function: (text: string) => {
+      count++;
+      const result = 100 * (1 - Math.exp(-0.05 * count));
+      const progress = Math.round(Math.min(result, 100));
+      updateProgress(progress, "Generating", { text, progress });
+    },
     ...(signal ? { abort_signal: signal } : {}),
   });
-}
-
-function downloadProgressCallback(
-  updateProgress: (progress: number, message?: string, details?: any) => void
-) {
-  return (status: CallbackStatus) => {
-    const progress = status.status === "progress" ? Math.round(status.progress) : 0;
-    if (status.status === "progress") {
-      updateProgress(progress, "Downloading model", {
-        file: status.file,
-        progress: status.progress,
-      });
-    }
-  };
 }

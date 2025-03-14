@@ -75,7 +75,7 @@ export class WorkerServer {
     }
   }
 
-  async handleCall(id: string, functionName: string, args: any[]) {
+  async handleCall(id: string, functionName: string, [input, model]: [any, any]) {
     if (!(functionName in this.functions)) {
       this.postError(id, `Function ${functionName} not found`);
       return;
@@ -89,7 +89,7 @@ export class WorkerServer {
       const postProgress = (progress: number, message?: string, details?: any) => {
         postMessage({ id, type: "progress", data: { progress, message, details } });
       };
-      const result = await fn(id, args, postProgress, abortController.signal);
+      const result = await fn(input, model, postProgress, abortController.signal);
       this.postResult(id, result);
     } catch (error: any) {
       this.postError(id, error.message);

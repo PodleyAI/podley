@@ -51,9 +51,9 @@ export class AiTask<
    * Creates a new Job instance for the task
    * @returns Promise<Job> - The created job
    */
-  async createJob() {
+  async createJob(input: Input) {
     const runtype = (this.constructor as any).runtype ?? (this.constructor as any).type;
-    const modelname = this.runInputData["model"];
+    const modelname = input["model"];
     if (!modelname) throw new Error("JobQueueTaskTask: No model name found");
     const model = await getGlobalModelRepository().findByName(modelname);
 
@@ -71,7 +71,7 @@ export class AiTask<
       input: {
         taskType: runtype,
         aiProvider: model.provider,
-        taskInput: this.runInputData,
+        taskInput: input,
       },
     });
     return job;
