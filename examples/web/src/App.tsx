@@ -31,7 +31,6 @@ import {
   registerHuggingfaceLocalModels,
   registerMediaPipeTfJsLocalModels,
 } from "@ellmers/test";
-import { globalServiceRegistry, WORKER_MANAGER } from "@ellmers/util";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useCallback, useEffect, useState } from "react";
 import { GraphStoreStatus } from "./GraphStoreStatus";
@@ -41,11 +40,12 @@ import { QueuesStatus } from "./QueueStatus";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
 import { RunGraphFlow } from "./RunGraphFlow";
 
-// const workerManager = globalServiceRegistry.get(WORKER_MANAGER);
-// const worker_tfmp = new Worker(new URL("./worker_tfmp.ts", import.meta.url), { type: "module" });
-// const worker_hft = new Worker(new URL("./worker_hft.ts", import.meta.url), { type: "module" });
-// workerManager.registerWorker(TENSORFLOW_MEDIAPIPE, worker_tfmp);
-// workerManager.registerWorker(HF_TRANSFORMERS_ONNX, worker_hft);
+// register_TFMP_ClientJobFns(
+//   new Worker(new URL("./worker_tfmp.ts", import.meta.url), { type: "module" })
+// );
+// register_HFT_ClientJobFns(
+//   new Worker(new URL("./worker_hft.ts", import.meta.url), { type: "module" })
+// );
 
 const queueRegistry = getTaskQueueRegistry();
 
