@@ -2,6 +2,8 @@
 // previous fork: https://github.com/sroussey/typescript-graph
 // license: MIT
 
+import { BaseError } from "../utilities/BaseError";
+
 /**
  * # NodeAlreadyExistsError
  *
@@ -9,8 +11,8 @@
  *
  * @category Errors
  */
-
-export class NodeAlreadyExistsError<T> extends Error {
+export class NodeAlreadyExistsError<T> extends BaseError {
+  public static type: string = "NodeAlreadyExistsError";
   public newNode: T;
   public oldNode: T;
   public identity: unknown;
@@ -37,7 +39,8 @@ export class NodeAlreadyExistsError<T> extends Error {
  *
  * @category Errors
  */
-export class NodeDoesntExistError extends Error {
+export class NodeDoesntExistError extends BaseError {
+  public static type: string = "NodeDoesntExistError";
   public identity: unknown;
 
   constructor(identity: unknown) {
@@ -57,7 +60,8 @@ export class NodeDoesntExistError extends Error {
  *
  * @category Errors
  */
-export class CycleError extends Error {
+export class CycleError extends BaseError {
+  public static type: string = "CycleError";
   constructor(message: string) {
     super(message);
     this.name = "CycleError";

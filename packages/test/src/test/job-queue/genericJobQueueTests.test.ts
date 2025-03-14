@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { IQueueStorage, IndexedDbQueueStorage } from "@ellmers/storage";
-import { sleep, uuid4 } from "@ellmers/util";
+import { BaseError, sleep, uuid4 } from "@ellmers/util";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   AbortSignalJobError,
@@ -898,7 +898,7 @@ export function runGenericJobQueueTests(
         error = err as Error;
       }
       expect(error).toBeDefined();
-      expect(error).toBeInstanceOf(Error);
+      expect(error).toBeInstanceOf(BaseError);
       expect(error?.message).toBe("Job failed as expected");
 
       const failedJob = await jobQueue.get(jobId);

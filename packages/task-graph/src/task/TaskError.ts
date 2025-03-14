@@ -5,10 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export class TaskError extends Error {
+import { BaseError } from "@ellmers/util";
+
+export class TaskError extends BaseError {
+  static readonly type: string = "TaskError";
   constructor(message: string) {
     super(message);
-    this.name = this.constructor.name;
   }
 }
 
@@ -17,6 +19,7 @@ export class TaskError extends Error {
  *
  */
 export class TaskConfigurationError extends TaskError {
+  static readonly type: string = "TaskConfigurationError";
   constructor(message: string) {
     super(message);
   }
@@ -26,6 +29,7 @@ export class TaskConfigurationError extends TaskError {
  * A task workflow error
  */
 export class WorkflowError extends TaskError {
+  static readonly type: string = "WorkflowError";
   constructor(message: string) {
     super(message);
   }
@@ -37,6 +41,7 @@ export class WorkflowError extends TaskError {
  * Examples: task.abort() was called, or some other reason an abort signal was received
  */
 export class TaskAbortedError extends TaskError {
+  static readonly type: string = "TaskAbortedError";
   constructor(message: string = "Task aborted") {
     super(message);
   }
@@ -48,6 +53,7 @@ export class TaskAbortedError extends TaskError {
  * Examples: task.run() threw an error
  */
 export class TaskFailedError extends TaskError {
+  static readonly type: string = "TaskFailedError";
   constructor(message: string = "Task failed") {
     super(message);
   }
@@ -69,6 +75,7 @@ export class TaskJSONError extends TaskError {
  * Examples: task.run() received invalid input data
  */
 export class TaskInvalidInputError extends TaskError {
+  static readonly type: string = "TaskInvalidInputError";
   constructor(message: string = "Invalid input data") {
     super(message);
   }
@@ -80,6 +87,7 @@ export class TaskInvalidInputError extends TaskError {
  * Examples: Task with isCompound=true, ArrayTask, TaskRunner, etc.
  */
 export class TaskErrorGroup extends TaskError {
+  static readonly type: string = "TaskErrorGroup";
   constructor(private errors: { key: unknown; type: string; error: TaskError }[]) {
     super("Child errors occurred");
   }

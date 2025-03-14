@@ -5,6 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+export * from "./utilities/BaseError";
 export * from "./utilities/Misc";
 export * from "./events/EventEmitter";
 export * from "./utilities/TypeUtilities";
