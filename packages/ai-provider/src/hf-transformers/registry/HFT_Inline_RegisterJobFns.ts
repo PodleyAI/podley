@@ -16,7 +16,7 @@ import {
   HFT_TextTranslation,
 } from "../common/HFT_JobRunFns";
 import { HF_TRANSFORMERS_ONNX } from "../common/HFT_Constants";
-import { env } from "@sroussey/transformers";
+import { env } from "@huggingface/transformers";
 
 export async function register_HFT_InlineJobFns() {
   // @ts-ignore

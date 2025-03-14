@@ -15,7 +15,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          "huggingface-transformers": ["@sroussey/transformers"],
+          "huggingface-transformers": ["@huggingface/transformers"],
           "tf-mediapipe": ["@mediapipe/tasks-text"],
           ellmers: [
             "@ellmers/ai",

@@ -40,7 +40,7 @@ import {
   QuestionAnsweringPipeline,
   SummarizationSingle,
   DocumentQuestionAnsweringSingle,
-} from "@sroussey/transformers";
+} from "@huggingface/transformers";
 import { QUANTIZATION_DATA_TYPES } from "./HFT_Constants";
 import { CallbackStatus } from "./HFT_CallbackStatus";
 

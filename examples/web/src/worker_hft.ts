@@ -7,7 +7,7 @@
 
 import { HFT_WORKER_JOBRUN, HFT_WORKER_JOBRUN_REGISTER } from "@ellmers/ai-provider";
 import { globalServiceRegistry } from "@ellmers/util";
-import { env } from "@sroussey/transformers";
+import { env } from "@huggingface/transformers";
 
 env.backends.onnx.wasm.proxy = true;
 globalServiceRegistry.get(HFT_WORKER_JOBRUN);
