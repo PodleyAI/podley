@@ -11,6 +11,7 @@ import type { TaskGraph } from "../task-graph/TaskGraph";
 import type { TaskGraphItemJson } from "./TaskJSON";
 import { TaskError } from "./TaskError";
 import type {
+  CompoundMergeStrategy,
   IConfig,
   Provenance,
   TaskConfig,
@@ -27,6 +28,7 @@ import type {
   TaskEventParameters,
   TaskEvents,
 } from "./TaskEvents";
+import { AnyGraphResult } from "../task-graph/TaskGraphRunner";
 
 /**
  * Configuration for task execution
@@ -56,7 +58,7 @@ export interface ITaskStaticProperties {
   readonly cacheable: boolean;
   readonly inputs: readonly TaskInputDefinition[];
   readonly outputs: readonly TaskOutputDefinition[];
-  isCompound: boolean;
+  readonly isCompound: boolean;
 }
 
 /**
@@ -73,7 +75,7 @@ export interface ITaskExecution<
    * @param config The configuration for the task
    * @returns The output of the task or undefined if no changes
    */
-  execute(input: Input, config: IExecuteConfig): Promise<Output | undefined>;
+  execute(input: Input, config: IExecuteConfig): Promise<AnyGraphResult<Output> | undefined>;
 
   /**
    * Reactive execution logic for updating UI or responding to changes
@@ -81,7 +83,7 @@ export interface ITaskExecution<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  executeReactive(input: Input, output: Output): Promise<Output | undefined>;
+  executeReactive(input: Input, output: Output): Promise<AnyGraphResult<Output> | undefined>;
 }
 
 /**
@@ -97,14 +99,14 @@ export interface ITaskLifecycle<
    * @param overrides Optional input overrides
    * @returns Promise resolving to the task output
    */
-  run(overrides?: Partial<Input>, config?: IRunConfig): Promise<Output>;
+  run(overrides?: Partial<Input>, config?: IRunConfig): Promise<AnyGraphResult<Output>>;
 
   /**
    * Runs the task in reactive mode
    * @param overrides Optional input overrides
    * @returns Promise resolving to the task output
    */
-  runReactive(overrides?: Partial<Input>): Promise<Output>;
+  runReactive(overrides?: Partial<Input>): Promise<AnyGraphResult<Output>>;
 
   /**
    * Aborts the task execution
@@ -138,6 +140,7 @@ export interface ITaskCompound {
   subGraph: TaskGraph | null;
   regenerateGraph(): void;
   hasChildren(): boolean;
+  get compoundMerge(): CompoundMergeStrategy;
 }
 
 /**

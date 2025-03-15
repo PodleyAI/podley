@@ -7,7 +7,7 @@
 
 import type { TaskInput, TaskOutput, TaskConfig } from "./TaskTypes";
 import type { ITask } from "./ITask";
-
+import { AnyGraphResult } from "../task-graph/TaskGraphRunner";
 /**
  * Interface for TaskRunner
  * Responsible for running tasks and managing their execution lifecycle
@@ -27,13 +27,13 @@ export interface ITaskRunner<
    * Runs the task with the provided input overrides
    * @param overrides Optional input overrides
    */
-  run(overrides?: Partial<Input>): Promise<Output>;
+  run(overrides?: Partial<Input>): Promise<AnyGraphResult<Output>>;
 
   /**
    * Runs the task in reactive mode
    * @param overrides Optional input overrides
    */
-  runReactive(overrides?: Partial<Input>): Promise<Output>;
+  runReactive(overrides?: Partial<Input>): Promise<AnyGraphResult<Output>>;
 
   /**
    * Aborts the task execution

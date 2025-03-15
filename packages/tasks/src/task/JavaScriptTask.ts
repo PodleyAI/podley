@@ -46,9 +46,7 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
       valueType: "any",
     },
   ] as const;
-  constructor(config: TaskConfig & { input?: JavaScriptTaskInput } = {}) {
-    super(config);
-  }
+
   async executeReactive() {
     if (this.runInputData.code) {
       try {
@@ -64,8 +62,8 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
 }
 TaskRegistry.registerTask(JavaScriptTask);
 
-export const JavaScript = (input: JavaScriptTaskInput) => {
-  return new JavaScriptTask(input).run();
+export const JavaScript = (input: JavaScriptTaskInput, config: TaskConfig = {}) => {
+  return new JavaScriptTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {

@@ -5,7 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { globalServiceRegistry, uuid4 } from "@ellmers/util";
+import {
+  collectPropertyValues,
+  ConvertAllToOptionalArray,
+  globalServiceRegistry,
+  uuid4,
+} from "@ellmers/util";
 import { deepEqual } from "@ellmers/util";
 import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
@@ -24,7 +29,17 @@ export type GraphSingleResult<T> = {
   type: String;
   data: T;
 };
-export type GraphResult<T> = Array<GraphSingleResult<T>>;
+export type NamedGraphResult<T> = Array<GraphSingleResult<T>>;
+export type UnorderedArrayGraphResult<T> = { data: T[] };
+export type PropertyArrayGraphResult<T> = ConvertAllToOptionalArray<T>;
+export type LastOrUnorderedArrayGraphResult<T> = T | UnorderedArrayGraphResult<T>;
+export type LastOrPropertyArrayGraphResult<T> = T | PropertyArrayGraphResult<T>;
+export type LastOrNamedGraphResult<T> = T | NamedGraphResult<T>;
+export type AnyGraphResult<T> =
+  | T
+  | UnorderedArrayGraphResult<T>
+  | PropertyArrayGraphResult<T>
+  | NamedGraphResult<T>;
 
 /**
  * Class for running a task graph
@@ -84,6 +99,7 @@ export class TaskGraphRunner {
   // ========================================================================
   // Public methods
   // ========================================================================
+
   /**
    * Runs the task graph
    * @param config Configuration for the graph run
@@ -92,7 +108,7 @@ export class TaskGraphRunner {
    */
   public async runGraph<T extends TaskOutput = TaskOutput>(
     config?: TaskGraphRunConfig
-  ): Promise<GraphResult<T> | T> {
+  ): Promise<AnyGraphResult<T>> {
     if (config?.outputCache !== undefined) {
       if (typeof config.outputCache === "boolean") {
         if (config.outputCache === true) {
@@ -107,12 +123,12 @@ export class TaskGraphRunner {
     }
     await this.handleStart(config?.parentSignal);
 
-    const results: GraphResult<T> = [];
+    const results: NamedGraphResult<T> = [];
     let error: TaskError | undefined;
 
     try {
-      // TODO: A different graph runner may chunck tasks that are in parallel
-      // rather them all at once
+      // TODO: A different graph runner may chunk tasks that are in parallel
+      // rather them all currently available
       for await (const task of this.processScheduler.tasks()) {
         if (this.abortController?.signal.aborted) {
           break;
@@ -171,12 +187,11 @@ export class TaskGraphRunner {
       ]);
     }
 
+    const mergedResults = this.mergeOutput<T>(results, config);
+
     await this.handleComplete();
 
-    if (results.length === 1) {
-      return results[0].data as T;
-    }
-    return results as GraphResult<T>;
+    return mergedResults;
   }
 
   /**
@@ -184,7 +199,7 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskConfigurationError if the graph is already running reactively
    */
-  public async runGraphReactive<T>(): Promise<GraphResult<T> | T> {
+  public async runGraphReactive<T>(): Promise<AnyGraphResult<T>> {
     await this.handleStartReactive();
 
     if (!this.running) {
@@ -192,7 +207,7 @@ export class TaskGraphRunner {
     }
 
     this.reactiveScheduler.reset();
-    const results: GraphResult<T> = [];
+    const results: NamedGraphResult<T> = [];
 
     try {
       for await (const task of this.reactiveScheduler.tasks()) {
@@ -211,13 +226,13 @@ export class TaskGraphRunner {
           }
         }
       }
+      const mergedResults = this.mergeOutput<T>(results);
       await this.handleCompleteReactive();
+      return mergedResults;
     } catch (error) {
       await this.handleErrorReactive();
       throw error;
-    } finally {
     }
-    return results;
   }
 
   /**
@@ -274,6 +289,38 @@ export class TaskGraphRunner {
   // ========================================================================
   // Protected Handlers
   // ========================================================================
+
+  protected mergeOutput<T>(
+    results: NamedGraphResult<T>,
+    config?: TaskGraphRunConfig
+  ): AnyGraphResult<T> {
+    const mergeStrategy = config?.compoundMerge || this.graph.compoundMerge;
+
+    if (
+      mergeStrategy === "last" ||
+      (results.length === 1 &&
+        ["last-or-named", "last-or-property-array", "last-or-unordered-array"].includes(
+          mergeStrategy
+        ))
+    ) {
+      return results[results.length - 1].data as T;
+    } else if (mergeStrategy === "named" || mergeStrategy === "last-or-named") {
+      return results as NamedGraphResult<T>;
+    } else if (mergeStrategy === "unordered-array" || mergeStrategy === "last-or-unordered-array") {
+      return { data: results.map((result) => result.data) } as UnorderedArrayGraphResult<T>;
+    } else if (mergeStrategy === "property-array" || mergeStrategy === "last-or-property-array") {
+      let fixedOutput = {} as T;
+      const outputs = results.map((result: any) => result.data);
+      if (outputs.length > 0) {
+        const collected = collectPropertyValues<T>(outputs as T[]);
+        if (Object.keys(collected).length > 0) {
+          fixedOutput = collected as unknown as T;
+        }
+      }
+      return fixedOutput as PropertyArrayGraphResult<T>;
+    }
+    throw new TaskConfigurationError(`Unknown merge strategy: ${mergeStrategy}`);
+  }
 
   /**
    * Copies input data from edges to a task

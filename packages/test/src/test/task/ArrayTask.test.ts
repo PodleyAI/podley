@@ -93,7 +93,13 @@ describe("ArrayTask", () => {
       )
     );
     const results = await graph.run();
-    expect(results).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 121] });
+    // graph is default "named" merge strategy, so we should get an array of named results
+    expect(Array.isArray(results)).toBe(true);
+    if (Array.isArray(results)) {
+      // inside the graph there is the Array graph, which is "property-array" merge strategy,
+      // so we should get an array of results inside output
+      expect(results[0].data).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 121] });
+    }
   });
 
   test("emits events correctly", async () => {

@@ -20,6 +20,7 @@ import {
 import type { TaskGraphItemJson, JsonTaskItem } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
 import {
+  CompoundMergeStrategy,
   IConfig,
   Provenance,
   TaskStatus,
@@ -30,6 +31,7 @@ import {
   type TaskOutputDefinition,
   type TaskTypeName,
 } from "./TaskTypes";
+import { AnyGraphResult } from "../task-graph/TaskGraphRunner";
 
 /**
  * Base class for all tasks that implements the ITask interface.
@@ -79,6 +81,7 @@ export class Task<
    * Whether this task is a compound task (contains subtasks)
    */
   public static isCompound: boolean = false;
+  public static compoundMerge: CompoundMergeStrategy = "last-or-named";
 
   // ========================================================================
   // Task Execution Methods - Core logic provided by subclasses
@@ -92,7 +95,10 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The output of the task or undefined if no changes
    */
-  public async execute(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
+  public async execute(
+    input: Input,
+    config: IExecuteConfig
+  ): Promise<AnyGraphResult<Output> | undefined> {
     if (config.signal?.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
@@ -108,7 +114,10 @@ export class Task<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  public async executeReactive(input: Input, output: Output): Promise<Output | undefined> {
+  public async executeReactive(
+    input: Input,
+    output: Output
+  ): Promise<AnyGraphResult<Output> | undefined> {
     return output;
   }
 
@@ -141,7 +150,10 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The task output
    */
-  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<Output> {
+  async run(
+    overrides: Partial<Input> = {},
+    config: IRunConfig = {}
+  ): Promise<AnyGraphResult<Output>> {
     return this.runner.run(overrides, config);
   }
 
@@ -152,7 +164,7 @@ export class Task<
    * @param overrides Optional input overrides
    * @returns The task output
    */
-  public async runReactive(overrides: Partial<Input> = {}): Promise<Output> {
+  public async runReactive(overrides: Partial<Input> = {}): Promise<AnyGraphResult<Output>> {
     return this.runner.runReactive(overrides);
   }
 
@@ -186,7 +198,7 @@ export class Task<
    * Gets whether this task is a compound task (contains subtasks)
    */
   public get isCompound(): boolean {
-    return (this.constructor as typeof Task).isCompound;
+    return this.config?.isCompound ?? (this.constructor as typeof Task).isCompound;
   }
 
   public get type(): TaskTypeName {
@@ -195,6 +207,10 @@ export class Task<
 
   public get category(): string {
     return (this.constructor as typeof Task).category;
+  }
+
+  public get compoundMerge(): CompoundMergeStrategy {
+    return this.config?.compoundMerge || (this.constructor as typeof Task).compoundMerge;
   }
 
   public hasChildren(): boolean {
@@ -300,6 +316,7 @@ export class Task<
       {
         id: uuid4(),
         name: name,
+        compoundMerge: (this.constructor as typeof Task).compoundMerge,
       },
       config
     );
@@ -424,7 +441,10 @@ export class Task<
    */
   get subGraph(): TaskGraph | null {
     if (!this._subGraph && this.isCompound) {
-      this._subGraph = new TaskGraph();
+      this._subGraph = new TaskGraph({
+        outputCache: this.outputCache,
+        compoundMerge: this.compoundMerge,
+      });
     }
     return this._subGraph;
   }
@@ -581,16 +601,16 @@ export class Task<
    */
   public toJSON(): JsonTaskItem | TaskGraphItemJson {
     // this.resetInputData();
+    const hasChildren = this.hasChildren();
     const provenance = this.getProvenance();
     let json: JsonTaskItem | TaskGraphItemJson = {
       id: this.config.id,
       type: this.type,
       input: this.defaults,
       ...(Object.keys(provenance).length ? { provenance } : {}),
+      ...(hasChildren ? { merge: this.compoundMerge } : {}),
+      ...(hasChildren ? { subgraph: this.subGraph!.toJSON() } : {}),
     };
-    if (this.hasChildren()) {
-      return { ...json, subgraph: this.subGraph!.toJSON() };
-    }
     return json;
   }
 
@@ -602,6 +622,9 @@ export class Task<
     // this.resetInputData();
     const json = this.toJSON();
     if (this.hasChildren()) {
+      if ("subgraph" in json) {
+        delete json.subgraph;
+      }
       return { ...json, subtasks: this.subGraph!.toDependencyJSON() };
     }
     return json;

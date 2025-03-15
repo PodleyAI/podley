@@ -5,9 +5,9 @@
 // //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 // //    *******************************************************************************
 
-import { TaskInput, Provenance, TaskConfig } from "./TaskTypes";
+import { TaskInput, Provenance, TaskConfig, CompoundMergeStrategy } from "./TaskTypes";
 import { TaskRegistry } from "../task/TaskRegistry";
-import { TaskConfigurationError } from "../task/TaskError";
+import { TaskConfigurationError, TaskJSONError } from "../task/TaskError";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { Dataflow } from "../task-graph/Dataflow";
 
@@ -65,9 +65,11 @@ export type TaskGraphItemJson = {
   input?: TaskInput;
   provenance?: Provenance;
   subgraph?: TaskGraphJson;
+  merge?: CompoundMergeStrategy;
 };
 
 export type TaskGraphJson = {
+  merge: CompoundMergeStrategy;
   tasks: TaskGraphItemJson[];
   dataflows: DataflowJson[];
 };
@@ -80,15 +82,16 @@ export type DataflowJson = {
 };
 
 const createSingleTaskFromJSON = (item: JsonTaskItem | TaskGraphItemJson) => {
-  if (!item.id) throw new Error("Task id required");
-  if (!item.type) throw new Error("Task type required");
+  if (!item.id) throw new TaskJSONError("Task id required");
+  if (!item.type) throw new TaskJSONError("Task type required");
   if (item.input && (Array.isArray(item.input) || Array.isArray(item.provenance)))
-    throw new Error("Task input must be an object");
+    throw new TaskJSONError("Task input must be an object");
   if (item.provenance && (Array.isArray(item.provenance) || typeof item.provenance !== "object"))
-    throw new Error("Task provenance must be an object");
+    throw new TaskJSONError("Task provenance must be an object");
 
   const taskClass = TaskRegistry.all.get(item.type);
-  if (!taskClass) throw new Error(`Task type ${item.type} not found`);
+  if (!taskClass)
+    throw new TaskJSONError(`Task type ${item.type} not found, perhaps not registered?`);
 
   const taskConfig: TaskConfig = {
     id: item.id,
@@ -149,7 +152,9 @@ export const createTaskFromGraphJSON = (item: TaskGraphItemJson) => {
  * @returns A new TaskGraph instance with all tasks and data flows
  */
 export const createGraphFromGraphJSON = (graphJsonObj: TaskGraphJson) => {
-  const subGraph = new TaskGraph();
+  const subGraph = new TaskGraph({
+    compoundMerge: graphJsonObj.merge,
+  });
   for (const subitem of graphJsonObj.tasks) {
     subGraph.addTask(createTaskFromGraphJSON(subitem));
   }

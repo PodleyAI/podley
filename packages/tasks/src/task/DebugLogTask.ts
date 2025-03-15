@@ -95,8 +95,8 @@ export class DebugLogTask<
 
 TaskRegistry.registerTask(DebugLogTask);
 
-export const DebugLog = (input: DebugLogTaskInput) => {
-  return new DebugLogTask(input).run();
+export const DebugLog = (input: DebugLogTaskInput, config: TaskConfig = {}) => {
+  return new DebugLogTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {

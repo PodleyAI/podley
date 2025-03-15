@@ -5,14 +5,19 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DirectedAcyclicGraph, GraphEvents } from "@ellmers/util";
-import { Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
+import { DirectedAcyclicGraph } from "@ellmers/util";
+import { CompoundMergeStrategy, Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
-import { GraphResult, TaskGraphRunner } from "./TaskGraphRunner";
+import { AnyGraphResult, TaskGraphRunner } from "./TaskGraphRunner";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
-import { EventParameters } from "@ellmers/util";
+import {
+  TaskGraphEvents,
+  TaskGraphEventListener,
+  EventTaskGraphToDagMapping,
+  TaskGraphEventParameters,
+} from "./TaskGraphEvents";
 
 /**
  * Configuration for running a task graph
@@ -24,46 +29,24 @@ export interface TaskGraphRunConfig {
   parentSignal?: AbortSignal;
   /** Optional provenance to use for this task graph */
   parentProvenance?: Provenance;
+  /** Optional compound merge strategy to use for this task graph */
+  compoundMerge?: CompoundMergeStrategy;
 }
 
-/**
- * Events that can be emitted by the TaskGraph
- */
-export type TaskGraphEvents = keyof TaskGraphEventListeners;
+class TaskGraphDAG extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType> {
+  constructor() {
+    super(
+      (task: ITask) => task.config.id,
+      (dataflow: Dataflow) => dataflow.id
+    );
+  }
+}
 
-export type TaskGraphEventListeners = {
-  task_added: (task: ITask) => void;
-  task_removed: (task: ITask) => void;
-  task_replaced: (task: ITask) => void;
-  dataflow_added: (dataflow: Dataflow) => void;
-  dataflow_removed: (dataflow: Dataflow) => void;
-  dataflow_replaced: (dataflow: Dataflow) => void;
-};
-
-export type TaskGraphEventListener<Event extends TaskGraphEvents> = TaskGraphEventListeners[Event];
-
-export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParameters<
-  TaskGraphEventListeners,
-  Event
->;
-
-const EventDagToTaskGraphMapping: Record<GraphEvents<ITask, Dataflow>, TaskGraphEvents> = {
-  "node-added": "task_added",
-  "node-removed": "task_removed",
-  "node-replaced": "task_replaced",
-  "edge-added": "dataflow_added",
-  "edge-removed": "dataflow_removed",
-  "edge-replaced": "dataflow_replaced",
-} as const;
-
-const EventTaskGraphToDagMapping: Record<TaskGraphEvents, GraphEvents<ITask, Dataflow>> = {
-  task_added: "node-added",
-  task_removed: "node-removed",
-  task_replaced: "node-replaced",
-  dataflow_added: "edge-added",
-  dataflow_removed: "edge-removed",
-  dataflow_replaced: "edge-replaced",
-} as const;
+interface TaskGraphConstructorConfig {
+  outputCache?: TaskOutputRepository;
+  dag?: TaskGraphDAG;
+  compoundMerge?: CompoundMergeStrategy;
+}
 
 /**
  * Represents a task graph, a directed acyclic graph of tasks and data flows
@@ -71,23 +54,21 @@ const EventTaskGraphToDagMapping: Record<TaskGraphEvents, GraphEvents<ITask, Dat
 export class TaskGraph {
   /** Optional output cache to use for this task graph */
   public outputCache?: TaskOutputRepository;
-  constructor({
-    outputCache,
-    dag,
-  }: {
-    outputCache?: TaskOutputRepository;
-    dag?: DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType>;
-  } = {}) {
+
+  /** The compound merge strategy to use for this task graph */
+  public compoundMerge: CompoundMergeStrategy = "named";
+
+  /**
+   * Constructor for TaskGraph
+   * @param config Configuration for the task graph
+   */
+  constructor({ outputCache, dag, compoundMerge }: TaskGraphConstructorConfig = {}) {
     this.outputCache = outputCache;
-    this._dag =
-      dag ||
-      new DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType>(
-        (task: ITask) => task.config.id,
-        (dataflow: Dataflow) => dataflow.id
-      );
+    this._dag = dag || new TaskGraphDAG();
+    this.compoundMerge = compoundMerge || "named";
   }
 
-  private _dag: DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType>;
+  private _dag: TaskGraphDAG;
 
   private _runner: TaskGraphRunner | undefined;
   public get runner(): TaskGraphRunner {
@@ -96,6 +77,7 @@ export class TaskGraph {
     }
     return this._runner;
   }
+
   // ========================================================================
   // Public methods
   // ========================================================================
@@ -106,11 +88,12 @@ export class TaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public run<T extends TaskOutput>(config?: TaskGraphRunConfig): Promise<GraphResult<T> | T> {
+  public run<T extends TaskOutput>(config?: TaskGraphRunConfig): Promise<AnyGraphResult<T>> {
     return this.runner.runGraph<T>({
       outputCache: config?.outputCache || this.outputCache,
       parentProvenance: config?.parentProvenance || {},
       parentSignal: config?.parentSignal || undefined,
+      compoundMerge: config?.compoundMerge || this.compoundMerge,
     });
   }
 
@@ -119,8 +102,8 @@ export class TaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public runReactive<T>(): Promise<GraphResult<T> | T> {
-    return this.runner.runGraphReactive();
+  public runReactive<T>(): Promise<AnyGraphResult<T>> {
+    return this.runner.runGraphReactive<T>();
   }
 
   /**
@@ -279,6 +262,7 @@ export class TaskGraph {
     const tasks = this.getTasks().map((node) => node.toJSON());
     const dataflows = this.getDataflows().map((df) => df.toJSON());
     return {
+      merge: this.compoundMerge,
       tasks,
       dataflows,
     };
@@ -317,6 +301,10 @@ export class TaskGraph {
     });
     return tasks;
   }
+
+  // ========================================================================
+  // Event handling
+  // ========================================================================
 
   /**
    * Registers an event listener for the specified event

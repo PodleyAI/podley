@@ -5,11 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { collectPropertyValues } from "@ellmers/util";
 import { uuid4 } from "@ellmers/util";
 import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { GraphResult } from "../task-graph/TaskGraphRunner";
+import { AnyGraphResult, NamedGraphResult } from "../task-graph/TaskGraphRunner";
 import { Task } from "./Task";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 import { TaskRunner } from "./TaskRunner";
@@ -34,6 +33,7 @@ export class RunOrReplicateTask<
    * Whether this task is a compound task (contains subtasks)
    */
   public static readonly isCompound = true;
+  public static readonly compoundMerge = "last-or-property-array";
 
   /**
    * Regenerates the task subgraph based on input arrays
@@ -56,7 +56,10 @@ export class RunOrReplicateTask<
     if (!hasArrayInputs) return;
 
     // Clear the existing subgraph
-    this.subGraph = new TaskGraph();
+    this.subGraph = new TaskGraph({
+      outputCache: this.outputCache,
+      compoundMerge: this.compoundMerge,
+    });
 
     // Create all combinations of inputs
     const combinations = this.generateCombinations(arrayInputs);
@@ -151,18 +154,6 @@ export class RunOrReplicateTaskRunner<
     return flattenedInput as Input;
   }
 
-  private fixOutput(results: GraphResult<Output>): Output {
-    let fixedOutput = {} as Output;
-    const outputs = results.map((result: any) => result.data);
-    if (outputs.length > 0) {
-      const collected = collectPropertyValues<Output>(outputs as Output[]);
-      if (Object.keys(collected).length > 0) {
-        fixedOutput = collected as unknown as Output;
-      }
-    }
-    return fixedOutput;
-  }
-
   // ========================================================================
   // TaskRunner method overrides and helpers
   // ========================================================================
@@ -170,7 +161,7 @@ export class RunOrReplicateTaskRunner<
   /**
    * Execute the task
    */
-  protected async executeTask(): Promise<Output | GraphResult<Output> | undefined> {
+  protected async executeTask(): Promise<AnyGraphResult<Output> | undefined> {
     this.task.runInputData = this.fixInput(this.task.runInputData);
     const result = await super.executeTask();
     if (result !== undefined) {
@@ -180,30 +171,14 @@ export class RunOrReplicateTaskRunner<
   }
 
   /**
-   * Private method to execute a task subgraphby delegating back to the task itself.
-   */
-  protected async executeTaskChildren(): Promise<Output | GraphResult<Output> | undefined> {
-    const results = await super.executeTaskChildren();
-    this.task.runOutputData = this.fixOutput(results as GraphResult<Output>);
-    return this.task.runOutputData as unknown as Output;
-  }
-
-  /**
    * Execute the task reactively
    */
-  public async executeTaskReactive(): Promise<Output | GraphResult<Output> | undefined> {
-    if (!this.task.hasChildren()) {
+  public async executeTaskReactive(): Promise<AnyGraphResult<Output> | undefined> {
+    if (this.task.hasChildren()) {
+      return await this.executeTaskChildrenReactive();
+    } else {
       this.task.runInputData = this.fixInput(this.task.runInputData);
       return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
     }
-    return this.executeTaskChildrenReactive();
-  }
-
-  /**
-   * Override protected method for reactive execution delegation
-   */
-  protected async executeTaskChildrenReactive(): Promise<Output | GraphResult<Output> | undefined> {
-    const results = await super.executeTaskChildrenReactive();
-    return this.fixOutput(results as GraphResult<Output>);
   }
 }

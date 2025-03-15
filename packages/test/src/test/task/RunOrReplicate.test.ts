@@ -252,7 +252,7 @@ describe("RunOrReplicate", () => {
       b: [10],
     });
     const results = await task.runReactive();
-    expect(results).toEqual({ result: [20] });
+    expect(results).toEqual({ result: 20 });
   });
 
   test("MultiplyRunReactiveTask in task mode reactive runReactive", async () => {
@@ -305,7 +305,9 @@ describe("RunOrReplicate", () => {
   });
 
   test("in task graph mode", async () => {
-    const graph = new TaskGraph();
+    const graph = new TaskGraph({
+      compoundMerge: "last",
+    });
     graph.addTask(
       new MultiplyRunTask({
         a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],

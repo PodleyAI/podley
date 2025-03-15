@@ -60,8 +60,24 @@ export type TaskConfig = Partial<IConfig>;
 // ========================================================================
 
 /**
- * Interface for task configuration
+ * Enum representing the possible compound merge strategies
  */
+export type CompoundMergeStrategy =
+  // named -- output is an array of {id, type, data}
+  | "named"
+  // array -- output is consolidation of each output property into an array
+  | "property-array"
+  // array -- output is simple array of results
+  | "unordered-array"
+  // single -- output is last item in graph
+  | "last"
+  // last-or-named -- last if one, otherwise named
+  | "last-or-named"
+  // last-or-property-array -- last if one, otherwise property-array
+  | "last-or-property-array"
+  // last-or-unordered-array -- last if one, otherwise unordered-array
+  | "last-or-unordered-array";
+
 export interface IConfig {
   /** Unique identifier for the task */
   id: unknown;
@@ -77,6 +93,12 @@ export interface IConfig {
 
   /** Optional output cache to use for this task */
   outputCache?: TaskOutputRepository;
+
+  /** Optional compound merge strategy to use for this task */
+  compoundMerge?: CompoundMergeStrategy;
+
+  /** Optional flag to indicate if the task is a compound task */
+  isCompound?: boolean;
 }
 
 /**

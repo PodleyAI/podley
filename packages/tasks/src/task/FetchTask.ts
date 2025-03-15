@@ -214,8 +214,8 @@ export class FetchTask<
 
 TaskRegistry.registerTask(FetchTask);
 
-export const Fetch = (input: FetchTaskInput) => {
-  return new FetchTask(input).run();
+export const Fetch = (input: FetchTaskInput, config: TaskConfig = {}) => {
+  return new FetchTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {

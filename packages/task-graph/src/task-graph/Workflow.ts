@@ -12,6 +12,7 @@ import { Task } from "../task/Task";
 import { WorkflowError } from "../task/TaskError";
 import type { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import {
+  CompoundMergeStrategy,
   TaskConfig,
   TaskOutput,
   type TaskInput,
@@ -53,9 +54,22 @@ let taskIdCounter = 0;
  * Provides methods for adding tasks, connecting outputs to inputs, and running the task graph
  */
 export class Workflow {
+  /**
+   * Creates a new Workflow
+   *
+   * @param repository - Optional repository for task outputs
+   */
+  constructor(repository?: TaskOutputRepository) {
+    this._repository = repository;
+    this._graph = new TaskGraph({
+      outputCache: this._repository,
+      compoundMerge: "last-or-property-array",
+    });
+    this._onChanged = this._onChanged.bind(this);
+    this.setupEvents();
+  }
   // Private properties
-  private _graph: TaskGraph = new TaskGraph();
-  private _runner: TaskGraphRunner;
+  private _graph: TaskGraph;
   private _dataFlows: Dataflow[] = [];
   private _error: string = "";
   private _repository?: TaskOutputRepository;
@@ -184,18 +198,6 @@ export class Workflow {
   }
 
   /**
-   * Creates a new Workflow
-   *
-   * @param repository - Optional repository for task outputs
-   */
-  constructor(repository?: TaskOutputRepository) {
-    this._repository = repository;
-    this._runner = new TaskGraphRunner(this._graph, this._repository);
-    this._onChanged = this._onChanged.bind(this);
-    this.setupEvents();
-  }
-
-  /**
    * Gets the current task graph
    */
   public get graph(): TaskGraph {
@@ -210,7 +212,6 @@ export class Workflow {
     this._error = "";
     this.clearEvents();
     this._graph = value;
-    this._runner = new TaskGraphRunner(this._graph, this._repository);
     this.setupEvents();
     this.events.emit("reset");
   }
@@ -253,7 +254,7 @@ export class Workflow {
     this._abortController = new AbortController();
 
     try {
-      const output = await this._runner.runGraph({
+      const output = await this.graph.run({
         parentSignal: this._abortController.signal,
         parentProvenance: {},
         outputCache: this._repository,
@@ -319,16 +320,23 @@ export class Workflow {
    * @param args - The task graph workflows to run in parallel
    * @returns The current task graph workflow
    */
-  public parallel(...args: Array<(b: Workflow) => void>): Workflow {
+  public parallel(merge: CompoundMergeStrategy, ...args: Array<(b: Workflow) => void>): Workflow {
     this._error = "";
 
-    const group = new Workflow();
-    for (const fn of args) {
-      fn(group);
-    }
+    const groups = args.map((fn) => {
+      const w = new Workflow();
+      fn(w);
+      return w;
+    });
 
-    const groupTask = new Task();
-    groupTask.subGraph = group._graph;
+    const groupTask = new Task(
+      {},
+      {
+        isCompound: true,
+        compoundMerge: merge,
+      }
+    );
+    groupTask.subGraph?.addTasks(groups.flatMap((w) => w.graph.getTasks()));
     this._graph.addTask(groupTask);
 
     return this;
@@ -375,8 +383,10 @@ export class Workflow {
   public reset(): Workflow {
     taskIdCounter = 0;
     this.clearEvents();
-    this._graph = new TaskGraph();
-    this._runner = new TaskGraphRunner(this._graph, this._repository);
+    this._graph = new TaskGraph({
+      outputCache: this._repository,
+      compoundMerge: "last-or-property-array",
+    });
     this._dataFlows = [];
     this._error = "";
     this.setupEvents();

@@ -11,7 +11,7 @@ import {
   Dataflow,
   TaskGraph,
   TaskGraphRunner,
-  GraphResult,
+  NamedGraphResult,
   TaskStatus,
   TaskAbortedError,
   TaskErrorGroup,
@@ -24,7 +24,6 @@ import {
 import {
   TestSquareTask,
   TestDoubleTask,
-  TestAddTask,
   TestSquareMultiInputTask,
   FailingTask,
   LongRunningTask,
@@ -54,7 +53,9 @@ describe("TaskSubGraphRunner", () => {
     });
 
     it("should be able to have multiple inputs for array input type", async () => {
-      const results = await runner.runGraph<TaskOutput>();
+      const results = await runner.runGraph<TaskOutput>({
+        compoundMerge: "named",
+      });
 
       expect(results.length).toEqual(3);
       expect(results.find((r: GraphSingleResult<TaskOutput>) => r.id === "task2")?.data).toEqual({
@@ -91,7 +92,7 @@ describe("TaskSubGraphRunner", () => {
       graph.addTask(failingTask);
 
       let error: TaskErrorGroup | undefined;
-      let result: GraphResult<TaskOutput> | TaskOutput | undefined;
+      let result: NamedGraphResult<TaskOutput> | TaskOutput | undefined;
       try {
         result = await runner.runGraph<TaskOutput>();
       } catch (err) {

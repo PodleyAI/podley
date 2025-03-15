@@ -79,8 +79,8 @@ TaskRegistry.registerTask(DelayTask);
  *
  * @param {delay} - The delay in milliseconds
  */
-export const Delay = (input: DelayTaskInput) => {
-  const task = new DelayTask(input);
+export const Delay = (input: DelayTaskInput, config: TaskConfig = {}) => {
+  const task = new DelayTask(input, config);
   return task.run();
 };
 

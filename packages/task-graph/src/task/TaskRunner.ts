@@ -10,7 +10,7 @@ import { ITask, IRunConfig } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 import { TaskInput, TaskOutput, TaskConfig, TaskStatus, Provenance } from "./TaskTypes";
-import { GraphResult } from "../task-graph/TaskGraphRunner";
+import { AnyGraphResult } from "../task-graph/TaskGraphRunner";
 import { globalServiceRegistry } from "@ellmers/util";
 
 /**
@@ -69,7 +69,10 @@ export class TaskRunner<
    * @param config Optional configuration overrides
    * @returns The task output
    */
-  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<Output> {
+  async run(
+    overrides: Partial<Input> = {},
+    config: IRunConfig = {}
+  ): Promise<AnyGraphResult<Output>> {
     await this.handleStart();
 
     this.nodeProvenance = config.nodeProvenance ?? {};
@@ -96,7 +99,7 @@ export class TaskRunner<
       }
 
       // Execute the task's functionality
-      let results: Output | GraphResult<Output> | undefined;
+      let results: AnyGraphResult<Output> | undefined;
 
       if (this.task.hasChildren()) {
         // For compound tasks, run the subgraph
@@ -114,8 +117,7 @@ export class TaskRunner<
 
       this.outputCache = this.task.config.outputCache;
 
-      // Process reactive execution if not a compound task
-      if (!this.task.isCompound) {
+      if (!this.task.hasChildren()) {
         results = await this.executeTaskReactive();
         if (results && Object.keys(results).length > 0) {
           this.task.runOutputData = results as Output;
@@ -150,7 +152,7 @@ export class TaskRunner<
         throw new TaskInvalidInputError("Invalid input data");
       }
 
-      let results: Output | GraphResult<Output> | undefined;
+      let results: AnyGraphResult<Output> | undefined;
 
       if (this.task.hasChildren()) {
         results = await this.executeTaskChildrenReactive();
@@ -186,7 +188,7 @@ export class TaskRunner<
   /**
    * Protected method to execute a task by delegating back to the task itself.
    */
-  protected async executeTask(): Promise<Output | GraphResult<Output> | undefined> {
+  protected async executeTask(): Promise<AnyGraphResult<Output> | undefined> {
     return this.task.execute(this.task.runInputData, {
       signal: this.abortController!.signal,
       updateProgress: this.handleProgress.bind(this),
@@ -197,25 +199,26 @@ export class TaskRunner<
   /**
    * Protected method to execute a task subgraphby delegating back to the task itself.
    */
-  protected async executeTaskChildren(): Promise<Output | GraphResult<Output> | undefined> {
-    return this.task.subGraph!.run({
+  protected async executeTaskChildren(): Promise<AnyGraphResult<Output> | undefined> {
+    return this.task.subGraph!.run<Output>({
       parentProvenance: this.nodeProvenance || {},
       parentSignal: this.abortController?.signal,
       outputCache: this.outputCache,
-    }) as Promise<Output | GraphResult<Output>>;
+      compoundMerge: this.task.compoundMerge,
+    });
   }
 
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskReactive(): Promise<Output | GraphResult<Output> | undefined> {
+  protected async executeTaskReactive(): Promise<AnyGraphResult<Output> | undefined> {
     return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
   }
 
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskChildrenReactive(): Promise<Output | GraphResult<Output> | undefined> {
+  protected async executeTaskChildrenReactive(): Promise<AnyGraphResult<Output> | undefined> {
     return this.task.subGraph!.runReactive<Output>();
   }
 

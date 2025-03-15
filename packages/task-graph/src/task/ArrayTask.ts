@@ -5,25 +5,23 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { collectPropertyValues, Writeable } from "@ellmers/util";
+import { Writeable } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { ITaskConstructor, IRunConfig, IExecuteConfig } from "./ITask";
+import { ITaskConstructor } from "./ITask";
+import { RunOrReplicateTaskRunner } from "./RunOrReplicateTask";
+import { Task } from "./Task";
+import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRegistry } from "./TaskRegistry";
 import {
   Provenance,
   TaskConfig,
   TaskInput,
+  TaskInputDefinition,
   TaskOutput,
   TaskOutputDefinition,
   TaskTypeName,
-  TaskInputDefinition,
-  TaskStatus,
 } from "./TaskTypes";
-import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
-import { Task } from "./Task";
-import { TaskRunner } from "./TaskRunner";
-import { RunOrReplicateTaskRunner } from "./RunOrReplicateTask";
 
 /**
  * Converts specified IO definitions to array type
@@ -157,7 +155,7 @@ export function arrayTaskFactory<
     static readonly category = taskClass.category;
     static readonly cacheable = taskClass.cacheable;
     static readonly isCompound = true;
-
+    static readonly compoundMerge = "property-array";
     itemClass = taskClass;
 
     static inputs = inputs;
@@ -169,7 +167,10 @@ export function arrayTaskFactory<
      */
     regenerateGraph() {
       //TODO: only regenerate if we need to
-      this.subGraph = new TaskGraph({ outputCache: this.outputCache });
+      this.subGraph = new TaskGraph({
+        outputCache: this.outputCache,
+        compoundMerge: this.compoundMerge,
+      });
       const combinations = generateCombinations<Input, keyof Input>(
         this.runInputData,
         inputMakeArray as (keyof Input)[]

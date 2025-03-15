@@ -54,6 +54,16 @@ export class TaskFailedError extends TaskError {
 }
 
 /**
+ * A task error that is caused by an error converting JSON to a Task
+ */
+export class TaskJSONError extends TaskError {
+  static readonly type: string = "TaskJSONError";
+  constructor(message: string = "Error converting JSON to a Task") {
+    super(message);
+  }
+}
+
+/**
  * A task error that is caused by invalid input data
  *
  * Examples: task.run() received invalid input data

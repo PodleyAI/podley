@@ -72,7 +72,7 @@ describe("TaskGraphRunner", () => {
 
       expect(nodes[1].runOutputData.output).toEqual(25);
       expect(nodes[2].runOutputData.output).toEqual(10);
-      // Check if results is an array (GraphResult) or a single value (T)
+      // Check if results is an array (NamedGraphResult) or a single value (T)
       if (Array.isArray(results)) {
         expect(results.find((r) => r.id === "task3")?.data.output).toEqual(35);
       } else {
