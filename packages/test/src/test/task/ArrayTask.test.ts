@@ -80,7 +80,7 @@ describe("ArrayTask", () => {
     expect(results).toEqual({} as any);
   });
 
-  test("in task graph mode", async () => {
+  test("in task graph mode, single result no array children", async () => {
     const graph = new TaskGraph();
     graph.addTask(
       new TestSquareMultiInputTask(
@@ -93,7 +93,7 @@ describe("ArrayTask", () => {
       )
     );
     const results = await graph.run();
-    expect(results![0].data).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 121] });
+    expect(results).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 121] });
   });
 
   test("emits events correctly", async () => {

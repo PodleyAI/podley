@@ -6,11 +6,11 @@
 //    *******************************************************************************
 
 import { DirectedAcyclicGraph, GraphEvents } from "@ellmers/util";
-import { Provenance, TaskIdType } from "../task/TaskTypes";
+import { Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
-import { TaskGraphRunner } from "./TaskGraphRunner";
+import { GraphResult, TaskGraphRunner } from "./TaskGraphRunner";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { EventParameters } from "@ellmers/util";
 
@@ -106,8 +106,8 @@ export class TaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public run(config?: TaskGraphRunConfig) {
-    return this.runner.runGraph({
+  public run<T extends TaskOutput>(config?: TaskGraphRunConfig): Promise<GraphResult<T> | T> {
+    return this.runner.runGraph<T>({
       outputCache: config?.outputCache || this.outputCache,
       parentProvenance: config?.parentProvenance || {},
       parentSignal: config?.parentSignal || undefined,
@@ -119,7 +119,7 @@ export class TaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public runReactive() {
+  public runReactive<T>(): Promise<GraphResult<T> | T> {
     return this.runner.runGraphReactive();
   }
 

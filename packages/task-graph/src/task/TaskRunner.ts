@@ -96,7 +96,7 @@ export class TaskRunner<
       }
 
       // Execute the task's functionality
-      let results: Output | GraphResult | undefined;
+      let results: Output | GraphResult<Output> | undefined;
 
       if (this.task.hasChildren()) {
         // For compound tasks, run the subgraph
@@ -150,7 +150,7 @@ export class TaskRunner<
         throw new TaskInvalidInputError("Invalid input data");
       }
 
-      let results: Output | GraphResult | undefined;
+      let results: Output | GraphResult<Output> | undefined;
 
       if (this.task.hasChildren()) {
         results = await this.executeTaskChildrenReactive();
@@ -186,7 +186,7 @@ export class TaskRunner<
   /**
    * Protected method to execute a task by delegating back to the task itself.
    */
-  protected async executeTask(): Promise<Output | GraphResult | undefined> {
+  protected async executeTask(): Promise<Output | GraphResult<Output> | undefined> {
     return this.task.execute(this.task.runInputData, {
       signal: this.abortController!.signal,
       updateProgress: this.handleProgress.bind(this),
@@ -197,26 +197,26 @@ export class TaskRunner<
   /**
    * Protected method to execute a task subgraphby delegating back to the task itself.
    */
-  protected async executeTaskChildren(): Promise<Output | GraphResult | undefined> {
+  protected async executeTaskChildren(): Promise<Output | GraphResult<Output> | undefined> {
     return this.task.subGraph!.run({
       parentProvenance: this.nodeProvenance || {},
       parentSignal: this.abortController?.signal,
       outputCache: this.outputCache,
-    });
+    }) as Promise<Output | GraphResult<Output>>;
   }
 
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskReactive(): Promise<Output | GraphResult | undefined> {
+  protected async executeTaskReactive(): Promise<Output | GraphResult<Output> | undefined> {
     return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
   }
 
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskChildrenReactive(): Promise<Output | GraphResult | undefined> {
-    return this.task.subGraph!.runReactive();
+  protected async executeTaskChildrenReactive(): Promise<Output | GraphResult<Output> | undefined> {
+    return this.task.subGraph!.runReactive<Output>();
   }
 
   // ========================================================================

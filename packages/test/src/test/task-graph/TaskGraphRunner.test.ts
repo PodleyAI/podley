@@ -53,8 +53,13 @@ describe("TaskGraphRunner", () => {
 
     it("should run the graph with results", async () => {
       const results = await runner.runGraph();
-      expect(results?.find((r) => r.id === "task1")?.data.output).toEqual(25);
-      expect(results?.find((r) => r.id === "task2")?.data.output).toEqual(10);
+
+      if (Array.isArray(results)) {
+        expect(results.find((r) => r.id === "task1")?.data.output).toEqual(25);
+        expect(results.find((r) => r.id === "task2")?.data.output).toEqual(10);
+      } else {
+        expect(true).toEqual(false);
+      }
     });
 
     it("should run the graph in the correct order with dependencies", async () => {
@@ -67,7 +72,13 @@ describe("TaskGraphRunner", () => {
 
       expect(nodes[1].runOutputData.output).toEqual(25);
       expect(nodes[2].runOutputData.output).toEqual(10);
-      expect(results?.find((r) => r.id === "task3")?.data.output).toEqual(35);
+      // Check if results is an array (GraphResult) or a single value (T)
+      if (Array.isArray(results)) {
+        expect(results.find((r) => r.id === "task3")?.data.output).toEqual(35);
+      } else {
+        // In this case, task3 is the only leaf node, so results might be its output directly
+        expect(results.output).toEqual(35);
+      }
     });
   });
 

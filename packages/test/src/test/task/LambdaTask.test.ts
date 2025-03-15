@@ -65,11 +65,7 @@ describe("LambdaTask", () => {
       )
     );
     const results = await graph.run();
-    expect(results[0]).toEqual({
-      id: "lambdaReactiveTest",
-      type: "LambdaTask",
-      data: { output: "Hello, world!" },
-    });
+    expect(results).toEqual({ output: "Hello, world!" });
   });
 
   test("in task workflow mode", async () => {
@@ -83,7 +79,7 @@ describe("LambdaTask", () => {
       }
     );
     const results = await workflow.run();
-    expect(results[0].data).toEqual({
+    expect(results).toEqual({
       output: "Hello, world!",
     });
   });
@@ -102,7 +98,7 @@ describe("LambdaTask", () => {
       }
     );
     const results = await workflow.run();
-    expect(results[0].data).toEqual({ output: 3 });
+    expect(results).toEqual({ output: 3 });
   });
 
   test("in task workflow mode with input executeReactive", async () => {
@@ -119,7 +115,7 @@ describe("LambdaTask", () => {
       }
     );
     const results = await workflow.run();
-    expect(results[0].data).toEqual({ output: 3 });
+    expect(results).toEqual({ output: 3 });
   });
 
   test("with updateProgress", async () => {
@@ -139,7 +135,7 @@ describe("LambdaTask", () => {
       progressCounter++;
     });
     const results = await graph.run();
-    expect(results[0].data).toEqual({ output: "Hello, world!" });
+    expect(results).toEqual({ output: "Hello, world!" });
     expect(progressCounter).toEqual(1);
   });
 });

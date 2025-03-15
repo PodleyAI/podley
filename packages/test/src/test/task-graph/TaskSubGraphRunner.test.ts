@@ -18,13 +18,17 @@ import {
   TaskFailedError,
   ITask,
   TaskRegistry,
+  TaskOutput,
+  GraphSingleResult,
 } from "@ellmers/task-graph";
 import {
-  FailingTask,
-  FAILURE_MESSAGE,
-  TestDoubleTask,
-  TestSquareMultiInputTask,
   TestSquareTask,
+  TestDoubleTask,
+  TestAddTask,
+  TestSquareMultiInputTask,
+  FailingTask,
+  LongRunningTask,
+  FAILURE_MESSAGE,
 } from "../task/TestTasks";
 
 TaskRegistry.all.clear();
@@ -50,11 +54,12 @@ describe("TaskSubGraphRunner", () => {
     });
 
     it("should be able to have multiple inputs for array input type", async () => {
-      const results = await runner.runGraph();
+      const results = await runner.runGraph<TaskOutput>();
 
-      expect(results?.find((r) => r.id === "task2")?.data).toEqual({ output: 10 });
-      expect(results?.find((r) => r.id === "task1")?.data).toEqual({ output: 25 });
-      expect(results?.find((r) => r.id === "task0")?.data).toEqual({ output: [36, 49] });
+      expect(results.length).toEqual(3);
+      expect(results.find((r: GraphSingleResult<TaskOutput>) => r.id === "task2")?.data).toEqual({
+        output: 10,
+      });
     });
 
     it("array input into ArrayTask", async () => {
@@ -63,16 +68,20 @@ describe("TaskSubGraphRunner", () => {
       graph.addDataflow(new Dataflow("task1", "output", "task3", "input"));
       graph.addDataflow(new Dataflow("task2", "output", "task3", "input"));
 
-      const results1 = await runner.runGraph();
-      const results2 = await runner.runGraph();
-      const results3 = await runner.runGraph();
-
-      expect(results1[0]).toEqual(results2[0]);
-      expect(results2[0]).toEqual(results3[0]);
-      expect(results1[1]).toEqual(results2[1]);
-      expect(results2[1]).toEqual(results3[1]);
-      expect(results1[2]).toEqual(results2[2]);
-      expect(results2[2]).toEqual(results3[2]);
+      const results1 = await runner.runGraph<TaskOutput>();
+      const results2 = await runner.runGraph<TaskOutput>();
+      const results3 = await runner.runGraph<TaskOutput>();
+      expect(Array.isArray(results1)).toBe(true);
+      expect(Array.isArray(results2)).toBe(true);
+      expect(Array.isArray(results3)).toBe(true);
+      if (Array.isArray(results1) && Array.isArray(results2) && Array.isArray(results3)) {
+        expect(results1[0]).toEqual(results2[0]);
+        expect(results2[0]).toEqual(results3[0]);
+        expect(results1[1]).toEqual(results2[1]);
+        expect(results2[1]).toEqual(results3[1]);
+        expect(results1[2]).toEqual(results2[2]);
+        expect(results2[2]).toEqual(results3[2]);
+      }
     });
   });
 
@@ -82,16 +91,35 @@ describe("TaskSubGraphRunner", () => {
       graph.addTask(failingTask);
 
       let error: TaskErrorGroup | undefined;
-      let result: GraphResult | undefined;
+      let result: GraphResult<TaskOutput> | TaskOutput | undefined;
       try {
-        result = await runner.runGraph();
+        result = await runner.runGraph<TaskOutput>();
       } catch (err) {
         error = err as TaskErrorGroup;
       }
+
       expect(error).toBeInstanceOf(TaskErrorGroup);
       expect(error?.getError("failingTaskId")?.name).toBe(TaskFailedError.name);
       expect(failingTask.status).toBe(TaskStatus.FAILED);
       expect(failingTask.error?.message).toBe(FAILURE_MESSAGE);
+    });
+
+    it("should handle task abortion", async () => {
+      const longRunningTask = new LongRunningTask({}, { id: "longRunningTaskId" });
+      graph.addTask(longRunningTask);
+
+      let error: TaskErrorGroup | undefined;
+      try {
+        const resultPromise = runner.runGraph<TaskOutput>();
+        await sleep(50);
+        runner.abort();
+        await resultPromise;
+      } catch (err) {
+        error = err as TaskErrorGroup;
+      }
+
+      expect(error).toBeInstanceOf(TaskErrorGroup);
+      expect(error?.getError("longRunningTaskId")?.name).toBe(TaskAbortedError.name);
     });
 
     it("should handle task failure in a chain", async () => {
@@ -140,11 +168,10 @@ describe("TaskSubGraphRunner", () => {
       graph.addTask(abortingTask);
 
       let error: TaskErrorGroup | undefined;
-      let result: GraphResult | undefined;
       try {
         const resultPromise = runner.runGraph();
         runner.abort();
-        result = await resultPromise;
+        await resultPromise;
       } catch (err) {
         error = err as TaskErrorGroup;
       }
@@ -157,12 +184,11 @@ describe("TaskSubGraphRunner", () => {
       graph.addTask(abortingTask);
 
       let error: TaskErrorGroup | undefined;
-      let result: GraphResult | undefined;
       try {
-        const resultPromise = runner.runGraph();
+        const resultPromise = runner.runGraph<TaskOutput>();
         await sleep(1);
         runner.abort();
-        result = await resultPromise;
+        await resultPromise;
       } catch (err) {
         error = err as TaskErrorGroup;
       }

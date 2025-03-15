@@ -14,7 +14,15 @@ import {
   TestOutputTask,
   TestSimpleTask,
 } from "../task/TestTasks";
-import { Workflow, Task, TaskOutputRepository, TaskConfig, TaskError, WorkflowError, CreateWorkflow } from "@ellmers/task-graph";
+import {
+  Workflow,
+  Task,
+  TaskOutputRepository,
+  TaskConfig,
+  TaskError,
+  WorkflowError,
+  CreateWorkflow,
+} from "@ellmers/task-graph";
 const colsoleError = globalThis.console.error;
 
 describe("Workflow", () => {
@@ -80,7 +88,7 @@ describe("Workflow", () => {
 
       expect(startSpy).toHaveBeenCalledWith("start");
       expect(startSpy).toHaveBeenCalledWith("complete");
-      expect(result[0].data).toEqual({ output: "processed-test" });
+      expect(result).toEqual({ output: "processed-test" });
     });
 
     it("should emit error event when task execution fails", async () => {

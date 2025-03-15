@@ -151,7 +151,7 @@ export class RunOrReplicateTaskRunner<
     return flattenedInput as Input;
   }
 
-  private fixOutput(results: GraphResult): Output {
+  private fixOutput(results: GraphResult<Output>): Output {
     let fixedOutput = {} as Output;
     const outputs = results.map((result: any) => result.data);
     if (outputs.length > 0) {
@@ -170,7 +170,7 @@ export class RunOrReplicateTaskRunner<
   /**
    * Execute the task
    */
-  protected async executeTask(): Promise<Output | GraphResult | undefined> {
+  protected async executeTask(): Promise<Output | GraphResult<Output> | undefined> {
     this.task.runInputData = this.fixInput(this.task.runInputData);
     const result = await super.executeTask();
     if (result !== undefined) {
@@ -182,16 +182,16 @@ export class RunOrReplicateTaskRunner<
   /**
    * Private method to execute a task subgraphby delegating back to the task itself.
    */
-  protected async executeTaskChildren(): Promise<Output | GraphResult | undefined> {
+  protected async executeTaskChildren(): Promise<Output | GraphResult<Output> | undefined> {
     const results = await super.executeTaskChildren();
-    this.task.runOutputData = this.fixOutput(results as GraphResult);
+    this.task.runOutputData = this.fixOutput(results as GraphResult<Output>);
     return this.task.runOutputData as unknown as Output;
   }
 
   /**
    * Execute the task reactively
    */
-  public async executeTaskReactive(): Promise<Output | GraphResult | undefined> {
+  public async executeTaskReactive(): Promise<Output | GraphResult<Output> | undefined> {
     if (!this.task.hasChildren()) {
       this.task.runInputData = this.fixInput(this.task.runInputData);
       return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
@@ -202,8 +202,8 @@ export class RunOrReplicateTaskRunner<
   /**
    * Override protected method for reactive execution delegation
    */
-  protected async executeTaskChildrenReactive(): Promise<Output | GraphResult | undefined> {
+  protected async executeTaskChildrenReactive(): Promise<Output | GraphResult<Output> | undefined> {
     const results = await super.executeTaskChildrenReactive();
-    return this.fixOutput(results as GraphResult);
+    return this.fixOutput(results as GraphResult<Output>);
   }
 }

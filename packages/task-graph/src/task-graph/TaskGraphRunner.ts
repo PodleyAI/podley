@@ -19,8 +19,12 @@ import {
 } from "../task/TaskError";
 import { ITask } from "../task/ITask";
 
-export type GraphSingleResult = { id: unknown; type: String; data: TaskOutput };
-export type GraphResult = Array<GraphSingleResult>;
+export type GraphSingleResult<T> = {
+  id: unknown;
+  type: String;
+  data: T;
+};
+export type GraphResult<T> = Array<GraphSingleResult<T>>;
 
 /**
  * Class for running a task graph
@@ -86,7 +90,9 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public async runGraph(config?: TaskGraphRunConfig): Promise<GraphResult> {
+  public async runGraph<T extends TaskOutput = TaskOutput>(
+    config?: TaskGraphRunConfig
+  ): Promise<GraphResult<T> | T> {
     if (config?.outputCache !== undefined) {
       if (typeof config.outputCache === "boolean") {
         if (config.outputCache === true) {
@@ -101,7 +107,7 @@ export class TaskGraphRunner {
     }
     await this.handleStart(config?.parentSignal);
 
-    const results: GraphResult = [];
+    const results: GraphResult<T> = [];
     let error: TaskError | undefined;
 
     try {
@@ -124,7 +130,7 @@ export class TaskGraphRunner {
 
             if (this.graph.getTargetDataflows(task.config.id).length === 0) {
               // we save the results of all the leaves
-              results.push(taskResult);
+              results.push(taskResult as GraphSingleResult<T>);
             }
           } catch (error) {
             this.failedTaskErrors.set(task.config.id, error as TaskError);
@@ -167,7 +173,10 @@ export class TaskGraphRunner {
 
     await this.handleComplete();
 
-    return results || [];
+    if (results.length === 1) {
+      return results[0].data as T;
+    }
+    return results as GraphResult<T>;
   }
 
   /**
@@ -175,7 +184,7 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskConfigurationError if the graph is already running reactively
    */
-  public async runGraphReactive(): Promise<GraphResult> {
+  public async runGraphReactive<T>(): Promise<GraphResult<T> | T> {
     await this.handleStartReactive();
 
     if (!this.running) {
@@ -183,7 +192,7 @@ export class TaskGraphRunner {
     }
 
     this.reactiveScheduler.reset();
-    const results: GraphResult = [];
+    const results: GraphResult<T> = [];
 
     try {
       for await (const task of this.reactiveScheduler.tasks()) {
@@ -197,7 +206,7 @@ export class TaskGraphRunner {
             results.push({
               id: task.config.id,
               type: (task.constructor as any).runtype || (task.constructor as any).type,
-              data: taskResult,
+              data: taskResult as T,
             });
           }
         }
@@ -333,10 +342,10 @@ export class TaskGraphRunner {
    * @param parentProvenance The provenance input for the task
    * @returns The output of the task
    */
-  protected async runTaskWithProvenance(
+  protected async runTaskWithProvenance<T>(
     task: ITask,
     parentProvenance: Provenance
-  ): Promise<GraphSingleResult> {
+  ): Promise<GraphSingleResult<T>> {
     // Update provenance for the current task
     const nodeProvenance = {
       ...parentProvenance,
@@ -379,7 +388,7 @@ export class TaskGraphRunner {
     return {
       id: task.config.id,
       type: (task.constructor as any).runtype || (task.constructor as any).type,
-      data: results,
+      data: results as T,
     };
   }
 

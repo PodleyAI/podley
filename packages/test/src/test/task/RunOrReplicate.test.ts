@@ -313,7 +313,7 @@ describe("RunOrReplicate", () => {
       })
     );
     const results = await graph.run();
-    expect(results![0].data).toEqual({ result: [0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110] });
+    expect(results).toEqual({ result: [0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110] });
   });
 
   test("emits events correctly", async () => {
