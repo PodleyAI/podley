@@ -8,3 +8,4 @@
 export * from "./common";
 export * from "./crypto/Crypto.browser";
 export * from "./compress/compress.browser";
+export * from "./worker/Worker.browser";

@@ -9,9 +9,9 @@ import { getAiProviderRegistry } from "@ellmers/ai";
 import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
 import { globalServiceRegistry, WORKER_MANAGER } from "@ellmers/util";
 
-export const register_TFMP_ClientJobFns = (worker: Worker) => {
+export const register_TFMP_ClientJobFns = (workerLocation: string, base: string) => {
   const workerManager = globalServiceRegistry.get(WORKER_MANAGER);
-  workerManager.registerWorker(TENSORFLOW_MEDIAPIPE, worker);
+  workerManager.registerWorker(TENSORFLOW_MEDIAPIPE, workerLocation, base);
 
   const aiProviderRegistry = getAiProviderRegistry();
   const names = ["DownloadModelTask", "TextEmbeddingTask"];

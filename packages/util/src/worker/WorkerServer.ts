@@ -6,6 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken, globalServiceRegistry } from "../di";
+import { Worker, parentPort } from "@ellmers/util";
 
 /**
  * Extracts transferables from an object.
@@ -34,7 +35,7 @@ function extractTransferables(obj: any) {
  */
 export class WorkerServer {
   constructor() {
-    self.addEventListener("message", async (event) => {
+    parentPort.addEventListener("message", async (event) => {
       await this.handleMessage(event);
     });
   }

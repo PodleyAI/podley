@@ -5,7 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken, globalServiceRegistry, WORKER_SERVER } from "@ellmers/util";
+import {
+  createServiceToken,
+  globalServiceRegistry,
+  WORKER_SERVER,
+  parentPort,
+} from "@ellmers/util";
 import {
   HFT_Download,
   HFT_TextEmbedding,
@@ -29,7 +34,7 @@ export const HFT_WORKER_JOBRUN_REGISTER = globalServiceRegistry.register(
     workerServer.registerFunction("TextRewriterTask", HFT_TextRewriter);
     workerServer.registerFunction("TextSummaryTask", HFT_TextSummary);
     workerServer.registerFunction("TextQuestionAnswerTask", HFT_TextQuestionAnswer);
-    self.postMessage({ type: "ready" });
+    parentPort.postMessage({ type: "ready" });
     console.log("HFT_WORKER_JOBRUN registered");
     return workerServer;
   },

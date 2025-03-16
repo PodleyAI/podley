@@ -4,13 +4,15 @@
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
+
 import { globalServiceRegistry, WORKER_MANAGER } from "@ellmers/util";
 import { getAiProviderRegistry } from "@ellmers/ai";
 import { HF_TRANSFORMERS_ONNX } from "../common/HFT_Constants";
 
-export async function register_HFT_ClientJobFns(worker: Worker) {
+export async function register_HFT_ClientJobFns(workerLocation: string, base: string) {
   const workerManager = globalServiceRegistry.get(WORKER_MANAGER);
-  workerManager.registerWorker(HF_TRANSFORMERS_ONNX, worker);
+
+  workerManager.registerWorker(HF_TRANSFORMERS_ONNX, workerLocation, base);
 
   const ProviderRegistry = getAiProviderRegistry();
   const names = [

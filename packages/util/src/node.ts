@@ -8,3 +8,4 @@
 export * from "./common";
 export * from "./crypto/Crypto.node";
 export * from "./compress/compress.node";
+export * from "./worker/Worker.node";
