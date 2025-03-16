@@ -31,11 +31,11 @@
     "dist"
   ],
   "dependencies": {
-    "@ellmers/task-graph": "workspace:packages/task-graph",
     "@ellmers/ai": "workspace:packages/ai",
     "@ellmers/ai-provider": "workspace:packages/ai-provider",
-    "@ellmers/storage": "workspace:packages/storage",
     "@ellmers/job-queue": "workspace:packages/job-queue",
+    "@ellmers/storage": "workspace:packages/storage",
+    "@ellmers/task-graph": "workspace:packages/task-graph",
     "@ellmers/tasks": "workspace:packages/tasks"
   }
 }

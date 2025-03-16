@@ -33,8 +33,8 @@
     "dist"
   ],
   "dependencies": {
-    "@ellmers/task-graph": "workspace:*",
     "@ellmers/job-queue": "workspace:*",
-    "@ellmers/storage": "workspace:*"
+    "@ellmers/storage": "workspace:*",
+    "@ellmers/task-graph": "workspace:*"
   }
 }

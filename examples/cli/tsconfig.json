@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src/**/*"],
-  "files": ["src/ellmers.ts"],
+  "files": ["src/ellmers.ts", "src/ellmers_worker.ts", "src/lib.ts"],
   "exclude": ["**/*.test.ts"],
   "compilerOptions": {
     "outDir": "dist",
