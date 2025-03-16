@@ -8,7 +8,6 @@ import {
   registerHuggingfaceLocalModels,
   registerMediaPipeTfJsLocalModels,
 } from "@ellmers/test";
-import { argv } from "bun";
 import { program } from "commander";
 import { AddBaseCommands } from "./TaskCLI";
 
@@ -31,6 +30,6 @@ await registerMediaPipeTfJsLocalModels();
 await register_TFMP_InlineJobFns();
 await register_TFMP_InMemoryQueue();
 
-await program.parseAsync(argv);
+await program.parseAsync(process.argv);
 
 getTaskQueueRegistry().stopQueues();

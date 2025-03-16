@@ -159,8 +159,8 @@ export function AddBaseCommands(program: Command) {
       const workflow = new Workflow();
       workflow
         .DownloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" })
-        .TextEmbedding({
-          text: "The quick brown fox jumps over the lazy dog.",
+        .TextGeneration({
+          prompt: "Where in the sky is the sun?",
         })
         .rename("*", "console")
         .DebugLog();

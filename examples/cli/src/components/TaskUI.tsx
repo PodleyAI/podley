@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import type { FC } from "react";
 import { Text, Box } from "tuir";
 import { TaskStatus, TaskGraph, Task, TaskError, ITask } from "@ellmers/task-graph";
-import spinners from "cli-spinners";
 import TaskGraphUI from "./TaskGraphUI";
 import { createBar, symbols, Spinner } from "./Elements";
 
@@ -17,7 +16,7 @@ const getSymbol = (state: TaskStatus) => {
   if (state === TaskStatus.PROCESSING) {
     return (
       <Text color="yellow">
-        <Spinner spinner={spinners.dots} />
+        <Spinner />
       </Text>
     );
   }

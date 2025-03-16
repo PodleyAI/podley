@@ -6,7 +6,6 @@
 //    *******************************************************************************
 
 import React, { useState, useEffect } from "react";
-import type { FC } from "react";
 import { Text } from "tuir";
 
 /**
@@ -70,28 +69,24 @@ export const symbols = {
   pointer: "❯",
 };
 
-export type Spinner = {
-  interval: number;
-  frames: string[];
-};
+export const Spinner = () => {
+  const interval = 90;
+  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
-export const Spinner: FC<{
-  spinner: Spinner;
-}> = ({ spinner }) => {
   const [frameIndex, setFrameIndex] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setFrameIndex((currentFrameIndex) => {
-        const isLastFrame = currentFrameIndex === spinner.frames.length - 1;
+        const isLastFrame = currentFrameIndex === frames.length - 1;
         return isLastFrame ? 0 : currentFrameIndex + 1;
       });
-    }, spinner.interval);
+    }, interval);
 
     return () => {
       clearInterval(timer);
     };
-  }, [spinner]);
+  }, []);
 
-  return <Text>{spinner.frames[frameIndex]}</Text>;
+  return <Text>{frames[frameIndex]}</Text>;
 };
