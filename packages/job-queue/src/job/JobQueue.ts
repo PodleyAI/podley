@@ -717,7 +717,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       }
 
       this.stats.failedJobs++;
-      this.events.emit("job_error", this.queueName, job.id, `${error!.cause}: ${error!.message}`);
+      this.events.emit("job_error", this.queueName, job.id, `${error!.name}: ${error!.message}`);
 
       const promises = this.activeJobPromises.get(job.id) || [];
       promises.forEach(({ reject }) => reject(error!));
