@@ -359,7 +359,7 @@ export const RunGraphFlow: React.FC<{
   const { fitView } = useReactFlow();
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: any;
     if (shouldLayout) {
       doNodeLayout(setNodes, setEdges);
       timeoutId = setTimeout(() => {
