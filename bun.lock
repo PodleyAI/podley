@@ -3,6 +3,9 @@
   "workspaces": {
     "": {
       "name": "ellmers",
+      "dependencies": {
+        "@sqlite.org/sqlite-wasm": "^3.49.1-build2",
+      },
       "devDependencies": {
         "@types/bun": "^1.2.5",
         "@types/react": "19.0.10",
@@ -463,6 +466,8 @@
     "@rollup/rollup-win32-ia32-msvc": ["@rollup/rollup-win32-ia32-msvc@4.36.0", "", { "os": "win32", "cpu": "ia32" }, "sha512-t+RY0JuRamIocMuQcfwYSOkmdX9dtkr1PbhKW42AMvaDQa+jOdpUYysroTF/nuPpAaQMWp7ye+ndlmmthieJrQ=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.36.0", "", { "os": "win32", "cpu": "x64" }, "sha512-aRXd7tRZkWLqGbChgcMMDEHjOKudo1kChb1Jt1IfR8cY/KIpgNviLeJy5FUb9IpSuQj8dU2fAYNMPW/hLKOSTw=="],
+
+    "@sqlite.org/sqlite-wasm": ["@sqlite.org/sqlite-wasm@3.49.1-build2", "", { "bin": { "sqlite-wasm": "bin/index.js" } }, "sha512-pZi8OSjNDZEYkvefsTOFKNRRN0GG9S5mtB6qBmrFZ5sraF5vxElPnTOl0DbJgiz9twlsOF5OzVkOce6Uc1TXsw=="],
 
     "@sroussey/transformers": ["@sroussey/transformers@3.4.0-2", "", { "dependencies": { "@huggingface/jinja": "^0.3.3", "onnxruntime-node": "1.21.0", "onnxruntime-web": "1.22.0-dev.20250306-ccf8fdd9ea", "sharp": "^0.33.5" } }, "sha512-6bLmDUDkWpTIUWTOwQCGv87cuLng95fcyaCaC6jKqKtv+tIJK2OBWoUD8oZ0beBC5e38z5IeHZd0te1Z3+DPdA=="],
 

@@ -33,6 +33,7 @@
   "peerDependencies": {
     "@electric-sql/pglite": "^0.2.17",
     "@mediapipe/tasks-text": "^0.10.21",
+    "@sqlite.org/sqlite-wasm": "^3.49.1-build2",
     "@sroussey/transformers": "^3.4.0-2",
     "@types/better-sqlite3": "^7.6.12",
     "@types/pg": "^8.11.11",
