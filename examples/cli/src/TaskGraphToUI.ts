@@ -13,20 +13,20 @@ import { sleep } from "@ellmers/util";
 
 export async function runTask(graph: TaskGraph) {
   if (process.stdout.isTTY) {
-    await runTaskToInk(graph.runner);
+    await runTaskToInk(graph);
   } else {
     const result = await graph.run();
     console.log(JSON.stringify(result, null, 2));
   }
 }
 
-const runTaskToInk = async (runner: TaskGraphRunner) => {
+const runTaskToInk = async (graph: TaskGraph) => {
   // preserveScreen();
-  const { unmount } = render(React.createElement(App, { runner }));
+  const { unmount } = render(React.createElement(App, { graph }));
   let results: any;
   try {
-    await sleep(1);
-    results = await runner.runGraph();
+    await sleep(50);
+    results = await graph.run();
   } catch (e: any) {
     console.error(e);
   }

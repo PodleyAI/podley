@@ -7,20 +7,20 @@
 
 import React from "react";
 import { Box, Text } from "tuir";
-import { TaskGraphRunner } from "@ellmers/task-graph";
+import { TaskGraph } from "@ellmers/task-graph";
 import TaskGraphUI from "./TaskGraphUI";
 
 type AppProps = {
-  runner: TaskGraphRunner;
+  graph: TaskGraph;
 };
 
-const App: React.FC<AppProps> = ({ runner }) => {
+const App: React.FC<AppProps> = ({ graph }) => {
   return (
     <Box flexDirection="column" borderStyle="double" paddingLeft={1} paddingRight={1}>
       <Box marginBottom={1}>
         <Text bold>Ellmers Task Graph Runner</Text>
       </Box>
-      <TaskGraphUI graph={runner.graph} />
+      <TaskGraphUI graph={graph} />
     </Box>
   );
 };

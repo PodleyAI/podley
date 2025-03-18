@@ -167,6 +167,8 @@ export function AddBaseCommands(program: Command) {
 
       try {
         await runTask(workflow.graph);
-      } catch (error) {}
+      } catch (error) {
+        console.error("Error running workflow:", error);
+      }
     });
 }

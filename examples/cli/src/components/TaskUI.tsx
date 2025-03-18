@@ -50,12 +50,8 @@ export const TaskUI: FC<{
   const [message, setMessage] = useState<string>("");
   const [details, setDetails] = useState<any>(undefined);
   const [text, setText] = useState<string>("");
-  const [subGraph, setSubGraph] = useState<TaskGraph | null>(
-    task.hasChildren() ? task.subGraph : null
-  );
-  const [dependantChildren, setDependantChildren] = useState<ITask[]>(
-    graph.getTargetTasks(task.config.id)
-  );
+  const [subGraph, setSubGraph] = useState<TaskGraph | null>(null);
+  const [dependantChildren, setDependantChildren] = useState<ITask[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -103,6 +99,8 @@ export const TaskUI: FC<{
       setStatus(TaskStatus.ABORTING);
       setError((err: string | null) => (err ? `${err}\nAborted` : "Aborted"));
     };
+
+    onRegenerate();
 
     task.on("start", onStart);
     task.on("progress", onProgress);
@@ -155,9 +153,14 @@ export const TaskUI: FC<{
           <Text color="gray">{`${symbols.arrowRight} ${createBar(progress / 100, 10)} ${text}`}</Text>
         </Box>
       )}
+      {status == TaskStatus.PROCESSING ? (
+        <Box marginLeft={2}>
+          <Text color="gray">{`${symbols.squareSmallFilled} ${JSON.stringify(task.runInputData).slice(0, 200)}`}</Text>
+        </Box>
+      ) : null}
       {status == TaskStatus.COMPLETED ? (
         <Box marginLeft={2}>
-          <Text color="gray">{`${symbols.arrowRight} ${JSON.stringify(task.runOutputData)}`}</Text>
+          <Text color="gray">{`${symbols.arrowRight} ${JSON.stringify(task.runOutputData).slice(0, 200)}`}</Text>
         </Box>
       ) : null}
       {error ? (
