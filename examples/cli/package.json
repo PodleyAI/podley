@@ -22,7 +22,10 @@
     "dist"
   ],
   "exports": {
-    "./lib": "./dist/lib.js"
+    ".": {
+      "import": "./dist/lib.js",
+      "types": "./dist/lib.d.ts"
+    }
   },
   "dependencies": {
     "@ellmers/ai": "workspace:*",

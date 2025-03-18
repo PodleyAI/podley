@@ -15,13 +15,6 @@ program.version("1.0.0").description("A CLI to run Ellmers.");
 
 AddBaseCommands(program);
 
-// const workerManager = globalServiceRegistry.get(WORKER_MANAGER);
-// const worker = new Worker(new URL("./worker_hft.ts", import.meta.url), {
-//   // @ts-ignore
-//   preload: new URL("./worker_error.ts", import.meta.url).href,
-// });
-// workerManager.registerWorker(HF_TRANSFORMERS_ONNX, worker);
-
 await registerHuggingfaceLocalModels();
 await register_HFT_InlineJobFns();
 await register_HFT_InMemoryQueue();
