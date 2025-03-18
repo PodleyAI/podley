@@ -41,6 +41,28 @@ export type AnyGraphResult<T> =
   | PropertyArrayGraphResult<T>
   | NamedGraphResult<T>;
 
+export type GraphResultMap<T> = {
+  // last -- output is last item in graph
+  last: T;
+  // named -- output is an array of {id, type, data}
+  named: NamedGraphResult<T>;
+  // last-or-named -- last if one, otherwise named
+  "last-or-named": LastOrNamedGraphResult<T>;
+  // last-or-property-array -- last if one, otherwise property-array
+  "last-or-property-array": LastOrPropertyArrayGraphResult<T>;
+  // last-or-unordered-array -- last if one, otherwise unordered-array
+  "last-or-unordered-array": LastOrUnorderedArrayGraphResult<T>;
+  // property-array -- output is consolidation of each output property into an array
+  "property-array": PropertyArrayGraphResult<T>;
+  // unordered-array -- output is simple array of results
+  "unordered-array": UnorderedArrayGraphResult<T>;
+};
+
+/**
+ * Enum representing the possible compound merge strategies
+ */
+export type CompoundMergeStrategy = keyof GraphResultMap<any>;
+
 /**
  * Class for running a task graph
  * Manages the execution of tasks in a task graph, including provenance tracking and caching

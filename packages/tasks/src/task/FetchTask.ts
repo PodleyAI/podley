@@ -106,7 +106,7 @@ async function fetchWithProgress(
  */
 export class FetchJob<
   Input extends FetchTaskInput = FetchTaskInput,
-  Output extends FetchTaskOutput = FetchTaskOutput,
+  Output = FetchTaskOutput,
 > extends Job<Input, Output> {
   constructor(config: JobQueueTaskConfig & { input: Input } = { input: {} as Input }) {
     super(config);

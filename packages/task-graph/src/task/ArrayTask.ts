@@ -166,11 +166,7 @@ export function arrayTaskFactory<
      * Each child task processes a single combination of the array inputs
      */
     regenerateGraph() {
-      //TODO: only regenerate if we need to
-      this.subGraph = new TaskGraph({
-        outputCache: this.outputCache,
-        compoundMerge: this.compoundMerge,
-      });
+      this.subGraph = new TaskGraph();
       const combinations = generateCombinations<Input, keyof Input>(
         this.runInputData,
         inputMakeArray as (keyof Input)[]

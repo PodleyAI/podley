@@ -6,11 +6,11 @@
 //    *******************************************************************************
 
 import { DirectedAcyclicGraph } from "@ellmers/util";
-import { CompoundMergeStrategy, Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
+import { Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
-import { AnyGraphResult, TaskGraphRunner } from "./TaskGraphRunner";
+import { AnyGraphResult, CompoundMergeStrategy, TaskGraphRunner } from "./TaskGraphRunner";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import {
   TaskGraphEvents,

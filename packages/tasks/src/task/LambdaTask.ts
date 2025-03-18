@@ -36,6 +36,16 @@ export class LambdaTask<
   Config extends LambdaTaskConfig<Input, Output> = LambdaTaskConfig<Input, Output>,
 > extends Task<Input, Output, Config> {
   static readonly type = "LambdaTask";
+  static readonly category = "Utility";
+  static readonly cacheable = true;
+  static readonly isCompound = false;
+
+  constructor(input: Input = {} as Input, config: Config = {} as Config) {
+    if (!config.execute && !config.executeReactive) {
+      throw new Error("LambdaTask must have either execute or executeReactive function in config");
+    }
+    super(input, config);
+  }
 
   /**
    * Input definition for LambdaTask

@@ -60,13 +60,26 @@ export function createBar(progress: number, length: number): string {
 }
 
 export const symbols = {
-  arrowRight: "→",
   tick: "✔",
   info: "ℹ",
   warning: "⚠",
   cross: "✖",
   squareSmallFilled: "◼",
   pointer: "❯",
+  arrowUp: "↑",
+  arrowDown: "↓",
+  arrowLeft: "←",
+  arrowRight: "→",
+  arrowUpDown: "↕",
+  arrowLeftRight: "↔",
+  arrowUpLeft: "↖",
+  arrowUpRight: "↗",
+  arrowDownLeft: "↙",
+  arrowDownRight: "↘",
+  arrowDashedDown: "⇣",
+  arrowDashedUp: "⇡",
+  arrowDashedLeft: "⇠",
+  arrowDashedRight: "⇢",
 };
 
 export const Spinner = () => {

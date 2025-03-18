@@ -6,6 +6,7 @@
 //    *******************************************************************************
 
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import type { Task } from "./Task";
 
 /**
@@ -58,25 +59,6 @@ export type TaskConfig = Partial<IConfig>;
 // ========================================================================
 // Task Configuration Types
 // ========================================================================
-
-/**
- * Enum representing the possible compound merge strategies
- */
-export type CompoundMergeStrategy =
-  // named -- output is an array of {id, type, data}
-  | "named"
-  // array -- output is consolidation of each output property into an array
-  | "property-array"
-  // array -- output is simple array of results
-  | "unordered-array"
-  // single -- output is last item in graph
-  | "last"
-  // last-or-named -- last if one, otherwise named
-  | "last-or-named"
-  // last-or-property-array -- last if one, otherwise property-array
-  | "last-or-property-array"
-  // last-or-unordered-array -- last if one, otherwise unordered-array
-  | "last-or-unordered-array";
 
 export interface IConfig {
   /** Unique identifier for the task */

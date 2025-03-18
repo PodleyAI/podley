@@ -56,10 +56,7 @@ export class RunOrReplicateTask<
     if (!hasArrayInputs) return;
 
     // Clear the existing subgraph
-    this.subGraph = new TaskGraph({
-      outputCache: this.outputCache,
-      compoundMerge: this.compoundMerge,
-    });
+    this.subGraph = new TaskGraph();
 
     // Create all combinations of inputs
     const combinations = this.generateCombinations(arrayInputs);

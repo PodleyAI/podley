@@ -11,7 +11,6 @@ import type { TaskGraph } from "../task-graph/TaskGraph";
 import type { TaskGraphItemJson } from "./TaskJSON";
 import { TaskError } from "./TaskError";
 import type {
-  CompoundMergeStrategy,
   IConfig,
   Provenance,
   TaskConfig,
@@ -28,7 +27,11 @@ import type {
   TaskEventParameters,
   TaskEvents,
 } from "./TaskEvents";
-import { AnyGraphResult } from "../task-graph/TaskGraphRunner";
+import {
+  AnyGraphResult,
+  CompoundMergeStrategy,
+  GraphResultMap,
+} from "../task-graph/TaskGraphRunner";
 
 /**
  * Configuration for task execution
@@ -68,6 +71,7 @@ export interface ITaskStaticProperties {
 export interface ITaskExecution<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
+  Merge extends CompoundMergeStrategy = CompoundMergeStrategy,
 > {
   /**
    * The actual task execution logic for subclasses to override
@@ -75,7 +79,7 @@ export interface ITaskExecution<
    * @param config The configuration for the task
    * @returns The output of the task or undefined if no changes
    */
-  execute(input: Input, config: IExecuteConfig): Promise<AnyGraphResult<Output> | undefined>;
+  execute(input: Input, config: IExecuteConfig): Promise<GraphResultMap<Output>[Merge] | undefined>;
 
   /**
    * Reactive execution logic for updating UI or responding to changes
@@ -83,7 +87,7 @@ export interface ITaskExecution<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  executeReactive(input: Input, output: Output): Promise<AnyGraphResult<Output> | undefined>;
+  executeReactive(input: Input, output: Output): Promise<GraphResultMap<Output>[Merge] | undefined>;
 }
 
 /**

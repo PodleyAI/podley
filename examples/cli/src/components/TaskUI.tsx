@@ -145,36 +145,36 @@ export const TaskUI: FC<{
         message == "Downloading model" &&
         details.map((d: any) => (
           <Box marginLeft={2} key={d.file}>
-            <Text color="gray">{`${symbols.arrowRight} ${createBar(d.progress / 100, 10)} ${d.file} ${Math.round(d.progress)}%`}</Text>
+            <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(d.progress / 100, 10)} ${d.file} ${Math.round(d.progress)}%`}</Text>
           </Box>
         ))}
       {status == TaskStatus.PROCESSING && text && message == "Generating" && (
         <Box marginLeft={2}>
-          <Text color="gray">{`${symbols.arrowRight} ${createBar(progress / 100, 10)} ${text}`}</Text>
+          <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(progress / 100, 10)} ${text}`}</Text>
         </Box>
       )}
       {status == TaskStatus.PROCESSING ? (
         <Box marginLeft={2}>
-          <Text color="gray">{`${symbols.squareSmallFilled} ${JSON.stringify(task.runInputData).slice(0, 200)}`}</Text>
+          <Text color="gray">{`${symbols.arrowRight} ${JSON.stringify(task.runInputData).slice(0, 200)}`}</Text>
         </Box>
       ) : null}
       {status == TaskStatus.COMPLETED ? (
         <Box marginLeft={2}>
-          <Text color="gray">{`${symbols.arrowRight} ${JSON.stringify(task.runOutputData).slice(0, 200)}`}</Text>
+          <Text color="gray">{`${symbols.arrowDown} ${JSON.stringify(task.runOutputData).slice(0, 200)}`}</Text>
         </Box>
       ) : null}
       {error ? (
         <Box marginLeft={2}>
-          <Text color="red">{`${symbols.arrowRight} ${error}`}</Text>
+          <Text color="red">{`${symbols.warning} ${error}`}</Text>
         </Box>
       ) : null}
       {subGraph && (
-        <Box flexDirection="column" marginLeft={2} borderStyle="round">
+        <Box flexDirection="row" marginLeft={2} borderStyle="round">
           <TaskGraphUI graph={subGraph} />
         </Box>
       )}
       {dependantChildren && (
-        <Box flexDirection="column" marginLeft={2}>
+        <Box flexDirection="row" marginLeft={2}>
           {dependantChildren.map((taskItem) => (
             <TaskUI key={`${taskItem.config.id}`} task={taskItem} graph={graph} />
           ))}

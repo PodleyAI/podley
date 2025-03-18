@@ -5,11 +5,12 @@
 // //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 // //    *******************************************************************************
 
-import { TaskInput, Provenance, TaskConfig, CompoundMergeStrategy } from "./TaskTypes";
+import { TaskInput, Provenance, TaskConfig } from "./TaskTypes";
 import { TaskRegistry } from "../task/TaskRegistry";
 import { TaskConfigurationError, TaskJSONError } from "../task/TaskError";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { Dataflow } from "../task-graph/Dataflow";
+import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 
 // ========================================================================
 // JSON Serialization Types

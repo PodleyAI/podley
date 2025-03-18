@@ -20,7 +20,6 @@ import {
 import type { TaskGraphItemJson, JsonTaskItem } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
 import {
-  CompoundMergeStrategy,
   IConfig,
   Provenance,
   TaskStatus,
@@ -31,7 +30,11 @@ import {
   type TaskOutputDefinition,
   type TaskTypeName,
 } from "./TaskTypes";
-import { AnyGraphResult } from "../task-graph/TaskGraphRunner";
+import {
+  AnyGraphResult,
+  CompoundMergeStrategy,
+  GraphResultMap,
+} from "../task-graph/TaskGraphRunner";
 
 /**
  * Base class for all tasks that implements the ITask interface.
@@ -46,6 +49,7 @@ export class Task<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
+  Merge extends CompoundMergeStrategy = "last-or-named",
 > implements ITask<Input, Output, Config>
 {
   // ========================================================================
@@ -98,7 +102,7 @@ export class Task<
   public async execute(
     input: Input,
     config: IExecuteConfig
-  ): Promise<AnyGraphResult<Output> | undefined> {
+  ): Promise<GraphResultMap<Output>[Merge] | undefined> {
     if (config.signal?.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
@@ -117,8 +121,8 @@ export class Task<
   public async executeReactive(
     input: Input,
     output: Output
-  ): Promise<AnyGraphResult<Output> | undefined> {
-    return output;
+  ): Promise<GraphResultMap<Output>[Merge] | undefined> {
+    return output as GraphResultMap<Output>[Merge] | undefined;
   }
 
   // ========================================================================
@@ -464,6 +468,8 @@ export class Task<
    * emit the "regenerate" event.
    */
   public regenerateGraph(): void {
+    this.subGraph!.outputCache = this.outputCache;
+    this.subGraph!.compoundMerge = this.compoundMerge;
     this.events.emit("regenerate");
   }
 

@@ -25,7 +25,7 @@ const runTaskToInk = async (graph: TaskGraph) => {
   const { unmount } = render(React.createElement(App, { graph }));
   let results: any;
   try {
-    await sleep(50);
+    await sleep(150);
     results = await graph.run();
   } catch (e: any) {}
   await sleep(150);

@@ -12,7 +12,6 @@ import { Task } from "../task/Task";
 import { WorkflowError } from "../task/TaskError";
 import type { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import {
-  CompoundMergeStrategy,
   TaskConfig,
   TaskOutput,
   type TaskInput,
@@ -21,7 +20,7 @@ import {
 } from "../task/TaskTypes";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph } from "./TaskGraph";
-import { TaskGraphRunner } from "./TaskGraphRunner";
+import { CompoundMergeStrategy, TaskGraphRunner } from "./TaskGraphRunner";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
