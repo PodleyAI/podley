@@ -133,6 +133,7 @@ export interface ITaskIO<
   validateInputValue(valueType: string, item: any): Promise<boolean>;
   validateInputDefinition(input: Partial<Input>, inputId: keyof Input): Promise<boolean>;
   validateInput(input: Partial<Input>): Promise<boolean>;
+  get cacheable(): boolean;
 }
 
 export interface ITaskCompound {

@@ -402,10 +402,8 @@ export class TaskGraphRunner {
     this.provenanceInput.set(task.config.id, nodeProvenance);
     this.copyInputFromEdgesToNode(task);
 
-    const shouldUseRepository = (task.constructor as any).cacheable && !task.hasChildren();
-
     let results;
-    if (shouldUseRepository) {
+    if (task.cacheable) {
       results = await this.outputCache?.getOutput(
         (task.constructor as any).type,
         task.runInputData
@@ -421,7 +419,7 @@ export class TaskGraphRunner {
     }
     if (!results) {
       results = await task.run({}, { nodeProvenance, outputCache: this.outputCache });
-      if (shouldUseRepository) {
+      if (task.cacheable) {
         await this.outputCache?.saveOutput(
           (task.constructor as any).type,
           task.runInputData,
@@ -465,8 +463,9 @@ export class TaskGraphRunner {
    */
   protected resetGraph(graph: TaskGraph, runnerId: string) {
     graph.getTasks().forEach((node) => {
+      const changed = node.isCompound && !deepEqual(node.runInputData, node.defaults);
       this.resetTask(graph, node, runnerId);
-      if (node.isCompound) {
+      if (changed) {
         node.regenerateGraph();
         this.resetGraph(node.subGraph!, runnerId);
       }

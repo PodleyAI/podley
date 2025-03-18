@@ -94,8 +94,11 @@ export interface IConfig {
   /** Optional output cache to use for this task */
   outputCache?: TaskOutputRepository;
 
-  /** Optional compound merge strategy to use for this task */
+  /** Optional compound merge strategy to use for this task, overriding the default static property */
   compoundMerge?: CompoundMergeStrategy;
+
+  /** Optional cacheable flag to use for this task, overriding the default static property */
+  cacheable?: boolean;
 
   /** Optional flag to indicate if the task is a compound task */
   isCompound?: boolean;

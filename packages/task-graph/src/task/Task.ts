@@ -213,6 +213,13 @@ export class Task<
     return this.config?.compoundMerge || (this.constructor as typeof Task).compoundMerge;
   }
 
+  public get cacheable(): boolean {
+    return (
+      // if cacheable is set in config, always use that
+      this.config?.cacheable ?? ((this.constructor as typeof Task).cacheable && !this.hasChildren())
+    );
+  }
+
   public hasChildren(): boolean {
     return this.isCompound && this.subGraph !== null && this.subGraph.getTasks().length > 0;
   }
