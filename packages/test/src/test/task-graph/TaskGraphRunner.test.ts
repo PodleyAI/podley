@@ -15,6 +15,7 @@ import {
   TaskAbortedError,
   Dataflow,
   TaskOutput,
+  AnyGraphResult,
 } from "@ellmers/task-graph";
 import {
   TestIOTask,
@@ -77,6 +78,7 @@ describe("TaskGraphRunner", () => {
         expect(results.find((r) => r.id === "task3")?.data.output).toEqual(35);
       } else {
         // In this case, task3 is the only leaf node, so results might be its output directly
+        // @ts-expect-error ts(2571)
         expect(results.output).toEqual(35);
       }
     });
@@ -107,7 +109,7 @@ describe("TaskGraphRunner", () => {
     });
 
     it("should propagate task status to dataflow edges", async () => {
-      let runPromise: Promise<TaskOutput[]>;
+      let runPromise: Promise<AnyGraphResult<TaskOutput>>;
       let error: Error | undefined;
 
       try {
@@ -191,7 +193,7 @@ describe("TaskGraphRunner", () => {
       expect(longRunningTask.status).toBe(TaskStatus.ABORTING);
       const dataflows = graph.getTargetDataflows("long-running");
       expect(dataflows.length).toBe(1);
-      expect(dataflows[0].status).toBe(longRunningTask.status);
+      expect(dataflows[0].status).toBe(TaskStatus.ABORTING);
       expect(dataflows[0].error).toBeDefined();
       expect(dataflows[0].error).toBeInstanceOf(TaskAbortedError);
     });

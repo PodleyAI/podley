@@ -382,6 +382,9 @@ export class TaskGraphRunner {
         case TaskStatus.PENDING:
           dataflow.events.emit("reset");
           break;
+        case TaskStatus.FAILED:
+          dataflow.events.emit("error", node.error!);
+          break;
       }
     });
   }
@@ -393,9 +396,7 @@ export class TaskGraphRunner {
   protected pushErrorFromNodeToEdges(graph: TaskGraph, node: ITask) {
     if (!node?.config?.id) return;
     graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
-      dataflow.status = TaskStatus.FAILED;
       dataflow.error = node.error;
-      dataflow.events.emit("error", node.error!);
     });
   }
 
