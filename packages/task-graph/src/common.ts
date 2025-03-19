@@ -11,6 +11,7 @@ export * from "./task/ITask";
 export * from "./task/TaskEvents";
 export * from "./task/TaskJSON";
 export * from "./task/Task";
+export * from "./task-graph/DataflowEvents";
 export * from "./task-graph/Dataflow";
 export * from "./task/TaskRegistry";
 export * from "./task-graph/TaskGraph";

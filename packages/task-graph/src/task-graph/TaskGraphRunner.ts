@@ -369,6 +369,20 @@ export class TaskGraphRunner {
     if (!node?.config?.id) return;
     graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
       dataflow.status = node.status;
+      switch (node.status) {
+        case TaskStatus.PROCESSING:
+          dataflow.events.emit("start");
+          break;
+        case TaskStatus.COMPLETED:
+          dataflow.events.emit("complete");
+          break;
+        case TaskStatus.ABORTING:
+          dataflow.events.emit("abort");
+          break;
+        case TaskStatus.PENDING:
+          dataflow.events.emit("reset");
+          break;
+      }
     });
   }
 
@@ -379,7 +393,9 @@ export class TaskGraphRunner {
   protected pushErrorFromNodeToEdges(graph: TaskGraph, node: ITask) {
     if (!node?.config?.id) return;
     graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
+      dataflow.status = TaskStatus.FAILED;
       dataflow.error = node.error;
+      dataflow.events.emit("error", node.error!);
     });
   }
 

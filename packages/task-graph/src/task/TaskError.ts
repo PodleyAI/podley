@@ -81,7 +81,7 @@ export class TaskInvalidInputError extends TaskError {
  */
 export class TaskErrorGroup extends TaskError {
   constructor(private errors: { key: unknown; type: string; error: TaskError }[]) {
-    super("Multiple errors occurred");
+    super("Child errors occurred");
   }
   getError(key: unknown): TaskError | undefined {
     return this.errors.find((e) => e.key === key)?.error;
