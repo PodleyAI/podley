@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskGraph, TaskGraphRunner } from "@ellmers/task-graph";
+import { TaskGraph } from "@ellmers/task-graph";
 import React from "react";
 import { render } from "tuir";
 import App from "./components/App";

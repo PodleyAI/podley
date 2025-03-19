@@ -5,10 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter } from "@ellmers/util";
-import { uuid4 } from "@ellmers/util";
+import { EventEmitter, uuid4 } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
+import {
+  AnyGraphResult,
+  CompoundMergeStrategy,
+  GraphResultMap,
+} from "../task-graph/TaskGraphRunner";
 import type { IExecuteConfig, IRunConfig, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
 import {
@@ -17,12 +21,12 @@ import {
   type TaskEventParameters,
   type TaskEvents,
 } from "./TaskEvents";
-import type { TaskGraphItemJson, JsonTaskItem } from "./TaskJSON";
+import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
 import {
-  IConfig,
-  Provenance,
   TaskStatus,
+  type IConfig,
+  type Provenance,
   type TaskConfig,
   type TaskInput,
   type TaskInputDefinition,
@@ -30,11 +34,6 @@ import {
   type TaskOutputDefinition,
   type TaskTypeName,
 } from "./TaskTypes";
-import {
-  AnyGraphResult,
-  CompoundMergeStrategy,
-  GraphResultMap,
-} from "../task-graph/TaskGraphRunner";
 
 /**
  * Base class for all tasks that implements the ITask interface.
