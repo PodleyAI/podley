@@ -5,18 +5,17 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, test, expect, beforeEach, afterEach, mock, beforeAll, afterAll } from "bun:test";
-import { Fetch, FetchJob } from "@ellmers/tasks";
 import {
-  getTaskQueueRegistry,
-  setTaskQueueRegistry,
-  TaskInput,
-  TaskOutput,
-} from "@ellmers/task-graph";
-import { JobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
-import { sleep } from "@ellmers/util";
-import { PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
+  InMemoryRateLimiter,
+  JobQueue,
+  PermanentJobError,
+  RetryableJobError,
+} from "@ellmers/job-queue";
 import { InMemoryQueueStorage } from "@ellmers/storage";
+import { getTaskQueueRegistry, setTaskQueueRegistry } from "@ellmers/task-graph";
+import { Fetch, FetchJob, FetchTaskInput, FetchTaskOutput } from "@ellmers/tasks";
+import { sleep } from "@ellmers/util";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
 
 // Create base mock response
 const createMockResponse = (jsonData: any = {}): Response => {
@@ -75,9 +74,9 @@ describe("FetchTask", () => {
 
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results).toHaveLength(3);
-    expect(results[0].body).toEqual({ data: { id: 1, name: "Test 1" } });
-    expect(results[1].body).toEqual({ data: { id: 2, name: "Test 2" } });
-    expect(results[2].body).toEqual({ data: { id: 3, name: "Test 3" } });
+    expect(results[0].json).toEqual({ data: { id: 1, name: "Test 1" } });
+    expect(results[1].json).toEqual({ data: { id: 2, name: "Test 2" } });
+    expect(results[2].json).toEqual({ data: { id: 3, name: "Test 3" } });
   });
 
   test("respects rate limiting with InMemoryQueue", async () => {
@@ -86,9 +85,9 @@ describe("FetchTask", () => {
     const rateLimiter = new InMemoryRateLimiter(1, 1); // 1 request per 1 minute window
 
     // Create a queue with the base Job type to match TaskQueueRegistry's expectations
-    const queue = new JobQueue<TaskInput, TaskOutput>(queueName, FetchJob, {
+    const queue = new JobQueue<FetchTaskInput, FetchTaskOutput>(queueName, FetchJob, {
       limiter: rateLimiter,
-      storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(queueName),
+      storage: new InMemoryQueueStorage<FetchTaskInput, FetchTaskOutput>(queueName),
       waitDurationInMilliseconds: 1,
     });
 
@@ -205,7 +204,7 @@ describe("FetchTask", () => {
 
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results[0].status).toBe("fulfilled");
-    expect((results[0] as PromiseFulfilledResult<any>).value.body).toEqual({ data: "success" });
+    expect((results[0] as PromiseFulfilledResult<any>).value.json).toEqual({ data: "success" });
     expect(results[1].status).toBe("rejected");
     expect((results[1] as PromiseRejectedResult).reason.message).toBe("Network error");
     expect(results[2].status).toBe("rejected");

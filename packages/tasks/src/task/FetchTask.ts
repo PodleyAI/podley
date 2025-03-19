@@ -16,11 +16,12 @@ import {
   TaskInvalidInputError,
   TaskConfig,
 } from "@ellmers/task-graph";
-import { Job, PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
+import { AbortSignalJobError, Job, PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
+import { JSONValue } from "@ellmers/storage";
 
 export type url = string;
 export type FetchTaskInput = {
-  url?: url;
+  url: url;
   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   headers?: Record<string, string>;
   body?: string;
@@ -28,47 +29,115 @@ export type FetchTaskInput = {
   queueName?: string;
 };
 export type FetchTaskOutput = {
-  body?: any;
+  json?: JSONValue;
+  text?: string;
+  blob?: Blob;
+  arraybuffer?: ArrayBuffer;
 };
 
 export type FetchTaskConfig = TaskConfig & {
   queueName?: string;
 };
 
+async function fetchWithProgress(
+  url: string,
+  options: RequestInit = {},
+  onProgress?: (progress: number) => void
+): Promise<Response> {
+  if (!options.signal) {
+    throw new Error("An AbortSignal must be provided.");
+  }
+
+  const response = await fetch(url, options);
+  if (!response.body) {
+    throw new Error("ReadableStream not supported in this environment.");
+  }
+
+  const contentLength = response.headers.get("Content-Length");
+  const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+  let receivedBytes = 0;
+  const reader = response.body.getReader();
+
+  // Create a new ReadableStream that supports progress updates
+  const stream = new ReadableStream({
+    start(controller) {
+      async function push() {
+        try {
+          while (true) {
+            // Check if the request was aborted
+            if (options.signal?.aborted) {
+              controller.error(new AbortSignalJobError("Fetch aborted"));
+              reader.cancel();
+              return;
+            }
+
+            const { done, value } = await reader.read();
+            if (done) {
+              controller.close();
+              break;
+            }
+            controller.enqueue(value);
+            receivedBytes += value.length;
+            if (onProgress && totalBytes) {
+              onProgress((receivedBytes / totalBytes) * 100);
+            }
+          }
+        } catch (error) {
+          controller.error(error);
+        }
+      }
+      push();
+    },
+    cancel() {
+      reader.cancel();
+    },
+  });
+
+  return new Response(stream, {
+    headers: response.headers,
+    status: response.status,
+    statusText: response.statusText,
+  });
+}
+
 /**
  * Extends the base Job class to provide custom execution functionality
  * through a provided function.
  */
-export class FetchJob extends Job<FetchTaskInput, FetchTaskOutput> {
-  constructor(
-    config: JobQueueTaskConfig & { input: FetchTaskInput } = { input: {} as FetchTaskInput }
-  ) {
+export class FetchJob<
+  Input extends FetchTaskInput = FetchTaskInput,
+  Output extends FetchTaskOutput = FetchTaskOutput,
+> extends Job<Input, Output> {
+  constructor(config: JobQueueTaskConfig & { input: Input } = { input: {} as Input }) {
     super(config);
   }
   static readonly type: string = "FetchJob";
   /**
    * Executes the job using the provided function.
    */
-  async execute(signal: AbortSignal): Promise<FetchTaskOutput> {
-    let result: any = null;
-    const response = await fetch(this.input.url!, {
-      method: this.input.method,
-      headers: this.input.headers,
-      body: this.input.body,
-      signal: signal,
-    });
+  async execute(signal: AbortSignal): Promise<Output> {
+    const response = await fetchWithProgress(
+      this.input.url!,
+      {
+        method: this.input.method,
+        headers: this.input.headers,
+        body: this.input.body,
+        signal: signal,
+      },
+      this.updateProgress.bind(this)
+    );
 
     if (response.ok) {
       if (this.input.response_type === "json") {
-        result = await response.json();
+        return { json: await response.json() } as Output;
       } else if (this.input.response_type === "text") {
-        result = await response.text();
+        return { text: await response.text() } as Output;
       } else if (this.input.response_type === "blob") {
-        result = await response.blob();
+        return { blob: await response.blob() } as Output;
       } else if (this.input.response_type === "arraybuffer") {
-        result = await response.arrayBuffer();
+        return { arraybuffer: await response.arrayBuffer() } as Output;
       }
-      return { body: result };
+      throw new TaskInvalidInputError(`Invalid response type: ${this.input.response_type}`);
     } else {
       if (
         response.status === 429 ||
@@ -155,11 +224,10 @@ export class FetchTask<
     },
   ] as const;
   public static outputs: TaskOutputDefinition[] = [
-    { id: "body", name: "Body", valueType: "any" },
-    // { id: "json", name: "JSON", valueType: "json" },
-    // { id: "text", name: "Text", valueType: "text" },
-    // { id: "blob", name: "Blob", valueType: "blob" },
-    // { id: "arraybuffer", name: "ArrayBuffer", valueType: "arraybuffer" },
+    { id: "json", name: "JSON", valueType: "json" },
+    { id: "text", name: "Text", valueType: "text" },
+    { id: "blob", name: "Blob", valueType: "blob" },
+    { id: "arraybuffer", name: "ArrayBuffer", valueType: "arraybuffer" },
   ] as const;
 
   constructor(input: Input = {} as Input, config: Config = {} as Config) {
@@ -214,8 +282,12 @@ export class FetchTask<
 
 TaskRegistry.registerTask(FetchTask);
 
-export const Fetch = (input: FetchTaskInput, config: TaskConfig = {}) => {
-  return new FetchTask(input, config).run();
+export const Fetch = async (
+  input: FetchTaskInput,
+  config: TaskConfig = {}
+): Promise<FetchTaskOutput> => {
+  const result = await new FetchTask(input, config).run();
+  return result as FetchTaskOutput;
 };
 
 declare module "@ellmers/task-graph" {

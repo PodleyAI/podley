@@ -62,6 +62,7 @@ export abstract class JobQueueTask<
     let cleanup: () => void = () => {};
 
     try {
+      executeConfig.updateProgress(0.009, "Creating job");
       const job = await this.createJob(input);
 
       const queue = getTaskQueueRegistry().getQueue(this.config.queueName!);
