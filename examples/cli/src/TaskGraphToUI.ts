@@ -27,8 +27,7 @@ const runTaskToInk = async (graph: TaskGraph) => {
   try {
     await sleep(50);
     results = await graph.run();
-  } catch (e: any) {
-    console.error(e);
-  }
+  } catch (e: any) {}
+  await sleep(150);
   unmount();
 };
