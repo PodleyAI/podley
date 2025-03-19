@@ -154,7 +154,7 @@ function updateNodeData(
 }
 
 function listenToTask(
-  task: ITask,
+  task: ITask<any, any, any>,
   setNodes: Dispatch<SetStateAction<Node<TurboNodeData>[]>>,
   setEdges: Dispatch<SetStateAction<Edge[]>>
 ) {

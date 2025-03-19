@@ -14,6 +14,7 @@ import {
   TaskGraph,
   Dataflow,
 } from "@ellmers/task-graph";
+import { DirectedAcyclicGraph } from "@ellmers/util";
 
 type Config = Record<string, any>;
 
@@ -39,7 +40,7 @@ export function isDarkMode() {
   return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
-export class WorkflowConsoleFormatter extends ConsoleFormatter {
+class WorkflowConsoleFormatter extends ConsoleFormatter {
   header(workflow: Workflow | TaskGraph, config?: Config) {
     // @ts-ignore
     if (workflow instanceof Workflow || workflow instanceof TaskGraph) {
@@ -94,18 +95,23 @@ export class WorkflowConsoleFormatter extends ConsoleFormatter {
       }
     }
     if (obj instanceof TaskGraph) {
-      nodes.createTextChild("Dataflows:");
+      const dfList = nodes.createTextChild("Dataflows:");
       for (const df of obj.getDataflows()) {
-        const dfTag = nodes.createListItem("", "list-style-type: none;");
+        const dfTag = dfList.createListItem("", "list-style-type: none;");
         dfTag.createObjectTag(df);
       }
     }
+    // @ts-ignore
+    const dag = obj._dag ?? obj.graph._dag;
+
+    if (dag && dag.getNodes().length > 0) body.createObjectTag(dag);
+
     return body.toJsonML();
   }
 }
 
 // New formatter for Workflow API methods
-export class WorkflowAPIConsoleFormatter extends ConsoleFormatter {
+class WorkflowAPIConsoleFormatter extends ConsoleFormatter {
   header(obj: any, config?: Config) {
     if (obj === Workflow.prototype || obj === Workflow) {
       const header = new JsonMLElement("div");
@@ -142,7 +148,7 @@ export class WorkflowAPIConsoleFormatter extends ConsoleFormatter {
   }
 }
 
-export class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
+class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
   header(obj: any, config?: Config) {
     if (obj.workflowCreate) {
       const header = new JsonMLElement("div");
@@ -175,7 +181,7 @@ export class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
   }
 }
 
-export class TaskConsoleFormatter extends ConsoleFormatter {
+class TaskConsoleFormatter extends ConsoleFormatter {
   header(task: Task, config?: Config) {
     if (!task) return null;
 
@@ -297,11 +303,48 @@ export class TaskConsoleFormatter extends ConsoleFormatter {
 
     body.createStatusListItem(task.status);
 
+    // @ts-ignore
+    const dag = task.subGraph?._dag;
+
+    if (dag && dag.getNodes().length > 0) body.createObjectTag(dag);
+
     return body.toJsonML();
   }
 }
 
-export class DataflowConsoleFormatter extends ConsoleFormatter {
+class DAGConsoleFormatter extends ConsoleFormatter {
+  header(obj: any, config?: Config) {
+    if (obj instanceof DirectedAcyclicGraph) {
+      const header = new JsonMLElement("div");
+      header.createTextChild("DAG");
+      return header.toJsonML();
+    }
+    return null;
+  }
+
+  hasBody(value: any, config?: Config) {
+    return true;
+  }
+
+  body(obj: any, config?: Config) {
+    const body = new JsonMLElement("div");
+    const nodes = body.createStyledList();
+    if (obj.getNodes().length > 0) {
+      // @ts-ignore
+      const { dataURL, height } = generateGraphImage(obj);
+      if (dataURL) {
+        const imageTag = body.createChild("div");
+        imageTag.addAttribute(
+          "style",
+          `background-image: url(${dataURL}); background-size: cover; background-position: center; width: 800px; height: ${height}px;`
+        );
+      }
+    }
+    return body.toJsonML();
+  }
+}
+
+class DataflowConsoleFormatter extends ConsoleFormatter {
   header(obj: any, config?: Config) {
     if (obj instanceof Dataflow) {
       const header = new JsonMLElement("div");
@@ -327,7 +370,7 @@ export class DataflowConsoleFormatter extends ConsoleFormatter {
   }
 }
 
-export class ReactElementConsoleFormatter extends ConsoleFormatter {
+class ReactElementConsoleFormatter extends ConsoleFormatter {
   header(obj: any, config?: Config) {
     if (obj?.$$typeof?.toString() === "Symbol(react.transitional.element)" && !config?.parent) {
       const header = new JsonMLElement("div");
@@ -584,6 +627,99 @@ class JsonMLElement {
   }
 }
 
+function computeLayout(
+  graph: DirectedAcyclicGraph<any, any, any, any>,
+  canvasWidth: number
+): { positions: { [id: string]: { x: number; y: number } }; requiredHeight: number } {
+  const positions: { [id: string]: { x: number; y: number } } = {};
+  const layers: Map<number, string[]> = new Map();
+  const depths: { [id: string]: number } = {};
+
+  // Compute depth (longest path from any root)
+  for (const node of graph.topologicallySortedNodes()) {
+    const incomingEdges = graph.inEdges(node.config.id).map(([from]) => from);
+    const depth =
+      incomingEdges.length > 0 ? Math.max(...incomingEdges.map((from) => depths[from])) + 1 : 0;
+    depths[node.config.id] = depth;
+
+    if (!layers.has(depth)) layers.set(depth, []);
+    layers.get(depth)!.push(node.config.id);
+  }
+
+  // Compute spacing based on available canvas size
+  const totalLayers = layers.size;
+  const layerSpacing = totalLayers > 1 ? Math.max(canvasWidth / totalLayers, 150) : 150;
+
+  // Determine the required height dynamically
+  const maxNodesInLayer = Math.max(...Array.from(layers.values()).map((layer) => layer.length));
+  const nodeSpacing = 100;
+  const requiredHeight = maxNodesInLayer * nodeSpacing + 100; // Extra padding
+
+  layers.forEach((layerNodes, layerIndex) => {
+    const yStart = (requiredHeight - layerNodes.length * nodeSpacing) / 2;
+    layerNodes.forEach((nodeId, index) => {
+      positions[nodeId] = {
+        x: layerIndex * layerSpacing + layerSpacing / 2,
+        y: yStart + index * nodeSpacing,
+      };
+    });
+  });
+
+  return { positions, requiredHeight };
+}
+
+function generateGraphImage(
+  graph: DirectedAcyclicGraph<any, any, any, any>,
+  width = 800
+): { dataURL: string; height: number } {
+  const ratio = window.devicePixelRatio || 1;
+  const { positions, requiredHeight } = computeLayout(graph, width);
+  const canvas = document.createElement("canvas");
+  canvas.width = width * ratio;
+  canvas.height = requiredHeight * ratio;
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) {
+    console.error("Canvas context is not available.");
+    return { dataURL: "", height: requiredHeight };
+  }
+  ctx.scale(ratio, ratio);
+
+  // Draw edges first
+  ctx.clearRect(0, 0, width, requiredHeight);
+  ctx.strokeStyle = "#aaa";
+  ctx.lineWidth = 2;
+  for (const [source, target] of graph.getEdges()) {
+    const fromNode = positions[source];
+    const toNode = positions[target];
+    if (fromNode && toNode) {
+      ctx.beginPath();
+      ctx.moveTo(fromNode.x, fromNode.y);
+      ctx.lineTo(toNode.x, toNode.y);
+      ctx.stroke();
+    }
+  }
+
+  // Draw nodes over the edges
+  ctx.fillStyle = "#3498db";
+  for (const node of graph.getNodes()) {
+    const pos = positions[node.config.id];
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "black";
+    ctx.font = `12px Arial`;
+    ctx.textAlign = "center";
+    ctx.fillText(node.type, pos.x, pos.y - 15);
+    ctx.fillStyle = "#3498db";
+  }
+
+  const dataURL = canvas.toDataURL("image/png");
+
+  return { dataURL, height: requiredHeight };
+}
+
 export function installDevToolsFormatters() {
   window["devtoolsFormatters"] = window["devtoolsFormatters"] || [];
   window["devtoolsFormatters"].push(
@@ -592,6 +728,7 @@ export function installDevToolsFormatters() {
     new WorkflowConsoleFormatter(),
     new TaskConsoleFormatter(),
     new ReactElementConsoleFormatter(),
-    new DataflowConsoleFormatter()
+    new DataflowConsoleFormatter(),
+    new DAGConsoleFormatter()
   );
 }
