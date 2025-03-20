@@ -42,6 +42,10 @@
   },
   "packageManager": "bun@1.2.5",
   "trustedDependencies": [
+    "better-sqlite3",
+    "esbuild",
+    "onnxruntime-node",
+    "protobufjs",
     "sharp"
   ]
 }
