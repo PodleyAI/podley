@@ -5,15 +5,12 @@
       "dependsOn": ["^build-package"],
       "outputs": ["dist/**/*.js", "dist/**/*.js.map"]
     },
-    "transit": {
-      "dependsOn": ["^transit"]
-    },
     "build-types": {
-      "dependsOn": ["transit"],
+      "dependsOn": ["^build-types"],
       "outputs": ["dist/**/*.d.ts", "dist/**/*.d.ts.map", "tsconfig.tsbuildinfo"]
     },
     "build-example": {
-      "dependsOn": ["^build-package", "^build-example"],
+      "dependsOn": ["build-package", "^build-example"],
       "outputs": ["dist/**/*.js", "dist/**/*.js.map"]
     },
     "dev": {

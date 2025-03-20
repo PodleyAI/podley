@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently --kill-others -c 'auto' -n app,types 'bunx --bun vite' 'tsc -w --noEmit --preserveWatchOutput'",
     "build-example": "vite build",
-    "build-types": "tsc",
+    "build-types": "rm -f tsconfig.tsbuildinfo && tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

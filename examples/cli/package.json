@@ -14,7 +14,7 @@
     "build-js-worker": "bun build --target=node --outdir ./dist ./src/ellmers_worker.ts",
     "build-js-worker-hft": "bun build --target=node --outdir ./dist ./src/worker_hft.ts",
     "build-lib": "bun build --target=bun --packages=external --outdir ./dist ./src/lib.ts",
-    "build-types": "tsc",
+    "build-types": "rm -f tsconfig.tsbuildinfo && tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": "./src/ellmers.js",

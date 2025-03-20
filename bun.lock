@@ -23,7 +23,7 @@
         "react": "19.0.0",
         "react-dom": "19.0.0",
         "tuir": "=1.0.1",
-        "typescript": "^5.8.2",
+        "typescript": "5.8.2",
       },
       "peerDependencies": {
         "@electric-sql/pglite": "^0.2.17",
@@ -108,6 +108,13 @@
         "@ellmers/job-queue": "workspace:*",
         "@ellmers/storage": "workspace:*",
         "@ellmers/task-graph": "workspace:*",
+        "@ellmers/util": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/pg": "^8.11.11",
+      },
+      "peerDependencies": {
+        "pg": "^8.14.1",
       },
     },
     "packages/ai-provider": {
@@ -118,6 +125,11 @@
         "@ellmers/job-queue": "workspace:*",
         "@ellmers/storage": "workspace:*",
         "@ellmers/task-graph": "workspace:*",
+        "@ellmers/util": "workspace:*",
+      },
+      "peerDependencies": {
+        "@mediapipe/tasks-text": "^0.10.21",
+        "@sroussey/transformers": "3.4.0-2",
       },
     },
     "packages/job-queue": {
@@ -125,15 +137,37 @@
       "version": "0.0.1",
       "dependencies": {
         "@ellmers/storage": "workspace:*",
+        "@ellmers/util": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/pg": "^8.11.11",
+      },
+      "peerDependencies": {
+        "pg": "^8.14.1",
       },
     },
     "packages/sqlite": {
       "name": "@ellmers/sqlite",
       "version": "0.0.1",
+      "devDependencies": {
+        "@types/better-sqlite3": "^7.6.12",
+      },
+      "peerDependencies": {
+        "@sqlite.org/sqlite-wasm": "^3.49.1-build2",
+        "better-sqlite3": "^11.9.1",
+      },
     },
     "packages/storage": {
       "name": "@ellmers/storage",
       "version": "0.0.1",
+      "dependencies": {
+        "@ellmers/sqlite": "workspace:*",
+        "pg": "^8.14.1",
+      },
+      "devDependencies": {
+        "@types/pg": "^8.11.11",
+        "fake-indexeddb": "^6.0.0",
+      },
     },
     "packages/task-graph": {
       "name": "@ellmers/task-graph",
@@ -147,19 +181,22 @@
       "name": "@ellmers/tasks",
       "version": "0.0.1",
       "dependencies": {
-        "@ellmers/task-graph": "workspace:packages/task-graph",
+        "@ellmers/task-graph": "workspace:*",
+        "@ellmers/util": "workspace:*",
       },
     },
     "packages/test": {
       "name": "@ellmers/test",
       "version": "0.0.1",
       "dependencies": {
-        "@ellmers/ai": "workspace:packages/ai",
-        "@ellmers/ai-provider": "workspace:packages/ai-provider",
-        "@ellmers/job-queue": "workspace:packages/job-queue",
-        "@ellmers/storage": "workspace:packages/storage",
-        "@ellmers/task-graph": "workspace:packages/task-graph",
-        "@ellmers/tasks": "workspace:packages/tasks",
+        "@ellmers/ai": "workspace:*",
+        "@ellmers/ai-provider": "workspace:*",
+        "@ellmers/job-queue": "workspace:*",
+        "@ellmers/sqlite": "workspace:*",
+        "@ellmers/storage": "workspace:*",
+        "@ellmers/task-graph": "workspace:*",
+        "@ellmers/tasks": "workspace:*",
+        "@ellmers/util": "workspace:*",
       },
     },
     "packages/util": {

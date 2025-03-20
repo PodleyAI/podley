@@ -7,10 +7,10 @@
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-code": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
-    "build-package": "bun run build-clean && bun run build-code && bun run build-types",
+    "build-package": "bun run build-clean && bun run build-code",
     "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
     "build-code": "bun build --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
-    "build-types": "tsc",
+    "build-types": "rm -f tsconfig.tsbuildinfo && tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "bun test"
   },
@@ -27,6 +27,7 @@
     "dist"
   ],
   "dependencies": {
-    "@ellmers/task-graph": "workspace:packages/task-graph"
+    "@ellmers/task-graph": "workspace:*",
+    "@ellmers/util": "workspace:*"
   }
 }
