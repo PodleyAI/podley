@@ -7,7 +7,7 @@
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-code": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
-    "build": "bun run build-clean && bun run build-code && bun run build-types",
+    "build-package": "bun run build-clean && bun run build-code && bun run build-types",
     "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
     "build-code": "bun build --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
     "build-types": "tsc",
@@ -15,6 +15,7 @@
     "test": "bun test"
   },
   "exports": {
+    "bun": "./src/index.ts",
     "import": "./dist/index.js",
     "types": "./dist/index.d.ts"
   },

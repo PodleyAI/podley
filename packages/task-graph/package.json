@@ -9,7 +9,7 @@
     "watch-node": "bun build --watch --no-clear-screen --target=node --sourcemap=external --packages=external --outdir ./dist ./src/node.ts",
     "watch-bun": "bun build --watch --no-clear-screen --target=bun --sourcemap=external --packages=external --outdir ./dist ./src/bun.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
-    "build": "bun run build-clean && bun run build-browser && bun run build-node && bun run build-bun && bun run build-types",
+    "build-package": "bun run build-clean && bun run build-browser && bun run build-node && bun run build-bun && bun run build-types",
     "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
     "build-browser": "bun build --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/browser.ts",
     "build-node": "bun build --target=node --sourcemap=external --packages=external --outdir ./dist ./src/node.ts",
@@ -24,7 +24,7 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./dist/bun.js",
+      "bun": "./src/bun.ts",
       "types": "./dist/bun.d.ts",
       "import": "./dist/node.js",
       "node": "./dist/node.js"

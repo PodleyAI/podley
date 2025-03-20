@@ -8,7 +8,7 @@
     "watch-js": "bun build --watch --target=node --sourcemap=external --packages=external --outdir ./dist ./src/ellmers.ts",
     "watch-lib": "bun build --watch --target=node --sourcemap=external --packages=external --outdir ./dist ./src/lib.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
-    "build": "bun run build-clean && bun run build-js && bun run build-js-worker && bun run build-js-worker-hft && bun run build-lib && bun run build-types",
+    "build-example": "bun run build-clean && bun run build-js && bun run build-js-worker && bun run build-js-worker-hft && bun run build-lib",
     "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
     "build-js": "bun build --target=bun --packages=external --outdir ./dist ./src/ellmers.ts",
     "build-js-worker": "bun build --target=node --outdir ./dist ./src/ellmers_worker.ts",
@@ -35,6 +35,8 @@
     "@ellmers/tasks": "workspace:*",
     "@ellmers/test": "workspace:*",
     "@ellmers/util": "workspace:*",
+    "@mediapipe/tasks-text": "^0.10.21",
+    "@sroussey/transformers": "3.4.0-2",
     "@types/react": "=18.3.12",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
@@ -42,6 +44,6 @@
     "react": "=18.3.1",
     "react-reconciler": "^0.31.0",
     "react-devtools-core": "^4.19.1",
-    "tuir": "^1.1.1"
+    "tuir": "^1.1.3"
   }
 }
