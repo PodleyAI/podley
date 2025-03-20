@@ -194,7 +194,11 @@
     },
   },
   "trustedDependencies": [
+    "better-sqlite3",
+    "onnxruntime-node",
     "sharp",
+    "esbuild",
+    "protobufjs",
   ],
   "packages": {
     "@alcalzone/ansi-tokenize": ["@alcalzone/ansi-tokenize@0.1.3", "", { "dependencies": { "ansi-styles": "^6.2.1", "is-fullwidth-code-point": "^4.0.0" } }, "sha512-3yWxPTq3UQ/FY9p1ErPxIyfT64elWaMvM9lIHnaqpyft63tkxodF5aUElYHrdisWve5cETkh1+KBw1yJuW0aRw=="],
