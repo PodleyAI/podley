@@ -22,7 +22,7 @@
   "types": "dist/index.d.ts",
   "peerDependencies": {
     "@sqlite.org/sqlite-wasm": "^3.49.1-build2",
-    "better-sqlite3": "=11.8.1"
+    "better-sqlite3": "^11.9.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12"
