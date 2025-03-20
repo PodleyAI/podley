@@ -22,7 +22,7 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./src/bun.ts",
+      "bun": "./dist/bun.js",
       "node": "./dist/node.js",
       "types": "./dist/bun.d.ts"
     }
