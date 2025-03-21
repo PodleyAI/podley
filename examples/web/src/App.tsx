@@ -8,10 +8,8 @@
 import { AiJob } from "@ellmers/ai";
 import {
   HF_TRANSFORMERS_ONNX,
-  // register_HFT_ClientJobFns,
-  register_HFT_InlineJobFns,
-  // register_TFMP_ClientJobFns,
-  register_TFMP_InlineJobFns,
+  register_HFT_ClientJobFns,
+  register_TFMP_ClientJobFns,
   TENSORFLOW_MEDIAPIPE,
 } from "@ellmers/ai-provider";
 import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
@@ -40,27 +38,25 @@ import { QueuesStatus } from "./QueueStatus";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
 import { RunGraphFlow } from "./RunGraphFlow";
 
-// register_TFMP_ClientJobFns(
-//   new Worker(new URL("./worker_tfmp.ts", import.meta.url), { type: "module" })
-// );
-// register_HFT_ClientJobFns(
-//   new Worker(new URL("./worker_hft.ts", import.meta.url), { type: "module" })
-// );
+register_TFMP_ClientJobFns(
+  new Worker(new URL("./worker_tfmp.ts", import.meta.url), { type: "module" })
+);
+register_HFT_ClientJobFns(
+  new Worker(new URL("./worker_hft.ts", import.meta.url), { type: "module" })
+);
 
 const queueRegistry = getTaskQueueRegistry();
 
-register_HFT_InlineJobFns();
 queueRegistry.registerQueue(
   new JobQueue<TaskInput, TaskOutput>(HF_TRANSFORMERS_ONNX, AiJob<TaskInput, TaskOutput>, {
-    limiter: new ConcurrencyLimiter(2, 100),
+    limiter: new ConcurrencyLimiter(1, 100),
     storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(HF_TRANSFORMERS_ONNX),
   })
 );
 
-register_TFMP_InlineJobFns();
 queueRegistry.registerQueue(
   new JobQueue<TaskInput, TaskOutput>(TENSORFLOW_MEDIAPIPE, AiJob<TaskInput, TaskOutput>, {
-    limiter: new ConcurrencyLimiter(2, 100),
+    limiter: new ConcurrencyLimiter(1, 100),
     storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(TENSORFLOW_MEDIAPIPE),
   })
 );

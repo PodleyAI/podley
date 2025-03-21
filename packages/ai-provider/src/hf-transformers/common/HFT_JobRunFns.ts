@@ -54,9 +54,8 @@ const getPipeline = async (
   onProgress: (progress: number, message?: string, details?: any) => void,
   options: PretrainedModelOptions = {}
 ) => {
-  const key = `${model.name}-${JSON.stringify(options)}`;
-  if (pipelines.has(key)) {
-    return pipelines.get(key);
+  if (pipelines.has(model.name)) {
+    return pipelines.get(model.name);
   }
 
   // Create a callback status object for progress tracking
@@ -82,7 +81,7 @@ const getPipeline = async (
 
   const pipelineType = model.pipeline as PipelineType;
   const result = await pipeline(pipelineType, model.url, pipelineOptions);
-  pipelines.set(key, result);
+  pipelines.set(model.name, result);
   return result;
 };
 

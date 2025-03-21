@@ -12,14 +12,9 @@ export class WorkerManager {
   private workers: Map<string, Worker> = new Map();
   private readyWorkers: Map<string, Promise<void>> = new Map();
 
-  registerWorker(name: string, workerLocation: string, base: string) {
+  registerWorker(name: string, worker: Worker) {
     if (this.workers.has(name)) throw new Error(`Worker ${name} is already registered.`);
-    let file = new URL(workerLocation, base).pathname;
-
-    const worker = new Worker(file, {
-      // @ts-ignore
-      preload: new URL("./worker_error.ts", base).href,
-    });
+    this.workers.set(name, worker);
 
     this.workers.set(name, worker);
     worker.addEventListener("error", (event) => {

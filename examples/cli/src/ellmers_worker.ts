@@ -16,7 +16,9 @@ program.version("1.0.0").description("A CLI to run Ellmers.");
 AddBaseCommands(program);
 
 await registerHuggingfaceLocalModels();
-await register_HFT_ClientJobFns("./worker_hft.ts", import.meta.url);
+await register_HFT_ClientJobFns(
+  new Worker(new URL("./worker_hft.ts", import.meta.url), { type: "module" })
+);
 await register_HFT_InMemoryQueue();
 
 await registerMediaPipeTfJsLocalModels();

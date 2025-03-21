@@ -1,3 +1,3 @@
-const Worker = window.Worker;
+const Worker = globalThis.Worker;
 const parentPort = self;
 export { Worker, parentPort };
