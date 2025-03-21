@@ -7,14 +7,15 @@
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-code": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
-    "build": "bun run build-clean && bun run build-code && bun run build-types",
-    "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
+    "build-package": "bun run build-clean && bun run build-code",
+    "build-clean": "rm -fr dist/*",
     "build-code": "bun build --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
-    "build-types": "tsc",
+    "build-types": "rm -f tsconfig.tsbuildinfo && tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "bun test"
   },
   "exports": {
+    "bun": "./src/index.ts",
     "import": "./dist/index.js",
     "types": "./dist/index.d.ts"
   },
@@ -25,6 +26,11 @@
     "@ellmers/ai": "workspace:*",
     "@ellmers/job-queue": "workspace:*",
     "@ellmers/storage": "workspace:*",
-    "@ellmers/task-graph": "workspace:*"
+    "@ellmers/task-graph": "workspace:*",
+    "@ellmers/util": "workspace:*"
+  },
+  "peerDependencies": {
+    "@sroussey/transformers": "3.4.0-2",
+    "@mediapipe/tasks-text": "^0.10.21"
   }
 }

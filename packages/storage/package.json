@@ -9,14 +9,23 @@
     "watch-node": "bun build --watch --no-clear-screen --target=node --sourcemap=external --packages=external --outdir ./dist ./src/node.ts",
     "watch-bun": "bun build --watch --no-clear-screen --target=bun --sourcemap=external --packages=external --outdir ./dist ./src/bun.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
-    "build": "bun run build-clean && bun run build-browser && bun run build-node && bun run build-bun && bun run build-types",
-    "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
+    "build-package": "bun run build-clean && concurrently -c 'auto' -n 'browser,node,bun' 'bun run build-browser' 'bun run build-node' 'bun run build-bun'",
+    "build-clean": "rm -fr dist/*",
     "build-browser": "bun build --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/browser.ts",
     "build-node": "bun build --target=node --sourcemap=external --packages=external --outdir ./dist ./src/node.ts",
     "build-bun": "bun build --target=bun --sourcemap=external --packages=external --outdir ./dist ./src/bun.ts",
-    "build-types": "tsc",
+    "build-types": "rm -f tsconfig.tsbuildinfo && tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "bun test"
+  },
+  "dependencies": {
+    "@ellmers/sqlite": "workspace:*",
+    "@ellmers/util": "workspace:*",
+    "pg": "^8.14.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.11",
+    "fake-indexeddb": "^6.0.0"
   },
   "exports": {
     ".": {

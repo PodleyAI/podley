@@ -1,0 +1,27 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build-package": {
+      "dependsOn": ["^build-package"],
+      "outputs": ["dist/**/*.js", "dist/**/*.js.map"]
+    },
+    "build-types": {
+      "dependsOn": ["^build-types"],
+      "outputs": ["dist/**/*.d.ts", "dist/**/*.d.ts.map", "tsconfig.tsbuildinfo"]
+    },
+    "build-example": {
+      "dependsOn": ["build-package", "^build-example"],
+      "outputs": ["dist/**/*.js", "dist/**/*.js.map"]
+    },
+    "dev": {
+      "dependsOn": ["^build-package"],
+      "persistent": true,
+      "cache": false
+    },
+    "watch": {
+      "dependsOn": ["build-package", "build-types"],
+      "persistent": true,
+      "cache": false
+    }
+  }
+}
