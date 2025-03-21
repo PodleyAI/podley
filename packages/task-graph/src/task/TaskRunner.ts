@@ -10,7 +10,6 @@ import { ITask, IRunConfig } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 import { TaskInput, TaskOutput, TaskConfig, TaskStatus, Provenance } from "./TaskTypes";
-import { AnyGraphResult } from "../task-graph/TaskGraphRunner";
 import { globalServiceRegistry } from "@ellmers/util";
 
 /**
@@ -19,9 +18,10 @@ import { globalServiceRegistry } from "@ellmers/util";
  */
 export class TaskRunner<
   Input extends TaskInput = TaskInput,
-  Output extends TaskOutput = TaskOutput,
+  SingleOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-> implements ITaskRunner<Input, Output, Config>
+  FinalOutput extends TaskOutput = SingleOutput,
+> implements ITaskRunner<Input, SingleOutput, Config, FinalOutput>
 {
   /**
    * Whether the task is currently running
@@ -37,7 +37,7 @@ export class TaskRunner<
   /**
    * The task to run
    */
-  public readonly task: ITask<Input, Output, Config>;
+  public readonly task: ITask<Input, SingleOutput, Config, FinalOutput>;
 
   /**
    * Output cache repository
@@ -54,7 +54,10 @@ export class TaskRunner<
    * @param task The task to run
    * @param outputCache Optional output cache repository
    */
-  constructor(task: ITask<Input, Output, Config>, outputCache?: TaskOutputRepository) {
+  constructor(
+    task: ITask<Input, SingleOutput, Config, FinalOutput>,
+    outputCache?: TaskOutputRepository
+  ) {
     this.task = task;
     this.outputCache = outputCache;
   }
@@ -69,10 +72,7 @@ export class TaskRunner<
    * @param config Optional configuration overrides
    * @returns The task output
    */
-  async run(
-    overrides: Partial<Input> = {},
-    config: IRunConfig = {}
-  ): Promise<AnyGraphResult<Output>> {
+  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<FinalOutput> {
     await this.handleStart();
 
     this.nodeProvenance = config.nodeProvenance ?? {};
@@ -99,7 +99,7 @@ export class TaskRunner<
       }
 
       // Execute the task's functionality
-      let results: AnyGraphResult<Output> | undefined;
+      let results: FinalOutput | undefined;
 
       if (this.task.hasChildren()) {
         // For compound tasks, run the subgraph
@@ -110,9 +110,9 @@ export class TaskRunner<
       }
 
       if (results && Object.keys(results).length > 0) {
-        this.task.runOutputData = results as Output;
+        this.task.runOutputData = results as FinalOutput;
       } else {
-        this.task.runOutputData = this.task.runOutputData || ({} as Output);
+        this.task.runOutputData = this.task.runOutputData || ({} as FinalOutput);
       }
 
       this.outputCache = this.task.config.outputCache;
@@ -120,7 +120,7 @@ export class TaskRunner<
       if (!this.task.hasChildren()) {
         results = await this.executeTaskReactive();
         if (results && Object.keys(results).length > 0) {
-          this.task.runOutputData = results as Output;
+          this.task.runOutputData = results as FinalOutput;
         }
       }
 
@@ -138,7 +138,7 @@ export class TaskRunner<
    * @param overrides Optional input overrides
    * @returns The task output
    */
-  public async runReactive(overrides: Partial<Input> = {}): Promise<Output> {
+  public async runReactive(overrides: Partial<Input> = {}): Promise<FinalOutput> {
     this.task.setInput(overrides);
     if (this.task.status === TaskStatus.PROCESSING) {
       return this.task.runOutputData;
@@ -152,17 +152,17 @@ export class TaskRunner<
         throw new TaskInvalidInputError("Invalid input data");
       }
 
-      let results: AnyGraphResult<Output> | undefined;
+      let results: FinalOutput | undefined;
 
       if (this.task.hasChildren()) {
         results = await this.executeTaskChildrenReactive();
         if (results && Object.keys(results).length > 0) {
-          this.task.runOutputData = results as Output;
+          this.task.runOutputData = results as FinalOutput;
         }
       } else {
         results = await this.executeTaskReactive();
         if (results && Object.keys(results).length > 0) {
-          this.task.runOutputData = results as Output;
+          this.task.runOutputData = results as FinalOutput;
         }
       }
 
@@ -188,7 +188,7 @@ export class TaskRunner<
   /**
    * Protected method to execute a task by delegating back to the task itself.
    */
-  protected async executeTask(): Promise<AnyGraphResult<Output> | undefined> {
+  protected async executeTask(): Promise<FinalOutput | undefined> {
     return this.task.execute(this.task.runInputData, {
       signal: this.abortController!.signal,
       updateProgress: this.handleProgress.bind(this),
@@ -199,8 +199,8 @@ export class TaskRunner<
   /**
    * Protected method to execute a task subgraphby delegating back to the task itself.
    */
-  protected async executeTaskChildren(): Promise<AnyGraphResult<Output> | undefined> {
-    return this.task.subGraph!.run<Output>({
+  protected async executeTaskChildren(): Promise<FinalOutput | undefined> {
+    return this.task.subGraph!.run<FinalOutput>({
       parentProvenance: this.nodeProvenance || {},
       parentSignal: this.abortController?.signal,
       outputCache: this.outputCache,
@@ -211,15 +211,15 @@ export class TaskRunner<
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskReactive(): Promise<AnyGraphResult<Output> | undefined> {
+  protected async executeTaskReactive(): Promise<FinalOutput | undefined> {
     return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
   }
 
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskChildrenReactive(): Promise<AnyGraphResult<Output> | undefined> {
-    return this.task.subGraph!.runReactive<Output>();
+  protected async executeTaskChildrenReactive(): Promise<FinalOutput | undefined> {
+    return this.task.subGraph!.runReactive<FinalOutput>();
   }
 
   // ========================================================================

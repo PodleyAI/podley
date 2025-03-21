@@ -78,7 +78,6 @@ describe("TaskGraphRunner", () => {
         expect(results.find((r) => r.id === "task3")?.data.output).toEqual(35);
       } else {
         // In this case, task3 is the only leaf node, so results might be its output directly
-        // @ts-expect-error ts(2571)
         expect(results.output).toEqual(35);
       }
     });

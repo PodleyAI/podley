@@ -8,11 +8,7 @@
 import { EventEmitter, uuid4 } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import {
-  AnyGraphResult,
-  CompoundMergeStrategy,
-  GraphResultMap,
-} from "../task-graph/TaskGraphRunner";
+import { CompoundMergeStrategy, GraphResultMap } from "../task-graph/TaskGraphRunner";
 import type { IExecuteConfig, IRunConfig, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
 import {
@@ -46,10 +42,10 @@ import {
  */
 export class Task<
   Input extends TaskInput = TaskInput,
-  Output extends TaskOutput = TaskOutput,
+  SingleOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  Merge extends CompoundMergeStrategy = "last-or-named",
-> implements ITask<Input, Output, Config>
+  FinalOutput extends TaskOutput = SingleOutput,
+> implements ITask<Input, SingleOutput, Config, FinalOutput>
 {
   // ========================================================================
   // Static properties - should be overridden by subclasses
@@ -98,10 +94,7 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The output of the task or undefined if no changes
    */
-  public async execute(
-    input: Input,
-    config: IExecuteConfig
-  ): Promise<GraphResultMap<Output>[Merge] | undefined> {
+  public async execute(input: Input, config: IExecuteConfig): Promise<FinalOutput | undefined> {
     if (config.signal?.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
@@ -119,9 +112,9 @@ export class Task<
    */
   public async executeReactive(
     input: Input,
-    output: Output
-  ): Promise<GraphResultMap<Output>[Merge] | undefined> {
-    return output as GraphResultMap<Output>[Merge] | undefined;
+    output: FinalOutput
+  ): Promise<FinalOutput | undefined> {
+    return output;
   }
 
   // ========================================================================
@@ -131,15 +124,18 @@ export class Task<
   /**
    * Task runner for handling the task execution
    */
-  protected _runner: TaskRunner<Input, Output, Config> | undefined;
+  protected _runner: TaskRunner<Input, SingleOutput, Config, FinalOutput> | undefined;
 
   /**
    * Gets the task runner instance
    * Creates a new one if it doesn't exist
    */
-  public get runner(): TaskRunner<Input, Output, Config> {
+  public get runner(): TaskRunner<Input, SingleOutput, Config, FinalOutput> {
     if (!this._runner) {
-      this._runner = new TaskRunner<Input, Output, Config>(this, this.outputCache);
+      this._runner = new TaskRunner<Input, SingleOutput, Config, FinalOutput>(
+        this,
+        this.outputCache
+      );
     }
     return this._runner;
   }
@@ -153,10 +149,7 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The task output
    */
-  async run(
-    overrides: Partial<Input> = {},
-    config: IRunConfig = {}
-  ): Promise<AnyGraphResult<Output>> {
+  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<FinalOutput> {
     return this.runner.run(overrides, config);
   }
 
@@ -167,7 +160,7 @@ export class Task<
    * @param overrides Optional input overrides
    * @returns The task output
    */
-  public async runReactive(overrides: Partial<Input> = {}): Promise<AnyGraphResult<Output>> {
+  public async runReactive(overrides: Partial<Input> = {}): Promise<FinalOutput> {
     return this.runner.runReactive(overrides);
   }
 
@@ -249,7 +242,7 @@ export class Task<
    * The output of the task at the time of the task run.
    * This is the result of the task execution.
    */
-  runOutputData: Output = {} as Output;
+  runOutputData: FinalOutput = {} as FinalOutput;
 
   // ========================================================================
   // Task state properties
