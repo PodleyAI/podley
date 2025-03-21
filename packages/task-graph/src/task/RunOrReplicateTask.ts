@@ -133,9 +133,10 @@ export class RunOrReplicateTask<
 
 export class RunOrReplicateTaskRunner<
   Input extends TaskInput = TaskInput,
-  Output extends TaskOutput = TaskOutput,
+  SingleOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-> extends TaskRunner<Input, Output, Config> {
+  FinalOutput extends TaskOutput = SingleOutput,
+> extends TaskRunner<Input, SingleOutput, Config, FinalOutput> {
   // ========================================================================
   // Utility methods
   // ========================================================================
@@ -158,11 +159,11 @@ export class RunOrReplicateTaskRunner<
   /**
    * Execute the task
    */
-  protected async executeTask(): Promise<AnyGraphResult<Output> | undefined> {
+  protected async executeTask(): Promise<FinalOutput | undefined> {
     this.task.runInputData = this.fixInput(this.task.runInputData);
     const result = await super.executeTask();
     if (result !== undefined) {
-      this.task.runOutputData = result as Output;
+      this.task.runOutputData = result as FinalOutput;
     }
     return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
   }
@@ -170,7 +171,7 @@ export class RunOrReplicateTaskRunner<
   /**
    * Execute the task reactively
    */
-  public async executeTaskReactive(): Promise<AnyGraphResult<Output> | undefined> {
+  public async executeTaskReactive(): Promise<FinalOutput | undefined> {
     if (this.task.hasChildren()) {
       return await this.executeTaskChildrenReactive();
     } else {
