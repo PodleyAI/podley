@@ -65,8 +65,8 @@ export interface ITaskStaticProperties {
  */
 export interface ITaskExecution<
   Input extends TaskInput = TaskInput,
-  SingleOutput extends TaskOutput = TaskOutput,
-  FinalOutput extends TaskOutput = SingleOutput,
+  ExecuteOutput extends TaskOutput = TaskOutput,
+  RunOutput extends TaskOutput = ExecuteOutput,
 > {
   /**
    * The actual task execution logic for subclasses to override
@@ -74,7 +74,7 @@ export interface ITaskExecution<
    * @param config The configuration for the task
    * @returns The output of the task or undefined if no changes
    */
-  execute(input: Input, config: IExecuteConfig): Promise<FinalOutput | undefined>;
+  execute(input: Input, config: IExecuteConfig): Promise<RunOutput | undefined>;
 
   /**
    * Reactive execution logic for updating UI or responding to changes
@@ -82,7 +82,7 @@ export interface ITaskExecution<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  executeReactive(input: Input, output: FinalOutput): Promise<FinalOutput | undefined>;
+  executeReactive(input: Input, output: RunOutput): Promise<RunOutput | undefined>;
 }
 
 /**
@@ -91,22 +91,22 @@ export interface ITaskExecution<
  */
 export interface ITaskLifecycle<
   Input extends TaskInput = TaskInput,
-  SingleOutput extends TaskOutput = TaskOutput,
-  FinalOutput extends TaskOutput = SingleOutput,
+  ExecuteOutput extends TaskOutput = TaskOutput,
+  RunOutput extends TaskOutput = ExecuteOutput,
 > {
   /**
    * Runs the task with the provided input overrides
    * @param overrides Optional input overrides
    * @returns Promise resolving to the task output
    */
-  run(overrides?: Partial<Input>, config?: IRunConfig): Promise<FinalOutput>;
+  run(overrides?: Partial<Input>, config?: IRunConfig): Promise<RunOutput>;
 
   /**
    * Runs the task in reactive mode
    * @param overrides Optional input overrides
    * @returns Promise resolving to the task output
    */
-  runReactive(overrides?: Partial<Input>): Promise<FinalOutput>;
+  runReactive(overrides?: Partial<Input>): Promise<RunOutput>;
 
   /**
    * Aborts the task execution
@@ -119,12 +119,12 @@ export interface ITaskLifecycle<
  */
 export interface ITaskIO<
   Input extends TaskInput = TaskInput,
-  SingleOutput extends TaskOutput = TaskOutput,
-  FinalOutput extends TaskOutput = SingleOutput,
+  ExecuteOutput extends TaskOutput = TaskOutput,
+  RunOutput extends TaskOutput = ExecuteOutput,
 > {
   defaults: Partial<Input>;
   runInputData: Input;
-  runOutputData: FinalOutput;
+  runOutputData: RunOutput;
 
   get inputs(): readonly TaskInputDefinition[]; // this gets local access for static input definition property
   get outputs(): readonly TaskOutputDefinition[]; // this gets local access for static output definition property
@@ -185,14 +185,14 @@ export interface ITaskState<Config extends TaskConfig = TaskConfig> {
  */
 export interface ITask<
   Input extends TaskInput = TaskInput,
-  SingleOutput extends TaskOutput = TaskOutput,
+  ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  FinalOutput extends TaskOutput = SingleOutput,
+  RunOutput extends TaskOutput = ExecuteOutput,
 > extends ITaskState<Config>,
-    ITaskIO<Input, SingleOutput, FinalOutput>,
+    ITaskIO<Input, ExecuteOutput, RunOutput>,
     ITaskEvents,
-    ITaskLifecycle<Input, SingleOutput, FinalOutput>,
-    ITaskExecution<Input, SingleOutput, FinalOutput>,
+    ITaskLifecycle<Input, ExecuteOutput, RunOutput>,
+    ITaskExecution<Input, ExecuteOutput, RunOutput>,
     ITaskCompound,
     ITaskSerialization {}
 
@@ -201,17 +201,17 @@ export interface ITask<
  */
 type ITaskConstructorType<
   Input extends TaskInput = TaskInput,
-  SingleOutput extends TaskOutput = TaskOutput,
+  ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  FinalOutput extends TaskOutput = SingleOutput,
-> = new (input: Input, config: Config) => ITask<Input, SingleOutput, Config, FinalOutput>;
+  RunOutput extends TaskOutput = ExecuteOutput,
+> = new (input: Input, config: Config) => ITask<Input, ExecuteOutput, Config, RunOutput>;
 
 /**
  * Interface for task constructor with static properties
  */
 export type ITaskConstructor<
   Input extends TaskInput = TaskInput,
-  SingleOutput extends TaskOutput = TaskOutput,
+  ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  FinalOutput extends TaskOutput = SingleOutput,
-> = ITaskConstructorType<Input, SingleOutput, Config, FinalOutput> & ITaskStaticProperties;
+  RunOutput extends TaskOutput = ExecuteOutput,
+> = ITaskConstructorType<Input, ExecuteOutput, Config, RunOutput> & ITaskStaticProperties;

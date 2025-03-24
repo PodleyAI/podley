@@ -42,10 +42,10 @@ import {
  */
 export class Task<
   Input extends TaskInput = TaskInput,
-  SingleOutput extends TaskOutput = TaskOutput,
+  ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  FinalOutput extends TaskOutput = SingleOutput,
-> implements ITask<Input, SingleOutput, Config, FinalOutput>
+  RunOutput extends TaskOutput = ExecuteOutput,
+> implements ITask<Input, ExecuteOutput, Config, RunOutput>
 {
   // ========================================================================
   // Static properties - should be overridden by subclasses
@@ -94,7 +94,7 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The output of the task or undefined if no changes
    */
-  public async execute(input: Input, config: IExecuteConfig): Promise<FinalOutput | undefined> {
+  public async execute(input: Input, config: IExecuteConfig): Promise<RunOutput | undefined> {
     if (config.signal?.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
@@ -110,10 +110,7 @@ export class Task<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  public async executeReactive(
-    input: Input,
-    output: FinalOutput
-  ): Promise<FinalOutput | undefined> {
+  public async executeReactive(input: Input, output: RunOutput): Promise<RunOutput | undefined> {
     return output;
   }
 
@@ -124,15 +121,15 @@ export class Task<
   /**
    * Task runner for handling the task execution
    */
-  protected _runner: TaskRunner<Input, SingleOutput, Config, FinalOutput> | undefined;
+  protected _runner: TaskRunner<Input, ExecuteOutput, Config, RunOutput> | undefined;
 
   /**
    * Gets the task runner instance
    * Creates a new one if it doesn't exist
    */
-  public get runner(): TaskRunner<Input, SingleOutput, Config, FinalOutput> {
+  public get runner(): TaskRunner<Input, ExecuteOutput, Config, RunOutput> {
     if (!this._runner) {
-      this._runner = new TaskRunner<Input, SingleOutput, Config, FinalOutput>(
+      this._runner = new TaskRunner<Input, ExecuteOutput, Config, RunOutput>(
         this,
         this.outputCache
       );
@@ -149,7 +146,7 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The task output
    */
-  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<FinalOutput> {
+  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<RunOutput> {
     return this.runner.run(overrides, config);
   }
 
@@ -160,7 +157,7 @@ export class Task<
    * @param overrides Optional input overrides
    * @returns The task output
    */
-  public async runReactive(overrides: Partial<Input> = {}): Promise<FinalOutput> {
+  public async runReactive(overrides: Partial<Input> = {}): Promise<RunOutput> {
     return this.runner.runReactive(overrides);
   }
 
@@ -242,7 +239,7 @@ export class Task<
    * The output of the task at the time of the task run.
    * This is the result of the task execution.
    */
-  runOutputData: FinalOutput = {} as FinalOutput;
+  runOutputData: RunOutput = {} as RunOutput;
 
   // ========================================================================
   // Task state properties

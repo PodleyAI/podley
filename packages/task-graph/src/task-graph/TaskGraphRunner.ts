@@ -129,9 +129,9 @@ export class TaskGraphRunner {
    * @throws TaskErrorGroup if any tasks have failed
    */
   public async runGraph<
-    SingleOutput extends TaskOutput,
-    FinalOutput extends TaskOutput = SingleOutput,
-  >(config?: TaskGraphRunConfig): Promise<FinalOutput> {
+    ExecuteOutput extends TaskOutput,
+    RunOutput extends TaskOutput = ExecuteOutput,
+  >(config?: TaskGraphRunConfig): Promise<RunOutput> {
     if (config?.outputCache !== undefined) {
       if (typeof config.outputCache === "boolean") {
         if (config.outputCache === true) {
@@ -146,7 +146,7 @@ export class TaskGraphRunner {
     }
     await this.handleStart(config?.parentSignal);
 
-    const results: NamedGraphResult<SingleOutput> = [];
+    const results: NamedGraphResult<ExecuteOutput> = [];
     let error: TaskError | undefined;
 
     try {
@@ -169,7 +169,7 @@ export class TaskGraphRunner {
 
             if (this.graph.getTargetDataflows(task.config.id).length === 0) {
               // we save the results of all the leaves
-              results.push(taskResult as GraphSingleResult<SingleOutput>);
+              results.push(taskResult as GraphSingleResult<ExecuteOutput>);
             }
           } catch (error) {
             this.failedTaskErrors.set(task.config.id, error as TaskError);
@@ -210,7 +210,7 @@ export class TaskGraphRunner {
       ]);
     }
 
-    const mergedResults = this.mergeOutput<SingleOutput, FinalOutput>(results, config);
+    const mergedResults = this.mergeOutput<ExecuteOutput, RunOutput>(results, config);
 
     await this.handleComplete();
 
@@ -223,9 +223,9 @@ export class TaskGraphRunner {
    * @throws TaskConfigurationError if the graph is already running reactively
    */
   public async runGraphReactive<
-    SingleOutput extends TaskOutput,
-    FinalOutput extends TaskOutput = SingleOutput,
-  >(): Promise<FinalOutput> {
+    ExecuteOutput extends TaskOutput,
+    RunOutput extends TaskOutput = ExecuteOutput,
+  >(): Promise<RunOutput> {
     await this.handleStartReactive();
 
     if (!this.running) {
@@ -233,7 +233,7 @@ export class TaskGraphRunner {
     }
 
     this.reactiveScheduler.reset();
-    const results: NamedGraphResult<SingleOutput> = [];
+    const results: NamedGraphResult<ExecuteOutput> = [];
 
     try {
       for await (const task of this.reactiveScheduler.tasks()) {
@@ -247,12 +247,12 @@ export class TaskGraphRunner {
             results.push({
               id: task.config.id,
               type: (task.constructor as any).runtype || (task.constructor as any).type,
-              data: taskResult as SingleOutput,
+              data: taskResult as ExecuteOutput,
             });
           }
         }
       }
-      const mergedResults = this.mergeOutput<SingleOutput, FinalOutput>(results);
+      const mergedResults = this.mergeOutput<ExecuteOutput, RunOutput>(results);
       await this.handleCompleteReactive();
       return mergedResults;
     } catch (error) {
@@ -317,9 +317,9 @@ export class TaskGraphRunner {
   // ========================================================================
 
   protected mergeOutput<
-    SingleOutput extends TaskOutput,
-    FinalOutput extends TaskOutput = SingleOutput,
-  >(results: NamedGraphResult<SingleOutput>, config?: TaskGraphRunConfig): FinalOutput {
+    ExecuteOutput extends TaskOutput,
+    RunOutput extends TaskOutput = ExecuteOutput,
+  >(results: NamedGraphResult<ExecuteOutput>, config?: TaskGraphRunConfig): RunOutput {
     const mergeStrategy = config?.compoundMerge || this.graph.compoundMerge;
 
     if (
@@ -329,18 +329,18 @@ export class TaskGraphRunner {
           mergeStrategy
         ))
     ) {
-      return results[results.length - 1].data as unknown as FinalOutput;
+      return results[results.length - 1].data as unknown as RunOutput;
     } else if (mergeStrategy === "named" || mergeStrategy === "last-or-named") {
-      return results as unknown as FinalOutput;
+      return results as unknown as RunOutput;
     } else if (mergeStrategy === "unordered-array" || mergeStrategy === "last-or-unordered-array") {
-      return { data: results.map((result) => result.data) } as unknown as FinalOutput;
+      return { data: results.map((result) => result.data) } as unknown as RunOutput;
     } else if (mergeStrategy === "property-array" || mergeStrategy === "last-or-property-array") {
-      let fixedOutput = {} as FinalOutput;
+      let fixedOutput = {} as RunOutput;
       const outputs = results.map((result: any) => result.data);
       if (outputs.length > 0) {
-        const collected = collectPropertyValues<SingleOutput>(outputs as SingleOutput[]);
+        const collected = collectPropertyValues<ExecuteOutput>(outputs as ExecuteOutput[]);
         if (Object.keys(collected).length > 0) {
-          fixedOutput = collected as unknown as FinalOutput;
+          fixedOutput = collected as unknown as RunOutput;
         }
       }
       return fixedOutput;

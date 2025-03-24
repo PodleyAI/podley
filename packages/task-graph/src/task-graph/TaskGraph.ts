@@ -88,10 +88,10 @@ export class TaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public run<SingleOutput extends TaskOutput, FinalOutput extends TaskOutput = SingleOutput>(
+  public run<ExecuteOutput extends TaskOutput, RunOutput extends TaskOutput = ExecuteOutput>(
     config?: TaskGraphRunConfig
-  ): Promise<FinalOutput> {
-    return this.runner.runGraph<SingleOutput, FinalOutput>({
+  ): Promise<RunOutput> {
+    return this.runner.runGraph<ExecuteOutput, RunOutput>({
       outputCache: config?.outputCache || this.outputCache,
       parentProvenance: config?.parentProvenance || {},
       parentSignal: config?.parentSignal || undefined,
@@ -105,10 +105,10 @@ export class TaskGraph {
    * @throws TaskErrorGroup if any tasks have failed
    */
   public runReactive<
-    SingleOutput extends TaskOutput,
-    FinalOutput extends TaskOutput = SingleOutput,
-  >(): Promise<FinalOutput> {
-    return this.runner.runGraphReactive<SingleOutput, FinalOutput>();
+    ExecuteOutput extends TaskOutput,
+    RunOutput extends TaskOutput = ExecuteOutput,
+  >(): Promise<RunOutput> {
+    return this.runner.runGraphReactive<ExecuteOutput, RunOutput>();
   }
 
   /**

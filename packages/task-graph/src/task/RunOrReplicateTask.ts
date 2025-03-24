@@ -133,10 +133,10 @@ export class RunOrReplicateTask<
 
 export class RunOrReplicateTaskRunner<
   Input extends TaskInput = TaskInput,
-  SingleOutput extends TaskOutput = TaskOutput,
+  ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  FinalOutput extends TaskOutput = SingleOutput,
-> extends TaskRunner<Input, SingleOutput, Config, FinalOutput> {
+  RunOutput extends TaskOutput = ExecuteOutput,
+> extends TaskRunner<Input, ExecuteOutput, Config, RunOutput> {
   // ========================================================================
   // Utility methods
   // ========================================================================
@@ -159,11 +159,11 @@ export class RunOrReplicateTaskRunner<
   /**
    * Execute the task
    */
-  protected async executeTask(): Promise<FinalOutput | undefined> {
+  protected async executeTask(): Promise<RunOutput | undefined> {
     this.task.runInputData = this.fixInput(this.task.runInputData);
     const result = await super.executeTask();
     if (result !== undefined) {
-      this.task.runOutputData = result as FinalOutput;
+      this.task.runOutputData = result as RunOutput;
     }
     return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
   }
@@ -171,7 +171,7 @@ export class RunOrReplicateTaskRunner<
   /**
    * Execute the task reactively
    */
-  public async executeTaskReactive(): Promise<FinalOutput | undefined> {
+  public async executeTaskReactive(): Promise<RunOutput | undefined> {
     if (this.task.hasChildren()) {
       return await this.executeTaskChildrenReactive();
     } else {
