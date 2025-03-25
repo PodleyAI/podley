@@ -1,2 +1,3 @@
-import { Worker, parentPort } from "node:worker_threads";
+const Worker = globalThis.Worker;
+const parentPort = self;
 export { Worker, parentPort };

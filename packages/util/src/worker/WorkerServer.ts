@@ -35,8 +35,13 @@ function extractTransferables(obj: any) {
  */
 export class WorkerServer {
   constructor() {
-    parentPort.addEventListener("message", async (event) => {
-      await this.handleMessage(event);
+    parentPort?.addEventListener("message", async (event) => {
+      const msg = {
+        type: event.type,
+        // @ts-ignore - Ignore type mismatch between standard MessageEvent and our message type
+        data: event.data,
+      };
+      await this.handleMessage(msg);
     });
   }
 
@@ -60,7 +65,7 @@ export class WorkerServer {
   }
 
   // Handle messages from the main thread
-  async handleMessage(event: MessageEvent) {
+  async handleMessage(event: { type: string; data: any }) {
     const { id, type, functionName, args } = event.data;
     if (type === "abort") {
       return await this.handleAbort(id);
