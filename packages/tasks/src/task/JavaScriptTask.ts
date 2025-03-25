@@ -47,17 +47,17 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
     },
   ] as const;
 
-  async executeReactive() {
-    if (this.runInputData.code) {
+  async executeReactive(input: JavaScriptTaskInput, output: JavaScriptTaskOutput) {
+    if (input.code) {
       try {
-        const myInterpreter = new Interpreter(this.runInputData.code);
+        const myInterpreter = new Interpreter(input.code);
         myInterpreter.run();
-        this.runOutputData.output = myInterpreter.value;
+        output.output = myInterpreter.value;
       } catch (e) {
         console.error("error", e);
       }
     }
-    return this.runOutputData;
+    return output;
   }
 }
 TaskRegistry.registerTask(JavaScriptTask);

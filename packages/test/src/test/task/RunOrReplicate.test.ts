@@ -213,10 +213,15 @@ describe("RunOrReplicate", () => {
   });
 
   test("MultiplyRunTask in task mode reactive run", async () => {
-    const task = new MultiplyRunTask({
-      a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-      b: 10,
-    });
+    const task = new MultiplyRunTask(
+      {
+        a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        b: 10,
+      },
+      {
+        id: "test",
+      }
+    );
     {
       const results = await task.runReactive();
       expect(results).toEqual({} as any);
@@ -252,7 +257,7 @@ describe("RunOrReplicate", () => {
       b: [10],
     });
     const results = await task.runReactive();
-    expect(results).toEqual({ result: 20 });
+    expect(results).toEqual({ result: [20] });
   });
 
   test("MultiplyRunReactiveTask in task mode reactive runReactive", async () => {
@@ -305,9 +310,7 @@ describe("RunOrReplicate", () => {
   });
 
   test("in task graph mode", async () => {
-    const graph = new TaskGraph({
-      compoundMerge: "last",
-    });
+    const graph = new TaskGraph();
     graph.addTask(
       new MultiplyRunTask({
         a: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -315,7 +318,8 @@ describe("RunOrReplicate", () => {
       })
     );
     const results = await graph.run();
-    expect(results).toEqual({ result: [0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110] });
+    const cleanResults = graph.mergeExecuteOutputsToRunOutput(results, "last");
+    expect(cleanResults).toEqual({ result: [0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110] });
   });
 
   test("emits events correctly", async () => {

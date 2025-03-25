@@ -52,9 +52,7 @@ describe("LambdaTask", () => {
   });
 
   test("in task graph mode", async () => {
-    const graph = new TaskGraph({
-      compoundMerge: "unordered-array",
-    });
+    const graph = new TaskGraph();
     graph.addTask(
       new LambdaTask(
         {},
@@ -67,7 +65,7 @@ describe("LambdaTask", () => {
       )
     );
     const results = await graph.run();
-    expect(results.data[0]).toEqual({ output: "Hello, world!" });
+    expect(results[0].data).toEqual({ output: "Hello, world!" });
   });
 
   test("in task workflow mode", async () => {
@@ -121,9 +119,7 @@ describe("LambdaTask", () => {
   });
 
   test("with updateProgress", async () => {
-    const graph = new TaskGraph({
-      compoundMerge: "named",
-    });
+    const graph = new TaskGraph();
     const task = new LambdaTask(
       {},
       {

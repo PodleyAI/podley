@@ -71,7 +71,6 @@ describe("FetchTask", () => {
     ];
 
     const results = await Promise.all(urls.map((url) => Fetch({ url })));
-
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results).toHaveLength(3);
     expect(results[0].json).toEqual({ data: { id: 1, name: "Test 1" } });

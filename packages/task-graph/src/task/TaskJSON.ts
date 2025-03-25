@@ -70,7 +70,6 @@ export type TaskGraphItemJson = {
 };
 
 export type TaskGraphJson = {
-  merge: CompoundMergeStrategy;
   tasks: TaskGraphItemJson[];
   dataflows: DataflowJson[];
 };
@@ -153,9 +152,7 @@ export const createTaskFromGraphJSON = (item: TaskGraphItemJson) => {
  * @returns A new TaskGraph instance with all tasks and data flows
  */
 export const createGraphFromGraphJSON = (graphJsonObj: TaskGraphJson) => {
-  const subGraph = new TaskGraph({
-    compoundMerge: graphJsonObj.merge,
-  });
+  const subGraph = new TaskGraph();
   for (const subitem of graphJsonObj.tasks) {
     subGraph.addTask(createTaskFromGraphJSON(subitem));
   }

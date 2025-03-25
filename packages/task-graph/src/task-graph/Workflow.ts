@@ -62,7 +62,6 @@ export class Workflow {
     this._repository = repository;
     this._graph = new TaskGraph({
       outputCache: this._repository,
-      compoundMerge: "last-or-property-array",
     });
     this._onChanged = this._onChanged.bind(this);
     this.setupEvents();
@@ -258,8 +257,9 @@ export class Workflow {
         parentProvenance: {},
         outputCache: this._repository,
       });
+      const last = this.graph.mergeExecuteOutputsToRunOutput(output, "last-or-property-array");
       this.events.emit("complete");
-      return output;
+      return last;
     } catch (error) {
       this.events.emit("error", String(error));
       throw error;
@@ -384,7 +384,6 @@ export class Workflow {
     this.clearEvents();
     this._graph = new TaskGraph({
       outputCache: this._repository,
-      compoundMerge: "last-or-property-array",
     });
     this._dataFlows = [];
     this._error = "";

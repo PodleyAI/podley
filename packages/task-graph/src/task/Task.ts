@@ -8,7 +8,7 @@
 import { EventEmitter, uuid4 } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { CompoundMergeStrategy, GraphResultMap } from "../task-graph/TaskGraphRunner";
+import { CompoundMergeStrategy, NamedGraphResult } from "../task-graph/TaskGraphRunner";
 import type { IExecuteConfig, IRunConfig, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
 import {
@@ -94,7 +94,7 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The output of the task or undefined if no changes
    */
-  public async execute(input: Input, config: IExecuteConfig): Promise<RunOutput | undefined> {
+  public async execute(input: Input, config: IExecuteConfig): Promise<ExecuteOutput | undefined> {
     if (config.signal?.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
@@ -110,7 +110,10 @@ export class Task<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  public async executeReactive(input: Input, output: RunOutput): Promise<RunOutput | undefined> {
+  public async executeReactive(
+    input: Input,
+    output: ExecuteOutput
+  ): Promise<ExecuteOutput | undefined> {
     return output;
   }
 
@@ -159,6 +162,18 @@ export class Task<
    */
   public async runReactive(overrides: Partial<Input> = {}): Promise<RunOutput> {
     return this.runner.runReactive(overrides);
+  }
+
+  /**
+   * Merges the execute output to the run output
+   * @param results The execute output
+   * @returns The run output
+   */
+  public mergeExecuteOutputsToRunOutput(
+    results: NamedGraphResult<ExecuteOutput>,
+    compoundMerge: CompoundMergeStrategy
+  ): RunOutput {
+    return this.runner.mergeExecuteOutputsToRunOutput(results, compoundMerge);
   }
 
   /**
@@ -241,6 +256,12 @@ export class Task<
    */
   runOutputData: RunOutput = {} as RunOutput;
 
+  /**
+   * The intermediate data of the task at the time of the task run.
+   * This is the result of the task execution.
+   */
+  runIntermediateData: NamedGraphResult<ExecuteOutput> = [] as NamedGraphResult<ExecuteOutput>;
+
   // ========================================================================
   // Task state properties
   // ========================================================================
@@ -316,7 +337,7 @@ export class Task<
       {
         id: uuid4(),
         name: name,
-        compoundMerge: (this.constructor as typeof Task).compoundMerge,
+        compoundMerge: this.compoundMerge,
       },
       config
     );
@@ -443,7 +464,6 @@ export class Task<
     if (!this._subGraph && this.isCompound) {
       this._subGraph = new TaskGraph({
         outputCache: this.outputCache,
-        compoundMerge: this.compoundMerge,
       });
     }
     return this._subGraph;
@@ -458,7 +478,6 @@ export class Task<
    */
   public regenerateGraph(): void {
     this.subGraph!.outputCache = this.outputCache;
-    this.subGraph!.compoundMerge = this.compoundMerge;
     this.events.emit("regenerate");
   }
 

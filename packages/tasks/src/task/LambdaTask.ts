@@ -73,11 +73,10 @@ export class LambdaTask<
   ] as const;
 
   async execute(input: Input, config: IExecuteConfig): Promise<Output> {
-    let results: Output = {} as Output;
     if (typeof this.config.execute === "function") {
-      results = await this.config.execute(input, config);
+      return await this.config.execute(input, config);
     }
-    return results;
+    return {} as Output;
   }
 
   /**
@@ -85,11 +84,10 @@ export class LambdaTask<
    * Throws an error if no function is provided or if the provided value is not callable
    */
   async executeReactive(input: Input, output: Output) {
-    let results: Output = {} as Output;
     if (typeof this.config.executeReactive === "function") {
-      results = await this.config.executeReactive(input, output);
+      return (await this.config.executeReactive(input, output)) ?? output;
     }
-    return results;
+    return output;
   }
 }
 

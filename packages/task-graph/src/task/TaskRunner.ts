@@ -5,12 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskOutputRepository, TASK_OUTPUT_REPOSITORY } from "../storage/TaskOutputRepository";
-import { ITask, IRunConfig } from "./ITask";
+import { globalServiceRegistry } from "@ellmers/util";
+import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { CompoundMergeStrategy, NamedGraphResult } from "../task-graph/TaskGraphRunner";
+import { IRunConfig, ITask } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
-import { TaskInput, TaskOutput, TaskConfig, TaskStatus, Provenance } from "./TaskTypes";
-import { globalServiceRegistry } from "@ellmers/util";
+import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
 
 /**
  * Responsible for running tasks
@@ -87,6 +88,7 @@ export class TaskRunner<
     }
 
     try {
+      this.outputCache = this.task.config.outputCache;
       this.task.setInput(overrides);
       const isValid = await this.task.validateInput(this.task.runInputData);
       if (!isValid) {
@@ -98,31 +100,33 @@ export class TaskRunner<
         throw new TaskAbortedError("Promise for task created and aborted before run");
       }
 
-      // Execute the task's functionality
-      let results: RunOutput | undefined;
-
       if (this.task.hasChildren()) {
         // For compound tasks, run the subgraph
-        results = await this.executeTaskChildren();
+        this.task.runIntermediateData = await this.executeTaskChildren();
       } else {
         // For simple tasks, we call the task's execute method
-        results = await this.executeTask();
+        const result = await this.executeTask();
+        this.task.runIntermediateData = [
+          {
+            id: this.task.config.id,
+            type: this.task.type,
+            data: result ?? ({} as unknown as ExecuteOutput),
+          },
+        ];
+        // and then we run the reactive task
+        const resultReactive = await this.executeTaskReactive();
+        this.task.runIntermediateData = [
+          {
+            id: this.task.config.id,
+            type: this.task.type,
+            data: resultReactive ?? result ?? ({} as unknown as ExecuteOutput),
+          },
+        ];
       }
-
-      if (results && Object.keys(results).length > 0) {
-        this.task.runOutputData = results as RunOutput;
-      } else {
-        this.task.runOutputData = this.task.runOutputData || ({} as RunOutput);
-      }
-
-      this.outputCache = this.task.config.outputCache;
-
-      if (!this.task.hasChildren()) {
-        results = await this.executeTaskReactive();
-        if (results && Object.keys(results).length > 0) {
-          this.task.runOutputData = results as RunOutput;
-        }
-      }
+      this.task.runOutputData = this.task.mergeExecuteOutputsToRunOutput(
+        this.task.runIntermediateData,
+        this.task.compoundMerge
+      );
 
       await this.handleComplete();
 
@@ -139,10 +143,10 @@ export class TaskRunner<
    * @returns The task output
    */
   public async runReactive(overrides: Partial<Input> = {}): Promise<RunOutput> {
-    this.task.setInput(overrides);
     if (this.task.status === TaskStatus.PROCESSING) {
       return this.task.runOutputData;
     }
+    this.task.setInput(overrides);
 
     await this.handleStartReactive();
 
@@ -152,19 +156,46 @@ export class TaskRunner<
         throw new TaskInvalidInputError("Invalid input data");
       }
 
-      let results: RunOutput | undefined;
+      if (this.task.runIntermediateData.length === 0) {
+        // running reactive before a real task run
+        this.task.runIntermediateData = [
+          { id: this.task.config.id, type: this.task.type, data: {} as ExecuteOutput },
+        ];
+      }
 
+      let reactiveResults: NamedGraphResult<ExecuteOutput> | undefined;
       if (this.task.hasChildren()) {
-        results = await this.executeTaskChildrenReactive();
-        if (results && Object.keys(results).length > 0) {
-          this.task.runOutputData = results as RunOutput;
-        }
+        reactiveResults = await this.executeTaskChildrenReactive();
       } else {
-        results = await this.executeTaskReactive();
-        if (results && Object.keys(results).length > 0) {
-          this.task.runOutputData = results as RunOutput;
+        const singleResult = await this.executeTaskReactive();
+        reactiveResults = [
+          {
+            id: this.task.config.id,
+            type: this.task.type,
+            data: singleResult ?? ({} as ExecuteOutput),
+          },
+        ];
+      }
+
+      // for each reactiveResults update the runIntermediateData with the same id
+      for (const result of reactiveResults) {
+        // if (Object.keys(result.data).length === 0) continue;
+        const index = this.task.runIntermediateData.findIndex((item) => item.id === result.id);
+        if (index !== -1) {
+          this.task.runIntermediateData[index].data = result.data;
+        } else {
+          this.task.runIntermediateData.push({
+            id: result.id,
+            type: result.type,
+            data: result.data,
+          });
         }
       }
+
+      this.task.runOutputData = this.task.mergeExecuteOutputsToRunOutput(
+        this.task.runIntermediateData,
+        this.task.compoundMerge
+      );
 
       await this.handleCompleteReactive();
       return this.task.runOutputData;
@@ -188,7 +219,7 @@ export class TaskRunner<
   /**
    * Protected method to execute a task by delegating back to the task itself.
    */
-  protected async executeTask(): Promise<RunOutput | undefined> {
+  protected async executeTask(): Promise<ExecuteOutput | undefined> {
     return this.task.execute(this.task.runInputData, {
       signal: this.abortController!.signal,
       updateProgress: this.handleProgress.bind(this),
@@ -199,27 +230,37 @@ export class TaskRunner<
   /**
    * Protected method to execute a task subgraphby delegating back to the task itself.
    */
-  protected async executeTaskChildren(): Promise<RunOutput | undefined> {
-    return this.task.subGraph!.run<RunOutput>({
+  protected async executeTaskChildren(): Promise<NamedGraphResult<ExecuteOutput>> {
+    return this.task.subGraph!.run<ExecuteOutput>({
       parentProvenance: this.nodeProvenance || {},
       parentSignal: this.abortController?.signal,
       outputCache: this.outputCache,
-      compoundMerge: this.task.compoundMerge,
     });
   }
 
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskReactive(): Promise<RunOutput | undefined> {
-    return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
+  protected async executeTaskReactive(): Promise<ExecuteOutput | undefined> {
+    return this.task.executeReactive(this.task.runInputData, this.task.runIntermediateData[0].data);
   }
 
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskChildrenReactive(): Promise<RunOutput | undefined> {
-    return this.task.subGraph!.runReactive<RunOutput>();
+  protected async executeTaskChildrenReactive(): Promise<NamedGraphResult<ExecuteOutput>> {
+    return this.task.subGraph!.runReactive<ExecuteOutput>();
+  }
+
+  public mergeExecuteOutputsToRunOutput(
+    results: NamedGraphResult<ExecuteOutput>,
+    compoundMerge: CompoundMergeStrategy
+  ): RunOutput {
+    if (this.task.hasChildren()) {
+      return this.task.subGraph!.mergeExecuteOutputsToRunOutput(results, compoundMerge);
+    } else {
+      return results[0].data as unknown as RunOutput;
+    }
   }
 
   // ========================================================================

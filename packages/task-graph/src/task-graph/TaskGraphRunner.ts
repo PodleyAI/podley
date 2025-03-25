@@ -122,29 +122,10 @@ export class TaskGraphRunner {
   // Public methods
   // ========================================================================
 
-  /**
-   * Runs the task graph
-   * @param config Configuration for the graph run
-   * @returns A promise that resolves when all tasks are complete
-   * @throws TaskErrorGroup if any tasks have failed
-   */
-  public async runGraph<
-    ExecuteOutput extends TaskOutput,
-    RunOutput extends TaskOutput = ExecuteOutput,
-  >(config?: TaskGraphRunConfig): Promise<RunOutput> {
-    if (config?.outputCache !== undefined) {
-      if (typeof config.outputCache === "boolean") {
-        if (config.outputCache === true) {
-          this.outputCache = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
-        } else {
-          this.outputCache = undefined;
-        }
-      } else {
-        this.outputCache = config.outputCache;
-      }
-      this.graph.outputCache = this.outputCache;
-    }
-    await this.handleStart(config?.parentSignal);
+  public async runGraph<ExecuteOutput extends TaskOutput>(
+    config?: TaskGraphRunConfig
+  ): Promise<NamedGraphResult<ExecuteOutput>> {
+    await this.handleStart(config);
 
     const results: NamedGraphResult<ExecuteOutput> = [];
     let error: TaskError | undefined;
@@ -210,11 +191,9 @@ export class TaskGraphRunner {
       ]);
     }
 
-    const mergedResults = this.mergeOutput<ExecuteOutput, RunOutput>(results, config);
-
     await this.handleComplete();
 
-    return mergedResults;
+    return results;
   }
 
   /**
@@ -222,17 +201,11 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskConfigurationError if the graph is already running reactively
    */
-  public async runGraphReactive<
-    ExecuteOutput extends TaskOutput,
-    RunOutput extends TaskOutput = ExecuteOutput,
-  >(): Promise<RunOutput> {
+  public async runGraphReactive<ExecuteOutput extends TaskOutput>(): Promise<
+    NamedGraphResult<ExecuteOutput>
+  > {
     await this.handleStartReactive();
 
-    if (!this.running) {
-      this.resetGraph(this.graph, uuid4());
-    }
-
-    this.reactiveScheduler.reset();
     const results: NamedGraphResult<ExecuteOutput> = [];
 
     try {
@@ -252,9 +225,8 @@ export class TaskGraphRunner {
           }
         }
       }
-      const mergedResults = this.mergeOutput<ExecuteOutput, RunOutput>(results);
       await this.handleCompleteReactive();
-      return mergedResults;
+      return results;
     } catch (error) {
       await this.handleErrorReactive();
       throw error;
@@ -316,28 +288,28 @@ export class TaskGraphRunner {
   // Protected Handlers
   // ========================================================================
 
-  protected mergeOutput<
+  public mergeExecuteOutputsToRunOutput<
     ExecuteOutput extends TaskOutput,
     RunOutput extends TaskOutput = ExecuteOutput,
-  >(results: NamedGraphResult<ExecuteOutput>, config?: TaskGraphRunConfig): RunOutput {
-    const mergeStrategy = config?.compoundMerge || this.graph.compoundMerge;
-
-    if (
-      mergeStrategy === "last" ||
-      (results.length === 1 &&
-        ["last-or-named", "last-or-property-array", "last-or-unordered-array"].includes(
-          mergeStrategy
-        ))
-    ) {
+  >(results: NamedGraphResult<ExecuteOutput>, compoundMerge: CompoundMergeStrategy): RunOutput {
+    if (compoundMerge === "last") {
       return results[results.length - 1].data as unknown as RunOutput;
-    } else if (mergeStrategy === "named" || mergeStrategy === "last-or-named") {
+    } else if (compoundMerge === "named") {
       return results as unknown as RunOutput;
-    } else if (mergeStrategy === "unordered-array" || mergeStrategy === "last-or-unordered-array") {
+    } else if (compoundMerge === "unordered-array") {
       return { data: results.map((result) => result.data) } as unknown as RunOutput;
-    } else if (mergeStrategy === "property-array" || mergeStrategy === "last-or-property-array") {
+    } else if (compoundMerge === "property-array") {
+      return { data: results.map((result) => result.data) } as unknown as RunOutput;
+    } else if (compoundMerge === "last-or-named") {
+      return results as unknown as RunOutput;
+    } else if (compoundMerge === "last-or-unordered-array") {
+      return { data: results.map((result) => result.data) } as unknown as RunOutput;
+    } else if (compoundMerge === "last-or-property-array") {
       let fixedOutput = {} as RunOutput;
       const outputs = results.map((result: any) => result.data);
-      if (outputs.length > 0) {
+      if (outputs.length === 1) {
+        fixedOutput = outputs[0] as unknown as RunOutput;
+      } else if (outputs.length > 1) {
         const collected = collectPropertyValues<ExecuteOutput>(outputs as ExecuteOutput[]);
         if (Object.keys(collected).length > 0) {
           fixedOutput = collected as unknown as RunOutput;
@@ -345,7 +317,7 @@ export class TaskGraphRunner {
       }
       return fixedOutput;
     }
-    throw new TaskConfigurationError(`Unknown merge strategy: ${mergeStrategy}`);
+    throw new TaskConfigurationError(`Unknown compound merge strategy: ${compoundMerge}`);
   }
 
   /**
@@ -489,6 +461,7 @@ export class TaskGraphRunner {
   protected resetTask(graph: TaskGraph, task: ITask, runId: string) {
     task.status = TaskStatus.PENDING;
     task.resetInputData();
+    task.runIntermediateData = [];
     task.runOutputData = {};
     task.error = undefined;
     task.progress = 0;
@@ -519,7 +492,19 @@ export class TaskGraphRunner {
    * Handles the start of task graph execution
    * @param parentSignal Optional abort signal from parent
    */
-  protected async handleStart(parentSignal?: AbortSignal): Promise<void> {
+  protected async handleStart(config?: TaskGraphRunConfig): Promise<void> {
+    if (config?.outputCache !== undefined) {
+      if (typeof config.outputCache === "boolean") {
+        if (config.outputCache === true) {
+          this.outputCache = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
+        } else {
+          this.outputCache = undefined;
+        }
+      } else {
+        this.outputCache = config.outputCache;
+      }
+      this.graph.outputCache = this.outputCache;
+    }
     // Prevent reentrancy
     if (this.running || this.reactiveRunning) {
       throw new TaskConfigurationError("Graph is already running");
@@ -531,11 +516,11 @@ export class TaskGraphRunner {
       this.handleAbort();
     });
 
-    if (parentSignal?.aborted) {
+    if (config?.parentSignal?.aborted) {
       this.abortController.abort(); // Immediately abort if the parent is already aborted
       return;
     } else {
-      parentSignal?.addEventListener(
+      config?.parentSignal?.addEventListener(
         "abort",
         () => {
           this.abortController?.abort();
@@ -555,6 +540,7 @@ export class TaskGraphRunner {
     if (this.reactiveRunning) {
       throw new TaskConfigurationError("Graph is already running reactively");
     }
+    this.reactiveScheduler.reset();
     this.reactiveRunning = true;
   }
 

@@ -155,7 +155,7 @@ export function arrayTaskFactory<
     static readonly category = taskClass.category;
     static readonly cacheable = taskClass.cacheable;
     static readonly isCompound = true;
-    static readonly compoundMerge = "property-array";
+    static readonly compoundMerge = "last-or-property-array";
     itemClass = taskClass;
 
     static inputs = inputs;

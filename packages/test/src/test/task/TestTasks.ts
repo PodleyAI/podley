@@ -236,13 +236,21 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   /**
    * Implementation with configurable behavior based on instance properties
    */
-  async execute(input: TaskInput, { updateProgress }: IExecuteConfig): Promise<any> {
+  async execute(input: TaskInput, { updateProgress, signal }: IExecuteConfig): Promise<any> {
+    if (signal.aborted) {
+      throw new TaskAbortedError("Task aborted");
+    }
+
     if (this.shouldEmitProgress) {
       updateProgress(this.progressValue);
     }
 
     if (this.delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    }
+
+    if (signal.aborted) {
+      throw new TaskAbortedError("Task aborted");
     }
 
     if (this.shouldThrowError) {

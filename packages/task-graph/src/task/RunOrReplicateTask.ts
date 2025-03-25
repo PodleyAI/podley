@@ -8,7 +8,6 @@
 import { uuid4 } from "@ellmers/util";
 import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { AnyGraphResult, NamedGraphResult } from "../task-graph/TaskGraphRunner";
 import { Task } from "./Task";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 import { TaskRunner } from "./TaskRunner";
@@ -159,24 +158,16 @@ export class RunOrReplicateTaskRunner<
   /**
    * Execute the task
    */
-  protected async executeTask(): Promise<RunOutput | undefined> {
+  protected async executeTask(): Promise<ExecuteOutput | undefined> {
     this.task.runInputData = this.fixInput(this.task.runInputData);
-    const result = await super.executeTask();
-    if (result !== undefined) {
-      this.task.runOutputData = result as RunOutput;
-    }
-    return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
+    return await super.executeTask();
   }
 
   /**
    * Execute the task reactively
    */
-  public async executeTaskReactive(): Promise<RunOutput | undefined> {
-    if (this.task.hasChildren()) {
-      return await this.executeTaskChildrenReactive();
-    } else {
-      this.task.runInputData = this.fixInput(this.task.runInputData);
-      return this.task.executeReactive(this.task.runInputData, this.task.runOutputData);
-    }
+  public async executeTaskReactive(): Promise<ExecuteOutput | undefined> {
+    this.task.runInputData = this.fixInput(this.task.runInputData);
+    return this.task.executeReactive(this.task.runInputData, this.task.runIntermediateData[0].data);
   }
 }

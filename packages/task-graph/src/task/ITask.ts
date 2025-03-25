@@ -8,7 +8,7 @@
 import type { EventEmitter } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import type { TaskGraph } from "../task-graph/TaskGraph";
-import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
+import { CompoundMergeStrategy, NamedGraphResult } from "../task-graph/TaskGraphRunner";
 import { TaskError } from "./TaskError";
 import type {
   TaskEventListener,
@@ -66,7 +66,6 @@ export interface ITaskStaticProperties {
 export interface ITaskExecution<
   Input extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
-  RunOutput extends TaskOutput = ExecuteOutput,
 > {
   /**
    * The actual task execution logic for subclasses to override
@@ -74,7 +73,7 @@ export interface ITaskExecution<
    * @param config The configuration for the task
    * @returns The output of the task or undefined if no changes
    */
-  execute(input: Input, config: IExecuteConfig): Promise<RunOutput | undefined>;
+  execute(input: Input, config: IExecuteConfig): Promise<ExecuteOutput | undefined>;
 
   /**
    * Reactive execution logic for updating UI or responding to changes
@@ -82,7 +81,7 @@ export interface ITaskExecution<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  executeReactive(input: Input, output: RunOutput): Promise<RunOutput | undefined>;
+  executeReactive(input: Input, output: ExecuteOutput): Promise<ExecuteOutput | undefined>;
 }
 
 /**
@@ -109,6 +108,16 @@ export interface ITaskLifecycle<
   runReactive(overrides?: Partial<Input>): Promise<RunOutput>;
 
   /**
+   * Merges the execute output to the run output
+   * @param results The execute output
+   * @returns The run output
+   */
+  mergeExecuteOutputsToRunOutput(
+    results: NamedGraphResult<ExecuteOutput>,
+    compoundMerge: CompoundMergeStrategy
+  ): RunOutput;
+
+  /**
    * Aborts the task execution
    */
   abort(): void;
@@ -124,10 +133,12 @@ export interface ITaskIO<
 > {
   defaults: Partial<Input>;
   runInputData: Input;
+  runIntermediateData: NamedGraphResult<ExecuteOutput>;
   runOutputData: RunOutput;
 
   get inputs(): readonly TaskInputDefinition[]; // this gets local access for static input definition property
   get outputs(): readonly TaskOutputDefinition[]; // this gets local access for static output definition property
+  get type(): string; // this gets local access for static type property
 
   resetInputData(): void;
   setInput(input: Partial<Input>): void;
@@ -192,7 +203,7 @@ export interface ITask<
     ITaskIO<Input, ExecuteOutput, RunOutput>,
     ITaskEvents,
     ITaskLifecycle<Input, ExecuteOutput, RunOutput>,
-    ITaskExecution<Input, ExecuteOutput, RunOutput>,
+    ITaskExecution<Input, ExecuteOutput>,
     ITaskCompound,
     ITaskSerialization {}
 
