@@ -10,7 +10,7 @@ import { Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
-import { AnyGraphResult, CompoundMergeStrategy, TaskGraphRunner } from "./TaskGraphRunner";
+import { CompoundMergeStrategy, TaskGraphRunner, NamedGraphResult } from "./TaskGraphRunner";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import {
   TaskGraphEvents,
@@ -29,8 +29,6 @@ export interface TaskGraphRunConfig {
   parentSignal?: AbortSignal;
   /** Optional provenance to use for this task graph */
   parentProvenance?: Provenance;
-  /** Optional compound merge strategy to use for this task graph */
-  compoundMerge?: CompoundMergeStrategy;
 }
 
 class TaskGraphDAG extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType> {
@@ -45,7 +43,6 @@ class TaskGraphDAG extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, Dat
 interface TaskGraphConstructorConfig {
   outputCache?: TaskOutputRepository;
   dag?: TaskGraphDAG;
-  compoundMerge?: CompoundMergeStrategy;
 }
 
 /**
@@ -55,17 +52,13 @@ export class TaskGraph {
   /** Optional output cache to use for this task graph */
   public outputCache?: TaskOutputRepository;
 
-  /** The compound merge strategy to use for this task graph */
-  public compoundMerge: CompoundMergeStrategy = "named";
-
   /**
    * Constructor for TaskGraph
    * @param config Configuration for the task graph
    */
-  constructor({ outputCache, dag, compoundMerge }: TaskGraphConstructorConfig = {}) {
+  constructor({ outputCache, dag }: TaskGraphConstructorConfig = {}) {
     this.outputCache = outputCache;
     this._dag = dag || new TaskGraphDAG();
-    this.compoundMerge = compoundMerge || "named";
   }
 
   private _dag: TaskGraphDAG;
@@ -88,12 +81,13 @@ export class TaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public run<T extends TaskOutput>(config?: TaskGraphRunConfig): Promise<AnyGraphResult<T>> {
-    return this.runner.runGraph<T>({
+  public run<ExecuteOutput extends TaskOutput>(
+    config?: TaskGraphRunConfig
+  ): Promise<NamedGraphResult<ExecuteOutput>> {
+    return this.runner.runGraph<ExecuteOutput>({
       outputCache: config?.outputCache || this.outputCache,
       parentProvenance: config?.parentProvenance || {},
       parentSignal: config?.parentSignal || undefined,
-      compoundMerge: config?.compoundMerge || this.compoundMerge,
     });
   }
 
@@ -102,8 +96,21 @@ export class TaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public runReactive<T>(): Promise<AnyGraphResult<T>> {
-    return this.runner.runGraphReactive<T>();
+  public runReactive<ExecuteOutput extends TaskOutput>(): Promise<NamedGraphResult<ExecuteOutput>> {
+    return this.runner.runGraphReactive<ExecuteOutput>();
+  }
+
+  /**
+   * Merges the execute output to the run output
+   * @param results The execute output
+   * @param compoundMerge The compound merge strategy to use
+   * @returns The run output
+   */
+  public mergeExecuteOutputsToRunOutput<
+    ExecuteOutput extends TaskOutput,
+    RunOutput extends TaskOutput = ExecuteOutput,
+  >(results: NamedGraphResult<ExecuteOutput>, compoundMerge: CompoundMergeStrategy): RunOutput {
+    return this.runner.mergeExecuteOutputsToRunOutput(results, compoundMerge);
   }
 
   /**
@@ -262,7 +269,6 @@ export class TaskGraph {
     const tasks = this.getTasks().map((node) => node.toJSON());
     const dataflows = this.getDataflows().map((df) => df.toJSON());
     return {
-      merge: this.compoundMerge,
       tasks,
       dataflows,
     };

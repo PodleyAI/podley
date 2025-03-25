@@ -22,6 +22,10 @@
       "dependsOn": ["build-package", "build-types"],
       "persistent": true,
       "cache": false
+    },
+    "watch-types": {
+      "persistent": true,
+      "cache": false
     }
   }
 }

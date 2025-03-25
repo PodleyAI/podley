@@ -237,8 +237,8 @@ export class FetchTask<
     this.jobClass = FetchJob;
   }
 
-  async executeReactive(): Promise<Output> {
-    return this.runOutputData ?? { body: null };
+  async executeReactive(input: Input, output: Output): Promise<Output> {
+    return output ?? { body: null };
   }
 
   async validateInputValue(valueType: string, item: any) {
