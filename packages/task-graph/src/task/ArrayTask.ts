@@ -13,57 +13,8 @@ import { RunOrReplicateTaskRunner } from "./RunOrReplicateTask";
 import { Task } from "./Task";
 import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRegistry } from "./TaskRegistry";
-import {
-  Provenance,
-  TaskConfig,
-  TaskInput,
-  TaskInputDefinition,
-  TaskOutput,
-  TaskOutputDefinition,
-  TaskTypeName,
-} from "./TaskTypes";
-
-/**
- * Converts specified IO definitions to array type
- * @param io Array of input/output definitions
- * @param id Optional ID to target specific definition
- * @returns Modified array of definitions with isArray set to true
- */
-function convertToArray<D extends TaskInputDefinition | TaskOutputDefinition>(
-  io: D[],
-  id?: string | number | symbol
-) {
-  const results: D[] = [];
-  for (const item of io) {
-    const newItem: Writeable<D> = { ...item };
-    if (newItem.id === id || id === undefined) {
-      newItem.isArray = true;
-    }
-    results.push(newItem);
-  }
-  return results as D[];
-}
-
-/**
- * Converts multiple IO definitions to array type based on provided IDs
- * @param io Array of input/output definitions
- * @param ids Array of IDs to target specific definitions
- * @returns Modified array of definitions with isArray set to true for matching IDs
- */
-function convertMultipleToArray<D extends TaskInputDefinition | TaskOutputDefinition>(
-  io: D[],
-  ids: Array<string | number | symbol>
-) {
-  const results: D[] = [];
-  for (const item of io) {
-    const newItem: Writeable<D> = { ...item };
-    if (ids.includes(newItem.id)) {
-      newItem.isArray = true;
-    }
-    results.push(newItem);
-  }
-  return results as D[];
-}
+import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskTypeName } from "./TaskTypes";
+import { Type, TSchema, TObject } from "@sinclair/typebox";
 
 /**
  * Generates all possible combinations of array inputs
@@ -132,12 +83,6 @@ export function arrayTaskFactory<
   inputMakeArray: Array<keyof PluralInputType>,
   name?: string
 ) {
-  const inputs = convertMultipleToArray<TaskInputDefinition>(
-    Array.from(taskClass.inputs),
-    inputMakeArray
-  );
-  const outputs = convertToArray<TaskOutputDefinition>(Array.from(taskClass.outputs));
-
   const nameWithoutTask = taskClass.type.slice(0, -4);
   name ??= nameWithoutTask + "ArrayTask";
 
@@ -158,8 +103,41 @@ export function arrayTaskFactory<
     static readonly compoundMerge = "last-or-property-array";
     itemClass = taskClass;
 
-    static inputs = inputs;
-    static outputs = outputs;
+    /**
+     * Input schema for ArrayTask
+     * Inherits from the base task class but converts specified properties to arrays
+     */
+    public static inputSchema = Type.Object(
+      Object.fromEntries(
+        Object.entries(((taskClass as any).inputSchema as TObject)?.properties || {}).map(
+          ([key, prop]) => [
+            key,
+            inputMakeArray.includes(key)
+              ? Type.Array(prop as TSchema, {
+                  description: `Array of ${(prop as TSchema).description || key}`,
+                })
+              : prop,
+          ]
+        )
+      )
+    );
+
+    /**
+     * Output schema for ArrayTask
+     * Converts all outputs to arrays since we're processing multiple items
+     */
+    public static outputSchema = Type.Object(
+      Object.fromEntries(
+        Object.entries(((taskClass as any).outputSchema as TObject)?.properties || {}).map(
+          ([key, prop]) => [
+            key,
+            Type.Array(prop as TSchema, {
+              description: `Array of ${(prop as TSchema).description || key}`,
+            }),
+          ]
+        )
+      )
+    );
 
     /**
      * Regenerates the task graph by creating child tasks for each input combination
@@ -194,10 +172,6 @@ export function arrayTaskFactory<
       return result;
     }
 
-    async validateInputValue(valueType: string, item: any) {
-      return true; // let children validate
-    }
-
     declare _subGraph: TaskGraph;
     declare abortController: AbortController;
     declare nodeProvenance: Provenance;
@@ -205,11 +179,11 @@ export function arrayTaskFactory<
     declare queueName: string;
     declare currentJobId: string;
     declare validateInput: (input: Partial<Input>) => Promise<boolean>;
-    // Declare specific _runner type for this class
-    declare _runner: RunOrReplicateTaskRunner<Input, Output, Config>;
-    override get runner(): RunOrReplicateTaskRunner<Input, Output, Config> {
+
+    declare _runner: RunOrReplicateTaskRunner<Input, Output, Config, Input, Output>;
+    override get runner(): RunOrReplicateTaskRunner<Input, Output, Config, Input, Output> {
       if (!this._runner) {
-        this._runner = new RunOrReplicateTaskRunner<Input, Output, Config>(this);
+        this._runner = new RunOrReplicateTaskRunner<Input, Output, Config, Input, Output>(this);
       }
       return this._runner;
     }

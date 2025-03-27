@@ -11,13 +11,23 @@ import {
   TaskRegistry,
   JobQueueTask,
   JobQueueTaskConfig,
-  TaskInputDefinition,
-  TaskOutputDefinition,
   TaskInvalidInputError,
   TaskConfig,
 } from "@ellmers/task-graph";
 import { AbortSignalJobError, Job, PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
 import { JSONValue } from "@ellmers/storage";
+import { FormatRegistry, Type } from "@sinclair/typebox";
+
+FormatRegistry.Set("url", (value) => {
+  if (value && typeof value === "string") {
+    try {
+      new URL(value);
+    } catch {
+      return false;
+    }
+  }
+  return true;
+});
 
 export type url = string;
 export type FetchTaskInput = {
@@ -184,99 +194,86 @@ export class FetchTask<
 > extends JobQueueTask<Input, Output, Config> {
   public static type = "FetchTask";
   public static category = "Input";
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "url",
-      name: "URL",
-      valueType: "url",
-    },
-    {
-      id: "method",
-      name: "Method",
-      valueType: "method",
-      defaultValue: "GET",
-      optional: true,
-    },
-    {
-      id: "headers",
-      name: "Headers",
-      valueType: "record_string_string",
-      optional: true,
-    },
-    {
-      id: "body",
-      name: "Body",
-      valueType: "text",
-      optional: true,
-    },
-    {
-      id: "response_type",
-      name: "Response Type",
-      valueType: "response_type",
-      defaultValue: "json",
-      optional: true,
-    },
-    {
-      id: "queueName",
-      name: "Queue Name",
-      valueType: "text",
-      optional: true,
-    },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    { id: "json", name: "JSON", valueType: "json" },
-    { id: "text", name: "Text", valueType: "text" },
-    { id: "blob", name: "Blob", valueType: "blob" },
-    { id: "arraybuffer", name: "ArrayBuffer", valueType: "arraybuffer" },
-  ] as const;
+
+  public static inputSchema = Type.Object({
+    url: Type.String({
+      title: "URL",
+      format: "url",
+    }),
+    method: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal("GET"),
+          Type.Literal("POST"),
+          Type.Literal("PUT"),
+          Type.Literal("DELETE"),
+          Type.Literal("PATCH"),
+        ],
+        {
+          title: "Method",
+          default: "GET",
+        }
+      )
+    ),
+    headers: Type.Optional(
+      Type.Record(Type.String(), Type.String(), {
+        title: "Headers",
+      })
+    ),
+    body: Type.Optional(
+      Type.String({
+        title: "Body",
+      })
+    ),
+    response_type: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal("json"),
+          Type.Literal("text"),
+          Type.Literal("blob"),
+          Type.Literal("arraybuffer"),
+        ],
+        {
+          title: "Response Type",
+          default: "json",
+        }
+      )
+    ),
+    queueName: Type.Optional(
+      Type.String({
+        title: "Queue Name",
+      })
+    ),
+  });
+
+  public static outputSchema = Type.Object({
+    json: Type.Optional(
+      Type.Any({
+        title: "JSON Response",
+      })
+    ),
+    text: Type.Optional(
+      Type.String({
+        title: "Text Response",
+      })
+    ),
+    blob: Type.Optional(
+      Type.Any({
+        title: "Blob Response",
+      })
+    ),
+    arraybuffer: Type.Optional(
+      Type.Any({
+        title: "ArrayBuffer Response",
+      })
+    ),
+  });
 
   constructor(input: Input = {} as Input, config: Config = {} as Config) {
     config.queueName = input?.queueName ?? config.queueName;
 
     super(input, config);
     this.jobClass = FetchJob;
-  }
-
-  async executeReactive(input: Input, output: Output): Promise<Output> {
-    return output ?? { body: null };
-  }
-
-  async validateInputValue(valueType: string, item: any) {
-    if (valueType === "url") {
-      try {
-        if (item instanceof URL) {
-          return true;
-        }
-        new URL(item); // This will throw an error if the URL is invalid
-        return true;
-      } catch (err) {
-        throw new TaskInvalidInputError(`${item} is not a valid URL`);
-      }
-    }
-    if (valueType === "method") {
-      const valid = ["GET", "POST", "PUT", "DELETE", "PATCH"].includes(item);
-      if (!valid) {
-        throw new TaskInvalidInputError(`${item} is not a valid HTTP method`);
-      }
-      return valid;
-    }
-    if (valueType === "response_type") {
-      const valid = ["json", "text", "blob", "arraybuffer"].includes(item);
-      if (!valid) {
-        throw new TaskInvalidInputError(`${item} is not a valid response type`);
-      }
-      return valid;
-    }
-    if (valueType === "record_string_string") {
-      const valid =
-        typeof item === "object" &&
-        Object.keys(item).every((key) => typeof key === "string" && typeof item[key] === "string");
-      if (!valid) {
-        throw new TaskInvalidInputError(`${item} is not a valid record of string to string`);
-      }
-      return valid;
-    }
-    return await super.validateInputValue(valueType, item);
   }
 }
 

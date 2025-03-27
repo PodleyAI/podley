@@ -25,11 +25,11 @@ import {
   type Provenance,
   type TaskConfig,
   type TaskInput,
-  type TaskInputDefinition,
   type TaskOutput,
-  type TaskOutputDefinition,
   type TaskTypeName,
 } from "./TaskTypes";
+import { Type, TObject } from "@sinclair/typebox";
+import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 /**
  * Base class for all tasks that implements the ITask interface.
@@ -41,11 +41,12 @@ import {
  * 3. Delegating the running logic to a TaskRunner
  */
 export class Task<
-  Input extends TaskInput = TaskInput,
+  ExecuteInput extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
+  RunInput extends TaskInput = ExecuteInput,
   RunOutput extends TaskOutput = ExecuteOutput,
-> implements ITask<Input, ExecuteOutput, Config, RunOutput>
+> implements ITask<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput>
 {
   // ========================================================================
   // Static properties - should be overridden by subclasses
@@ -67,14 +68,14 @@ export class Task<
   public static cacheable: boolean = true;
 
   /**
-   * Input definitions for this task
+   * Input schema for this task
    */
-  public static inputs: readonly TaskInputDefinition[] = [];
+  public static inputSchema: TObject = Type.Object({});
 
   /**
-   * Output definitions for this task
+   * Output schema for this task
    */
-  public static outputs: readonly TaskOutputDefinition[] = [];
+  public static outputSchema: TObject = Type.Object({});
 
   /**
    * Whether this task is a compound task (contains subtasks)
@@ -94,7 +95,10 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The output of the task or undefined if no changes
    */
-  public async execute(input: Input, config: IExecuteConfig): Promise<ExecuteOutput | undefined> {
+  public async execute(
+    input: ExecuteInput,
+    config: IExecuteConfig
+  ): Promise<ExecuteOutput | undefined> {
     if (config.signal?.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
@@ -111,7 +115,7 @@ export class Task<
    * @returns The updated output of the task or undefined if no changes
    */
   public async executeReactive(
-    input: Input,
+    input: ExecuteInput,
     output: ExecuteOutput
   ): Promise<ExecuteOutput | undefined> {
     return output;
@@ -124,15 +128,17 @@ export class Task<
   /**
    * Task runner for handling the task execution
    */
-  protected _runner: TaskRunner<Input, ExecuteOutput, Config, RunOutput> | undefined;
+  protected _runner:
+    | TaskRunner<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput>
+    | undefined;
 
   /**
    * Gets the task runner instance
    * Creates a new one if it doesn't exist
    */
-  public get runner(): TaskRunner<Input, ExecuteOutput, Config, RunOutput> {
+  public get runner(): TaskRunner<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput> {
     if (!this._runner) {
-      this._runner = new TaskRunner<Input, ExecuteOutput, Config, RunOutput>(
+      this._runner = new TaskRunner<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput>(
         this,
         this.outputCache
       );
@@ -149,7 +155,7 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The task output
    */
-  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<RunOutput> {
+  async run(overrides: Partial<RunInput> = {}, config: IRunConfig = {}): Promise<RunOutput> {
     return this.runner.run(overrides, config);
   }
 
@@ -160,7 +166,7 @@ export class Task<
    * @param overrides Optional input overrides
    * @returns The task output
    */
-  public async runReactive(overrides: Partial<Input> = {}): Promise<RunOutput> {
+  public async runReactive(overrides: Partial<RunInput> = {}): Promise<RunOutput> {
     return this.runner.runReactive(overrides);
   }
 
@@ -189,17 +195,17 @@ export class Task<
   // ========================================================================
 
   /**
-   * Gets input definitions for this task
+   * Gets input schema for this task
    */
-  get inputs(): readonly TaskInputDefinition[] {
-    return (this.constructor as typeof Task).inputs;
+  get inputSchema(): TObject {
+    return (this.constructor as typeof Task).inputSchema;
   }
 
   /**
-   * Gets output definitions for this task
+   * Gets output schema for this task
    */
-  get outputs(): readonly TaskOutputDefinition[] {
-    return (this.constructor as typeof Task).outputs ?? [];
+  get outputSchema(): TObject {
+    return (this.constructor as typeof Task).outputSchema;
   }
 
   /**
@@ -241,14 +247,14 @@ export class Task<
    * If no overrides at run time, then this would be equal to the input.
    * resetInputData() will reset inputs to these defaults.
    */
-  defaults: Partial<Input>;
+  defaults: Partial<RunInput>;
 
   /**
    * The input to the task at the time of the task run.
    * This takes defaults from construction time and overrides from run time.
    * It is the input that created the output.
    */
-  runInputData: Input = {} as Input;
+  runInputData: RunInput = {} as RunInput;
 
   /**
    * The output of the task at the time of the task run.
@@ -257,10 +263,16 @@ export class Task<
   runOutputData: RunOutput = {} as RunOutput;
 
   /**
+   * The input data of the task at the time of the task run.
+   * This is the input that was used to create the output.
+   */
+  runExecuteInputData: NamedGraphResult<ExecuteInput> = [] as NamedGraphResult<ExecuteInput>;
+
+  /**
    * The intermediate data of the task at the time of the task run.
    * This is the result of the task execution.
    */
-  runIntermediateData: NamedGraphResult<ExecuteOutput> = [] as NamedGraphResult<ExecuteOutput>;
+  runExecuteOutputData: NamedGraphResult<ExecuteOutput> = [] as NamedGraphResult<ExecuteOutput>;
 
   // ========================================================================
   // Task state properties
@@ -323,7 +335,7 @@ export class Task<
    * @param config Configuration for the task
    */
   constructor(
-    callerDefaultInputs: Partial<Input> = {} as Partial<Input>,
+    callerDefaultInputs: Partial<RunInput> = {} as Partial<RunInput>,
     config: Config = {} as Config
   ) {
     // Initialize input defaults
@@ -355,15 +367,20 @@ export class Task<
   // ========================================================================
 
   /**
-   * Gets default input values from static input definitions
+   * Gets default input values from input schema
    */
-  getDefaultInputsFromStaticInputDefinitions(): Partial<Input> {
-    return this.inputs.reduce<Record<string, any>>((acc, cur) => {
-      if (cur.defaultValue !== undefined) {
-        acc[cur.id] = cur.defaultValue;
-      }
-      return acc;
-    }, {}) as Partial<Input>;
+  getDefaultInputsFromStaticInputDefinitions(): Partial<RunInput> {
+    const schema = this.inputSchema as TObject;
+    return Object.entries(schema.properties || {}).reduce<Record<string, any>>(
+      (acc, [id, prop]) => {
+        const defaultValue = (prop as any).default;
+        if (defaultValue !== undefined) {
+          acc[id] = defaultValue;
+        }
+        return acc;
+      },
+      {}
+    ) as Partial<RunInput>;
   }
 
   /**
@@ -372,9 +389,9 @@ export class Task<
   public resetInputData(): void {
     // Use deep clone to avoid state leakage
     try {
-      this.runInputData = structuredClone(this.defaults) as Input;
+      this.runInputData = structuredClone(this.defaults) as RunInput;
     } catch (err) {
-      this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as Input;
+      this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as RunInput;
     }
     if (this.hasChildren()) {
       this.subGraph!.getTasks().forEach((node) => {
@@ -388,13 +405,16 @@ export class Task<
    *
    * @param input Input values to set
    */
-  public setInput(input: Partial<Input>): void {
-    for (const inputdef of this.inputs) {
-      const inputId = inputdef.id as keyof Input;
+  public setInput(input: Partial<RunInput>): void {
+    const schema = this.inputSchema as TObject;
+    const properties = schema.properties || {};
+
+    for (const [id, prop] of Object.entries(properties)) {
+      const inputId = id as keyof RunInput;
       if (input[inputId] !== undefined) {
         this.runInputData[inputId] = input[inputId];
-      } else if (this.runInputData[inputId] === undefined && inputdef.defaultValue !== undefined) {
-        this.runInputData[inputId] = inputdef.defaultValue;
+      } else if (this.runInputData[inputId] === undefined && prop.default !== undefined) {
+        this.runInputData[inputId] = prop.default;
       }
     }
   }
@@ -486,122 +506,17 @@ export class Task<
   // ========================================================================
 
   /**
-   * Validates an item against the task's input definition
-   *
-   * @param valueType The type of the item
-   * @param item The item to validate
-   * @returns True if the item is valid, otherwise throws an error
-   * @throws TaskInvalidInputError if the item is invalid
+   * Validates an input data object against the task's input schema
    */
-  async validateInputValue(valueType: string, item: any): Promise<boolean> {
-    switch (valueType) {
-      case "any":
-        return true;
-      case "number": {
-        const valid = typeof item === "bigint" || typeof item === "number";
-        if (!valid) {
-          throw new TaskInvalidInputError(`${item} is not a number`);
-        }
-        return valid;
-      }
-      case "text":
-      case "string": {
-        const valid = typeof item === "string";
-        if (!valid) {
-          throw new TaskInvalidInputError(`${item} is not a string`);
-        }
-        return valid;
-      }
-      case "boolean": {
-        const valid = typeof item === "boolean";
-        if (!valid) {
-          throw new TaskInvalidInputError(`${item} is not a boolean`);
-        }
-        return valid;
-      }
-      case "function": {
-        const valid = typeof item === "function";
-        if (!valid) {
-          throw new TaskInvalidInputError(`${item} is not a function`);
-        }
-        return valid;
-      }
-      default:
-        throw new TaskInvalidInputError(`validateInputValue: Unknown value type: ${valueType}`);
-    }
-  }
+  public async validateInput(input: Partial<RunInput>): Promise<boolean> {
+    const schema = this.inputSchema as TObject;
 
-  /**
-   * Validates an input item against the task's input definition
-   *
-   * @param input The input to validate
-   * @param inputId The id of the input to validate
-   * @returns True if the input is valid, otherwise throws an error
-   * @throws TaskInvalidInputError if the input is invalid
-   */
-  public async validateInputDefinition(
-    input: Partial<Input>,
-    inputId: keyof Input
-  ): Promise<boolean> {
-    const classRef = this.constructor as typeof Task;
-    const inputdef = this.inputs.find((def) => def.id === inputId);
-
-    if (!inputdef) {
-      throw new TaskInvalidInputError(
-        `validateInputDefinition: Unknown input id: ${inputId as string}`
-      );
+    // validate the partial input against the schema
+    const check = TypeCompiler.Compile(schema);
+    if (!check.Check(input)) {
+      throw new TaskInvalidInputError(`Input ${JSON.stringify(input)} does not match schema`);
     }
 
-    if (typeof input !== "object") {
-      throw new TaskInvalidInputError(
-        `validateInputDefinition: Input is not an object: ${inputId as string}`
-      );
-    }
-
-    if (input[inputId] === undefined) {
-      if (inputdef.defaultValue !== undefined) {
-        input[inputId] = inputdef.defaultValue;
-      } else {
-        if (!inputdef.optional && inputdef.valueType !== "any") {
-          throw new TaskInvalidInputError(
-            `No default value for '${inputId as string}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
-          );
-        }
-      }
-    }
-
-    // force the input to be an array if the input definition says it is an array
-    if (inputdef.isArray === true && !Array.isArray(input[inputId])) {
-      input[inputId] = [input[inputId]] as any;
-    }
-
-    let inputlist: any[] = [];
-    if (inputdef.isArray && Array.isArray(input[inputId])) {
-      inputlist = input[inputId] as any[];
-    } else {
-      inputlist = [input[inputId]];
-    }
-
-    const validationPromises = inputlist.map((item) =>
-      this.validateInputValue(inputdef.valueType as string, item)
-    );
-
-    const validationResults = await Promise.allSettled(validationPromises);
-    return validationResults.every((result) => result.status === "fulfilled");
-  }
-
-  /**
-   * Validates an input data object against the task's input definition
-   *
-   * @param input The input to validate
-   * @returns True if the input is valid, otherwise throws an error
-   * @throws TaskInvalidInputError if the input is invalid
-   */
-  public async validateInput(input: Partial<Input>): Promise<boolean> {
-    for (const inputdef of this.inputs) {
-      if (inputdef.optional && input[inputdef.id] === undefined) continue;
-      await this.validateInputDefinition(input, inputdef.id);
-    }
     return true;
   }
 

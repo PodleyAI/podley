@@ -22,11 +22,10 @@ import type {
   Provenance,
   TaskConfig,
   TaskInput,
-  TaskInputDefinition,
   TaskOutput,
-  TaskOutputDefinition,
   TaskStatus,
 } from "./TaskTypes";
+import { TObject } from "@sinclair/typebox";
 
 /**
  * Configuration for task execution
@@ -54,8 +53,8 @@ export interface ITaskStaticProperties {
   readonly type: string;
   readonly category: string;
   readonly cacheable: boolean;
-  readonly inputs: readonly TaskInputDefinition[];
-  readonly outputs: readonly TaskOutputDefinition[];
+  readonly inputSchema: TObject;
+  readonly outputSchema: TObject;
   readonly isCompound: boolean;
 }
 
@@ -64,7 +63,7 @@ export interface ITaskStaticProperties {
  * These methods define how tasks are executed and should be implemented by Task subclasses
  */
 export interface ITaskExecution<
-  Input extends TaskInput = TaskInput,
+  ExecuteInput extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
 > {
   /**
@@ -73,7 +72,7 @@ export interface ITaskExecution<
    * @param config The configuration for the task
    * @returns The output of the task or undefined if no changes
    */
-  execute(input: Input, config: IExecuteConfig): Promise<ExecuteOutput | undefined>;
+  execute(input: ExecuteInput, config: IExecuteConfig): Promise<ExecuteOutput | undefined>;
 
   /**
    * Reactive execution logic for updating UI or responding to changes
@@ -81,7 +80,7 @@ export interface ITaskExecution<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  executeReactive(input: Input, output: ExecuteOutput): Promise<ExecuteOutput | undefined>;
+  executeReactive(input: ExecuteInput, output: ExecuteOutput): Promise<ExecuteOutput | undefined>;
 }
 
 /**
@@ -89,8 +88,9 @@ export interface ITaskExecution<
  * These methods define how tasks are run and are usually delegated to a TaskRunner
  */
 export interface ITaskLifecycle<
-  Input extends TaskInput = TaskInput,
+  ExecuteInput extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
+  RunInput extends TaskInput = ExecuteInput,
   RunOutput extends TaskOutput = ExecuteOutput,
 > {
   /**
@@ -98,14 +98,14 @@ export interface ITaskLifecycle<
    * @param overrides Optional input overrides
    * @returns Promise resolving to the task output
    */
-  run(overrides?: Partial<Input>, config?: IRunConfig): Promise<RunOutput>;
+  run(overrides?: Partial<RunInput>, config?: IRunConfig): Promise<RunOutput>;
 
   /**
    * Runs the task in reactive mode
    * @param overrides Optional input overrides
    * @returns Promise resolving to the task output
    */
-  runReactive(overrides?: Partial<Input>): Promise<RunOutput>;
+  runReactive(overrides?: Partial<RunInput>): Promise<RunOutput>;
 
   /**
    * Merges the execute output to the run output
@@ -127,24 +127,24 @@ export interface ITaskLifecycle<
  * Interface for task input/output operations
  */
 export interface ITaskIO<
-  Input extends TaskInput = TaskInput,
+  ExecuteInput extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
+  RunInput extends TaskInput = ExecuteInput,
   RunOutput extends TaskOutput = ExecuteOutput,
 > {
-  defaults: Partial<Input>;
-  runInputData: Input;
-  runIntermediateData: NamedGraphResult<ExecuteOutput>;
+  defaults: Partial<RunInput>;
+  runInputData: RunInput;
+  runExecuteInputData: NamedGraphResult<ExecuteInput>;
+  runExecuteOutputData: NamedGraphResult<ExecuteOutput>;
   runOutputData: RunOutput;
 
-  get inputs(): readonly TaskInputDefinition[]; // this gets local access for static input definition property
-  get outputs(): readonly TaskOutputDefinition[]; // this gets local access for static output definition property
-  get type(): string; // this gets local access for static type property
+  get inputSchema(): TObject; // gets local access for static inputSchema property
+  get outputSchema(): TObject; // gets local access for static outputSchema property
+  get type(): string; // gets local access for static type property
 
   resetInputData(): void;
-  setInput(input: Partial<Input>): void;
-  validateInputValue(valueType: string, item: any): Promise<boolean>;
-  validateInputDefinition(input: Partial<Input>, inputId: keyof Input): Promise<boolean>;
-  validateInput(input: Partial<Input>): Promise<boolean>;
+  setInput(input: Partial<RunInput>): void;
+  validateInput(input: Partial<RunInput>): Promise<boolean>;
   get cacheable(): boolean;
 }
 
@@ -195,15 +195,16 @@ export interface ITaskState<Config extends TaskConfig = TaskConfig> {
  * Main task interface that combines all the specialized interfaces
  */
 export interface ITask<
-  Input extends TaskInput = TaskInput,
+  ExecuteInput extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
+  RunInput extends TaskInput = ExecuteInput,
   RunOutput extends TaskOutput = ExecuteOutput,
 > extends ITaskState<Config>,
-    ITaskIO<Input, ExecuteOutput, RunOutput>,
+    ITaskIO<ExecuteInput, ExecuteOutput, RunInput, RunOutput>,
     ITaskEvents,
-    ITaskLifecycle<Input, ExecuteOutput, RunOutput>,
-    ITaskExecution<Input, ExecuteOutput>,
+    ITaskLifecycle<ExecuteInput, ExecuteOutput, RunInput, RunOutput>,
+    ITaskExecution<ExecuteInput, ExecuteOutput>,
     ITaskCompound,
     ITaskSerialization {}
 
@@ -214,8 +215,9 @@ type ITaskConstructorType<
   Input extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
+  RunInput extends TaskInput = Input,
   RunOutput extends TaskOutput = ExecuteOutput,
-> = new (input: Input, config: Config) => ITask<Input, ExecuteOutput, Config, RunOutput>;
+> = new (input: Input, config: Config) => ITask<Input, ExecuteOutput, Config, RunInput, RunOutput>;
 
 /**
  * Interface for task constructor with static properties
@@ -224,5 +226,6 @@ export type ITaskConstructor<
   Input extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
+  RunInput extends TaskInput = Input,
   RunOutput extends TaskOutput = ExecuteOutput,
-> = ITaskConstructorType<Input, ExecuteOutput, Config, RunOutput> & ITaskStaticProperties;
+> = ITaskConstructorType<Input, ExecuteOutput, Config, RunInput, RunOutput> & ITaskStaticProperties;

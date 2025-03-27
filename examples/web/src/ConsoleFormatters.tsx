@@ -5,15 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  Workflow,
-  TaskInputDefinition,
-  TaskOutputDefinition,
-  TaskStatus,
-  Task,
-  TaskGraph,
-  Dataflow,
-} from "@ellmers/task-graph";
+import { Workflow, TaskStatus, Task, TaskGraph, Dataflow } from "@ellmers/task-graph";
 import { DirectedAcyclicGraph } from "@ellmers/util";
 
 type Config = Record<string, any>;
@@ -153,8 +145,8 @@ class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
     if (obj.workflowCreate) {
       const header = new JsonMLElement("div");
       const name = obj.constructor.runtype ?? obj.constructor.type ?? obj.type.replace(/Task$/, "");
-      const inputs = obj.inputs.map((i: TaskInputDefinition) => i.id + ": …");
-      const outputs = obj.outputs.map((i: TaskOutputDefinition) => i.id + ": …");
+      const inputs = Object.keys(obj.inputSchema.properties).map((key) => `${key}: …`);
+      const outputs = Object.keys(obj.outputSchema.properties).map((key) => `${key}: …`);
 
       header.methodSignature(name);
       header.functionCall((el) => {
@@ -187,29 +179,29 @@ class TaskConsoleFormatter extends ConsoleFormatter {
 
     if (
       task instanceof Task &&
-      task.inputs &&
-      task.outputs &&
+      task.inputSchema &&
+      task.outputSchema &&
       task.runInputData &&
       task.runOutputData
     ) {
       const header = new JsonMLElement("div");
       let name = task.type ?? task.constructor.name;
       if (config?.workflow) name = name.replace(/Task$/, "");
-      const inputs = task.inputs
-        .filter((i) => task.runInputData[i.id] !== undefined)
-        .map((i: TaskInputDefinition) => {
-          const name = i.id;
-          let value = task.runInputData[i.id];
+      const inputs = Object.keys(task.inputSchema.properties)
+        .filter((key) => task.runInputData[key] !== undefined)
+        .map((key) => {
+          const name = key;
+          let value = task.runInputData[key];
           return { name, value };
         });
 
-      const outputs = task.outputs
-        .filter((i) => task.runOutputData[i.id] !== undefined && task.runOutputData[i.id] !== "")
+      const outputs = Object.keys(task.outputSchema.properties)
+        .filter((key) => task.runOutputData[key] !== undefined && task.runOutputData[key] !== "")
         .filter(
-          (i) => !(Array.isArray(task.runOutputData[i.id]) && task.runOutputData[i.id].length === 0)
+          (key) => !(Array.isArray(task.runOutputData[key]) && task.runOutputData[key].length === 0)
         )
-        .map((i: TaskInputDefinition) => {
-          return { name: i.id, value: task.runOutputData[i.id] };
+        .map((key) => {
+          return { name: key, value: task.runOutputData[key] };
         });
 
       header.highlightText(name);
@@ -247,13 +239,11 @@ class TaskConsoleFormatter extends ConsoleFormatter {
     const inputs = body.createStyledList("Inputs:");
     const allInboundDataflows = (config?.graph as TaskGraph)?.getSourceDataflows(task.config.id);
 
-    for (const input of task.inputs) {
-      const value = task.runInputData[input.id];
+    for (const [key, value] of Object.entries(task.inputSchema.properties)) {
+      const value = task.runInputData[key];
       const li = inputs.createListItem("", "padding-left: 20px;");
-      li.inputText(`${input.id}: `);
-      const inputInboundDataflows = allInboundDataflows?.filter(
-        (e) => e.targetTaskPortId === input.id
-      );
+      li.inputText(`${key}: `);
+      const inputInboundDataflows = allInboundDataflows?.filter((e) => e.targetTaskPortId === key);
       if (inputInboundDataflows) {
         let sources: string[] = [];
         let sourceValues: any[] = [];
@@ -285,10 +275,9 @@ class TaskConsoleFormatter extends ConsoleFormatter {
     }
 
     const outputs = body.createStyledList("Outputs:");
-    for (const out of task.outputs) {
-      const value = task.runOutputData[out.id];
+    for (const [key, value] of Object.entries(task.outputSchema.properties)) {
       const li = outputs.createListItem("", "padding-left: 20px;");
-      li.outputText(`${out.id}: `);
+      li.outputText(`${key}: `);
       li.createValueObject(value);
     }
 

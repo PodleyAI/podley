@@ -22,6 +22,7 @@ import {
   TaskError,
   WorkflowError,
   CreateWorkflow,
+  ITaskConstructor,
 } from "@ellmers/task-graph";
 const colsoleError = globalThis.console.error;
 
@@ -54,26 +55,21 @@ describe("Workflow", () => {
 
   describe("createWorkflow", () => {
     it("should create a helper function for adding tasks", () => {
-      const addTestTask = CreateWorkflow<{ input: string }, { output: string }, TaskConfig>(
-        TestSimpleTask
-      );
+      const addTestTask = CreateWorkflow<{ input: string }, { output: string }>(TestSimpleTask);
 
       expect(addTestTask).toBeInstanceOf(Function);
       // @ts-ignore
-      expect(addTestTask.inputs).toEqual(TestSimpleTask.inputs);
+      expect(addTestTask.inputSchema).toEqual(TestSimpleTask.inputSchema);
       // @ts-ignore
-      expect(addTestTask.outputs).toEqual(TestSimpleTask.outputs);
+      expect(addTestTask.outputSchema).toEqual(TestSimpleTask.outputSchema);
     });
 
     it("should add a task to the workflow when called", () => {
-      const addTestTask = Workflow.createWorkflow<
-        { input: string },
-        { output: string },
-        TaskConfig
-      >(TestSimpleTask);
+      const addTestTask = Workflow.createWorkflow<{ input: string }, { output: string }>(
+        TestSimpleTask
+      );
 
       workflow = addTestTask.call(workflow, { input: "test" });
-
       expect(workflow.graph.getTasks()).toHaveLength(1);
       expect(workflow.graph.getTasks()[0]).toBeInstanceOf(TestSimpleTask);
     });

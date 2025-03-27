@@ -8,6 +8,7 @@
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import type { Task } from "./Task";
+import { Type, Static } from "@sinclair/typebox";
 
 /**
  * Enum representing the possible states of a task
@@ -85,46 +86,6 @@ export interface IConfig {
   /** Optional flag to indicate if the task is a compound task */
   isCompound?: boolean;
 }
-
-/**
- * Definition of a task input parameter
- */
-export type TaskInputDefinition = {
-  /** Identifier for the input */
-  readonly id: string;
-
-  /** Display name for the input */
-  readonly name: string;
-
-  /** Type of value expected for this input */
-  readonly valueType: string;
-
-  /** Whether this input accepts an array of values */
-  readonly isArray?: boolean | "replicate";
-
-  /** Default value for this input */
-  readonly defaultValue?: any;
-
-  /** Whether this input is optional */
-  readonly optional?: boolean;
-};
-
-/**
- * Definition of a task output parameter
- */
-export type TaskOutputDefinition = {
-  /** Identifier for the output */
-  readonly id: string;
-
-  /** Display name for the output */
-  readonly name: string;
-
-  /** Type of value produced for this output */
-  readonly valueType: string;
-
-  /** Whether this output produces an array of values */
-  readonly isArray?: boolean | "replicate";
-};
 
 /** Type for task ID */
 export type TaskIdType = Task<TaskInput, TaskOutput, TaskConfig>["config"]["id"];

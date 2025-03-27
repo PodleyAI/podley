@@ -9,7 +9,7 @@ import { describe, expect, it, beforeEach, spyOn } from "bun:test";
 import { EventTestTask, SimpleProcessingTask, TestIOTask } from "./TestTasks";
 import { Task, TaskStatus, TaskAbortedError, TaskError } from "@ellmers/task-graph";
 
-describe("Task", () => {
+describe("SingleTask", () => {
   describe("TestIOTask", () => {
     it("should create with input data and run the task", async () => {
       const input = { key: "value" };
@@ -393,7 +393,7 @@ describe("Task", () => {
         await task.run().catch(() => {});
 
         expect(receivedError).not.toBeNull();
-        expect(receivedError!.message).toBe("Controlled test error");
+        expect(receivedError!.message).toBe("Test error");
       });
 
       it("should pass progress value to progress event listeners", async () => {

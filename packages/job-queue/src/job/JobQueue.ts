@@ -202,7 +202,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   /**
    * Returns a promise that resolves when the job completes
    */
-  public async waitFor<Output>(jobId: unknown): Promise<Output> {
+  public async waitFor(jobId: unknown): Promise<Output> {
     if (!jobId) throw new JobNotFoundError("Cannot wait for undefined job");
     const job = await this.get(jobId);
     if (!job) throw new JobNotFoundError(`Job ${jobId} not found`);

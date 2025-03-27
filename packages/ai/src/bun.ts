@@ -4,7 +4,7 @@
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
-
+export * from "./task/base/TaskIOSchemas";
 export * from "./job/AiJob";
 export * from "./task";
 export * from "./model/Model";

@@ -9,178 +9,109 @@ import {
   TaskRegistry,
   Workflow,
   CreateWorkflow,
-  TaskInputDefinition,
-  TaskOutputDefinition,
-  TaskInvalidInputError,
   JobQueueTaskConfig,
   RunOrReplicateTask,
 } from "@ellmers/task-graph";
 import { AnyNumberArray, ElVector } from "./base/TaskIOTypes";
-import { ConvertAllToOptionalArray } from "@ellmers/util";
+import { Type } from "@sinclair/typebox";
+import type { Static } from "@sinclair/typebox";
+import { TypeVector } from "./base/TaskIOSchemas";
 // ===============================================================================
 
-export const similarity_fn = ["cosine", "jaccard", "hamming"] as const;
+export enum SimilarityFn {
+  COSINE = "cosine",
+  JACCARD = "jaccard",
+  HAMMING = "hamming",
+}
 
-export type SimilarityTaskInput = {
-  query: ElVector<Float32Array>;
-  input: ElVector<Float32Array>[];
-  k: number;
-  similarity: (typeof similarity_fn)[number];
-};
+const SimilarityInputSchema = Type.Object({
+  query: TypeVector({
+    title: "Query",
+    description: "Query vector to compare against",
+  }),
+  input: Type.Array(
+    TypeVector({
+      title: "Input",
+      description: "Array of vectors to compare against the query",
+    })
+  ),
+  topK: Type.Optional(
+    Type.Number({
+      title: "Top K",
+      description: "Number of top results to return",
+      minimum: 1,
+      default: 10,
+    })
+  ),
+  similarity: Type.Enum(SimilarityFn, {
+    title: "Similarity",
+    description: "Similarity function to use for comparisons",
+    default: SimilarityFn.COSINE,
+  }),
+});
 
-export type SimilarityTaskOutput = {
-  output: ElVector<AnyNumberArray>[];
-  score: number[];
-};
+const SimilarityOutputSchema = Type.Object({
+  output: Type.Array(
+    TypeVector({
+      title: "Output",
+      description: "Ranked output vectors",
+    })
+  ),
+  score: Type.Array(
+    Type.Number({
+      title: "Score",
+      description: "Similarity scores for each output vector",
+    })
+  ),
+});
 
-type SimilarityTaskInputReplicate = ConvertAllToOptionalArray<SimilarityTaskInput>;
-type SimilarityTaskOutputReplicate = ConvertAllToOptionalArray<SimilarityTaskOutput>;
+export type SimilarityTaskInput = Static<typeof SimilarityInputSchema>;
+export type SimilarityTaskOutput = Static<typeof SimilarityOutputSchema>;
 
 export class SimilarityTask extends RunOrReplicateTask<
-  SimilarityTaskInputReplicate,
-  SimilarityTaskOutputReplicate,
+  SimilarityTaskInput,
+  SimilarityTaskOutput,
   JobQueueTaskConfig
 > {
   static readonly type = "SimilarityTask";
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "input",
-      name: "Inputs",
-      valueType: "vector",
-      isArray: "replicate",
-    },
-    {
-      id: "query",
-      name: "Query",
-      valueType: "vector",
-      isArray: "replicate",
-    },
-    {
-      id: "k",
-      name: "Top K",
-      valueType: "number",
-      defaultValue: 10,
-      optional: true,
-      isArray: "replicate",
-    },
-    {
-      id: "similarity",
-      name: "Similarity",
-      valueType: "similarity_fn",
-      defaultValue: "cosine",
-      isArray: "replicate",
-    },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    {
-      id: "output",
-      name: "Ranked Outputs",
-      valueType: "vector",
-      isArray: true,
-    },
-    {
-      id: "score",
-      name: "Ranked Scores",
-      valueType: "number",
-      isArray: true,
-    },
-  ] as const;
+  static readonly category = "AI/Similarity";
+  static readonly cacheable = true;
 
-  async validateInputValue(valueType: string, item: any): Promise<boolean> {
-    if (valueType === "similarity_fn") {
-      if (!similarity_fn.includes(item)) {
-        throw new TaskInvalidInputError(
-          `similarity must be one of: ${similarity_fn.join(", ")} but gave ${item}`
-        );
-      }
-      return true;
-    }
-    if (valueType === "vector") {
-      if (!(item instanceof ElVector)) {
-        throw new TaskInvalidInputError(`vector must be an instance of ElVector: ${item}`);
-      }
-      return true;
-    }
-    return super.validateInputValue(valueType, item);
-  }
-
-  async validateInputDefinition(
-    input: Partial<SimilarityTaskInput>,
-    inputId: keyof SimilarityTaskInput
-  ) {
-    switch (inputId) {
-      case "k": {
-        const val = input[inputId];
-        if (val !== null && val !== undefined && val <= 0) {
-          throw new TaskInvalidInputError(`k must be greater than 0: ${val}`);
-        }
-        return true;
-      }
-      case "input": {
-        const vectors = input[inputId];
-        if (!Array.isArray(vectors)) {
-          throw new TaskInvalidInputError(`input must be an array: ${vectors}`);
-        }
-        if (vectors.length === 0) {
-          throw new TaskInvalidInputError(`input must not be empty: ${vectors}`);
-        }
-        const normalized = vectors[0].normalized;
-        const dimensions = vectors[0].vector.length;
-        for (const v of vectors) {
-          if (v.normalized !== normalized) {
-            throw new TaskInvalidInputError(
-              `all vectors must be normalized or none: ${normalized}`
-            );
-          }
-          if (v.vector.length !== dimensions) {
-            throw new TaskInvalidInputError(
-              `all vectors must have the same dimensions: ${v.vector.length} is not ${dimensions}`
-            );
-          }
-        }
-        return true;
-      }
-      default:
-        return super.validateInputDefinition(input, inputId);
-    }
-  }
+  public static override inputSchema = SimilarityInputSchema;
+  public static override outputSchema = SimilarityOutputSchema;
 
   async executeReactive(input: SimilarityTaskInput, output: SimilarityTaskOutput) {
-    const query = input.query as ElVector<Float32Array>;
+    const query = new ElVector(input.query);
     let similarities = [];
     const fns = { cosine_similarity };
     const fnName = (input.similarity + "_similarity") as keyof typeof fns;
     const fn = fns[fnName];
 
-    for (const embedding of input.input) {
-      similarities.push({
-        similarity: fn(embedding, query),
-        embedding,
-      });
-    }
-    similarities = similarities.sort((a, b) => b.similarity - a.similarity).slice(0, input.k);
+    // for (const embedding of input.input) {
+    //   similarities.push({
+    //     similarity: fn(new ElVector(embedding), query),
+    //     embedding,
+    //   });
+    // }
+    // similarities = similarities.sort((a, b) => b.similarity - a.similarity).slice(0, input.k);
 
-    const outputs = similarities.map((s) => s.embedding) as ElVector<AnyNumberArray>[];
-    const scores = similarities.map((s) => s.similarity) as number[];
-    output.output = outputs;
-    output.score = scores;
+    // const outputs = similarities.map((s) => s.embedding) as ElVector<AnyNumberArray>[];
+    // const scores = similarities.map((s) => s.similarity) as number[];
+    // output.output = outputs;
+    // output.score = scores;
     return output;
   }
 }
 
 TaskRegistry.registerTask(SimilarityTask);
 
-export const Similarity = (input: SimilarityTaskInputReplicate, config?: JobQueueTaskConfig) => {
+export const Similarity = (input: SimilarityTaskInput, config?: JobQueueTaskConfig) => {
   return new SimilarityTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    Similarity: CreateWorkflow<
-      SimilarityTaskInputReplicate,
-      SimilarityTaskOutputReplicate,
-      JobQueueTaskConfig
-    >;
+    Similarity: CreateWorkflow<SimilarityTaskInput, SimilarityTaskOutput, JobQueueTaskConfig>;
   }
 }
 

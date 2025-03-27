@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import {
-  DownloadModelTaskInput,
-  DownloadModelTaskOutput,
+  DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteOutput,
   TextEmbeddingTaskInput,
   TextEmbeddingTaskOutput,
   TextGenerationTaskInput,
@@ -90,8 +90,8 @@ const getPipeline = async (
  * This is shared between inline and worker implementations.
  */
 export const HFT_Download: AiProviderRunFn<
-  DownloadModelTaskInput,
-  Pick<DownloadModelTaskOutput, "model" | "dimensions" | "normalize">
+  DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteInput
 > = async (input, model, onProgress, signal) => {
   // Download the model by creating a pipeline
   await getPipeline(model!, onProgress, { abort_signal: signal });
@@ -137,7 +137,7 @@ export const HFT_TextEmbedding: AiProviderRunFn<
   // @ts-ignore
   const vector = new ElVector(hfVector.data, model.normalize ?? true);
 
-  return { vector };
+  return { vector: vector.vector };
 };
 
 /**

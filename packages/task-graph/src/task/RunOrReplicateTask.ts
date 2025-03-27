@@ -11,6 +11,7 @@ import { TaskGraph } from "../task-graph/TaskGraph";
 import { Task } from "./Task";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 import { TaskRunner } from "./TaskRunner";
+import { TObject } from "@sinclair/typebox";
 
 /**
  * RunOrReplicate is a compound task that either:
@@ -19,10 +20,12 @@ import { TaskRunner } from "./TaskRunner";
  * 3. Creates all combinations if multiple inputs are arrays
  */
 export class RunOrReplicateTask<
-  Input extends TaskInput = TaskInput,
-  Output extends TaskOutput = TaskOutput,
+  ExecuteInput extends TaskInput = TaskInput,
+  ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-> extends Task<Input, Output, Config> {
+  RunInput extends TaskInput = ExecuteInput,
+  RunOutput extends TaskOutput = ExecuteOutput,
+> extends Task<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput> {
   /**
    * The type identifier for this task class
    */
@@ -40,24 +43,19 @@ export class RunOrReplicateTask<
   public regenerateGraph(): void {
     // Check if any inputs are arrays
     const arrayInputs = new Map<string, any[]>();
-    let hasArrayInputs = false;
-    for (const inputDef of this.inputs) {
-      const inputId = inputDef.id;
-      const inputValue = this.runInputData[inputId];
+    const schema = this.inputSchema as TObject;
 
-      if (inputDef.isArray === "replicate" && Array.isArray(inputValue) && inputValue.length > 0) {
+    for (const [inputId, prop] of Object.entries(schema.properties || {})) {
+      const inputValue = this.runInputData[inputId];
+      if (prop.replicate && Array.isArray(inputValue) && inputValue.length > 0) {
         arrayInputs.set(inputId, inputValue);
-        hasArrayInputs = true;
       }
     }
 
-    // If no array inputs, no need to create a subgraph
-    if (!hasArrayInputs) return;
+    if (arrayInputs.size === 0) return;
 
-    // Clear the existing subgraph
     this.subGraph = new TaskGraph();
 
-    // Create all combinations of inputs
     const combinations = this.generateCombinations(arrayInputs);
 
     // Create task instances for each combination
@@ -81,13 +79,13 @@ export class RunOrReplicateTask<
   /**
    * Generate all combinations of array inputs
    */
-  private generateCombinations(arrayInputs: Map<string, any[]>): Input[] {
+  private generateCombinations(arrayInputs: Map<string, any[]>): ExecuteInput[] {
     // Start with an empty object
-    const combinations: Input[] = [{ ...this.runInputData }];
+    const combinations: ExecuteInput[] = [{ ...this.runInputData } as unknown as ExecuteInput];
 
     // For each array input, generate all combinations
     for (const [inputId, values] of arrayInputs.entries()) {
-      const newCombinations: Input[] = [];
+      const newCombinations: ExecuteInput[] = [];
 
       // For each existing combination
       for (const combination of combinations) {
@@ -97,7 +95,7 @@ export class RunOrReplicateTask<
           newCombinations.push({
             ...combination,
             [inputId]: value,
-          } as Input);
+          } as ExecuteInput);
         }
       }
 
@@ -120,27 +118,46 @@ export class RunOrReplicateTask<
   }
 
   // Declare specific _runner type for this class
-  declare _runner: RunOrReplicateTaskRunner<Input, Output, Config>;
+  declare _runner: RunOrReplicateTaskRunner<
+    ExecuteInput,
+    ExecuteOutput,
+    Config,
+    RunInput,
+    RunOutput
+  >;
 
-  override get runner(): RunOrReplicateTaskRunner<Input, Output, Config> {
+  override get runner(): RunOrReplicateTaskRunner<
+    ExecuteInput,
+    ExecuteOutput,
+    Config,
+    RunInput,
+    RunOutput
+  > {
     if (!this._runner) {
-      this._runner = new RunOrReplicateTaskRunner<Input, Output, Config>(this);
+      this._runner = new RunOrReplicateTaskRunner<
+        ExecuteInput,
+        ExecuteOutput,
+        Config,
+        RunInput,
+        RunOutput
+      >(this);
     }
     return this._runner;
   }
 }
 
 export class RunOrReplicateTaskRunner<
-  Input extends TaskInput = TaskInput,
+  ExecuteInput extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
+  RunInput extends TaskInput = ExecuteInput,
   RunOutput extends TaskOutput = ExecuteOutput,
-> extends TaskRunner<Input, ExecuteOutput, Config, RunOutput> {
+> extends TaskRunner<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput> {
   // ========================================================================
   // Utility methods
   // ========================================================================
 
-  private fixInput(input: Input): Input {
+  private fixInput(input: ExecuteInput): ExecuteInput {
     // inputs has turned each property into an array, so we need to flatten the input
     const flattenedInput = Object.entries(input).reduce((acc, [key, value]) => {
       if (Array.isArray(value)) {
@@ -148,7 +165,7 @@ export class RunOrReplicateTaskRunner<
       }
       return { ...acc, [key]: value };
     }, {});
-    return flattenedInput as Input;
+    return flattenedInput as ExecuteInput;
   }
 
   // ========================================================================
@@ -158,16 +175,17 @@ export class RunOrReplicateTaskRunner<
   /**
    * Execute the task
    */
-  protected async executeTask(): Promise<ExecuteOutput | undefined> {
-    this.task.runInputData = this.fixInput(this.task.runInputData);
-    return await super.executeTask();
+  protected async executeTask(input: ExecuteInput): Promise<ExecuteOutput | undefined> {
+    return await super.executeTask(this.fixInput(input));
   }
 
   /**
    * Execute the task reactively
    */
-  public async executeTaskReactive(): Promise<ExecuteOutput | undefined> {
-    this.task.runInputData = this.fixInput(this.task.runInputData);
-    return this.task.executeReactive(this.task.runInputData, this.task.runIntermediateData[0].data);
+  public async executeTaskReactive(
+    input: ExecuteInput,
+    output: ExecuteOutput
+  ): Promise<ExecuteOutput | undefined> {
+    return super.executeTaskReactive(this.fixInput(input), output);
   }
 }

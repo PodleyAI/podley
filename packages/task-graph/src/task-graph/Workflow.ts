@@ -11,22 +11,20 @@ import type { ITask, ITaskConstructor } from "../task/ITask";
 import { Task } from "../task/Task";
 import { WorkflowError } from "../task/TaskError";
 import type { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
-import {
-  TaskConfig,
-  TaskOutput,
-  type TaskInput,
-  type TaskInputDefinition,
-  type TaskOutputDefinition,
-} from "../task/TaskTypes";
+import { TaskConfig, TaskOutput, type TaskInput } from "../task/TaskTypes";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph } from "./TaskGraph";
-import { CompoundMergeStrategy, TaskGraphRunner } from "./TaskGraphRunner";
+import { CompoundMergeStrategy } from "./TaskGraphRunner";
+import { TSchema } from "@sinclair/typebox";
 
 // Type definitions for the workflow
-export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
-  input?: Partial<I>,
-  config?: Partial<C>
-) => Workflow;
+export type CreateWorkflow<
+  I extends TaskInput,
+  EO extends TaskOutput,
+  C extends TaskConfig,
+  RI extends TaskInput = I,
+  RO extends TaskOutput = EO,
+> = (input?: Partial<RI>, config?: Partial<C>) => Workflow;
 
 // Event types
 export type WorkflowEventListeners = {
@@ -86,12 +84,16 @@ export class Workflow {
    * @param taskClass - The task class to create a helper for
    * @returns A function that adds the specified task type to a Workflow
    */
-  public static createWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig>(
-    taskClass: ITaskConstructor<I, O, C>
-  ): CreateWorkflow<I, O, C> {
+  public static createWorkflow<
+    EI extends TaskInput,
+    EO extends TaskOutput,
+    C extends TaskConfig = TaskConfig,
+    RI extends TaskInput = EI,
+    RO extends TaskOutput = EO,
+  >(taskClass: ITaskConstructor<EI, EO, C, RI, RO>): CreateWorkflow<RI, RO, C> {
     const helper = function (
       this: Workflow,
-      input: Partial<I> = {},
+      input: Partial<RI> = {},
       config: Partial<C> = {}
     ): Workflow {
       this._error = "";
@@ -103,20 +105,17 @@ export class Workflow {
       // Create and add the new task
       taskIdCounter++;
 
-      const task: ITask<I, O, C> = new taskClass(
-        input as I,
-        {
-          id: String(taskIdCounter),
-          ...config,
-        } as C
+      const task = this.addTask<EI, EO, C, RI, RO>(
+        taskClass,
+        input as EI,
+        { id: String(taskIdCounter), ...config } as C
       );
-      this.graph.addTask(task);
 
       // Process any pending data flows
       if (this._dataFlows.length > 0) {
         this._dataFlows.forEach((dataflow) => {
           if (
-            task.inputs.find((i) => i.id === dataflow.targetTaskPortId) === undefined &&
+            task.inputSchema.properties?.[dataflow.targetTaskPortId] === undefined &&
             dataflow.targetTaskPortId !== DATAFLOW_ALL_PORTS
           ) {
             this._error = `Input ${dataflow.targetTaskPortId} not found on task ${task.config.id}`;
@@ -137,19 +136,23 @@ export class Workflow {
         const matches = new Map<string, string>();
 
         const makeMatch = (
-          comparator: (output: TaskOutputDefinition, input: TaskInputDefinition) => boolean
+          comparator: (
+            [parentOutputPortId, parentPortOutput]: [string, TSchema],
+            [taskInputPortId, taskPortInput]: [string, TSchema]
+          ) => boolean
         ): Map<string, string> => {
-          for (const parentOutput of parent.outputs) {
-            for (const taskInput of task.inputs) {
-              if (!matches.has(taskInput.id) && comparator(parentOutput, taskInput)) {
-                matches.set(taskInput.id, parentOutput.id);
-                const dataflow = new Dataflow(
-                  parent.config.id,
-                  parentOutput.id,
-                  task.config.id,
-                  taskInput.id
-                );
-                this.graph.addDataflow(dataflow);
+          for (const [parentOutputPortId, parentPortOutput] of Object.entries(
+            parent.outputSchema.properties
+          )) {
+            for (const [taskInputPortId, taskPortInput] of Object.entries(
+              task.inputSchema.properties
+            )) {
+              if (
+                !matches.has(taskInputPortId) &&
+                comparator([parentOutputPortId, parentPortOutput], [taskInputPortId, taskPortInput])
+              ) {
+                matches.set(taskInputPortId, parentOutputPortId);
+                this.connect(parent.config.id, parentOutputPortId, task.config.id, taskInputPortId);
               }
             }
           }
@@ -158,21 +161,24 @@ export class Workflow {
 
         // Try to match outputs to inputs using different strategies
         makeMatch(
-          (output, input) => output.valueType === input.valueType && output.id === input.id
+          ([parentOutputPortId, parentPortOutput], [taskInputPortId, taskPortInput]) =>
+            parentPortOutput.type === taskPortInput.type && parentOutputPortId === taskInputPortId
         );
         makeMatch(
-          (output, input) =>
-            output.valueType === input.valueType && output.id === "output" && input.id === "input"
+          ([parentOutputPortId, parentPortOutput], [taskInputPortId, taskPortInput]) =>
+            parentPortOutput.type === taskPortInput.type &&
+            parentOutputPortId === "output" &&
+            taskInputPortId === "input"
         );
-        makeMatch((output, input) => output.valueType === input.valueType);
+        makeMatch(
+          ([parentOutputPortId, parentPortOutput], [taskInputPortId, taskPortInput]) =>
+            parentPortOutput.type === taskPortInput.type
+        );
 
         // If no matches were found, remove the task and report an error
         if (matches.size === 0) {
-          const parentType = (parent.constructor as any).type;
-          const taskType = (task.constructor as any).type;
-
           this._error =
-            `Could not find a match between the outputs of ${parentType} and the inputs of ${taskType}. ` +
+            `Could not find a match between the outputs of ${parent.type} and the inputs of ${task.type}. ` +
             `You now need to connect the outputs to the inputs via connect() manually before adding this task. Task not added.`;
 
           console.error(this._error);
@@ -187,8 +193,8 @@ export class Workflow {
     // @ts-expect-error - runtype is hack from ArrayTask TODO: fix
     helper.type = taskClass.runtype ?? taskClass.type;
     helper.category = taskClass.category;
-    helper.inputs = taskClass.inputs;
-    helper.outputs = taskClass.outputs;
+    helper.inputSchema = taskClass.inputSchema;
+    helper.outputSchema = taskClass.outputSchema;
     helper.cacheable = taskClass.cacheable;
     helper.workflowCreate = true;
 
@@ -361,9 +367,9 @@ export class Workflow {
     }
 
     const lastNode = nodes[nodes.length + index];
-    const sourceTaskOutputs = (lastNode?.constructor as typeof Task)?.outputs;
+    const outputSchema = lastNode.outputSchema;
 
-    if (!sourceTaskOutputs.find((o) => o.id === source) && source !== DATAFLOW_ALL_PORTS) {
+    if (!outputSchema.properties?.[source] && source !== DATAFLOW_ALL_PORTS) {
       const errorMsg = `Output ${source} not found on task ${lastNode.config.id}`;
       this._error = errorMsg;
       console.error(this._error);
@@ -423,6 +429,55 @@ export class Workflow {
   private _onChanged(id: unknown): void {
     this.events.emit("changed", id);
   }
+
+  /**
+   * Connects outputs to inputs between tasks
+   */
+  public connect(
+    sourceTaskId: unknown,
+    sourceTaskPortId: string,
+    targetTaskId: unknown,
+    targetTaskPortId: string
+  ): Workflow {
+    const sourceTask = this.graph.getTask(sourceTaskId);
+    const targetTask = this.graph.getTask(targetTaskId);
+
+    if (!sourceTask || !targetTask) {
+      throw new WorkflowError("Source or target task not found");
+    }
+
+    const sourceSchema = sourceTask.outputSchema;
+    const targetSchema = targetTask.inputSchema;
+
+    if (!sourceSchema.properties?.[sourceTaskPortId]) {
+      throw new WorkflowError(`Output ${sourceTaskPortId} not found on source task`);
+    }
+
+    if (!targetSchema.properties?.[targetTaskPortId]) {
+      throw new WorkflowError(`Input ${targetTaskPortId} not found on target task`);
+    }
+
+    const dataflow = new Dataflow(sourceTaskId, sourceTaskPortId, targetTaskId, targetTaskPortId);
+    this.graph.addDataflow(dataflow);
+    return this;
+  }
+
+  public addTask<
+    EI extends TaskInput,
+    EO extends TaskOutput,
+    C extends TaskConfig = TaskConfig,
+    RI extends TaskInput = EI,
+    RO extends TaskOutput = EO,
+  >(
+    taskClass: ITaskConstructor<EI, EO, C, RI, RO>,
+    input: EI,
+    config: C
+  ): ITask<EI, EO, C, RI, RO> {
+    const task = new taskClass(input, config);
+    const id = this.graph.addTask(task);
+    this.events.emit("changed", id);
+    return task;
+  }
 }
 
 /**
@@ -432,6 +487,8 @@ export function CreateWorkflow<
   I extends TaskInput,
   O extends TaskOutput,
   C extends TaskConfig = TaskConfig,
->(taskClass: any): CreateWorkflow<I, O, C> {
-  return Workflow.createWorkflow<I, O, C>(taskClass);
+  RI extends TaskInput = I,
+  RO extends TaskOutput = O,
+>(taskClass: any): CreateWorkflow<I, O, C, RI, RO> {
+  return Workflow.createWorkflow<I, O, C, RI, RO>(taskClass);
 }
