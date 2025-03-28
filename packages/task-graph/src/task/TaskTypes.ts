@@ -11,10 +11,19 @@ import type { Task } from "./Task";
 
 /**
  * Enum representing the possible states of a task
+ *
+ *  PENDING -> PROCESSING -> COMPLETED
+ *  PENDING -> PROCESSING -> ABORTING -> FAILED
+ *  PENDING -> PROCESSING -> FAILED
+ *  PENDING -> SKIPPED
+ *
  */
 export enum TaskStatus {
   /** Task is created but not yet started */
   PENDING = "PENDING",
+
+  /** Task is skipped due to conditional logic */
+  SKIPPED = "SKIPPED",
 
   /** Task is currently running */
   PROCESSING = "PROCESSING",

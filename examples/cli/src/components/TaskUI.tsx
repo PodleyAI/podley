@@ -29,6 +29,10 @@ const getSymbol = (state: TaskStatus) => {
     return <Text color="red">{symbols.cross}</Text>;
   }
 
+  if (state === TaskStatus.SKIPPED) {
+    return <Text color="gray">{symbols.info}</Text>;
+  }
+
   if (state === TaskStatus.COMPLETED) {
     return <Text color="green">{symbols.tick}</Text>;
   }

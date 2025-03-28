@@ -184,6 +184,14 @@ export class Task<
     this.runner.abort();
   }
 
+  /**
+   * Skips task execution
+   * Delegates to the task runner
+   */
+  public async skip(): Promise<void> {
+    await this.runner.skip();
+  }
+
   // ========================================================================
   // Static to Instance conversion methods
   // ========================================================================

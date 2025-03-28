@@ -121,6 +121,13 @@ export class TaskGraph {
   }
 
   /**
+   * Skips the task graph
+   */
+  public async skip() {
+    await this.runner.skip();
+  }
+
+  /**
    * Retrieves a task from the task graph by its id
    * @param id The id of the task to retrieve
    * @returns The task with the given id, or undefined if not found

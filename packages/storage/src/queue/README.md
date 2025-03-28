@@ -15,6 +15,7 @@ This is not a job queue implementation. It is a storage implementation for job q
   - `PostgresQueueStorage` - Production-grade PostgreSQL
 - Job lifecycle management:
   - PENDING → PROCESSING → COMPLETED/FAILED/ABORTED
+  - PENDING → SKIPPED
   - Automatic retry mechanisms
   - Progress tracking with message/details
 - Fingerprint-based input deduplication
@@ -36,4 +37,5 @@ This is not a job queue implementation. It is a storage implementation for job q
    - `COMPLETED`: Successful execution
    - `FAILED`: Unrecoverable error
    - `ABORTED`: Manual cancellation
+   - `SKIPPED`: Skipped due to conditions not met
    - Auto-retried while `PENDING` if within retry limits

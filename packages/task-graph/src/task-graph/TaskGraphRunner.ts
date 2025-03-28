@@ -242,6 +242,13 @@ export class TaskGraphRunner {
   }
 
   /**
+   * Skips the task graph execution
+   */
+  public async skip(): Promise<void> {
+    await this.handleSkip();
+  }
+
+  /**
    * Adds input data to a task
    * @param task The task to add input data to
    * @param overrides The input data to override (or add to if an array)
@@ -386,6 +393,9 @@ export class TaskGraphRunner {
           break;
         case TaskStatus.FAILED:
           dataflow.events.emit("error", node.error!);
+          break;
+        case TaskStatus.SKIPPED:
+          dataflow.events.emit("skipped");
           break;
       }
     });
@@ -581,18 +591,32 @@ export class TaskGraphRunner {
    * Handles task graph abortion
    */
   protected async handleAbort(): Promise<void> {
-    await Promise.allSettled(
-      this.graph.getTasks().map(async (task: ITask) => {
-        if ([TaskStatus.PROCESSING].includes(task.status)) {
-          task.abort();
-        }
-      })
-    );
+    this.graph.getTasks().map(async (task: ITask) => {
+      if ([TaskStatus.PROCESSING].includes(task.status)) {
+        task.abort();
+      }
+    });
+
     this.running = false;
   }
 
   protected async handleAbortReactive(): Promise<void> {
     this.reactiveRunning = false;
+  }
+
+  /**
+   * Handles task graph skipping
+   */
+  protected async handleSkip(): Promise<void> {
+    await Promise.allSettled(
+      this.graph.getTasks().map(async (task: ITask) => {
+        if ([TaskStatus.PENDING].includes(task.status)) {
+          return task.skip();
+        }
+      })
+    );
+
+    this.running = false;
   }
 
   /**
