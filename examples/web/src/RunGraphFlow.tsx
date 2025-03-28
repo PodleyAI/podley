@@ -175,6 +175,8 @@ function listenToTask(
           : [{ id: "text", text: task.runOutputData?.text ?? "COMPLETED", progress: 100 }];
     } else if (task.status === TaskStatus.FAILED) {
       progressItems = [{ id: "text", text: "Error: " + task.error, progress: 100 }];
+    } else if (task.status === TaskStatus.SKIPPED) {
+      progressItems = [{ id: "text", text: "Skipped", progress: 100 }];
     } else if (task.status === TaskStatus.ABORTING) {
       progressItems = [{ id: "text", text: "Aborting", progress: 100 }];
     }

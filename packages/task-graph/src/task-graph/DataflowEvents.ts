@@ -19,6 +19,9 @@ export type DataflowEventListeners = {
   /** Fired when a source task completes successfully */
   complete: () => void;
 
+  /** Fired when a source task is skipped */
+  skipped: () => void;
+
   /** Fired when a source task is aborted */
   abort: () => void;
 

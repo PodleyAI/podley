@@ -67,7 +67,7 @@ export abstract class JobQueueTask<
 
       const queue = getTaskQueueRegistry().getQueue(this.config.queueName!);
 
-      let output: Output;
+      let output: Output | undefined;
 
       if (!queue) {
         if ((this.constructor as typeof JobQueueTask).canRunDirectly) {
@@ -90,9 +90,12 @@ export abstract class JobQueueTask<
           executeConfig.updateProgress(progress, message, details);
         });
         output = await queue.waitFor<Output>(jobId);
+        if (output === undefined) {
+          throw new TaskConfigurationError("Job skipped, should not happen");
+        }
       }
 
-      return output;
+      return output!;
     } catch (err: any) {
       throw err;
     } finally {

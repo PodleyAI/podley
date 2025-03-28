@@ -536,6 +536,7 @@ class JsonMLElement {
       case TaskStatus.COMPLETED:
         color = "green";
         break;
+      case TaskStatus.ABORTING:
       case TaskStatus.FAILED:
         color = "red";
         break;

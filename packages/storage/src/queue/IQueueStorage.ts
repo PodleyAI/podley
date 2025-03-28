@@ -15,6 +15,7 @@ export enum JobStatus {
   COMPLETED = "COMPLETED",
   ABORTING = "ABORTING",
   FAILED = "FAILED",
+  SKIPPED = "SKIPPED",
 }
 
 /**

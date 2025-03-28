@@ -1,3 +1,10 @@
+//    *******************************************************************************
+//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *                                                                             *
+//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
+//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
+//    *******************************************************************************
+
 import { AbortSignalJobError, Job, JobStatus, PermanentJobError } from "@ellmers/job-queue";
 import { TaskInput, TaskOutput } from "@ellmers/task-graph";
 import { getAiProviderRegistry } from "../provider/AiProviderRegistry";

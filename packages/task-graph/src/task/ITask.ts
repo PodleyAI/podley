@@ -67,20 +67,7 @@ export interface ITaskExecution<
   Input extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
 > {
-  /**
-   * The actual task execution logic for subclasses to override
-   * @param input The input to the task
-   * @param config The configuration for the task
-   * @returns The output of the task or undefined if no changes
-   */
   execute(input: Input, config: IExecuteConfig): Promise<ExecuteOutput | undefined>;
-
-  /**
-   * Reactive execution logic for updating UI or responding to changes
-   * @param input The input to the task
-   * @param output The current output of the task
-   * @returns The updated output of the task or undefined if no changes
-   */
   executeReactive(input: Input, output: ExecuteOutput): Promise<ExecuteOutput | undefined>;
 }
 
@@ -93,34 +80,14 @@ export interface ITaskLifecycle<
   ExecuteOutput extends TaskOutput = TaskOutput,
   RunOutput extends TaskOutput = ExecuteOutput,
 > {
-  /**
-   * Runs the task with the provided input overrides
-   * @param overrides Optional input overrides
-   * @returns Promise resolving to the task output
-   */
   run(overrides?: Partial<Input>, config?: IRunConfig): Promise<RunOutput>;
-
-  /**
-   * Runs the task in reactive mode
-   * @param overrides Optional input overrides
-   * @returns Promise resolving to the task output
-   */
   runReactive(overrides?: Partial<Input>): Promise<RunOutput>;
-
-  /**
-   * Merges the execute output to the run output
-   * @param results The execute output
-   * @returns The run output
-   */
   mergeExecuteOutputsToRunOutput(
     results: NamedGraphResult<ExecuteOutput>,
     compoundMerge: CompoundMergeStrategy
   ): RunOutput;
-
-  /**
-   * Aborts the task execution
-   */
   abort(): void;
+  skip(): Promise<void>;
 }
 
 /**

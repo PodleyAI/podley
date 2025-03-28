@@ -5,12 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IQueueStorage } from "@ellmers/storage";
+import { IQueueStorage, JobStatus } from "@ellmers/storage";
 import { ILimiter } from "../limiter/ILimiter";
-import { Job, JobStatus } from "./Job";
+import { Job } from "./Job";
 import { JobQueueStats } from "./JobQueue";
 import { JobProgressListener } from "./JobQueueEventListeners";
 
+export { JobStatus };
 /**
  * Common options for all job queues
  */
@@ -26,6 +27,11 @@ export interface JobQueueOptions<Input, Output> {
    * Set to 0 to delete immediately, undefined to never delete
    */
   deleteAfterFailureMs?: number;
+  /**
+   * Time in milliseconds after which failed jobs should be deleted
+   * Set to 0 to delete immediately, undefined to never delete
+   */
+  deleteAfterSkippedMs?: number;
   /**
    * How often to check for new jobs in milliseconds
    */
@@ -89,7 +95,7 @@ export interface IJobQueue<Input, Output> {
    * @param jobId The job ID to wait for
    * @returns A promise that resolves to the job output, or rejects with an error
    */
-  waitFor(jobId: unknown): Promise<Output>;
+  waitFor(jobId: unknown): Promise<Output | undefined>;
 
   /**
    * Abort a job

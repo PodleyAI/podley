@@ -329,6 +329,23 @@ export class TaskRunner<
     this.reactiveRunning = false;
   }
 
+  protected async handleSkip(): Promise<void> {
+    if (this.task.status === TaskStatus.SKIPPED) return;
+    this.task.status = TaskStatus.SKIPPED;
+    this.task.progress = 100;
+    this.task.completedAt = new Date();
+    this.abortController = undefined;
+    this.nodeProvenance = {};
+    if (this.task.hasChildren()) {
+      await this.task.subGraph!.skip();
+    }
+    this.task.emit("skipped");
+  }
+
+  public async skip(): Promise<void> {
+    await this.handleSkip();
+  }
+
   /**
    * Handles task error
    * @param err Error that occurred

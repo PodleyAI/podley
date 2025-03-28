@@ -308,37 +308,24 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * - Increments the retry count.
    * - For a retryable error, updates run_after with the retry date.
    * - Marks the job as FAILED for permanent or generic errors.
+   * - Marks the job as SKIPPED for skipped jobs.
    */
   public async complete(job: JobStorageFormat<Input, Output>) {
     await sleep(0);
     const now = new Date().toISOString();
     let updateQuery: string;
     let params: any[];
-    if (job.status === JobStatus.PENDING) {
+    if (job.status === JobStatus.SKIPPED) {
       updateQuery = `
           UPDATE job_queue 
             SET 
-              error = ?, 
-              error_code = ?, 
               status = ?, 
-              run_after = ?, 
-              last_ran_at = ?,
-              progress = 0, 
+              progress = 100, 
               progress_message = "", 
               progress_details = NULL, 
-              run_attempts = run_attempts + 1,
-              last_ran_at = ?
+              completed_at = ?  
             WHERE id = ? AND queue = ?`;
-      params = [
-        job.error ?? null,
-        job.error_code ?? null,
-        job.status,
-        job.run_after,
-        now,
-        job.status,
-        job.id,
-        this.queueName,
-      ];
+      params = [job.status, now, job.id, this.queueName];
     } else {
       updateQuery = `
           UPDATE job_queue 
