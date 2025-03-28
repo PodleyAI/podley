@@ -23,6 +23,7 @@ import {
   TaskErrorGroup,
 } from "../task/TaskError";
 import { ITask } from "../task/ITask";
+import { DATAFLOW_ALL_PORTS } from "./Dataflow";
 
 export type GraphSingleResult<T> = {
   id: unknown;
@@ -248,7 +249,10 @@ export class TaskGraphRunner {
   public addInputData(task: ITask, overrides: Partial<TaskInput> | undefined) {
     let changed = false;
     for (const input of task.inputs) {
-      if (overrides?.[input.id] !== undefined) {
+      if (input.id === DATAFLOW_ALL_PORTS) {
+        task.runInputData = { ...task.runInputData, ...overrides };
+        changed = true;
+      } else if (overrides?.[input.id] !== undefined) {
         let isArray = input.isArray;
         if (
           input.valueType === "any" &&
