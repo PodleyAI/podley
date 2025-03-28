@@ -7,7 +7,7 @@
 
 import { EventEmitter, type EventParameters } from "@ellmers/util";
 import type { TaskOutputRepository } from "../storage/TaskOutputRepository";
-import type { ITask, ITaskConstructor } from "../task/ITask";
+import type { IExecuteConfig, ITask, ITaskConstructor } from "../task/ITask";
 import { Task } from "../task/Task";
 import { WorkflowError } from "../task/TaskError";
 import type { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
@@ -20,7 +20,7 @@ import {
 } from "../task/TaskTypes";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph } from "./TaskGraph";
-import { CompoundMergeStrategy, TaskGraphRunner } from "./TaskGraphRunner";
+import { CompoundMergeStrategy } from "./TaskGraphRunner";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
@@ -47,6 +47,81 @@ export type WorkflowEventParameters<Event extends WorkflowEvents> = EventParamet
 
 // Task ID counter
 let taskIdCounter = 0;
+
+// Update PipeFunction type to be more specific about input/output types
+type PipeFunction<I extends TaskInput = any, O extends TaskOutput = any> = (
+  input: I,
+  config?: IExecuteConfig
+) => O | Promise<O>;
+
+function getLastTask(workflow: Workflow): ITask | undefined {
+  const tasks = workflow.graph.getTasks();
+  return tasks.length > 0 ? tasks[tasks.length - 1] : undefined;
+}
+
+function convertPipeFunctionToTask<I extends TaskInput, O extends TaskOutput>(
+  fn: PipeFunction<I, O>
+): ITask<I, O> {
+  class QuickTask extends Task<I, O> {
+    public static type = "QuickTask";
+    public static inputs = [{ id: "*", name: "input", valueType: "any" }];
+    public static outputs = [{ id: "*", name: "output", valueType: "any" }];
+    public async execute(input: I, config: IExecuteConfig) {
+      return fn(input, config);
+    }
+  }
+  return new QuickTask();
+}
+
+function ensureTask<I extends TaskInput, O extends TaskOutput>(
+  arg: PipeFunction<I, O> | ITask
+): ITask {
+  if (arg instanceof Task) {
+    return arg;
+  }
+  return convertPipeFunctionToTask(arg as PipeFunction<I, O>);
+}
+
+function connect(source: ITask, target: ITask, workflow: Workflow): void {
+  workflow.graph.addDataflow(new Dataflow(source.config.id, "*", target.config.id, "*"));
+}
+
+function pipe<T extends TaskInput = any>(
+  args: (PipeFunction<any, any> | ITask)[],
+  workflow: Workflow
+): Workflow {
+  let previousTask = getLastTask(workflow);
+  const tasks = args.map((arg) => ensureTask(arg));
+  tasks.forEach((task) => {
+    workflow.graph.addTask(task);
+    if (previousTask) {
+      connect(previousTask, task, workflow);
+    }
+    previousTask = task;
+  });
+  return workflow;
+}
+
+function parallel(
+  args: (PipeFunction<any, any> | Task)[],
+  mergeFn: CompoundMergeStrategy,
+  workflow: Workflow
+): Workflow {
+  let previousTask = getLastTask(workflow);
+  const tasks = args.map((arg) => ensureTask(arg));
+  const input = {};
+  const config = {
+    isCompound: true,
+    compoundMerge: mergeFn,
+  };
+  const mergeTask = new Task(input, config);
+  mergeTask.subGraph!.addTasks(tasks);
+  workflow.graph.addTask(mergeTask);
+  if (previousTask) {
+    connect(previousTask, mergeTask, workflow);
+  }
+  return workflow;
+}
 
 /**
  * Class for building and managing a task graph
@@ -96,9 +171,7 @@ export class Workflow {
     ): Workflow {
       this._error = "";
 
-      // Get the parent node if it exists
-      const tasks = this.graph.getTasks();
-      const parent = tasks.length > 0 ? tasks[tasks.length - 1] : undefined;
+      const parent = getLastTask(this);
 
       // Create and add the new task
       taskIdCounter++;
@@ -313,32 +386,115 @@ export class Workflow {
     return this._graph.toDependencyJSON();
   }
 
-  /**
-   * Creates a new task graph workflow that runs multiple task graph workflows in parallel
-   *
-   * @param args - The task graph workflows to run in parallel
-   * @returns The current task graph workflow
-   */
-  public parallel(merge: CompoundMergeStrategy, ...args: Array<(b: Workflow) => void>): Workflow {
-    this._error = "";
+  // Replace both the instance and static pipe methods with properly typed versions
+  // Pipe method overloads
+  public pipe<A extends TaskInput, B extends TaskOutput>(
+    fn1: PipeFunction<A, B> | Task<A, B>
+  ): Workflow;
+  public pipe<A extends TaskInput, B extends TaskOutput, C extends TaskOutput>(
+    fn1: PipeFunction<A, B> | Task<A, B>,
+    fn2: PipeFunction<B, C> | Task<B, C>
+  ): Workflow;
+  public pipe<
+    A extends TaskInput,
+    B extends TaskOutput,
+    C extends TaskOutput,
+    D extends TaskOutput,
+  >(
+    fn1: PipeFunction<A, B> | Task<A, B>,
+    fn2: PipeFunction<B, C> | Task<B, C>,
+    fn3: PipeFunction<C, D> | Task<C, D>
+  ): Workflow;
+  public pipe<
+    A extends TaskInput,
+    B extends TaskOutput,
+    C extends TaskOutput,
+    D extends TaskOutput,
+    E extends TaskOutput,
+  >(
+    fn1: PipeFunction<A, B> | Task<A, B>,
+    fn2: PipeFunction<B, C> | Task<B, C>,
+    fn3: PipeFunction<C, D> | Task<C, D>,
+    fn4: PipeFunction<D, E> | Task<D, E>
+  ): Workflow;
+  public pipe<
+    A extends TaskInput,
+    B extends TaskOutput,
+    C extends TaskOutput,
+    D extends TaskOutput,
+    E extends TaskOutput,
+    F extends TaskOutput,
+  >(
+    fn1: PipeFunction<A, B> | Task<A, B>,
+    fn2: PipeFunction<B, C> | Task<B, C>,
+    fn3: PipeFunction<C, D> | Task<C, D>,
+    fn4: PipeFunction<D, E> | Task<D, E>,
+    fn5: PipeFunction<E, F> | Task<E, F>
+  ): Workflow;
+  public pipe(...args: (PipeFunction | Task)[]): Workflow {
+    return pipe(args, this);
+  }
 
-    const groups = args.map((fn) => {
-      const w = new Workflow();
-      fn(w);
-      return w;
-    });
+  // Static pipe method overloads
+  public static pipe<A extends TaskInput, B extends TaskOutput>(
+    fn1: PipeFunction<A, B> | Task<A, B>
+  ): Workflow;
+  public static pipe<A extends TaskInput, B extends TaskOutput, C extends TaskOutput>(
+    fn1: PipeFunction<A, B> | Task<A, B>,
+    fn2: PipeFunction<B, C> | Task<B, C>
+  ): Workflow;
+  public static pipe<
+    A extends TaskInput,
+    B extends TaskOutput,
+    C extends TaskOutput,
+    D extends TaskOutput,
+  >(
+    fn1: PipeFunction<A, B> | Task<A, B>,
+    fn2: PipeFunction<B, C> | Task<B, C>,
+    fn3: PipeFunction<C, D> | Task<C, D>
+  ): Workflow;
+  public static pipe<
+    A extends TaskInput,
+    B extends TaskOutput,
+    C extends TaskOutput,
+    D extends TaskOutput,
+    E extends TaskOutput,
+  >(
+    fn1: PipeFunction<A, B> | Task<A, B>,
+    fn2: PipeFunction<B, C> | Task<B, C>,
+    fn3: PipeFunction<C, D> | Task<C, D>,
+    fn4: PipeFunction<D, E> | Task<D, E>
+  ): Workflow;
+  public static pipe<
+    A extends TaskInput,
+    B extends TaskOutput,
+    C extends TaskOutput,
+    D extends TaskOutput,
+    E extends TaskOutput,
+    F extends TaskOutput,
+  >(
+    fn1: PipeFunction<A, B> | Task<A, B>,
+    fn2: PipeFunction<B, C> | Task<B, C>,
+    fn3: PipeFunction<C, D> | Task<C, D>,
+    fn4: PipeFunction<D, E> | Task<D, E>,
+    fn5: PipeFunction<E, F> | Task<E, F>
+  ): Workflow;
+  public static pipe(...args: (PipeFunction | Task)[]): Workflow {
+    return pipe(args, new Workflow());
+  }
 
-    const groupTask = new Task(
-      {},
-      {
-        isCompound: true,
-        compoundMerge: merge,
-      }
-    );
-    groupTask.subGraph?.addTasks(groups.flatMap((w) => w.graph.getTasks()));
-    this._graph.addTask(groupTask);
+  public parallel(
+    args: (PipeFunction<any, any> | Task)[],
+    mergeFn?: CompoundMergeStrategy
+  ): Workflow {
+    return parallel(args, mergeFn ?? "last-or-property-array", this);
+  }
 
-    return this;
+  public static parallel(
+    args: (PipeFunction<any, any> | Task)[],
+    mergeFn?: CompoundMergeStrategy
+  ): Workflow {
+    return parallel(args, mergeFn ?? "last-or-property-array", new Workflow());
   }
 
   /**
@@ -372,6 +528,22 @@ export class Workflow {
 
     this._dataFlows.push(new Dataflow(lastNode.config.id, source, undefined, target));
     return this;
+  }
+
+  toTaskGraph(): TaskGraph {
+    return this._graph;
+  }
+
+  toTask(): Task {
+    const task = new Task(
+      {},
+      {
+        isCompound: true,
+        compoundMerge: "last-or-property-array",
+      }
+    );
+    task.subGraph = this.toTaskGraph();
+    return task;
   }
 
   /**
