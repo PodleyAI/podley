@@ -94,13 +94,41 @@ export class LambdaTask<
 // Register LambdaTask with the task registry
 TaskRegistry.registerTask(LambdaTask);
 
+export function process(value: string): string;
+export function process(value: number): number;
+export function process(value: boolean): string;
+
+// Implementation
+export function process(value: string | number | boolean): string | number {
+  if (typeof value === "string") return `Processed: ${value}`;
+  if (typeof value === "number") return value * 2;
+  return value ? "True" : "False";
+}
 /**
  * Convenience function to create and run a LambdaTask
  */
-export const Lambda = (input: TaskInput, config: LambdaTaskConfig) => {
-  const task = new LambdaTask(input, config);
+export function Lambda<I extends TaskInput, O extends TaskOutput>(
+  fn: (input: I, config: IExecuteConfig) => Promise<O>
+): Promise<TaskOutput>;
+export function Lambda<I extends TaskInput, O extends TaskOutput>(
+  input: I,
+  config?: LambdaTaskConfig<I, O>
+): Promise<TaskOutput>;
+
+export function Lambda<I extends TaskInput, O extends TaskOutput>(
+  input: I | ((input: I, config: IExecuteConfig) => Promise<O>),
+  config?: LambdaTaskConfig<I, O>
+): Promise<TaskOutput> {
+  if (typeof input === "function") {
+    type Input = Parameters<typeof input>[0];
+    const task = new LambdaTask<Input, O>({} as Input, {
+      execute: input,
+    });
+    return task.run();
+  }
+  const task = new LambdaTask<I, O>(input, config);
   return task.run();
-};
+}
 
 // Add Lambda task workflow to Workflow interface
 declare module "@ellmers/task-graph" {

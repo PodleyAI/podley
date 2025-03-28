@@ -172,16 +172,9 @@ describe("Workflow", () => {
 
   describe("parallel", () => {
     it("should create a compound task with parallel workflows", async () => {
-      const addTestTask = Workflow.createWorkflow<
-        { input: string },
-        { output: string },
-        TaskConfig
-      >(TestSimpleTask);
-
       workflow.parallel(
-        "unordered-array",
-        (w) => w.TestSimpleTask({ input: "test1" }),
-        (w) => w.TestSimpleTask({ input: "test2" })
+        [new TestSimpleTask({ input: "test1" }), new TestSimpleTask({ input: "test2" })],
+        "unordered-array"
       );
 
       expect(workflow.graph.getTasks()).toHaveLength(1);

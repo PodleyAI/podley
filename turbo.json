@@ -19,7 +19,6 @@
       "cache": false
     },
     "watch": {
-      "dependsOn": ["build-package", "build-types"],
       "persistent": true,
       "cache": false
     },
