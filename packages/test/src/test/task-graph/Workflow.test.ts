@@ -349,4 +349,16 @@ describe("Workflow", () => {
       expect(workflow.graph.getTasks()).toHaveLength(1); // Second task not added
     });
   });
+
+  describe("static methods", () => {
+    it("should create a workflow using static methods", () => {
+      const workflow = Workflow.pipe(new TestSimpleTask(), new TestSimpleTask());
+      expect(workflow).toBeInstanceOf(Workflow);
+    });
+
+    it("should create a workflow using static methods", () => {
+      const workflow = Workflow.parallel([new TestSimpleTask(), new TestSimpleTask()]);
+      expect(workflow).toBeInstanceOf(Workflow);
+    });
+  });
 });
