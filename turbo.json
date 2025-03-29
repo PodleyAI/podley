@@ -14,7 +14,6 @@
       "outputs": ["dist/**/*.js", "dist/**/*.js.map"]
     },
     "dev": {
-      "dependsOn": ["^build-package"],
       "persistent": true,
       "cache": false
     },
