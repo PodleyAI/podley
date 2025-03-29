@@ -18,11 +18,12 @@ import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./Tas
  * Manages the execution lifecycle of individual tasks
  */
 export class TaskRunner<
-  Input extends TaskInput = TaskInput,
+  ExecuteInput extends TaskInput = TaskInput,
   ExecuteOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
+  RunInput extends TaskInput = ExecuteInput,
   RunOutput extends TaskOutput = ExecuteOutput,
-> implements ITaskRunner<Input, ExecuteOutput, Config, RunOutput>
+> implements ITaskRunner<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput>
 {
   /**
    * Whether the task is currently running
@@ -38,7 +39,7 @@ export class TaskRunner<
   /**
    * The task to run
    */
-  public readonly task: ITask<Input, ExecuteOutput, Config, RunOutput>;
+  public readonly task: ITask<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput>;
 
   /**
    * Output cache repository
@@ -56,7 +57,7 @@ export class TaskRunner<
    * @param outputCache Optional output cache repository
    */
   constructor(
-    task: ITask<Input, ExecuteOutput, Config, RunOutput>,
+    task: ITask<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput>,
     outputCache?: TaskOutputRepository
   ) {
     this.task = task;
@@ -73,7 +74,7 @@ export class TaskRunner<
    * @param config Optional configuration overrides
    * @returns The task output
    */
-  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<RunOutput> {
+  async run(overrides: Partial<RunInput> = {}, config: IRunConfig = {}): Promise<RunOutput> {
     await this.handleStart();
 
     this.nodeProvenance = config.nodeProvenance ?? {};
@@ -102,11 +103,11 @@ export class TaskRunner<
 
       if (this.task.hasChildren()) {
         // For compound tasks, run the subgraph
-        this.task.runIntermediateData = await this.executeTaskChildren();
+        this.task.runExecuteOutputData = await this.executeTaskChildren();
       } else {
         // For simple tasks, we call the task's execute method
-        const result = await this.executeTask();
-        this.task.runIntermediateData = [
+        const result = await this.executeTask(this.task.runInputData as unknown as ExecuteInput);
+        this.task.runExecuteOutputData = [
           {
             id: this.task.config.id,
             type: this.task.type,
@@ -114,8 +115,11 @@ export class TaskRunner<
           },
         ];
         // and then we run the reactive task
-        const resultReactive = await this.executeTaskReactive();
-        this.task.runIntermediateData = [
+        const resultReactive = await this.executeTaskReactive(
+          this.task.runInputData as unknown as ExecuteInput,
+          this.task.runExecuteOutputData[0].data
+        );
+        this.task.runExecuteOutputData = [
           {
             id: this.task.config.id,
             type: this.task.type,
@@ -124,7 +128,7 @@ export class TaskRunner<
         ];
       }
       this.task.runOutputData = this.task.mergeExecuteOutputsToRunOutput(
-        this.task.runIntermediateData,
+        this.task.runExecuteOutputData,
         this.task.compoundMerge
       );
 
@@ -142,7 +146,7 @@ export class TaskRunner<
    * @param overrides Optional input overrides
    * @returns The task output
    */
-  public async runReactive(overrides: Partial<Input> = {}): Promise<RunOutput> {
+  public async runReactive(overrides: Partial<RunInput> = {}): Promise<RunOutput> {
     if (this.task.status === TaskStatus.PROCESSING) {
       return this.task.runOutputData;
     }
@@ -156,9 +160,9 @@ export class TaskRunner<
         throw new TaskInvalidInputError("Invalid input data");
       }
 
-      if (this.task.runIntermediateData.length === 0) {
+      if (this.task.runExecuteOutputData.length === 0) {
         // running reactive before a real task run
-        this.task.runIntermediateData = [
+        this.task.runExecuteOutputData = [
           { id: this.task.config.id, type: this.task.type, data: {} as ExecuteOutput },
         ];
       }
@@ -167,7 +171,10 @@ export class TaskRunner<
       if (this.task.hasChildren()) {
         reactiveResults = await this.executeTaskChildrenReactive();
       } else {
-        const singleResult = await this.executeTaskReactive();
+        const singleResult = await this.executeTaskReactive(
+          this.task.runInputData as unknown as ExecuteInput,
+          this.task.runExecuteOutputData[0].data
+        );
         reactiveResults = [
           {
             id: this.task.config.id,
@@ -177,14 +184,14 @@ export class TaskRunner<
         ];
       }
 
-      // for each reactiveResults update the runIntermediateData with the same id
+      // for each reactiveResults update the runExecuteOutputData with the same id
       for (const result of reactiveResults) {
         // if (Object.keys(result.data).length === 0) continue;
-        const index = this.task.runIntermediateData.findIndex((item) => item.id === result.id);
+        const index = this.task.runExecuteOutputData.findIndex((item) => item.id === result.id);
         if (index !== -1) {
-          this.task.runIntermediateData[index].data = result.data;
+          this.task.runExecuteOutputData[index].data = result.data;
         } else {
-          this.task.runIntermediateData.push({
+          this.task.runExecuteOutputData.push({
             id: result.id,
             type: result.type,
             data: result.data,
@@ -193,7 +200,7 @@ export class TaskRunner<
       }
 
       this.task.runOutputData = this.task.mergeExecuteOutputsToRunOutput(
-        this.task.runIntermediateData,
+        this.task.runExecuteOutputData,
         this.task.compoundMerge
       );
 
@@ -219,8 +226,8 @@ export class TaskRunner<
   /**
    * Protected method to execute a task by delegating back to the task itself.
    */
-  protected async executeTask(): Promise<ExecuteOutput | undefined> {
-    return this.task.execute(this.task.runInputData, {
+  protected async executeTask(input: ExecuteInput): Promise<ExecuteOutput | undefined> {
+    return this.task.execute(input, {
       signal: this.abortController!.signal,
       updateProgress: this.handleProgress.bind(this),
       nodeProvenance: this.nodeProvenance,
@@ -241,15 +248,18 @@ export class TaskRunner<
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskReactive(): Promise<ExecuteOutput | undefined> {
-    return this.task.executeReactive(this.task.runInputData, this.task.runIntermediateData[0].data);
+  protected async executeTaskReactive(
+    input: ExecuteInput,
+    output: ExecuteOutput
+  ): Promise<ExecuteOutput | undefined> {
+    return this.task.executeReactive(input, output);
   }
 
   /**
    * Protected method for reactive execution delegation
    */
   protected async executeTaskChildrenReactive(): Promise<NamedGraphResult<ExecuteOutput>> {
-    return this.task.subGraph!.runReactive<ExecuteOutput>();
+    return this.task.subGraph!.runReactive<ExecuteInput, ExecuteOutput>();
   }
 
   public mergeExecuteOutputsToRunOutput(

@@ -16,8 +16,8 @@ import {
   Workflow,
 } from "@ellmers/task-graph";
 import { sleep } from "@ellmers/util";
+import { Type } from "@sinclair/typebox";
 
-// TODO: we should have a generic way to handle "...rest" inputs to pass through to outputs
 export type DelayTaskInput = {
   delay: number;
   pass_through: any;
@@ -31,20 +31,23 @@ export class DelayTask<
 > extends Task<Input, Output, Config> {
   static readonly type = "DelayTask";
   static readonly category = "Utility";
-  static inputs = [
-    {
-      id: "delay",
-      name: "Delay (ms)",
-      valueType: "number",
-      defaultValue: 1,
-    },
-    {
-      id: "pass_through",
-      name: "Pass Through",
-      valueType: "any",
-    },
-  ] as const;
-  static outputs = [] as const;
+
+  static inputSchema = Type.Object({
+    delay: Type.Optional(
+      Type.Number({
+        title: "Delay (ms)",
+        default: 1,
+      })
+    ),
+    pass_through: Type.Optional(
+      Type.Any({
+        title: "Pass Through",
+        description: "Pass through data to the output",
+      })
+    ),
+  });
+
+  static outputSchema = Type.Object({});
 
   async execute(input: Input, executeConfig: IExecuteConfig): Promise<Output> {
     const delay = input.delay;
@@ -61,11 +64,11 @@ export class DelayTask<
     } else {
       await sleep(delay);
     }
-    return input.pass_through;
+    return input.pass_through as Output;
   }
 
   async executeReactive(input: Input): Promise<Output> {
-    return input.pass_through;
+    return input.pass_through as Output;
   }
 }
 

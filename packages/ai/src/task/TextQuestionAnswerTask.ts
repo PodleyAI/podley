@@ -5,63 +5,57 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  TaskInputDefinition,
-  TaskOutputDefinition,
-  arrayTaskFactory,
-  TaskRegistry,
-  JobQueueTaskConfig,
-  Workflow,
-  CreateWorkflow,
-} from "@ellmers/task-graph";
+import { TaskRegistry, JobQueueTaskConfig, Workflow, CreateWorkflow } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
-import { model_question_answering } from "./base/TaskIOTypes";
-import { ConvertAllToOptionalArray } from "@ellmers/util";
-export type TextQuestionAnswerTaskInput = {
-  context: string;
-  question: string;
-  model: model_question_answering;
-};
-export type TextQuestionAnswerTaskOutput = {
-  text: string;
-};
-type TextQuestionAnswerTaskInputReplicate = ConvertAllToOptionalArray<TextQuestionAnswerTaskInput>;
-type TextQuestionAnswerTaskOutputReplicate =
-  ConvertAllToOptionalArray<TextQuestionAnswerTaskOutput>;
+import { Type, type Static } from "@sinclair/typebox";
+import { TypeModel, TypeOptionalArray, TypeReplicate } from "./base/TaskIOSchemas";
+
+const TextQuestionAnswerInputSchema = Type.Object({
+  context: TypeReplicate(
+    TypeModel({
+      title: "Context",
+      description: "The context of the question",
+    })
+  ),
+  question: TypeReplicate(
+    Type.String({
+      title: "Question",
+      description: "The question to answer",
+    })
+  ),
+  model: TypeReplicate(
+    TypeModel({
+      title: "Model",
+      description: "The model to use for text question answer",
+      task: "TextQuestionAnswerTask",
+    })
+  ),
+});
+
+const TextQuestionAnswerOutputSchema = Type.Object({
+  text: TypeOptionalArray(
+    Type.String({
+      title: "Text",
+      description: "The generated text",
+    })
+  ),
+});
+
+export type TextQuestionAnswerTaskInput = Static<typeof TextQuestionAnswerInputSchema>;
+export type TextQuestionAnswerTaskOutput = Static<typeof TextQuestionAnswerOutputSchema>;
 
 /**
  * This is a special case of text generation that takes a context and a question
  */
 export class TextQuestionAnswerTask extends AiTask<
-  TextQuestionAnswerTaskInputReplicate,
-  TextQuestionAnswerTaskOutputReplicate,
+  TextQuestionAnswerTaskInput,
+  TextQuestionAnswerTaskOutput,
   JobQueueTaskConfig
 > {
   public static type = "TextQuestionAnswerTask";
   public static category = "Text Model";
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "context",
-      name: "Context",
-      valueType: "text",
-      isArray: "replicate",
-    },
-    {
-      id: "question",
-      name: "Question",
-      valueType: "text",
-      isArray: "replicate",
-    },
-    {
-      id: "model",
-      name: "Model",
-      valueType: "text_model_question_answering",
-      isArray: "replicate",
-    },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    { id: "text", name: "Answer", valueType: "text", isArray: "replicate" },
-  ] as const;
+  public static inputSchema = TextQuestionAnswerInputSchema;
+  public static outputSchema = TextQuestionAnswerOutputSchema;
 }
 
 TaskRegistry.registerTask(TextQuestionAnswerTask);
@@ -73,7 +67,7 @@ TaskRegistry.registerTask(TextQuestionAnswerTask);
  * @returns Promise resolving to the generated answer(s)
  */
 export const TextQuestionAnswer = (
-  input: TextQuestionAnswerTaskInputReplicate,
+  input: TextQuestionAnswerTaskInput,
   config?: JobQueueTaskConfig
 ) => {
   return new TextQuestionAnswerTask(input, config).run();
@@ -82,8 +76,8 @@ export const TextQuestionAnswer = (
 declare module "@ellmers/task-graph" {
   interface Workflow {
     TextQuestionAnswer: CreateWorkflow<
-      TextQuestionAnswerTaskInputReplicate,
-      TextQuestionAnswerTaskOutputReplicate,
+      TextQuestionAnswerTaskInput,
+      TextQuestionAnswerTaskOutput,
       JobQueueTaskConfig
     >;
   }

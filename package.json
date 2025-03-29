@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "turbo run build-types build-package build-example",
+    "rebuild": "turbo run build-types build-package build-example --force",
     "build-types": "turbo run build-types",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/*tsbuildinfo packages/*/dist packages/*/src/**/*\\.d\\.ts packages/*/src/**/*\\.map examples/*/node_modules examples/*/dist examples/*/src/**/*\\.d\\.ts examples/*/src/**/*\\.map .turbo */*/.turbo",
     "watch": "turbo run watch",
@@ -22,7 +23,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@types/bun": "^1.2.5",
+    "@types/bun": "^1.2.6",
     "@types/react": "19.0.12",
     "@types/react-dom": "19.0.4",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
@@ -42,9 +43,9 @@
     "typescript": "5.8.2"
   },
   "engines": {
-    "bun": "^1.2.5"
+    "bun": "^1.2.6"
   },
-  "packageManager": "bun@1.2.5",
+  "packageManager": "bun@1.2.6",
   "trustedDependencies": [
     "better-sqlite3",
     "esbuild",

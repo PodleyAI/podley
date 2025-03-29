@@ -5,16 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  Workflow,
-  TaskRegistry,
-  TaskInputDefinition,
-  TaskOutputDefinition,
-  CreateWorkflow,
-  TaskInvalidInputError,
-  TaskConfig,
-  Task,
-} from "@ellmers/task-graph";
+import { Workflow, TaskRegistry, CreateWorkflow, TaskConfig, Task } from "@ellmers/task-graph";
+import { Type } from "@sinclair/typebox";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
@@ -48,27 +40,29 @@ export class DebugLogTask<
   static type = "DebugLogTask";
   static category = "Output";
   static readonly cacheable = false;
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "console",
-      name: "Messages",
-      valueType: "any",
-      isArray: true,
-    },
-    {
-      id: "log_level",
-      name: "Level",
-      valueType: "log_level",
-      defaultValue: DEFAULT_LOG_LEVEL,
-    },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    {
-      id: "console",
-      name: "Messages",
-      valueType: "any",
-    },
-  ] as const;
+
+  public static inputSchema = Type.Object({
+    console: Type.Array(
+      Type.Any({
+        title: "Messages",
+        description: "Messages to log",
+      })
+    ),
+    log_level: Type.Union(
+      log_levels.map((level) => Type.Literal(level)),
+      {
+        title: "Log Level",
+        default: DEFAULT_LOG_LEVEL,
+      }
+    ),
+  });
+
+  public static outputSchema = Type.Object({
+    console: Type.Any({
+      title: "Messages",
+      description: "Messages that were logged",
+    }),
+  });
 
   async executeReactive(input: Input, output: Output) {
     const { log_level = DEFAULT_LOG_LEVEL, console: messages } = input;
@@ -79,17 +73,6 @@ export class DebugLogTask<
     }
     output.console = input.console;
     return output;
-  }
-
-  async validateInputValue(valueType: string, item: any) {
-    if (valueType == "log_level") {
-      const valid = log_levels.includes(item);
-      if (!valid) {
-        throw new TaskInvalidInputError(`${item} is not a valid log level`);
-      }
-      return valid;
-    }
-    return super.validateInputValue(valueType, item);
   }
 }
 

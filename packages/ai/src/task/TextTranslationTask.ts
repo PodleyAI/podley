@@ -5,88 +5,62 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  CreateWorkflow,
-  JobQueueTaskConfig,
-  TaskInputDefinition,
-  TaskInvalidInputError,
-  TaskOutputDefinition,
-  TaskRegistry,
-  Workflow,
-} from "@ellmers/task-graph";
-import { ConvertAllToOptionalArray } from "@ellmers/util";
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
-import { language, model_translation } from "./base/TaskIOTypes";
+import { Type, type Static } from "@sinclair/typebox";
+import { TypeModel } from "./base/TaskIOSchemas";
 
-export type TextTranslationTaskInput = {
-  text: string;
-  model: model_translation;
-  source_lang: language;
-  target_lang: language;
-};
-export type TextTranslationTaskOutput = {
-  text: string;
-  target_lang: language;
-};
-type TextTranslationTaskInputReplicate = ConvertAllToOptionalArray<TextTranslationTaskInput>;
-type TextTranslationTaskOutputReplicate = ConvertAllToOptionalArray<TextTranslationTaskOutput>;
+const TextTranslationInputSchema = Type.Object({
+  text: Type.String({
+    title: "Text",
+    description: "The text to translate",
+  }),
+  source_lang: Type.String({
+    title: "Source Language",
+    description: "The source language",
+    maxLength: 2,
+    minLength: 2,
+  }),
+  target_lang: Type.String({
+    title: "Target Language",
+    description: "The target language",
+    maxLength: 2,
+    minLength: 2,
+  }),
+  model: TypeModel({
+    task: "TextTranslationTask",
+    title: "Model",
+    description: "The model to use for text translation",
+  }),
+});
+
+const TextTranslationOutputSchema = Type.Object({
+  text: Type.String({
+    title: "Text",
+    description: "The translated text",
+  }),
+  target_lang: Type.String({
+    title: "Output Language",
+    description: "The output language",
+  }),
+});
+
+export type TextTranslationTaskInput = Static<typeof TextTranslationInputSchema>;
+export type TextTranslationTaskOutput = Static<typeof TextTranslationOutputSchema>;
 
 /**
- * This generates text from a prompt
+ * This translates text from one language to another
  */
 export class TextTranslationTask extends AiTask<
-  TextTranslationTaskInputReplicate,
-  TextTranslationTaskOutputReplicate
+  TextTranslationTaskInput,
+  TextTranslationTaskOutput
 > {
   public static type = "TextTranslationTask";
   public static category = "Text Model";
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "text",
-      name: "Text",
-      valueType: "text",
-      isArray: "replicate",
-    },
-    {
-      id: "model",
-      name: "Model",
-      valueType: "model_translation",
-      isArray: "replicate",
-    },
-    {
-      id: "source_lang",
-      name: "Input Language",
-      valueType: "language",
-      isArray: "replicate",
-    },
-    {
-      id: "target_lang",
-      name: "Output Language",
-      valueType: "language",
-      isArray: "replicate",
-    },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    { id: "text", name: "Text", valueType: "text" },
-    {
-      id: "target_lang",
-      name: "Output Language",
-      valueType: "language",
-      isArray: "replicate",
-    },
-  ] as const;
-
-  async validateInputValue(valueType: string, item: any) {
-    if (valueType == "language") {
-      const valid = typeof item == "string" && item.length == 2;
-      if (!valid) {
-        throw new TaskInvalidInputError(`language must be a 2 character string: ${item}`);
-      }
-      return valid;
-    }
-    return super.validateInputValue(valueType, item);
-  }
+  public static inputSchema = TextTranslationInputSchema;
+  public static outputSchema = TextTranslationOutputSchema;
 }
+
 TaskRegistry.registerTask(TextTranslationTask);
 
 /**
@@ -95,18 +69,15 @@ TaskRegistry.registerTask(TextTranslationTask);
  * @param input The input parameters for text translation (text, model, source_lang, and target_lang)
  * @returns Promise resolving to the translated text output(s)
  */
-export const TextTranslation = (
-  input: TextTranslationTaskInputReplicate,
-  config?: JobQueueTaskConfig
-) => {
+export const TextTranslation = (input: TextTranslationTaskInput, config?: JobQueueTaskConfig) => {
   return new TextTranslationTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
     TextTranslation: CreateWorkflow<
-      TextTranslationTaskInputReplicate,
-      TextTranslationTaskOutputReplicate,
+      TextTranslationTaskInput,
+      TextTranslationTaskOutput,
       JobQueueTaskConfig
     >;
   }

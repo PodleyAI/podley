@@ -7,8 +7,8 @@
 
 import { FilesetResolver, TextEmbedder } from "@mediapipe/tasks-text";
 import type {
-  DownloadModelTaskInput,
-  DownloadModelTaskOutput,
+  DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteOutput,
   TextEmbeddingTaskInput,
   AiProviderRunFn,
 } from "@ellmers/ai";
@@ -19,8 +19,8 @@ import { PermanentJobError } from "@ellmers/job-queue";
  * This is shared between inline and worker implementations.
  */
 export const TFMP_Download: AiProviderRunFn<
-  DownloadModelTaskInput,
-  Partial<DownloadModelTaskOutput>
+  DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteOutput
 > = async (input, model, onProgress, signal) => {
   const textFiles = await FilesetResolver.forTextTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@latest/wasm"

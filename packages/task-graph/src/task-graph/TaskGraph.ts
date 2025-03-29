@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { DirectedAcyclicGraph } from "@ellmers/util";
-import { Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
+import { Provenance, TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITask } from "../task/ITask";
@@ -96,8 +96,10 @@ export class TaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public runReactive<ExecuteOutput extends TaskOutput>(): Promise<NamedGraphResult<ExecuteOutput>> {
-    return this.runner.runGraphReactive<ExecuteOutput>();
+  public runReactive<ExecuteInput extends TaskInput, ExecuteOutput extends TaskOutput>(): Promise<
+    NamedGraphResult<ExecuteOutput>
+  > {
+    return this.runner.runGraphReactive<ExecuteInput, ExecuteOutput>();
   }
 
   /**

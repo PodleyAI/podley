@@ -12,7 +12,7 @@ import { TaskInput, TaskOutput } from "./TaskTypes";
  * Global singleton instance of the TaskQueueRegistry.
  * This is used to manage all job queues across the application.
  */
-let taskQueueRegistry: TaskQueueRegistry<TaskInput, TaskOutput> | null = null;
+let taskQueueRegistry: TaskQueueRegistry | null = null;
 
 /**
  * Registry for managing task queues in the application.
@@ -21,11 +21,11 @@ let taskQueueRegistry: TaskQueueRegistry<TaskInput, TaskOutput> | null = null;
  * @template Input - The type of input data for tasks in the queues
  * @template Output - The type of output data for tasks in the queues
  */
-export class TaskQueueRegistry<Input, Output> {
+export class TaskQueueRegistry {
   /**
    * Map of queue names to their corresponding JobQueue instances
    */
-  public queues: Map<string, JobQueue<Input, Output>> = new Map();
+  public queues: Map<string, JobQueue<any, any>> = new Map();
 
   /**
    * Registers a new job queue with the registry
@@ -46,8 +46,8 @@ export class TaskQueueRegistry<Input, Output> {
    * @param queue - The name of the queue to retrieve
    * @returns The job queue instance or undefined if not found
    */
-  getQueue(queue: string): JobQueue<Input, Output> | undefined {
-    return this.queues.get(queue);
+  getQueue<I, O>(queue: string): JobQueue<I, O> | undefined {
+    return this.queues.get(queue) as JobQueue<I, O> | undefined;
   }
 
   /**
@@ -96,9 +96,9 @@ export class TaskQueueRegistry<Input, Output> {
  *
  * @returns The global TaskQueueRegistry instance
  */
-export function getTaskQueueRegistry(): TaskQueueRegistry<TaskInput, TaskOutput> {
+export function getTaskQueueRegistry(): TaskQueueRegistry {
   if (!taskQueueRegistry) {
-    taskQueueRegistry = new TaskQueueRegistry<TaskInput, TaskOutput>();
+    taskQueueRegistry = new TaskQueueRegistry();
   }
   return taskQueueRegistry;
 }
@@ -109,7 +109,7 @@ export function getTaskQueueRegistry(): TaskQueueRegistry<TaskInput, TaskOutput>
  *
  * @param registry - The new registry instance to use, or null to clear
  */
-export function setTaskQueueRegistry(registry: TaskQueueRegistry<any, any> | null): void {
+export function setTaskQueueRegistry(registry: TaskQueueRegistry | null): void {
   if (taskQueueRegistry) {
     taskQueueRegistry.stopQueues();
     taskQueueRegistry.clearQueues();

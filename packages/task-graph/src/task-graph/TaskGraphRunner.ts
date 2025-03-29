@@ -24,6 +24,7 @@ import {
 } from "../task/TaskError";
 import { ITask } from "../task/ITask";
 import { DATAFLOW_ALL_PORTS } from "./Dataflow";
+import { Task } from "../task/Task";
 
 export type GraphSingleResult<T> = {
   id: unknown;
@@ -202,9 +203,10 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskConfigurationError if the graph is already running reactively
    */
-  public async runGraphReactive<ExecuteOutput extends TaskOutput>(): Promise<
-    NamedGraphResult<ExecuteOutput>
-  > {
+  public async runGraphReactive<
+    ExecuteInput extends TaskInput,
+    ExecuteOutput extends TaskOutput,
+  >(): Promise<NamedGraphResult<ExecuteOutput>> {
     await this.handleStartReactive();
 
     const results: NamedGraphResult<ExecuteOutput> = [];
@@ -254,42 +256,47 @@ export class TaskGraphRunner {
    * @param overrides The input data to override (or add to if an array)
    */
   public addInputData(task: ITask, overrides: Partial<TaskInput> | undefined) {
+    if (!overrides) return;
+
     let changed = false;
-    for (const input of task.inputs) {
-      if (input.id === DATAFLOW_ALL_PORTS) {
+    const inputSchema = task.inputSchema;
+    const properties = inputSchema.properties || {};
+
+    for (const [inputId, prop] of Object.entries(properties)) {
+      if (overrides[inputId] === undefined) continue;
+
+      if (inputId === DATAFLOW_ALL_PORTS) {
         task.runInputData = { ...task.runInputData, ...overrides };
         changed = true;
-      } else if (overrides?.[input.id] !== undefined) {
-        let isArray = input.isArray;
-        if (
-          input.valueType === "any" &&
-          (Array.isArray(overrides[input.id]) || Array.isArray(task.runInputData[input.id]))
-        ) {
-          isArray = true;
-        }
+      } else {
+        const isArray =
+          prop.type === "array" ||
+          (prop.type === "any" &&
+            (Array.isArray(overrides[inputId]) || Array.isArray(task.runInputData[inputId])));
 
-        if (isArray === true) {
-          const existingItems = Array.isArray(task.runInputData[input.id])
-            ? task.runInputData[input.id]
-            : [];
+        if (isArray) {
+          const existingItems = Array.isArray(task.runInputData[inputId])
+            ? task.runInputData[inputId]
+            : [task.runInputData[inputId]];
           const newitems = [...existingItems];
 
-          const overrideItem = overrides[input.id];
+          const overrideItem = overrides[inputId];
           if (Array.isArray(overrideItem)) {
             newitems.push(...overrideItem);
           } else {
             newitems.push(overrideItem);
           }
-          task.runInputData[input.id] = newitems;
+          task.runInputData[inputId] = newitems;
           changed = true;
         } else {
-          if (!deepEqual(task.runInputData[input.id], overrides[input.id])) {
-            task.runInputData[input.id] = overrides[input.id];
+          if (!deepEqual(task.runInputData[inputId], overrides[inputId])) {
+            task.runInputData[inputId] = overrides[inputId];
             changed = true;
           }
         }
       }
     }
+
     if (changed && task.isCompound) {
       task.regenerateGraph();
     }
@@ -475,7 +482,8 @@ export class TaskGraphRunner {
   protected resetTask(graph: TaskGraph, task: ITask, runId: string) {
     task.status = TaskStatus.PENDING;
     task.resetInputData();
-    task.runIntermediateData = [];
+    task.runExecuteInputData = [];
+    task.runExecuteOutputData = [];
     task.runOutputData = {};
     task.error = undefined;
     task.progress = 0;
@@ -626,7 +634,6 @@ export class TaskGraphRunner {
    * @param args Additional arguments
    */
   protected handleProgress(progress: number, ...args: any[]): void {
-    // Not currently implemented at the graph level
-    // Could be used to track overall graph progress
+    // TODO(str): Implement graph level progress tracking
   }
 }

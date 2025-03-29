@@ -6,15 +6,8 @@
 //    *******************************************************************************
 
 import { Interpreter } from "../util/interpreter";
-import {
-  TaskConfig,
-  Workflow,
-  CreateWorkflow,
-  TaskRegistry,
-  TaskInputDefinition,
-  TaskOutputDefinition,
-  Task,
-} from "@ellmers/task-graph";
+import { TaskConfig, Workflow, CreateWorkflow, TaskRegistry, Task } from "@ellmers/task-graph";
+import { Type } from "@sinclair/typebox";
 
 export type JavaScriptTaskInput = {
   code: string;
@@ -27,25 +20,21 @@ export type JavaScriptTaskOutput = {
 export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutput> {
   static readonly type = "JavaScriptTask";
   static readonly category = "Utility";
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "code",
-      name: "Code",
-      valueType: "text",
-    },
-    {
-      id: "input",
-      name: "Input",
-      valueType: "any",
-    },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "any",
-    },
-  ] as const;
+
+  public static inputSchema = Type.Object({
+    code: Type.String({
+      title: "Code",
+    }),
+    input: Type.Any({
+      title: "Input",
+    }),
+  });
+
+  public static outputSchema = Type.Object({
+    output: Type.Any({
+      title: "Output",
+    }),
+  });
 
   async executeReactive(input: JavaScriptTaskInput, output: JavaScriptTaskOutput) {
     if (input.code) {
@@ -60,6 +49,7 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
     return output;
   }
 }
+
 TaskRegistry.registerTask(JavaScriptTask);
 
 export const JavaScript = (input: JavaScriptTaskInput, config: TaskConfig = {}) => {

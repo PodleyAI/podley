@@ -12,13 +12,12 @@ import {
   Workflow,
   CreateWorkflow,
   TaskRegistry,
-  TaskInputDefinition,
-  TaskOutputDefinition,
   TaskInput,
   TaskOutput,
   Task,
   createGraphFromDependencyJSON,
 } from "@ellmers/task-graph";
+import { Type } from "@sinclair/typebox";
 
 interface JsonTaskInput extends TaskInput {
   json: string;
@@ -40,21 +39,20 @@ export class JsonTask<
   static readonly type = "JsonTask";
   static readonly category = "Utility";
   static readonly isCompound = true;
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "json",
-      name: "JSON",
-      valueType: "text", // Expects JSON string input
-    },
-  ] as const;
 
-  public static outputs: TaskOutputDefinition[] = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "any", // Output type depends on the generated task graph
-    },
-  ] as const;
+  public static inputSchema = Type.Object({
+    json: Type.String({
+      title: "JSON",
+      description: "JSON string input",
+    }),
+  });
+
+  public static outputSchema = Type.Object({
+    output: Type.Any({
+      title: "Output",
+      description: "Output depends on the generated task graph",
+    }),
+  });
 
   /**
    * Regenerates the entire task graph based on the current JSON input

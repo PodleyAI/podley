@@ -115,6 +115,7 @@ export abstract class ModelRepository {
    */
   async addModel(model: Model) {
     await this.modelTabularRepository.put({ name: model.name, details: JSON.stringify(model) });
+    this.models.set(model.name, model);
     this.events.emit("model_added", model);
   }
 
@@ -132,8 +133,13 @@ export abstract class ModelRepository {
       const model = await this.modelTabularRepository.get({ name: junction.model } as any);
       if (model) models.push(JSON.parse(model.details as string));
     }
+    models.forEach((m) => this.models.set(m.name, m));
+    this.taskModels.set(task, models);
     return models;
   }
+
+  models = new Map<string, Model>();
+  taskModels = new Map<string, Model[]>();
 
   /**
    * Finds all tasks associated with a specific model
@@ -165,7 +171,9 @@ export abstract class ModelRepository {
   async enumerateAllModels() {
     const models = await this.modelTabularRepository.getAll();
     if (!models || models.length === 0) return undefined;
-    return models.map((model) => JSON.parse(model.details as string));
+    const parsedModels = models.map((model) => JSON.parse(model.details as string));
+    parsedModels.forEach((m) => this.models.set(m.name, m));
+    return parsedModels;
   }
 
   /**
@@ -187,7 +195,9 @@ export abstract class ModelRepository {
     if (typeof name != "string") return undefined;
     const modelstr = await this.modelTabularRepository.get({ name } as any);
     if (!modelstr) return undefined;
-    return JSON.parse(modelstr.details as string);
+    const model = JSON.parse(modelstr.details as string);
+    this.models.set(model.name, model);
+    return model;
   }
 
   /**
