@@ -56,7 +56,6 @@ export interface ITaskStaticProperties {
   readonly cacheable: boolean;
   readonly inputs: readonly TaskInputDefinition[];
   readonly outputs: readonly TaskOutputDefinition[];
-  readonly isCompound: boolean;
 }
 
 /**
@@ -65,10 +64,10 @@ export interface ITaskStaticProperties {
  */
 export interface ITaskExecution<
   Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  Output extends TaskOutput = TaskOutput,
 > {
-  execute(input: Input, config: IExecuteConfig): Promise<ExecuteOutput | undefined>;
-  executeReactive(input: Input, output: ExecuteOutput): Promise<ExecuteOutput | undefined>;
+  execute(input: Input, config: IExecuteConfig): Promise<Output | undefined>;
+  executeReactive(input: Input, output: Output): Promise<Output | undefined>;
 }
 
 /**
@@ -77,15 +76,10 @@ export interface ITaskExecution<
  */
 export interface ITaskLifecycle<
   Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
-  RunOutput extends TaskOutput = ExecuteOutput,
+  Output extends TaskOutput = TaskOutput,
 > {
-  run(overrides?: Partial<Input>, config?: IRunConfig): Promise<RunOutput>;
-  runReactive(overrides?: Partial<Input>): Promise<RunOutput>;
-  mergeExecuteOutputsToRunOutput(
-    results: NamedGraphResult<ExecuteOutput>,
-    compoundMerge: CompoundMergeStrategy
-  ): RunOutput;
+  run(overrides?: Partial<Input>, config?: IRunConfig): Promise<Output>;
+  runReactive(overrides?: Partial<Input>): Promise<Output>;
   abort(): void;
   skip(): Promise<void>;
 }
@@ -95,13 +89,11 @@ export interface ITaskLifecycle<
  */
 export interface ITaskIO<
   Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
-  RunOutput extends TaskOutput = ExecuteOutput,
+  Output extends TaskOutput = TaskOutput,
 > {
   defaults: Partial<Input>;
   runInputData: Input;
-  runIntermediateData: NamedGraphResult<ExecuteOutput>;
-  runOutputData: RunOutput;
+  runOutputData: Output;
 
   get inputs(): readonly TaskInputDefinition[]; // this gets local access for static input definition property
   get outputs(): readonly TaskOutputDefinition[]; // this gets local access for static output definition property
@@ -116,7 +108,6 @@ export interface ITaskIO<
 }
 
 export interface ITaskCompound {
-  get isCompound(): boolean; // this gets local access for static isCompound property
   subGraph: TaskGraph | null;
   regenerateGraph(): void;
   hasChildren(): boolean;
@@ -163,33 +154,36 @@ export interface ITaskState<Config extends TaskConfig = TaskConfig> {
  */
 export interface ITask<
   Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  RunOutput extends TaskOutput = ExecuteOutput,
 > extends ITaskState<Config>,
-    ITaskIO<Input, ExecuteOutput, RunOutput>,
+    ITaskIO<Input, Output>,
     ITaskEvents,
-    ITaskLifecycle<Input, ExecuteOutput, RunOutput>,
-    ITaskExecution<Input, ExecuteOutput>,
-    ITaskCompound,
+    ITaskLifecycle<Input, Output>,
+    ITaskExecution<Input, Output>,
     ITaskSerialization {}
+
+export interface ITaskWithSubgraph<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends ITask<Input, Output, Config>,
+    ITaskCompound {}
 
 /**
  * Type for task constructor
  */
 type ITaskConstructorType<
   Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> = new (input: Input, config: Config) => ITask<Input, ExecuteOutput, Config, RunOutput>;
+> = new (input: Input, config: Config) => ITask<Input, Output, Config>;
 
 /**
  * Interface for task constructor with static properties
  */
 export type ITaskConstructor<
   Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> = ITaskConstructorType<Input, ExecuteOutput, Config, RunOutput> & ITaskStaticProperties;
+> = ITaskConstructorType<Input, Output, Config> & ITaskStaticProperties;

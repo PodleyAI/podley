@@ -6,14 +6,14 @@
 //    *******************************************************************************
 
 import {
-  TaskRegistry,
-  Workflow,
   CreateWorkflow,
   TaskInputDefinition,
   TaskOutputDefinition,
   TaskInvalidInputError,
   JobQueueTaskConfig,
   RunOrReplicateTask,
+  TaskRegistry,
+  Workflow,
 } from "@ellmers/task-graph";
 import { AnyNumberArray, ElVector } from "./base/TaskIOTypes";
 import { ConvertAllToOptionalArray } from "@ellmers/util";

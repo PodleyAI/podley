@@ -202,28 +202,26 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskConfigurationError if the graph is already running reactively
    */
-  public async runGraphReactive<ExecuteOutput extends TaskOutput>(): Promise<
-    NamedGraphResult<ExecuteOutput>
-  > {
+  public async runGraphReactive<Output extends TaskOutput>(): Promise<NamedGraphResult<Output>> {
     await this.handleStartReactive();
 
-    const results: NamedGraphResult<ExecuteOutput> = [];
-
+    const results: NamedGraphResult<Output> = [];
+    console.log("runGraphReactive start");
     try {
       for await (const task of this.reactiveScheduler.tasks()) {
         if (task.status === TaskStatus.PENDING) {
           task.resetInputData();
           this.copyInputFromEdgesToNode(task);
-          const taskResult = await task.runReactive();
+        }
+        const taskResult = await task.runReactive();
 
-          this.pushOutputFromNodeToEdges(task, taskResult);
-          if (this.graph.getTargetDataflows(task.config.id).length === 0) {
-            results.push({
-              id: task.config.id,
-              type: (task.constructor as any).runtype || (task.constructor as any).type,
-              data: taskResult as ExecuteOutput,
-            });
-          }
+        this.pushOutputFromNodeToEdges(task, taskResult);
+        if (this.graph.getTargetDataflows(task.config.id).length === 0) {
+          results.push({
+            id: task.config.id,
+            type: (task.constructor as any).runtype || (task.constructor as any).type,
+            data: taskResult as Output,
+          });
         }
       }
       await this.handleCompleteReactive();
@@ -252,8 +250,11 @@ export class TaskGraphRunner {
    * Adds input data to a task
    * @param task The task to add input data to
    * @param overrides The input data to override (or add to if an array)
+   * @returns true if the input data was changed, false otherwise
    */
   public addInputData(task: ITask, overrides: Partial<TaskInput> | undefined) {
+    if (!overrides) return false;
+
     let changed = false;
     for (const input of task.inputs) {
       if (input.id === DATAFLOW_ALL_PORTS) {
@@ -290,7 +291,9 @@ export class TaskGraphRunner {
         }
       }
     }
-    if (changed && task.isCompound) {
+
+    // TODO(str): This is a hack.
+    if (changed && "regenerateGraph" in task && typeof task.regenerateGraph === "function") {
       task.regenerateGraph();
     }
   }
@@ -301,29 +304,29 @@ export class TaskGraphRunner {
 
   public mergeExecuteOutputsToRunOutput<
     ExecuteOutput extends TaskOutput,
-    RunOutput extends TaskOutput = ExecuteOutput,
-  >(results: NamedGraphResult<ExecuteOutput>, compoundMerge: CompoundMergeStrategy): RunOutput {
+    Output extends TaskOutput = ExecuteOutput,
+  >(results: NamedGraphResult<ExecuteOutput>, compoundMerge: CompoundMergeStrategy): Output {
     if (compoundMerge === "last") {
-      return results[results.length - 1].data as unknown as RunOutput;
+      return results[results.length - 1].data as unknown as Output;
     } else if (compoundMerge === "named") {
-      return results as unknown as RunOutput;
+      return results as unknown as Output;
     } else if (compoundMerge === "unordered-array") {
-      return { data: results.map((result) => result.data) } as unknown as RunOutput;
+      return { data: results.map((result) => result.data) } as unknown as Output;
     } else if (compoundMerge === "property-array") {
-      return { data: results.map((result) => result.data) } as unknown as RunOutput;
+      return { data: results.map((result) => result.data) } as unknown as Output;
     } else if (compoundMerge === "last-or-named") {
-      return results as unknown as RunOutput;
+      return results as unknown as Output;
     } else if (compoundMerge === "last-or-unordered-array") {
-      return { data: results.map((result) => result.data) } as unknown as RunOutput;
+      return { data: results.map((result) => result.data) } as unknown as Output;
     } else if (compoundMerge === "last-or-property-array") {
-      let fixedOutput = {} as RunOutput;
+      let fixedOutput = {} as Output;
       const outputs = results.map((result: any) => result.data);
       if (outputs.length === 1) {
-        fixedOutput = outputs[0] as unknown as RunOutput;
+        fixedOutput = outputs[0] as unknown as Output;
       } else if (outputs.length > 1) {
         const collected = collectPropertyValues<ExecuteOutput>(outputs as ExecuteOutput[]);
         if (Object.keys(collected).length > 0) {
-          fixedOutput = collected as unknown as RunOutput;
+          fixedOutput = collected as unknown as Output;
         }
       }
       return fixedOutput;
@@ -475,7 +478,6 @@ export class TaskGraphRunner {
   protected resetTask(graph: TaskGraph, task: ITask, runId: string) {
     task.status = TaskStatus.PENDING;
     task.resetInputData();
-    task.runIntermediateData = [];
     task.runOutputData = {};
     task.error = undefined;
     task.progress = 0;
@@ -493,11 +495,14 @@ export class TaskGraphRunner {
    */
   protected resetGraph(graph: TaskGraph, runnerId: string) {
     graph.getTasks().forEach((node) => {
-      const changed = node.isCompound && !deepEqual(node.runInputData, node.defaults);
+      const changed = deepEqual(node.runInputData, node.defaults);
       this.resetTask(graph, node, runnerId);
       if (changed) {
-        node.regenerateGraph();
-        this.resetGraph(node.subGraph!, runnerId);
+        if ("regenerateGraph" in node && typeof node.regenerateGraph === "function") {
+          node.regenerateGraph();
+          // TODO(str): This is a hack.
+          // this.resetGraph(node.subGraph!, runnerId);
+        }
       }
     });
   }

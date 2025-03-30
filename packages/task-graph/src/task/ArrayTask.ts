@@ -9,8 +9,6 @@ import { Writeable } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { ITaskConstructor } from "./ITask";
-import { RunOrReplicateTaskRunner } from "./RunOrReplicateTask";
-import { Task } from "./Task";
 import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRegistry } from "./TaskRegistry";
 import {
@@ -22,6 +20,7 @@ import {
   TaskOutputDefinition,
   TaskTypeName,
 } from "./TaskTypes";
+import { TaskWithSubgraph } from "./TaskWithSubgraph";
 
 /**
  * Converts specified IO definitions to array type
@@ -64,7 +63,6 @@ function convertMultipleToArray<D extends TaskInputDefinition | TaskOutputDefini
   }
   return results as D[];
 }
-
 /**
  * Generates all possible combinations of array inputs
  * @param input Input object containing arrays
@@ -149,12 +147,11 @@ export function arrayTaskFactory<
     Input extends PluralInputType = PluralInputType,
     Output extends PluralOutputType = PluralOutputType,
     Config extends SingleConfig = SingleConfig,
-  > extends Task<Input, Output, Config> {
+  > extends TaskWithSubgraph<Input, Output, Config> {
     static readonly type: TaskTypeName = name!;
     static readonly runtype = taskClass.type;
     static readonly category = taskClass.category;
     static readonly cacheable = taskClass.cacheable;
-    static readonly isCompound = true;
     static readonly compoundMerge = "last-or-property-array";
     itemClass = taskClass;
 
@@ -205,14 +202,6 @@ export function arrayTaskFactory<
     declare queueName: string;
     declare currentJobId: string;
     declare validateInput: (input: Partial<Input>) => Promise<boolean>;
-    // Declare specific _runner type for this class
-    declare _runner: RunOrReplicateTaskRunner<Input, Output, Config>;
-    override get runner(): RunOrReplicateTaskRunner<Input, Output, Config> {
-      if (!this._runner) {
-        this._runner = new RunOrReplicateTaskRunner<Input, Output, Config>(this);
-      }
-      return this._runner;
-    }
   }
 
   // Use type assertion to make TypeScript accept the registration

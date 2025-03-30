@@ -15,26 +15,25 @@ import type { ITask } from "./ITask";
 
 export interface ITaskRunner<
   Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  RunOutput extends TaskOutput = ExecuteOutput,
 > {
   /**
    * The task being run
    */
-  readonly task: ITask<Input, ExecuteOutput, Config, RunOutput>;
+  readonly task: ITask<Input, Output, Config>;
 
   /**
    * Runs the task with the provided input overrides
    * @param overrides Optional input overrides
    */
-  run(overrides?: Partial<Input>): Promise<RunOutput>;
+  run(overrides?: Partial<Input>): Promise<Output>;
 
   /**
    * Runs the task in reactive mode
    * @param overrides Optional input overrides
    */
-  runReactive(overrides?: Partial<Input>): Promise<RunOutput>;
+  runReactive(overrides?: Partial<Input>): Promise<Output>;
 
   /**
    * Aborts the task execution

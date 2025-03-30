@@ -28,4 +28,4 @@ Tasks get posted to a job queue and are run by a job queue runner.
 
 ## Compound Task
 
-A compound task is Task with isCompound = true that contains a groups of tasks (in DAG format) that are chained together to look like a single task.
+A compound task is TaskWithSubgraph that contains a groups of tasks (in DAG format) that are chained together to look like a single task.

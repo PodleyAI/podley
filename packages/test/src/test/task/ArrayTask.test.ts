@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { TaskGraph, TaskStatus, TaskError, ITask } from "@ellmers/task-graph";
 import {
   TestSquareMultiInputTask,
@@ -63,8 +63,16 @@ describe("ArrayTask", () => {
         id: "task1",
       }
     );
+    const executeGraphSpy = spyOn(task.subGraph.getTasks()[0], "execute");
+    const executeReactiveSpy = spyOn(task.subGraph.getTasks()[0], "executeReactive");
+    const executeBaseGraphSpy = spyOn(task, "execute");
+    const executeBaseReactiveSpy = spyOn(task, "executeReactive");
     const results = await task.run();
     expect(results).toEqual({ output: [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100] });
+    expect(executeGraphSpy).toHaveBeenCalledTimes(1);
+    expect(executeReactiveSpy).toHaveBeenCalledTimes(1);
+    expect(executeBaseGraphSpy).toHaveBeenCalledTimes(0);
+    expect(executeBaseReactiveSpy).toHaveBeenCalledTimes(0);
   });
 
   test("in task mode non-reactive runReactive", async () => {
@@ -76,8 +84,12 @@ describe("ArrayTask", () => {
         id: "task1",
       }
     );
+    const executeGraphSpy = spyOn(task.subGraph.getTasks()[0], "execute");
+    const executeReactiveSpy = spyOn(task.subGraph.getTasks()[0], "executeReactive");
     const results = await task.runReactive();
     expect(results).toEqual({} as any);
+    expect(executeGraphSpy).toHaveBeenCalledTimes(0);
+    expect(executeReactiveSpy).toHaveBeenCalledTimes(1);
   });
 
   test("in task graph mode, single result no array children", async () => {
@@ -273,7 +285,7 @@ describe("ArrayTask", () => {
     task.on("error", (error: TaskError) => {
       events.error++;
       expect(error).toBeDefined();
-      expect(error.message).toContain("Test error");
+      expect(error.message).toContain("Child errors occurred");
     });
 
     task.on("complete", () => {

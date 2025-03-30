@@ -58,7 +58,7 @@ export abstract class JobQueueTask<
     this.jobClass = Job<Input, Output>;
   }
 
-  async execute(input: Input, executeConfig: IExecuteConfig): Promise<Output> {
+  async execute(input: Input, executeConfig: IExecuteConfig): Promise<Output | undefined> {
     let cleanup: () => void = () => {};
 
     try {
@@ -89,7 +89,7 @@ export abstract class JobQueueTask<
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
           executeConfig.updateProgress(progress, message, details);
         });
-        output = await queue.waitFor<Output>(jobId);
+        output = (await queue.waitFor(jobId)) as Output | undefined;
         if (output === undefined) {
           throw new TaskConfigurationError("Job skipped, should not happen");
         }
