@@ -8,7 +8,6 @@
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import type { Task } from "./Task";
-import { Type, Static } from "@sinclair/typebox";
 
 /**
  * Enum representing the possible states of a task

@@ -6,16 +6,16 @@
 //    *******************************************************************************
 
 import {
-  TaskRegistry,
-  Workflow,
   CreateWorkflow,
   JobQueueTaskConfig,
   RunOrReplicateTask,
+  TaskRegistry,
+  Workflow,
 } from "@ellmers/task-graph";
-import { AnyNumberArray, ElVector } from "./base/TaskIOTypes";
-import { Type } from "@sinclair/typebox";
 import type { Static } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 import { TypeVector } from "./base/TaskIOSchemas";
+import { ElVector } from "./base/TaskIOTypes";
 // ===============================================================================
 
 export enum SimilarityFn {

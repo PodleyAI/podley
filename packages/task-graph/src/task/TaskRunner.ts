@@ -7,7 +7,6 @@
 
 import { globalServiceRegistry } from "@ellmers/util";
 import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
-import { CompoundMergeStrategy, NamedGraphResult } from "../task-graph/TaskGraphRunner";
 import { IRunConfig, ITask } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
@@ -18,12 +17,10 @@ import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./Tas
  * Manages the execution lifecycle of individual tasks
  */
 export class TaskRunner<
-  ExecuteInput extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  RunInput extends TaskInput = TaskInput,
+  RunOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  RunInput extends TaskInput = ExecuteInput,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> implements ITaskRunner<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput>
+> implements ITaskRunner<RunInput, RunOutput, Config>
 {
   /**
    * Whether the task is currently running
@@ -39,7 +36,7 @@ export class TaskRunner<
   /**
    * The task to run
    */
-  public readonly task: ITask<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput>;
+  public readonly task: ITask<RunInput, RunOutput, Config>;
 
   /**
    * Output cache repository
@@ -56,10 +53,7 @@ export class TaskRunner<
    * @param task The task to run
    * @param outputCache Optional output cache repository
    */
-  constructor(
-    task: ITask<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput>,
-    outputCache?: TaskOutputRepository
-  ) {
+  constructor(task: ITask<RunInput, RunOutput, Config>, outputCache?: TaskOutputRepository) {
     this.task = task;
     this.outputCache = outputCache;
   }
@@ -101,36 +95,9 @@ export class TaskRunner<
         throw new TaskAbortedError("Promise for task created and aborted before run");
       }
 
-      if (this.task.hasChildren()) {
-        // For compound tasks, run the subgraph
-        this.task.runExecuteOutputData = await this.executeTaskChildren();
-      } else {
-        // For simple tasks, we call the task's execute method
-        const result = await this.executeTask(this.task.runInputData as unknown as ExecuteInput);
-        this.task.runExecuteOutputData = [
-          {
-            id: this.task.config.id,
-            type: this.task.type,
-            data: result ?? ({} as unknown as ExecuteOutput),
-          },
-        ];
-        // and then we run the reactive task
-        const resultReactive = await this.executeTaskReactive(
-          this.task.runInputData as unknown as ExecuteInput,
-          this.task.runExecuteOutputData[0].data
-        );
-        this.task.runExecuteOutputData = [
-          {
-            id: this.task.config.id,
-            type: this.task.type,
-            data: resultReactive ?? result ?? ({} as unknown as ExecuteOutput),
-          },
-        ];
-      }
-      this.task.runOutputData = this.task.mergeExecuteOutputsToRunOutput(
-        this.task.runExecuteOutputData,
-        this.task.compoundMerge
-      );
+      const result = await this.executeTask(this.task.runInputData);
+
+      this.task.runOutputData = result ?? ({} as RunOutput);
 
       await this.handleComplete();
 
@@ -160,49 +127,12 @@ export class TaskRunner<
         throw new TaskInvalidInputError("Invalid input data");
       }
 
-      if (this.task.runExecuteOutputData.length === 0) {
-        // running reactive before a real task run
-        this.task.runExecuteOutputData = [
-          { id: this.task.config.id, type: this.task.type, data: {} as ExecuteOutput },
-        ];
-      }
-
-      let reactiveResults: NamedGraphResult<ExecuteOutput> | undefined;
-      if (this.task.hasChildren()) {
-        reactiveResults = await this.executeTaskChildrenReactive();
-      } else {
-        const singleResult = await this.executeTaskReactive(
-          this.task.runInputData as unknown as ExecuteInput,
-          this.task.runExecuteOutputData[0].data
-        );
-        reactiveResults = [
-          {
-            id: this.task.config.id,
-            type: this.task.type,
-            data: singleResult ?? ({} as ExecuteOutput),
-          },
-        ];
-      }
-
-      // for each reactiveResults update the runExecuteOutputData with the same id
-      for (const result of reactiveResults) {
-        // if (Object.keys(result.data).length === 0) continue;
-        const index = this.task.runExecuteOutputData.findIndex((item) => item.id === result.id);
-        if (index !== -1) {
-          this.task.runExecuteOutputData[index].data = result.data;
-        } else {
-          this.task.runExecuteOutputData.push({
-            id: result.id,
-            type: result.type,
-            data: result.data,
-          });
-        }
-      }
-
-      this.task.runOutputData = this.task.mergeExecuteOutputsToRunOutput(
-        this.task.runExecuteOutputData,
-        this.task.compoundMerge
+      const resultReactive = await this.executeTaskReactive(
+        this.task.runInputData,
+        this.task.runOutputData
       );
+
+      this.task.runOutputData = (resultReactive ?? {}) as RunOutput;
 
       await this.handleCompleteReactive();
       return this.task.runOutputData;
@@ -226,51 +156,28 @@ export class TaskRunner<
   /**
    * Protected method to execute a task by delegating back to the task itself.
    */
-  protected async executeTask(input: ExecuteInput): Promise<ExecuteOutput | undefined> {
-    return this.task.execute(input, {
+  protected async executeTask(input: RunInput): Promise<RunOutput | undefined> {
+    const result = await this.task.execute(input, {
       signal: this.abortController!.signal,
       updateProgress: this.handleProgress.bind(this),
       nodeProvenance: this.nodeProvenance,
     });
-  }
-
-  /**
-   * Protected method to execute a task subgraphby delegating back to the task itself.
-   */
-  protected async executeTaskChildren(): Promise<NamedGraphResult<ExecuteOutput>> {
-    return this.task.subGraph!.run<ExecuteOutput>({
-      parentProvenance: this.nodeProvenance || {},
-      parentSignal: this.abortController?.signal,
-      outputCache: this.outputCache,
-    });
+    const reactiveResult = await this.task.executeReactive(input, result || ({} as RunOutput));
+    return (
+      Object.keys(reactiveResult || {}) >= Object.keys(result || {})
+        ? reactiveResult
+        : (result ?? {})
+    ) as RunOutput;
   }
 
   /**
    * Protected method for reactive execution delegation
    */
   protected async executeTaskReactive(
-    input: ExecuteInput,
-    output: ExecuteOutput
-  ): Promise<ExecuteOutput | undefined> {
+    input: RunInput,
+    output: RunOutput
+  ): Promise<RunOutput | undefined> {
     return this.task.executeReactive(input, output);
-  }
-
-  /**
-   * Protected method for reactive execution delegation
-   */
-  protected async executeTaskChildrenReactive(): Promise<NamedGraphResult<ExecuteOutput>> {
-    return this.task.subGraph!.runReactive<ExecuteInput, ExecuteOutput>();
-  }
-
-  public mergeExecuteOutputsToRunOutput(
-    results: NamedGraphResult<ExecuteOutput>,
-    compoundMerge: CompoundMergeStrategy
-  ): RunOutput {
-    if (this.task.hasChildren()) {
-      return this.task.subGraph!.mergeExecuteOutputsToRunOutput(results, compoundMerge);
-    } else {
-      return results[0].data as unknown as RunOutput;
-    }
   }
 
   // ========================================================================
@@ -305,14 +212,11 @@ export class TaskRunner<
   /**
    * Handles task abort
    */
-  public async handleAbort(): Promise<void> {
+  protected async handleAbort(): Promise<void> {
     if (this.task.status === TaskStatus.ABORTING) return;
     this.task.status = TaskStatus.ABORTING;
     this.task.progress = 100;
     this.task.error = new TaskAbortedError();
-    if (this.task.isCompound) {
-      this.task.subGraph?.abort();
-    }
     this.task.emit("abort", this.task.error);
   }
 
@@ -346,9 +250,6 @@ export class TaskRunner<
     this.task.completedAt = new Date();
     this.abortController = undefined;
     this.nodeProvenance = {};
-    if (this.task.hasChildren()) {
-      await this.task.subGraph!.skip();
-    }
     this.task.emit("skipped");
   }
 
@@ -371,9 +272,6 @@ export class TaskRunner<
       err instanceof TaskError ? err : new TaskFailedError(err?.message || "Task failed");
     this.abortController = undefined;
     this.nodeProvenance = {};
-    if (this.task.hasChildren()) {
-      this.task.subGraph!.abort();
-    }
     this.task.emit("error", this.task.error);
   }
 

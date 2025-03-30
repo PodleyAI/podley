@@ -42,12 +42,10 @@ export type JobQueueTaskEventListeners = Omit<TaskEventListeners, "progress"> & 
  * @template Config - Type of configuration object for the task
  */
 export abstract class JobQueueTask<
-  ExecuteInput extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  RunInput extends TaskInput = TaskInput,
+  RunOutput extends TaskOutput = TaskOutput,
   Config extends JobQueueTaskConfig = JobQueueTaskConfig,
-  RunInput extends TaskInput = ExecuteInput,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> extends RunOrReplicateTask<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput> {
+> extends RunOrReplicateTask<RunInput, RunOutput, Config> {
   static readonly type: string = "JobQueueTask";
   static canRunDirectly = true;
 
@@ -57,24 +55,19 @@ export abstract class JobQueueTask<
 
   constructor(input: RunInput = {} as RunInput, config: Config = {} as Config) {
     super(input, config);
-    this.jobClass = Job<ExecuteInput, ExecuteOutput>;
+    this.jobClass = Job<RunInput, RunOutput>;
   }
 
-  async execute(
-    input: ExecuteInput,
-    executeConfig: IExecuteConfig
-  ): Promise<ExecuteOutput | undefined> {
+  async execute(input: RunInput, executeConfig: IExecuteConfig): Promise<RunOutput | undefined> {
     let cleanup: () => void = () => {};
 
     try {
       executeConfig.updateProgress(0.009, "Creating job");
       const job = await this.createJob(input);
 
-      const queue = getTaskQueueRegistry().getQueue<ExecuteInput, ExecuteOutput>(
-        this.config.queueName!
-      );
+      const queue = getTaskQueueRegistry().getQueue<RunInput, RunOutput>(this.config.queueName!);
 
-      let output: ExecuteOutput | undefined;
+      let output: RunOutput | undefined;
 
       if (!queue) {
         if ((this.constructor as typeof JobQueueTask).canRunDirectly) {
@@ -96,7 +89,7 @@ export abstract class JobQueueTask<
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
           executeConfig.updateProgress(progress, message, details);
         });
-        output = await queue.waitFor<ExecuteOutput>(jobId);
+        output = await queue.waitFor(jobId);
         if (output === undefined) {
           throw new TaskConfigurationError("Job skipped, should not happen");
         }
@@ -114,7 +107,7 @@ export abstract class JobQueueTask<
    * Override this method to create the right job class for the queue for this task
    * @returns Promise<Job> - The created job
    */
-  async createJob(input: ExecuteInput) {
+  async createJob(input: RunInput) {
     const queue = getTaskQueueRegistry().getQueue(this.config.queueName!);
     if (!queue) {
       if ((this.constructor as typeof JobQueueTask).canRunDirectly) {

@@ -24,7 +24,6 @@ import {
 } from "../task/TaskError";
 import { ITask } from "../task/ITask";
 import { DATAFLOW_ALL_PORTS } from "./Dataflow";
-import { Task } from "../task/Task";
 
 export type GraphSingleResult<T> = {
   id: unknown;
@@ -203,29 +202,28 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskConfigurationError if the graph is already running reactively
    */
-  public async runGraphReactive<
-    ExecuteInput extends TaskInput,
-    ExecuteOutput extends TaskOutput,
-  >(): Promise<NamedGraphResult<ExecuteOutput>> {
+  public async runGraphReactive<RunOutput extends TaskOutput>(): Promise<
+    NamedGraphResult<RunOutput>
+  > {
     await this.handleStartReactive();
 
-    const results: NamedGraphResult<ExecuteOutput> = [];
-
+    const results: NamedGraphResult<RunOutput> = [];
+    console.log("runGraphReactive start");
     try {
       for await (const task of this.reactiveScheduler.tasks()) {
         if (task.status === TaskStatus.PENDING) {
           task.resetInputData();
           this.copyInputFromEdgesToNode(task);
-          const taskResult = await task.runReactive();
+        }
+        const taskResult = await task.runReactive();
 
-          this.pushOutputFromNodeToEdges(task, taskResult);
-          if (this.graph.getTargetDataflows(task.config.id).length === 0) {
-            results.push({
-              id: task.config.id,
-              type: (task.constructor as any).runtype || (task.constructor as any).type,
-              data: taskResult as ExecuteOutput,
-            });
-          }
+        this.pushOutputFromNodeToEdges(task, taskResult);
+        if (this.graph.getTargetDataflows(task.config.id).length === 0) {
+          results.push({
+            id: task.config.id,
+            type: (task.constructor as any).runtype || (task.constructor as any).type,
+            data: taskResult as RunOutput,
+          });
         }
       }
       await this.handleCompleteReactive();
@@ -254,9 +252,10 @@ export class TaskGraphRunner {
    * Adds input data to a task
    * @param task The task to add input data to
    * @param overrides The input data to override (or add to if an array)
+   * @returns true if the input data was changed, false otherwise
    */
   public addInputData(task: ITask, overrides: Partial<TaskInput> | undefined) {
-    if (!overrides) return;
+    if (!overrides) return false;
 
     let changed = false;
     const inputSchema = task.inputSchema;
@@ -297,7 +296,8 @@ export class TaskGraphRunner {
       }
     }
 
-    if (changed && task.isCompound) {
+    // TODO(str): This is a hack.
+    if (changed && "regenerateGraph" in task && typeof task.regenerateGraph === "function") {
       task.regenerateGraph();
     }
   }
@@ -482,8 +482,6 @@ export class TaskGraphRunner {
   protected resetTask(graph: TaskGraph, task: ITask, runId: string) {
     task.status = TaskStatus.PENDING;
     task.resetInputData();
-    task.runExecuteInputData = [];
-    task.runExecuteOutputData = [];
     task.runOutputData = {};
     task.error = undefined;
     task.progress = 0;
@@ -501,11 +499,15 @@ export class TaskGraphRunner {
    */
   protected resetGraph(graph: TaskGraph, runnerId: string) {
     graph.getTasks().forEach((node) => {
-      const changed = node.isCompound && !deepEqual(node.runInputData, node.defaults);
+      const changed = deepEqual(node.runInputData, node.defaults);
       this.resetTask(graph, node, runnerId);
       if (changed) {
-        node.regenerateGraph();
-        this.resetGraph(node.subGraph!, runnerId);
+        if ("regenerateGraph" in node && typeof node.regenerateGraph === "function") {
+          node.regenerateGraph();
+          // TODO(str): This is a hack.
+          // @ts-expect-error - using internals
+          this.resetGraph(node.subGraph!, runnerId);
+        }
       }
     });
   }

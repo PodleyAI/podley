@@ -5,16 +5,16 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Writeable } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { ITaskConstructor } from "./ITask";
-import { RunOrReplicateTaskRunner } from "./RunOrReplicateTask";
 import { Task } from "./Task";
 import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRegistry } from "./TaskRegistry";
 import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskTypeName } from "./TaskTypes";
 import { Type, TSchema, TObject } from "@sinclair/typebox";
+import { TaskWithSubgraph } from "./TaskWithSubgraph";
+import { TaskWithSubgraphRunner } from "./TaskWithSubgraphRunner";
 
 /**
  * Generates all possible combinations of array inputs
@@ -94,12 +94,11 @@ export function arrayTaskFactory<
     Input extends PluralInputType = PluralInputType,
     Output extends PluralOutputType = PluralOutputType,
     Config extends SingleConfig = SingleConfig,
-  > extends Task<Input, Output, Config> {
+  > extends TaskWithSubgraph<Input, Output, Config> {
     static readonly type: TaskTypeName = name!;
     static readonly runtype = taskClass.type;
     static readonly category = taskClass.category;
     static readonly cacheable = taskClass.cacheable;
-    static readonly isCompound = true;
     static readonly compoundMerge = "last-or-property-array";
     itemClass = taskClass;
 
@@ -179,14 +178,6 @@ export function arrayTaskFactory<
     declare queueName: string;
     declare currentJobId: string;
     declare validateInput: (input: Partial<Input>) => Promise<boolean>;
-
-    declare _runner: RunOrReplicateTaskRunner<Input, Output, Config, Input, Output>;
-    override get runner(): RunOrReplicateTaskRunner<Input, Output, Config, Input, Output> {
-      if (!this._runner) {
-        this._runner = new RunOrReplicateTaskRunner<Input, Output, Config, Input, Output>(this);
-      }
-      return this._runner;
-    }
   }
 
   // Use type assertion to make TypeScript accept the registration

@@ -14,16 +14,14 @@ import type { ITask } from "./ITask";
  */
 
 export interface ITaskRunner<
-  ExecuteInput extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  RunInput extends TaskInput = TaskInput,
+  RunOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  RunInput extends TaskInput = ExecuteInput,
-  RunOutput extends TaskOutput = ExecuteOutput,
 > {
   /**
    * The task being run
    */
-  readonly task: ITask<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput>;
+  readonly task: ITask<RunInput, RunOutput, Config>;
 
   /**
    * Runs the task with the provided input overrides

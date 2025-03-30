@@ -6,12 +6,11 @@
 //    *******************************************************************************
 
 import { uuid4 } from "@ellmers/util";
+import { TObject } from "@sinclair/typebox";
 import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { Task } from "./Task";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
-import { TaskRunner } from "./TaskRunner";
-import { TObject } from "@sinclair/typebox";
+import { TaskWithSubgraph } from "./TaskWithSubgraph";
 
 /**
  * RunOrReplicate is a compound task that either:
@@ -20,12 +19,10 @@ import { TObject } from "@sinclair/typebox";
  * 3. Creates all combinations if multiple inputs are arrays
  */
 export class RunOrReplicateTask<
-  ExecuteInput extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  RunInput extends TaskInput = TaskInput,
+  RunOutput extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  RunInput extends TaskInput = ExecuteInput,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> extends Task<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput> {
+> extends TaskWithSubgraph<RunInput, RunOutput, Config> {
   /**
    * The type identifier for this task class
    */
@@ -34,7 +31,6 @@ export class RunOrReplicateTask<
   /**
    * Whether this task is a compound task (contains subtasks)
    */
-  public static readonly isCompound = true;
   public static readonly compoundMerge = "last-or-property-array";
 
   /**
@@ -79,13 +75,13 @@ export class RunOrReplicateTask<
   /**
    * Generate all combinations of array inputs
    */
-  private generateCombinations(arrayInputs: Map<string, any[]>): ExecuteInput[] {
+  private generateCombinations(arrayInputs: Map<string, any[]>): RunInput[] {
     // Start with an empty object
-    const combinations: ExecuteInput[] = [{ ...this.runInputData } as unknown as ExecuteInput];
+    const combinations: RunInput[] = [{ ...this.runInputData } as unknown as RunInput];
 
     // For each array input, generate all combinations
     for (const [inputId, values] of arrayInputs.entries()) {
-      const newCombinations: ExecuteInput[] = [];
+      const newCombinations: RunInput[] = [];
 
       // For each existing combination
       for (const combination of combinations) {
@@ -95,7 +91,7 @@ export class RunOrReplicateTask<
           newCombinations.push({
             ...combination,
             [inputId]: value,
-          } as ExecuteInput);
+          } as RunInput);
         }
       }
 
@@ -115,77 +111,5 @@ export class RunOrReplicateTask<
   toDependencyJSON(): JsonTaskItem {
     const { subtasks, ...result } = super.toDependencyJSON() as JsonTaskItem;
     return result;
-  }
-
-  // Declare specific _runner type for this class
-  declare _runner: RunOrReplicateTaskRunner<
-    ExecuteInput,
-    ExecuteOutput,
-    Config,
-    RunInput,
-    RunOutput
-  >;
-
-  override get runner(): RunOrReplicateTaskRunner<
-    ExecuteInput,
-    ExecuteOutput,
-    Config,
-    RunInput,
-    RunOutput
-  > {
-    if (!this._runner) {
-      this._runner = new RunOrReplicateTaskRunner<
-        ExecuteInput,
-        ExecuteOutput,
-        Config,
-        RunInput,
-        RunOutput
-      >(this);
-    }
-    return this._runner;
-  }
-}
-
-export class RunOrReplicateTaskRunner<
-  ExecuteInput extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
-  Config extends TaskConfig = TaskConfig,
-  RunInput extends TaskInput = ExecuteInput,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> extends TaskRunner<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput> {
-  // ========================================================================
-  // Utility methods
-  // ========================================================================
-
-  private fixInput(input: ExecuteInput): ExecuteInput {
-    // inputs has turned each property into an array, so we need to flatten the input
-    const flattenedInput = Object.entries(input).reduce((acc, [key, value]) => {
-      if (Array.isArray(value)) {
-        return { ...acc, [key]: value[0] };
-      }
-      return { ...acc, [key]: value };
-    }, {});
-    return flattenedInput as ExecuteInput;
-  }
-
-  // ========================================================================
-  // TaskRunner method overrides and helpers
-  // ========================================================================
-
-  /**
-   * Execute the task
-   */
-  protected async executeTask(input: ExecuteInput): Promise<ExecuteOutput | undefined> {
-    return await super.executeTask(this.fixInput(input));
-  }
-
-  /**
-   * Execute the task reactively
-   */
-  public async executeTaskReactive(
-    input: ExecuteInput,
-    output: ExecuteOutput
-  ): Promise<ExecuteOutput | undefined> {
-    return super.executeTaskReactive(this.fixInput(input), output);
   }
 }

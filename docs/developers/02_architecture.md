@@ -115,9 +115,14 @@ classDiagram
       static string category$
       static TaskInputDefinition[] inputs$
       static TaskOutputDefinition[] outputs$
-      static readonly isCompound = false$
       run() TaskOutput
       runReactive() TaskOutput
+    }
+
+    class TaskWithSubgraph{
+      TaskGraph subGraph
+      string merge
+      regenerateGraph()
     }
 
     class JobQueueTask{

@@ -24,12 +24,10 @@ import { getGlobalModelRepository } from "../../model/ModelRegistry";
  * Extends the JobQueueTask class to provide LLM-specific functionality.
  */
 export class AiTask<
-  ExecuteInput extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  RunInput extends TaskInput = TaskInput,
+  RunOutput extends TaskOutput = TaskOutput,
   Config extends JobQueueTaskConfig = JobQueueTaskConfig,
-  RunInput extends TaskInput = ExecuteInput,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> extends JobQueueTask<ExecuteInput, ExecuteOutput, Config, RunInput, RunOutput> {
+> extends JobQueueTask<RunInput, RunOutput, Config> {
   public static type: string = "AiTask";
 
   /**
@@ -52,7 +50,7 @@ export class AiTask<
    * Creates a new Job instance for the task
    * @returns Promise<Job> - The created job
    */
-  async createJob(input: ExecuteInput) {
+  async createJob(input: RunInput) {
     const runtype = (this.constructor as any).runtype ?? (this.constructor as any).type;
     const modelname = input.model;
     if (!modelname) throw new Error("JobQueueTaskTask: No model name found");

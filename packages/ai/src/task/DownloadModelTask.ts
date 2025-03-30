@@ -45,11 +45,9 @@ export type DownloadModelTaskExecuteOutput = {
  * This task has a side effect of downloading the model and caching it locally outside of the task system
  */
 export class DownloadModelTask extends AiTask<
-  DownloadModelTaskExecuteInput,
-  DownloadModelTaskExecuteOutput,
-  JobQueueTaskConfig,
   DownloadModelTaskRunInput,
-  DownloadModelTaskRunOutput
+  DownloadModelTaskRunOutput,
+  JobQueueTaskConfig
 > {
   public static type = "DownloadModelTask";
   public static category = "Text Model";

@@ -16,15 +16,13 @@ import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph } from "./TaskGraph";
 import { CompoundMergeStrategy } from "./TaskGraphRunner";
 import { TSchema } from "@sinclair/typebox";
+import { TaskWithSubgraph } from "../task/TaskWithSubgraph";
 
 // Type definitions for the workflow
-export type CreateWorkflow<
-  I extends TaskInput,
-  EO extends TaskOutput,
-  C extends TaskConfig,
-  RI extends TaskInput = I,
-  RO extends TaskOutput = EO,
-> = (input?: Partial<RI>, config?: Partial<C>) => Workflow;
+export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
+  input?: Partial<I>,
+  config?: Partial<C>
+) => Workflow;
 
 // Event types
 export type WorkflowEventListeners = {
@@ -112,7 +110,7 @@ function parallel(
     isCompound: true,
     compoundMerge: mergeFn,
   };
-  const mergeTask = new Task(input, config);
+  const mergeTask = new TaskWithSubgraph(input, config);
   mergeTask.subGraph!.addTasks(tasks);
   workflow.graph.addTask(mergeTask);
   if (previousTask) {
@@ -160,15 +158,13 @@ export class Workflow {
    * @returns A function that adds the specified task type to a Workflow
    */
   public static createWorkflow<
-    EI extends TaskInput,
-    EO extends TaskOutput,
+    I extends TaskInput,
+    O extends TaskOutput,
     C extends TaskConfig = TaskConfig,
-    RI extends TaskInput = EI,
-    RO extends TaskOutput = EO,
-  >(taskClass: ITaskConstructor<EI, EO, C, RI, RO>): CreateWorkflow<RI, RO, C> {
+  >(taskClass: ITaskConstructor<I, O, C>): CreateWorkflow<I, O, C> {
     const helper = function (
       this: Workflow,
-      input: Partial<RI> = {},
+      input: Partial<I> = {},
       config: Partial<C> = {}
     ): Workflow {
       this._error = "";
@@ -178,9 +174,9 @@ export class Workflow {
       // Create and add the new task
       taskIdCounter++;
 
-      const task = this.addTask<EI, EO, C, RI, RO>(
+      const task = this.addTask<I, O, C>(
         taskClass,
-        input as EI,
+        input as I,
         { id: String(taskIdCounter), ...config } as C
       );
 
@@ -541,7 +537,7 @@ export class Workflow {
   }
 
   toTask(): Task {
-    const task = new Task(
+    const task = new TaskWithSubgraph(
       {},
       {
         isCompound: true,
@@ -634,17 +630,11 @@ export class Workflow {
     return this;
   }
 
-  public addTask<
-    EI extends TaskInput,
-    EO extends TaskOutput,
-    C extends TaskConfig = TaskConfig,
-    RI extends TaskInput = EI,
-    RO extends TaskOutput = EO,
-  >(
-    taskClass: ITaskConstructor<EI, EO, C, RI, RO>,
-    input: EI,
+  public addTask<I extends TaskInput, O extends TaskOutput, C extends TaskConfig = TaskConfig>(
+    taskClass: ITaskConstructor<I, O, C>,
+    input: I,
     config: C
-  ): ITask<EI, EO, C, RI, RO> {
+  ): ITask<I, O, C> {
     const task = new taskClass(input, config);
     const id = this.graph.addTask(task);
     this.events.emit("changed", id);
@@ -659,8 +649,6 @@ export function CreateWorkflow<
   I extends TaskInput,
   O extends TaskOutput,
   C extends TaskConfig = TaskConfig,
-  RI extends TaskInput = I,
-  RO extends TaskOutput = O,
->(taskClass: any): CreateWorkflow<I, O, C, RI, RO> {
-  return Workflow.createWorkflow<I, O, C, RI, RO>(taskClass);
+>(taskClass: any): CreateWorkflow<I, O, C> {
+  return Workflow.createWorkflow<I, O, C>(taskClass);
 }

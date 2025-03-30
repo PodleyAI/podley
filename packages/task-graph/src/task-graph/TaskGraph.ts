@@ -96,10 +96,8 @@ export class TaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public runReactive<ExecuteInput extends TaskInput, ExecuteOutput extends TaskOutput>(): Promise<
-    NamedGraphResult<ExecuteOutput>
-  > {
-    return this.runner.runGraphReactive<ExecuteInput, ExecuteOutput>();
+  public runReactive<RunOutput extends TaskOutput>(): Promise<NamedGraphResult<RunOutput>> {
+    return this.runner.runGraphReactive<RunOutput>();
   }
 
   /**

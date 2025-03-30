@@ -6,7 +6,7 @@ This module provides a flexible task processing system with support for various 
   - [Core Classes](#core-classes)
 - [Task Types](#task-types)
   - [A Simple Task](#a-simple-task)
-  - [isCompound = true](#iscompound--true)
+  - [TaskWithSubgraph](#taskwithsubgraph)
   - [RunOrReplicateTask](#runorreplicatetask)
   - [Job Queue Tasks](#job-queue-tasks)
 - [Task Lifecycle](#task-lifecycle)
@@ -42,9 +42,12 @@ class MyTask extends Task {
   static readonly category = "Utility"; // Optional, used for grouping tasks in UI
   declare runInputData: MyTaskInput;
   declare runOutputData: MyTaskOutput;
-  static inputs = [{ id: "input", valueType: "number" }];
-  static outputs = [{ id: "result", valueType: "number" }];
-  static isCompound = false;
+  static inputSchema = Type.Object({
+    input: Type.Number(),
+  });
+  static outputSchema = Type.Object({
+    result: Type.Number(),
+  });
 
   // typically you either override execute or executeReactive, but not both
   async execute(input: MyTaskInput, config: IExecuteConfig) {
@@ -63,10 +66,9 @@ class MyTask extends Task {
 }
 ```
 
-### isCompound = true
+### TaskWithSubgraph
 
-- Compound tasks are tasks that contain other tasks. They are represented as an internal TaskGraph.
-- Compound tasks can regenerate its own subtasks based on changes to its inputs.
+- TaskWithSubgraph tasks are tasks that contain other tasks. They are represented as an internal TaskGraph.
 - A RunOrReplicateTask is a compound task that can run a task as normal, or if the inputs are an array and the input definition has isArray="replicate" defined for that input, then the task will run parallel copies with a subGraph.
 - An ArrayTask is a regenerative task based on a single task that processes an array of inputs in parallel by creating a new subtask for each input, and then combining the results into a single array output. (deprecated)
 
