@@ -51,8 +51,6 @@ export abstract class JobQueueTask<
 
   public jobClass: any;
 
-  declare events: EventEmitter<JobQueueTaskEventListeners>;
-
   constructor(input: Input = {} as Input, config: Config = {} as Config) {
     super(input, config);
     this.jobClass = Job<Input, Output>;

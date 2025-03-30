@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Writeable } from "@ellmers/util";
+import { EventEmitter, Writeable } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { ITaskConstructor } from "./ITask";
@@ -21,6 +21,7 @@ import {
   TaskTypeName,
 } from "./TaskTypes";
 import { TaskWithSubgraph } from "./TaskWithSubgraph";
+import { TaskEventListeners } from "./TaskEvents";
 
 /**
  * Converts specified IO definitions to array type
@@ -196,6 +197,7 @@ export function arrayTaskFactory<
     }
 
     declare _subGraph: TaskGraph;
+    declare _events: EventEmitter<TaskEventListeners>;
     declare abortController: AbortController;
     declare nodeProvenance: Provenance;
     declare outputCache: TaskOutputRepository;

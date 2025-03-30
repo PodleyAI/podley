@@ -118,7 +118,7 @@ export interface ITaskCompound {
  * Interface for task event handling
  */
 export interface ITaskEvents {
-  readonly events: EventEmitter<TaskEventListeners>;
+  get events(): EventEmitter<TaskEventListeners>;
 
   on<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void;
   off<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void;

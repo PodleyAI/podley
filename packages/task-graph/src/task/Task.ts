@@ -266,7 +266,13 @@ export class Task<
   /**
    * Event emitter for task lifecycle events
    */
-  public readonly events = new EventEmitter<TaskEventListeners>();
+  public get events(): EventEmitter<TaskEventListeners> {
+    if (!this._events) {
+      this._events = new EventEmitter<TaskEventListeners>();
+    }
+    return this._events;
+  }
+  protected _events: EventEmitter<TaskEventListeners> | undefined;
 
   /**
    * Cache for task outputs
@@ -302,9 +308,6 @@ export class Task<
       },
       config
     );
-
-    // Prevent serialization of events
-    Object.defineProperty(this, "events", { enumerable: false });
   }
 
   // ========================================================================
@@ -387,7 +390,9 @@ export class Task<
    * Emits an event
    */
   public emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>): void {
-    this.events.emit(name, ...args);
+    // this one is not like the others. Listeners will cause a lazy load of the event emitter.
+    // but no need to emit if no one is listening, so we don't want to create the event emitter if not needed
+    this._events?.emit(name, ...args);
   }
 
   // ========================================================================
