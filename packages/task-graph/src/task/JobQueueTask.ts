@@ -51,7 +51,7 @@ export abstract class JobQueueTask<
 
   public jobClass: any;
 
-  declare events: EventEmitter<JobQueueTaskEventListeners>;
+  declare _events: EventEmitter<JobQueueTaskEventListeners>;
 
   constructor(input: RunInput = {} as RunInput, config: Config = {} as Config) {
     super(input, config);

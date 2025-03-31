@@ -272,7 +272,7 @@ export class Task<
     }
     return this._events;
   }
-  private _events: EventEmitter<TaskEventListeners> | undefined;
+  protected _events: EventEmitter<TaskEventListeners> | undefined;
 
   /**
    * Cache for task outputs

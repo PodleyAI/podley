@@ -8,13 +8,13 @@
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { ITaskConstructor } from "./ITask";
-import { Task } from "./Task";
 import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRegistry } from "./TaskRegistry";
 import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskTypeName } from "./TaskTypes";
 import { Type, TSchema, TObject } from "@sinclair/typebox";
 import { TaskWithSubgraph } from "./TaskWithSubgraph";
-import { TaskWithSubgraphRunner } from "./TaskWithSubgraphRunner";
+import { EventEmitter } from "@ellmers/util";
+import { TaskEventListeners } from "./TaskEvents";
 
 /**
  * Generates all possible combinations of array inputs
@@ -172,6 +172,7 @@ export function arrayTaskFactory<
     }
 
     declare _subGraph: TaskGraph;
+    declare _events: EventEmitter<TaskEventListeners>;
     declare abortController: AbortController;
     declare nodeProvenance: Provenance;
     declare outputCache: TaskOutputRepository;
