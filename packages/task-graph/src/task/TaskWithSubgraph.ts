@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { CompoundMergeStrategy, NamedGraphResult } from "../task-graph/TaskGraphRunner";
+import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import type { IRunConfig } from "./ITask";
 import { Task } from "./Task";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";

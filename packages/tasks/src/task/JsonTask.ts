@@ -14,8 +14,8 @@ import {
   TaskRegistry,
   TaskInput,
   TaskOutput,
-  Task,
   createGraphFromDependencyJSON,
+  TaskWithSubgraph,
 } from "@ellmers/task-graph";
 import { Type } from "@sinclair/typebox";
 
@@ -35,7 +35,7 @@ export class JsonTask<
   Input extends JsonTaskInput = JsonTaskInput,
   Output extends JsonTaskOutput = JsonTaskOutput,
   Config extends TaskConfig = TaskConfig,
-> extends Task<Input, Output, Config> {
+> extends TaskWithSubgraph<Input, Output, Config> {
   static readonly type = "JsonTask";
   static readonly category = "Utility";
   static readonly isCompound = true;
