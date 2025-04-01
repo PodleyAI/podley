@@ -87,6 +87,16 @@ export const TypeModel = (annotations: Record<"task" | string, unknown> = {}) =>
     $id: "TypeModel",
   });
 
+export const TypeLanguage = (annotations: Record<string, unknown> = {}) =>
+  Type.String({
+    title: "Language",
+    description: "The language to use",
+    maxLength: 2,
+    minLength: 2,
+    ...annotations,
+    $id: "TypeLanguage",
+  });
+
 setTimeout(() => {
   TypeRegistry.Set("TypeModel", (schema: TSchema, modelName: unknown) => {
     if (schema.$id === "TypeModel" && typeof modelName === "string") {

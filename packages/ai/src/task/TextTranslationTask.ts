@@ -8,24 +8,20 @@
 import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
 import { Type, type Static } from "@sinclair/typebox";
-import { TypeModel } from "./base/TaskIOSchemas";
+import { TypeLanguage, TypeModel } from "./base/TaskIOSchemas";
 
 const TextTranslationInputSchema = Type.Object({
   text: Type.String({
     title: "Text",
     description: "The text to translate",
   }),
-  source_lang: Type.String({
+  source_lang: TypeLanguage({
     title: "Source Language",
     description: "The source language",
-    maxLength: 2,
-    minLength: 2,
   }),
-  target_lang: Type.String({
+  target_lang: TypeLanguage({
     title: "Target Language",
     description: "The target language",
-    maxLength: 2,
-    minLength: 2,
   }),
   model: TypeModel({
     task: "TextTranslationTask",
@@ -39,7 +35,7 @@ const TextTranslationOutputSchema = Type.Object({
     title: "Text",
     description: "The translated text",
   }),
-  target_lang: Type.String({
+  target_lang: TypeLanguage({
     title: "Output Language",
     description: "The output language",
   }),
