@@ -177,19 +177,10 @@ export class TaskGraphRunner {
     await Promise.allSettled(Array.from(this.inProgressFunctions.values()));
 
     if (this.failedTaskErrors.size > 0) {
-      const errors = Array.from(this.failedTaskErrors.entries()).map(([key, error]) => ({
-        key,
-        type: (error as any).name || (error as any).constructor.name,
-        error,
-      }));
-      const errorGroup = new TaskErrorGroup(errors);
-      await this.handleError();
-      throw errorGroup;
+      throw this.failedTaskErrors.values().next().value;
     }
     if (this.abortController?.signal.aborted) {
-      throw new TaskErrorGroup([
-        { key: "*", type: "TaskAbortedError", error: new TaskAbortedError() },
-      ]);
+      throw new TaskAbortedError();
     }
 
     await this.handleComplete();

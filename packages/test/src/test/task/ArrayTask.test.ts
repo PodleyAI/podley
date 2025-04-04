@@ -285,7 +285,7 @@ describe("ArrayTask", () => {
     task.on("error", (error: TaskError) => {
       events.error++;
       expect(error).toBeDefined();
-      expect(error.message).toContain("Child errors occurred");
+      expect(error.message).toContain("Test error");
     });
 
     task.on("complete", () => {
