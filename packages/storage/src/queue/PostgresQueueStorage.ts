@@ -244,7 +244,19 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
   public async complete(jobDetails: JobStorageFormat<Input, Output>): Promise<void> {
     await this.dbPromise;
 
-    if (jobDetails.status === JobStatus.PENDING) {
+    if (jobDetails.status === JobStatus.SKIPPED) {
+      await this.db.query(
+        `UPDATE job_queue 
+          SET 
+            status = $1, 
+            progress = 100,
+            progress_message = '',
+            progress_details = NULL,
+            completed_at = NOW() AT TIME ZONE 'UTC'
+          WHERE id = $2 AND queue = $3`,
+        [jobDetails.status, jobDetails.id, this.queueName]
+      );
+    } else if (jobDetails.status === JobStatus.PENDING) {
       await this.db.query(
         `UPDATE job_queue 
           SET 

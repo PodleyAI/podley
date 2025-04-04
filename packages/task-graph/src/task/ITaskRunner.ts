@@ -40,4 +40,9 @@ export interface ITaskRunner<
    * Aborts the task execution
    */
   abort(): void;
+
+  /**
+   * Skips the task execution
+   */
+  skip(): Promise<void>;
 }

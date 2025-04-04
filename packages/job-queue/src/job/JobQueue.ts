@@ -12,12 +12,13 @@ import {
   QUEUE_STORAGE,
 } from "@ellmers/storage";
 import { EventEmitter, globalServiceRegistry, sleep } from "@ellmers/util";
-import { IJobQueue, JobQueueOptions, QueueMode } from "./IJobQueue";
-import { Job, JobConstructorParam, JobStatus } from "./Job";
+import { IJobQueue, JobQueueOptions, QueueMode, JobStatus } from "./IJobQueue";
+import { Job, JobConstructorParam } from "./Job";
 import {
   AbortSignalJobError,
   JobError,
   JobNotFoundError,
+  JobSkippedError,
   PermanentJobError,
   RetryableJobError,
 } from "./JobError";
@@ -40,6 +41,7 @@ export interface JobQueueStats {
   failedJobs: number;
   abortedJobs: number;
   retriedJobs: number;
+  skippedJobs: number;
   averageProcessingTime?: number;
   lastUpdateTime: Date;
 }
@@ -110,6 +112,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       failedJobs: 0,
       abortedJobs: 0,
       retriedJobs: 0,
+      skippedJobs: 0,
       lastUpdateTime: new Date(),
     };
   }
@@ -174,6 +177,13 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     await this.storage.delete(id);
   }
 
+  public async skip(id: unknown) {
+    if (!id) throw new JobNotFoundError("Cannot skip undefined job");
+    const job = await this.get(id);
+    if (!job) throw new JobNotFoundError(`Job ${id} not found`);
+    await this.skipJob(job);
+  }
+
   /**
    * Returns current queue statistics
    */
@@ -202,13 +212,16 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
   /**
    * Returns a promise that resolves when the job completes
    */
-  public async waitFor<Output>(jobId: unknown): Promise<Output> {
+  public async waitFor<Output>(jobId: unknown): Promise<Output | undefined> {
     if (!jobId) throw new JobNotFoundError("Cannot wait for undefined job");
     const job = await this.get(jobId);
     if (!job) throw new JobNotFoundError(`Job ${jobId} not found`);
 
     if (job.status === JobStatus.COMPLETED) {
       return job.output as Output;
+    }
+    if (job.status === JobStatus.SKIPPED) {
+      return undefined;
     }
     if (job.status === JobStatus.FAILED) {
       throw job.error;
@@ -238,7 +251,11 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     const job = await this.get(jobId);
     if (!job) throw new JobNotFoundError(`Job ${jobId} not found`);
 
-    if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.ABORTING].includes(job.status)) {
+    if (
+      [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.ABORTING, JobStatus.SKIPPED].includes(
+        job.status
+      )
+    ) {
       return;
     }
 
@@ -348,6 +365,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       failedJobs: 0,
       abortedJobs: 0,
       retriedJobs: 0,
+      skippedJobs: 0,
       lastUpdateTime: new Date(),
     };
     this.emitStatsUpdate();
@@ -462,6 +480,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     failedJobs: 0,
     abortedJobs: 0,
     retriedJobs: 0,
+    skippedJobs: 0,
     lastUpdateTime: new Date(),
   };
 
@@ -552,6 +571,9 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     }
     if (job.deadlineAt && job.deadlineAt < new Date()) {
       throw new PermanentJobError(`Job ${job.id} has exceeded its deadline`);
+    }
+    if (job.status === JobStatus.SKIPPED) {
+      throw new JobSkippedError(`Job ${job.id} has been skipped`);
     }
   }
 
@@ -697,6 +719,27 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       this.events.emit("job_retry", this.queueName, job.id, job.runAfter);
     } catch (err) {
       console.error("rescheduleJob", err);
+    }
+  }
+
+  protected async skipJob(job: Job<Input, Output>) {
+    try {
+      job.status = JobStatus.SKIPPED;
+      job.progress = 100;
+      job.completedAt = new Date();
+      job.progressMessage = "";
+      job.progressDetails = null;
+      await this.storage.complete(this.classToStorage(job));
+      if (this.options.deleteAfterSkippedMs === 0) {
+        await this.delete(job.id);
+      }
+      this.stats.skippedJobs++;
+      this.events.emit("job_skipped", this.queueName, job.id);
+      const promises = this.activeJobPromises.get(job.id) || [];
+      promises.forEach(({ resolve }) => resolve(undefined));
+      this.activeJobPromises.delete(job.id);
+    } catch (err) {
+      console.error("skipJob", err);
     }
   }
 

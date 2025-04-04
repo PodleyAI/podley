@@ -7,14 +7,7 @@
 
 import type { JobQueue } from "./JobQueue";
 import type { JobProgressListener } from "./JobQueueEventListeners";
-
-export enum JobStatus {
-  PENDING = "PENDING",
-  PROCESSING = "PROCESSING",
-  COMPLETED = "COMPLETED",
-  ABORTING = "ABORTING",
-  FAILED = "FAILED",
-}
+import { JobStatus } from "./IJobQueue";
 
 /**
  * Details about a job that reflect the structure in the database.
