@@ -96,8 +96,8 @@ export class TaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskErrorGroup if any tasks have failed
    */
-  public runReactive<ExecuteOutput extends TaskOutput>(): Promise<NamedGraphResult<ExecuteOutput>> {
-    return this.runner.runGraphReactive<ExecuteOutput>();
+  public runReactive<Output extends TaskOutput>(): Promise<NamedGraphResult<Output>> {
+    return this.runner.runGraphReactive<Output>();
   }
 
   /**
@@ -108,8 +108,8 @@ export class TaskGraph {
    */
   public mergeExecuteOutputsToRunOutput<
     ExecuteOutput extends TaskOutput,
-    RunOutput extends TaskOutput = ExecuteOutput,
-  >(results: NamedGraphResult<ExecuteOutput>, compoundMerge: CompoundMergeStrategy): RunOutput {
+    Output extends TaskOutput = ExecuteOutput,
+  >(results: NamedGraphResult<ExecuteOutput>, compoundMerge: CompoundMergeStrategy): Output {
     return this.runner.mergeExecuteOutputsToRunOutput(results, compoundMerge);
   }
 

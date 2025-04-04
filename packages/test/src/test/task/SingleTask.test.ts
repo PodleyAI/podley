@@ -60,10 +60,6 @@ describe("Task", () => {
         expect(SimpleProcessingTask.type).toBe("SimpleProcessingTask");
       });
 
-      it("should not be a compound task", () => {
-        expect(task.isCompound).toBe(false);
-      });
-
       it("should have default input values", () => {
         expect(task.defaults).toEqual({ value: "default" });
       });
@@ -229,11 +225,6 @@ describe("Task", () => {
       it("should be instantiable", () => {
         const task = new Task();
         expect(task).toBeInstanceOf(Task);
-      });
-
-      it("should not be a compound task", () => {
-        const task = new Task();
-        expect(task.isCompound).toBe(false);
       });
     });
 

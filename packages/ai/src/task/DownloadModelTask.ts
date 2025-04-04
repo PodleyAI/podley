@@ -52,8 +52,9 @@ type DownloadModelTaskOutputReplicate = ConvertAllToOptionalArray<DownloadModelT
  * This task has a side effect of downloading the model and caching it locally outside of the task system
  */
 export class DownloadModelTask extends AiTask<
-  DownloadModelTaskInputReplicate,
-  DownloadModelTaskOutputReplicate
+  DownloadModelTaskInput,
+  DownloadModelTaskOutput,
+  JobQueueTaskConfig
 > {
   public static type = "DownloadModelTask";
   public static category = "Text Model";
@@ -132,7 +133,7 @@ export class DownloadModelTask extends AiTask<
   public files: { file: string; progress: number }[] = [];
 
   constructor(input: Partial<DownloadModelTaskInputReplicate>, config: JobQueueTaskConfig = {}) {
-    super(input as DownloadModelTaskInputReplicate, config);
+    super(input as DownloadModelTaskInput, config);
     this.on("progress", this.processProgress.bind(this));
     this.on("start", () => {
       this.files = [];

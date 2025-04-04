@@ -8,7 +8,7 @@
 import type { EventEmitter } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import type { TaskGraph } from "../task-graph/TaskGraph";
-import { CompoundMergeStrategy, NamedGraphResult } from "../task-graph/TaskGraphRunner";
+import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import { TaskError } from "./TaskError";
 import type {
   TaskEventListener,
@@ -27,6 +27,7 @@ import type {
   TaskOutputDefinition,
   TaskStatus,
 } from "./TaskTypes";
+import { TaskRunner } from "./TaskRunner";
 
 /**
  * Configuration for task execution
@@ -56,7 +57,6 @@ export interface ITaskStaticProperties {
   readonly cacheable: boolean;
   readonly inputs: readonly TaskInputDefinition[];
   readonly outputs: readonly TaskOutputDefinition[];
-  readonly isCompound: boolean;
 }
 
 /**
@@ -65,10 +65,10 @@ export interface ITaskStaticProperties {
  */
 export interface ITaskExecution<
   Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  Output extends TaskOutput = TaskOutput,
 > {
-  execute(input: Input, config: IExecuteConfig): Promise<ExecuteOutput | undefined>;
-  executeReactive(input: Input, output: ExecuteOutput): Promise<ExecuteOutput | undefined>;
+  execute(input: Input, config: IExecuteConfig): Promise<Output | undefined>;
+  executeReactive(input: Input, output: Output): Promise<Output | undefined>;
 }
 
 /**
@@ -76,16 +76,13 @@ export interface ITaskExecution<
  * These methods define how tasks are run and are usually delegated to a TaskRunner
  */
 export interface ITaskLifecycle<
-  Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
-  RunOutput extends TaskOutput = ExecuteOutput,
+  Input extends TaskInput,
+  Output extends TaskOutput,
+  Config extends TaskConfig,
 > {
-  run(overrides?: Partial<Input>, config?: IRunConfig): Promise<RunOutput>;
-  runReactive(overrides?: Partial<Input>): Promise<RunOutput>;
-  mergeExecuteOutputsToRunOutput(
-    results: NamedGraphResult<ExecuteOutput>,
-    compoundMerge: CompoundMergeStrategy
-  ): RunOutput;
+  run(overrides?: Partial<Input>): Promise<Output>;
+  runReactive(overrides?: Partial<Input>): Promise<Output>;
+  get runner(): TaskRunner<Input, Output, Config>;
   abort(): void;
   skip(): Promise<void>;
 }
@@ -93,15 +90,10 @@ export interface ITaskLifecycle<
 /**
  * Interface for task input/output operations
  */
-export interface ITaskIO<
-  Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> {
+export interface ITaskIO<Input extends TaskInput, Output extends TaskOutput> {
   defaults: Partial<Input>;
   runInputData: Input;
-  runIntermediateData: NamedGraphResult<ExecuteOutput>;
-  runOutputData: RunOutput;
+  runOutputData: Output;
 
   get inputs(): readonly TaskInputDefinition[]; // this gets local access for static input definition property
   get outputs(): readonly TaskOutputDefinition[]; // this gets local access for static output definition property
@@ -116,7 +108,6 @@ export interface ITaskIO<
 }
 
 export interface ITaskCompound {
-  get isCompound(): boolean; // this gets local access for static isCompound property
   subGraph: TaskGraph | null;
   regenerateGraph(): void;
   hasChildren(): boolean;
@@ -127,7 +118,7 @@ export interface ITaskCompound {
  * Interface for task event handling
  */
 export interface ITaskEvents {
-  readonly events: EventEmitter<TaskEventListeners>;
+  get events(): EventEmitter<TaskEventListeners>;
 
   on<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void;
   off<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void;
@@ -163,33 +154,36 @@ export interface ITaskState<Config extends TaskConfig = TaskConfig> {
  */
 export interface ITask<
   Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  RunOutput extends TaskOutput = ExecuteOutput,
 > extends ITaskState<Config>,
-    ITaskIO<Input, ExecuteOutput, RunOutput>,
+    ITaskIO<Input, Output>,
     ITaskEvents,
-    ITaskLifecycle<Input, ExecuteOutput, RunOutput>,
-    ITaskExecution<Input, ExecuteOutput>,
-    ITaskCompound,
+    ITaskLifecycle<Input, Output, Config>,
+    ITaskExecution<Input, Output>,
     ITaskSerialization {}
+
+export interface ITaskWithSubgraph<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends ITask<Input, Output, Config>,
+    ITaskCompound {}
 
 /**
  * Type for task constructor
  */
 type ITaskConstructorType<
-  Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
-  Config extends TaskConfig = TaskConfig,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> = new (input: Input, config: Config) => ITask<Input, ExecuteOutput, Config, RunOutput>;
+  Input extends TaskInput,
+  Output extends TaskOutput,
+  Config extends TaskConfig,
+> = new (input: Input, config: Config) => ITask<Input, Output, Config>;
 
 /**
  * Interface for task constructor with static properties
  */
 export type ITaskConstructor<
-  Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
-  Config extends TaskConfig = TaskConfig,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> = ITaskConstructorType<Input, ExecuteOutput, Config, RunOutput> & ITaskStaticProperties;
+  Input extends TaskInput,
+  Output extends TaskOutput,
+  Config extends TaskConfig,
+> = ITaskConstructorType<Input, Output, Config> & ITaskStaticProperties;

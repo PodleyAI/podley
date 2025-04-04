@@ -42,10 +42,9 @@ import {
  */
 export class Task<
   Input extends TaskInput = TaskInput,
-  ExecuteOutput extends TaskOutput = TaskOutput,
+  Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-  RunOutput extends TaskOutput = ExecuteOutput,
-> implements ITask<Input, ExecuteOutput, Config, RunOutput>
+> implements ITask<Input, Output, Config>
 {
   // ========================================================================
   // Static properties - should be overridden by subclasses
@@ -76,12 +75,6 @@ export class Task<
    */
   public static outputs: readonly TaskOutputDefinition[] = [];
 
-  /**
-   * Whether this task is a compound task (contains subtasks)
-   */
-  public static isCompound: boolean = false;
-  public static compoundMerge: CompoundMergeStrategy = "last-or-named";
-
   // ========================================================================
   // Task Execution Methods - Core logic provided by subclasses
   // ========================================================================
@@ -94,7 +87,7 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The output of the task or undefined if no changes
    */
-  public async execute(input: Input, config: IExecuteConfig): Promise<ExecuteOutput | undefined> {
+  public async execute(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
     if (config.signal?.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
@@ -110,10 +103,7 @@ export class Task<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  public async executeReactive(
-    input: Input,
-    output: ExecuteOutput
-  ): Promise<ExecuteOutput | undefined> {
+  public async executeReactive(input: Input, output: Output): Promise<Output | undefined> {
     return output;
   }
 
@@ -124,18 +114,15 @@ export class Task<
   /**
    * Task runner for handling the task execution
    */
-  protected _runner: TaskRunner<Input, ExecuteOutput, Config, RunOutput> | undefined;
+  protected _runner: TaskRunner<Input, Output, Config> | undefined;
 
   /**
    * Gets the task runner instance
    * Creates a new one if it doesn't exist
    */
-  public get runner(): TaskRunner<Input, ExecuteOutput, Config, RunOutput> {
+  public get runner(): TaskRunner<Input, Output, Config> {
     if (!this._runner) {
-      this._runner = new TaskRunner<Input, ExecuteOutput, Config, RunOutput>(
-        this,
-        this.outputCache
-      );
+      this._runner = new TaskRunner<Input, Output, Config>(this);
     }
     return this._runner;
   }
@@ -145,12 +132,11 @@ export class Task<
    * Delegates to the task runner
    *
    * @param overrides Optional input overrides
-   * @param config Optional configuration overrides
    * @throws TaskError if the task fails
    * @returns The task output
    */
-  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<RunOutput> {
-    return this.runner.run(overrides, config);
+  async run(overrides: Partial<Input> = {}): Promise<Output> {
+    return this.runner.run(overrides);
   }
 
   /**
@@ -160,20 +146,8 @@ export class Task<
    * @param overrides Optional input overrides
    * @returns The task output
    */
-  public async runReactive(overrides: Partial<Input> = {}): Promise<RunOutput> {
+  public async runReactive(overrides: Partial<Input> = {}): Promise<Output> {
     return this.runner.runReactive(overrides);
-  }
-
-  /**
-   * Merges the execute output to the run output
-   * @param results The execute output
-   * @returns The run output
-   */
-  public mergeExecuteOutputsToRunOutput(
-    results: NamedGraphResult<ExecuteOutput>,
-    compoundMerge: CompoundMergeStrategy
-  ): RunOutput {
-    return this.runner.mergeExecuteOutputsToRunOutput(results, compoundMerge);
   }
 
   /**
@@ -210,13 +184,6 @@ export class Task<
     return (this.constructor as typeof Task).outputs ?? [];
   }
 
-  /**
-   * Gets whether this task is a compound task (contains subtasks)
-   */
-  public get isCompound(): boolean {
-    return this.config?.isCompound ?? (this.constructor as typeof Task).isCompound;
-  }
-
   public get type(): TaskTypeName {
     return (this.constructor as typeof Task).type;
   }
@@ -225,19 +192,11 @@ export class Task<
     return (this.constructor as typeof Task).category;
   }
 
-  public get compoundMerge(): CompoundMergeStrategy {
-    return this.config?.compoundMerge || (this.constructor as typeof Task).compoundMerge;
-  }
-
   public get cacheable(): boolean {
     return (
       // if cacheable is set in config, always use that
-      this.config?.cacheable ?? ((this.constructor as typeof Task).cacheable && !this.hasChildren())
+      this.config?.cacheable ?? (this.constructor as typeof Task).cacheable
     );
-  }
-
-  public hasChildren(): boolean {
-    return this.isCompound && this.subGraph !== null && this.subGraph.getTasks().length > 0;
   }
 
   // ========================================================================
@@ -262,13 +221,7 @@ export class Task<
    * The output of the task at the time of the task run.
    * This is the result of the task execution.
    */
-  runOutputData: RunOutput = {} as RunOutput;
-
-  /**
-   * The intermediate data of the task at the time of the task run.
-   * This is the result of the task execution.
-   */
-  runIntermediateData: NamedGraphResult<ExecuteOutput> = [] as NamedGraphResult<ExecuteOutput>;
+  runOutputData: Output = {} as Output;
 
   // ========================================================================
   // Task state properties
@@ -312,12 +265,13 @@ export class Task<
   /**
    * Event emitter for task lifecycle events
    */
-  public readonly events = new EventEmitter<TaskEventListeners>();
-
-  /**
-   * Cache for task outputs
-   */
-  protected outputCache: TaskOutputRepository | undefined;
+  public get events(): EventEmitter<TaskEventListeners> {
+    if (!this._events) {
+      this._events = new EventEmitter<TaskEventListeners>();
+    }
+    return this._events;
+  }
+  protected _events: EventEmitter<TaskEventListeners> | undefined;
 
   /**
    * Provenance information for the task
@@ -345,17 +299,9 @@ export class Task<
       {
         id: uuid4(),
         name: name,
-        compoundMerge: this.compoundMerge,
       },
       config
     );
-
-    if (this.isCompound) {
-      this.regenerateGraph();
-    }
-
-    // Prevent serialization of events
-    Object.defineProperty(this, "events", { enumerable: false });
   }
 
   // ========================================================================
@@ -383,11 +329,6 @@ export class Task<
       this.runInputData = structuredClone(this.defaults) as Input;
     } catch (err) {
       this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as Input;
-    }
-    if (this.hasChildren()) {
-      this.subGraph!.getTasks().forEach((node) => {
-        node.resetInputData();
-      });
     }
   }
 
@@ -443,50 +384,9 @@ export class Task<
    * Emits an event
    */
   public emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>): void {
-    this.events.emit(name, ...args);
-  }
-
-  // ========================================================================
-  //  Compound task methods
-  // ========================================================================
-
-  /**
-   * The internal task graph containing subtasks
-   */
-  protected _subGraph: TaskGraph | null = null;
-
-  /**
-   * Sets the subtask graph for the compound task
-   * @param subGraph The subtask graph to set
-   */
-  set subGraph(subGraph: TaskGraph) {
-    this._subGraph = subGraph;
-  }
-
-  /**
-   * Gets the subtask graph for the compound task.
-   * Creates a new graph if one doesn't exist.
-   * @returns The subtask graph
-   */
-  get subGraph(): TaskGraph | null {
-    if (!this._subGraph && this.isCompound) {
-      this._subGraph = new TaskGraph({
-        outputCache: this.outputCache,
-      });
-    }
-    return this._subGraph;
-  }
-
-  /**
-   * Regenerates the subtask graph and emits a "regenerate" event
-   *
-   * Subclasses should override this method to implement the actual graph
-   * regeneration logic, but all they need to do is call this method to
-   * emit the "regenerate" event.
-   */
-  public regenerateGraph(): void {
-    this.subGraph!.outputCache = this.outputCache;
-    this.events.emit("regenerate");
+    // this one is not like the others. Listeners will cause a lazy load of the event emitter.
+    // but no need to emit if no one is listening, so we don't want to create the event emitter if not needed
+    this._events?.emit(name, ...args);
   }
 
   // ========================================================================
@@ -629,16 +529,12 @@ export class Task<
    * @returns The serialized task and subtasks
    */
   public toJSON(): JsonTaskItem | TaskGraphItemJson {
-    // this.resetInputData();
-    const hasChildren = this.hasChildren();
     const provenance = this.getProvenance();
     let json: JsonTaskItem | TaskGraphItemJson = {
       id: this.config.id,
       type: this.type,
       input: this.defaults,
       ...(Object.keys(provenance).length ? { provenance } : {}),
-      ...(hasChildren ? { merge: this.compoundMerge } : {}),
-      ...(hasChildren ? { subgraph: this.subGraph!.toJSON() } : {}),
     };
     return json;
   }
@@ -648,14 +544,7 @@ export class Task<
    * @returns The task and subtasks in JSON thats easier for humans to read
    */
   public toDependencyJSON(): JsonTaskItem {
-    // this.resetInputData();
     const json = this.toJSON();
-    if (this.hasChildren()) {
-      if ("subgraph" in json) {
-        delete json.subgraph;
-      }
-      return { ...json, subtasks: this.subGraph!.toDependencyJSON() };
-    }
     return json;
   }
 }

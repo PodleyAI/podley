@@ -21,6 +21,7 @@ import {
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph } from "./TaskGraph";
 import { CompoundMergeStrategy } from "./TaskGraphRunner";
+import { TaskWithSubgraph } from "../task/TaskWithSubgraph";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
@@ -114,7 +115,7 @@ function parallel(
     isCompound: true,
     compoundMerge: mergeFn,
   };
-  const mergeTask = new Task(input, config);
+  const mergeTask = new TaskWithSubgraph(input, config);
   mergeTask.subGraph!.addTasks(tasks);
   workflow.graph.addTask(mergeTask);
   if (previousTask) {
@@ -161,9 +162,11 @@ export class Workflow {
    * @param taskClass - The task class to create a helper for
    * @returns A function that adds the specified task type to a Workflow
    */
-  public static createWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig>(
-    taskClass: ITaskConstructor<I, O, C>
-  ): CreateWorkflow<I, O, C> {
+  public static createWorkflow<
+    I extends TaskInput,
+    O extends TaskOutput,
+    C extends TaskConfig = TaskConfig,
+  >(taskClass: ITaskConstructor<I, O, C>): CreateWorkflow<I, O, C> {
     const helper = function (
       this: Workflow,
       input: Partial<I> = {},
@@ -257,7 +260,7 @@ export class Workflow {
     };
 
     // Copy metadata from the task class
-    // @ts-expect-error - runtype is hack from ArrayTask TODO: fix
+    // @ts-expect-error - using internals
     helper.type = taskClass.runtype ?? taskClass.type;
     helper.category = taskClass.category;
     helper.inputs = taskClass.inputs;
@@ -535,7 +538,7 @@ export class Workflow {
   }
 
   toTask(): Task {
-    const task = new Task(
+    const task = new TaskWithSubgraph(
       {},
       {
         isCompound: true,
@@ -594,6 +597,38 @@ export class Workflow {
    */
   private _onChanged(id: unknown): void {
     this.events.emit("changed", id);
+  }
+
+  /**
+   * Connects outputs to inputs between tasks
+   */
+  public connect(
+    sourceTaskId: unknown,
+    sourceTaskPortId: string,
+    targetTaskId: unknown,
+    targetTaskPortId: string
+  ): Workflow {
+    const sourceTask = this.graph.getTask(sourceTaskId);
+    const targetTask = this.graph.getTask(targetTaskId);
+
+    if (!sourceTask || !targetTask) {
+      throw new WorkflowError("Source or target task not found");
+    }
+
+    const dataflow = new Dataflow(sourceTaskId, sourceTaskPortId, targetTaskId, targetTaskPortId);
+    this.graph.addDataflow(dataflow);
+    return this;
+  }
+
+  public addTask<I extends TaskInput, O extends TaskOutput, C extends TaskConfig = TaskConfig>(
+    taskClass: ITaskConstructor<I, O, C>,
+    input: I,
+    config: C
+  ): ITask<I, O, C> {
+    const task = new taskClass(input, config);
+    const id = this.graph.addTask(task);
+    this.events.emit("changed", id);
+    return task;
   }
 }
 

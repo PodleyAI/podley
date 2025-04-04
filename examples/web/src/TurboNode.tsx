@@ -51,7 +51,7 @@ export const SingleNode = ({ data }: NodeProps<Node<TurboNodeData>>) => {
     </>
   );
 };
-SingleNode.displayName = "SingleNode";
+
 export const CompoundNode = ({ data }: NodeProps<Node<TurboNodeData>>) => {
   return (
     <div className={`outside ${data.active ? "active" : ""}`}>
@@ -80,4 +80,3 @@ export const CompoundNode = ({ data }: NodeProps<Node<TurboNodeData>>) => {
     </div>
   );
 };
-CompoundNode.displayName = "CompoundNode";

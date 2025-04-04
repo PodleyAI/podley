@@ -20,7 +20,7 @@ import {
 import { TurboNodeData, SingleNode, CompoundNode } from "./TurboNode";
 import TurboEdge from "./TurboEdge";
 import { FiFileText, FiClipboard, FiDownload, FiUpload } from "react-icons/fi";
-import { ITask, TaskGraph, TaskStatus } from "@ellmers/task-graph";
+import { ITask, TaskGraph, TaskStatus, TaskWithSubgraph } from "@ellmers/task-graph";
 import { GraphPipelineCenteredLayout, GraphPipelineLayout, computeLayout } from "./layout";
 
 import "@xyflow/react/dist/base.css";
@@ -67,7 +67,9 @@ function sortNodes(nodes: Node<TurboNodeData>[]): Node<TurboNodeData>[] {
 
 function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
   const tasks = graph.getTasks();
+
   const nodes = tasks.flatMap((task, index) => {
+    const isCompound = task instanceof TaskWithSubgraph && task.hasChildren();
     let n: Node<TurboNodeData>[] = [
       {
         id: task.config.id as string,
@@ -77,7 +79,7 @@ function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
           title: (task.constructor as any).type,
           subline: task.config.name,
         },
-        type: task.hasChildren() ? "compound" : "single",
+        type: isCompound ? "compound" : "single",
         selectable: true,
         connectable: false,
         draggable: false,
@@ -85,7 +87,7 @@ function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
         targetPosition: Position.Left,
       },
     ];
-    if (task.hasChildren()) {
+    if (isCompound) {
       const subNodes = convertGraphToNodes(task.subGraph).map((n) => {
         return {
           ...n,
@@ -161,7 +163,7 @@ function listenToTask(
   const cleanupFns: (() => void)[] = [];
   let progressItems: Array<{ id: string; text: string; progress: number }> = [];
 
-  const handleStatusChange = (...args: any[]) => {
+  const handleStatusChange = () => {
     if (task.status === TaskStatus.PROCESSING) {
       progressItems = [{ id: "text", text: "STARTING", progress: 1 }];
     } else if (task.status === TaskStatus.COMPLETED) {
@@ -250,45 +252,43 @@ function listenToTask(
   };
 
   const handleRegenerate = () => {
-    setNodes((nodes) => {
-      let children = convertGraphToNodes(task.subGraph).map(
-        (n) =>
-          ({
-            ...n,
-            parentId: task.config.id as string,
-            extent: "parent",
-            selectable: false,
-            connectable: false,
-          }) as Node<TurboNodeData>
-      );
-      let returnNodes = nodes.filter((n) => n.parentId !== task.config.id); // remove old children
-      const self = returnNodes.find((n) => n.id === task.config.id);
-      if (self?.type !== "compound" && children.length > 0) {
-        // update to true compound
-        returnNodes = nodes.filter((n) => n.id !== task.config.id); // remove old self
-        const newSelf: Node<TurboNodeData> = {
-          ...self,
-          type: "compound",
-          data: {
-            ...self.data,
-          },
-        };
-        children = [...children, newSelf];
-      }
-      returnNodes = [...returnNodes, ...children]; // add new children
-      returnNodes = sortNodes(returnNodes); // sort all nodes
-      return returnNodes;
-    });
-
-    // Set up listeners for new subtasks
-    const newCleanupFns = listenToGraphTasks(task.subGraph, setNodes, setEdges);
-    cleanupFns.push(...newCleanupFns);
-    cleanupFns.push(() => {
-      task.off("regenerate", () => {});
-    });
+    if (task instanceof TaskWithSubgraph) {
+      setNodes((nodes) => {
+        let children = convertGraphToNodes(task.subGraph).map(
+          (n) =>
+            ({
+              ...n,
+              parentId: task.config.id as string,
+              extent: "parent",
+              selectable: false,
+              connectable: false,
+            }) as Node<TurboNodeData>
+        );
+        let returnNodes = nodes.filter((n) => n.parentId !== task.config.id); // remove old children
+        const self = returnNodes.find((n) => n.id === task.config.id);
+        if (self?.type !== "compound" && children.length > 0) {
+          // update to true compound
+          returnNodes = nodes.filter((n) => n.id !== task.config.id); // remove old self
+          const newSelf: Node<TurboNodeData> = {
+            ...self,
+            type: "compound",
+            data: {
+              ...self.data,
+            },
+          };
+          children = [...children, newSelf];
+        }
+        returnNodes = [...returnNodes, ...children]; // add new children
+        returnNodes = sortNodes(returnNodes); // sort all nodes
+        return returnNodes;
+      });
+      // Set up listeners for new subtasks
+      const newCleanupFns = listenToGraphTasks(task.subGraph, setNodes, setEdges);
+      cleanupFns.push(...newCleanupFns);
+    }
   };
 
-  if (task.isCompound) {
+  if (task instanceof TaskWithSubgraph) {
     const subTasks = task.subGraph.getTasks();
     for (const subTask of subTasks) {
       const subCleanupFns = listenToTask(subTask, setNodes, setEdges);
