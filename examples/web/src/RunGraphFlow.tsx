@@ -161,7 +161,7 @@ function listenToTask(
   const cleanupFns: (() => void)[] = [];
   let progressItems: Array<{ id: string; text: string; progress: number }> = [];
 
-  const handleStatusChange = (...args: any[]) => {
+  const handleStatusChange = () => {
     if (task.status === TaskStatus.PROCESSING) {
       progressItems = [{ id: "text", text: "STARTING", progress: 1 }];
     } else if (task.status === TaskStatus.COMPLETED) {
@@ -250,7 +250,6 @@ function listenToTask(
   };
 
   const handleRegenerate = () => {
-    const cleanupFns: (() => void)[] = [];
     if (task instanceof TaskWithSubgraph) {
       setNodes((nodes) => {
         let children = convertGraphToNodes(task.subGraph).map(
@@ -285,9 +284,6 @@ function listenToTask(
       const newCleanupFns = listenToGraphTasks(task.subGraph, setNodes, setEdges);
       cleanupFns.push(...newCleanupFns);
     }
-    cleanupFns.push(() => {
-      task.off("regenerate", () => {});
-    });
   };
 
   if (task instanceof TaskWithSubgraph) {
