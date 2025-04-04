@@ -6,10 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, uuid4 } from "@ellmers/util";
-import { TaskOutputRepository } from "../storage/TaskOutputRepository";
-import { TaskGraph } from "../task-graph/TaskGraph";
-import { CompoundMergeStrategy, NamedGraphResult } from "../task-graph/TaskGraphRunner";
-import type { IExecuteConfig, IRunConfig, ITask } from "./ITask";
+import type { IExecuteConfig, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
 import {
   type TaskEventListener,

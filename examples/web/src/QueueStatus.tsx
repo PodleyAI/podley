@@ -56,7 +56,7 @@ export function QueueStatus({ queueType }: { queueType: string }) {
 
   return (
     <span>
-      <span>{queue.queueName}</span>: <span title="Pending">{pending}</span> /{" "}
+      <span>{queue.queueName.split("_").pop()}</span>: <span title="Pending">{pending}</span> /{" "}
       <span title="Processing">{processing}</span> / <span title="Completed">{completed}</span> /{" "}
       <span title="Aborting">{aborting}</span> / <span title="Errors">{errors}</span> /{" "}
       <span title="Skipped">{skipped}</span>
