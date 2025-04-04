@@ -122,7 +122,7 @@ export class Task<
    */
   public get runner(): TaskRunner<Input, Output, Config> {
     if (!this._runner) {
-      this._runner = new TaskRunner<Input, Output, Config>(this, this.outputCache);
+      this._runner = new TaskRunner<Input, Output, Config>(this);
     }
     return this._runner;
   }
@@ -132,12 +132,11 @@ export class Task<
    * Delegates to the task runner
    *
    * @param overrides Optional input overrides
-   * @param config Optional configuration overrides
    * @throws TaskError if the task fails
    * @returns The task output
    */
-  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<Output> {
-    return this.runner.run(overrides, config);
+  async run(overrides: Partial<Input> = {}): Promise<Output> {
+    return this.runner.run(overrides);
   }
 
   /**
@@ -273,11 +272,6 @@ export class Task<
     return this._events;
   }
   protected _events: EventEmitter<TaskEventListeners> | undefined;
-
-  /**
-   * Cache for task outputs
-   */
-  protected outputCache: TaskOutputRepository | undefined;
 
   /**
    * Provenance information for the task

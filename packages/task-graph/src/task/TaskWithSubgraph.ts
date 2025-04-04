@@ -6,8 +6,7 @@
 //    *******************************************************************************
 
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { CompoundMergeStrategy, NamedGraphResult } from "../task-graph/TaskGraphRunner";
-import type { IRunConfig } from "./ITask";
+import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import { Task } from "./Task";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { type TaskConfig, type TaskInput, type TaskOutput, type TaskTypeName } from "./TaskTypes";
@@ -27,7 +26,6 @@ export class TaskWithSubgraph<
 
   public static type: TaskTypeName = "TaskWithSubgraph";
   public static category: string = "Hidden";
-  public static cacheable: boolean = false;
   public static isCompound: boolean = true;
   public static compoundMerge: CompoundMergeStrategy = "last-or-named";
 
@@ -52,12 +50,11 @@ export class TaskWithSubgraph<
    * Delegates to the task runner
    *
    * @param overrides Optional input overrides
-   * @param config Optional configuration overrides
    * @throws TaskError if the task fails
    * @returns The task output
    */
-  async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<Output> {
-    return this.runner.run(overrides, config);
+  async run(overrides: Partial<Input> = {}): Promise<Output> {
+    return this.runner.run(overrides);
   }
 
   /**
@@ -155,9 +152,7 @@ export class TaskWithSubgraph<
    */
   get subGraph(): TaskGraph {
     if (!this._subGraph) {
-      this._subGraph = new TaskGraph({
-        outputCache: this.outputCache,
-      });
+      this._subGraph = new TaskGraph();
     }
     return this._subGraph;
   }
@@ -170,7 +165,6 @@ export class TaskWithSubgraph<
    * emit the "regenerate" event.
    */
   public regenerateGraph(): void {
-    this.subGraph!.outputCache = this.outputCache;
     this.events.emit("regenerate");
   }
 

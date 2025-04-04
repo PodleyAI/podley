@@ -8,7 +8,7 @@
 import type { EventEmitter } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import type { TaskGraph } from "../task-graph/TaskGraph";
-import { CompoundMergeStrategy, NamedGraphResult } from "../task-graph/TaskGraphRunner";
+import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import { TaskError } from "./TaskError";
 import type {
   TaskEventListener,
@@ -27,6 +27,7 @@ import type {
   TaskOutputDefinition,
   TaskStatus,
 } from "./TaskTypes";
+import { TaskRunner } from "./TaskRunner";
 
 /**
  * Configuration for task execution
@@ -75,11 +76,13 @@ export interface ITaskExecution<
  * These methods define how tasks are run and are usually delegated to a TaskRunner
  */
 export interface ITaskLifecycle<
-  Input extends TaskInput = TaskInput,
-  Output extends TaskOutput = TaskOutput,
+  Input extends TaskInput,
+  Output extends TaskOutput,
+  Config extends TaskConfig,
 > {
-  run(overrides?: Partial<Input>, config?: IRunConfig): Promise<Output>;
+  run(overrides?: Partial<Input>): Promise<Output>;
   runReactive(overrides?: Partial<Input>): Promise<Output>;
+  get runner(): TaskRunner<Input, Output, Config>;
   abort(): void;
   skip(): Promise<void>;
 }
@@ -87,10 +90,7 @@ export interface ITaskLifecycle<
 /**
  * Interface for task input/output operations
  */
-export interface ITaskIO<
-  Input extends TaskInput = TaskInput,
-  Output extends TaskOutput = TaskOutput,
-> {
+export interface ITaskIO<Input extends TaskInput, Output extends TaskOutput> {
   defaults: Partial<Input>;
   runInputData: Input;
   runOutputData: Output;
@@ -159,7 +159,7 @@ export interface ITask<
 > extends ITaskState<Config>,
     ITaskIO<Input, Output>,
     ITaskEvents,
-    ITaskLifecycle<Input, Output>,
+    ITaskLifecycle<Input, Output, Config>,
     ITaskExecution<Input, Output>,
     ITaskSerialization {}
 
@@ -174,16 +174,16 @@ export interface ITaskWithSubgraph<
  * Type for task constructor
  */
 type ITaskConstructorType<
-  Input extends TaskInput = TaskInput,
-  Output extends TaskOutput = TaskOutput,
-  Config extends TaskConfig = TaskConfig,
+  Input extends TaskInput,
+  Output extends TaskOutput,
+  Config extends TaskConfig,
 > = new (input: Input, config: Config) => ITask<Input, Output, Config>;
 
 /**
  * Interface for task constructor with static properties
  */
 export type ITaskConstructor<
-  Input extends TaskInput = TaskInput,
-  Output extends TaskOutput = TaskOutput,
-  Config extends TaskConfig = TaskConfig,
+  Input extends TaskInput,
+  Output extends TaskOutput,
+  Config extends TaskConfig,
 > = ITaskConstructorType<Input, Output, Config> & ITaskStaticProperties;

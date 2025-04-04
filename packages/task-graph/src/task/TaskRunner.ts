@@ -51,11 +51,9 @@ export class TaskRunner<
   /**
    * Constructor for TaskRunner
    * @param task The task to run
-   * @param outputCache Optional output cache repository
    */
-  constructor(task: ITask<Input, Output, Config>, outputCache?: TaskOutputRepository) {
+  constructor(task: ITask<Input, Output, Config>) {
     this.task = task;
-    this.outputCache = outputCache;
   }
 
   // ========================================================================
@@ -83,7 +81,6 @@ export class TaskRunner<
     }
 
     try {
-      this.outputCache = this.task.config.outputCache;
       this.task.setInput(overrides);
       const isValid = await this.task.validateInput(this.task.runInputData);
       if (!isValid) {

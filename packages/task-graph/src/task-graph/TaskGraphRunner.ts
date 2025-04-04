@@ -197,12 +197,21 @@ export class TaskGraphRunner {
     await this.handleStartReactive();
 
     const results: NamedGraphResult<Output> = [];
-    console.log("runGraphReactive start");
     try {
       for await (const task of this.reactiveScheduler.tasks()) {
         if (task.status === TaskStatus.PENDING) {
           task.resetInputData();
           this.copyInputFromEdgesToNode(task);
+          // TODO: cacheable here??
+          // if (task.cacheable) {
+          //   const results = await this.outputCache?.getOutput(
+          //     (task.constructor as any).type,
+          //     task.runInputData
+          //   );
+          //   if (results) {
+          //     task.runOutputData = results;
+          //   }
+          // }
         }
         const taskResult = await task.runReactive();
 
@@ -441,7 +450,7 @@ export class TaskGraphRunner {
       }
     }
     if (!results) {
-      results = await task.run({}, { nodeProvenance, outputCache: this.outputCache });
+      results = await task.runner.run({}, { nodeProvenance, outputCache: this.outputCache });
       if (task.cacheable) {
         await this.outputCache?.saveOutput(
           (task.constructor as any).type,
