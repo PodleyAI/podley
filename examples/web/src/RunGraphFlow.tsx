@@ -67,7 +67,9 @@ function sortNodes(nodes: Node<TurboNodeData>[]): Node<TurboNodeData>[] {
 
 function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
   const tasks = graph.getTasks();
+
   const nodes = tasks.flatMap((task, index) => {
+    const isCompound = task instanceof TaskWithSubgraph && task.hasChildren();
     let n: Node<TurboNodeData>[] = [
       {
         id: task.config.id as string,
@@ -77,7 +79,7 @@ function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
           title: (task.constructor as any).type,
           subline: task.config.name,
         },
-        type: task instanceof TaskWithSubgraph ? "compound" : "single",
+        type: isCompound ? "compound" : "single",
         selectable: true,
         connectable: false,
         draggable: false,
@@ -85,7 +87,7 @@ function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
         targetPosition: Position.Left,
       },
     ];
-    if (task instanceof TaskWithSubgraph && task.hasChildren()) {
+    if (isCompound) {
       const subNodes = convertGraphToNodes(task.subGraph).map((n) => {
         return {
           ...n,
