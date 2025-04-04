@@ -486,13 +486,14 @@ export class TaskGraphRunner {
    */
   protected resetGraph(graph: TaskGraph, runnerId: string) {
     graph.getTasks().forEach((node) => {
-      const changed = deepEqual(node.runInputData, node.defaults);
+      const changed = !deepEqual(node.runInputData, node.defaults);
       this.resetTask(graph, node, runnerId);
       if (changed) {
         if ("regenerateGraph" in node && typeof node.regenerateGraph === "function") {
           node.regenerateGraph();
-          // TODO(str): This is a hack.
-          // this.resetGraph(node.subGraph!, runnerId);
+          if ("subGraph" in node) {
+            this.resetGraph((node as any).subGraph, runnerId);
+          }
         }
       }
     });
