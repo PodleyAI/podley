@@ -45,29 +45,6 @@ export class GraphAsTask<
     return this._runner;
   }
 
-  /**
-   * Runs the task and returns the output
-   * Delegates to the task runner
-   *
-   * @param overrides Optional input overrides
-   * @throws TaskError if the task fails
-   * @returns The task output
-   */
-  async run(overrides: Partial<Input> = {}): Promise<Output> {
-    return this.runner.run(overrides);
-  }
-
-  /**
-   * Runs the task in reactive mode
-   * Delegates to the task runner
-   *
-   * @param overrides Optional input overrides
-   * @returns The task output
-   */
-  public async runReactive(overrides: Partial<Input> = {}): Promise<Output> {
-    return this.runner.runReactive(overrides);
-  }
-
   // ========================================================================
   // Static to Instance conversion methods
   // ========================================================================
@@ -81,14 +58,6 @@ export class GraphAsTask<
       // if cacheable is set in config, always use that
       this.config?.cacheable ??
       ((this.constructor as typeof GraphAsTask).cacheable && !this.hasChildren())
-    );
-  }
-
-  public hasChildren(): boolean {
-    return (
-      this._subGraph !== undefined &&
-      this._subGraph !== null &&
-      this._subGraph.getTasks().length > 0
     );
   }
 
@@ -129,31 +98,6 @@ export class GraphAsTask<
   // ========================================================================
   //  Compound task methods
   // ========================================================================
-
-  /**
-   * The internal task graph containing subtasks
-   */
-  protected _subGraph: TaskGraph | null = null;
-
-  /**
-   * Sets the subtask graph for the compound task
-   * @param subGraph The subtask graph to set
-   */
-  set subGraph(subGraph: TaskGraph) {
-    this._subGraph = subGraph;
-  }
-
-  /**
-   * Gets the subtask graph for the compound task.
-   * Creates a new graph if one doesn't exist.
-   * @returns The subtask graph
-   */
-  get subGraph(): TaskGraph {
-    if (!this._subGraph) {
-      this._subGraph = new TaskGraph();
-    }
-    return this._subGraph;
-  }
 
   /**
    * Regenerates the subtask graph and emits a "regenerate" event

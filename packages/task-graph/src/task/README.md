@@ -6,7 +6,7 @@ This module provides a flexible task processing system with support for various 
   - [Core Classes](#core-classes)
 - [Task Types](#task-types)
   - [A Simple Task](#a-simple-task)
-  - [GraphAsTask](#taskwithsubgraph)
+  - [GraphAsTask](#graphastask)
   - [RunOrReplicateTask](#runorreplicatetask)
   - [Job Queue Tasks](#job-queue-tasks)
 - [Task Lifecycle](#task-lifecycle)

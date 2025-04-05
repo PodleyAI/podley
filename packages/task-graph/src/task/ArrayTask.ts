@@ -177,7 +177,7 @@ export function arrayTaskFactory<
             outputCache: this.outputCache,
           } as SingleConfig
         );
-        this.subGraph!.addTask(current);
+        this.subGraph.addTask(current);
       });
       super.regenerateGraph();
     }

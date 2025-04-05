@@ -107,11 +107,9 @@ export interface ITaskIO<Input extends TaskInput, Output extends TaskOutput> {
   get cacheable(): boolean;
 }
 
-export interface ITaskCompound {
+export interface ITaskInternalGraph {
   subGraph: TaskGraph | null;
-  regenerateGraph(): void;
   hasChildren(): boolean;
-  get compoundMerge(): CompoundMergeStrategy;
 }
 
 /**
@@ -161,14 +159,17 @@ export interface ITask<
     ITaskEvents,
     ITaskLifecycle<Input, Output, Config>,
     ITaskExecution<Input, Output>,
-    ITaskSerialization {}
+    ITaskSerialization,
+    ITaskInternalGraph {}
 
 export interface IGraphAsTask<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-> extends ITask<Input, Output, Config>,
-    ITaskCompound {}
+> extends ITask<Input, Output, Config> {
+  regenerateGraph(): void;
+  get compoundMerge(): CompoundMergeStrategy;
+}
 
 /**
  * Type for task constructor

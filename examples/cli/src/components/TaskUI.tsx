@@ -5,12 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { useEffect, useState } from "react";
+import { ITask, TaskGraph, TaskStatus } from "@ellmers/task-graph";
 import type { FC } from "react";
-import { Text, Box } from "tuir";
-import { TaskStatus, TaskGraph, Task, TaskError, ITask, GraphAsTask } from "@ellmers/task-graph";
+import { useEffect, useState } from "react";
+import { Box, Text } from "tuir";
+import { createBar, Spinner, symbols } from "./Elements";
 import TaskGraphUI from "./TaskGraphUI";
-import { createBar, symbols, Spinner } from "./Elements";
 
 const getSymbol = (state: TaskStatus) => {
   if (state === TaskStatus.PROCESSING) {
@@ -95,7 +95,7 @@ export const TaskUI: FC<{
 
     const onRegenerate = () => {
       setCount((counter) => counter + 1);
-      setSubGraph(task instanceof GraphAsTask && task.hasChildren() ? task.subGraph : null);
+      setSubGraph(task.hasChildren() ? task.subGraph : null);
       setDependantChildren(graph.getTargetTasks(task.config.id));
     };
 

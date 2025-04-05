@@ -109,7 +109,7 @@ const createSingleTaskFromJSON = (item: JsonTaskItem | TaskGraphItemJson) => {
  */
 export const createTaskFromDependencyJSON = (item: JsonTaskItem) => {
   const task = createSingleTaskFromJSON(item);
-  if (item.subtasks) {
+  if (item.subtasks && item.subtasks.length > 0) {
     if (!(task instanceof GraphAsTask)) {
       throw new TaskConfigurationError("Subgraph is only supported for CompoundTasks");
     }

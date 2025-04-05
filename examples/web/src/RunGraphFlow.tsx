@@ -69,7 +69,7 @@ function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
   const tasks = graph.getTasks();
 
   const nodes = tasks.flatMap((task, index) => {
-    const isCompound = task instanceof GraphAsTask && task.hasChildren();
+    const isCompound = task.hasChildren();
     let n: Node<TurboNodeData>[] = [
       {
         id: task.config.id as string,
@@ -252,43 +252,41 @@ function listenToTask(
   };
 
   const handleRegenerate = () => {
-    if (task instanceof GraphAsTask) {
-      setNodes((nodes) => {
-        let children = convertGraphToNodes(task.subGraph).map(
-          (n) =>
-            ({
-              ...n,
-              parentId: task.config.id as string,
-              extent: "parent",
-              selectable: false,
-              connectable: false,
-            }) as Node<TurboNodeData>
-        );
-        let returnNodes = nodes.filter((n) => n.parentId !== task.config.id); // remove old children
-        const self = returnNodes.find((n) => n.id === task.config.id);
-        if (self?.type !== "compound" && children.length > 0) {
-          // update to true compound
-          returnNodes = nodes.filter((n) => n.id !== task.config.id); // remove old self
-          const newSelf: Node<TurboNodeData> = {
-            ...self,
-            type: "compound",
-            data: {
-              ...self.data,
-            },
-          };
-          children = [...children, newSelf];
-        }
-        returnNodes = [...returnNodes, ...children]; // add new children
-        returnNodes = sortNodes(returnNodes); // sort all nodes
-        return returnNodes;
-      });
-      // Set up listeners for new subtasks
-      const newCleanupFns = listenToGraphTasks(task.subGraph, setNodes, setEdges);
-      cleanupFns.push(...newCleanupFns);
-    }
+    setNodes((nodes) => {
+      let children = convertGraphToNodes(task.subGraph).map(
+        (n) =>
+          ({
+            ...n,
+            parentId: task.config.id as string,
+            extent: "parent",
+            selectable: false,
+            connectable: false,
+          }) as Node<TurboNodeData>
+      );
+      let returnNodes = nodes.filter((n) => n.parentId !== task.config.id); // remove old children
+      const self = returnNodes.find((n) => n.id === task.config.id);
+      if (self?.type !== "compound" && children.length > 0) {
+        // update to true compound
+        returnNodes = nodes.filter((n) => n.id !== task.config.id); // remove old self
+        const newSelf: Node<TurboNodeData> = {
+          ...self,
+          type: "compound",
+          data: {
+            ...self.data,
+          },
+        };
+        children = [...children, newSelf];
+      }
+      returnNodes = [...returnNodes, ...children]; // add new children
+      returnNodes = sortNodes(returnNodes); // sort all nodes
+      return returnNodes;
+    });
+    // Set up listeners for new subtasks
+    const newCleanupFns = listenToGraphTasks(task.subGraph, setNodes, setEdges);
+    cleanupFns.push(...newCleanupFns);
   };
 
-  if (task instanceof GraphAsTask) {
+  if (task.hasChildren()) {
     const subTasks = task.subGraph.getTasks();
     for (const subTask of subTasks) {
       const subCleanupFns = listenToTask(subTask, setNodes, setEdges);
@@ -296,10 +294,12 @@ function listenToTask(
     }
 
     // Listen for regeneration of compound tasks
-    task.on("regenerate", handleRegenerate);
-    cleanupFns.push(() => {
-      task.off("regenerate", handleRegenerate);
-    });
+    if (task instanceof GraphAsTask) {
+      task.on("regenerate", handleRegenerate);
+      cleanupFns.push(() => {
+        task.off("regenerate", handleRegenerate);
+      });
+    }
   }
   // Register event handlers
   task.on("start", handleStatusChange);
