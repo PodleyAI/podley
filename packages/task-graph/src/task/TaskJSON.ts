@@ -11,7 +11,7 @@ import { TaskConfigurationError, TaskJSONError } from "../task/TaskError";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { Dataflow } from "../task-graph/Dataflow";
 import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
-import { TaskWithSubgraph } from "./TaskWithSubgraph";
+import { GraphAsTask } from "./GraphAsTask";
 
 // ========================================================================
 // JSON Serialization Types
@@ -110,7 +110,7 @@ const createSingleTaskFromJSON = (item: JsonTaskItem | TaskGraphItemJson) => {
 export const createTaskFromDependencyJSON = (item: JsonTaskItem) => {
   const task = createSingleTaskFromJSON(item);
   if (item.subtasks) {
-    if (!(task instanceof TaskWithSubgraph)) {
+    if (!(task instanceof GraphAsTask)) {
       throw new TaskConfigurationError("Subgraph is only supported for CompoundTasks");
     }
     task.subGraph = createGraphFromDependencyJSON(item.subtasks);
@@ -139,8 +139,8 @@ export const createGraphFromDependencyJSON = (jsonItems: JsonTaskItem[]) => {
 export const createTaskFromGraphJSON = (item: TaskGraphItemJson) => {
   const task = createSingleTaskFromJSON(item);
   if (item.subgraph) {
-    if (!(task instanceof TaskWithSubgraph)) {
-      throw new TaskConfigurationError("Subgraph is only supported for CompoundTasks");
+    if (!(task instanceof GraphAsTask)) {
+      throw new TaskConfigurationError("Subgraph is only supported for GraphAsTask");
     }
     task.subGraph = createGraphFromGraphJSON(item.subgraph);
   }

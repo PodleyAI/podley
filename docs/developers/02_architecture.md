@@ -119,7 +119,7 @@ classDiagram
       runReactive() TaskOutput
     }
 
-    class TaskWithSubgraph{
+    class GraphAsTask{
       TaskGraph subGraph
       string merge
       regenerateGraph()

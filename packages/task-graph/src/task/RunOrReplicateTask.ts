@@ -9,7 +9,7 @@ import { uuid4 } from "@ellmers/util";
 import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
-import { TaskWithSubgraph } from "./TaskWithSubgraph";
+import { GraphAsTask } from "./GraphAsTask";
 
 /**
  * RunOrReplicate is a compound task that either:
@@ -21,7 +21,7 @@ export class RunOrReplicateTask<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-> extends TaskWithSubgraph<Input, Output, Config> {
+> extends GraphAsTask<Input, Output, Config> {
   /**
    * The type identifier for this task class
    */

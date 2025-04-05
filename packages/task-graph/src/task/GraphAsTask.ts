@@ -10,12 +10,12 @@ import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import { Task } from "./Task";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { type TaskConfig, type TaskInput, type TaskOutput, type TaskTypeName } from "./TaskTypes";
-import { TaskWithSubgraphRunner } from "./TaskWithSubgraphRunner";
+import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 
 /**
  * A task that contains a subgraph of tasks
  */
-export class TaskWithSubgraph<
+export class GraphAsTask<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
@@ -24,7 +24,7 @@ export class TaskWithSubgraph<
   // Static properties - should be overridden by subclasses
   // ========================================================================
 
-  public static type: TaskTypeName = "TaskWithSubgraph";
+  public static type: TaskTypeName = "GraphAsTask";
   public static category: string = "Hidden";
   public static isCompound: boolean = true;
   public static compoundMerge: CompoundMergeStrategy = "last-or-named";
@@ -36,11 +36,11 @@ export class TaskWithSubgraph<
   /**
    * Task runner for handling the task execution
    */
-  declare _runner: TaskWithSubgraphRunner<Input, Output, Config>;
+  declare _runner: GraphAsTaskRunner<Input, Output, Config>;
 
-  override get runner(): TaskWithSubgraphRunner<Input, Output, Config> {
+  override get runner(): GraphAsTaskRunner<Input, Output, Config> {
     if (!this._runner) {
-      this._runner = new TaskWithSubgraphRunner<Input, Output, Config>(this);
+      this._runner = new GraphAsTaskRunner<Input, Output, Config>(this);
     }
     return this._runner;
   }
@@ -73,16 +73,14 @@ export class TaskWithSubgraph<
   // ========================================================================
 
   public get compoundMerge(): CompoundMergeStrategy {
-    return (
-      this.config?.compoundMerge || (this.constructor as typeof TaskWithSubgraph).compoundMerge
-    );
+    return this.config?.compoundMerge || (this.constructor as typeof GraphAsTask).compoundMerge;
   }
 
   public get cacheable(): boolean {
     return (
       // if cacheable is set in config, always use that
       this.config?.cacheable ??
-      ((this.constructor as typeof TaskWithSubgraph).cacheable && !this.hasChildren())
+      ((this.constructor as typeof GraphAsTask).cacheable && !this.hasChildren())
     );
   }
 

@@ -20,7 +20,7 @@ import {
   TaskOutputDefinition,
   TaskTypeName,
 } from "./TaskTypes";
-import { TaskWithSubgraph } from "./TaskWithSubgraph";
+import { GraphAsTask } from "./GraphAsTask";
 import { TaskEventListeners } from "./TaskEvents";
 
 /**
@@ -148,7 +148,7 @@ export function arrayTaskFactory<
     Input extends PluralInputType = PluralInputType,
     Output extends PluralOutputType = PluralOutputType,
     Config extends SingleConfig = SingleConfig,
-  > extends TaskWithSubgraph<Input, Output, Config> {
+  > extends GraphAsTask<Input, Output, Config> {
     static readonly type: TaskTypeName = name!;
     static readonly runtype = taskClass.type;
     static readonly category = taskClass.category;

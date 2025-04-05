@@ -8,14 +8,7 @@
 import { useEffect, useState } from "react";
 import type { FC } from "react";
 import { Text, Box } from "tuir";
-import {
-  TaskStatus,
-  TaskGraph,
-  Task,
-  TaskError,
-  ITask,
-  TaskWithSubgraph,
-} from "@ellmers/task-graph";
+import { TaskStatus, TaskGraph, Task, TaskError, ITask, GraphAsTask } from "@ellmers/task-graph";
 import TaskGraphUI from "./TaskGraphUI";
 import { createBar, symbols, Spinner } from "./Elements";
 
@@ -102,7 +95,7 @@ export const TaskUI: FC<{
 
     const onRegenerate = () => {
       setCount((counter) => counter + 1);
-      setSubGraph(task instanceof TaskWithSubgraph && task.hasChildren() ? task.subGraph : null);
+      setSubGraph(task instanceof GraphAsTask && task.hasChildren() ? task.subGraph : null);
       setDependantChildren(graph.getTargetTasks(task.config.id));
     };
 

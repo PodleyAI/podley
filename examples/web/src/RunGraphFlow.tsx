@@ -20,7 +20,7 @@ import {
 import { TurboNodeData, SingleNode, CompoundNode } from "./TurboNode";
 import TurboEdge from "./TurboEdge";
 import { FiFileText, FiClipboard, FiDownload, FiUpload } from "react-icons/fi";
-import { ITask, TaskGraph, TaskStatus, TaskWithSubgraph } from "@ellmers/task-graph";
+import { ITask, TaskGraph, TaskStatus, GraphAsTask } from "@ellmers/task-graph";
 import { GraphPipelineCenteredLayout, GraphPipelineLayout, computeLayout } from "./layout";
 
 import "@xyflow/react/dist/base.css";
@@ -69,7 +69,7 @@ function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
   const tasks = graph.getTasks();
 
   const nodes = tasks.flatMap((task, index) => {
-    const isCompound = task instanceof TaskWithSubgraph && task.hasChildren();
+    const isCompound = task instanceof GraphAsTask && task.hasChildren();
     let n: Node<TurboNodeData>[] = [
       {
         id: task.config.id as string,
@@ -252,7 +252,7 @@ function listenToTask(
   };
 
   const handleRegenerate = () => {
-    if (task instanceof TaskWithSubgraph) {
+    if (task instanceof GraphAsTask) {
       setNodes((nodes) => {
         let children = convertGraphToNodes(task.subGraph).map(
           (n) =>
@@ -288,7 +288,7 @@ function listenToTask(
     }
   };
 
-  if (task instanceof TaskWithSubgraph) {
+  if (task instanceof GraphAsTask) {
     const subTasks = task.subGraph.getTasks();
     for (const subTask of subTasks) {
       const subCleanupFns = listenToTask(subTask, setNodes, setEdges);

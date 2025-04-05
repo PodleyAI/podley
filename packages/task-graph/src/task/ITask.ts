@@ -163,7 +163,7 @@ export interface ITask<
     ITaskExecution<Input, Output>,
     ITaskSerialization {}
 
-export interface ITaskWithSubgraph<
+export interface IGraphAsTask<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,

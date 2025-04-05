@@ -248,7 +248,7 @@ LLM providers have long running functions. These are handled by a Job Queue. The
 
 Every task in the library has a corresponding method in the Workflow. The workflow is a simple way to build a graph. It is not meant to be a full replacement for the creating a TaskGraph directly, but it is a good way to get started.
 
-Tasks are the smallest unit of work, therefore they take simple inputs. TaskWithSubgraph are compound tasks that contain a subgraph of tasks.
+Tasks are the smallest unit of work, therefore they take simple inputs. GraphAsTask are compound tasks that contain a subgraph of tasks.
 
 An example is TextEmbeddingTask and TextEmbeddingCompoundTask. The first takes a single model input, the second accepts an array of model inputs. Since models can have different providers, the Compound version creates a single task version for each model input. The workflow is smart enough to know that the Compound version is needed when an array is passed, and as such, you don't need to differentiate between the two:
 

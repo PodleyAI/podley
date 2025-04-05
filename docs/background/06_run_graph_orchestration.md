@@ -2,7 +2,7 @@
 
 ## Introduction
 
-We have Tasks (preprammed to do some action), JobQueueTask types (these get posted to job queues), and TaskWithSubgraph types that contain a whole graph. These are all internal and must be defined in code.
+We have Tasks (preprammed to do some action), JobQueueTask types (these get posted to job queues), and GraphAsTask types that contain a whole graph. These are all internal and must be defined in code.
 
 When an end user want to build a pipeline, they need to be able to define a list of tasks to run. This is where Graphs come in. The directed acyclic graph (DAG) is more flexible than simple chains.
 
