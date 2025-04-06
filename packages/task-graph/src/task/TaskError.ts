@@ -5,6 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { JobError } from "@ellmers/job-queue";
 import { BaseError } from "@ellmers/util";
 
 export class TaskError extends BaseError {
@@ -56,6 +57,15 @@ export class TaskFailedError extends TaskError {
   static readonly type: string = "TaskFailedError";
   constructor(message: string = "Task failed") {
     super(message);
+  }
+}
+
+export class JobTaskFailedError extends TaskFailedError {
+  static readonly type: string = "JobTaskFailedError";
+  public jobError: JobError;
+  constructor(err: JobError) {
+    super(String(err));
+    this.jobError = err;
   }
 }
 

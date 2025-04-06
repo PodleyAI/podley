@@ -6,10 +6,9 @@
 //    *******************************************************************************
 
 import { Job } from "@ellmers/job-queue";
-import { EventEmitter } from "@ellmers/util";
 import { IExecuteConfig } from "./ITask";
 import { ArrayTask } from "./ArrayTask";
-import { TaskConfigurationError } from "./TaskError";
+import { JobTaskFailedError, TaskConfigurationError, TaskFailedError } from "./TaskError";
 import { TaskEventListeners } from "./TaskEvents";
 import { getTaskQueueRegistry } from "./TaskQueueRegistry";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
@@ -95,7 +94,7 @@ export abstract class JobQueueTask<
 
       return output!;
     } catch (err: any) {
-      throw err;
+      throw new JobTaskFailedError(err);
     } finally {
       cleanup();
     }
