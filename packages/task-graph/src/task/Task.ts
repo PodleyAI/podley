@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, uuid4 } from "@ellmers/util";
-import type { IExecuteConfig, ITask } from "./ITask";
+import type { IExecuteConfig, IExecuteReactiveConfig, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
 import {
   type TaskEventListener,
@@ -101,7 +101,11 @@ export class Task<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  public async executeReactive(input: Input, output: Output): Promise<Output | undefined> {
+  public async executeReactive(
+    input: Input,
+    output: Output,
+    config: IExecuteReactiveConfig
+  ): Promise<Output | undefined> {
     return output;
   }
 

@@ -34,27 +34,6 @@ export class GraphAsTaskRunner<
     return this.task.subGraph!.runReactive<Output>();
   }
 
-  /**
-   * Handles task abort
-   */
-  protected async handleAbort(): Promise<void> {
-    if (this.task.hasChildren()) {
-      this.task.subGraph!.abort();
-    }
-    super.handleAbort();
-  }
-
-  /**
-   * Handles task error
-   * @param err Error that occurred
-   */
-  protected async handleError(err: Error): Promise<void> {
-    if (this.task.hasChildren()) {
-      this.task.subGraph!.abort();
-    }
-    super.handleError(err);
-  }
-
   protected async handleSkip(): Promise<void> {
     if (this.task.hasChildren()) {
       await this.task.subGraph!.skip();

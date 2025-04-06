@@ -12,13 +12,16 @@ import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { type TaskConfig, type TaskInput, type TaskOutput, type TaskTypeName } from "./TaskTypes";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 
+interface GraphAsTaskConfig extends TaskConfig {
+  subGraph?: TaskGraph;
+}
 /**
  * A task that contains a subgraph of tasks
  */
 export class GraphAsTask<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
-  Config extends TaskConfig = TaskConfig,
+  Config extends GraphAsTaskConfig = GraphAsTaskConfig,
 > extends Task<Input, Output, Config> {
   // ========================================================================
   // Static properties - should be overridden by subclasses
@@ -30,14 +33,27 @@ export class GraphAsTask<
   public static compoundMerge: CompoundMergeStrategy = "last-or-named";
 
   // ========================================================================
+  // Constructor
+  // ========================================================================
+
+  constructor(input: Input = {} as Input, config: Config = {} as Config) {
+    const { subGraph, ...rest } = config;
+    super(input, rest as Config);
+    if (subGraph) {
+      this.subGraph = subGraph;
+    }
+    this.regenerateGraph();
+  }
+
+  // ========================================================================
   // TaskRunner delegation - Executes and manages the task
   // ========================================================================
+
+  declare _runner: GraphAsTaskRunner<Input, Output, Config>;
 
   /**
    * Task runner for handling the task execution
    */
-  declare _runner: GraphAsTaskRunner<Input, Output, Config>;
-
   override get runner(): GraphAsTaskRunner<Input, Output, Config> {
     if (!this._runner) {
       this._runner = new GraphAsTaskRunner<Input, Output, Config>(this);
@@ -59,24 +75,6 @@ export class GraphAsTask<
       this.config?.cacheable ??
       ((this.constructor as typeof GraphAsTask).cacheable && !this.hasChildren())
     );
-  }
-
-  // ========================================================================
-  // Instance properties using @template types
-  // ========================================================================
-
-  /**
-   * Creates a new task instance
-   *
-   * @param callerDefaultInputs Default input values provided by the caller
-   * @param config Configuration for the task
-   */
-  constructor(
-    callerDefaultInputs: Partial<Input> = {} as Partial<Input>,
-    config: Config = {} as Config
-  ) {
-    super(callerDefaultInputs, config);
-    this.regenerateGraph();
   }
 
   // ========================================================================

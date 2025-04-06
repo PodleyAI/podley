@@ -11,6 +11,11 @@ import { IRunConfig, ITask } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
+import { ITaskGraph } from "../task-graph/ITaskGraph";
+import { Task } from "./Task";
+import { TaskGraph } from "../task-graph/TaskGraph";
+import { GraphAsTask, Workflow } from "../node";
+import { IWorkflow } from "../task-graph/IWorkflow";
 
 /**
  * Responsible for running tasks
@@ -54,6 +59,8 @@ export class TaskRunner<
    */
   constructor(task: ITask<Input, Output, Config>) {
     this.task = task;
+    this.own = this.own.bind(this);
+    this.handleProgress = this.handleProgress.bind(this);
   }
 
   // ========================================================================
@@ -143,6 +150,9 @@ export class TaskRunner<
    * Aborts task execution
    */
   public abort(): void {
+    if (this.task.hasChildren()) {
+      this.task.subGraph.abort();
+    }
     this.abortController?.abort();
   }
 
@@ -150,16 +160,30 @@ export class TaskRunner<
   // Protected methods
   // ========================================================================
 
+  protected own<T extends ITask | ITaskGraph | IWorkflow>(i: T): T {
+    if (i instanceof Task) {
+      this.task.subGraph.addTask(i);
+    } else if (i instanceof TaskGraph) {
+      this.task.subGraph.addTask(new GraphAsTask({}, { subGraph: i }));
+    } else if (i instanceof Workflow) {
+      this.task.subGraph.addTask(new GraphAsTask({}, { subGraph: i.graph }));
+    }
+    return i;
+  }
+
   /**
    * Protected method to execute a task by delegating back to the task itself.
    */
   protected async executeTask(input: Input): Promise<Output | undefined> {
     const result = await this.task.execute(input, {
       signal: this.abortController!.signal,
-      updateProgress: this.handleProgress.bind(this),
+      updateProgress: this.handleProgress,
       nodeProvenance: this.nodeProvenance,
+      own: this.own,
     });
-    const reactiveResult = await this.task.executeReactive(input, result || ({} as Output));
+    const reactiveResult = await this.task.executeReactive(input, result || ({} as Output), {
+      own: this.own,
+    });
     return (
       Object.keys(reactiveResult || {}) >= Object.keys(result || {})
         ? reactiveResult
@@ -171,7 +195,7 @@ export class TaskRunner<
    * Protected method for reactive execution delegation
    */
   protected async executeTaskReactive(input: Input, output: Output): Promise<Output | undefined> {
-    return this.task.executeReactive(input, output);
+    return this.task.executeReactive(input, output, { own: this.own });
   }
 
   // ========================================================================
@@ -258,6 +282,10 @@ export class TaskRunner<
   protected async handleError(err: Error): Promise<void> {
     if (err instanceof TaskAbortedError) return this.handleAbort();
     if (this.task.status === TaskStatus.FAILED) return;
+
+    if (this.task.hasChildren()) {
+      this.task.subGraph!.abort();
+    }
 
     this.task.completedAt = new Date();
     this.task.progress = 100;

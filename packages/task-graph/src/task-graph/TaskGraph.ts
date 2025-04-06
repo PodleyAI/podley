@@ -18,6 +18,7 @@ import {
   EventTaskGraphToDagMapping,
   TaskGraphEventParameters,
 } from "./TaskGraphEvents";
+import { ITaskGraph } from "./ITaskGraph";
 
 /**
  * Configuration for running a task graph
@@ -48,7 +49,7 @@ interface TaskGraphConstructorConfig {
 /**
  * Represents a task graph, a directed acyclic graph of tasks and data flows
  */
-export class TaskGraph {
+export class TaskGraph implements ITaskGraph {
   /** Optional output cache to use for this task graph */
   public outputCache?: TaskOutputRepository;
 

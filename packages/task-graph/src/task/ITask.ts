@@ -28,6 +28,8 @@ import type {
   TaskStatus,
 } from "./TaskTypes";
 import { TaskRunner } from "./TaskRunner";
+import { ITaskGraph } from "../task-graph/ITaskGraph";
+import { IWorkflow } from "../task-graph/IWorkflow";
 
 /**
  * Configuration for task execution
@@ -36,7 +38,10 @@ export interface IExecuteConfig {
   signal: AbortSignal;
   nodeProvenance: Provenance;
   updateProgress: (progress: number, message?: string, ...args: any[]) => void;
+  own: <T extends ITask | ITaskGraph | IWorkflow>(i: T) => T;
 }
+
+export type IExecuteReactiveConfig = Pick<IExecuteConfig, "own">;
 
 /**
  * Configuration for running a task
@@ -68,7 +73,11 @@ export interface ITaskExecution<
   Output extends TaskOutput = TaskOutput,
 > {
   execute(input: Input, config: IExecuteConfig): Promise<Output | undefined>;
-  executeReactive(input: Input, output: Output): Promise<Output | undefined>;
+  executeReactive(
+    input: Input,
+    output: Output,
+    config: IExecuteReactiveConfig
+  ): Promise<Output | undefined>;
 }
 
 /**
@@ -108,7 +117,7 @@ export interface ITaskIO<Input extends TaskInput, Output extends TaskOutput> {
 }
 
 export interface ITaskInternalGraph {
-  subGraph: TaskGraph | null;
+  subGraph: TaskGraph;
   hasChildren(): boolean;
 }
 
