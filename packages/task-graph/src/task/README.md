@@ -7,7 +7,7 @@ This module provides a flexible task processing system with support for various 
 - [Task Types](#task-types)
   - [A Simple Task](#a-simple-task)
   - [GraphAsTask](#graphastask)
-  - [RunOrReplicateTask](#runorreplicatetask)
+  - [ArrayTask](#ArrayTask)
   - [Job Queue Tasks](#job-queue-tasks)
 - [Task Lifecycle](#task-lifecycle)
 - [Event Handling](#event-handling)
@@ -22,8 +22,7 @@ This module provides a flexible task processing system with support for various 
 ### Core Classes
 
 - `Task`: Base class implementing core task functionality
-- `RunOrReplicateTask`: Executes a task or a task with multiple inputs in parallel with a subGraph
-- `ArrayTask`: Processes arrays of inputs using parallel subtasks (deprecated)
+- `ArrayTask`: Executes a task or a task with multiple inputs in parallel with a subGraph
 - `JobQueueTask`: Integrates with job queue system for distributed processing
 
 ## Task Types
@@ -69,12 +68,11 @@ class MyTask extends Task {
 ### GraphAsTask
 
 - GraphAsTask tasks are tasks that contain other tasks. They are represented as an internal TaskGraph.
-- A RunOrReplicateTask is a compound task that can run a task as normal, or if the inputs are an array and the input definition has isArray="replicate" defined for that input, then the task will run parallel copies with a subGraph.
-- An ArrayTask is a regenerative task based on a single task that processes an array of inputs in parallel by creating a new subtask for each input, and then combining the results into a single array output. (deprecated)
+- A ArrayTask is a compound task that can run a task as normal, or if the inputs are an array and the input definition has isArray="replicate" defined for that input, then the task will run parallel copies with a subGraph.
 
-### RunOrReplicateTask
+### ArrayTask
 
-- RunOrReplicateTask is a task that can run a task as normal, or if the inputs are an arryay and the input definition has isArray="replicate", then the task will run parallel copies with a subGraph.
+- ArrayTask is a task that can run a task as normal, or if the inputs are an arryay and the input definition has isArray="replicate", then the task will run parallel copies with a subGraph.
 - The subGraph is a TaskGraph that is created from the inputs of the task.
 - The results of the subGraph are combined such that the outputs are turned into arrays.
 
@@ -158,9 +156,6 @@ try {
 } catch (err) {
   if (err instanceof TaskAbortedError) {
     console.log("Task was aborted");
-  }
-  if (err instanceof TaskErrorGroup) {
-    console.log("Multiple errors:", err.getErrors());
   }
 }
 ```

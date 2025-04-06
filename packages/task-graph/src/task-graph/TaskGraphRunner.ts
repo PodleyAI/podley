@@ -16,12 +16,7 @@ import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOut
 import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
 import { TaskGraph, TaskGraphRunConfig } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
-import {
-  TaskAbortedError,
-  TaskConfigurationError,
-  TaskError,
-  TaskErrorGroup,
-} from "../task/TaskError";
+import { TaskAbortedError, TaskConfigurationError, TaskError } from "../task/TaskError";
 import { ITask } from "../task/ITask";
 import { DATAFLOW_ALL_PORTS } from "./Dataflow";
 

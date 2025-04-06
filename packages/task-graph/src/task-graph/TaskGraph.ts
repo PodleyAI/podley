@@ -80,7 +80,7 @@ export class TaskGraph implements ITaskGraph {
    * Runs the task graph
    * @param config Configuration for the graph run
    * @returns A promise that resolves when all tasks are complete
-   * @throws TaskErrorGroup if any tasks have failed
+   * @throws TaskGroup if any tasks have failed
    */
   public run<ExecuteOutput extends TaskOutput>(
     config?: TaskGraphRunConfig
@@ -95,7 +95,7 @@ export class TaskGraph implements ITaskGraph {
   /**
    * Runs the task graph reactively
    * @returns A promise that resolves when all tasks are complete
-   * @throws TaskErrorGroup if any tasks have failed
+   * @throws TaskError if any tasks have failed
    */
   public runReactive<Output extends TaskOutput>(): Promise<NamedGraphResult<Output>> {
     return this.runner.runGraphReactive<Output>();

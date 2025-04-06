@@ -8,7 +8,7 @@
 import {
   IExecuteConfig,
   ITask,
-  RunOrReplicateTask,
+  ArrayTask,
   TaskGraph,
   TaskInput,
   TaskInputDefinition,
@@ -30,9 +30,9 @@ interface MultiplyOutput extends TaskOutput {
 
 /**
  * Create a task that multiplies two numbers
- * This is a direct subclass of RunOrReplicate
+ * This is a direct subclass of ArrayTask
  */
-class MultiplyRunTask extends RunOrReplicateTask<
+class MultiplyRunTask extends ArrayTask<
   ConvertAllToOptionalArray<MultiplyInput>,
   ConvertAllToOptionalArray<MultiplyOutput>,
   TaskConfig
@@ -70,9 +70,9 @@ class MultiplyRunTask extends RunOrReplicateTask<
 }
 /**
  * Create a task that multiplies two numbers
- * This is a direct subclass of RunOrReplicate
+ * This is a direct subclass of ArrayTask
  */
-class MultiplyRunReactiveTask extends RunOrReplicateTask<
+class MultiplyRunReactiveTask extends ArrayTask<
   ConvertAllToOptionalArray<MultiplyInput>,
   ConvertAllToOptionalArray<MultiplyOutput>
 > {
@@ -119,9 +119,9 @@ interface SquareOutput extends TaskOutput {
 }
 /**
  * Create a task that squares a number
- * This is a direct subclass of RunOrReplicate
+ * This is a direct subclass of ArrayTask
  */
-class SquareRunTask extends RunOrReplicateTask<
+class SquareRunTask extends ArrayTask<
   ConvertAllToOptionalArray<SquareInput>,
   ConvertAllToOptionalArray<SquareOutput>
 > {
@@ -150,7 +150,7 @@ class SquareRunTask extends RunOrReplicateTask<
     };
   }
 }
-class SquareRunReactiveTask extends RunOrReplicateTask<
+class SquareRunReactiveTask extends ArrayTask<
   ConvertAllToOptionalArray<SquareInput>,
   ConvertAllToOptionalArray<SquareOutput>
 > {
@@ -180,7 +180,7 @@ class SquareRunReactiveTask extends RunOrReplicateTask<
   }
 }
 
-describe("RunOrReplicate", () => {
+describe("ArrayTask", () => {
   test("MultiplyRunTask in task mode run plain", async () => {
     const task = new MultiplyRunTask({
       a: 4,

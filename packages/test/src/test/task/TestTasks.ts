@@ -12,19 +12,17 @@
  */
 
 import {
-  TaskOutputRepository,
   CreateWorkflow,
   IExecuteConfig,
+  JobQueueTaskConfig,
   Task,
-  TaskInput,
   TaskAbortedError,
+  TaskConfig,
   TaskError,
   TaskFailedError,
-  TaskConfig,
+  TaskInput,
   TaskInputDefinition,
   TaskOutputDefinition,
-  arrayTaskFactory,
-  JobQueueTaskConfig,
   Workflow,
 } from "@ellmers/task-graph";
 import { ConvertAllToArrays, ConvertSomeToOptionalArray, sleep } from "@ellmers/util";
@@ -307,18 +305,6 @@ export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutp
 }
 
 /**
- * Multi-input version of the square task created using the array task factory
- * Allows processing multiple inputs in parallel
- */
-export const TestSquareMultiInputTask = arrayTaskFactory<
-  ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>,
-  TestSquareTaskInput,
-  TestSquareTaskOutput,
-  JobQueueTaskConfig
->(TestSquareTask, ["input"]);
-
-/**
  * Task that squares a number - simple mathematical operation example
  */
 export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
@@ -348,18 +334,6 @@ export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSqu
     return { output: input.input * input.input };
   }
 }
-
-/**
- * Multi-input version of the square task created using the array task factory
- * Allows processing multiple inputs in parallel
- */
-export const TestSquareNonReactiveMultiInputTask = arrayTaskFactory<
-  ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>,
-  TestSquareTaskInput,
-  TestSquareTaskOutput,
-  JobQueueTaskConfig
->(TestSquareNonReactiveTask, ["input"]);
 
 /**
  * Input type for the double task
@@ -408,18 +382,6 @@ export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutp
 }
 
 /**
- * Multi-input version of the double task created using the array task factory
- * Allows processing multiple inputs in parallel
- */
-export const TestDoubleMultiInputTask = arrayTaskFactory<
-  ConvertSomeToOptionalArray<TestDoubleTaskInput, "input">,
-  ConvertAllToArrays<TestDoubleTaskOutput>,
-  TestDoubleTaskInput,
-  TestDoubleTaskOutput,
-  JobQueueTaskConfig
->(TestDoubleTask, ["input"]);
-
-/**
  * Task that throws errors under specific conditions
  * Used for testing error handling in the task system
  */
@@ -452,16 +414,6 @@ export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTas
     return { output: input.input * input.input };
   }
 }
-
-/**
- * Multi-input version of the error-throwing task
- */
-export const TestErrorMultiInputTask = arrayTaskFactory<
-  ConvertSomeToOptionalArray<TestSquareTaskInput, "input">,
-  ConvertAllToArrays<TestSquareTaskOutput>,
-  TestSquareTaskInput,
-  TestSquareTaskOutput
->(TestSquareErrorTask, ["input"]);
 
 /**
  * Simple single task

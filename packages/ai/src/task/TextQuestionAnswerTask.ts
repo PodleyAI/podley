@@ -6,17 +6,16 @@
 //    *******************************************************************************
 
 import {
+  CreateWorkflow,
+  JobQueueTaskConfig,
   TaskInputDefinition,
   TaskOutputDefinition,
-  arrayTaskFactory,
   TaskRegistry,
-  JobQueueTaskConfig,
   Workflow,
-  CreateWorkflow,
 } from "@ellmers/task-graph";
+import { ConvertAllToOptionalArray } from "@ellmers/util";
 import { AiTask } from "./base/AiTask";
 import { model_question_answering } from "./base/TaskIOTypes";
-import { ConvertAllToOptionalArray } from "@ellmers/util";
 export type TextQuestionAnswerTaskInput = {
   context: string;
   question: string;

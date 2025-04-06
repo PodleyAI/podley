@@ -23,7 +23,6 @@ import {
 import {
   TestSquareTask,
   TestDoubleTask,
-  TestSquareMultiInputTask,
   FailingTask,
   LongRunningTask,
   FAILURE_MESSAGE,
@@ -45,7 +44,6 @@ describe("TaskSubGraphRunner", () => {
     let nodes: ITask[];
     beforeEach(() => {
       nodes = [
-        new TestSquareMultiInputTask({ input: [6, 7] }, { id: "task0" }),
         new TestSquareTask({ input: 5 }, { id: "task1" }),
         new TestDoubleTask({ input: 5 }, { id: "task2" }),
       ];
@@ -55,32 +53,10 @@ describe("TaskSubGraphRunner", () => {
     it("should be able to have multiple inputs for array input type", async () => {
       const results = await runner.runGraph<TaskOutput>();
 
-      expect(results.length).toEqual(3);
+      expect(results.length).toEqual(2);
       expect(results.find((r: GraphSingleResult<TaskOutput>) => r.id === "task2")?.data).toEqual({
         output: 10,
       });
-    });
-
-    it("array input into ArrayTask", async () => {
-      const task = new TestSquareMultiInputTask({ input: [6, 7] }, { id: "task3" });
-      graph.addTask(task);
-      graph.addDataflow(new Dataflow("task1", "output", "task3", "input"));
-      graph.addDataflow(new Dataflow("task2", "output", "task3", "input"));
-
-      const results1 = await runner.runGraph<TaskOutput>();
-      const results2 = await runner.runGraph<TaskOutput>();
-      const results3 = await runner.runGraph<TaskOutput>();
-      expect(Array.isArray(results1)).toBe(true);
-      expect(Array.isArray(results2)).toBe(true);
-      expect(Array.isArray(results3)).toBe(true);
-      if (Array.isArray(results1) && Array.isArray(results2) && Array.isArray(results3)) {
-        expect(results1[0]).toEqual(results2[0]);
-        expect(results2[0]).toEqual(results3[0]);
-        expect(results1[1]).toEqual(results2[1]);
-        expect(results2[1]).toEqual(results3[1]);
-        expect(results1[2]).toEqual(results2[2]);
-        expect(results2[2]).toEqual(results3[2]);
-      }
     });
   });
 
