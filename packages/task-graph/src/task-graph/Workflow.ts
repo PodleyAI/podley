@@ -612,7 +612,7 @@ export class Workflow {
     const targetTask = this.graph.getTask(targetTaskId);
 
     if (!sourceTask || !targetTask) {
-      throw new WorkflowError("Source or target task notgit found");
+      throw new WorkflowError("Source or target task not found");
     }
 
     const dataflow = new Dataflow(sourceTaskId, sourceTaskPortId, targetTaskId, targetTaskPortId);
