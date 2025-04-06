@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, uuid4 } from "@ellmers/util";
-import type { IExecuteConfig, ITask } from "./ITask";
+import type { IExecuteConfig, IExecuteReactiveConfig, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
 import {
   type TaskEventListener,
@@ -27,6 +27,7 @@ import {
   type TaskOutputDefinition,
   type TaskTypeName,
 } from "./TaskTypes";
+import { TaskGraph } from "../task-graph/TaskGraph";
 
 /**
  * Base class for all tasks that implements the ITask interface.
@@ -100,7 +101,11 @@ export class Task<
    * @param output The current output of the task
    * @returns The updated output of the task or undefined if no changes
    */
-  public async executeReactive(input: Input, output: Output): Promise<Output | undefined> {
+  public async executeReactive(
+    input: Input,
+    output: Output,
+    config: IExecuteReactiveConfig
+  ): Promise<Output | undefined> {
     return output;
   }
 
@@ -543,5 +548,58 @@ export class Task<
   public toDependencyJSON(): JsonTaskItem {
     const json = this.toJSON();
     return json;
+  }
+
+  // ========================================================================
+  // Internal graph methods
+  // ========================================================================
+
+  /**
+   * Checks if the task has children. Useful to gate to use of the internal subGraph
+   * as this will return without creating a new graph if graph is non-existent .
+   *
+   * @returns True if the task has children, otherwise false
+   */
+  public hasChildren(): boolean {
+    return (
+      this._subGraph !== undefined &&
+      this._subGraph !== null &&
+      this._subGraph.getTasks().length > 0
+    );
+  }
+
+  /**
+   * The internal task graph containing subtasks
+   *
+   * In the base case, these may just be incidental tasks that are not part of the task graph
+   * but are used to manage the task's state as part of task execution. Therefore, the graph
+   * is not used by the default runner.
+   */
+  protected _subGraph: TaskGraph | undefined = undefined;
+
+  /**
+   * Sets the subtask graph for the compound task
+   * @param subGraph The subtask graph to set
+   */
+  set subGraph(subGraph: TaskGraph) {
+    this._subGraph = subGraph;
+  }
+
+  /**
+   * The internal task graph containing subtasks
+   *
+   * In the base case, these may just be incidental tasks that are not part of the task graph
+   * but are used to manage the task's state as part of task execution. Therefore, the graph
+   * is not used by the default runner.
+   *
+   * Creates a new graph if one doesn't exist.
+   *
+   * @returns The task graph
+   */
+  get subGraph(): TaskGraph {
+    if (!this._subGraph) {
+      this._subGraph = new TaskGraph();
+    }
+    return this._subGraph;
   }
 }

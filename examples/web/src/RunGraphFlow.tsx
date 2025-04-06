@@ -5,24 +5,25 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import React, { Dispatch, SetStateAction, useEffect, useRef } from "react";
+import { ArrayTask, ITask, TaskGraph, TaskStatus } from "@ellmers/task-graph";
 import {
-  ReactFlow,
   Controls,
-  useNodesState,
-  useEdgesState,
-  Node,
-  useNodesInitialized,
-  useReactFlow,
   Edge,
+  Node,
   Position,
+  ReactFlow,
+  useEdgesState,
+  useNodesInitialized,
+  useNodesState,
+  useReactFlow,
 } from "@xyflow/react";
-import { TurboNodeData, SingleNode, CompoundNode } from "./TurboNode";
-import TurboEdge from "./TurboEdge";
-import { FiFileText, FiClipboard, FiDownload, FiUpload } from "react-icons/fi";
-import { ITask, TaskGraph, TaskStatus, TaskWithSubgraph } from "@ellmers/task-graph";
+import React, { Dispatch, SetStateAction, useEffect, useRef } from "react";
+import { FiClipboard, FiDownload, FiFileText, FiUpload } from "react-icons/fi";
 import { GraphPipelineCenteredLayout, GraphPipelineLayout, computeLayout } from "./layout";
+import TurboEdge from "./TurboEdge";
+import { CompoundNode, SingleNode, TurboNodeData } from "./TurboNode";
 
+import { DownloadModelTask } from "@ellmers/ai";
 import "@xyflow/react/dist/base.css";
 import "./RunGraphFlow.css";
 
@@ -69,7 +70,8 @@ function convertGraphToNodes(graph: TaskGraph): Node<TurboNodeData>[] {
   const tasks = graph.getTasks();
 
   const nodes = tasks.flatMap((task, index) => {
-    const isCompound = task instanceof TaskWithSubgraph && task.hasChildren();
+    const isArrayTask = task instanceof ArrayTask && !(task instanceof DownloadModelTask);
+    const isCompound = task.hasChildren() && !isArrayTask;
     let n: Node<TurboNodeData>[] = [
       {
         id: task.config.id as string,
@@ -162,25 +164,69 @@ function listenToTask(
 ) {
   const cleanupFns: (() => void)[] = [];
   let progressItems: Array<{ id: string; text: string; progress: number }> = [];
+  const isArrayTask = task instanceof ArrayTask && !(task instanceof DownloadModelTask);
+  const isCompoundTask = task.hasChildren() && !isArrayTask;
+
+  const updateArrayTaskProgress = () => {
+    const subTasks = task.subGraph.getTasks();
+    progressItems = subTasks.map((subTask) => {
+      let text = "";
+      if (subTask.status === TaskStatus.COMPLETED && subTask.runOutputData?.text) {
+        text = String(subTask.runOutputData.text);
+      } else if (subTask.status === TaskStatus.FAILED) {
+        text = `Error: ${String(subTask.error)}`;
+      }
+
+      return {
+        id: subTask.config.id as string,
+        text,
+        progress:
+          subTask.status === TaskStatus.COMPLETED
+            ? 100
+            : subTask.status === TaskStatus.PROCESSING
+              ? subTask.progress
+              : subTask.status === TaskStatus.FAILED
+                ? 100
+                : 0,
+      };
+    });
+
+    updateNodeData(
+      task.config.id,
+      {
+        active: task.status === TaskStatus.PROCESSING,
+        progressItems,
+      },
+      setNodes
+    );
+  };
 
   const handleStatusChange = () => {
-    if (task.status === TaskStatus.PROCESSING) {
-      progressItems = [{ id: "text", text: "STARTING", progress: 1 }];
-    } else if (task.status === TaskStatus.COMPLETED) {
-      progressItems =
-        progressItems.length > 0
-          ? progressItems.map((item) => ({
-              id: item.id,
-              text: item.id === "text" ? (task.runOutputData?.text ?? "COMPLETED") : item.text,
-              progress: 100,
-            }))
-          : [{ id: "text", text: task.runOutputData?.text ?? "COMPLETED", progress: 100 }];
-    } else if (task.status === TaskStatus.FAILED) {
-      progressItems = [{ id: "text", text: "Error: " + task.error, progress: 100 }];
-    } else if (task.status === TaskStatus.SKIPPED) {
-      progressItems = [{ id: "text", text: "Skipped", progress: 100 }];
-    } else if (task.status === TaskStatus.ABORTING) {
-      progressItems = [{ id: "text", text: "Aborting", progress: 100 }];
+    if (isCompoundTask) {
+      // do nothing
+    } else if (isArrayTask) {
+      updateArrayTaskProgress();
+    } else {
+      if (task.status === TaskStatus.PENDING) {
+        progressItems = [];
+      } else if (task.status === TaskStatus.PROCESSING) {
+        progressItems = [{ id: "text", text: "STARTING", progress: 1 }];
+      } else if (task.status === TaskStatus.COMPLETED) {
+        progressItems =
+          progressItems.length > 0
+            ? progressItems.map((item) => ({
+                id: item.id,
+                text: item.id === "text" ? (task.runOutputData?.text ?? "COMPLETED") : item.text,
+                progress: 100,
+              }))
+            : [{ id: "text", text: task.runOutputData?.text ?? "COMPLETED", progress: 100 }];
+      } else if (task.status === TaskStatus.FAILED) {
+        progressItems = [{ id: "text", text: "Error: " + task.error, progress: 100 }];
+      } else if (task.status === TaskStatus.SKIPPED) {
+        progressItems = [{ id: "text", text: "Skipped", progress: 100 }];
+      } else if (task.status === TaskStatus.ABORTING) {
+        progressItems = [{ id: "text", text: "Aborting", progress: 100 }];
+      }
     }
 
     updateNodeData(
@@ -252,70 +298,134 @@ function listenToTask(
   };
 
   const handleRegenerate = () => {
-    if (task instanceof TaskWithSubgraph) {
-      setNodes((nodes) => {
-        let children = convertGraphToNodes(task.subGraph).map(
-          (n) =>
-            ({
-              ...n,
-              parentId: task.config.id as string,
-              extent: "parent",
-              selectable: false,
-              connectable: false,
-            }) as Node<TurboNodeData>
-        );
-        let returnNodes = nodes.filter((n) => n.parentId !== task.config.id); // remove old children
-        const self = returnNodes.find((n) => n.id === task.config.id);
-        if (self?.type !== "compound" && children.length > 0) {
-          // update to true compound
-          returnNodes = nodes.filter((n) => n.id !== task.config.id); // remove old self
-          const newSelf: Node<TurboNodeData> = {
-            ...self,
-            type: "compound",
-            data: {
-              ...self.data,
-            },
-          };
-          children = [...children, newSelf];
-        }
-        returnNodes = [...returnNodes, ...children]; // add new children
-        returnNodes = sortNodes(returnNodes); // sort all nodes
-        return returnNodes;
-      });
-      // Set up listeners for new subtasks
-      const newCleanupFns = listenToGraphTasks(task.subGraph, setNodes, setEdges);
-      cleanupFns.push(...newCleanupFns);
-    }
+    setNodes((nodes) => {
+      if (isArrayTask) {
+        // For array tasks, we don't create compound nodes
+        // Instead, we update the progress items to reflect the subtasks
+        updateArrayTaskProgress();
+        return nodes;
+      }
+
+      let children = convertGraphToNodes(task.subGraph).map(
+        (n) =>
+          ({
+            ...n,
+            parentId: task.config.id as string,
+            extent: "parent",
+            selectable: false,
+            connectable: false,
+          }) as Node<TurboNodeData>
+      );
+      let returnNodes = nodes.filter((n) => n.parentId !== task.config.id); // remove old children
+      const self = returnNodes.find((n) => n.id === task.config.id);
+      if (self?.type !== "compound" && children.length > 0) {
+        // update to true compound
+        returnNodes = nodes.filter((n) => n.id !== task.config.id); // remove old self
+        const newSelf: Node<TurboNodeData> = {
+          ...self,
+          type: "compound",
+          data: {
+            ...self.data,
+          },
+        };
+        children = [...children, newSelf];
+      }
+      returnNodes = [...returnNodes, ...children]; // add new children
+      returnNodes = sortNodes(returnNodes); // sort all nodes
+      return returnNodes;
+    });
+    // Set up listeners for new subtasks
+    const newCleanupFns = listenToGraphTasks(task.subGraph, setNodes, setEdges);
+    cleanupFns.push(...newCleanupFns);
   };
 
-  if (task instanceof TaskWithSubgraph) {
+  if (isCompoundTask) {
     const subTasks = task.subGraph.getTasks();
     for (const subTask of subTasks) {
       const subCleanupFns = listenToTask(subTask, setNodes, setEdges);
       cleanupFns.push(...subCleanupFns);
     }
-
-    // Listen for regeneration of compound tasks
-    task.on("regenerate", handleRegenerate);
-    cleanupFns.push(() => {
-      task.off("regenerate", handleRegenerate);
-    });
   }
+
+  const handleRegenerateArrayTask = () => {
+    const subTasks = task.subGraph.getTasks();
+    for (const subTask of subTasks) {
+      const handleSubTaskProgress = (progress: number, message: string, details: any) => {
+        const progressItem = {
+          id: subTask.config.id as string,
+          text: details?.text,
+          progress,
+        };
+
+        const existingIndex = progressItems.findIndex((item) => item.id === progressItem.id);
+        if (existingIndex >= 0) {
+          progressItem.text = progressItems[existingIndex].text + (progressItem.text ?? "");
+          progressItems[existingIndex] = progressItem;
+        } else {
+          progressItems.push(progressItem);
+        }
+
+        updateNodeData(
+          task.config.id,
+          {
+            active: true,
+            progressItems,
+          },
+          setNodes
+        );
+      };
+
+      const handleSubTaskStatusChange = () => {
+        if (subTask.status === TaskStatus.COMPLETED) {
+          const existingItem = progressItems.find((item) => item.id === subTask.config.id);
+          if (existingItem) {
+            existingItem.text = subTask.runOutputData?.text ?? existingItem.text;
+            existingItem.progress = 100;
+          }
+
+          updateNodeData(
+            task.config.id,
+            {
+              active: true,
+              progressItems,
+            },
+            setNodes
+          );
+        }
+      };
+
+      subTask.on("progress", handleSubTaskProgress);
+      subTask.on("complete", handleSubTaskStatusChange);
+      cleanupFns.push(() => {
+        subTask.off("progress", handleSubTaskProgress);
+        subTask.off("complete", handleSubTaskStatusChange);
+      });
+    }
+  };
+
+  const clearProgress = () => {
+    progressItems = [];
+    updateNodeData(task.config.id, { active: false, progressItems }, setNodes);
+  };
+
   // Register event handlers
   task.on("start", handleStatusChange);
   task.on("complete", handleStatusChange);
   task.on("error", handleStatusChange);
   task.on("abort", handleStatusChange);
-  task.on("reset", handleStatusChange);
+  task.on("reset", clearProgress);
   task.on("progress", handleProgress);
+  task.on("regenerate", isArrayTask ? handleRegenerateArrayTask : handleRegenerate);
+
   // Add cleanup function
   cleanupFns.push(() => {
     task.off("start", handleStatusChange);
     task.off("complete", handleStatusChange);
     task.off("error", handleStatusChange);
     task.off("abort", handleStatusChange);
-    task.off("reset", handleStatusChange);
+    task.off("reset", clearProgress);
     task.off("progress", handleProgress);
+    task.off("regenerate", isArrayTask ? handleRegenerateArrayTask : handleRegenerate);
   });
 
   return cleanupFns;

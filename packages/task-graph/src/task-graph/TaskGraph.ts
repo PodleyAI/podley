@@ -18,6 +18,7 @@ import {
   EventTaskGraphToDagMapping,
   TaskGraphEventParameters,
 } from "./TaskGraphEvents";
+import { ITaskGraph } from "./ITaskGraph";
 
 /**
  * Configuration for running a task graph
@@ -48,7 +49,7 @@ interface TaskGraphConstructorConfig {
 /**
  * Represents a task graph, a directed acyclic graph of tasks and data flows
  */
-export class TaskGraph {
+export class TaskGraph implements ITaskGraph {
   /** Optional output cache to use for this task graph */
   public outputCache?: TaskOutputRepository;
 
@@ -79,7 +80,7 @@ export class TaskGraph {
    * Runs the task graph
    * @param config Configuration for the graph run
    * @returns A promise that resolves when all tasks are complete
-   * @throws TaskErrorGroup if any tasks have failed
+   * @throws TaskGroup if any tasks have failed
    */
   public run<ExecuteOutput extends TaskOutput>(
     config?: TaskGraphRunConfig
@@ -94,7 +95,7 @@ export class TaskGraph {
   /**
    * Runs the task graph reactively
    * @returns A promise that resolves when all tasks are complete
-   * @throws TaskErrorGroup if any tasks have failed
+   * @throws TaskError if any tasks have failed
    */
   public runReactive<Output extends TaskOutput>(): Promise<NamedGraphResult<Output>> {
     return this.runner.runGraphReactive<Output>();

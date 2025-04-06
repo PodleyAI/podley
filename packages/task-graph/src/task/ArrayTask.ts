@@ -5,209 +5,133 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter, Writeable } from "@ellmers/util";
-import { TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { uuid4 } from "@ellmers/util";
+import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { ITaskConstructor } from "./ITask";
-import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
-import { TaskRegistry } from "./TaskRegistry";
-import {
-  Provenance,
-  TaskConfig,
-  TaskInput,
-  TaskInputDefinition,
-  TaskOutput,
-  TaskOutputDefinition,
-  TaskTypeName,
-} from "./TaskTypes";
-import { TaskWithSubgraph } from "./TaskWithSubgraph";
-import { TaskEventListeners } from "./TaskEvents";
+import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
+import { GraphAsTask } from "./GraphAsTask";
 
 /**
- * Converts specified IO definitions to array type
- * @param io Array of input/output definitions
- * @param id Optional ID to target specific definition
- * @returns Modified array of definitions with isArray set to true
+ * ArrayTask is a compound task that either:
+ * 1. Executes directly if all inputs are non-arrays
+ * 2. Creates a subGraph with one task instance per array element if any input is an array
+ * 3. Creates all combinations if multiple inputs are arrays
  */
-function convertToArray<D extends TaskInputDefinition | TaskOutputDefinition>(
-  io: D[],
-  id?: string | number | symbol
-) {
-  const results: D[] = [];
-  for (const item of io) {
-    const newItem: Writeable<D> = { ...item };
-    if (newItem.id === id || id === undefined) {
-      newItem.isArray = true;
-    }
-    results.push(newItem);
-  }
-  return results as D[];
-}
-
-/**
- * Converts multiple IO definitions to array type based on provided IDs
- * @param io Array of input/output definitions
- * @param ids Array of IDs to target specific definitions
- * @returns Modified array of definitions with isArray set to true for matching IDs
- */
-function convertMultipleToArray<D extends TaskInputDefinition | TaskOutputDefinition>(
-  io: D[],
-  ids: Array<string | number | symbol>
-) {
-  const results: D[] = [];
-  for (const item of io) {
-    const newItem: Writeable<D> = { ...item };
-    if (ids.includes(newItem.id)) {
-      newItem.isArray = true;
-    }
-    results.push(newItem);
-  }
-  return results as D[];
-}
-/**
- * Generates all possible combinations of array inputs
- * @param input Input object containing arrays
- * @param inputMakeArray Keys of properties to generate combinations for
- * @returns Array of input objects with all possible combinations
- */
-function generateCombinations<T, K extends keyof T>(input: T, inputMakeArray: K[]): T[] {
-  // Helper function to check if a property is an array
-  const isArray = (value: any): value is Array<any> => Array.isArray(value);
-
-  // Prepare arrays for combination generation
-  const arraysToCombine: any[][] = inputMakeArray.map((key) =>
-    isArray(input[key]) ? input[key] : []
-  );
-
-  // Initialize indices and combinations
-  const indices = arraysToCombine.map(() => 0);
-  const combinations: number[][] = [];
-  let done = false;
-
-  while (!done) {
-    combinations.push([...indices]); // Add current combination of indices
-
-    // Move to the next combination of indices
-    for (let i = indices.length - 1; i >= 0; i--) {
-      if (++indices[i] < arraysToCombine[i].length) break; // Increment current index if possible
-      if (i === 0)
-        done = true; // All combinations have been generated
-      else indices[i] = 0; // Reset current index and move to the next position
-    }
-  }
-
-  // Build objects based on the combinations
-  const combos = combinations.map((combination) => {
-    const result = { ...input }; // Start with a shallow copy of the input
-
-    // Set values from the arrays based on the current combination
-    combination.forEach((valueIndex, arrayIndex) => {
-      const key = inputMakeArray[arrayIndex];
-      if (isArray(input[key])) result[key] = input[key][valueIndex];
-    });
-
-    return result;
-  });
-
-  return combos;
-}
-
-/**
- * Factory function to create array-based task classes
- * Creates a task that can process arrays of inputs in parallel
- * @param taskClass Base task class to wrap
- * @param inputMakeArray Array of input keys to process as arrays
- * @param name Optional name for the generated task class
- * @returns New task class that handles array inputs
- */
-export function arrayTaskFactory<
-  PluralInputType extends TaskInput,
-  PluralOutputType extends TaskOutput,
-  SingleInputType extends TaskInput,
-  SingleOutputType extends TaskOutput,
-  SingleConfig extends TaskConfig = TaskConfig,
->(
-  taskClass: ITaskConstructor<SingleInputType, SingleOutputType, SingleConfig>,
-  inputMakeArray: Array<keyof PluralInputType>,
-  name?: string
-) {
-  const inputs = convertMultipleToArray<TaskInputDefinition>(
-    Array.from(taskClass.inputs),
-    inputMakeArray
-  );
-  const outputs = convertToArray<TaskOutputDefinition>(Array.from(taskClass.outputs));
-
-  const nameWithoutTask = taskClass.type.slice(0, -4);
-  name ??= nameWithoutTask + "ArrayTask";
+export class ArrayTask<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends GraphAsTask<Input, Output, Config> {
+  /**
+   * The type identifier for this task class
+   */
+  public static type = "ArrayTask";
 
   /**
-   * A task class that handles array-based processing by creating subtasks for each combination of inputs
-   * Extends RegenerativeCompoundTask to manage a collection of child tasks running in parallel
+   * Whether this task is a compound task (contains subtasks)
    */
-  class ArrayTask<
-    Input extends PluralInputType = PluralInputType,
-    Output extends PluralOutputType = PluralOutputType,
-    Config extends SingleConfig = SingleConfig,
-  > extends TaskWithSubgraph<Input, Output, Config> {
-    static readonly type: TaskTypeName = name!;
-    static readonly runtype = taskClass.type;
-    static readonly category = taskClass.category;
-    static readonly cacheable = taskClass.cacheable;
-    static readonly compoundMerge = "last-or-property-array";
-    itemClass = taskClass;
+  public static readonly compoundMerge = "last-or-property-array";
 
-    static inputs = inputs;
-    static outputs = outputs;
+  /**
+   * Regenerates the task subgraph based on input arrays
+   */
+  public regenerateGraph(): void {
+    // Check if any inputs are arrays
+    const arrayInputs = new Map<string, any[]>();
+    let hasArrayInputs = false;
+    for (const inputDef of this.inputs) {
+      const inputId = inputDef.id;
+      const inputValue = this.runInputData[inputId];
 
-    /**
-     * Regenerates the task graph by creating child tasks for each input combination
-     * Each child task processes a single combination of the array inputs
-     */
-    regenerateGraph() {
-      this.subGraph = new TaskGraph();
-      const combinations = generateCombinations<Input, keyof Input>(
-        this.runInputData,
-        inputMakeArray as (keyof Input)[]
+      if (inputDef.isArray === "replicate" && Array.isArray(inputValue) && inputValue.length > 0) {
+        arrayInputs.set(inputId, inputValue);
+        hasArrayInputs = true;
+      }
+    }
+
+    // If no array inputs, no need to create a subgraph
+    if (!hasArrayInputs) return;
+
+    // Clear the existing subgraph
+    this.subGraph = new TaskGraph();
+
+    // Create all combinations of inputs
+    const inputIds = Array.from(arrayInputs.keys());
+    const inputObject = Object.fromEntries(arrayInputs);
+    const combinations = this.generateCombinations(inputObject as Input, inputIds);
+
+    // Create task instances for each combination
+    const tasks = combinations.map((combination) => {
+      // Create a new instance of this same class
+      const { id, name, ...rest } = this.config;
+      const task = new (this.constructor as any)(
+        { ...this.defaults, ...combination },
+        { ...rest, id: `${id}_${uuid4()}` }
       );
-      combinations.forEach((input, index) => {
-        const current = new taskClass(
-          input as unknown as SingleInputType,
-          {
-            id: this.config.id + "-child-" + (index + 1),
-            outputCache: this.outputCache,
-          } as SingleConfig
-        );
-        this.subGraph!.addTask(current);
-      });
-      super.regenerateGraph();
-    }
+      return task;
+    });
 
-    toJSON(): JsonTaskItem {
-      const { subgraph, ...result } = super.toJSON() as TaskGraphItemJson;
-      return result;
-    }
+    // Add tasks to subgraph
+    this.subGraph.addTasks(tasks);
 
-    toDependencyJSON(): JsonTaskItem {
-      const { subtasks, ...result } = super.toDependencyJSON() as JsonTaskItem;
-      return result;
-    }
-
-    async validateInputValue(valueType: string, item: any) {
-      return true; // let children validate
-    }
-
-    declare _subGraph: TaskGraph;
-    declare _events: EventEmitter<TaskEventListeners>;
-    declare abortController: AbortController;
-    declare nodeProvenance: Provenance;
-    declare outputCache: TaskOutputRepository;
-    declare queueName: string;
-    declare currentJobId: string;
-    declare validateInput: (input: Partial<Input>) => Promise<boolean>;
+    // Emit regenerate event
+    super.regenerateGraph();
   }
 
-  // Use type assertion to make TypeScript accept the registration
-  TaskRegistry.registerTask(ArrayTask);
+  /**
+   * Generates all possible combinations of array inputs
+   * @param input Input object containing arrays
+   * @param inputMakeArray Keys of properties to generate combinations for
+   * @returns Array of input objects with all possible combinations
+   */
+  protected generateCombinations(input: Input, inputMakeArray: Array<keyof Input>): Input[] {
+    // Helper function to check if a property is an array
+    const isArray = (value: any): value is Array<any> => Array.isArray(value);
 
-  return ArrayTask;
+    // Prepare arrays for combination generation
+    const arraysToCombine: any[][] = inputMakeArray.map((key) =>
+      isArray(input[key]) ? input[key] : []
+    );
+
+    const indices = arraysToCombine.map(() => 0);
+    const combinations: number[][] = [];
+    let done = false;
+
+    while (!done) {
+      combinations.push([...indices]); // Add current combination of indices
+
+      // Move to the next combination of indices
+      for (let i = indices.length - 1; i >= 0; i--) {
+        if (++indices[i] < arraysToCombine[i].length) break; // Increment current index if possible
+        if (i === 0)
+          done = true; // All combinations have been generated
+        else indices[i] = 0; // Reset current index and move to the next position
+      }
+    }
+
+    // Build objects based on the combinations
+    const combos = combinations.map((combination) => {
+      const result = { ...input }; // Start with a shallow copy of the input
+
+      // Set values from the arrays based on the current combination
+      combination.forEach((valueIndex, arrayIndex) => {
+        const key = inputMakeArray[arrayIndex];
+        if (isArray(input[key])) result[key] = input[key][valueIndex];
+      });
+
+      return result;
+    });
+
+    return combos;
+  }
+
+  toJSON(): JsonTaskItem {
+    const { subgraph, ...result } = super.toJSON() as TaskGraphItemJson;
+    return result;
+  }
+
+  toDependencyJSON(): JsonTaskItem {
+    const { subtasks, ...result } = super.toDependencyJSON() as JsonTaskItem;
+    return result;
+  }
 }

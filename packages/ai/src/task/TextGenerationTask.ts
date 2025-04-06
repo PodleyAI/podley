@@ -6,7 +6,6 @@
 //    *******************************************************************************
 
 import {
-  arrayTaskFactory,
   CreateWorkflow,
   JobQueueTaskConfig,
   TaskInputDefinition,
@@ -14,9 +13,9 @@ import {
   TaskRegistry,
   Workflow,
 } from "@ellmers/task-graph";
+import { ConvertAllToOptionalArray } from "@ellmers/util";
 import { AiTask } from "./base/AiTask";
 import { model_generation } from "./base/TaskIOTypes";
-import { ConvertAllToOptionalArray } from "@ellmers/util";
 
 export type TextGenerationTaskInput = {
   prompt: string;

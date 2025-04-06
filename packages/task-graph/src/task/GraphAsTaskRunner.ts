@@ -5,17 +5,17 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { CompoundMergeStrategy, NamedGraphResult } from "../task-graph/TaskGraphRunner";
+import { NamedGraphResult } from "../task-graph/TaskGraphRunner";
 import { TaskRunner } from "./TaskRunner";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
-import { TaskWithSubgraph } from "./TaskWithSubgraph";
+import { GraphAsTask } from "./GraphAsTask";
 
-export class TaskWithSubgraphRunner<
+export class GraphAsTaskRunner<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
 > extends TaskRunner<Input, Output, Config> {
-  declare task: TaskWithSubgraph<Input, Output, Config>;
+  declare task: GraphAsTask<Input, Output, Config>;
 
   /**
    * Protected method to execute a task subgraphby delegating back to the task itself.
@@ -32,27 +32,6 @@ export class TaskWithSubgraphRunner<
    */
   protected async executeTaskChildrenReactive(): Promise<NamedGraphResult<Output>> {
     return this.task.subGraph!.runReactive<Output>();
-  }
-
-  /**
-   * Handles task abort
-   */
-  protected async handleAbort(): Promise<void> {
-    if (this.task.hasChildren()) {
-      this.task.subGraph!.abort();
-    }
-    super.handleAbort();
-  }
-
-  /**
-   * Handles task error
-   * @param err Error that occurred
-   */
-  protected async handleError(err: Error): Promise<void> {
-    if (this.task.hasChildren()) {
-      this.task.subGraph!.abort();
-    }
-    super.handleError(err);
   }
 
   protected async handleSkip(): Promise<void> {

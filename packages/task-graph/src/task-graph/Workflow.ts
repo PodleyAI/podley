@@ -21,7 +21,7 @@ import {
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph } from "./TaskGraph";
 import { CompoundMergeStrategy } from "./TaskGraphRunner";
-import { TaskWithSubgraph } from "../task/TaskWithSubgraph";
+import { GraphAsTask } from "../task/GraphAsTask";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
@@ -115,7 +115,7 @@ function parallel(
     isCompound: true,
     compoundMerge: mergeFn,
   };
-  const mergeTask = new TaskWithSubgraph(input, config);
+  const mergeTask = new GraphAsTask(input, config);
   mergeTask.subGraph!.addTasks(tasks);
   workflow.graph.addTask(mergeTask);
   if (previousTask) {
@@ -538,7 +538,7 @@ export class Workflow {
   }
 
   toTask(): Task {
-    const task = new TaskWithSubgraph(
+    const task = new GraphAsTask(
       {},
       {
         isCompound: true,

@@ -5,19 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { useEffect, useState } from "react";
+import { ITask, TaskGraph, TaskStatus, ArrayTask } from "@ellmers/task-graph";
 import type { FC } from "react";
-import { Text, Box } from "tuir";
-import {
-  TaskStatus,
-  TaskGraph,
-  Task,
-  TaskError,
-  ITask,
-  TaskWithSubgraph,
-} from "@ellmers/task-graph";
+import { useEffect, useState } from "react";
+import { Box, Text } from "tuir";
+import { createBar, Spinner, symbols } from "./Elements";
 import TaskGraphUI from "./TaskGraphUI";
-import { createBar, symbols, Spinner } from "./Elements";
+import { DownloadModelTask } from "@ellmers/ai";
 
 const getSymbol = (state: TaskStatus) => {
   if (state === TaskStatus.PROCESSING) {
@@ -64,6 +58,9 @@ export const TaskUI: FC<{
   const [subGraph, setSubGraph] = useState<TaskGraph | null>(null);
   const [dependantChildren, setDependantChildren] = useState<ITask[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [arrayProgress, setArrayProgress] = useState<{ completed: number; total: number } | null>(
+    null
+  );
 
   useEffect(() => {
     const onStart = () => {
@@ -102,7 +99,21 @@ export const TaskUI: FC<{
 
     const onRegenerate = () => {
       setCount((counter) => counter + 1);
-      setSubGraph(task instanceof TaskWithSubgraph && task.hasChildren() ? task.subGraph : null);
+      if (
+        task &&
+        task instanceof ArrayTask &&
+        !(task instanceof DownloadModelTask) &&
+        task.hasChildren()
+      ) {
+        const tasks = task.subGraph.getTasks();
+        setArrayProgress({
+          completed: tasks.filter((t: ITask) => t.status === TaskStatus.COMPLETED).length,
+          total: tasks.length,
+        });
+        setSubGraph(null);
+      } else {
+        setSubGraph(task.hasChildren() ? task.subGraph : null);
+      }
       setDependantChildren(graph.getTargetTasks(task.config.id));
     };
 
@@ -179,11 +190,15 @@ export const TaskUI: FC<{
           <Text color="red">{`${symbols.warning} ${error}`}</Text>
         </Box>
       ) : null}
-      {subGraph && (
+      {arrayProgress ? (
+        <Box marginLeft={2}>
+          <Text color="gray">{`${symbols.arrowDashedRight} Processing array tasks: ${arrayProgress.completed}/${arrayProgress.total} completed ${createBar(arrayProgress.completed / arrayProgress.total, 10)}`}</Text>
+        </Box>
+      ) : subGraph && !(task instanceof ArrayTask) ? (
         <Box flexDirection="row" marginLeft={2} borderStyle="round">
           <TaskGraphUI graph={subGraph} />
         </Box>
-      )}
+      ) : null}
       {dependantChildren && (
         <Box flexDirection="row" marginLeft={2}>
           {dependantChildren.map((taskItem) => (

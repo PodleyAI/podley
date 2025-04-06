@@ -45,7 +45,7 @@ await graph.run();
 ### Task Types
 
 - **Task**: Atomic unit of work
-- **TaskWithSubgraph**: Group of tasks forming a subgraph
+- **GraphAsTask**: Group of tasks forming a subgraph
 - **JobQueueTask**: Integration with job queues
 
 [See Task Types Documentation](./src/task/README.md) for more details

@@ -10,62 +10,55 @@ import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import { Task } from "./Task";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { type TaskConfig, type TaskInput, type TaskOutput, type TaskTypeName } from "./TaskTypes";
-import { TaskWithSubgraphRunner } from "./TaskWithSubgraphRunner";
+import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 
+interface GraphAsTaskConfig extends TaskConfig {
+  subGraph?: TaskGraph;
+}
 /**
  * A task that contains a subgraph of tasks
  */
-export class TaskWithSubgraph<
+export class GraphAsTask<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
-  Config extends TaskConfig = TaskConfig,
+  Config extends GraphAsTaskConfig = GraphAsTaskConfig,
 > extends Task<Input, Output, Config> {
   // ========================================================================
   // Static properties - should be overridden by subclasses
   // ========================================================================
 
-  public static type: TaskTypeName = "TaskWithSubgraph";
+  public static type: TaskTypeName = "GraphAsTask";
   public static category: string = "Hidden";
   public static isCompound: boolean = true;
   public static compoundMerge: CompoundMergeStrategy = "last-or-named";
 
   // ========================================================================
+  // Constructor
+  // ========================================================================
+
+  constructor(input: Input = {} as Input, config: Config = {} as Config) {
+    const { subGraph, ...rest } = config;
+    super(input, rest as Config);
+    if (subGraph) {
+      this.subGraph = subGraph;
+    }
+    this.regenerateGraph();
+  }
+
+  // ========================================================================
   // TaskRunner delegation - Executes and manages the task
   // ========================================================================
+
+  declare _runner: GraphAsTaskRunner<Input, Output, Config>;
 
   /**
    * Task runner for handling the task execution
    */
-  declare _runner: TaskWithSubgraphRunner<Input, Output, Config>;
-
-  override get runner(): TaskWithSubgraphRunner<Input, Output, Config> {
+  override get runner(): GraphAsTaskRunner<Input, Output, Config> {
     if (!this._runner) {
-      this._runner = new TaskWithSubgraphRunner<Input, Output, Config>(this);
+      this._runner = new GraphAsTaskRunner<Input, Output, Config>(this);
     }
     return this._runner;
-  }
-
-  /**
-   * Runs the task and returns the output
-   * Delegates to the task runner
-   *
-   * @param overrides Optional input overrides
-   * @throws TaskError if the task fails
-   * @returns The task output
-   */
-  async run(overrides: Partial<Input> = {}): Promise<Output> {
-    return this.runner.run(overrides);
-  }
-
-  /**
-   * Runs the task in reactive mode
-   * Delegates to the task runner
-   *
-   * @param overrides Optional input overrides
-   * @returns The task output
-   */
-  public async runReactive(overrides: Partial<Input> = {}): Promise<Output> {
-    return this.runner.runReactive(overrides);
   }
 
   // ========================================================================
@@ -73,43 +66,15 @@ export class TaskWithSubgraph<
   // ========================================================================
 
   public get compoundMerge(): CompoundMergeStrategy {
-    return (
-      this.config?.compoundMerge || (this.constructor as typeof TaskWithSubgraph).compoundMerge
-    );
+    return this.config?.compoundMerge || (this.constructor as typeof GraphAsTask).compoundMerge;
   }
 
   public get cacheable(): boolean {
     return (
       // if cacheable is set in config, always use that
       this.config?.cacheable ??
-      ((this.constructor as typeof TaskWithSubgraph).cacheable && !this.hasChildren())
+      ((this.constructor as typeof GraphAsTask).cacheable && !this.hasChildren())
     );
-  }
-
-  public hasChildren(): boolean {
-    return (
-      this._subGraph !== undefined &&
-      this._subGraph !== null &&
-      this._subGraph.getTasks().length > 0
-    );
-  }
-
-  // ========================================================================
-  // Instance properties using @template types
-  // ========================================================================
-
-  /**
-   * Creates a new task instance
-   *
-   * @param callerDefaultInputs Default input values provided by the caller
-   * @param config Configuration for the task
-   */
-  constructor(
-    callerDefaultInputs: Partial<Input> = {} as Partial<Input>,
-    config: Config = {} as Config
-  ) {
-    super(callerDefaultInputs, config);
-    this.regenerateGraph();
   }
 
   // ========================================================================
@@ -131,31 +96,6 @@ export class TaskWithSubgraph<
   // ========================================================================
   //  Compound task methods
   // ========================================================================
-
-  /**
-   * The internal task graph containing subtasks
-   */
-  protected _subGraph: TaskGraph | null = null;
-
-  /**
-   * Sets the subtask graph for the compound task
-   * @param subGraph The subtask graph to set
-   */
-  set subGraph(subGraph: TaskGraph) {
-    this._subGraph = subGraph;
-  }
-
-  /**
-   * Gets the subtask graph for the compound task.
-   * Creates a new graph if one doesn't exist.
-   * @returns The subtask graph
-   */
-  get subGraph(): TaskGraph {
-    if (!this._subGraph) {
-      this._subGraph = new TaskGraph();
-    }
-    return this._subGraph;
-  }
 
   /**
    * Regenerates the subtask graph and emits a "regenerate" event

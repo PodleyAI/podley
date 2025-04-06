@@ -11,7 +11,7 @@ import {
   TaskOutputDefinition,
   TaskInvalidInputError,
   JobQueueTaskConfig,
-  RunOrReplicateTask,
+  ArrayTask,
   TaskRegistry,
   Workflow,
 } from "@ellmers/task-graph";
@@ -36,7 +36,7 @@ export type SimilarityTaskOutput = {
 type SimilarityTaskInputReplicate = ConvertAllToOptionalArray<SimilarityTaskInput>;
 type SimilarityTaskOutputReplicate = ConvertAllToOptionalArray<SimilarityTaskOutput>;
 
-export class SimilarityTask extends RunOrReplicateTask<
+export class SimilarityTask extends ArrayTask<
   SimilarityTaskInputReplicate,
   SimilarityTaskOutputReplicate,
   JobQueueTaskConfig

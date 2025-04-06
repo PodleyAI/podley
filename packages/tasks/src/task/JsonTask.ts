@@ -17,7 +17,7 @@ import {
   TaskInput,
   TaskOutput,
   createGraphFromDependencyJSON,
-  TaskWithSubgraph,
+  GraphAsTask,
 } from "@ellmers/task-graph";
 
 interface JsonTaskInput extends TaskInput {
@@ -36,7 +36,7 @@ export class JsonTask<
   Input extends JsonTaskInput = JsonTaskInput,
   Output extends JsonTaskOutput = JsonTaskOutput,
   Config extends TaskConfig = TaskConfig,
-> extends TaskWithSubgraph<Input, Output, Config> {
+> extends GraphAsTask<Input, Output, Config> {
   static readonly type = "JsonTask";
   static readonly category = "Utility";
   static readonly isCompound = true;

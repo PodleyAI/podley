@@ -8,7 +8,7 @@
 import { Job } from "@ellmers/job-queue";
 import { EventEmitter } from "@ellmers/util";
 import { IExecuteConfig } from "./ITask";
-import { RunOrReplicateTask } from "./RunOrReplicateTask";
+import { ArrayTask } from "./ArrayTask";
 import { TaskConfigurationError } from "./TaskError";
 import { TaskEventListeners } from "./TaskEvents";
 import { getTaskQueueRegistry } from "./TaskQueueRegistry";
@@ -45,7 +45,7 @@ export abstract class JobQueueTask<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends JobQueueTaskConfig = JobQueueTaskConfig,
-> extends RunOrReplicateTask<Input, Output, Config> {
+> extends ArrayTask<Input, Output, Config> {
   static readonly type: string = "JobQueueTask";
   static canRunDirectly = true;
 
