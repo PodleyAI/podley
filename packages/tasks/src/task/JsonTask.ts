@@ -39,7 +39,6 @@ export class JsonTask<
 > extends GraphAsTask<Input, Output, Config> {
   static readonly type = "JsonTask";
   static readonly category = "Utility";
-  static readonly isCompound = true;
   public static inputs: TaskInputDefinition[] = [
     {
       id: "json",

@@ -6,19 +6,19 @@
 //    *******************************************************************************
 
 import { DirectedAcyclicGraph } from "@ellmers/util";
-import { Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
-import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
-import { Dataflow, DataflowIdType } from "./Dataflow";
-import { ITask } from "../task/ITask";
-import { CompoundMergeStrategy, TaskGraphRunner, NamedGraphResult } from "./TaskGraphRunner";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
-import {
-  TaskGraphEvents,
-  TaskGraphEventListener,
-  EventTaskGraphToDagMapping,
-  TaskGraphEventParameters,
-} from "./TaskGraphEvents";
+import { ITask } from "../task/ITask";
+import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
+import { Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
+import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITaskGraph } from "./ITaskGraph";
+import {
+  EventTaskGraphToDagMapping,
+  TaskGraphEventListener,
+  TaskGraphEventParameters,
+  TaskGraphEvents,
+} from "./TaskGraphEvents";
+import { CompoundMergeStrategy, NamedGraphResult, TaskGraphRunner } from "./TaskGraphRunner";
 
 /**
  * Configuration for running a task graph
@@ -32,10 +32,15 @@ export interface TaskGraphRunConfig {
   parentProvenance?: Provenance;
 }
 
-class TaskGraphDAG extends DirectedAcyclicGraph<ITask, Dataflow, TaskIdType, DataflowIdType> {
+class TaskGraphDAG extends DirectedAcyclicGraph<
+  ITask<any, any, any>,
+  Dataflow,
+  TaskIdType,
+  DataflowIdType
+> {
   constructor() {
     super(
-      (task: ITask) => task.config.id,
+      (task: ITask<any, any, any>) => task.config.id,
       (dataflow: Dataflow) => dataflow.id
     );
   }
@@ -80,7 +85,7 @@ export class TaskGraph implements ITaskGraph {
    * Runs the task graph
    * @param config Configuration for the graph run
    * @returns A promise that resolves when all tasks are complete
-   * @throws TaskGroup if any tasks have failed
+   * @throws TaskError if any tasks have failed
    */
   public run<ExecuteOutput extends TaskOutput>(
     config?: TaskGraphRunConfig
@@ -133,7 +138,7 @@ export class TaskGraph implements ITaskGraph {
    * @param id The id of the task to retrieve
    * @returns The task with the given id, or undefined if not found
    */
-  public getTask(id: TaskIdType): ITask | undefined {
+  public getTask(id: TaskIdType): ITask<any, any, any> | undefined {
     return this._dag.getNode(id);
   }
 
@@ -141,7 +146,7 @@ export class TaskGraph implements ITaskGraph {
    * Retrieves all tasks in the task graph
    * @returns An array of tasks in the task graph
    */
-  public getTasks(): ITask[] {
+  public getTasks(): ITask<any, any, any>[] {
     return this._dag.getNodes();
   }
 
@@ -149,7 +154,7 @@ export class TaskGraph implements ITaskGraph {
    * Retrieves all tasks in the task graph topologically sorted
    * @returns An array of tasks in the task graph topologically sorted
    */
-  public topologicallySortedNodes(): ITask[] {
+  public topologicallySortedNodes(): ITask<any, any, any>[] {
     return this._dag.topologicallySortedNodes();
   }
 
@@ -158,7 +163,7 @@ export class TaskGraph implements ITaskGraph {
    * @param task The task to add
    * @returns The current task graph
    */
-  public addTask(task: ITask) {
+  public addTask(task: ITask<any, any, any>) {
     return this._dag.addNode(task);
   }
 
@@ -167,7 +172,7 @@ export class TaskGraph implements ITaskGraph {
    * @param tasks The tasks to add
    * @returns The current task graph
    */
-  public addTasks(tasks: ITask[]) {
+  public addTasks(tasks: ITask<any, any, any>[]) {
     return this._dag.addNodes(tasks);
   }
 
@@ -247,7 +252,7 @@ export class TaskGraph implements ITaskGraph {
    * @param taskId The id of the task to retrieve sources for
    * @returns An array of tasks that are sources of the given task
    */
-  public getSourceTasks(taskId: unknown): ITask[] {
+  public getSourceTasks(taskId: unknown): ITask<any, any, any>[] {
     return this.getSourceDataflows(taskId).map((dataflow) => this.getTask(dataflow.sourceTaskId)!);
   }
 
@@ -256,7 +261,7 @@ export class TaskGraph implements ITaskGraph {
    * @param taskId The id of the task to retrieve targets for
    * @returns An array of tasks that are targets of the given task
    */
-  public getTargetTasks(taskId: unknown): ITask[] {
+  public getTargetTasks(taskId: unknown): ITask<any, any, any>[] {
     return this.getTargetDataflows(taskId).map((dataflow) => this.getTask(dataflow.targetTaskId)!);
   }
 
@@ -356,7 +361,11 @@ export class TaskGraph implements ITaskGraph {
  * @param outputHandle
  * @returns
  */
-function serialGraphEdges(tasks: ITask[], inputHandle: string, outputHandle: string): Dataflow[] {
+function serialGraphEdges(
+  tasks: ITask<any, any, any>[],
+  inputHandle: string,
+  outputHandle: string
+): Dataflow[] {
   const edges: Dataflow[] = [];
   for (let i = 0; i < tasks.length - 1; i++) {
     edges.push(new Dataflow(tasks[i].config.id, inputHandle, tasks[i + 1].config.id, outputHandle));
@@ -372,7 +381,11 @@ function serialGraphEdges(tasks: ITask[], inputHandle: string, outputHandle: str
  * @param outputHandle
  * @returns
  */
-export function serialGraph(tasks: ITask[], inputHandle: string, outputHandle: string): TaskGraph {
+export function serialGraph(
+  tasks: ITask<any, any, any>[],
+  inputHandle: string,
+  outputHandle: string
+): TaskGraph {
   const graph = new TaskGraph();
   graph.addTasks(tasks);
   graph.addDataflows(serialGraphEdges(tasks, inputHandle, outputHandle));

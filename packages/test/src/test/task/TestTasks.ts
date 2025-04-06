@@ -49,7 +49,6 @@ export type TestIOTaskOutput = {
  */
 export class TestIOTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   static readonly type = "TestIOTask";
-  static readonly isCompound = false;
 
   // Define input schema
   static readonly inputs = [

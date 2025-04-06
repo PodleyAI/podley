@@ -147,7 +147,7 @@ export interface ITaskSerialization {
  * Interface for task configuration and state
  */
 export interface ITaskState<Config extends TaskConfig = TaskConfig> {
-  readonly config: IConfig & Config;
+  readonly config: Config;
   status: TaskStatus;
   progress: number;
   createdAt: Date;

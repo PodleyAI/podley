@@ -28,3 +28,8 @@ export type ConvertAllToArrays<T> = {
 
 // Removes readonly modifiers from object properties
 export type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+
+// Converts an object to an array of its properties
+export type ObjectToArray<T extends Record<string, any>> = {
+  [K in keyof T]: T[K][];
+};

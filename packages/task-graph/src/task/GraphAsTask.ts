@@ -12,8 +12,9 @@ import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { type TaskConfig, type TaskInput, type TaskOutput, type TaskTypeName } from "./TaskTypes";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 
-interface GraphAsTaskConfig extends TaskConfig {
+export interface GraphAsTaskConfig extends TaskConfig {
   subGraph?: TaskGraph;
+  compoundMerge?: CompoundMergeStrategy;
 }
 /**
  * A task that contains a subgraph of tasks
@@ -29,14 +30,13 @@ export class GraphAsTask<
 
   public static type: TaskTypeName = "GraphAsTask";
   public static category: string = "Hidden";
-  public static isCompound: boolean = true;
-  public static compoundMerge: CompoundMergeStrategy = "last-or-named";
+  public static compoundMerge: CompoundMergeStrategy = "last-or-property-array";
 
   // ========================================================================
   // Constructor
   // ========================================================================
 
-  constructor(input: Input = {} as Input, config: Config = {} as Config) {
+  constructor(input: Partial<Input> = {}, config: Partial<Config> = {}) {
     const { subGraph, ...rest } = config;
     super(input, rest as Config);
     if (subGraph) {

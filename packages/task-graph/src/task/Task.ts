@@ -232,7 +232,7 @@ export class Task<
   /**
    * The configuration of the task
    */
-  config: IConfig & Config;
+  config: Config;
 
   /**
    * Current status of the task
@@ -288,7 +288,7 @@ export class Task<
    */
   constructor(
     callerDefaultInputs: Partial<Input> = {} as Partial<Input>,
-    config: Config = {} as Config
+    config: Partial<Config> = {} as Config
   ) {
     // Initialize input defaults
     const inputDefaults = this.getDefaultInputsFromStaticInputDefinitions();
@@ -303,7 +303,7 @@ export class Task<
         name: name,
       },
       config
-    );
+    ) as Config;
   }
 
   // ========================================================================

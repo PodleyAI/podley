@@ -16,15 +16,22 @@ import {
   TaskConfig,
   Task,
   IExecuteConfig,
+  IExecuteReactiveConfig,
+  DATAFLOW_ALL_PORTS,
 } from "@ellmers/task-graph";
 
-type LambdaTaskConfig<
+interface LambdaTaskConfig<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
-> = Partial<TaskConfig> & {
+> extends TaskConfig {
   execute?: (input: Input, config: IExecuteConfig) => Promise<Output>;
-  executeReactive?: (input: Input, output: Output) => Promise<Output>;
-};
+  executeReactive?: (
+    input: Input,
+    output: Output,
+    config: IExecuteReactiveConfig
+  ) => Promise<Output>;
+}
+
 /**
  * LambdaTask provides a way to execute arbitrary functions within the task framework
  * It wraps a provided function and its input into a task that can be integrated
@@ -38,13 +45,12 @@ export class LambdaTask<
   static readonly type = "LambdaTask";
   static readonly category = "Utility";
   static readonly cacheable = true;
-  static readonly isCompound = false;
 
-  constructor(input: Input = {} as Input, config: Config = {} as Config) {
+  constructor(input: Partial<Input> = {}, config: Partial<Config> = {}) {
     if (!config.execute && !config.executeReactive) {
       throw new Error("LambdaTask must have either execute or executeReactive function in config");
     }
-    super(input, config);
+    super(input, config as Config);
   }
 
   /**
@@ -54,7 +60,7 @@ export class LambdaTask<
    */
   public static inputs: TaskInputDefinition[] = [
     {
-      id: "input",
+      id: DATAFLOW_ALL_PORTS, // Can accept any port
       name: "Input",
       valueType: "any", // Can accept any type of input
     },
@@ -66,7 +72,7 @@ export class LambdaTask<
    */
   public static outputs: TaskOutputDefinition[] = [
     {
-      id: "output",
+      id: DATAFLOW_ALL_PORTS, // Can return on any port
       name: "Output",
       valueType: "any", // Can return any type of value
     },
@@ -83,9 +89,9 @@ export class LambdaTask<
    * Executes the provided function with the given input
    * Throws an error if no function is provided or if the provided value is not callable
    */
-  async executeReactive(input: Input, output: Output) {
+  async executeReactive(input: Input, output: Output, config: IExecuteReactiveConfig) {
     if (typeof this.config.executeReactive === "function") {
-      return (await this.config.executeReactive(input, output)) ?? output;
+      return (await this.config.executeReactive(input, output, config)) ?? output;
     }
     return output;
   }
@@ -133,7 +139,10 @@ export function Lambda<I extends TaskInput, O extends TaskOutput>(
 // Add Lambda task workflow to Workflow interface
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    Lambda: CreateWorkflow<TaskInput, TaskOutput, LambdaTaskConfig>;
+    Lambda: <I extends TaskInput, O extends TaskOutput>(
+      input: Partial<I>,
+      config: LambdaTaskConfig<I, O>
+    ) => Workflow;
   }
 }
 

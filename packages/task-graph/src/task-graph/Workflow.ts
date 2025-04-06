@@ -22,6 +22,7 @@ import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph } from "./TaskGraph";
 import { CompoundMergeStrategy } from "./TaskGraphRunner";
 import { GraphAsTask } from "../task/GraphAsTask";
+import { IWorkflow } from "./IWorkflow";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
@@ -55,7 +56,7 @@ type PipeFunction<I extends TaskInput = any, O extends TaskOutput = any> = (
   config?: IExecuteConfig
 ) => O | Promise<O>;
 
-function getLastTask(workflow: Workflow): ITask | undefined {
+function getLastTask(workflow: Workflow): ITask<any, any, any> | undefined {
   const tasks = workflow.graph.getTasks();
   return tasks.length > 0 ? tasks[tasks.length - 1] : undefined;
 }
@@ -75,20 +76,24 @@ function convertPipeFunctionToTask<I extends TaskInput, O extends TaskOutput>(
 }
 
 function ensureTask<I extends TaskInput, O extends TaskOutput>(
-  arg: PipeFunction<I, O> | ITask
-): ITask {
+  arg: PipeFunction<I, O> | ITask<any, any, any>
+): ITask<any, any, any> {
   if (arg instanceof Task) {
     return arg;
   }
   return convertPipeFunctionToTask(arg as PipeFunction<I, O>);
 }
 
-function connect(source: ITask, target: ITask, workflow: Workflow): void {
+function connect(
+  source: ITask<any, any, any>,
+  target: ITask<any, any, any>,
+  workflow: Workflow
+): void {
   workflow.graph.addDataflow(new Dataflow(source.config.id, "*", target.config.id, "*"));
 }
 
 function pipe<T extends TaskInput = any>(
-  args: (PipeFunction<any, any> | ITask)[],
+  args: (PipeFunction<any, any> | ITask<any, any, any>)[],
   workflow: Workflow
 ): Workflow {
   let previousTask = getLastTask(workflow);
@@ -112,7 +117,6 @@ function parallel(
   const tasks = args.map((arg) => ensureTask(arg));
   const input = {};
   const config = {
-    isCompound: true,
     compoundMerge: mergeFn,
   };
   const mergeTask = new GraphAsTask(input, config);
@@ -128,7 +132,7 @@ function parallel(
  * Class for building and managing a task graph
  * Provides methods for adding tasks, connecting outputs to inputs, and running the task graph
  */
-export class Workflow {
+export class Workflow implements IWorkflow {
   /**
    * Creates a new Workflow
    *
@@ -209,50 +213,60 @@ export class Workflow {
 
       // Auto-connect to parent if needed
       if (parent && this.graph.getTargetDataflows(parent.config.id).length === 0) {
-        // Find matches between parent outputs and task inputs based on valueType
-        const matches = new Map<string, string>();
+        if (task.inputs.length === 1 && task.inputs[0].id === DATAFLOW_ALL_PORTS) {
+          // If the task has only one input and it is a wildcard, connect the parent output to the task input
+          const dataflow = new Dataflow(
+            parent.config.id,
+            DATAFLOW_ALL_PORTS,
+            task.config.id,
+            DATAFLOW_ALL_PORTS
+          );
+          this.graph.addDataflow(dataflow);
+        } else {
+          // Find matches between parent outputs and task inputs based on valueType
+          const matches = new Map<string, string>();
 
-        const makeMatch = (
-          comparator: (output: TaskOutputDefinition, input: TaskInputDefinition) => boolean
-        ): Map<string, string> => {
-          for (const parentOutput of parent.outputs) {
-            for (const taskInput of task.inputs) {
-              if (!matches.has(taskInput.id) && comparator(parentOutput, taskInput)) {
-                matches.set(taskInput.id, parentOutput.id);
-                const dataflow = new Dataflow(
-                  parent.config.id,
-                  parentOutput.id,
-                  task.config.id,
-                  taskInput.id
-                );
-                this.graph.addDataflow(dataflow);
+          const makeMatch = (
+            comparator: (output: TaskOutputDefinition, input: TaskInputDefinition) => boolean
+          ): Map<string, string> => {
+            for (const parentOutput of parent.outputs) {
+              for (const taskInput of task.inputs) {
+                if (!matches.has(taskInput.id) && comparator(parentOutput, taskInput)) {
+                  matches.set(taskInput.id, parentOutput.id);
+                  const dataflow = new Dataflow(
+                    parent.config.id,
+                    parentOutput.id,
+                    task.config.id,
+                    taskInput.id
+                  );
+                  this.graph.addDataflow(dataflow);
+                }
               }
             }
+            return matches;
+          };
+
+          // Try to match outputs to inputs using different strategies
+          makeMatch(
+            (output, input) => output.valueType === input.valueType && output.id === input.id
+          );
+          makeMatch(
+            (output, input) =>
+              output.valueType === input.valueType && output.id === "output" && input.id === "input"
+          );
+          makeMatch((output, input) => output.valueType === input.valueType);
+
+          if (matches.size === 0) {
+            const parentType = (parent.constructor as any).type;
+            const taskType = (task.constructor as any).type;
+
+            this._error =
+              `Could not find a match between the outputs of ${parentType} and the inputs of ${taskType}. ` +
+              `You now need to connect the outputs to the inputs via connect() manually before adding this task. Task not added.`;
+
+            console.error(this._error);
+            this.graph.removeTask(task.config.id);
           }
-          return matches;
-        };
-
-        // Try to match outputs to inputs using different strategies
-        makeMatch(
-          (output, input) => output.valueType === input.valueType && output.id === input.id
-        );
-        makeMatch(
-          (output, input) =>
-            output.valueType === input.valueType && output.id === "output" && input.id === "input"
-        );
-        makeMatch((output, input) => output.valueType === input.valueType);
-
-        // If no matches were found, remove the task and report an error
-        if (matches.size === 0) {
-          const parentType = (parent.constructor as any).type;
-          const taskType = (task.constructor as any).type;
-
-          this._error =
-            `Could not find a match between the outputs of ${parentType} and the inputs of ${taskType}. ` +
-            `You now need to connect the outputs to the inputs via connect() manually before adding this task. Task not added.`;
-
-          console.error(this._error);
-          this.graph.removeTask(task.config.id);
         }
       }
 
@@ -537,11 +551,10 @@ export class Workflow {
     return this._graph;
   }
 
-  toTask(): Task {
+  toTask(): GraphAsTask {
     const task = new GraphAsTask(
       {},
       {
-        isCompound: true,
         compoundMerge: "last-or-property-array",
       }
     );

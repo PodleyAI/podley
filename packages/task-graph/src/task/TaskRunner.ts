@@ -160,7 +160,10 @@ export class TaskRunner<
   // Protected methods
   // ========================================================================
 
-  protected own<T extends ITask | ITaskGraph | IWorkflow>(i: T): T {
+  protected own<T extends ITask<any, any, any>>(i: T): T;
+  protected own<T extends ITaskGraph>(i: T): T;
+  protected own<T extends IWorkflow>(i: T): T;
+  protected own<T extends ITask<any, any, any> | ITaskGraph | IWorkflow>(i: T): T {
     if (i instanceof Task) {
       this.task.subGraph.addTask(i);
     } else if (i instanceof TaskGraph) {

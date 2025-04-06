@@ -7,6 +7,7 @@
 
 export * from "./utilities/BaseError";
 export * from "./utilities/Misc";
+export * from "./utilities/objectOfArraysAsArrayOfObjects";
 export * from "./events/EventEmitter";
 export * from "./utilities/TypeUtilities";
 export * from "./graph";

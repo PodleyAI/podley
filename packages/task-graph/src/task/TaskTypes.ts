@@ -21,19 +21,14 @@ import type { Task } from "./Task";
 export enum TaskStatus {
   /** Task is created but not yet started */
   PENDING = "PENDING",
-
   /** Task is skipped due to conditional logic */
   SKIPPED = "SKIPPED",
-
   /** Task is currently running */
   PROCESSING = "PROCESSING",
-
   /** Task has completed successfully */
   COMPLETED = "COMPLETED",
-
   /** Task is in the process of being aborted */
   ABORTING = "ABORTING",
-
   /** Task has failed */
   FAILED = "FAILED",
 }
@@ -85,14 +80,8 @@ export interface IConfig {
   /** Optional output cache to use for this task */
   outputCache?: TaskOutputRepository;
 
-  /** Optional compound merge strategy to use for this task, overriding the default static property */
-  compoundMerge?: CompoundMergeStrategy;
-
   /** Optional cacheable flag to use for this task, overriding the default static property */
   cacheable?: boolean;
-
-  /** Optional flag to indicate if the task is a compound task */
-  isCompound?: boolean;
 }
 
 /**

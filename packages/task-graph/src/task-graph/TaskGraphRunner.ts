@@ -59,6 +59,11 @@ export type GraphResultMap<T> = {
  */
 export type CompoundMergeStrategy = keyof GraphResultMap<any>;
 
+export type GraphResult<
+  Output,
+  Merge extends CompoundMergeStrategy,
+> = GraphResultMap<Output>[Merge];
+
 /**
  * Class for running a task graph
  * Manages the execution of tasks in a task graph, including provenance tracking and caching

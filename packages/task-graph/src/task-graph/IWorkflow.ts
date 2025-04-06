@@ -5,10 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { TaskOutput } from "../task/TaskTypes";
 import { TaskGraph } from "./TaskGraph";
 
 export interface IWorkflow {
   graph: TaskGraph;
-  run(): Promise<void>;
-  runReactive(): Promise<void>;
+  run(): Promise<TaskOutput>;
 }
