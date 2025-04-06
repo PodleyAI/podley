@@ -5,27 +5,21 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken, EventEmitter } from "@ellmers/util";
-import { makeFingerprint } from "@ellmers/util";
-import {
-  KvEventName,
-  KvEventListener,
-  KvEventListeners,
-  KvEventParameters,
-  IKvRepository,
-  DefaultKeyValueSchema,
-  DefaultKeyValueKey,
-  DefaultKvPk,
-  DefaultKvValue,
-} from "./IKvRepository";
+import { createServiceToken, EventEmitter, makeFingerprint } from "@ellmers/util";
 import {
   JSONValue,
   KeyOption,
+  KeyOptionType,
   ValueOption,
   ValueOptionType,
-  KeyOptionType,
 } from "../tabular/ITabularRepository";
-import type { TabularRepository } from "../tabular/TabularRepository";
+import {
+  IKvRepository,
+  KvEventListener,
+  KvEventListeners,
+  KvEventName,
+  KvEventParameters,
+} from "./IKvRepository";
 
 export const KV_REPOSITORY =
   createServiceToken<IKvRepository<any, any, any>>("storage.kvRepository");
@@ -47,11 +41,6 @@ export abstract class KvRepository<
   /** Event emitter for repository events */
   protected events = new EventEmitter<KvEventListeners<Key, Value, Combined>>();
 
-  public abstract tabularRepository: TabularRepository<
-    typeof DefaultKeyValueSchema,
-    typeof DefaultKeyValueKey
-  >;
-
   /**
    * Creates a new KvRepository instance
    */
@@ -65,16 +54,7 @@ export abstract class KvRepository<
    * @param key - The primary key
    * @param value - The value to store
    */
-  public async put(key: Key, value: Value): Promise<void> {
-    const tKey = { key } as DefaultKvPk;
-    let tValue: DefaultKvValue;
-    if (this.valueType === "json") {
-      tValue = { value: JSON.stringify(value) } as DefaultKvValue;
-    } else {
-      tValue = { value } as DefaultKvValue;
-    }
-    return await this.tabularRepository.put({ ...tKey, ...tValue });
-  }
+  abstract put(key: Key, value: Value): Promise<void>;
 
   /**
    * Retrieves a value by its key.
@@ -83,58 +63,30 @@ export abstract class KvRepository<
    * @param key - Primary key to look up (basic key like default schema)
    * @returns The stored value or undefined if not found
    */
-  public async get(key: Key): Promise<Value | undefined> {
-    const result = await this.tabularRepository.get({ key } as DefaultKvPk);
-    if (result) {
-      if (this.valueType === "json") {
-        return JSON.parse(result.value as string) as Value;
-      } else {
-        return result.value as Value;
-      }
-    } else {
-      return undefined;
-    }
-  }
+  abstract get(key: Key): Promise<Value | undefined>;
 
   /**
    * Deletes a row from the repository.
    * @param key - The primary key of the row to delete
    */
-  public async delete(key: Key): Promise<void> {
-    return await this.tabularRepository.delete({ key } as DefaultKvPk);
-  }
+  abstract delete(key: Key): Promise<void>;
 
   /**
    * Retrieves all rows from the repository.
    * @returns An array of all rows in the repository or undefined if empty
    */
-  public async getAll(): Promise<Combined[] | undefined> {
-    const values = await this.tabularRepository.getAll();
-    if (values) {
-      return values.map(
-        (value) =>
-          ({
-            key: value.key,
-            value: this.valueType === "json" ? JSON.parse(value.value as string) : value.value,
-          }) as Combined
-      );
-    }
-  }
+  abstract getAll(): Promise<Combined[] | undefined>;
 
   /**
    * Deletes all rows from the repository.
    */
-  public async deleteAll(): Promise<void> {
-    return await this.tabularRepository.deleteAll();
-  }
+  abstract deleteAll(): Promise<void>;
 
   /**
    * Retrieves the number of rows in the repository.
    * @returns The number of rows in the repository
    */
-  public async size(): Promise<number> {
-    return await this.tabularRepository.size();
-  }
+  abstract size(): Promise<number>;
 
   /**
    * Generates a consistent string identifier for a given key.

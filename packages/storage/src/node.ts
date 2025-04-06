@@ -12,6 +12,7 @@ export * from "./tabular/SqliteTabularRepository";
 export * from "./tabular/PostgresTabularRepository";
 
 export * from "./kv/FsFolderKvRepository";
+export * from "./kv/FsFolderJsonKvRepository";
 export * from "./kv/PostgresKvRepository";
 export * from "./kv/SqliteKvRepository";
 

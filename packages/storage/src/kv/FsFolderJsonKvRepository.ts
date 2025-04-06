@@ -5,20 +5,20 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { PostgresTabularRepository } from "../tabular/PostgresTabularRepository";
-import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import {
   JSONValue,
-  KeyOptionType,
   ValueOptionType,
+  KeyOptionType,
   KeyOption,
   ValueOption,
 } from "../tabular/ITabularRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";
+import { FsFolderTabularRepository } from "../tabular/FsFolderTabularRepository";
+import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { createServiceToken } from "@ellmers/util";
 
-export const POSTGRES_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
-  "storage.kvRepository.postgres"
+export const FS_FOLDER_JSON_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
+  "storage.kvRepository.fsFolderJson"
 );
 
 /**
@@ -29,12 +29,12 @@ export const POSTGRES_KV_REPOSITORY = createServiceToken<IKvRepository<string, a
  * @template Value - The type of the value being stored
  * @template Combined - Combined type of Key & Value
  */
-export class PostgresKvRepository<
+export class FsFolderJsonKvRepository<
   Key extends KeyOptionType = KeyOptionType,
   Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvViaTabularRepository<Key, Value, Combined> {
-  public tabularRepository: PostgresTabularRepository<
+  public tabularRepository: FsFolderTabularRepository<
     typeof DefaultKeyValueSchema,
     typeof DefaultKeyValueKey
   >;
@@ -43,15 +43,13 @@ export class PostgresKvRepository<
    * Creates a new KvRepository instance
    */
   constructor(
-    public db: any,
-    public dbName: string,
+    public folderPath: string,
     primaryKeyType: KeyOption,
     valueType: ValueOption
   ) {
     super(primaryKeyType, valueType);
-    this.tabularRepository = new PostgresTabularRepository(
-      db,
-      dbName,
+    this.tabularRepository = new FsFolderTabularRepository(
+      folderPath,
       DefaultKeyValueSchema,
       DefaultKeyValueKey
     );

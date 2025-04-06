@@ -5,14 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { FsFolderKvRepository } from "@ellmers/storage";
+import { FsFolderJsonKvRepository } from "@ellmers/storage";
 import { afterEach, beforeEach, describe } from "bun:test";
 import { mkdirSync, rmdirSync } from "fs";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests.test";
 
 const testDir = ".cache/test/testing";
 
-describe("FsFolderKvRepository", () => {
+describe("FsFolderJsonKvRepository", () => {
   beforeEach(() => {
     try {
       mkdirSync(testDir, { recursive: true });
@@ -26,11 +26,6 @@ describe("FsFolderKvRepository", () => {
   });
 
   runGenericKvRepositoryTests(async (keyType, valueType) => {
-    return new FsFolderKvRepository(
-      testDir,
-      (key) => String(key) + "." + valueType,
-      keyType,
-      valueType
-    );
+    return new FsFolderJsonKvRepository(testDir, keyType, valueType);
   });
 });

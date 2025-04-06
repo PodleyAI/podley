@@ -48,9 +48,7 @@ export class FsFolderTabularRepository<
    * @param folderPath - The directory path where the JSON files will be stored
    * @param schema - Schema defining the structure of the entity
    * @param primaryKeyNames - Array of property names that form the primary key
-   * @param indexes - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
-   *                    while each array creates a compound index with columns in the specified order.
-   *                    Note: indexes are not supported in this implementation.
+   * @param indexes - Note: indexes are not supported in this implementation.
    */
   constructor(
     folderPath: string,

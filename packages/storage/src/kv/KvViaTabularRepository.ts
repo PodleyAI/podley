@@ -5,22 +5,15 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken } from "@ellmers/util";
-import { mkdir, readFile, rmdir, unlink, writeFile } from "fs/promises";
-import path from "path";
+import { JSONValue, KeyOptionType, ValueOptionType } from "../tabular/ITabularRepository";
+import type { TabularRepository } from "../tabular/TabularRepository";
 import {
-  JSONValue,
-  KeyOption,
-  KeyOptionType,
-  ValueOption,
-  ValueOptionType,
-} from "../tabular/ITabularRepository";
-import { IKvRepository } from "./IKvRepository";
+  DefaultKeyValueKey,
+  DefaultKeyValueSchema,
+  DefaultKvPk,
+  DefaultKvValue,
+} from "./IKvRepository";
 import { KvRepository } from "./KvRepository";
-
-export const FS_FOLDER_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
-  "storage.kvRepository.fsFolder"
-);
 
 /**
  * Abstract base class for key-value storage repositories.
@@ -30,22 +23,15 @@ export const FS_FOLDER_KV_REPOSITORY = createServiceToken<IKvRepository<string, 
  * @template Value - The type of the value being stored
  * @template Combined - Combined type of Key & Value
  */
-export class FsFolderKvRepository<
+export abstract class KvViaTabularRepository<
   Key extends KeyOptionType = KeyOptionType,
   Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
-  /**
-   * Creates a new KvRepository instance
-   */
-  constructor(
-    public folderPath: string,
-    public pathWriter: (key: Key) => string,
-    primaryKeyType: KeyOption,
-    valueType: ValueOption
-  ) {
-    super(primaryKeyType, valueType);
-  }
+  public abstract tabularRepository: TabularRepository<
+    typeof DefaultKeyValueSchema,
+    typeof DefaultKeyValueKey
+  >;
 
   /**
    * Stores a row in the repository.
@@ -53,14 +39,14 @@ export class FsFolderKvRepository<
    * @param value - The value to store
    */
   public async put(key: Key, value: Value): Promise<void> {
-    const localPath = path.join(this.folderPath, this.pathWriter(key).replaceAll("..", "_"));
-    let content = this.valueType === "json" ? JSON.stringify(value) : value;
-    if (content === null) {
-      content = "";
+    const tKey = { key } as DefaultKvPk;
+    let tValue: DefaultKvValue;
+    if (this.valueType === "json") {
+      tValue = { value: JSON.stringify(value) } as DefaultKvValue;
+    } else {
+      tValue = { value } as DefaultKvValue;
     }
-    await mkdir(path.dirname(localPath), { recursive: true });
-    // @ts-ignore
-    await writeFile(localPath, content);
+    return await this.tabularRepository.put({ ...tKey, ...tValue });
   }
 
   /**
@@ -71,13 +57,14 @@ export class FsFolderKvRepository<
    * @returns The stored value or undefined if not found
    */
   public async get(key: Key): Promise<Value | undefined> {
-    const localPath = path.join(this.folderPath, this.pathWriter(key));
-    try {
-      const content = await readFile(localPath, {
-        encoding: this.valueType == "json" || this.valueType == "string" ? "utf-8" : "binary",
-      });
-      return this.valueType === "json" ? JSON.parse(content) : (content as Value);
-    } catch (error) {
+    const result = await this.tabularRepository.get({ key } as DefaultKvPk);
+    if (result) {
+      if (this.valueType === "json") {
+        return JSON.parse(result.value as string) as Value;
+      } else {
+        return result.value as Value;
+      }
+    } else {
       return undefined;
     }
   }
@@ -87,8 +74,7 @@ export class FsFolderKvRepository<
    * @param key - The primary key of the row to delete
    */
   public async delete(key: Key): Promise<void> {
-    const localPath = path.join(this.folderPath, this.pathWriter(key));
-    await unlink(localPath);
+    return await this.tabularRepository.delete({ key } as DefaultKvPk);
   }
 
   /**
@@ -96,15 +82,23 @@ export class FsFolderKvRepository<
    * @returns An array of all rows in the repository or undefined if empty
    */
   public async getAll(): Promise<Combined[] | undefined> {
-    throw new Error("Not implemented");
+    const values = await this.tabularRepository.getAll();
+    if (values) {
+      return values.map(
+        (value) =>
+          ({
+            key: value.key,
+            value: this.valueType === "json" ? JSON.parse(value.value as string) : value.value,
+          }) as Combined
+      );
+    }
   }
 
   /**
    * Deletes all rows from the repository.
    */
   public async deleteAll(): Promise<void> {
-    const localPath = path.join(this.folderPath);
-    await rmdir(localPath, { recursive: true });
+    return await this.tabularRepository.deleteAll();
   }
 
   /**
@@ -112,6 +106,6 @@ export class FsFolderKvRepository<
    * @returns The number of rows in the repository
    */
   public async size(): Promise<number> {
-    throw new Error("Not implemented");
+    return await this.tabularRepository.size();
   }
 }

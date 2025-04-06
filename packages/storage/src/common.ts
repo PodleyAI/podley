@@ -11,6 +11,7 @@ export * from "./tabular/InMemoryTabularRepository";
 
 export * from "./kv/IKvRepository";
 export * from "./kv/KvRepository";
+export * from "./kv/KvViaTabularRepository";
 export * from "./kv/InMemoryKvRepository";
 
 export * from "./queue/IQueueStorage";

@@ -12,7 +12,7 @@ import {
   KeyOption,
   ValueOption,
 } from "../tabular/ITabularRepository";
-import { KvRepository } from "./KvRepository";
+import { KvViaTabularRepository } from "./KvViaTabularRepository";
 import { InMemoryTabularRepository } from "../tabular/InMemoryTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { createServiceToken } from "@ellmers/util";
@@ -33,7 +33,7 @@ export class InMemoryKvRepository<
   Key extends KeyOptionType = KeyOptionType,
   Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
-> extends KvRepository<Key, Value, Combined> {
+> extends KvViaTabularRepository<Key, Value, Combined> {
   public tabularRepository: InMemoryTabularRepository<
     typeof DefaultKeyValueSchema,
     typeof DefaultKeyValueKey
