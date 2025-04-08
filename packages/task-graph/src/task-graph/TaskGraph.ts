@@ -7,9 +7,10 @@
 
 import { DirectedAcyclicGraph } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
-import { ITask } from "../task/ITask";
+import { IExecuteConfig, ITask } from "../task/ITask";
+import { Task } from "../task/Task";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
-import { Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
+import { Provenance, TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import { ITaskGraph } from "./ITaskGraph";
 import {
@@ -44,6 +45,38 @@ class TaskGraphDAG extends DirectedAcyclicGraph<
       (dataflow: Dataflow) => dataflow.id
     );
   }
+}
+
+// Update PipeFunction type to be more specific about input/output types
+export type PipeFunction<I extends TaskInput = any, O extends TaskOutput = any> = (
+  input: I,
+  config: IExecuteConfig
+) => O | Promise<O>;
+
+function convertPipeFunctionToTask<I extends TaskInput, O extends TaskOutput>(
+  fn: PipeFunction<I, O>,
+  config?: any
+): ITask<I, O> {
+  class QuickTask extends Task<I, O> {
+    public static type = "QuickTask";
+    public static inputs = [{ id: "*", name: "input", valueType: "any" }];
+    public static outputs = [{ id: "*", name: "output", valueType: "any" }];
+    public static cacheable = false;
+    public async execute(input: I, config: IExecuteConfig) {
+      return fn(input, config);
+    }
+  }
+  return new QuickTask({}, config);
+}
+
+export function ensureTask<I extends TaskInput, O extends TaskOutput>(
+  arg: PipeFunction<I, O> | ITask<any, any, any>,
+  config?: any
+): ITask<any, any, any> {
+  if (arg instanceof Task) {
+    return arg;
+  }
+  return convertPipeFunctionToTask(arg as PipeFunction<I, O>, config);
 }
 
 interface TaskGraphConstructorConfig {
@@ -163,8 +196,10 @@ export class TaskGraph implements ITaskGraph {
    * @param task The task to add
    * @returns The current task graph
    */
-  public addTask(task: ITask<any, any, any>) {
-    return this._dag.addNode(task);
+  public addTask(fn: PipeFunction<any, any>, config?: any): unknown;
+  public addTask(task: ITask<any, any, any>): unknown;
+  public addTask(task: ITask<any, any, any> | PipeFunction<any, any>, config?: any): unknown {
+    return this._dag.addNode(ensureTask(task, config));
   }
 
   /**
@@ -172,8 +207,10 @@ export class TaskGraph implements ITaskGraph {
    * @param tasks The tasks to add
    * @returns The current task graph
    */
-  public addTasks(tasks: ITask<any, any, any>[]) {
-    return this._dag.addNodes(tasks);
+  public addTasks(tasks: PipeFunction<any, any>[]): unknown[];
+  public addTasks(tasks: ITask<any, any, any>[]): unknown[];
+  public addTasks(tasks: ITask<any, any, any>[] | PipeFunction<any, any>[]): unknown[] {
+    return this._dag.addNodes(tasks.map(ensureTask));
   }
 
   /**

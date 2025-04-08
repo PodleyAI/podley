@@ -6,8 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, type EventParameters } from "@ellmers/util";
-import type { TaskOutputRepository } from "../storage/TaskOutputRepository";
-import type { IExecuteConfig, ITask, ITaskConstructor } from "../task/ITask";
+import type { ITask, ITaskConstructor } from "../task/ITask";
 import { Task } from "../task/Task";
 import { WorkflowError } from "../task/TaskError";
 import type { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
@@ -19,10 +18,11 @@ import {
   type TaskOutputDefinition,
 } from "../task/TaskTypes";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
-import { TaskGraph } from "./TaskGraph";
+import { ensureTask, PipeFunction, TaskGraph } from "./TaskGraph";
 import { CompoundMergeStrategy } from "./TaskGraphRunner";
 import { GraphAsTask } from "../task/GraphAsTask";
 import { IWorkflow } from "./IWorkflow";
+import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
@@ -50,38 +50,9 @@ export type WorkflowEventParameters<Event extends WorkflowEvents> = EventParamet
 // Task ID counter
 let taskIdCounter = 0;
 
-// Update PipeFunction type to be more specific about input/output types
-type PipeFunction<I extends TaskInput = any, O extends TaskOutput = any> = (
-  input: I,
-  config?: IExecuteConfig
-) => O | Promise<O>;
-
 function getLastTask(workflow: Workflow): ITask<any, any, any> | undefined {
   const tasks = workflow.graph.getTasks();
   return tasks.length > 0 ? tasks[tasks.length - 1] : undefined;
-}
-
-function convertPipeFunctionToTask<I extends TaskInput, O extends TaskOutput>(
-  fn: PipeFunction<I, O>
-): ITask<I, O> {
-  class QuickTask extends Task<I, O> {
-    public static type = "QuickTask";
-    public static inputs = [{ id: "*", name: "input", valueType: "any" }];
-    public static outputs = [{ id: "*", name: "output", valueType: "any" }];
-    public async execute(input: I, config: IExecuteConfig) {
-      return fn(input, config);
-    }
-  }
-  return new QuickTask();
-}
-
-function ensureTask<I extends TaskInput, O extends TaskOutput>(
-  arg: PipeFunction<I, O> | ITask<any, any, any>
-): ITask<any, any, any> {
-  if (arg instanceof Task) {
-    return arg;
-  }
-  return convertPipeFunctionToTask(arg as PipeFunction<I, O>);
 }
 
 function connect(

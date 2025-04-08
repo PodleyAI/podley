@@ -7,6 +7,8 @@
 
 import type { EventEmitter } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { ITaskGraph } from "../task-graph/ITaskGraph";
+import { IWorkflow } from "../task-graph/IWorkflow";
 import type { TaskGraph } from "../task-graph/TaskGraph";
 import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import { TaskError } from "./TaskError";
@@ -17,8 +19,8 @@ import type {
   TaskEvents,
 } from "./TaskEvents";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
+import { TaskRunner } from "./TaskRunner";
 import type {
-  IConfig,
   Provenance,
   TaskConfig,
   TaskInput,
@@ -27,9 +29,6 @@ import type {
   TaskOutputDefinition,
   TaskStatus,
 } from "./TaskTypes";
-import { TaskRunner } from "./TaskRunner";
-import { ITaskGraph } from "../task-graph/ITaskGraph";
-import { IWorkflow } from "../task-graph/IWorkflow";
 
 /**
  * Configuration for task execution
