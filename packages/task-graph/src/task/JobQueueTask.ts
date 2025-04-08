@@ -111,7 +111,7 @@ export abstract class JobQueueTask<
         return new this.jobClass({
           queueName: this.config.queueName,
           jobRunId: this.config.runnerId, // could be undefined
-          input: this.runInputData,
+          input: input,
         });
       } else {
         throw new TaskConfigurationError("Queue not found");
