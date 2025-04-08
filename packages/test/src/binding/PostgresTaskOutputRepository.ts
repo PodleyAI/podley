@@ -9,12 +9,12 @@ import { PostgresTabularRepository } from "@ellmers/storage";
 import {
   TaskOutputSchema,
   TaskOutputPrimaryKeyNames,
-  TaskOutputRepository,
+  TaskOutputTabularRepository,
 } from "@ellmers/task-graph";
 import type { Pool } from "pg";
 import { createServiceToken } from "@ellmers/util";
 
-export const POSTGRES_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepository>(
+export const POSTGRES_TASK_OUTPUT_REPOSITORY = createServiceToken<PostgresTaskOutputRepository>(
   "taskgraph.taskOutputRepository.postgres"
 );
 
@@ -22,7 +22,7 @@ export const POSTGRES_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepo
  * PostgreSQL implementation of a task output repository.
  * Provides storage and retrieval for task outputs using PostgreSQL.
  */
-export class PostgresTaskOutputRepository extends TaskOutputRepository {
+export class PostgresTaskOutputRepository extends TaskOutputTabularRepository {
   constructor(db: Pool, table: string = "task_outputs") {
     super({
       tabularRepository: new PostgresTabularRepository(

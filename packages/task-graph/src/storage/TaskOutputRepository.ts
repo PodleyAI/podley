@@ -5,15 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  compress,
-  createServiceToken,
-  decompress,
-  EventEmitter,
-  EventParameters,
-} from "@ellmers/util";
-import { type TabularRepository } from "@ellmers/storage";
-import { makeFingerprint } from "@ellmers/util";
+import { createServiceToken, EventEmitter, EventParameters } from "@ellmers/util";
 import { TaskInput, TaskOutput } from "../task/TaskTypes";
 
 /**
@@ -40,40 +32,11 @@ export type TaskOutputEventParameters<Event extends TaskOutputEvents> = EventPar
   Event
 >;
 
-export type TaskOutputPrimaryKey = {
-  key: string;
-  taskType: string;
-};
-
-export const TaskOutputSchema = {
-  key: "string",
-  taskType: "string",
-  value: "blob",
-  createdAt: "date",
-} as const;
-
-export const TaskOutputPrimaryKeyNames = ["key", "taskType"] as const;
-
-export type TaskOutputRepositoryStorage = TabularRepository<
-  typeof TaskOutputSchema,
-  typeof TaskOutputPrimaryKeyNames
->;
-
-export type TaskOutputRepositoryOptions = {
-  tabularRepository: TaskOutputRepositoryStorage;
-  outputCompression?: boolean;
-};
-
 /**
  * Abstract class for managing task outputs in a repository
  * Provides methods for saving, retrieving, and clearing task outputs
  */
 export abstract class TaskOutputRepository {
-  /**
-   * The tabular repository for the task outputs
-   */
-  tabularRepository: TaskOutputRepositoryStorage;
-
   /**
    * Whether to compress the output
    */
@@ -83,14 +46,17 @@ export abstract class TaskOutputRepository {
    * Constructor for the TaskOutputRepository
    * @param options The options for the repository
    */
-  constructor({ tabularRepository, outputCompression = true }: TaskOutputRepositoryOptions) {
-    this.tabularRepository = tabularRepository;
+  constructor({ outputCompression = true }) {
     this.outputCompression = outputCompression;
   }
 
-  /**
-   * The event emitter for the task outputs */
-  protected events = new EventEmitter<TaskOutputEventListeners>();
+  private get events() {
+    if (!this._events) {
+      this._events = new EventEmitter<TaskOutputEventListeners>();
+    }
+    return this._events;
+  }
+  private _events: EventEmitter<TaskOutputEventListeners> | undefined;
 
   /**
    * Registers an event listener for a specific event
@@ -120,38 +86,26 @@ export abstract class TaskOutputRepository {
   }
 
   /**
+   * Emits an event (if there are listeners)
+   * @param name The event name to emit
+   * @param args The event parameters
+   */
+  emit<Event extends TaskOutputEvents>(name: Event, ...args: TaskOutputEventParameters<Event>) {
+    this._events?.emit(name, ...args);
+  }
+
+  /**
    * Saves a task output to the repository
    * @param taskType The type of task to save the output for
    * @param inputs The input parameters for the task
    * @param output The task output to save
    */
-  async saveOutput(
+  abstract saveOutput(
     taskType: string,
     inputs: TaskInput,
     output: TaskOutput,
-    createdAt = new Date() // for testing purposes
-  ): Promise<void> {
-    const key = await makeFingerprint(inputs);
-    const value = JSON.stringify(output);
-    if (this.outputCompression) {
-      const compressedValue = await compress(value);
-      await this.tabularRepository.put({
-        taskType,
-        key,
-        value: compressedValue,
-        createdAt: createdAt,
-      });
-    } else {
-      const valueBuffer = Buffer.from(value);
-      await this.tabularRepository.put({
-        taskType,
-        key,
-        value: valueBuffer,
-        createdAt: createdAt,
-      });
-    }
-    this.events.emit("output_saved", taskType);
-  }
+    createdAt?: Date // for testing purposes
+  ): Promise<void>;
 
   /**
    * Retrieves a task output from the repository
@@ -159,49 +113,23 @@ export abstract class TaskOutputRepository {
    * @param inputs The input parameters for the task
    * @returns The retrieved task output, or undefined if not found
    */
-  async getOutput(taskType: string, inputs: TaskInput): Promise<TaskOutput | undefined> {
-    const key = await makeFingerprint(inputs);
-    const output = await this.tabularRepository.get({ key, taskType });
-    this.events.emit("output_retrieved", taskType);
-    if (output?.value) {
-      if (this.outputCompression) {
-        const decompressedValue = await decompress(output.value);
-        const value = JSON.parse(decompressedValue) as TaskOutput;
-        return value as TaskOutput;
-      } else {
-        const stringValue = output.value.toString();
-        const value = JSON.parse(stringValue) as TaskOutput;
-        return value as TaskOutput;
-      }
-    } else {
-      return undefined;
-    }
-  }
+  abstract getOutput(taskType: string, inputs: TaskInput): Promise<TaskOutput | undefined>;
 
   /**
    * Clears all task outputs from the repository
    * @emits output_cleared when the operation completes
    */
-  async clear(): Promise<void> {
-    await this.tabularRepository.deleteAll();
-    this.events.emit("output_cleared");
-  }
+  abstract clear(): Promise<void>;
 
   /**
    * Returns the number of task outputs stored in the repository
    * @returns The count of stored task outputs
    */
-  async size(): Promise<number> {
-    return await this.tabularRepository.size();
-  }
+  abstract size(): Promise<number>;
 
   /**
    * Clear all task outputs from the repository that are older than the given date
    * @param olderThanInMs The time in milliseconds to clear task outputs older than
    */
-  async clearOlderThan(olderThanInMs: number): Promise<void> {
-    const date = new Date(Date.now() - olderThanInMs);
-    await this.tabularRepository.deleteSearch("createdAt", date, "<");
-    this.events.emit("output_pruned");
-  }
+  abstract clearOlderThan(olderThanInMs: number): Promise<void>;
 }

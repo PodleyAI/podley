@@ -9,11 +9,11 @@ import { InMemoryTabularRepository } from "@ellmers/storage";
 import {
   TaskOutputSchema,
   TaskOutputPrimaryKeyNames,
-  TaskOutputRepository,
+  TaskOutputTabularRepository,
 } from "@ellmers/task-graph";
 import { createServiceToken } from "@ellmers/util";
 
-export const MEMORY_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepository>(
+export const MEMORY_TASK_OUTPUT_REPOSITORY = createServiceToken<InMemoryTaskOutputRepository>(
   "taskgraph.taskOutputRepository.inMemory"
 );
 
@@ -21,7 +21,7 @@ export const MEMORY_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputReposi
  * In-memory implementation of a task output repository.
  * Provides storage and retrieval for task outputs.
  */
-export class InMemoryTaskOutputRepository extends TaskOutputRepository {
+export class InMemoryTaskOutputRepository extends TaskOutputTabularRepository {
   constructor() {
     super({
       tabularRepository: new InMemoryTabularRepository(

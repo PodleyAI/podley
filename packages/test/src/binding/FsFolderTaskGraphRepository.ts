@@ -8,12 +8,12 @@
 import { FsFolderTabularRepository } from "@ellmers/storage";
 import {
   TaskGraphPrimaryKeyNames,
-  TaskGraphRepository,
+  TaskGraphTabularRepository,
   TaskGraphSchema,
 } from "@ellmers/task-graph";
 import { createServiceToken } from "@ellmers/util";
 
-export const FS_FOLDER_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>(
+export const FS_FOLDER_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphTabularRepository>(
   "taskgraph.taskGraphRepository.fsFolder"
 );
 
@@ -21,7 +21,7 @@ export const FS_FOLDER_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepos
  * File-based implementation of a task graph repository.
  * Provides storage and retrieval for task graphs using a file system.
  */
-export class FsFolderTaskGraphRepository extends TaskGraphRepository {
+export class FsFolderTaskGraphRepository extends TaskGraphTabularRepository {
   constructor(folderPath: string) {
     super({
       tabularRepository: new FsFolderTabularRepository(

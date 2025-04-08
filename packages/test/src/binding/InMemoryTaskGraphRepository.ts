@@ -6,14 +6,14 @@
 //    *******************************************************************************
 
 import {
-  TaskGraphRepository,
+  TaskGraphTabularRepository,
   TaskGraphSchema,
   TaskGraphPrimaryKeyNames,
 } from "@ellmers/task-graph";
 import { InMemoryTabularRepository } from "@ellmers/storage";
 import { createServiceToken } from "@ellmers/util";
 
-export const MEMORY_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>(
+export const MEMORY_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphTabularRepository>(
   "taskgraph.taskGraphRepository.inMemory"
 );
 
@@ -21,7 +21,7 @@ export const MEMORY_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphReposito
  * In-memory implementation of a task graph repository.
  * Provides storage and retrieval for task graphs.
  */
-export class InMemoryTaskGraphRepository extends TaskGraphRepository {
+export class InMemoryTaskGraphRepository extends TaskGraphTabularRepository {
   constructor() {
     super({
       tabularRepository: new InMemoryTabularRepository(TaskGraphSchema, TaskGraphPrimaryKeyNames),

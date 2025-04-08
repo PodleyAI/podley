@@ -7,13 +7,13 @@
 
 import {
   TaskGraphPrimaryKeyNames,
-  TaskGraphRepository,
+  TaskGraphTabularRepository,
   TaskGraphSchema,
 } from "@ellmers/task-graph";
 import { SqliteTabularRepository } from "@ellmers/storage";
 import { createServiceToken } from "@ellmers/util";
 
-export const SQLITE_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>(
+export const SQLITE_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphTabularRepository>(
   "taskgraph.taskGraphRepository.sqlite"
 );
 
@@ -21,7 +21,7 @@ export const SQLITE_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphReposito
  * SQLite implementation of a task graph repository.
  * Provides storage and retrieval for task graphs using SQLite.
  */
-export class SqliteTaskGraphRepository extends TaskGraphRepository {
+export class SqliteTaskGraphRepository extends TaskGraphTabularRepository {
   constructor(dbOrPath: string, table: string = "task_graphs") {
     super({
       tabularRepository: new SqliteTabularRepository(

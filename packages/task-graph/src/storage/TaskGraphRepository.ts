@@ -8,7 +8,6 @@
 import { createServiceToken, EventEmitter, EventParameters } from "@ellmers/util";
 import type { TabularRepository } from "@ellmers/storage";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { createGraphFromGraphJSON } from "../task/TaskJSON";
 
 /**
  * Service token for TaskGraphRepository
@@ -34,51 +33,26 @@ export type TaskGraphRepositoryEventListener<Event extends TaskGraphRepositoryEv
 export type TaskGraphRepositoryEventParameters<Event extends TaskGraphRepositoryEvents> =
   EventParameters<TaskGraphRepositoryEventListeners, Event>;
 
-export const TaskGraphSchema = {
-  key: "string",
-  value: "string",
-} as const;
-
-export const TaskGraphPrimaryKeyNames = ["key"] as const;
-
-/**
- * Options for the TaskGraphRepository
- */
-export type TaskGraphRepositoryStorage = TabularRepository<
-  typeof TaskGraphSchema,
-  typeof TaskGraphPrimaryKeyNames
->;
-type TaskGraphRepositoryOptions = {
-  tabularRepository: TaskGraphRepositoryStorage;
-};
-
 /**
  * Repository class for managing task graphs persistence and retrieval.
  * Provides functionality to save, load, and manipulate task graphs with their associated tasks and data flows.
  */
-export class TaskGraphRepository {
+export abstract class TaskGraphRepository {
   /**
    * The type of the repository
    */
   public type = "TaskGraphRepository";
 
   /**
-   * The tabular repository for the task graphs
-   */
-  tabularRepository: TaskGraphRepositoryStorage;
-
-  /**
-   * Constructor for the TaskGraphRepository
-   * @param options The options for the repository
-   */
-  constructor({ tabularRepository }: TaskGraphRepositoryOptions) {
-    this.tabularRepository = tabularRepository;
-  }
-
-  /**
    * The event emitter for the task graphs
    */
-  protected events = new EventEmitter<TaskGraphRepositoryEventListeners>();
+  private get events() {
+    if (!this._events) {
+      this._events = new EventEmitter<TaskGraphRepositoryEventListeners>();
+    }
+    return this._events;
+  }
+  private _events: EventEmitter<TaskGraphRepositoryEventListeners> | undefined;
 
   /**
    * Registers an event listener for the specified event
@@ -126,16 +100,24 @@ export class TaskGraphRepository {
   }
 
   /**
+   * Emits an event (if there are listeners)
+   * @param name The event name to emit
+   * @param args The event parameters
+   */
+  emit<Event extends TaskGraphRepositoryEvents>(
+    name: Event,
+    ...args: TaskGraphRepositoryEventParameters<Event>
+  ) {
+    this._events?.emit(name, ...args);
+  }
+
+  /**
    * Saves a task graph to persistent storage
    * @param key The unique identifier for the task graph
    * @param output The task graph to save
    * @emits graph_saved when the operation completes
    */
-  async saveTaskGraph(key: string, output: TaskGraph): Promise<void> {
-    const value = JSON.stringify(output.toJSON());
-    await this.tabularRepository.put({ key, value });
-    this.events.emit("graph_saved", key);
-  }
+  abstract saveTaskGraph(key: string, output: TaskGraph): Promise<void>;
 
   /**
    * Retrieves a task graph from persistent storage
@@ -143,33 +125,17 @@ export class TaskGraphRepository {
    * @returns The retrieved task graph, or undefined if not found
    * @emits graph_retrieved when the operation completes successfully
    */
-  async getTaskGraph(key: string): Promise<TaskGraph | undefined> {
-    const result = await this.tabularRepository.get({ key });
-    const value = result?.value;
-    if (!value) {
-      return undefined;
-    }
-    const jsonObj = JSON.parse(value);
-    const graph = createGraphFromGraphJSON(jsonObj);
-
-    this.events.emit("graph_retrieved", key);
-    return graph;
-  }
+  abstract getTaskGraph(key: string): Promise<TaskGraph | undefined>;
 
   /**
    * Clears all task graphs from the repository
    * @emits graph_cleared when the operation completes
    */
-  async clear(): Promise<void> {
-    await this.tabularRepository.deleteAll();
-    this.events.emit("graph_cleared");
-  }
+  abstract clear(): Promise<void>;
 
   /**
    * Returns the number of task graphs stored in the repository
    * @returns The count of stored task graphs
    */
-  async size(): Promise<number> {
-    return await this.tabularRepository.size();
-  }
+  abstract size(): Promise<number>;
 }

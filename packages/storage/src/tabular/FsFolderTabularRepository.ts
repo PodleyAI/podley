@@ -57,7 +57,7 @@ export class FsFolderTabularRepository<
     indexes: Array<keyof Entity | Array<keyof Entity>> = []
   ) {
     super(schema, primaryKeyNames, indexes);
-    this.folderPath = path.dirname(folderPath);
+    this.folderPath = path.join(folderPath);
     try {
       mkdirSync(this.folderPath, { recursive: true });
     } catch (error) {

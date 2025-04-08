@@ -24,4 +24,6 @@ export * from "./task/TaskQueueRegistry";
 export * from "./task/ArrayTask";
 
 export * from "./storage/TaskOutputRepository";
+export * from "./storage/TaskOutputTabularRepository";
 export * from "./storage/TaskGraphRepository";
+export * from "./storage/TaskGraphTabularRepository";

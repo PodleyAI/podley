@@ -9,11 +9,11 @@ import { IndexedDbTabularRepository } from "@ellmers/storage";
 import {
   TaskOutputSchema,
   TaskOutputPrimaryKeyNames,
-  TaskOutputRepository,
+  TaskOutputTabularRepository,
 } from "@ellmers/task-graph";
 import { createServiceToken } from "@ellmers/util";
 
-export const IDB_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepository>(
+export const IDB_TASK_OUTPUT_REPOSITORY = createServiceToken<IndexedDbTaskOutputRepository>(
   "taskgraph.taskOutputRepository.indexedDb"
 );
 
@@ -21,7 +21,7 @@ export const IDB_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepositor
  * IndexedDB implementation of a task output repository.
  * Provides storage and retrieval for task outputs using IndexedDB.
  */
-export class IndexedDbTaskOutputRepository extends TaskOutputRepository {
+export class IndexedDbTaskOutputRepository extends TaskOutputTabularRepository {
   constructor(table: string = "task_outputs") {
     super({
       tabularRepository: new IndexedDbTabularRepository(

@@ -9,11 +9,11 @@ import { FsFolderTabularRepository } from "@ellmers/storage";
 import {
   TaskOutputSchema,
   TaskOutputPrimaryKeyNames,
-  TaskOutputRepository,
+  TaskOutputTabularRepository,
 } from "@ellmers/task-graph";
 import { createServiceToken } from "@ellmers/util";
 
-export const FS_FOLDER_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRepository>(
+export const FS_FOLDER_TASK_OUTPUT_REPOSITORY = createServiceToken<FsFolderTaskOutputRepository>(
   "taskgraph.taskOutputRepository.fsFolder"
 );
 
@@ -21,7 +21,7 @@ export const FS_FOLDER_TASK_OUTPUT_REPOSITORY = createServiceToken<TaskOutputRep
  * File system folder implementation of a task output repository.
  * Provides storage and retrieval for task outputs using the file system.
  */
-export class FsFolderTaskOutputRepository extends TaskOutputRepository {
+export class FsFolderTaskOutputRepository extends TaskOutputTabularRepository {
   constructor(folderPath: string) {
     super({
       tabularRepository: new FsFolderTabularRepository(

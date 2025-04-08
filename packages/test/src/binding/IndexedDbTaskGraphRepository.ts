@@ -7,13 +7,13 @@
 
 import {
   TaskGraphPrimaryKeyNames,
-  TaskGraphRepository,
+  TaskGraphTabularRepository,
   TaskGraphSchema,
 } from "@ellmers/task-graph";
 import { IndexedDbTabularRepository } from "@ellmers/storage";
 import { createServiceToken } from "@ellmers/util";
 
-export const IDB_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>(
+export const IDB_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphTabularRepository>(
   "taskgraph.taskGraphRepository.indexedDb"
 );
 
@@ -21,7 +21,7 @@ export const IDB_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>
  * IndexedDB implementation of a task graph repository.
  * Provides storage and retrieval for task graphs using IndexedDB.
  */
-export class IndexedDbTaskGraphRepository extends TaskGraphRepository {
+export class IndexedDbTaskGraphRepository extends TaskGraphTabularRepository {
   constructor(table: string = "task_graphs") {
     super({
       tabularRepository: new IndexedDbTabularRepository(

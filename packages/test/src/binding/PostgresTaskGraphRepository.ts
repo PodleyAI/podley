@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import {
-  TaskGraphRepository,
+  TaskGraphTabularRepository,
   TaskGraphSchema,
   TaskGraphPrimaryKeyNames,
 } from "@ellmers/task-graph";
@@ -14,7 +14,7 @@ import { PostgresTabularRepository } from "@ellmers/storage";
 import type { Pool } from "pg";
 import { createServiceToken } from "@ellmers/util";
 
-export const POSTGRES_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphRepository>(
+export const POSTGRES_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphTabularRepository>(
   "taskgraph.taskGraphRepository.postgres"
 );
 
@@ -22,7 +22,7 @@ export const POSTGRES_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphReposi
  * PostgreSQL implementation of a task graph repository.
  * Provides storage and retrieval for task graphs using PostgreSQL.
  */
-export class PostgresTaskGraphRepository extends TaskGraphRepository {
+export class PostgresTaskGraphRepository extends TaskGraphTabularRepository {
   constructor(db: Pool, table: string = "task_graphs") {
     super({
       tabularRepository: new PostgresTabularRepository(
