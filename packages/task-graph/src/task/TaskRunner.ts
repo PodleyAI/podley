@@ -6,16 +6,16 @@
 //    *******************************************************************************
 
 import { globalServiceRegistry } from "@ellmers/util";
+import { GraphAsTask, Workflow } from "../node";
 import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { ITaskGraph } from "../task-graph/ITaskGraph";
+import { IWorkflow } from "../task-graph/IWorkflow";
+import { TaskGraph } from "../task-graph/TaskGraph";
 import { IRunConfig, ITask } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
+import { Task } from "./Task";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
-import { ITaskGraph } from "../task-graph/ITaskGraph";
-import { Task } from "./Task";
-import { TaskGraph } from "../task-graph/TaskGraph";
-import { GraphAsTask, Workflow } from "../node";
-import { IWorkflow } from "../task-graph/IWorkflow";
 
 /**
  * Responsible for running tasks
@@ -44,14 +44,14 @@ export class TaskRunner<
   public readonly task: ITask<Input, Output, Config>;
 
   /**
-   * Output cache repository
-   */
-  protected outputCache?: TaskOutputRepository;
-
-  /**
    * AbortController for cancelling task execution
    */
   protected abortController?: AbortController;
+
+  /**
+   * The output cache for the task
+   */
+  protected outputCache?: TaskOutputRepository;
 
   /**
    * Constructor for TaskRunner
@@ -78,13 +78,14 @@ export class TaskRunner<
 
     this.nodeProvenance = config.nodeProvenance ?? {};
 
-    if (config.outputCache === true) {
+    const cache = this.task.config.outputCache ?? config.outputCache;
+    if (cache === true) {
       let instance = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
       this.outputCache = instance;
-    } else if (config.outputCache === false) {
+    } else if (cache === false) {
       this.outputCache = undefined;
-    } else {
-      this.outputCache = config.outputCache;
+    } else if (cache instanceof TaskOutputRepository) {
+      this.outputCache = cache;
     }
 
     try {
@@ -99,9 +100,21 @@ export class TaskRunner<
         throw new TaskAbortedError("Promise for task created and aborted before run");
       }
 
-      const result = await this.executeTask(this.task.runInputData);
-
-      this.task.runOutputData = result ?? ({} as Output);
+      const inputs = this.task.runInputData;
+      let outputs: Output | undefined;
+      if (this.task.cacheable) {
+        outputs = (await this.outputCache?.getOutput(this.task.type, inputs)) as Output;
+        if (outputs) {
+          this.task.runOutputData = await this.executeTaskReactive(inputs, outputs);
+        }
+      }
+      if (!outputs) {
+        outputs = await this.executeTask(inputs);
+        if (this.task.cacheable && outputs !== undefined) {
+          await this.outputCache?.saveOutput(this.task.type, inputs, outputs);
+        }
+        this.task.runOutputData = outputs ?? ({} as Output);
+      }
 
       await this.handleComplete();
 
@@ -136,7 +149,7 @@ export class TaskRunner<
         this.task.runOutputData
       );
 
-      this.task.runOutputData = (resultReactive ?? {}) as Output;
+      this.task.runOutputData = resultReactive;
 
       await this.handleCompleteReactive();
       return this.task.runOutputData;
@@ -184,21 +197,19 @@ export class TaskRunner<
       nodeProvenance: this.nodeProvenance,
       own: this.own,
     });
-    const reactiveResult = await this.task.executeReactive(input, result || ({} as Output), {
-      own: this.own,
-    });
-    return (
-      Object.keys(reactiveResult || {}) >= Object.keys(result || {})
-        ? reactiveResult
-        : (result ?? {})
-    ) as Output;
+    return await this.executeTaskReactive(input, result || ({} as Output));
   }
 
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskReactive(input: Input, output: Output): Promise<Output | undefined> {
-    return this.task.executeReactive(input, output, { own: this.own });
+  protected async executeTaskReactive(input: Input, output: Output): Promise<Output> {
+    const reactiveResult = await this.task.executeReactive(input, output, { own: this.own });
+    return (
+      Object.keys(reactiveResult || {}) >= Object.keys(output || {})
+        ? reactiveResult
+        : (output ?? {})
+    ) as Output;
   }
 
   // ========================================================================

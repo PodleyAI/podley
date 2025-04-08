@@ -6,7 +6,6 @@
 //    *******************************************************************************
 
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
-import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
 import type { Task } from "./Task";
 
 /**
@@ -78,7 +77,7 @@ export interface IConfig {
   runnerId?: string;
 
   /** Optional output cache to use for this task */
-  outputCache?: TaskOutputRepository;
+  outputCache?: TaskOutputRepository | boolean;
 
   /** Optional cacheable flag to use for this task, overriding the default static property */
   cacheable?: boolean;

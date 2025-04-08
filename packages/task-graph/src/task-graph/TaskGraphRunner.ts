@@ -8,17 +8,17 @@
 import {
   collectPropertyValues,
   ConvertAllToOptionalArray,
+  deepEqual,
   globalServiceRegistry,
   uuid4,
 } from "@ellmers/util";
-import { deepEqual } from "@ellmers/util";
 import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
-import { TaskInput, TaskOutput, TaskStatus, Provenance } from "../task/TaskTypes";
+import { ITask } from "../task/ITask";
+import { TaskAbortedError, TaskConfigurationError, TaskError } from "../task/TaskError";
+import { Provenance, TaskInput, TaskOutput, TaskStatus } from "../task/TaskTypes";
+import { DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph, TaskGraphRunConfig } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
-import { TaskAbortedError, TaskConfigurationError, TaskError } from "../task/TaskError";
-import { ITask } from "../task/ITask";
-import { DATAFLOW_ALL_PORTS } from "./Dataflow";
 
 export type GraphSingleResult<T> = {
   id: unknown;
@@ -434,31 +434,7 @@ export class TaskGraphRunner {
     this.provenanceInput.set(task.config.id, nodeProvenance);
     this.copyInputFromEdgesToNode(task);
 
-    let results;
-    if (task.cacheable) {
-      results = await this.outputCache?.getOutput(
-        (task.constructor as any).type,
-        task.runInputData
-      );
-      if (results) {
-        //@ts-expect-error - using internals
-        await task.runner.handleStart();
-        task.runOutputData = results;
-        await task.runReactive();
-        //@ts-expect-error - using internals
-        await task.runner.handleComplete();
-      }
-    }
-    if (!results) {
-      results = await task.runner.run({}, { nodeProvenance, outputCache: this.outputCache });
-      if (task.cacheable) {
-        await this.outputCache?.saveOutput(
-          (task.constructor as any).type,
-          task.runInputData,
-          results
-        );
-      }
-    }
+    const results = await task.runner.run({}, { nodeProvenance, outputCache: this.outputCache });
 
     this.pushOutputFromNodeToEdges(task, results, nodeProvenance);
 

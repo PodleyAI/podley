@@ -80,7 +80,7 @@ export class GraphAsTaskRunner<
   /**
    * Execute the task reactively
    */
-  public async executeTaskReactive(input: Input, output: Output): Promise<Output | undefined> {
+  public async executeTaskReactive(input: Input, output: Output): Promise<Output> {
     if (this.task.hasChildren()) {
       const reactiveResults = await this.executeTaskChildrenReactive();
       this.task.runOutputData = this.task.subGraph.mergeExecuteOutputsToRunOutput(
@@ -89,7 +89,7 @@ export class GraphAsTaskRunner<
       );
     } else {
       const reactiveResults = await super.executeTaskReactive(this.fixInput(input), output);
-      this.task.runOutputData = reactiveResults ?? output;
+      this.task.runOutputData = reactiveResults ?? output ?? ({} as Output);
     }
     return this.task.runOutputData;
   }
