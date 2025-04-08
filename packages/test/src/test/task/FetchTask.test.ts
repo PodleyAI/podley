@@ -12,6 +12,7 @@ import {
   RetryableJobError,
 } from "@ellmers/job-queue";
 import { InMemoryQueueStorage } from "@ellmers/storage";
+import { JobTaskFailedError } from "@ellmers/task-graph";
 import { getTaskQueueRegistry, setTaskQueueRegistry } from "@ellmers/task-graph";
 import { Fetch, FetchJob, FetchTaskInput, FetchTaskOutput } from "@ellmers/tasks";
 import { sleep } from "@ellmers/util";
@@ -127,9 +128,13 @@ describe("FetchTask", () => {
       url: "https://api.example.com/notfound",
     });
 
-    expect(fetchPromise).rejects.toThrow();
-    expect(fetchPromise).rejects.toBeInstanceOf(PermanentJobError);
-    expect(fetchPromise).rejects.toHaveProperty("message", expect.stringContaining("404"));
+    try {
+      await fetchPromise;
+    } catch (e: any) {
+      expect(e).toBeInstanceOf(JobTaskFailedError);
+      expect(e.jobError).toBeInstanceOf(PermanentJobError);
+      expect(e.jobError.message).toContain("404");
+    }
 
     expect(mockFetch.mock.calls.length).toBe(1);
   });
@@ -142,7 +147,12 @@ describe("FetchTask", () => {
     });
 
     expect(fetchPromise).rejects.toThrow("Network error");
-    expect(fetchPromise).rejects.toBeInstanceOf(Error);
+    expect(fetchPromise).rejects.toBeInstanceOf(JobTaskFailedError);
+    expect(fetchPromise).rejects.toHaveProperty("jobError");
+    expect(fetchPromise).rejects.toHaveProperty(
+      "jobError.message",
+      expect.stringContaining("Network error")
+    );
 
     expect(mockFetch.mock.calls.length).toBe(1);
   });
@@ -205,9 +215,10 @@ describe("FetchTask", () => {
     expect(results[0].status).toBe("fulfilled");
     expect((results[0] as PromiseFulfilledResult<any>).value.json).toEqual({ data: "success" });
     expect(results[1].status).toBe("rejected");
-    expect((results[1] as PromiseRejectedResult).reason.message).toBe("Network error");
+    expect((results[1] as PromiseRejectedResult).reason.message).toContain("Network error");
     expect(results[2].status).toBe("rejected");
-    expect((results[2] as PromiseRejectedResult).reason).toBeInstanceOf(PermanentJobError);
+    expect((results[2] as PromiseRejectedResult).reason).toBeInstanceOf(JobTaskFailedError);
+    expect((results[2] as PromiseRejectedResult).reason.jobError).toBeInstanceOf(PermanentJobError);
     expect((results[2] as PromiseRejectedResult).reason.message).toContain("404");
   });
 
@@ -230,13 +241,13 @@ describe("FetchTask", () => {
       url: "https://api.example.com/rate-limited",
     }).catch((e) => e);
 
-    expect(error).toBeInstanceOf(RetryableJobError);
-    expect(error.message).toContain("429");
-    expect(error.retryDate).toBeInstanceOf(Date);
+    expect(error).toBeInstanceOf(JobTaskFailedError);
+    expect(error.jobError.message).toContain("429");
+    expect(error.jobError.retryDate).toBeInstanceOf(Date);
 
     // Should be approximately retryAfterSeconds in the future
     const expectedTime = beforeTest + retryAfterSeconds * 1000;
-    const actualTime = error.retryDate.getTime();
+    const actualTime = error.jobError.retryDate.getTime();
     const tolerance = 1000; // 1 second tolerance
 
     expect(actualTime).toBeGreaterThan(expectedTime - tolerance);
@@ -258,8 +269,9 @@ describe("FetchTask", () => {
       url: "https://api.example.com/service-unavailable",
     }).catch((e) => e);
 
-    expect(error).toBeInstanceOf(RetryableJobError);
-    expect(error.message).toContain("503");
+    expect(error).toBeInstanceOf(JobTaskFailedError);
+    expect(error.jobError).toBeInstanceOf(RetryableJobError);
+    expect(error.jobError.message).toContain("503");
 
     expect(mockFetch.mock.calls.length).toBe(1);
   });
@@ -283,13 +295,14 @@ describe("FetchTask", () => {
       url: "https://api.example.com/rate-limited-date",
     }).catch((e) => e);
 
-    expect(error).toBeInstanceOf(RetryableJobError);
-    expect(error.message).toContain("429");
-    expect(error.retryDate).toBeInstanceOf(Date);
-    expect(error.retryDate > new Date()).toBe(true); // Should be in the future
+    expect(error).toBeInstanceOf(JobTaskFailedError);
+    expect(error.jobError).toBeInstanceOf(RetryableJobError);
+    expect(error.jobError.message).toContain("429");
+    expect(error.jobError.retryDate).toBeInstanceOf(Date);
+    expect(error.jobError.retryDate > new Date()).toBe(true); // Should be in the future
 
     // Should be close to our specified retry date
-    const timeDiff = Math.abs(error.retryDate.getTime() - retryDate.getTime());
+    const timeDiff = Math.abs(error.jobError.retryDate.getTime() - retryDate.getTime());
     expect(timeDiff).toBeLessThan(1000); // Within 1 second
     expect(mockFetch.mock.calls.length).toBe(1);
   });
@@ -312,9 +325,10 @@ describe("FetchTask", () => {
       url: "https://api.example.com/rate-limited-invalid",
     }).catch((e) => e);
 
-    expect(error).toBeInstanceOf(RetryableJobError);
-    expect(error.message).toContain("429");
-    expect(error.retryDate).not.toBeInstanceOf(Date);
+    expect(error).toBeInstanceOf(JobTaskFailedError);
+    expect(error.jobError).toBeInstanceOf(RetryableJobError);
+    expect(error.jobError.message).toContain("429");
+    expect(error.jobError.retryDate).not.toBeInstanceOf(Date);
     expect(mockFetch.mock.calls.length).toBe(1);
   });
 
@@ -336,9 +350,10 @@ describe("FetchTask", () => {
       url: "https://api.example.com/rate-limited-past",
     }).catch((e) => e);
 
-    expect(error).toBeInstanceOf(RetryableJobError);
-    expect(error.message).toContain("429");
-    expect(error.retryDate).not.toBeInstanceOf(Date);
+    expect(error).toBeInstanceOf(JobTaskFailedError);
+    expect(error.jobError).toBeInstanceOf(RetryableJobError);
+    expect(error.jobError.message).toContain("429");
+    expect(error.jobError.retryDate).not.toBeInstanceOf(Date);
     expect(mockFetch.mock.calls.length).toBe(1);
   });
 
@@ -361,13 +376,16 @@ describe("FetchTask", () => {
       url: "https://api.example.com/rate-limited-rfc1123",
     }).catch((e) => e);
 
-    expect(error).toBeInstanceOf(RetryableJobError);
-    expect(error.message).toContain("429");
-    expect(error.retryDate).toBeInstanceOf(Date);
+    expect(error).toBeInstanceOf(JobTaskFailedError);
+    expect(error.jobError).toBeInstanceOf(RetryableJobError);
+    expect(error.jobError.message).toContain("429");
+    expect(error.jobError.retryDate).toBeInstanceOf(Date);
 
     // Should be very close to the date we provided (within 1 second)
     const tolerance = 1000;
-    expect(Math.abs(error.retryDate.getTime() - retryDate.getTime())).toBeLessThan(tolerance);
+    expect(Math.abs(error.jobError.retryDate.getTime() - retryDate.getTime())).toBeLessThan(
+      tolerance
+    );
     expect(mockFetch.mock.calls.length).toBe(1);
   });
 
@@ -390,13 +408,16 @@ describe("FetchTask", () => {
       url: "https://api.example.com/rate-limited-iso8601",
     }).catch((e) => e);
 
-    expect(error).toBeInstanceOf(RetryableJobError);
-    expect(error.message).toContain("429");
-    expect(error.retryDate).toBeInstanceOf(Date);
+    expect(error).toBeInstanceOf(JobTaskFailedError);
+    expect(error.jobError).toBeInstanceOf(RetryableJobError);
+    expect(error.jobError.message).toContain("429");
+    expect(error.jobError.retryDate).toBeInstanceOf(Date);
 
     // Should be very close to the date we provided (within 1 second)
     const tolerance = 1000;
-    expect(Math.abs(error.retryDate.getTime() - retryDate.getTime())).toBeLessThan(tolerance);
+    expect(Math.abs(error.jobError.retryDate.getTime() - retryDate.getTime())).toBeLessThan(
+      tolerance
+    );
     expect(mockFetch.mock.calls.length).toBe(1);
   });
 });
