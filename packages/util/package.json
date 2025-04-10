@@ -27,7 +27,7 @@
       "bun": "./src/bun.ts",
       "node": "./dist/node.js",
       "import": "./dist/index.js",
-      "types": "./dist/bun.d.ts"
+      "types": "./src/bun.ts"
     }
   },
   "files": [
