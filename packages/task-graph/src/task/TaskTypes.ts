@@ -36,22 +36,26 @@ export enum TaskStatus {
 // Core Task Data Types
 // ========================================================================
 
+export interface TaskIO {
+  [key: string]: unknown;
+}
+
 /** Type for task input data */
-export type TaskInput = Record<string, any>;
+export type TaskInput = TaskIO;
 
 /** Type for task output data */
-export type TaskOutput = Record<string, any>;
+export type TaskOutput = TaskIO;
 
 export type CompoundTaskOutput =
   | {
       outputs: TaskOutput[];
     }
   | {
-      [key: string]: any | any[] | undefined;
+      [key: string]: unknown | unknown[] | undefined;
     };
 
 /** Type for task provenance metadata */
-export type Provenance = Record<string, any>;
+export type Provenance = TaskIO;
 
 /** Type for task type names */
 export type TaskTypeName = string;

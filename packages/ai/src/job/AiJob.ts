@@ -16,7 +16,7 @@ import { getGlobalModelRepository } from "../model/ModelRegistry";
 export interface AiProviderInput<Input extends TaskInput = TaskInput> {
   taskType: string;
   aiProvider: string;
-  taskInput: Input;
+  taskInput: Input & { model: string };
 }
 
 /**

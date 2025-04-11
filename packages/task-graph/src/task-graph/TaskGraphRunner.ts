@@ -271,7 +271,7 @@ export class TaskGraphRunner {
 
         if (isArray === true) {
           const existingItems = Array.isArray(task.runInputData[input.id])
-            ? task.runInputData[input.id]
+            ? (task.runInputData[input.id] as unknown[])
             : [];
           const newitems = [...existingItems];
 

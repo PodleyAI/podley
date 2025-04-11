@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { AiJob } from "@ellmers/ai";
+import { AiJob, AiProviderInput } from "@ellmers/ai";
 import {
   HF_TRANSFORMERS_ONNX,
   register_HFT_ClientJobFns,
@@ -48,16 +48,16 @@ register_HFT_ClientJobFns(
 const queueRegistry = getTaskQueueRegistry();
 
 queueRegistry.registerQueue(
-  new JobQueue<TaskInput, TaskOutput>(HF_TRANSFORMERS_ONNX, AiJob<TaskInput, TaskOutput>, {
+  new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(HF_TRANSFORMERS_ONNX, AiJob, {
     limiter: new ConcurrencyLimiter(1, 100),
-    storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(HF_TRANSFORMERS_ONNX),
+    storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(HF_TRANSFORMERS_ONNX),
   })
 );
 
 queueRegistry.registerQueue(
-  new JobQueue<TaskInput, TaskOutput>(TENSORFLOW_MEDIAPIPE, AiJob<TaskInput, TaskOutput>, {
+  new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(TENSORFLOW_MEDIAPIPE, AiJob, {
     limiter: new ConcurrencyLimiter(1, 100),
-    storage: new InMemoryQueueStorage<TaskInput, TaskOutput>(TENSORFLOW_MEDIAPIPE),
+    storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(TENSORFLOW_MEDIAPIPE),
   })
 );
 

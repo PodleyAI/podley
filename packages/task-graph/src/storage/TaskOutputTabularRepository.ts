@@ -45,11 +45,6 @@ export class TaskOutputTabularRepository extends TaskOutputRepository {
   tabularRepository: TaskOutputRepositoryStorage;
 
   /**
-   * Whether to compress the output
-   */
-  outputCompression: boolean;
-
-  /**
    * Constructor for the TaskOutputTabularRepository
    * @param options The options for the repository
    */

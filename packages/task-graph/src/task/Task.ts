@@ -18,7 +18,6 @@ import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
 import {
   TaskStatus,
-  type IConfig,
   type Provenance,
   type TaskConfig,
   type TaskInput,

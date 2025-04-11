@@ -15,25 +15,26 @@ import {
   TaskOutputDefinition,
   TaskInvalidInputError,
   TaskConfig,
+  TaskIO,
 } from "@ellmers/task-graph";
 import { AbortSignalJobError, Job, PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
 import { JSONValue } from "@ellmers/storage";
 
 export type url = string;
-export type FetchTaskInput = {
+export interface FetchTaskInput extends TaskIO {
   url: url;
   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   headers?: Record<string, string>;
   body?: string;
   response_type?: "json" | "text" | "blob" | "arraybuffer";
   queueName?: string;
-};
-export type FetchTaskOutput = {
+}
+export interface FetchTaskOutput extends TaskIO {
   json?: JSONValue;
   text?: string;
   blob?: Blob;
   arraybuffer?: ArrayBuffer;
-};
+}
 
 export type FetchTaskConfig = TaskConfig & {
   queueName?: string;

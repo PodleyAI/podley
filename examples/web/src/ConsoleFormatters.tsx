@@ -206,7 +206,11 @@ class TaskConsoleFormatter extends ConsoleFormatter {
       const outputs = task.outputs
         .filter((i) => task.runOutputData[i.id] !== undefined && task.runOutputData[i.id] !== "")
         .filter(
-          (i) => !(Array.isArray(task.runOutputData[i.id]) && task.runOutputData[i.id].length === 0)
+          (i) =>
+            !(
+              Array.isArray(task.runOutputData[i.id]) &&
+              (task.runOutputData[i.id] as unknown[]).length === 0
+            )
         )
         .map((i: TaskInputDefinition) => {
           return { name: i.id, value: task.runOutputData[i.id] };
