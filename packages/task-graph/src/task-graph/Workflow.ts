@@ -14,19 +14,18 @@ import { WorkflowError } from "../task/TaskError";
 import type { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import type {
   TaskConfig,
-  TaskOutput,
-  TaskInput,
+  TaskIO,
   TaskInputDefinition,
   TaskOutputDefinition,
 } from "../task/TaskTypes";
-import { getLastTask, parallel, pipe, PipeFunction } from "./Conversions";
+import { getLastTask, parallel, pipe, PipeFunction, Taskish } from "./Conversions";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { IWorkflow } from "./IWorkflow";
 import { TaskGraph } from "./TaskGraph";
 import { CompoundMergeStrategy } from "./TaskGraphRunner";
 
 // Type definitions for the workflow
-export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
+export type CreateWorkflow<I extends TaskIO, O extends TaskIO, C extends TaskConfig> = (
   input?: Partial<I>,
   config?: Partial<C>
 ) => Workflow;
@@ -55,7 +54,7 @@ let taskIdCounter = 0;
  * Class for building and managing a task graph
  * Provides methods for adding tasks, connecting outputs to inputs, and running the task graph
  */
-export class Workflow<Input extends TaskInput = TaskInput, Output extends TaskOutput = TaskOutput>
+export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = TaskIO>
   implements IWorkflow<Input, Output>
 {
   /**
@@ -92,8 +91,8 @@ export class Workflow<Input extends TaskInput = TaskInput, Output extends TaskOu
    * @returns A function that adds the specified task type to a Workflow
    */
   public static createWorkflow<
-    I extends TaskInput,
-    O extends TaskOutput,
+    I extends TaskIO,
+    O extends TaskIO,
     C extends TaskConfig = TaskConfig,
   >(taskClass: ITaskConstructor<I, O, C>): CreateWorkflow<I, O, C> {
     const helper = function (
@@ -333,77 +332,65 @@ export class Workflow<Input extends TaskInput = TaskInput, Output extends TaskOu
 
   // Replace both the instance and static pipe methods with properly typed versions
   // Pipe method overloads
-  public pipe<A extends TaskInput, B extends TaskOutput>(
-    fn1: PipeFunction<A, B> | ITask<A, B> | IWorkflow<A, B>
-  ): IWorkflow<A, B>;
-  public pipe<A extends TaskInput, B extends TaskOutput, C extends TaskOutput>(
-    fn1: PipeFunction<A, B> | ITask<A, B> | IWorkflow<A, B>,
-    fn2: PipeFunction<B, C> | ITask<B, C> | IWorkflow<B, C>
+  public pipe<A extends TaskIO, B extends TaskIO>(fn1: Taskish<A, B>): IWorkflow<A, B>;
+  public pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO>(
+    fn1: Taskish<A, B>,
+    fn2: Taskish<B, C>
   ): IWorkflow<A, C>;
-  public pipe<
-    A extends TaskInput,
-    B extends TaskOutput,
-    C extends TaskOutput,
-    D extends TaskOutput,
-  >(
-    fn1: PipeFunction<A, B> | ITask<A, B> | IWorkflow<A, B>,
-    fn2: PipeFunction<B, C> | ITask<B, C> | IWorkflow<B, C>,
-    fn3: PipeFunction<C, D> | ITask<C, D> | IWorkflow<C, D>
+  public pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO, D extends TaskIO>(
+    fn1: Taskish<A, B>,
+    fn2: Taskish<B, C>,
+    fn3: Taskish<C, D>
   ): IWorkflow<A, D>;
   public pipe<
-    A extends TaskInput,
-    B extends TaskOutput,
-    C extends TaskOutput,
-    D extends TaskOutput,
-    E extends TaskOutput,
+    A extends TaskIO,
+    B extends TaskIO,
+    C extends TaskIO,
+    D extends TaskIO,
+    E extends TaskIO,
   >(
-    fn1: PipeFunction<A, B> | ITask<A, B> | IWorkflow<A, B>,
-    fn2: PipeFunction<B, C> | ITask<B, C> | IWorkflow<B, C>,
-    fn3: PipeFunction<C, D> | ITask<C, D> | IWorkflow<C, D>,
-    fn4: PipeFunction<D, E> | ITask<D, E> | IWorkflow<D, E>
+    fn1: Taskish<A, B>,
+    fn2: Taskish<B, C>,
+    fn3: Taskish<C, D>,
+    fn4: Taskish<D, E>
   ): IWorkflow<A, E>;
   public pipe<
-    A extends TaskInput,
-    B extends TaskOutput,
-    C extends TaskOutput,
-    D extends TaskOutput,
-    E extends TaskOutput,
-    F extends TaskOutput,
+    A extends TaskIO,
+    B extends TaskIO,
+    C extends TaskIO,
+    D extends TaskIO,
+    E extends TaskIO,
+    F extends TaskIO,
   >(
-    fn1: PipeFunction<A, B> | ITask<A, B> | IWorkflow<A, B>,
-    fn2: PipeFunction<B, C> | ITask<B, C> | IWorkflow<B, C>,
-    fn3: PipeFunction<C, D> | ITask<C, D> | IWorkflow<C, D>,
-    fn4: PipeFunction<D, E> | ITask<D, E> | IWorkflow<D, E>,
-    fn5: PipeFunction<E, F> | ITask<E, F> | IWorkflow<E, F>
+    fn1: Taskish<A, B>,
+    fn2: Taskish<B, C>,
+    fn3: Taskish<C, D>,
+    fn4: Taskish<D, E>,
+    fn5: Taskish<E, F>
   ): IWorkflow<A, F>;
-  public pipe(...args: (IWorkflow | PipeFunction | ITask)[]): IWorkflow {
-    return pipe(args, this);
+  public pipe(...args: Taskish<TaskIO, TaskIO>[]): IWorkflow {
+    return pipe(args as any, this);
   }
 
   // Static pipe method overloads
-  public static pipe<A extends TaskInput, B extends TaskOutput>(
+  public static pipe<A extends TaskIO, B extends TaskIO>(
     fn1: PipeFunction<A, B> | ITask<A, B>
   ): IWorkflow;
-  public static pipe<A extends TaskInput, B extends TaskOutput, C extends TaskOutput>(
+  public static pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO>(
     fn1: PipeFunction<A, B> | ITask<A, B>,
     fn2: PipeFunction<B, C> | ITask<B, C>
   ): IWorkflow;
-  public static pipe<
-    A extends TaskInput,
-    B extends TaskOutput,
-    C extends TaskOutput,
-    D extends TaskOutput,
-  >(
+  public static pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO, D extends TaskIO>(
     fn1: PipeFunction<A, B> | ITask<A, B>,
     fn2: PipeFunction<B, C> | ITask<B, C>,
     fn3: PipeFunction<C, D> | ITask<C, D>
   ): IWorkflow;
   public static pipe<
-    A extends TaskInput,
-    B extends TaskOutput,
-    C extends TaskOutput,
-    D extends TaskOutput,
-    E extends TaskOutput,
+    A extends TaskIO,
+    B extends TaskIO,
+    C extends TaskIO,
+    D extends TaskIO,
+    E extends TaskIO,
   >(
     fn1: PipeFunction<A, B> | ITask<A, B>,
     fn2: PipeFunction<B, C> | ITask<B, C>,
@@ -411,12 +398,12 @@ export class Workflow<Input extends TaskInput = TaskInput, Output extends TaskOu
     fn4: PipeFunction<D, E> | ITask<D, E>
   ): IWorkflow;
   public static pipe<
-    A extends TaskInput,
-    B extends TaskOutput,
-    C extends TaskOutput,
-    D extends TaskOutput,
-    E extends TaskOutput,
-    F extends TaskOutput,
+    A extends TaskIO,
+    B extends TaskIO,
+    C extends TaskIO,
+    D extends TaskIO,
+    E extends TaskIO,
+    F extends TaskIO,
   >(
     fn1: PipeFunction<A, B> | ITask<A, B>,
     fn2: PipeFunction<B, C> | ITask<B, C>,
@@ -425,7 +412,7 @@ export class Workflow<Input extends TaskInput = TaskInput, Output extends TaskOu
     fn5: PipeFunction<E, F> | ITask<E, F>
   ): IWorkflow;
   public static pipe(...args: (PipeFunction | ITask)[]): IWorkflow {
-    return pipe(args, new Workflow());
+    return pipe(args as any, new Workflow());
   }
 
   public parallel(
@@ -561,7 +548,7 @@ export class Workflow<Input extends TaskInput = TaskInput, Output extends TaskOu
     return this;
   }
 
-  public addTask<I extends TaskInput, O extends TaskOutput, C extends TaskConfig = TaskConfig>(
+  public addTask<I extends TaskIO, O extends TaskIO, C extends TaskConfig = TaskConfig>(
     taskClass: ITaskConstructor<I, O, C>,
     input: I,
     config: C
@@ -577,8 +564,8 @@ export class Workflow<Input extends TaskInput = TaskInput, Output extends TaskOu
  * Helper function for backward compatibility
  */
 export function CreateWorkflow<
-  I extends TaskInput,
-  O extends TaskOutput,
+  I extends TaskIO,
+  O extends TaskIO,
   C extends TaskConfig = TaskConfig,
 >(taskClass: any): CreateWorkflow<I, O, C> {
   return Workflow.createWorkflow<I, O, C>(taskClass);

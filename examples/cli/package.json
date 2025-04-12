@@ -23,8 +23,9 @@
   ],
   "exports": {
     ".": {
-      "import": "./dist/lib.js",
-      "types": "./dist/lib.d.ts"
+      "bun": "./src/lib.ts",
+      "types": "./src/lib.ts",
+      "import": "./dist/lib.js"
     }
   },
   "dependencies": {

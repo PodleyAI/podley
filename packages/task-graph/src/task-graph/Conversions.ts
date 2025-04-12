@@ -8,7 +8,7 @@
 import { GraphAsTask } from "../task/GraphAsTask";
 import type { IExecuteConfig, ITask } from "../task/ITask";
 import { Task } from "../task/Task";
-import type { TaskInput, TaskOutput } from "../task/TaskTypes";
+import type { TaskIO } from "../task/TaskTypes";
 import { Dataflow } from "./Dataflow";
 import { ITaskGraph } from "./ITaskGraph";
 import { Workflow } from "./Workflow";
@@ -17,12 +17,17 @@ import { TaskGraph } from "./TaskGraph";
 import { CompoundMergeStrategy } from "./TaskGraphRunner";
 
 // Update PipeFunction type to be more specific about input/output types
-export type PipeFunction<I extends TaskInput = any, O extends TaskOutput = any> = (
+export type PipeFunction<I extends TaskIO = any, O extends TaskIO = any> = (
   input: I,
   config: IExecuteConfig
 ) => O | Promise<O>;
 
-function convertPipeFunctionToTask<I extends TaskInput, O extends TaskOutput>(
+export type Taskish<A extends TaskIO = TaskIO, B extends TaskIO = TaskIO> =
+  | PipeFunction<A, B>
+  | ITask<A, B>
+  | IWorkflow<A, B>;
+
+function convertPipeFunctionToTask<I extends TaskIO, O extends TaskIO>(
   fn: PipeFunction<I, O>,
   config?: any
 ): ITask<I, O> {
@@ -38,7 +43,7 @@ function convertPipeFunctionToTask<I extends TaskInput, O extends TaskOutput>(
   return new QuickTask({}, config);
 }
 
-export function ensureTask<I extends TaskInput, O extends TaskOutput>(
+export function ensureTask<I extends TaskIO, O extends TaskIO>(
   arg: IWorkflow<I, O> | PipeFunction<I, O> | ITask<any, any, any> | ITaskGraph,
   config?: any
 ): ITask<any, any, any> {
@@ -67,9 +72,53 @@ export function connect(
   workflow.graph.addDataflow(new Dataflow(source.config.id, "*", target.config.id, "*"));
 }
 
-export function pipe<T extends TaskInput = any, O extends TaskOutput = TaskOutput>(
-  args: (IWorkflow<T, O> | PipeFunction<T, O> | ITask<T, O, any>)[],
-  workflow: IWorkflow<T, O>
+export function pipe<A extends TaskIO, B extends TaskIO>(
+  [fn1]: [Taskish<A, B>],
+  workflow?: IWorkflow<A, B>
+): IWorkflow<A, B>;
+
+export function pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO>(
+  [fn1, fn2]: [Taskish<A, B>, Taskish<B, C>],
+  workflow?: IWorkflow<A, C>
+): IWorkflow<A, C>;
+
+export function pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO, D extends TaskIO>(
+  [fn1, fn2, fn3]: [Taskish<A, B>, Taskish<B, C>, Taskish<C, D>],
+  workflow?: IWorkflow<A, D>
+): IWorkflow<A, D>;
+
+export function pipe<
+  A extends TaskIO,
+  B extends TaskIO,
+  C extends TaskIO,
+  D extends TaskIO,
+  E extends TaskIO,
+>(
+  [fn1, fn2, fn3, fn4]: [Taskish<A, B>, Taskish<B, C>, Taskish<C, D>, Taskish<D, E>],
+  workflow?: IWorkflow<A, E>
+): IWorkflow<A, E>;
+
+export function pipe<
+  A extends TaskIO,
+  B extends TaskIO,
+  C extends TaskIO,
+  D extends TaskIO,
+  E extends TaskIO,
+  F extends TaskIO,
+>(
+  [fn1, fn2, fn3, fn4, fn5]: [
+    Taskish<A, B>,
+    Taskish<B, C>,
+    Taskish<C, D>,
+    Taskish<D, E>,
+    Taskish<E, F>,
+  ],
+  workflow?: IWorkflow<A, F>
+): IWorkflow<A, F>;
+
+export function pipe<T extends TaskIO = any, O extends TaskIO = TaskIO>(
+  args: Taskish<T, O>[],
+  workflow: IWorkflow<T, O> = new Workflow()
 ): IWorkflow<T, O> {
   let previousTask = getLastTask(workflow);
   const tasks = args.map((arg) => ensureTask(arg));

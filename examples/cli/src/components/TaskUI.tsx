@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ITask, TaskGraph, TaskStatus, ArrayTask } from "@ellmers/task-graph";
+import { ITask, ITaskGraph, TaskStatus, ArrayTask } from "@ellmers/task-graph";
 import type { FC } from "react";
 import { useEffect, useState } from "react";
 import { Box, Text } from "tuir";
@@ -47,7 +47,7 @@ const getSymbol = (state: TaskStatus) => {
 
 export const TaskUI: FC<{
   task: ITask;
-  graph: TaskGraph;
+  graph: ITaskGraph;
 }> = ({ task, graph }) => {
   const [count, setCount] = useState<number>(0);
   const [status, setStatus] = useState<TaskStatus>(task.status);
@@ -55,7 +55,7 @@ export const TaskUI: FC<{
   const [message, setMessage] = useState<string>("");
   const [details, setDetails] = useState<any>(undefined);
   const [text, setText] = useState<string>("");
-  const [subGraph, setSubGraph] = useState<TaskGraph | null>(null);
+  const [subGraph, setSubGraph] = useState<ITaskGraph | null>(null);
   const [dependantChildren, setDependantChildren] = useState<ITask[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [arrayProgress, setArrayProgress] = useState<{ completed: number; total: number } | null>(

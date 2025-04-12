@@ -7,11 +7,11 @@
 
 import React from "react";
 import { Box, Text } from "tuir";
-import { TaskGraph } from "@ellmers/task-graph";
 import TaskGraphUI from "./TaskGraphUI";
+import { ITaskGraph } from "@ellmers/task-graph";
 
 type AppProps = {
-  graph: TaskGraph;
+  graph: ITaskGraph;
 };
 
 const App: React.FC<AppProps> = ({ graph }) => {

@@ -20,10 +20,15 @@ export * from "./task/ArrayTask";
 
 export * from "./task-graph/DataflowEvents";
 export * from "./task-graph/Dataflow";
+
+export * from "./task-graph/ITaskGraph";
 export * from "./task-graph/TaskGraph";
+export * from "./task-graph/TaskGraphEvents";
 export * from "./task-graph/TaskGraphRunner";
-export * from "./task-graph/Workflow";
+
 export * from "./task-graph/Conversions";
+export * from "./task-graph/Workflow";
+export * from "./task-graph/IWorkflow";
 
 export * from "./storage/TaskOutputRepository";
 export * from "./storage/TaskOutputTabularRepository";

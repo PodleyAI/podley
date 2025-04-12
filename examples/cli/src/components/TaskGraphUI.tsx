@@ -7,14 +7,14 @@
 
 import React, { useState, useEffect } from "react";
 import { Box } from "tuir";
-import { ITask, TaskGraph } from "@ellmers/task-graph";
+import { ITask, ITaskGraph } from "@ellmers/task-graph";
 import { TaskUI } from "./TaskUI";
 
 type TaskGraphUIProps = {
-  graph: TaskGraph;
+  graph: ITaskGraph;
 };
 
-function findRootTasks(graph: TaskGraph): ITask[] {
+function findRootTasks(graph: ITaskGraph): ITask[] {
   return graph.getTasks().filter((task) => graph.getSourceTasks(task.config.id).length === 0);
 }
 
