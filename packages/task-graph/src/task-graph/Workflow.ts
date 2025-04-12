@@ -6,23 +6,24 @@
 //    *******************************************************************************
 
 import { EventEmitter, type EventParameters } from "@ellmers/util";
+import { TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { GraphAsTask } from "../task/GraphAsTask";
 import type { ITask, ITaskConstructor } from "../task/ITask";
 import { Task } from "../task/Task";
 import { WorkflowError } from "../task/TaskError";
 import type { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
-import {
+import type {
   TaskConfig,
   TaskOutput,
-  type TaskInput,
-  type TaskInputDefinition,
-  type TaskOutputDefinition,
+  TaskInput,
+  TaskInputDefinition,
+  TaskOutputDefinition,
 } from "../task/TaskTypes";
+import { getLastTask, parallel, pipe, PipeFunction } from "./Conversions";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
-import { ensureTask, PipeFunction, TaskGraph } from "./TaskGraph";
-import { CompoundMergeStrategy } from "./TaskGraphRunner";
-import { GraphAsTask } from "../task/GraphAsTask";
 import { IWorkflow } from "./IWorkflow";
-import { TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { TaskGraph } from "./TaskGraph";
+import { CompoundMergeStrategy } from "./TaskGraphRunner";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskInput, O extends TaskOutput, C extends TaskConfig> = (
@@ -50,60 +51,13 @@ export type WorkflowEventParameters<Event extends WorkflowEvents> = EventParamet
 // Task ID counter
 let taskIdCounter = 0;
 
-function getLastTask(workflow: Workflow): ITask<any, any, any> | undefined {
-  const tasks = workflow.graph.getTasks();
-  return tasks.length > 0 ? tasks[tasks.length - 1] : undefined;
-}
-
-function connect(
-  source: ITask<any, any, any>,
-  target: ITask<any, any, any>,
-  workflow: Workflow
-): void {
-  workflow.graph.addDataflow(new Dataflow(source.config.id, "*", target.config.id, "*"));
-}
-
-function pipe<T extends TaskInput = any>(
-  args: (PipeFunction<any, any> | ITask<any, any, any>)[],
-  workflow: Workflow
-): Workflow {
-  let previousTask = getLastTask(workflow);
-  const tasks = args.map((arg) => ensureTask(arg));
-  tasks.forEach((task) => {
-    workflow.graph.addTask(task);
-    if (previousTask) {
-      connect(previousTask, task, workflow);
-    }
-    previousTask = task;
-  });
-  return workflow;
-}
-
-function parallel(
-  args: (PipeFunction<any, any> | Task)[],
-  mergeFn: CompoundMergeStrategy,
-  workflow: Workflow
-): Workflow {
-  let previousTask = getLastTask(workflow);
-  const tasks = args.map((arg) => ensureTask(arg));
-  const input = {};
-  const config = {
-    compoundMerge: mergeFn,
-  };
-  const mergeTask = new GraphAsTask(input, config);
-  mergeTask.subGraph!.addTasks(tasks);
-  workflow.graph.addTask(mergeTask);
-  if (previousTask) {
-    connect(previousTask, mergeTask, workflow);
-  }
-  return workflow;
-}
-
 /**
  * Class for building and managing a task graph
  * Provides methods for adding tasks, connecting outputs to inputs, and running the task graph
  */
-export class Workflow implements IWorkflow {
+export class Workflow<Input extends TaskInput = TaskInput, Output extends TaskOutput = TaskOutput>
+  implements IWorkflow<Input, Output>
+{
   /**
    * Creates a new Workflow
    *
@@ -313,12 +267,15 @@ export class Workflow implements IWorkflow {
     this._abortController = new AbortController();
 
     try {
-      const output = await this.graph.run({
+      const output = await this.graph.run<Output>({
         parentSignal: this._abortController.signal,
         parentProvenance: {},
         outputCache: this._repository,
       });
-      const last = this.graph.mergeExecuteOutputsToRunOutput(output, "last-or-property-array");
+      const last = this.graph.mergeExecuteOutputsToRunOutput<Output>(
+        output,
+        "last-or-property-array"
+      );
       this.events.emit("complete");
       return last;
     } catch (error) {
@@ -377,22 +334,22 @@ export class Workflow implements IWorkflow {
   // Replace both the instance and static pipe methods with properly typed versions
   // Pipe method overloads
   public pipe<A extends TaskInput, B extends TaskOutput>(
-    fn1: PipeFunction<A, B> | Task<A, B>
-  ): Workflow;
+    fn1: PipeFunction<A, B> | ITask<A, B> | IWorkflow<A, B>
+  ): IWorkflow<A, B>;
   public pipe<A extends TaskInput, B extends TaskOutput, C extends TaskOutput>(
-    fn1: PipeFunction<A, B> | Task<A, B>,
-    fn2: PipeFunction<B, C> | Task<B, C>
-  ): Workflow;
+    fn1: PipeFunction<A, B> | ITask<A, B> | IWorkflow<A, B>,
+    fn2: PipeFunction<B, C> | ITask<B, C> | IWorkflow<B, C>
+  ): IWorkflow<A, C>;
   public pipe<
     A extends TaskInput,
     B extends TaskOutput,
     C extends TaskOutput,
     D extends TaskOutput,
   >(
-    fn1: PipeFunction<A, B> | Task<A, B>,
-    fn2: PipeFunction<B, C> | Task<B, C>,
-    fn3: PipeFunction<C, D> | Task<C, D>
-  ): Workflow;
+    fn1: PipeFunction<A, B> | ITask<A, B> | IWorkflow<A, B>,
+    fn2: PipeFunction<B, C> | ITask<B, C> | IWorkflow<B, C>,
+    fn3: PipeFunction<C, D> | ITask<C, D> | IWorkflow<C, D>
+  ): IWorkflow<A, D>;
   public pipe<
     A extends TaskInput,
     B extends TaskOutput,
@@ -400,11 +357,11 @@ export class Workflow implements IWorkflow {
     D extends TaskOutput,
     E extends TaskOutput,
   >(
-    fn1: PipeFunction<A, B> | Task<A, B>,
-    fn2: PipeFunction<B, C> | Task<B, C>,
-    fn3: PipeFunction<C, D> | Task<C, D>,
-    fn4: PipeFunction<D, E> | Task<D, E>
-  ): Workflow;
+    fn1: PipeFunction<A, B> | ITask<A, B> | IWorkflow<A, B>,
+    fn2: PipeFunction<B, C> | ITask<B, C> | IWorkflow<B, C>,
+    fn3: PipeFunction<C, D> | ITask<C, D> | IWorkflow<C, D>,
+    fn4: PipeFunction<D, E> | ITask<D, E> | IWorkflow<D, E>
+  ): IWorkflow<A, E>;
   public pipe<
     A extends TaskInput,
     B extends TaskOutput,
@@ -413,34 +370,34 @@ export class Workflow implements IWorkflow {
     E extends TaskOutput,
     F extends TaskOutput,
   >(
-    fn1: PipeFunction<A, B> | Task<A, B>,
-    fn2: PipeFunction<B, C> | Task<B, C>,
-    fn3: PipeFunction<C, D> | Task<C, D>,
-    fn4: PipeFunction<D, E> | Task<D, E>,
-    fn5: PipeFunction<E, F> | Task<E, F>
-  ): Workflow;
-  public pipe(...args: (PipeFunction | Task)[]): Workflow {
+    fn1: PipeFunction<A, B> | ITask<A, B> | IWorkflow<A, B>,
+    fn2: PipeFunction<B, C> | ITask<B, C> | IWorkflow<B, C>,
+    fn3: PipeFunction<C, D> | ITask<C, D> | IWorkflow<C, D>,
+    fn4: PipeFunction<D, E> | ITask<D, E> | IWorkflow<D, E>,
+    fn5: PipeFunction<E, F> | ITask<E, F> | IWorkflow<E, F>
+  ): IWorkflow<A, F>;
+  public pipe(...args: (IWorkflow | PipeFunction | ITask)[]): IWorkflow {
     return pipe(args, this);
   }
 
   // Static pipe method overloads
   public static pipe<A extends TaskInput, B extends TaskOutput>(
-    fn1: PipeFunction<A, B> | Task<A, B>
-  ): Workflow;
+    fn1: PipeFunction<A, B> | ITask<A, B>
+  ): IWorkflow;
   public static pipe<A extends TaskInput, B extends TaskOutput, C extends TaskOutput>(
-    fn1: PipeFunction<A, B> | Task<A, B>,
-    fn2: PipeFunction<B, C> | Task<B, C>
-  ): Workflow;
+    fn1: PipeFunction<A, B> | ITask<A, B>,
+    fn2: PipeFunction<B, C> | ITask<B, C>
+  ): IWorkflow;
   public static pipe<
     A extends TaskInput,
     B extends TaskOutput,
     C extends TaskOutput,
     D extends TaskOutput,
   >(
-    fn1: PipeFunction<A, B> | Task<A, B>,
-    fn2: PipeFunction<B, C> | Task<B, C>,
-    fn3: PipeFunction<C, D> | Task<C, D>
-  ): Workflow;
+    fn1: PipeFunction<A, B> | ITask<A, B>,
+    fn2: PipeFunction<B, C> | ITask<B, C>,
+    fn3: PipeFunction<C, D> | ITask<C, D>
+  ): IWorkflow;
   public static pipe<
     A extends TaskInput,
     B extends TaskOutput,
@@ -448,11 +405,11 @@ export class Workflow implements IWorkflow {
     D extends TaskOutput,
     E extends TaskOutput,
   >(
-    fn1: PipeFunction<A, B> | Task<A, B>,
-    fn2: PipeFunction<B, C> | Task<B, C>,
-    fn3: PipeFunction<C, D> | Task<C, D>,
-    fn4: PipeFunction<D, E> | Task<D, E>
-  ): Workflow;
+    fn1: PipeFunction<A, B> | ITask<A, B>,
+    fn2: PipeFunction<B, C> | ITask<B, C>,
+    fn3: PipeFunction<C, D> | ITask<C, D>,
+    fn4: PipeFunction<D, E> | ITask<D, E>
+  ): IWorkflow;
   public static pipe<
     A extends TaskInput,
     B extends TaskOutput,
@@ -461,27 +418,27 @@ export class Workflow implements IWorkflow {
     E extends TaskOutput,
     F extends TaskOutput,
   >(
-    fn1: PipeFunction<A, B> | Task<A, B>,
-    fn2: PipeFunction<B, C> | Task<B, C>,
-    fn3: PipeFunction<C, D> | Task<C, D>,
-    fn4: PipeFunction<D, E> | Task<D, E>,
-    fn5: PipeFunction<E, F> | Task<E, F>
-  ): Workflow;
-  public static pipe(...args: (PipeFunction | Task)[]): Workflow {
+    fn1: PipeFunction<A, B> | ITask<A, B>,
+    fn2: PipeFunction<B, C> | ITask<B, C>,
+    fn3: PipeFunction<C, D> | ITask<C, D>,
+    fn4: PipeFunction<D, E> | ITask<D, E>,
+    fn5: PipeFunction<E, F> | ITask<E, F>
+  ): IWorkflow;
+  public static pipe(...args: (PipeFunction | ITask)[]): IWorkflow {
     return pipe(args, new Workflow());
   }
 
   public parallel(
     args: (PipeFunction<any, any> | Task)[],
     mergeFn?: CompoundMergeStrategy
-  ): Workflow {
+  ): IWorkflow {
     return parallel(args, mergeFn ?? "last-or-property-array", this);
   }
 
   public static parallel(
-    args: (PipeFunction<any, any> | Task)[],
+    args: (PipeFunction<any, any> | ITask)[],
     mergeFn?: CompoundMergeStrategy
-  ): Workflow {
+  ): IWorkflow {
     return parallel(args, mergeFn ?? "last-or-property-array", new Workflow());
   }
 

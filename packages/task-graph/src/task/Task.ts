@@ -568,6 +568,10 @@ export class Task<
     );
   }
 
+  private _taskAddedListener: (task: ITask) => void = () => {
+    this.emit("regenerate");
+  };
+
   /**
    * The internal task graph containing subtasks
    *
@@ -582,7 +586,11 @@ export class Task<
    * @param subGraph The subtask graph to set
    */
   set subGraph(subGraph: TaskGraph) {
+    if (this._subGraph) {
+      this._subGraph.off("task_added", this._taskAddedListener);
+    }
     this._subGraph = subGraph;
+    this._subGraph.on("task_added", this._taskAddedListener);
   }
 
   /**
@@ -599,6 +607,7 @@ export class Task<
   get subGraph(): TaskGraph {
     if (!this._subGraph) {
       this._subGraph = new TaskGraph();
+      this._subGraph.on("task_added", this._taskAddedListener);
     }
     return this._subGraph;
   }

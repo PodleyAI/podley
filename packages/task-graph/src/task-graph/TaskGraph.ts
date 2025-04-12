@@ -20,6 +20,9 @@ import {
   TaskGraphEvents,
 } from "./TaskGraphEvents";
 import { CompoundMergeStrategy, NamedGraphResult, TaskGraphRunner } from "./TaskGraphRunner";
+import { IWorkflow } from "./IWorkflow";
+import { ensureTask } from "./Conversions";
+import { PipeFunction } from "./Conversions";
 
 /**
  * Configuration for running a task graph
@@ -45,38 +48,6 @@ class TaskGraphDAG extends DirectedAcyclicGraph<
       (dataflow: Dataflow) => dataflow.id
     );
   }
-}
-
-// Update PipeFunction type to be more specific about input/output types
-export type PipeFunction<I extends TaskInput = any, O extends TaskOutput = any> = (
-  input: I,
-  config: IExecuteConfig
-) => O | Promise<O>;
-
-function convertPipeFunctionToTask<I extends TaskInput, O extends TaskOutput>(
-  fn: PipeFunction<I, O>,
-  config?: any
-): ITask<I, O> {
-  class QuickTask extends Task<I, O> {
-    public static type = "QuickTask";
-    public static inputs = [{ id: "*", name: "input", valueType: "any" }];
-    public static outputs = [{ id: "*", name: "output", valueType: "any" }];
-    public static cacheable = false;
-    public async execute(input: I, config: IExecuteConfig) {
-      return fn(input, config);
-    }
-  }
-  return new QuickTask({}, config);
-}
-
-export function ensureTask<I extends TaskInput, O extends TaskOutput>(
-  arg: PipeFunction<I, O> | ITask<any, any, any>,
-  config?: any
-): ITask<any, any, any> {
-  if (arg instanceof Task) {
-    return arg;
-  }
-  return convertPipeFunctionToTask(arg as PipeFunction<I, O>, config);
 }
 
 interface TaskGraphConstructorConfig {
