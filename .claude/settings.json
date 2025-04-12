@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "allow": ["Bash(turbo run *)", "Bash(bun run *)", "Bash(bun test *)"]
+  }
+}
