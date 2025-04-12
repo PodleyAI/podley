@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import type { Command } from "commander";
-import { runTask } from "./TaskGraphToUI";
+import { runGraph, runTask, runWorkflow } from "./TaskGraphToUI";
 import { TaskGraph, Workflow, JsonTaskItem } from "@ellmers/task-graph";
 import { DownloadModelTask, getGlobalModelRepository } from "@ellmers/ai";
 import { JsonTask } from "@ellmers/tasks";
@@ -27,7 +27,7 @@ export function AddBaseCommands(program: Command) {
         }
       }
       try {
-        await runTask(graph);
+        await runGraph(graph);
       } catch (error) {
         console.error("Error running download task:", error);
       }
@@ -51,7 +51,7 @@ export function AddBaseCommands(program: Command) {
         const workflow = new Workflow();
         workflow.TextEmbedding({ model, text });
         try {
-          await runTask(workflow.graph);
+          await runWorkflow(workflow);
         } catch (error) {
           console.error("Error running embedding task:", error);
         }
@@ -75,7 +75,7 @@ export function AddBaseCommands(program: Command) {
         const workflow = new Workflow();
         workflow.TextSummary({ model, text });
         try {
-          await runTask(workflow.graph);
+          await runWorkflow(workflow);
         } catch (error) {
           console.error("Error running summary task:", error);
         }
@@ -100,7 +100,7 @@ export function AddBaseCommands(program: Command) {
         const workflow = new Workflow();
         workflow.TextRewriter({ model, text, prompt: options.prompt });
         try {
-          await runTask(workflow.graph);
+          await runWorkflow(workflow);
         } catch (error) {
           console.error("Error running rewriter task:", error);
         }
@@ -146,7 +146,7 @@ export function AddBaseCommands(program: Command) {
         program.error("Task has no sub-graph");
       }
       try {
-        await runTask(graph);
+        await runGraph(graph);
       } catch (error) {
         console.error("Error running JSON task:", error);
       }
@@ -166,7 +166,7 @@ export function AddBaseCommands(program: Command) {
         .DebugLog();
 
       try {
-        await runTask(workflow.graph);
+        await runWorkflow(workflow);
       } catch (error) {
         console.error("Error running workflow:", error);
       }
