@@ -1,1 +1,1 @@
-export { runTask } from "./TaskGraphToUI";
+export { runGraph, runWorkflow, runSingleTask, runTasks } from "./TaskGraphToUI";

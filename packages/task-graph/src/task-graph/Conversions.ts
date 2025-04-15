@@ -25,6 +25,7 @@ export type PipeFunction<I extends TaskIO = any, O extends TaskIO = any> = (
 export type Taskish<A extends TaskIO = TaskIO, B extends TaskIO = TaskIO> =
   | PipeFunction<A, B>
   | ITask<A, B>
+  | ITaskGraph
   | IWorkflow<A, B>;
 
 function convertPipeFunctionToTask<I extends TaskIO, O extends TaskIO>(
@@ -44,7 +45,7 @@ function convertPipeFunctionToTask<I extends TaskIO, O extends TaskIO>(
 }
 
 export function ensureTask<I extends TaskIO, O extends TaskIO>(
-  arg: IWorkflow<I, O> | PipeFunction<I, O> | ITask<any, any, any> | ITaskGraph,
+  arg: Taskish<I, O>,
   config?: any
 ): ITask<any, any, any> {
   if (arg instanceof Task) {

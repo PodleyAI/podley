@@ -5,17 +5,29 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Task, TaskGraph, IWorkflow, ITaskGraph } from "@ellmers/task-graph";
+import { Task, TaskGraph, IWorkflow, ITaskGraph, Taskish, Workflow } from "@ellmers/task-graph";
 import React from "react";
 import { render } from "tuir";
 import App from "./components/App";
 import { sleep } from "@ellmers/util";
 
+export async function runTasks(taskish: Taskish) {
+  if (taskish instanceof Workflow) {
+    await runWorkflow(taskish);
+  } else if (taskish instanceof Task) {
+    await runSingleTask(taskish);
+  } else if (taskish instanceof TaskGraph) {
+    await runGraph(taskish);
+  } else {
+    throw new Error("Unknown taskish type");
+  }
+}
+
 export async function runWorkflow(workflow: IWorkflow) {
   runGraph(workflow.graph);
 }
 
-export async function runTask(task: Task) {
+export async function runSingleTask(task: Task) {
   const graph = new TaskGraph();
   graph.addTask(task);
   runGraph(graph);
@@ -23,14 +35,14 @@ export async function runTask(task: Task) {
 
 export async function runGraph(graph: ITaskGraph) {
   if (process.stdout.isTTY) {
-    await runTaskToInk(graph);
+    await runTaskGraphToInk(graph);
   } else {
     const result = await graph.run();
     console.log(JSON.stringify(result, null, 2));
   }
 }
 
-const runTaskToInk = async (graph: ITaskGraph) => {
+const runTaskGraphToInk = async (graph: ITaskGraph) => {
   // preserveScreen();
   const { unmount } = render(React.createElement(App, { graph }));
   let results: any;
