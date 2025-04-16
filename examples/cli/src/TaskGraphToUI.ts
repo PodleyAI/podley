@@ -24,13 +24,13 @@ export async function runTasks(taskish: Taskish) {
 }
 
 export async function runWorkflow(workflow: IWorkflow) {
-  runGraph(workflow.graph);
+  await runGraph(workflow.graph);
 }
 
 export async function runSingleTask(task: Task) {
   const graph = new TaskGraph();
   graph.addTask(task);
-  runGraph(graph);
+  await runGraph(graph);
 }
 
 export async function runGraph(graph: ITaskGraph) {

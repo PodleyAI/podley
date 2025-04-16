@@ -354,6 +354,16 @@ export class Task<
   // ========================================================================
 
   /**
+   * Subscribes to an event
+   */
+  public subscribe<Event extends TaskEvents>(
+    name: Event,
+    fn: TaskEventListener<Event>
+  ): () => void {
+    return this.events.subscribe(name, fn);
+  }
+
+  /**
    * Registers an event listener
    */
   public on<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void {

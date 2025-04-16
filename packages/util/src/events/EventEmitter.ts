@@ -156,4 +156,18 @@ export class EventEmitter<EventListenerTypes extends Record<string, (...args: an
       this.listeners[event] = listeners.filter((l) => !l.once);
     }
   }
+
+  /**
+   * Subscribes to an event and returns a function to unsubscribe
+   * @param event - The event name to subscribe to
+   * @param listener - The listener function to add
+   * @returns a function to unsubscribe from the event
+   */
+  public subscribe<Event extends keyof EventListenerTypes>(
+    event: Event,
+    listener: EventListener<EventListenerTypes, Event>
+  ): () => void {
+    this.on(event, listener);
+    return () => this.off(event, listener);
+  }
 }

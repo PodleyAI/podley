@@ -131,6 +131,7 @@ export interface ITaskEvents {
   once<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): void;
   waitOn<Event extends TaskEvents>(name: Event): Promise<TaskEventParameters<Event>>;
   emit<Event extends TaskEvents>(name: Event, ...args: TaskEventParameters<Event>): void;
+  subscribe<Event extends TaskEvents>(name: Event, fn: TaskEventListener<Event>): () => void;
 }
 
 /**

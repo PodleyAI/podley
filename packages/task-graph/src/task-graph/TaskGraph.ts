@@ -334,6 +334,20 @@ export class TaskGraph implements ITaskGraph {
   // ========================================================================
 
   /**
+   * Subscribes to an event
+   * @param name - The event name to listen for
+   * @param fn - The callback function to execute when the event occurs
+   * @returns a function to unsubscribe from the event
+   */
+  public subscribe<Event extends TaskGraphEvents>(
+    name: Event,
+    fn: TaskGraphEventListener<Event>
+  ): () => void {
+    this.on(name, fn);
+    return () => this.off(name, fn);
+  }
+
+  /**
    * Registers an event listener for the specified event
    * @param name - The event name to listen for
    * @param fn - The callback function to execute when the event occurs

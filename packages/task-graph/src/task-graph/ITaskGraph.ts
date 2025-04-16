@@ -12,6 +12,11 @@ import { TaskIdType, TaskOutput } from "../task/TaskTypes";
 import { DataflowIdType } from "./Dataflow";
 import { Dataflow } from "./Dataflow";
 import type { TaskGraphRunConfig } from "./TaskGraph";
+import type {
+  TaskGraphEventListener,
+  TaskGraphEventParameters,
+  TaskGraphEvents,
+} from "./TaskGraphEvents";
 import { CompoundMergeStrategy, NamedGraphResult, TaskGraphRunner } from "./TaskGraphRunner";
 
 export interface ITaskGraph {
@@ -45,4 +50,8 @@ export interface ITaskGraph {
   removeTask(taskId: unknown): void;
   toJSON(): TaskGraphJson;
   toDependencyJSON(): JsonTaskItem[];
+  subscribe<Event extends TaskGraphEvents>(
+    event: Event,
+    fn: TaskGraphEventListener<Event>
+  ): () => void;
 }
