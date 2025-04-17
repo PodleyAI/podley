@@ -15,9 +15,11 @@ import {
   TaskOutput,
   TaskOutputDefinition,
   TaskStatus,
+  TaskConfig,
 } from "@ellmers/task-graph";
 import { ConvertAllToOptionalArray } from "@ellmers/util";
 import { describe, expect, spyOn, test } from "bun:test";
+
 // Define our input and output types
 interface MultiplyInput extends TaskInput {
   a: number;

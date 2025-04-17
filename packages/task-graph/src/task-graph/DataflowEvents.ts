@@ -7,6 +7,7 @@
 
 import { EventParameters } from "@ellmers/util";
 import { TaskError } from "../task/TaskError";
+import { TaskStatus } from "../task/TaskTypes";
 
 /**
  * Event listeners for dataflow events
@@ -30,6 +31,9 @@ export type DataflowEventListeners = {
 
   /** Fired when a dataflow is reset to original state */
   reset: () => void;
+
+  /** Fired when a dataflow status changes */
+  status: (status: TaskStatus) => void;
 };
 /** Union type of all possible dataflow event names */
 

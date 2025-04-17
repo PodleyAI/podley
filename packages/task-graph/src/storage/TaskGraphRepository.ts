@@ -6,7 +6,6 @@
 //    *******************************************************************************
 
 import { createServiceToken, EventEmitter, EventParameters } from "@ellmers/util";
-import type { TabularRepository } from "@ellmers/storage";
 import { TaskGraph } from "../task-graph/TaskGraph";
 
 /**

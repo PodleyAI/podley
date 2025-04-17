@@ -7,6 +7,7 @@
 
 import { EventParameters } from "@ellmers/util";
 import { TaskAbortedError, TaskError } from "./TaskError";
+import { TaskStatus } from "../common";
 
 // ========================================================================
 // Event Handling Types
@@ -39,6 +40,9 @@ export type TaskEventListeners = {
 
   /** Fired when a task is reset to original state */
   reset: () => void;
+
+  /** Fired when a task status is updated */
+  status: (status: TaskStatus) => void;
 };
 /** Union type of all possible task event names */
 

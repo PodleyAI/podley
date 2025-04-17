@@ -49,8 +49,14 @@ export class ArrayTask<
       }
     }
 
-    // If no array inputs, no need to create a subgraph
-    if (!hasArrayInputs) return;
+    // Clear the existing subgraph
+    this.subGraph = new TaskGraph();
+
+    // If no array inputs, no need to populate the subgraph
+    if (!hasArrayInputs) {
+      super.regenerateGraph();
+      return;
+    }
 
     // Clear the existing subgraph
     this.subGraph = new TaskGraph();

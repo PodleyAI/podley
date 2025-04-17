@@ -74,19 +74,7 @@ export class TaskRunner<
    * @returns The task output
    */
   async run(overrides: Partial<Input> = {}, config: IRunConfig = {}): Promise<Output> {
-    await this.handleStart();
-
-    this.nodeProvenance = config.nodeProvenance ?? {};
-
-    const cache = this.task.config.outputCache ?? config.outputCache;
-    if (cache === true) {
-      let instance = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
-      this.outputCache = instance;
-    } else if (cache === false) {
-      this.outputCache = undefined;
-    } else if (cache instanceof TaskOutputRepository) {
-      this.outputCache = cache;
-    }
+    await this.handleStart(config);
 
     try {
       this.task.setInput(overrides);
@@ -219,7 +207,7 @@ export class TaskRunner<
   /**
    * Handles task start
    */
-  protected async handleStart(): Promise<void> {
+  protected async handleStart(config: IRunConfig = {}): Promise<void> {
     if (this.task.status === TaskStatus.PROCESSING) return;
 
     this.nodeProvenance = {};
@@ -234,8 +222,26 @@ export class TaskRunner<
       this.handleAbort();
     });
 
+    this.nodeProvenance = config.nodeProvenance ?? {};
+
+    const cache = this.task.config.outputCache ?? config.outputCache;
+    if (cache === true) {
+      let instance = globalServiceRegistry.get(TASK_OUTPUT_REPOSITORY);
+      this.outputCache = instance;
+    } else if (cache === false) {
+      this.outputCache = undefined;
+    } else if (cache instanceof TaskOutputRepository) {
+      this.outputCache = cache;
+    }
+
+    if (config.onProgress) {
+      this.onProgress = config.onProgress;
+    }
+
     this.task.emit("start");
+    this.task.emit("status", this.task.status);
   }
+  private onProgress = (task: ITask, progress: number, message?: string, ...args: any[]) => {};
 
   protected async handleStartReactive(): Promise<void> {
     this.reactiveRunning = true;
@@ -250,6 +256,7 @@ export class TaskRunner<
     this.task.progress = 100;
     this.task.error = new TaskAbortedError();
     this.task.emit("abort", this.task.error);
+    this.task.emit("status", this.task.status);
   }
 
   protected async handleAbortReactive(): Promise<void> {
@@ -269,6 +276,7 @@ export class TaskRunner<
     this.nodeProvenance = {};
 
     this.task.emit("complete");
+    this.task.emit("status", this.task.status);
   }
 
   protected async handleCompleteReactive(): Promise<void> {
@@ -283,6 +291,7 @@ export class TaskRunner<
     this.abortController = undefined;
     this.nodeProvenance = {};
     this.task.emit("skipped");
+    this.task.emit("status", this.task.status);
   }
 
   public async skip(): Promise<void> {
@@ -309,6 +318,7 @@ export class TaskRunner<
     this.abortController = undefined;
     this.nodeProvenance = {};
     this.task.emit("error", this.task.error);
+    this.task.emit("status", this.task.status);
   }
 
   protected async handleErrorReactive(): Promise<void> {
@@ -322,6 +332,7 @@ export class TaskRunner<
    */
   protected handleProgress(progress: number, ...args: any[]): void {
     this.task.progress = progress;
+    this.onProgress(this.task, progress, ...args);
     this.task.emit("progress", progress, ...args);
   }
 }

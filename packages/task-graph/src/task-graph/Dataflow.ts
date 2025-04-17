@@ -39,6 +39,41 @@ export class Dataflow {
   public status: TaskStatus = TaskStatus.PENDING;
   public error: TaskError | undefined;
 
+  public reset() {
+    this.status = TaskStatus.PENDING;
+    this.error = undefined;
+    this.value = undefined;
+    this.provenance = {};
+    this.emit("reset");
+    this.emit("status", this.status);
+  }
+
+  public setStatus(status: TaskStatus) {
+    if (status === this.status) return;
+    this.status = status;
+    switch (status) {
+      case TaskStatus.PROCESSING:
+        this.emit("start");
+        break;
+      case TaskStatus.COMPLETED:
+        this.emit("complete");
+        break;
+      case TaskStatus.ABORTING:
+        this.emit("abort");
+        break;
+      case TaskStatus.PENDING:
+        this.emit("reset");
+        break;
+      case TaskStatus.FAILED:
+        this.emit("error", this.error!);
+        break;
+      case TaskStatus.SKIPPED:
+        this.emit("skipped");
+        break;
+    }
+    this.emit("status", this.status);
+  }
+
   setPortData(entireDataBlock: any, nodeProvenance: any) {
     if (this.sourceTaskPortId === DATAFLOW_ALL_PORTS) {
       this.value = entireDataBlock;
@@ -76,7 +111,20 @@ export class Dataflow {
   /**
    * Event emitter for dataflow events
    */
-  public readonly events = new EventEmitter<DataflowEventListeners>();
+  public get events(): EventEmitter<DataflowEventListeners> {
+    if (!this._events) {
+      this._events = new EventEmitter<DataflowEventListeners>();
+    }
+    return this._events;
+  }
+  protected _events: EventEmitter<DataflowEventListeners> | undefined;
+
+  public subscribe<Event extends DataflowEvents>(
+    name: Event,
+    fn: DataflowEventListener<Event>
+  ): () => void {
+    return this.events.subscribe(name, fn);
+  }
 
   /**
    * Registers an event listener
@@ -115,7 +163,7 @@ export class Dataflow {
     name: Event,
     ...args: DataflowEventParameters<Event>
   ): void {
-    this.events.emit(name, ...args);
+    this._events?.emit(name, ...args);
   }
 }
 

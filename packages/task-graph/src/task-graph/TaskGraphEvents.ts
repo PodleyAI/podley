@@ -5,17 +5,23 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventParameters } from "@ellmers/util";
-import { GraphEvents } from "@ellmers/util";
+import { EventParameters, GraphEvents } from "@ellmers/util";
 import { ITask } from "../task/ITask";
 import { Dataflow } from "./Dataflow";
 
 /**
  * Events that can be emitted by the TaskGraph
  */
-export type TaskGraphEvents = keyof TaskGraphEventListeners;
+type BaseGraphEvents = keyof GraphEventListeners;
 
-export type TaskGraphEventListeners = {
+type TaskGraphStatusListeners = {
+  graph_progress: (progress: number, message?: string, ...args: any[]) => void;
+  task_status: (task: ITask) => void;
+  dataflow_status: (dataflow: Dataflow) => void;
+};
+type TaskGraphStatusEvents = keyof TaskGraphStatusListeners;
+
+type GraphEventListeners = {
   task_added: (task: ITask) => void;
   task_removed: (task: ITask) => void;
   task_replaced: (task: ITask) => void;
@@ -24,6 +30,9 @@ export type TaskGraphEventListeners = {
   dataflow_replaced: (dataflow: Dataflow) => void;
 };
 
+export type TaskGraphEventListeners = TaskGraphStatusListeners & GraphEventListeners;
+export type TaskGraphEvents = keyof TaskGraphEventListeners;
+
 export type TaskGraphEventListener<Event extends TaskGraphEvents> = TaskGraphEventListeners[Event];
 
 export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParameters<
@@ -31,7 +40,7 @@ export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParam
   Event
 >;
 
-export const EventDagToTaskGraphMapping: Record<GraphEvents<ITask, Dataflow>, TaskGraphEvents> = {
+export const EventDagToTaskGraphMapping: Record<GraphEvents<ITask, Dataflow>, BaseGraphEvents> = {
   "node-added": "task_added",
   "node-removed": "task_removed",
   "node-replaced": "task_replaced",
@@ -40,7 +49,7 @@ export const EventDagToTaskGraphMapping: Record<GraphEvents<ITask, Dataflow>, Ta
   "edge-replaced": "dataflow_replaced",
 } as const;
 
-export const EventTaskGraphToDagMapping: Record<TaskGraphEvents, GraphEvents<ITask, Dataflow>> = {
+export const EventTaskGraphToDagMapping: Record<BaseGraphEvents, GraphEvents<ITask, Dataflow>> = {
   task_added: "node-added",
   task_removed: "node-removed",
   task_replaced: "node-replaced",

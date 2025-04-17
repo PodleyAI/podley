@@ -48,6 +48,7 @@ export type IExecuteReactiveConfig = Pick<IExecuteConfig, "own">;
 export interface IRunConfig {
   nodeProvenance?: Provenance;
   outputCache?: TaskOutputRepository | boolean;
+  onProgress?: (task: ITask, progress: number, message?: string, ...args: any[]) => void;
 }
 
 /**

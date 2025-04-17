@@ -238,10 +238,6 @@ export class FetchTask<
     this.jobClass = FetchJob;
   }
 
-  async executeReactive(input: Input, output: Output): Promise<Output> {
-    return output ?? { body: null };
-  }
-
   async validateInputValue(valueType: string, item: any) {
     if (valueType === "url") {
       try {

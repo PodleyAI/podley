@@ -21,11 +21,19 @@ export class GraphAsTaskRunner<
    * Protected method to execute a task subgraphby delegating back to the task itself.
    */
   protected async executeTaskChildren(): Promise<NamedGraphResult<Output>> {
-    return this.task.subGraph!.run<Output>({
+    const unsubscribe = this.task.subGraph!.subscribe(
+      "graph_progress",
+      (progress: number, message?: string, ...args: any[]) => {
+        this.task.emit("progress", progress, message, ...args);
+      }
+    );
+    const results = await this.task.subGraph!.run<Output>({
       parentProvenance: this.nodeProvenance || {},
       parentSignal: this.abortController?.signal,
       outputCache: this.outputCache,
     });
+    unsubscribe();
+    return results;
   }
   /**
    * Protected method for reactive execution delegation

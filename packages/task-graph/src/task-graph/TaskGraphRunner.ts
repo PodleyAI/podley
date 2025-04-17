@@ -117,6 +117,7 @@ export class TaskGraphRunner {
     this.graph = graph;
     this.provenanceInput = new Map();
     graph.outputCache = outputCache;
+    this.handleProgress = this.handleProgress.bind(this);
   }
 
   // ========================================================================
@@ -377,30 +378,10 @@ export class TaskGraphRunner {
    * Pushes the status of a task to its target edges
    * @param node The task that produced the status
    */
-  protected pushStatusFromNodeToEdges(graph: TaskGraph, node: ITask) {
+  protected pushStatusFromNodeToEdges(graph: TaskGraph, node: ITask, status?: TaskStatus) {
     if (!node?.config?.id) return;
     graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
-      dataflow.status = node.status;
-      switch (node.status) {
-        case TaskStatus.PROCESSING:
-          dataflow.events.emit("start");
-          break;
-        case TaskStatus.COMPLETED:
-          dataflow.events.emit("complete");
-          break;
-        case TaskStatus.ABORTING:
-          dataflow.events.emit("abort");
-          break;
-        case TaskStatus.PENDING:
-          dataflow.events.emit("reset");
-          break;
-        case TaskStatus.FAILED:
-          dataflow.events.emit("error", node.error!);
-          break;
-        case TaskStatus.SKIPPED:
-          dataflow.events.emit("skipped");
-          break;
-      }
+      dataflow.setStatus(status ?? node.status);
     });
   }
 
@@ -434,7 +415,10 @@ export class TaskGraphRunner {
     this.provenanceInput.set(task.config.id, nodeProvenance);
     this.copyInputFromEdgesToNode(task);
 
-    const results = await task.runner.run({}, { nodeProvenance, outputCache: this.outputCache });
+    const results = await task.runner.run(
+      {},
+      { nodeProvenance, outputCache: this.outputCache, onProgress: this.handleProgress }
+    );
 
     this.pushOutputFromNodeToEdges(task, results, nodeProvenance);
 
@@ -463,24 +447,25 @@ export class TaskGraphRunner {
     this.pushStatusFromNodeToEdges(graph, task);
     this.pushErrorFromNodeToEdges(graph, task);
     task.emit("reset");
+    task.emit("status", task.status);
   }
 
   /**
    * Resets the task graph, recursively
    * @param graph The task graph to reset
    */
-  protected resetGraph(graph: TaskGraph, runnerId: string) {
+  public resetGraph(graph: TaskGraph, runnerId: string) {
     graph.getTasks().forEach((node) => {
-      const changed = !deepEqual(node.runInputData, node.defaults);
       this.resetTask(graph, node, runnerId);
-      if (changed) {
-        if ("regenerateGraph" in node && typeof node.regenerateGraph === "function") {
-          node.regenerateGraph();
-          if ("subGraph" in node) {
-            this.resetGraph((node as any).subGraph, runnerId);
-          }
-        }
+      if (node.hasChildren()) {
+        this.resetGraph(node.subGraph, runnerId);
       }
+      if ("regenerateGraph" in node && typeof node.regenerateGraph === "function") {
+        node.regenerateGraph();
+      }
+    });
+    graph.getDataflows().forEach((dataflow) => {
+      dataflow.reset();
     });
   }
 
@@ -605,10 +590,17 @@ export class TaskGraphRunner {
    * Handles progress updates for the task graph
    * Currently not implemented at the graph level
    * @param progress Progress value (0-100)
+   * @param message Optional message
    * @param args Additional arguments
    */
-  protected handleProgress(progress: number, ...args: any[]): void {
-    // Not currently implemented at the graph level
-    // Could be used to track overall graph progress
+  protected handleProgress(task: ITask, progress: number, message?: string, ...args: any[]): void {
+    const total = this.graph.getTasks().length;
+    if (total > 1) {
+      const completed = this.graph.getTasks().reduce((acc, t) => acc + t.progress, 0);
+      progress = Math.round(completed / total);
+    }
+    this.pushStatusFromNodeToEdges(this.graph, task);
+    this.pushOutputFromNodeToEdges(task, task.runOutputData, task.getProvenance());
+    this.graph.emit("graph_progress", progress, message, args);
   }
 }
