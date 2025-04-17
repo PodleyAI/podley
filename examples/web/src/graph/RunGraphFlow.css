@@ -22,7 +22,7 @@
   letter-spacing: -0.2px;
 }
 
-.react-flow__node-compound .outside {
+.react-flow__node .outside {
   border-radius: var(--node-border-radius) var(--node-border-radius) 0 0;
   min-width: 150px;
   background:
@@ -40,10 +40,6 @@
     0 100%,
     0 0,
     100% 0;
-}
-
-.react-flow__node-compound .outside.active {
-  animation: linearGradientMove 0.3s infinite linear;
 }
 
 @keyframes linearGradientMove {
@@ -66,20 +62,6 @@
   width: 250px;
 }
 
-.react-flow__node-compound {
-  min-height: 150px;
-}
-
-.react-flow__node-compound .outside {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.react-flow__node-compound .wrapper {
-  width: 100%;
-}
-
 .gradient:before {
   content: "";
   position: absolute;
@@ -98,23 +80,7 @@
   border-radius: 100%;
 }
 
-.progress .bar {
-  margin: 10px 0;
-  min-width: 10px;
-  height: 6px;
-  border-radius: 4px;
-  background: repeating-linear-gradient(90deg, #e92a67, #a853ba, #2a8af6, #e92a67);
-  background-size: 200% auto;
-  background-position: 0 100%;
-}
-
-.active .progress .bar {
-  animation: progress 2s infinite;
-  animation-fill-mode: forwards;
-  animation-timing-function: linear;
-}
-
-.react-flow__node-single .wrapper.gradient.active:before {
+.react-flow__node .wrapper.gradient.processing:before {
   content: "";
   background: conic-gradient(
     from -160deg at 50% 50%,
@@ -130,15 +96,6 @@
 @keyframes spinner {
   100% {
     transform: translate(-50%, -50%) rotate(-360deg);
-  }
-}
-
-@keyframes progress {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: -200% 0;
   }
 }
 
@@ -172,13 +129,6 @@
   color: #777;
 }
 
-.react-flow__node .progress .subline {
-  font-size: 12px;
-  color: #ccc;
-  overflow-y: none;
-  overflow-x: scroll;
-}
-
 .react-flow__node .cloud {
   border-radius: 100%;
   width: 30px;
@@ -201,11 +151,6 @@
   justify-content: center;
   align-items: center;
   position: relative;
-}
-
-.react-flow__node-compound {
-  backdrop-filter: blur(10px);
-  background-color: #226bbe31;
 }
 
 .react-flow__handle {
@@ -260,4 +205,141 @@
 
 .react-flow__attribution a {
   color: #95679e;
+}
+
+/* Status indicators */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  line-height: 1;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+/* Progress bars */
+.progress-container {
+  width: 100%;
+  background-color: rgba(28, 35, 50, 0.6);
+  border-radius: 9999px;
+  height: 8px;
+  margin: 8px 0;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar.processing {
+  background: linear-gradient(90deg, #2a8af6 0%, #a853ba 50%, #2a8af6 100%);
+  background-size: 200% 100%;
+  animation: progress-animation 2s infinite linear;
+}
+
+@keyframes progress-animation {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+/* Sub-task progress bars */
+.subtask-progress {
+  margin-bottom: 4px;
+}
+
+.subtask-progress .progress-container {
+  height: 4px;
+  opacity: 0.5;
+}
+
+/* Edge animations */
+@keyframes flow-animation {
+  0% {
+    offset-distance: 0%;
+  }
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+.data-particle {
+  offset-path: path(attr(d));
+  animation: flow-animation 2s linear infinite;
+}
+
+/* Graph visualization */
+.mini-graph {
+  position: relative;
+  height: 120px;
+  border: 1px solid rgba(80, 80, 80, 0.5);
+  border-radius: 4px;
+  margin-top: 8px;
+  background: rgba(30, 30, 30, 0.8);
+  overflow: hidden;
+}
+
+.mini-graph-node {
+  position: absolute;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+  z-index: 10;
+}
+
+.mini-graph-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+}
+
+/* Output data display */
+.output-data {
+  margin-top: 8px;
+  padding: 6px;
+  background-color: rgba(70, 70, 70, 0.8);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  overflow: hidden;
+  max-height: 80px;
+  transition: max-height 0.3s ease;
+}
+
+.output-data:hover {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Transitions */
+.fade-in {
+  animation: fade-in 0.3s ease-in-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
