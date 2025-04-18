@@ -5,17 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
-import {
-  ValueSchema,
-  ExtractPrimaryKey,
-  ExtractValue,
-  SchemaToType,
-  ITabularRepository,
-  ValueOptionType,
-} from "./ITabularRepository";
-import { TabularRepository } from "./TabularRepository";
 import { createServiceToken } from "@ellmers/util";
+import { Static, TObject } from "@sinclair/typebox";
+import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
+import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
+import { TabularRepository } from "./TabularRepository";
 
 export const IDB_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository.indexedDb"
@@ -28,11 +22,11 @@ export const IDB_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class IndexedDbTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** Promise that resolves to the IndexedDB database instance */
@@ -309,7 +303,7 @@ export class IndexedDbTabularRepository<
    */
   async deleteSearch(
     column: keyof Entity,
-    value: ValueOptionType,
+    value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
     if (!this.dbPromise) throw new Error("Database not initialized");

@@ -5,17 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import type { Pool } from "pg";
 import { createServiceToken } from "@ellmers/util";
+import { Static, TObject, TSchema } from "@sinclair/typebox";
+import type { Pool } from "pg";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import {
-  ValueSchema,
-  ExtractValue,
-  SchemaToType,
-  ExtractPrimaryKey,
-  ITabularRepository,
-  ValueOptionType,
-} from "./ITabularRepository";
+import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
 
 export const POSTGRES_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository.postgres"
@@ -30,11 +24,11 @@ export const POSTGRES_TABULAR_REPOSITORY = createServiceToken<ITabularRepository
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class PostgresTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   private db: Pool;
@@ -119,22 +113,20 @@ export class PostgresTabularRepository<
   /**
    * Maps TypeScript/JavaScript types to corresponding PostgreSQL data types.
    *
-   * @param type - The TypeScript/JavaScript type to map
+   * @param typeDef - The TypeScript/JavaScript type to map
    * @returns The corresponding PostgreSQL data type
    */
-  protected mapTypeToSQL(type: string): string {
-    // Basic type mapping; extend according to your needs
-    switch (type) {
+  protected mapTypeToSQL(typeDef: TSchema): string {
+    if (typeDef.contentEncoding === "blob") return "BYTEA";
+    switch (typeDef.type) {
       case "string":
+        if (typeDef.format === "date-time") return "TIMESTAMP";
+        if (typeDef.format === "date") return "DATE";
         return "TEXT";
       case "boolean":
         return "BOOLEAN";
       case "number":
         return "INTEGER";
-      case "blob":
-        return "BYTEA";
-      case "date":
-        return "TIMESTAMP";
       default:
         return "TEXT";
     }
@@ -201,7 +193,7 @@ export class PostgresTabularRepository<
     if (result.rows.length > 0) {
       val = result.rows[0] as Entity;
       // iterate through the schema and check if value is a blob base on the schema
-      for (const [key, type] of Object.entries(this.valueSchema)) {
+      for (const key in this.valueSchema.properties) {
         // @ts-ignore
         val[key] = this.sqlToJsValue(key, val[key]);
       }
@@ -318,7 +310,7 @@ export class PostgresTabularRepository<
     column: keyof Entity,
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): string {
-    if (!this.schema[column as keyof Schema]) {
+    if (!(column in this.schema.properties)) {
       throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
     }
     return `${String(column)} ${operator} $1`;
@@ -332,7 +324,7 @@ export class PostgresTabularRepository<
    */
   async deleteSearch(
     column: keyof Entity,
-    value: ValueOptionType,
+    value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
     await this.dbPromise;

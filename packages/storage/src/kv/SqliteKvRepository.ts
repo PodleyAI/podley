@@ -5,35 +5,25 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  JSONValue,
-  KeyOptionType,
-  ValueOptionType,
-  KeyOption,
-  ValueOption,
-} from "../tabular/ITabularRepository";
-import { KvViaTabularRepository } from "./KvViaTabularRepository";
+import { createServiceToken } from "@ellmers/util";
+import { TSchema, Type } from "@sinclair/typebox";
 import { SqliteTabularRepository } from "../tabular/SqliteTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
-import { createServiceToken } from "@ellmers/util";
+import { KvViaTabularRepository } from "./KvViaTabularRepository";
 
 export const SQLITE_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
   "storage.kvRepository.sqlite"
 );
 
 /**
- * Abstract base class for key-value storage repositories.
- * Has a basic event emitter for listening to repository events.
+ * A key-value repository implementation that uses SQLite for persistent storage.
+ * Leverages a tabular repository abstraction for SQLite operations.
  *
  * @template Key - The type of the primary key
  * @template Value - The type of the value being stored
  * @template Combined - Combined type of Key & Value
  */
-export class SqliteKvRepository<
-  Key extends KeyOptionType = KeyOptionType,
-  Value extends ValueOptionType = JSONValue,
-  Combined = { key: Key; value: Value },
-> extends KvViaTabularRepository<Key, Value, Combined> {
+export class SqliteKvRepository extends KvViaTabularRepository {
   public tabularRepository: SqliteTabularRepository<
     typeof DefaultKeyValueSchema,
     typeof DefaultKeyValueKey
@@ -45,10 +35,10 @@ export class SqliteKvRepository<
   constructor(
     public db: any,
     public dbName: string,
-    primaryKeyType: KeyOption,
-    valueType: ValueOption
+    keySchema: TSchema = Type.String(),
+    valueSchema: TSchema = Type.Any()
   ) {
-    super(primaryKeyType, valueType);
+    super(keySchema, valueSchema);
     this.tabularRepository = new SqliteTabularRepository(
       db,
       dbName,

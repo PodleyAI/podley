@@ -5,23 +5,18 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken, EventEmitter } from "@ellmers/util";
-import { makeFingerprint } from "@ellmers/util";
+import { createServiceToken, EventEmitter, makeFingerprint } from "@ellmers/util";
+import { Static, TObject, Type } from "@sinclair/typebox";
 import {
-  TabularEventName,
-  TabularEventListener,
-  TabularEventListeners,
-  TabularEventParameters,
-  ITabularRepository,
-  ValueSchema,
-  KeyOptionType,
-  SchemaToType,
   ExtractPrimaryKey,
   ExtractValue,
-  KeyOption,
-  KeySchema,
-  ValueOptionType,
+  ITabularRepository,
+  TabularEventListener,
+  TabularEventListeners,
+  TabularEventName,
+  TabularEventParameters,
 } from "./ITabularRepository";
+import { ValueOptionType } from "./ITabularRepository";
 
 export const TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository"
@@ -33,15 +28,15 @@ export const TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
  * primary keys and values, and supports compound keys and partial key lookup.
  * Has a basic event emitter for listening to repository events.
  *
- * @template Schema - The schema definition for the entity
+ * @template Schema - The schema definition for the entity using TypeBox
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export abstract class TabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > implements ITabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity>
 {
@@ -49,8 +44,8 @@ export abstract class TabularRepository<
   protected events = new EventEmitter<TabularEventListeners<PrimaryKey, Entity>>();
 
   protected indexes: Array<keyof Entity>[];
-  protected primaryKeySchema: KeySchema;
-  protected valueSchema: ValueSchema;
+  protected primaryKeySchema: TObject;
+  protected valueSchema: TObject;
 
   /**
    * Creates a new TabularRepository instance
@@ -64,19 +59,21 @@ export abstract class TabularRepository<
     protected primaryKeyNames: PrimaryKeyNames,
     indexes: Array<keyof Entity | Array<keyof Entity>> = []
   ) {
-    this.primaryKeySchema = {};
+    const primaryKeyProps: Record<string, any> = {};
+    const valueProps: Record<string, any> = {};
     const primaryKeySet = new Set(primaryKeyNames);
-    for (const [key, type] of Object.entries(schema)) {
-      if (primaryKeySet.has(key as keyof Schema)) {
-        this.primaryKeySchema[key] = type as KeyOption;
+
+    // Split the schema properties into primary key and value properties
+    for (const [key, typeDef] of Object.entries(schema.properties)) {
+      if (primaryKeySet.has(key as keyof Static<Schema>)) {
+        primaryKeyProps[key] = { ...typeDef };
+      } else {
+        valueProps[key] = { ...typeDef };
       }
     }
-    this.valueSchema = {};
-    for (const [key, type] of Object.entries(schema)) {
-      if (!primaryKeySet.has(key as keyof Schema)) {
-        this.valueSchema[key] = type;
-      }
-    }
+
+    this.primaryKeySchema = Type.Object(primaryKeyProps);
+    this.valueSchema = Type.Object(valueProps);
 
     // validate all combined columns names are "identifier" names
     const combinedColumns = [...this.primaryKeyColumns(), ...this.valueColumns()];
@@ -96,7 +93,7 @@ export abstract class TabularRepository<
       Array<keyof Entity>
     >;
 
-    // searchable is an arrya of compound keys, which are arrays of columns
+    // searchable is an array of compound keys, which are arrays of columns
     // clean up searchable array by removing any compoundkeys that are a prefix of another compoundkey
     // or a prefix of the primary key
     this.indexes = this.filterCompoundKeys(
@@ -107,7 +104,10 @@ export abstract class TabularRepository<
     // Validate searchable columns
     for (const compoundIndex of this.indexes) {
       for (const column of compoundIndex) {
-        if (!(column in this.primaryKeySchema) && !(column in this.valueSchema)) {
+        if (
+          !(column in this.primaryKeySchema.properties) &&
+          !(column in this.valueSchema.properties)
+        ) {
           throw new Error(
             `Searchable column ${String(column)} is not in the primary key schema or value schema`
           );
@@ -134,7 +134,6 @@ export abstract class TabularRepository<
     for (let i = 0; i < potentialKeys.length; i++) {
       let key = potentialKeys[i];
 
-      // Skip if the key is a prefix of the primary key
       if (isPrefix(key, primaryKey)) continue;
 
       // Keep single-column indexes regardless of being a prefix
@@ -224,7 +223,7 @@ export abstract class TabularRepository<
   abstract size(): Promise<number>;
   abstract deleteSearch(
     column: keyof Entity,
-    value: ValueOptionType,
+    value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">="
   ): Promise<void>;
 
@@ -239,16 +238,16 @@ export abstract class TabularRepository<
 
   protected primaryKeyColumns(): Array<keyof PrimaryKey> {
     const columns: Array<keyof PrimaryKey> = [];
-    for (const [k, type] of Object.entries(this.primaryKeySchema)) {
-      columns.push(k as keyof PrimaryKey);
+    for (const key of Object.keys(this.primaryKeySchema.properties)) {
+      columns.push(key as keyof PrimaryKey);
     }
     return columns;
   }
 
   protected valueColumns(): Array<keyof Value> {
     const columns: Array<keyof Value> = [];
-    for (const [k, type] of Object.entries(this.valueSchema)) {
-      columns.push(k as keyof Value);
+    for (const key of Object.keys(this.valueSchema.properties)) {
+      columns.push(key as keyof Value);
     }
     return columns;
   }
@@ -298,10 +297,10 @@ export abstract class TabularRepository<
    * @param key - The primary key object to convert
    * @returns Array of key values ordered according to the schema
    */
-  protected getPrimaryKeyAsOrderedArray(key: PrimaryKey): KeyOptionType[] {
-    const orderedParams: KeyOptionType[] = [];
-    const keyObj = key as Record<string, KeyOptionType>;
-    for (const [k, type] of Object.entries(this.primaryKeySchema)) {
+  protected getPrimaryKeyAsOrderedArray(key: PrimaryKey): ValueOptionType[] {
+    const orderedParams: ValueOptionType[] = [];
+    const keyObj = key as Record<string, ValueOptionType>;
+    for (const k in this.primaryKeySchema.properties) {
       if (k in keyObj) {
         orderedParams.push(keyObj[k]);
       } else {
@@ -321,16 +320,13 @@ export abstract class TabularRepository<
   ): Array<keyof Entity> | undefined {
     if (!unorderedSearchKey.length) return undefined;
 
-    // Combine all possible indexes: primary key + searchable indexes
     const allKeys: Array<keyof Entity>[] = [
       this.primaryKeyColumns() as unknown as Array<keyof Entity>,
       ...(this.indexes as Array<keyof Entity>[]),
     ];
 
-    // Convert search keys to a Set for efficient lookup
     const searchKeySet = new Set(unorderedSearchKey);
 
-    // Helper function to check if any search key matches the start of the index
     const hasMatchingPrefix = (index: Array<keyof Entity>): boolean => {
       // Check if the first column of the index is in our search keys
       return index.length > 0 && searchKeySet.has(index[0]);

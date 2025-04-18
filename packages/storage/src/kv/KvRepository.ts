@@ -6,13 +6,8 @@
 //    *******************************************************************************
 
 import { createServiceToken, EventEmitter, makeFingerprint } from "@ellmers/util";
-import {
-  JSONValue,
-  KeyOption,
-  KeyOptionType,
-  ValueOption,
-  ValueOptionType,
-} from "../tabular/ITabularRepository";
+import { TAny, TNumber, TSchema, TString, Type } from "@sinclair/typebox";
+import { JSONValue } from "../tabular/ITabularRepository";
 import {
   IKvRepository,
   KvEventListener,
@@ -33,8 +28,8 @@ export const KV_REPOSITORY =
  * @template Combined - Combined type of Key & Value
  */
 export abstract class KvRepository<
-  Key extends KeyOptionType = KeyOptionType,
-  Value extends ValueOptionType = JSONValue,
+  Key extends string = string,
+  Value extends any = any,
   Combined = { key: Key; value: Value },
 > implements IKvRepository<Key, Value, Combined>
 {
@@ -45,8 +40,8 @@ export abstract class KvRepository<
    * Creates a new KvRepository instance
    */
   constructor(
-    public primaryKeyType: KeyOption,
-    public valueType: ValueOption
+    public keySchema: TSchema = Type.String(),
+    public valueSchema: TSchema = Type.Any()
   ) {}
 
   /**

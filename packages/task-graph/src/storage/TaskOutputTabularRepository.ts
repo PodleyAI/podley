@@ -6,7 +6,8 @@
 //    *******************************************************************************
 
 import { type TabularRepository } from "@ellmers/storage";
-import { compress, decompress, makeFingerprint } from "@ellmers/util";
+import { compress, decompress, makeFingerprint, TypeBlob, TypeDateTime } from "@ellmers/util";
+import { Type } from "@sinclair/typebox";
 import { TaskInput, TaskOutput } from "../task/TaskTypes";
 import { TaskOutputRepository } from "./TaskOutputRepository";
 
@@ -15,12 +16,12 @@ export type TaskOutputPrimaryKey = {
   taskType: string;
 };
 
-export const TaskOutputSchema = {
-  key: "string",
-  taskType: "string",
-  value: "blob",
-  createdAt: "date",
-} as const;
+export const TaskOutputSchema = Type.Object({
+  key: Type.String(),
+  taskType: Type.String(),
+  value: TypeBlob(),
+  createdAt: TypeDateTime(),
+});
 
 export const TaskOutputPrimaryKeyNames = ["key", "taskType"] as const;
 
@@ -78,7 +79,7 @@ export class TaskOutputTabularRepository extends TaskOutputRepository {
         taskType,
         key,
         value: compressedValue,
-        createdAt: createdAt,
+        createdAt: createdAt.toISOString(),
       });
     } else {
       const valueBuffer = Buffer.from(value);
@@ -86,7 +87,7 @@ export class TaskOutputTabularRepository extends TaskOutputRepository {
         taskType,
         key,
         value: valueBuffer,
-        createdAt: createdAt,
+        createdAt: createdAt.toISOString(),
       });
     }
     this.emit("output_saved", taskType);
@@ -139,7 +140,7 @@ export class TaskOutputTabularRepository extends TaskOutputRepository {
    * @param olderThanInMs The time in milliseconds to clear task outputs older than
    */
   async clearOlderThan(olderThanInMs: number): Promise<void> {
-    const date = new Date(Date.now() - olderThanInMs);
+    const date = new Date(Date.now() - olderThanInMs).toISOString();
     await this.tabularRepository.deleteSearch("createdAt", date, "<");
     this.emit("output_pruned");
   }

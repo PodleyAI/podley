@@ -5,35 +5,25 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  JSONValue,
-  KeyOptionType,
-  ValueOptionType,
-  KeyOption,
-  ValueOption,
-} from "../tabular/ITabularRepository";
-import { KvViaTabularRepository } from "./KvViaTabularRepository";
+import { createServiceToken } from "@ellmers/util";
+import { TSchema, Type } from "@sinclair/typebox";
 import { InMemoryTabularRepository } from "../tabular/InMemoryTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
-import { createServiceToken } from "@ellmers/util";
+import { KvViaTabularRepository } from "./KvViaTabularRepository";
 
 export const MEMORY_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
   "storage.kvRepository.inMemory"
 );
 
 /**
- * Abstract base class for key-value storage repositories.
- * Has a basic event emitter for listening to repository events.
+ * An in-memory key-value repository implementation for fast, ephemeral storage.
+ * Uses a tabular repository abstraction for in-memory persistence.
  *
  * @template Key - The type of the primary key
  * @template Value - The type of the value being stored
  * @template Combined - Combined type of Key & Value
  */
-export class InMemoryKvRepository<
-  Key extends KeyOptionType = KeyOptionType,
-  Value extends ValueOptionType = JSONValue,
-  Combined = { key: Key; value: Value },
-> extends KvViaTabularRepository<Key, Value, Combined> {
+export class InMemoryKvRepository extends KvViaTabularRepository {
   public tabularRepository: InMemoryTabularRepository<
     typeof DefaultKeyValueSchema,
     typeof DefaultKeyValueKey
@@ -42,8 +32,8 @@ export class InMemoryKvRepository<
   /**
    * Creates a new KvRepository instance
    */
-  constructor(primaryKeyType: KeyOption, valueType: ValueOption) {
-    super(primaryKeyType, valueType);
+  constructor(keySchema: TSchema = Type.String(), valueSchema: TSchema = Type.Any()) {
+    super(keySchema, valueSchema);
     this.tabularRepository = new InMemoryTabularRepository(
       DefaultKeyValueSchema,
       DefaultKeyValueKey

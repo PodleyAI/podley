@@ -5,17 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { makeFingerprint } from "@ellmers/util";
-import {
-  ValueSchema,
-  ExtractPrimaryKey,
-  ExtractValue,
-  SchemaToType,
-  ITabularRepository,
-  ValueOptionType,
-} from "./ITabularRepository";
+import { createServiceToken, makeFingerprint } from "@ellmers/util";
+import { Static, TObject } from "@sinclair/typebox";
+import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
-import { createServiceToken } from "@ellmers/util";
 
 export const MEMORY_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository.inMemory"
@@ -25,15 +18,15 @@ export const MEMORY_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<a
  * A generic in-memory key-value repository implementation.
  * Provides a simple, non-persistent storage solution suitable for testing and caching scenarios.
  *
- * @template Schema - The schema definition for the entity
+ * @template Schema - The schema definition for the entity using TypeBox
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class InMemoryTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** Internal storage using a Map with fingerprint strings as keys */
@@ -164,11 +157,10 @@ export class InMemoryTabularRepository<
    */
   async deleteSearch(
     column: keyof Entity,
-    value: ValueOptionType,
+    value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
-    // Get all entries
-    const entries = Array.from(this.values.entries());
+    const entries = this.values.entries();
 
     const entriesToDelete = entries.filter(([_, entity]) => {
       const columnValue = entity[column];
@@ -176,24 +168,23 @@ export class InMemoryTabularRepository<
         case "=":
           return columnValue === value;
         case "<":
-          return value !== null && columnValue < value;
+          return value !== null && value !== undefined && columnValue < value;
         case "<=":
-          return value !== null && columnValue <= value;
+          return value !== null && value !== undefined && columnValue <= value;
         case ">":
-          return value !== null && columnValue > value;
+          return value !== null && value !== undefined && columnValue > value;
         case ">=":
-          return value !== null && columnValue >= value;
+          return value !== null && value !== undefined && columnValue >= value;
         default:
           return false;
       }
     });
-
     // Delete the filtered entries
     for (const [id, _] of entriesToDelete) {
       this.values.delete(id);
     }
 
-    if (entriesToDelete.length > 0) {
+    if (Array.from(entriesToDelete).length > 0) {
       this.events.emit("delete", column);
     }
   }
