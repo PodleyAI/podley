@@ -17,7 +17,7 @@ import {
   TypeReplicateArray,
 } from "@ellmers/task-graph";
 import { ConvertAllToOptionalArray, TypeOptionalArray } from "@ellmers/util";
-import { Type } from "@sinclair/typebox";
+import { TObject, Type } from "@sinclair/typebox";
 import { describe, expect, spyOn, test } from "bun:test";
 
 // Define our input and output types
