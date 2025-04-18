@@ -5,8 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { JSONValue, KeyOptionType, ValueOptionType } from "../tabular/ITabularRepository";
+import { JSONValue, ValueOptionType } from "../tabular/ITabularRepository";
 import type { TabularRepository } from "../tabular/TabularRepository";
+import { Static, Type } from "@sinclair/typebox";
 import {
   DefaultKeyValueKey,
   DefaultKeyValueSchema,
@@ -24,13 +25,15 @@ import { KvRepository } from "./KvRepository";
  * @template Combined - Combined type of Key & Value
  */
 export abstract class KvViaTabularRepository<
-  Key extends KeyOptionType = KeyOptionType,
+  Key = string,
   Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
   public abstract tabularRepository: TabularRepository<
     typeof DefaultKeyValueSchema,
-    typeof DefaultKeyValueKey
+    typeof DefaultKeyValueKey,
+    DefaultKvPk,
+    Static<typeof DefaultKeyValueSchema>
   >;
 
   /**
@@ -41,7 +44,16 @@ export abstract class KvViaTabularRepository<
   public async put(key: Key, value: Value): Promise<void> {
     const tKey = { key } as DefaultKvPk;
     let tValue: DefaultKvValue;
-    if (this.valueType === "json") {
+    
+    // Handle objects that need to be JSON-stringified
+    // Check if this is a TypeBox schema with object type or a JSON value
+    const shouldStringify = 
+      // TypeBox schema with object type
+      (typeof this.valueSchema === 'object' && this.valueSchema.type === 'object') || 
+      // Special handling for the string literal 'json' for backward compatibility
+      (typeof this.valueSchema === 'string' && this.valueSchema === 'json');
+      
+    if (shouldStringify) {
       tValue = { value: JSON.stringify(value) } as DefaultKvValue;
     } else {
       tValue = { value } as DefaultKvValue;
@@ -59,10 +71,21 @@ export abstract class KvViaTabularRepository<
   public async get(key: Key): Promise<Value | undefined> {
     const result = await this.tabularRepository.get({ key } as DefaultKvPk);
     if (result) {
-      if (this.valueType === "json") {
-        return JSON.parse(result.value as string) as Value;
+      // Handle TypeBox objects and string 'json' schema type
+      const shouldParse = 
+        // TypeBox schema with object type
+        (typeof this.valueSchema === 'object' && this.valueSchema.type === 'object') || 
+        // Special handling for the string literal 'json' for backward compatibility
+        (typeof this.valueSchema === 'string' && this.valueSchema === 'json');
+        
+      if (shouldParse) {
+        try {
+          return JSON.parse(result.value as unknown as string) as Value;
+        } catch (e) {
+          return result.value as unknown as Value;
+        }
       } else {
-        return result.value as Value;
+        return result.value as unknown as Value;
       }
     } else {
       return undefined;
@@ -88,7 +111,19 @@ export abstract class KvViaTabularRepository<
         (value) =>
           ({
             key: value.key,
-            value: this.valueType === "json" ? JSON.parse(value.value as string) : value.value,
+            value: (() => {
+                const shouldParse = 
+                  // TypeBox schema with object type
+                  (typeof this.valueSchema === 'object' && this.valueSchema.type === 'object') || 
+                  // Special handling for the string literal 'json' for backward compatibility
+                  (typeof this.valueSchema === 'string' && this.valueSchema === 'json');
+                
+                if (shouldParse && typeof value.value === 'string') {
+                  try { return JSON.parse(value.value); } 
+                  catch (e) { return value.value; }
+                }
+                return value.value;
+              })(),
           }) as Combined
       );
     }

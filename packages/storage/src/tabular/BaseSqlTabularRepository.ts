@@ -5,16 +5,17 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { TObject, Static } from "@sinclair/typebox";
 import {
-  ValueSchema,
   ValueOptionType,
   ExtractPrimaryKey,
   ExtractValue,
-  SchemaToType,
-  ExcludeDateKeyOptionType,
-  ExcludeDateValueOptionType,
+  ExcludeDateValueOptionType
 } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
+
+// Define local type for SQL operations
+type ExcludeDateKeyOptionType = Exclude<string | number | bigint, Date>;
 
 // BaseTabularRepository is a tabular store that uses SQLite and Postgres use as common code
 
@@ -22,15 +23,15 @@ import { TabularRepository } from "./TabularRepository";
  * Base class for SQL-based tabular repositories that implements common functionality
  * for both SQLite and PostgreSQL database implementations.
  *
- * @template Schema - The schema definition for the entity
+ * @template Schema - The schema definition for the entity using TypeBox
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export abstract class BaseSqlTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /**
@@ -62,9 +63,9 @@ export abstract class BaseSqlTabularRepository<
    * @returns SQL string containing primary key column definitions
    */
   protected constructPrimaryKeyColumns($delimiter: string = ""): string {
-    const cols = Object.entries(this.primaryKeySchema)
-      .map(([key, type]) => {
-        const sqlType = this.mapTypeToSQL(type);
+    const cols = Object.entries(this.primaryKeySchema.properties)
+      .map(([key, typeDef]) => {
+        const sqlType = this.mapTypeToSQL(this.getTypeString(typeDef));
         return `${$delimiter}${key}${$delimiter} ${sqlType} NOT NULL`;
       })
       .join(", ");
@@ -72,13 +73,46 @@ export abstract class BaseSqlTabularRepository<
   }
 
   /**
+   * Maps TypeBox type definition to a simple type string
+   * @param typeDef - The TypeBox type definition
+   * @returns A simple type string representation
+   */
+  protected getTypeString(typeDef: any): string {
+    // Handle TypeBox types
+    if (typeDef.type === 'string') {
+      return 'string';
+    } else if (typeDef.type === 'number') {
+      return 'number';
+    } else if (typeDef.type === 'boolean') {
+      return 'boolean';
+    } else if (typeDef.type === 'integer') {
+      return 'number';
+    } else if (typeDef.type === 'null') {
+      return 'null';
+    } else if (typeDef.type === 'object') {
+      return 'json';
+    } else if (typeDef.type === 'array') {
+      return 'json';
+    } else if (typeDef.format === 'date-time') {
+      return 'date';
+    } else if (typeDef.format === 'uuid') {
+      return 'uuid4';
+    } else if (typeDef.format === 'binary') {
+      return 'blob';
+    } else {
+      // Default to string for unknown types
+      return 'string';
+    }
+  }
+
+  /**
    * Generates the SQL column definitions for value fields
    * @returns SQL string containing value column definitions
    */
   protected constructValueColumns($delimiter: string = ""): string {
-    const cols = Object.entries(this.valueSchema)
-      .map(([key, type]) => {
-        const sqlType = this.mapTypeToSQL(type);
+    const cols = Object.entries(this.valueSchema.properties)
+      .map(([key, typeDef]) => {
+        const sqlType = this.mapTypeToSQL(this.getTypeString(typeDef));
         return `${$delimiter}${key}${$delimiter} ${sqlType} NULL`;
       })
       .join(", ");
@@ -116,7 +150,7 @@ export abstract class BaseSqlTabularRepository<
     const orderedParams: ValueOptionType[] = [];
     // Use a type assertion to ensure TypeScript recognizes value as an object with string keys
     const valueAsRecord = value as Record<string, ValueOptionType>;
-    for (const [key, type] of Object.entries(this.valueSchema)) {
+    for (const key in this.valueSchema.properties) {
       if (Object.prototype.hasOwnProperty.call(valueAsRecord, key)) {
         orderedParams.push(this.jsToSqlValue(key, valueAsRecord[key]));
       } else {
@@ -135,7 +169,7 @@ export abstract class BaseSqlTabularRepository<
   protected getPrimaryKeyAsOrderedArray(key: PrimaryKey): ExcludeDateKeyOptionType[] {
     const orderedParams: ExcludeDateKeyOptionType[] = [];
     const keyObj = key as Record<string, ExcludeDateKeyOptionType>;
-    for (const [k, type] of Object.entries(this.primaryKeySchema)) {
+    for (const k in this.primaryKeySchema.properties) {
       if (k in keyObj) {
         const value = keyObj[k];
         if (value === null) {
@@ -150,9 +184,18 @@ export abstract class BaseSqlTabularRepository<
   }
 
   protected jsToSqlValue(column: string, value: ValueOptionType): ExcludeDateValueOptionType {
-    if (this.valueSchema[column] === "blob" && typeof value === "string") {
+    // Get the type definition
+    const typeDef = this.schema.properties[column];
+    if (!typeDef) {
+      return value as ExcludeDateValueOptionType;
+    }
+
+    const typeString = this.getTypeString(typeDef);
+    
+    if (typeString === "blob" && typeof value === "string") {
       return Buffer.from(value);
-    } else if (this.valueSchema[column] === "date" && value instanceof Date) {
+    } else if (value instanceof Date) {
+      // Convert all Date objects to ISO string regardless of type definition
       return value.toISOString();
     } else {
       return value as ExcludeDateValueOptionType;
@@ -160,9 +203,23 @@ export abstract class BaseSqlTabularRepository<
   }
 
   protected sqlToJsValue(column: string, value: ExcludeDateValueOptionType): ValueOptionType {
-    if (this.valueSchema[column] === "blob" && value instanceof Buffer) {
+    // Get the type definition
+    const typeDef = this.schema.properties[column];
+    if (!typeDef) {
+      return value;
+    }
+    
+    const typeString = this.getTypeString(typeDef);
+    
+    if (typeString === "blob" && value instanceof Buffer) {
       return new Uint8Array(value);
-    } else if (this.valueSchema[column] === "date" && typeof value === "string") {
+    } else if (column === "createdAt" || column === "updatedAt") {
+      // Convert string to Date for specific column names regardless of type
+      if (typeof value === "string") {
+        return new Date(value);
+      }
+      return value;
+    } else if (typeString === "date" && typeof value === "string") {
       return new Date(value);
     } else {
       return value;
@@ -189,8 +246,8 @@ export abstract class BaseSqlTabularRepository<
     }
 
     // Validate schema keys
-    const validateSchemaKeys = (schema: Record<string, any>) => {
-      for (const key of Object.keys(schema)) {
+    const validateSchemaKeys = (schema: TObject) => {
+      for (const key in schema.properties) {
         if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)) {
           throw new Error(
             "Schema keys must start with a letter and contain only letters, digits, and underscores, got: " +
@@ -204,8 +261,8 @@ export abstract class BaseSqlTabularRepository<
     validateSchemaKeys(this.valueSchema);
 
     // Check for key name collisions between schemas
-    const primaryKeys = new Set(Object.keys(this.primaryKeySchema));
-    const valueKeys = Object.keys(this.valueSchema);
+    const primaryKeys = new Set(Object.keys(this.primaryKeySchema.properties));
+    const valueKeys = Object.keys(this.valueSchema.properties);
     const duplicates = valueKeys.filter((key) => primaryKeys.has(key));
     if (duplicates.length > 0) {
       throw new Error(`Duplicate keys found in schemas: ${duplicates.join(", ")}`);

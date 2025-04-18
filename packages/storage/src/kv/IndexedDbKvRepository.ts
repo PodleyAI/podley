@@ -8,10 +8,8 @@
 import {
   JSONValue,
   ValueOptionType,
-  KeyOptionType,
-  KeyOption,
-  ValueOption,
 } from "../tabular/ITabularRepository";
+import { Type, TSchema } from "@sinclair/typebox";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";
 import { IndexedDbTabularRepository } from "../tabular/IndexedDbTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
@@ -30,7 +28,7 @@ export const IDB_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, a
  * @template Combined - Combined type of Key & Value
  */
 export class IndexedDbKvRepository<
-  Key extends KeyOptionType = KeyOptionType,
+  Key = string,
   Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvViaTabularRepository<Key, Value, Combined> {
@@ -44,10 +42,10 @@ export class IndexedDbKvRepository<
    */
   constructor(
     public dbName: string,
-    primaryKeyType: KeyOption,
-    valueType: ValueOption
+    keySchema: TSchema = Type.String(),
+    valueSchema: TSchema = Type.Any()
   ) {
-    super(primaryKeyType, valueType);
+    super(keySchema, valueSchema);
     this.tabularRepository = new IndexedDbTabularRepository(
       dbName,
       DefaultKeyValueSchema,

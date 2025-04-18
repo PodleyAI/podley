@@ -7,11 +7,9 @@
 
 import {
   JSONValue,
-  KeyOptionType,
   ValueOptionType,
-  KeyOption,
-  ValueOption,
 } from "../tabular/ITabularRepository";
+import { Type, TSchema } from "@sinclair/typebox";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";
 import { InMemoryTabularRepository } from "../tabular/InMemoryTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
@@ -30,7 +28,7 @@ export const MEMORY_KV_REPOSITORY = createServiceToken<IKvRepository<string, any
  * @template Combined - Combined type of Key & Value
  */
 export class InMemoryKvRepository<
-  Key extends KeyOptionType = KeyOptionType,
+  Key = string,
   Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvViaTabularRepository<Key, Value, Combined> {
@@ -42,8 +40,8 @@ export class InMemoryKvRepository<
   /**
    * Creates a new KvRepository instance
    */
-  constructor(primaryKeyType: KeyOption, valueType: ValueOption) {
-    super(primaryKeyType, valueType);
+  constructor(keySchema: TSchema = Type.String(), valueSchema: TSchema = Type.Any()) {
+    super(keySchema, valueSchema);
     this.tabularRepository = new InMemoryTabularRepository(
       DefaultKeyValueSchema,
       DefaultKeyValueKey

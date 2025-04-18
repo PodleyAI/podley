@@ -9,11 +9,9 @@ import { PostgresTabularRepository } from "../tabular/PostgresTabularRepository"
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import {
   JSONValue,
-  KeyOptionType,
   ValueOptionType,
-  KeyOption,
-  ValueOption,
 } from "../tabular/ITabularRepository";
+import { Type, TSchema } from "@sinclair/typebox";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";
 import { createServiceToken } from "@ellmers/util";
 
@@ -30,7 +28,7 @@ export const POSTGRES_KV_REPOSITORY = createServiceToken<IKvRepository<string, a
  * @template Combined - Combined type of Key & Value
  */
 export class PostgresKvRepository<
-  Key extends KeyOptionType = KeyOptionType,
+  Key = string,
   Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvViaTabularRepository<Key, Value, Combined> {
@@ -45,10 +43,10 @@ export class PostgresKvRepository<
   constructor(
     public db: any,
     public dbName: string,
-    primaryKeyType: KeyOption,
-    valueType: ValueOption
+    keySchema: TSchema = Type.String(),
+    valueSchema: TSchema = Type.Any()
   ) {
-    super(primaryKeyType, valueType);
+    super(keySchema, valueSchema);
     this.tabularRepository = new PostgresTabularRepository(
       db,
       dbName,

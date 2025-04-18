@@ -1,4 +1,5 @@
 import { EventEmitter, EventParameters } from "@ellmers/util";
+import { TObject, TProperties, Static, Type } from "@sinclair/typebox";
 
 //    *******************************************************************************
 //    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
@@ -31,9 +32,6 @@ export type TabularEventParameters<
   Entity,
 > = EventParameters<TabularEventListeners<PrimaryKey, Entity>, Event>;
 
-// Helper type to map schema types to their actual types
-export type MapSchemaTypes<T extends keyof SchemaTypeMap> = SchemaTypeMap[T];
-
 // Type definitions for specialized string types
 export type uuid4 = string;
 export type JSONValue =
@@ -44,61 +42,38 @@ export type JSONValue =
   | JSONValue[]
   | { [key: string]: JSONValue };
 
-// Type mapping from schema type strings to actual types
-export type SchemaTypeMap = {
-  uuid4: uuid4;
-  string: string;
-  number: number;
-  bigint: bigint;
-  boolean: boolean;
-  null: null;
-  json: JSONValue;
-  date: Date;
-  blob: Uint8Array;
-};
-
-export type KeyOption = "string" | "number" | "bigint" | "uuid4" | "date";
-export type KeySchema = Record<string, KeyOption>;
-export type KeyOptionType = MapSchemaTypes<KeyOption>;
-export type ExcludeDateKeyOptionType = Exclude<KeyOptionType, Date>;
-
-export type ValueOption = KeyOption | "boolean" | "null" | "json" | "blob";
-export type ValueSchema = Record<string, ValueOption>;
-export type ValueOptionType = MapSchemaTypes<ValueOption>;
-export type ExcludeDateValueOptionType = Exclude<ValueOptionType, Date>;
-// Type to map schema to TypeScript types
-export type SchemaToType<T extends Record<string, keyof SchemaTypeMap>> = {
-  [K in keyof T]: MapSchemaTypes<T[K]>;
-};
-
-// Extract primary key type
+// Extract primary key type from TypeBox schema
 export type ExtractPrimaryKey<
-  T extends Record<string, keyof SchemaTypeMap>,
-  K extends ReadonlyArray<keyof T>,
+  T extends TObject,
+  K extends ReadonlyArray<keyof Static<T>>,
 > = {
-  [P in K[number]]: MapSchemaTypes<T[P]>;
+  [P in K[number]]: Static<T>[P];
 };
 
-// Extract value type (everything except the primary key)
+// Extract value type from TypeBox schema (everything except the primary key)
 export type ExtractValue<
-  T extends Record<string, keyof SchemaTypeMap>,
-  K extends ReadonlyArray<keyof T>,
-> = Omit<SchemaToType<T>, K[number]>;
+  T extends TObject,
+  K extends ReadonlyArray<keyof Static<T>>,
+> = Omit<Static<T>, K[number]>;
+
+// Generic type for possible value types in the repository
+export type ValueOptionType = string | number | bigint | boolean | null | JSONValue | Date | Uint8Array;
+export type ExcludeDateValueOptionType = Exclude<ValueOptionType, Date>;
 
 /**
  * Interface defining the contract for tabular storage repositories.
  * Provides a flexible interface for storing and retrieving data with typed
  * primary keys and values, and supports compound keys and partial key lookup.
  *
- * @typeParam Schema - The schema definition for the entity
+ * @typeParam Schema - The schema definition for the entity using TypeBox
  * @typeParam PrimaryKeyNames - Array of property names that form the primary key
  */
 export interface ITabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema> = ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>> = ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
 > {
   // Core methods
   put(value: Entity): Promise<void>;

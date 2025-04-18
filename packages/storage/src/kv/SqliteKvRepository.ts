@@ -7,11 +7,9 @@
 
 import {
   JSONValue,
-  KeyOptionType,
   ValueOptionType,
-  KeyOption,
-  ValueOption,
 } from "../tabular/ITabularRepository";
+import { Type, TSchema } from "@sinclair/typebox";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";
 import { SqliteTabularRepository } from "../tabular/SqliteTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
@@ -30,7 +28,7 @@ export const SQLITE_KV_REPOSITORY = createServiceToken<IKvRepository<string, any
  * @template Combined - Combined type of Key & Value
  */
 export class SqliteKvRepository<
-  Key extends KeyOptionType = KeyOptionType,
+  Key = string,
   Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvViaTabularRepository<Key, Value, Combined> {
@@ -45,10 +43,10 @@ export class SqliteKvRepository<
   constructor(
     public db: any,
     public dbName: string,
-    primaryKeyType: KeyOption,
-    valueType: ValueOption
+    keySchema: TSchema = Type.String(),
+    valueSchema: TSchema = Type.Any()
   ) {
-    super(primaryKeyType, valueType);
+    super(keySchema, valueSchema);
     this.tabularRepository = new SqliteTabularRepository(
       db,
       dbName,

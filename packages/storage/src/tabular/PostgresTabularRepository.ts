@@ -8,10 +8,9 @@
 import type { Pool } from "pg";
 import { createServiceToken } from "@ellmers/util";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
+import { TObject, Static } from "@sinclair/typebox";
 import {
-  ValueSchema,
   ExtractValue,
-  SchemaToType,
   ExtractPrimaryKey,
   ITabularRepository,
   ValueOptionType,
@@ -30,11 +29,11 @@ export const POSTGRES_TABULAR_REPOSITORY = createServiceToken<ITabularRepository
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class PostgresTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   private db: Pool;
@@ -201,7 +200,7 @@ export class PostgresTabularRepository<
     if (result.rows.length > 0) {
       val = result.rows[0] as Entity;
       // iterate through the schema and check if value is a blob base on the schema
-      for (const [key, type] of Object.entries(this.valueSchema)) {
+      for (const key in this.valueSchema.properties) {
         // @ts-ignore
         val[key] = this.sqlToJsValue(key, val[key]);
       }
@@ -318,7 +317,7 @@ export class PostgresTabularRepository<
     column: keyof Entity,
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): string {
-    if (!this.schema[column as keyof Schema]) {
+    if (!(column in this.schema.properties)) {
       throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
     }
     return `${String(column)} ${operator} $1`;

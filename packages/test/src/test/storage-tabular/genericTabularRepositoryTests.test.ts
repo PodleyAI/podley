@@ -6,25 +6,26 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach, afterEach } from "bun:test";
-import { ValueSchema, ITabularRepository } from "@ellmers/storage";
+import { ITabularRepository } from "@ellmers/storage";
+import { Type } from "@sinclair/typebox";
 
 export const CompoundPrimaryKeyNames = ["name", "type"] as const;
-export const CompoundSchema: ValueSchema = {
-  name: "string",
-  type: "string",
-  option: "string",
-  success: "boolean",
-} as const;
+export const CompoundSchema = Type.Object({
+  name: Type.String(),
+  type: Type.String(),
+  option: Type.String(),
+  success: Type.Boolean(),
+});
 
 export const SearchPrimaryKeyNames = ["id"] as const;
-export const SearchSchema: ValueSchema = {
-  id: "string",
-  category: "string",
-  subcategory: "string",
-  value: "number",
-  createdAt: "date",
-  updatedAt: "date",
-} as const;
+export const SearchSchema = Type.Object({
+  id: Type.String(),
+  category: Type.String(),
+  subcategory: Type.String(),
+  value: Type.Number(),
+  createdAt: Type.Any(), // Use Type.Any() for Date objects
+  updatedAt: Type.Any(), // Use Type.Any() for Date objects
+});
 
 export function runGenericTabularRepositoryTests(
   createCompoundPkRepository: () => Promise<

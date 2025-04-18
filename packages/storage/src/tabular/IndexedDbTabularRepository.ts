@@ -6,11 +6,10 @@
 //    *******************************************************************************
 
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
+import { TObject, Static } from "@sinclair/typebox";
 import {
-  ValueSchema,
   ExtractPrimaryKey,
   ExtractValue,
-  SchemaToType,
   ITabularRepository,
   ValueOptionType,
 } from "./ITabularRepository";
@@ -28,11 +27,11 @@ export const IDB_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class IndexedDbTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** Promise that resolves to the IndexedDB database instance */

@@ -6,11 +6,10 @@
 //    *******************************************************************************
 
 import { makeFingerprint } from "@ellmers/util";
+import { TObject, Static } from "@sinclair/typebox";
 import {
-  ValueSchema,
   ExtractPrimaryKey,
   ExtractValue,
-  SchemaToType,
   ITabularRepository,
   ValueOptionType,
 } from "./ITabularRepository";
@@ -25,15 +24,15 @@ export const MEMORY_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<a
  * A generic in-memory key-value repository implementation.
  * Provides a simple, non-persistent storage solution suitable for testing and caching scenarios.
  *
- * @template Schema - The schema definition for the entity
+ * @template Schema - The schema definition for the entity using TypeBox
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class InMemoryTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** Internal storage using a Map with fingerprint strings as keys */

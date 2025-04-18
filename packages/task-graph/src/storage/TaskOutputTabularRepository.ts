@@ -7,6 +7,7 @@
 
 import { type TabularRepository } from "@ellmers/storage";
 import { compress, decompress, makeFingerprint } from "@ellmers/util";
+import { Type } from "@sinclair/typebox";
 import { TaskInput, TaskOutput } from "../task/TaskTypes";
 import { TaskOutputRepository } from "./TaskOutputRepository";
 
@@ -15,12 +16,12 @@ export type TaskOutputPrimaryKey = {
   taskType: string;
 };
 
-export const TaskOutputSchema = {
-  key: "string",
-  taskType: "string",
-  value: "blob",
-  createdAt: "date",
-} as const;
+export const TaskOutputSchema = Type.Object({
+  key: Type.String(),
+  taskType: Type.String(),
+  value: Type.Any(), // For binary data
+  createdAt: Type.Any() // For Date objects
+});
 
 export const TaskOutputPrimaryKeyNames = ["key", "taskType"] as const;
 

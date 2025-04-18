@@ -8,14 +8,12 @@
 import {
   JSONValue,
   ValueOptionType,
-  KeyOptionType,
-  KeyOption,
-  ValueOption,
 } from "../tabular/ITabularRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";
 import { FsFolderTabularRepository } from "../tabular/FsFolderTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { createServiceToken } from "@ellmers/util";
+import { Type, TSchema } from "@sinclair/typebox";
 
 export const FS_FOLDER_JSON_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
   "storage.kvRepository.fsFolderJson"
@@ -30,7 +28,7 @@ export const FS_FOLDER_JSON_KV_REPOSITORY = createServiceToken<IKvRepository<str
  * @template Combined - Combined type of Key & Value
  */
 export class FsFolderJsonKvRepository<
-  Key extends KeyOptionType = KeyOptionType,
+  Key = string,
   Value extends ValueOptionType = JSONValue,
   Combined = { key: Key; value: Value },
 > extends KvViaTabularRepository<Key, Value, Combined> {
@@ -44,10 +42,10 @@ export class FsFolderJsonKvRepository<
    */
   constructor(
     public folderPath: string,
-    primaryKeyType: KeyOption,
-    valueType: ValueOption
+    keySchema: TSchema = Type.String(),
+    valueSchema: TSchema = Type.Any()
   ) {
-    super(primaryKeyType, valueType);
+    super(keySchema, valueSchema);
     this.tabularRepository = new FsFolderTabularRepository(
       folderPath,
       DefaultKeyValueSchema,

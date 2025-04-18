@@ -8,15 +8,17 @@
 import { Sqlite } from "@ellmers/sqlite";
 import { createServiceToken } from "@ellmers/util";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
+import { TObject, Static } from "@sinclair/typebox";
 import {
-  ExcludeDateKeyOptionType,
   ExtractPrimaryKey,
   ExtractValue,
   ITabularRepository,
-  SchemaToType,
   ValueOptionType,
-  ValueSchema,
+  ExcludeDateValueOptionType
 } from "./ITabularRepository";
+
+// Define local type for SQL operations
+type ExcludeDateKeyOptionType = Exclude<string | number | bigint, Date>;
 
 export const SQLITE_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository.sqlite"
@@ -33,11 +35,11 @@ const Database = Sqlite.Database;
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class SqliteTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** The SQLite database instance */
@@ -192,7 +194,7 @@ export class SqliteTabularRepository<
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const value: Entity | null = stmt.get(...params);
     if (value) {
-      for (const [key, type] of Object.entries(this.valueSchema)) {
+      for (const key in this.valueSchema.properties) {
         // @ts-ignore
         value[key] = this.sqlToJsValue(key, value[key]);
       }
@@ -308,7 +310,7 @@ export class SqliteTabularRepository<
     column: keyof Entity,
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): string {
-    if (!this.schema[column as keyof Schema]) {
+    if (!(column in this.schema.properties)) {
       throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
     }
     return `${String(column)} ${operator} ?`;
