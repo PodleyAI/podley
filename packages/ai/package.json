@@ -25,8 +25,8 @@
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
       "bun": "./src/bun.ts",
-      "node": "./dist/node.js",
-      "types": "./src/bun.ts"
+      "types": "./src/bun.ts",
+      "node": "./dist/node.js"
     }
   },
   "files": [
@@ -36,7 +36,8 @@
     "@ellmers/job-queue": "workspace:*",
     "@ellmers/storage": "workspace:*",
     "@ellmers/task-graph": "workspace:*",
-    "@ellmers/util": "workspace:*"
+    "@ellmers/util": "workspace:*",
+    "@sinclair/typebox": "^0.34.31"
   },
   "devDependencies": {
     "@types/pg": "^8.11.11"

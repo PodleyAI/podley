@@ -29,7 +29,7 @@ export interface JobQueueTaskConfig extends TaskConfig {
  * Adds progress event handling to base task event listeners.
  */
 export type JobQueueTaskEventListeners = Omit<TaskEventListeners, "progress"> & {
-  progress: (progress: number, message: string, details: Record<string, any> | null) => void;
+  progress: (progress: number, message?: string, details?: Record<string, any> | null) => void;
 };
 
 /**
@@ -62,7 +62,7 @@ export abstract class JobQueueTask<
       // executeConfig.updateProgress(0.009, "Creating job");
       const job = await this.createJob(input);
 
-      const queue = getTaskQueueRegistry().getQueue(this.config.queueName!);
+      const queue = getTaskQueueRegistry().getQueue<Input, Output>(this.config.queueName!);
 
       let output: Output | undefined;
 
@@ -76,7 +76,7 @@ export abstract class JobQueueTask<
           output = await job.execute(executeConfig.signal);
         } else {
           throw new TaskConfigurationError(
-            `Queue ${this.config.queueName} not found, and ${this.constructor.name} cannot run directly`
+            `Queue ${this.config.queueName} not found, and ${this.type} cannot run directly`
           );
         }
       } else {

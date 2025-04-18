@@ -5,16 +5,17 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter } from "@ellmers/util";
+import { areSemanticallyCompatible, EventEmitter, simplifySchema } from "@ellmers/util";
 import { TaskError } from "../task/TaskError";
 import { DataflowJson } from "../task/TaskJSON";
 import { Provenance, TaskIdType, TaskOutput, TaskStatus } from "../task/TaskTypes";
 import {
   DataflowEventListener,
-  DataflowEvents,
-  DataflowEventParameters,
   DataflowEventListeners,
+  DataflowEventParameters,
+  DataflowEvents,
 } from "./DataflowEvents";
+import { TaskGraph } from "./TaskGraph";
 
 export type DataflowIdType = `${string}.${string} -> ${string}.${string}`;
 
@@ -102,6 +103,33 @@ export class Dataflow {
       targetTaskId: this.targetTaskId,
       targetTaskPortId: this.targetTaskPortId,
     };
+  }
+
+  semanticallyCompatible(
+    graph: TaskGraph,
+    dataflow: Dataflow
+  ): "static" | "runtime" | "incompatible" {
+    // TODO(str): this is inefficient
+    const targetSchema = graph.getTask(dataflow.targetTaskId)!.inputSchema;
+    const sourceSchema = graph.getTask(dataflow.sourceTaskId)!.outputSchema;
+
+    const targetSchemaProperty = simplifySchema(
+      DATAFLOW_ALL_PORTS === dataflow.targetTaskPortId
+        ? targetSchema
+        : targetSchema.properties[dataflow.targetTaskPortId]
+    );
+    const sourceSchemaProperty = simplifySchema(
+      DATAFLOW_ALL_PORTS === dataflow.sourceTaskPortId
+        ? sourceSchema
+        : sourceSchema.properties[dataflow.sourceTaskPortId]
+    );
+
+    const semanticallyCompatible = areSemanticallyCompatible(
+      sourceSchemaProperty,
+      targetSchemaProperty
+    );
+
+    return semanticallyCompatible;
   }
 
   // ========================================================================

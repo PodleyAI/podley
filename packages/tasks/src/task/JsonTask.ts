@@ -12,13 +12,13 @@ import {
   Workflow,
   CreateWorkflow,
   TaskRegistry,
-  TaskInputDefinition,
-  TaskOutputDefinition,
   TaskInput,
   TaskOutput,
   createGraphFromDependencyJSON,
   GraphAsTask,
+  TaskConfigurationError,
 } from "@ellmers/task-graph";
+import { Type } from "@sinclair/typebox";
 
 interface JsonTaskInput extends TaskInput {
   json: string;
@@ -39,21 +39,20 @@ export class JsonTask<
 > extends GraphAsTask<Input, Output, Config> {
   static readonly type = "JsonTask";
   static readonly category = "Utility";
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "json",
-      name: "JSON",
-      valueType: "text", // Expects JSON string input
-    },
-  ] as const;
 
-  public static outputs: TaskOutputDefinition[] = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "any", // Output type depends on the generated task graph
-    },
-  ] as const;
+  public static inputSchema = Type.Object({
+    json: Type.String({
+      title: "JSON",
+      description: "JSON string input",
+    }),
+  });
+
+  public static outputSchema = Type.Object({
+    output: Type.Any({
+      title: "Output",
+      description: "Output depends on the generated task graph",
+    }),
+  });
 
   /**
    * Regenerates the entire task graph based on the current JSON input
@@ -76,7 +75,7 @@ export class JsonTask<
         for (const dep of dependencies) {
           const sourceTask = this.subGraph.getTask(dep.id);
           if (!sourceTask) {
-            throw new Error(`Dependency id ${dep.id} not found`);
+            throw new TaskConfigurationError(`Dependency id ${dep.id} not found`);
           }
           const df = new Dataflow(sourceTask.config.id, dep.output, item.id, input);
           this.subGraph.addDataflow(df);

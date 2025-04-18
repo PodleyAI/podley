@@ -6,18 +6,18 @@
 //    *******************************************************************************
 
 import {
+  ArrayTask,
   IExecuteConfig,
   ITask,
-  ArrayTask,
+  TaskConfig,
   TaskGraph,
   TaskInput,
-  TaskInputDefinition,
   TaskOutput,
-  TaskOutputDefinition,
   TaskStatus,
-  TaskConfig,
+  TypeReplicateArray,
 } from "@ellmers/task-graph";
-import { ConvertAllToOptionalArray } from "@ellmers/util";
+import { ConvertAllToOptionalArray, TypeOptionalArray } from "@ellmers/util";
+import { Type } from "@sinclair/typebox";
 import { describe, expect, spyOn, test } from "bun:test";
 
 // Define our input and output types
@@ -39,30 +39,14 @@ class MultiplyRunTask extends ArrayTask<
   ConvertAllToOptionalArray<MultiplyOutput>,
   TaskConfig
 > {
-  public static readonly inputs: readonly TaskInputDefinition[] = [
-    {
-      id: "a",
-      name: "First Number",
-      valueType: "number",
-      isArray: "replicate", // This can be a single number or an array of numbers
-      defaultValue: 0,
-    },
-    {
-      id: "b",
-      name: "Second Number",
-      valueType: "number",
-      isArray: "replicate", // This can be a single number or an array of numbers
-      defaultValue: 0,
-    },
-  ];
-  public static readonly outputs: readonly TaskOutputDefinition[] = [
-    {
-      id: "result",
-      name: "Result",
-      valueType: "number",
-      isArray: "replicate", // The result can be a single number or an array
-    },
-  ];
+  public static inputSchema = Type.Object({
+    a: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
+    b: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
+  });
+  public static outputSchema = Type.Object({
+    result: TypeOptionalArray(Type.Number()),
+  });
+
   public async execute(input: MultiplyInput, config: IExecuteConfig): Promise<MultiplyOutput> {
     // Simple multiplication - at this point, we know the inputs are not arrays
     return {
@@ -78,35 +62,18 @@ class MultiplyRunReactiveTask extends ArrayTask<
   ConvertAllToOptionalArray<MultiplyInput>,
   ConvertAllToOptionalArray<MultiplyOutput>
 > {
-  public static readonly inputs: readonly TaskInputDefinition[] = [
-    {
-      id: "a",
-      name: "First Number",
-      valueType: "number",
-      isArray: "replicate", // This can be a single number or an array of numbers
-      defaultValue: 0,
-    },
-    {
-      id: "b",
-      name: "Second Number",
-      valueType: "number",
-      isArray: "replicate", // This can be a single number or an array of numbers
-      defaultValue: 0,
-    },
-  ];
-  public static readonly outputs: readonly TaskOutputDefinition[] = [
-    {
-      id: "result",
-      name: "Result",
-      valueType: "number",
-      isArray: "replicate", // The result can be a single number or an array
-    },
-  ];
+  public static inputSchema = Type.Object({
+    a: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
+    b: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
+  });
+  public static outputSchema = Type.Object({
+    result: TypeOptionalArray(Type.Number()),
+  });
+
   public async executeReactive(
     input: MultiplyInput,
     output: MultiplyOutput
   ): Promise<MultiplyOutput> {
-    // Simple multiplication - at this point, we know the inputs are not arrays
     return {
       result: input.a * input.b,
     };
@@ -119,63 +86,37 @@ interface SquareInput extends TaskInput {
 interface SquareOutput extends TaskOutput {
   result: number;
 }
-/**
- * Create a task that squares a number
- * This is a direct subclass of ArrayTask
- */
+
 class SquareRunTask extends ArrayTask<
   ConvertAllToOptionalArray<SquareInput>,
   ConvertAllToOptionalArray<SquareOutput>
 > {
-  public static readonly inputs: readonly TaskInputDefinition[] = [
-    {
-      id: "a",
-      name: "First Number",
-      valueType: "number",
-      isArray: "replicate", // This can be a single number or an array of numbers
-    },
-  ];
-
-  public static readonly outputs: readonly TaskOutputDefinition[] = [
-    {
-      id: "result",
-      name: "Result",
-      valueType: "number",
-      isArray: "replicate", // The result can be a single number or an array
-    },
-  ];
+  public static inputSchema = Type.Object({
+    a: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
+  });
+  public static outputSchema = Type.Object({
+    result: TypeOptionalArray(Type.Number()),
+  });
 
   public async execute(input: SquareInput, config: IExecuteConfig): Promise<SquareOutput> {
-    // Simple square - at this point, we know the inputs are not arrays
     return {
       result: input.a * input.a,
     };
   }
 }
+
 class SquareRunReactiveTask extends ArrayTask<
   ConvertAllToOptionalArray<SquareInput>,
   ConvertAllToOptionalArray<SquareOutput>
 > {
-  public static readonly inputs: readonly TaskInputDefinition[] = [
-    {
-      id: "a",
-      name: "First Number",
-      valueType: "number",
-      isArray: "replicate", // This can be a single number or an array of numbers
-    },
-  ];
-
-  public static readonly outputs: readonly TaskOutputDefinition[] = [
-    {
-      id: "result",
-      name: "Result",
-      valueType: "number",
-      isArray: "replicate", // The result can be a single number or an array
-    },
-  ];
+  public static inputSchema = Type.Object({
+    a: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
+  });
+  public static outputSchema = Type.Object({
+    result: TypeOptionalArray(Type.Number()),
+  });
 
   public async executeReactive(input: SquareInput, output: SquareOutput): Promise<SquareOutput> {
-    // Simple square - at this point, we know the inputs are not arrays
     return {
       result: input.a * input.a,
     };

@@ -9,52 +9,44 @@ import {
   Workflow,
   CreateWorkflow,
   TaskRegistry,
-  TaskInputDefinition,
-  TaskOutputDefinition,
   JobQueueTaskConfig,
+  TypeReplicateArray,
 } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
-import { model_summarization } from "./base/TaskIOTypes";
-import { ConvertAllToOptionalArray } from "@ellmers/util";
+import { Type, type Static } from "@sinclair/typebox";
+import { TypeModel } from "./base/AiTaskSchemas";
 
-export type TextSummaryTaskInput = {
-  text: string;
-  model: model_summarization;
-};
-export type TextSummaryTaskOutput = {
-  text: string;
-};
-type TextSummaryTaskInputReplicate = ConvertAllToOptionalArray<TextSummaryTaskInput>;
-type TextSummaryTaskOutputReplicate = ConvertAllToOptionalArray<TextSummaryTaskOutput>;
+export const TextSummaryInputSchema = Type.Object({
+  text: TypeReplicateArray(
+    Type.String({
+      title: "Text",
+      description: "The text to summarize",
+    })
+  ),
+  model: TypeReplicateArray(TypeModel("model:TextSummaryTask")),
+});
+
+export const TextSummaryOutputSchema = Type.Object({
+  text: Type.String({
+    title: "Text",
+    description: "The summarized text",
+  }),
+});
+
+export type TextSummaryTaskInput = Static<typeof TextSummaryInputSchema>;
+export type TextSummaryTaskOutput = Static<typeof TextSummaryOutputSchema>;
 
 /**
  * This summarizes a piece of text
  */
 
-export class TextSummaryTask extends AiTask<
-  TextSummaryTaskInputReplicate,
-  TextSummaryTaskOutputReplicate
-> {
+export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTaskOutput> {
   public static type = "TextSummaryTask";
   public static category = "Text Model";
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "text",
-      name: "Text",
-      valueType: "text",
-      isArray: "replicate",
-    },
-    {
-      id: "model",
-      name: "Model",
-      valueType: "model_summarization",
-      isArray: "replicate",
-    },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    { id: "text", name: "Text", valueType: "text", isArray: "replicate" },
-  ] as const;
+  public static inputSchema = TextSummaryInputSchema;
+  public static outputSchema = TextSummaryOutputSchema;
 }
+
 TaskRegistry.registerTask(TextSummaryTask);
 
 /**
@@ -63,20 +55,13 @@ TaskRegistry.registerTask(TextSummaryTask);
  * @param input The input parameters for text summary (text and model)
  * @returns Promise resolving to the summarized text output(s)
  */
-export const TextSummary = async (
-  input: TextSummaryTaskInputReplicate,
-  config?: JobQueueTaskConfig
-) => {
+export const TextSummary = async (input: TextSummaryTaskInput, config?: JobQueueTaskConfig) => {
   return new TextSummaryTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
-    TextSummary: CreateWorkflow<
-      TextSummaryTaskInputReplicate,
-      TextSummaryTaskOutputReplicate,
-      JobQueueTaskConfig
-    >;
+    TextSummary: CreateWorkflow<TextSummaryTaskInput, TextSummaryTaskOutput, JobQueueTaskConfig>;
   }
 }
 

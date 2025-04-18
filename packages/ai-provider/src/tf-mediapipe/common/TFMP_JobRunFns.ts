@@ -7,20 +7,22 @@
 
 import { FilesetResolver, TextEmbedder } from "@mediapipe/tasks-text";
 import type {
-  DownloadModelTaskInput,
-  DownloadModelTaskOutput,
-  TextEmbeddingTaskInput,
+  DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteOutput,
   AiProviderRunFn,
+  TextEmbeddingOutputSchema,
+  TextEmbeddingInputSchema,
 } from "@ellmers/ai";
 import { PermanentJobError } from "@ellmers/job-queue";
+import { DeReplicateStatic } from "@ellmers/task-graph";
 
 /**
  * Core implementation for downloading and caching a MediaPipe TFJS model.
  * This is shared between inline and worker implementations.
  */
 export const TFMP_Download: AiProviderRunFn<
-  DownloadModelTaskInput,
-  Partial<DownloadModelTaskOutput>
+  DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteOutput
 > = async (input, model, onProgress, signal) => {
   const textFiles = await FilesetResolver.forTextTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@latest/wasm"
@@ -35,8 +37,6 @@ export const TFMP_Download: AiProviderRunFn<
 
   return {
     model: input.model,
-    dimensions: model!.nativeDimensions,
-    normalize: model!.normalize,
   };
 };
 
@@ -44,12 +44,10 @@ export const TFMP_Download: AiProviderRunFn<
  * Core implementation for text embedding using MediaPipe TFJS.
  * This is shared between inline and worker implementations.
  */
-export const TFMP_TextEmbedding: AiProviderRunFn<TextEmbeddingTaskInput, any> = async (
-  input,
-  model,
-  onProgress,
-  signal
-) => {
+export const TFMP_TextEmbedding: AiProviderRunFn<
+  DeReplicateStatic<typeof TextEmbeddingInputSchema>,
+  DeReplicateStatic<typeof TextEmbeddingOutputSchema>
+> = async (input, model, onProgress, signal) => {
   const textFiles = await FilesetResolver.forTextTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@latest/wasm"
   );
@@ -69,11 +67,12 @@ export const TFMP_TextEmbedding: AiProviderRunFn<TextEmbeddingTaskInput, any> = 
   onProgress(0.2, "Embedding text");
 
   const result = embedder.embed(input.text);
-  const embedding = result.embeddings[0].floatEmbedding;
 
-  if (!embedding) {
-    throw new PermanentJobError("Failed to generate embedding");
+  if (!result.embeddings?.[0]?.floatEmbedding) {
+    throw new PermanentJobError("Failed to generate embedding: Empty result");
   }
+
+  const embedding = Float32Array.from(result.embeddings[0].floatEmbedding);
 
   return {
     vector: embedding,

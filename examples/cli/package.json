@@ -36,6 +36,7 @@
     "@ellmers/tasks": "workspace:*",
     "@ellmers/test": "workspace:*",
     "@ellmers/util": "workspace:*",
+    "@sinclair/typebox": "^0.34.31",
     "@mediapipe/tasks-text": "^0.10.21",
     "@sroussey/transformers": "3.4.0-2",
     "@types/react": "=18.3.12",

@@ -223,7 +223,7 @@ export class TaskGraphRunner {
         }
         const taskResult = await task.runReactive();
 
-        this.pushOutputFromNodeToEdges(task, taskResult);
+        await this.pushOutputFromNodeToEdges(task, taskResult);
         if (this.graph.getTargetDataflows(task.config.id).length === 0) {
           results.push({
             id: task.config.id,
@@ -264,36 +264,38 @@ export class TaskGraphRunner {
     if (!overrides) return false;
 
     let changed = false;
-    for (const input of task.inputs) {
-      if (input.id === DATAFLOW_ALL_PORTS) {
+    const inputSchema = task.inputSchema;
+    const properties = inputSchema.properties || {};
+
+    for (const [inputId, prop] of Object.entries(properties)) {
+      if (inputId === DATAFLOW_ALL_PORTS) {
         task.runInputData = { ...task.runInputData, ...overrides };
         changed = true;
-      } else if (overrides?.[input.id] !== undefined) {
-        let isArray = input.isArray;
-        if (
-          input.valueType === "any" &&
-          (Array.isArray(overrides[input.id]) || Array.isArray(task.runInputData[input.id]))
-        ) {
-          isArray = true;
-        }
+      } else {
+        if (overrides[inputId] === undefined) continue;
 
-        if (isArray === true) {
-          const existingItems = Array.isArray(task.runInputData[input.id])
-            ? (task.runInputData[input.id] as unknown[])
-            : [];
+        const isArray =
+          prop.type === "array" ||
+          (prop.type === "any" &&
+            (Array.isArray(overrides[inputId]) || Array.isArray(task.runInputData[inputId])));
+
+        if (isArray) {
+          const existingItems = Array.isArray(task.runInputData[inputId])
+            ? task.runInputData[inputId]
+            : [task.runInputData[inputId]];
           const newitems = [...existingItems];
 
-          const overrideItem = overrides[input.id];
+          const overrideItem = overrides[inputId];
           if (Array.isArray(overrideItem)) {
             newitems.push(...overrideItem);
           } else {
             newitems.push(overrideItem);
           }
-          task.runInputData[input.id] = newitems;
+          task.runInputData[inputId] = newitems;
           changed = true;
         } else {
-          if (!deepEqual(task.runInputData[input.id], overrides[input.id])) {
-            task.runInputData[input.id] = overrides[input.id];
+          if (!deepEqual(task.runInputData[inputId], overrides[inputId])) {
+            task.runInputData[inputId] = overrides[inputId];
             changed = true;
           }
         }
@@ -347,9 +349,10 @@ export class TaskGraphRunner {
    * @param task The task to copy input data to
    */
   protected copyInputFromEdgesToNode(task: ITask) {
-    this.graph.getSourceDataflows(task.config.id).forEach((dataflow) => {
+    const dataflows = this.graph.getSourceDataflows(task.config.id);
+    for (const dataflow of dataflows) {
       this.addInputData(task, dataflow.getPortData());
-    });
+    }
   }
 
   /**
@@ -371,14 +374,24 @@ export class TaskGraphRunner {
    * @param results The output of the task
    * @param nodeProvenance The provenance input for the task
    */
-  protected pushOutputFromNodeToEdges(
+  protected async pushOutputFromNodeToEdges(
     node: ITask,
     results: TaskOutput,
     nodeProvenance?: Provenance
   ) {
-    this.graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
-      dataflow.setPortData(results, nodeProvenance);
-    });
+    const dataflows = this.graph.getTargetDataflows(node.config.id);
+    for (const dataflow of dataflows) {
+      const compatibility = dataflow.semanticallyCompatible(this.graph, dataflow);
+      if (compatibility === "static") {
+        dataflow.setPortData({ ...results }, nodeProvenance);
+      } else if (compatibility === "runtime") {
+        const task = this.graph.getTask(dataflow.targetTaskId)!;
+        const narrowed = await task.narrowInput({ ...results });
+        dataflow.setPortData(narrowed, nodeProvenance);
+      } else {
+        // don't push incompatible data
+      }
+    }
   }
 
   /**
@@ -429,7 +442,7 @@ export class TaskGraphRunner {
       onProgress: this.handleProgress,
     });
 
-    this.pushOutputFromNodeToEdges(task, results, nodeProvenance);
+    await this.pushOutputFromNodeToEdges(task, results, nodeProvenance);
 
     return {
       id: task.config.id,
@@ -600,14 +613,19 @@ export class TaskGraphRunner {
    * @param message Optional message
    * @param args Additional arguments
    */
-  protected handleProgress(task: ITask, progress: number, message?: string, ...args: any[]): void {
+  protected async handleProgress(
+    task: ITask,
+    progress: number,
+    message?: string,
+    ...args: any[]
+  ): Promise<void> {
     const total = this.graph.getTasks().length;
     if (total > 1) {
       const completed = this.graph.getTasks().reduce((acc, t) => acc + t.progress, 0);
       progress = Math.round(completed / total);
     }
     this.pushStatusFromNodeToEdges(this.graph, task);
-    this.pushOutputFromNodeToEdges(task, task.runOutputData, task.getProvenance());
+    await this.pushOutputFromNodeToEdges(task, task.runOutputData, task.getProvenance());
     this.graph.emit("graph_progress", progress, message, args);
   }
 }
