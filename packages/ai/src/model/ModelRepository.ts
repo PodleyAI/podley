@@ -8,6 +8,7 @@
 import { EventEmitter, EventParameters } from "@ellmers/util";
 import { type TabularRepository } from "@ellmers/storage";
 import { Model } from "./Model";
+import { Type, TObject, Static } from "@sinclair/typebox";
 
 /**
  * Events that can be emitted by the ModelRepository
@@ -30,19 +31,19 @@ export type ModelEventParameters<Event extends ModelEvents> = EventParameters<
   Event
 >;
 
-export const ModelSchema = {
-  name: "string",
-  details: "json",
-} as const;
+export const ModelSchema = Type.Object({
+  name: Type.String(),
+  details: Type.String()
+});
 export const ModelPrimaryKeyNames = ["name"] as const;
 
 /**
  * Represents the structure for mapping tasks to models
  */
-export const Task2ModelSchema = {
-  task: "string",
-  model: "string",
-} as const;
+export const Task2ModelSchema = Type.Object({
+  task: Type.String(),
+  model: Type.String()
+});
 export const Task2ModelPrimaryKeyNames = ["task", "model"] as const;
 
 /**

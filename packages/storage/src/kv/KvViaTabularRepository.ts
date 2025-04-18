@@ -5,18 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { JSONValue, KeyOptionType, ValueOptionType } from "../tabular/ITabularRepository";
+import { simplifySchema } from "@ellmers/util";
+import { Static } from "@sinclair/typebox";
 import type { TabularRepository } from "../tabular/TabularRepository";
-import {
-  DefaultKeyValueKey,
-  DefaultKeyValueSchema,
-  DefaultKvPk,
-  DefaultKvValue,
-} from "./IKvRepository";
+import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
 import { KvRepository } from "./KvRepository";
 
 /**
- * Abstract base class for key-value storage repositories.
+ * Abstract base class for key-value storage repositories that uses a tabular repository for storage.
  * Has a basic event emitter for listening to repository events.
  *
  * @template Key - The type of the primary key
@@ -24,13 +20,15 @@ import { KvRepository } from "./KvRepository";
  * @template Combined - Combined type of Key & Value
  */
 export abstract class KvViaTabularRepository<
-  Key extends KeyOptionType = KeyOptionType,
-  Value extends ValueOptionType = JSONValue,
+  Key extends string = string,
+  Value extends any = any,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
   public abstract tabularRepository: TabularRepository<
     typeof DefaultKeyValueSchema,
-    typeof DefaultKeyValueKey
+    typeof DefaultKeyValueKey,
+    (typeof DefaultKeyValueSchema)["key"],
+    Static<typeof DefaultKeyValueSchema>
   >;
 
   /**
@@ -39,14 +37,15 @@ export abstract class KvViaTabularRepository<
    * @param value - The value to store
    */
   public async put(key: Key, value: Value): Promise<void> {
-    const tKey = { key } as DefaultKvPk;
-    let tValue: DefaultKvValue;
-    if (this.valueType === "json") {
-      tValue = { value: JSON.stringify(value) } as DefaultKvValue;
-    } else {
-      tValue = { value } as DefaultKvValue;
+    // Handle objects that need to be JSON-stringified, TODO(str): should put in the type
+    const shouldStringify = !["number", "boolean", "string", "blob"].includes(
+      simplifySchema(this.valueSchema).type
+    );
+
+    if (shouldStringify) {
+      value = JSON.stringify(value) as Value;
     }
-    return await this.tabularRepository.put({ ...tKey, ...tValue });
+    return await this.tabularRepository.put({ key, value });
   }
 
   /**
@@ -57,12 +56,20 @@ export abstract class KvViaTabularRepository<
    * @returns The stored value or undefined if not found
    */
   public async get(key: Key): Promise<Value | undefined> {
-    const result = await this.tabularRepository.get({ key } as DefaultKvPk);
+    const result = await this.tabularRepository.get({ key });
     if (result) {
-      if (this.valueType === "json") {
-        return JSON.parse(result.value as string) as Value;
+      const shouldParse = !["number", "boolean", "string", "blob"].includes(
+        simplifySchema(this.valueSchema).type
+      );
+
+      if (shouldParse) {
+        try {
+          return JSON.parse(result.value as unknown as string) as Value;
+        } catch (e) {
+          return result.value as unknown as Value;
+        }
       } else {
-        return result.value as Value;
+        return result.value as unknown as Value;
       }
     } else {
       return undefined;
@@ -74,7 +81,7 @@ export abstract class KvViaTabularRepository<
    * @param key - The primary key of the row to delete
    */
   public async delete(key: Key): Promise<void> {
-    return await this.tabularRepository.delete({ key } as DefaultKvPk);
+    return await this.tabularRepository.delete({ key });
   }
 
   /**
@@ -88,7 +95,20 @@ export abstract class KvViaTabularRepository<
         (value) =>
           ({
             key: value.key,
-            value: this.valueType === "json" ? JSON.parse(value.value as string) : value.value,
+            value: (() => {
+              const shouldParse = !["number", "boolean", "string"].includes(
+                simplifySchema(this.valueSchema).type
+              );
+
+              if (shouldParse && typeof value.value === "string") {
+                try {
+                  return JSON.parse(value.value);
+                } catch (e) {
+                  return value.value;
+                }
+              }
+              return value.value;
+            })(),
           }) as Combined
       );
     }

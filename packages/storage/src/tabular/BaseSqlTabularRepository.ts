@@ -5,15 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  ValueSchema,
-  ValueOptionType,
-  ExtractPrimaryKey,
-  ExtractValue,
-  SchemaToType,
-  ExcludeDateKeyOptionType,
-  ExcludeDateValueOptionType,
-} from "./ITabularRepository";
+import { simplifySchema } from "@ellmers/util";
+import { Static, TObject, TSchema } from "@sinclair/typebox";
+import { ExtractPrimaryKey, ExtractValue, ValueOptionType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
 // BaseTabularRepository is a tabular store that uses SQLite and Postgres use as common code
@@ -22,15 +16,15 @@ import { TabularRepository } from "./TabularRepository";
  * Base class for SQL-based tabular repositories that implements common functionality
  * for both SQLite and PostgreSQL database implementations.
  *
- * @template Schema - The schema definition for the entity
+ * @template Schema - The schema definition for the entity using TypeBox
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export abstract class BaseSqlTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /**
@@ -55,16 +49,16 @@ export abstract class BaseSqlTabularRepository<
    * Maps JavaScript/TypeScript types to their corresponding SQL type
    * Must be implemented by derived classes for specific SQL dialects
    */
-  protected abstract mapTypeToSQL(type: string): string;
+  protected abstract mapTypeToSQL(typeDef: TSchema): string;
 
   /**
    * Generates the SQL column definitions for primary key fields
    * @returns SQL string containing primary key column definitions
    */
   protected constructPrimaryKeyColumns($delimiter: string = ""): string {
-    const cols = Object.entries(this.primaryKeySchema)
-      .map(([key, type]) => {
-        const sqlType = this.mapTypeToSQL(type);
+    const cols = Object.entries<TSchema>(simplifySchema(this.primaryKeySchema).properties)
+      .map(([key, typeDef]) => {
+        const sqlType = this.mapTypeToSQL(typeDef);
         return `${$delimiter}${key}${$delimiter} ${sqlType} NOT NULL`;
       })
       .join(", ");
@@ -76,9 +70,9 @@ export abstract class BaseSqlTabularRepository<
    * @returns SQL string containing value column definitions
    */
   protected constructValueColumns($delimiter: string = ""): string {
-    const cols = Object.entries(this.valueSchema)
-      .map(([key, type]) => {
-        const sqlType = this.mapTypeToSQL(type);
+    const cols = Object.entries<TSchema>(simplifySchema(this.valueSchema).properties)
+      .map(([key, typeDef]) => {
+        const sqlType = this.mapTypeToSQL(typeDef);
         return `${$delimiter}${key}${$delimiter} ${sqlType} NULL`;
       })
       .join(", ");
@@ -114,9 +108,8 @@ export abstract class BaseSqlTabularRepository<
    */
   protected getValueAsOrderedArray(value: Value): ValueOptionType[] {
     const orderedParams: ValueOptionType[] = [];
-    // Use a type assertion to ensure TypeScript recognizes value as an object with string keys
-    const valueAsRecord = value as Record<string, ValueOptionType>;
-    for (const [key, type] of Object.entries(this.valueSchema)) {
+    const valueAsRecord = value as Record<string, Entity[keyof Entity]>;
+    for (const key in simplifySchema(this.valueSchema).properties) {
       if (Object.prototype.hasOwnProperty.call(valueAsRecord, key)) {
         orderedParams.push(this.jsToSqlValue(key, valueAsRecord[key]));
       } else {
@@ -132,16 +125,16 @@ export abstract class BaseSqlTabularRepository<
    * @param key - The primary key object to convert
    * @returns Array of key values ordered according to the schema
    */
-  protected getPrimaryKeyAsOrderedArray(key: PrimaryKey): ExcludeDateKeyOptionType[] {
-    const orderedParams: ExcludeDateKeyOptionType[] = [];
-    const keyObj = key as Record<string, ExcludeDateKeyOptionType>;
-    for (const [k, type] of Object.entries(this.primaryKeySchema)) {
+  protected getPrimaryKeyAsOrderedArray(key: PrimaryKey): ValueOptionType[] {
+    const orderedParams: ValueOptionType[] = [];
+    const keyObj = key as Record<string, Entity[keyof Entity]>;
+    for (const k of Object.keys(this.primaryKeySchema.properties)) {
       if (k in keyObj) {
         const value = keyObj[k];
         if (value === null) {
           throw new Error(`Primary key field ${k} cannot be null`);
         }
-        orderedParams.push(this.jsToSqlValue(k, value) as ExcludeDateKeyOptionType);
+        orderedParams.push(this.jsToSqlValue(k, value));
       } else {
         throw new Error(`Missing required primary key field: ${k}`);
       }
@@ -149,23 +142,33 @@ export abstract class BaseSqlTabularRepository<
     return orderedParams;
   }
 
-  protected jsToSqlValue(column: string, value: ValueOptionType): ExcludeDateValueOptionType {
-    if (this.valueSchema[column] === "blob" && typeof value === "string") {
-      return Buffer.from(value);
-    } else if (this.valueSchema[column] === "date" && value instanceof Date) {
+  protected jsToSqlValue(column: string, value: Entity[keyof Entity]): ValueOptionType {
+    const typeDef = simplifySchema(this.schema.properties[column]);
+    if (!typeDef) {
+      return value as ValueOptionType;
+    }
+
+    if (typeDef.contentEncoding === "blob") {
+      return Buffer.from(value as Uint8Array);
+    } else if (value instanceof Date) {
+      // Convert all Date objects to ISO string regardless of type definition (not that is should be a Date object, but just in case)
       return value.toISOString();
     } else {
-      return value as ExcludeDateValueOptionType;
+      return value as ValueOptionType;
     }
   }
 
-  protected sqlToJsValue(column: string, value: ExcludeDateValueOptionType): ValueOptionType {
-    if (this.valueSchema[column] === "blob" && value instanceof Buffer) {
-      return new Uint8Array(value);
-    } else if (this.valueSchema[column] === "date" && typeof value === "string") {
-      return new Date(value);
+  protected sqlToJsValue(column: string, value: ValueOptionType): Entity[keyof Entity] {
+    // Get the type definition
+    const typeDef = simplifySchema(this.schema.properties[column]);
+    if (!typeDef) {
+      return value as Entity[keyof Entity];
+    }
+
+    if (typeDef.contentEncoding === "blob" && value instanceof Buffer) {
+      return new Uint8Array(value) as Entity[keyof Entity];
     } else {
-      return value;
+      return value as Entity[keyof Entity];
     }
   }
 
@@ -189,8 +192,8 @@ export abstract class BaseSqlTabularRepository<
     }
 
     // Validate schema keys
-    const validateSchemaKeys = (schema: Record<string, any>) => {
-      for (const key of Object.keys(schema)) {
+    const validateSchemaKeys = (schema: TObject) => {
+      for (const key in schema.properties) {
         if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)) {
           throw new Error(
             "Schema keys must start with a letter and contain only letters, digits, and underscores, got: " +
@@ -204,8 +207,8 @@ export abstract class BaseSqlTabularRepository<
     validateSchemaKeys(this.valueSchema);
 
     // Check for key name collisions between schemas
-    const primaryKeys = new Set(Object.keys(this.primaryKeySchema));
-    const valueKeys = Object.keys(this.valueSchema);
+    const primaryKeys = new Set(Object.keys(this.primaryKeySchema.properties));
+    const valueKeys = Object.keys(this.valueSchema.properties);
     const duplicates = valueKeys.filter((key) => primaryKeys.has(key));
     if (duplicates.length > 0) {
       throw new Error(`Duplicate keys found in schemas: ${duplicates.join(", ")}`);

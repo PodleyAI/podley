@@ -5,31 +5,24 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, expect, it, beforeEach } from "bun:test";
-import {
-  DefaultKvPkType,
-  DefaultKvValueType,
-  IKvRepository,
-  KeyOption,
-  KeyOptionType,
-  ValueOption,
-  ValueOptionType,
-} from "@ellmers/storage";
+import { IKvRepository, DefaultKeyValueSchema } from "@ellmers/storage";
+import { Static, TNumber, TSchema, TString, Type } from "@sinclair/typebox";
+import { beforeEach, describe, expect, it } from "bun:test";
 
 export function runGenericKvRepositoryTests(
-  createRepository: <
-    K extends KeyOptionType = KeyOptionType,
-    V extends ValueOptionType = ValueOptionType,
-  >(
-    keyType: KeyOption,
-    valueType: ValueOption
+  createRepository: <K = string | number, V extends TSchema = TSchema>(
+    keyType: K,
+    valueType: V
   ) => Promise<IKvRepository<K, V>>
 ) {
   describe("with default schemas (key and value)", () => {
-    let repository: IKvRepository<DefaultKvPkType, DefaultKvValueType>;
+    let repository: IKvRepository<
+      Static<typeof DefaultKeyValueSchema.properties.key>,
+      Static<typeof DefaultKeyValueSchema.properties.value>
+    >;
 
     beforeEach(async () => {
-      repository = await createRepository("string", "string");
+      repository = await createRepository(Type.String(), Type.Any());
     });
 
     it("should store and retrieve values for a key", async () => {

@@ -6,25 +6,17 @@
 //    *******************************************************************************
 
 import { EventParameters } from "@ellmers/util";
-import {
-  JSONValue,
-  KeyOptionType,
-  ValueSchema,
-  ValueOptionType,
-} from "../tabular/ITabularRepository";
+import { Type } from "@sinclair/typebox";
+import { JSONValue } from "../tabular/ITabularRepository";
 
 /**
  * Default schema types for simple string row data
  */
-export const DefaultKeyValueSchema: ValueSchema = {
-  key: "string",
-  value: "json",
-} as const;
+export const DefaultKeyValueSchema = Type.Object({
+  key: Type.String(),
+  value: Type.Any(),
+});
 export const DefaultKeyValueKey = ["key"] as const;
-export type DefaultKvPkType = string;
-export type DefaultKvPk = { key: DefaultKvPkType };
-export type DefaultKvValueType = JSONValue;
-export type DefaultKvValue = { value: DefaultKvValueType };
 
 /**
  * Type definitions for kv repository events
@@ -59,8 +51,8 @@ export type KvEventParameters<Event extends KvEventName, Key, Value, Combined> =
  * @typeParam Combined - Combined type of Key & Value
  */
 export interface IKvRepository<
-  Key extends KeyOptionType = KeyOptionType,
-  Value extends ValueOptionType = JSONValue,
+  Key extends string | number = string,
+  Value extends any = any,
   Combined = { key: Key; value: Value },
 > {
   // Core methods

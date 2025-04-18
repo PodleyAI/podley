@@ -5,16 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken } from "@ellmers/util";
+import { createServiceToken, simplifySchema, TypeBlob } from "@ellmers/util";
+import { TSchema, Type } from "@sinclair/typebox";
 import { mkdir, readFile, rmdir, unlink, writeFile } from "fs/promises";
 import path from "path";
-import {
-  JSONValue,
-  KeyOption,
-  KeyOptionType,
-  ValueOption,
-  ValueOptionType,
-} from "../tabular/ITabularRepository";
 import { IKvRepository } from "./IKvRepository";
 import { KvRepository } from "./KvRepository";
 
@@ -23,16 +17,16 @@ export const FS_FOLDER_KV_REPOSITORY = createServiceToken<IKvRepository<string, 
 );
 
 /**
- * Abstract base class for key-value storage repositories.
- * Has a basic event emitter for listening to repository events.
+ * A key-value repository implementation that stores each value as a file in a specified folder.
+ * Uses the file system for persistence, with each key mapped to a file path.
  *
  * @template Key - The type of the primary key
  * @template Value - The type of the value being stored
  * @template Combined - Combined type of Key & Value
  */
 export class FsFolderKvRepository<
-  Key extends KeyOptionType = KeyOptionType,
-  Value extends ValueOptionType = JSONValue,
+  Key extends string = string,
+  Value extends any = any,
   Combined = { key: Key; value: Value },
 > extends KvRepository<Key, Value, Combined> {
   /**
@@ -41,10 +35,10 @@ export class FsFolderKvRepository<
   constructor(
     public folderPath: string,
     public pathWriter: (key: Key) => string,
-    primaryKeyType: KeyOption,
-    valueType: ValueOption
+    keySchema: TSchema = Type.String(),
+    valueSchema: TSchema = TypeBlob()
   ) {
-    super(primaryKeyType, valueType);
+    super(keySchema, valueSchema);
   }
 
   /**
@@ -54,12 +48,20 @@ export class FsFolderKvRepository<
    */
   public async put(key: Key, value: Value): Promise<void> {
     const localPath = path.join(this.folderPath, this.pathWriter(key).replaceAll("..", "_"));
-    let content = this.valueType === "json" ? JSON.stringify(value) : value;
-    if (content === null) {
+
+    let content: string;
+    if (value === null) {
       content = "";
+    } else if (simplifySchema(this.valueSchema).type === "object") {
+      content = JSON.stringify(value);
+    } else if (typeof value === "object") {
+      // Handle 'json' type schema from tests
+      content = JSON.stringify(value);
+    } else {
+      content = String(value);
     }
+
     await mkdir(path.dirname(localPath), { recursive: true });
-    // @ts-ignore
     await writeFile(localPath, content);
   }
 
@@ -72,11 +74,27 @@ export class FsFolderKvRepository<
    */
   public async get(key: Key): Promise<Value | undefined> {
     const localPath = path.join(this.folderPath, this.pathWriter(key));
+    const typeDef = simplifySchema(this.valueSchema);
     try {
-      const content = await readFile(localPath, {
-        encoding: this.valueType == "json" || this.valueType == "string" ? "utf-8" : "binary",
-      });
-      return this.valueType === "json" ? JSON.parse(content) : (content as Value);
+      const encoding = typeDef.contentEncoding === "blob" ? "binary" : "utf-8";
+      const content = (await readFile(localPath, { encoding })).trim();
+
+      if (encoding === "utf-8") {
+        if (
+          typeDef.type === "object" ||
+          (content.startsWith("{") && content.endsWith("}")) ||
+          (content.startsWith("[") && content.endsWith("]"))
+        ) {
+          try {
+            return JSON.parse(content) as Value;
+          } catch (e) {
+            // If JSON parsing fails, return as string
+            return content as unknown as Value;
+          }
+        }
+      }
+
+      return content as unknown as Value;
     } catch (error) {
       return undefined;
     }

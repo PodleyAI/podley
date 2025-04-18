@@ -6,25 +6,27 @@
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach, afterEach } from "bun:test";
-import { ValueSchema, ITabularRepository } from "@ellmers/storage";
+import { ITabularRepository } from "@ellmers/storage";
+import { Type } from "@sinclair/typebox";
+import { TypeDateTime } from "@ellmers/util";
 
 export const CompoundPrimaryKeyNames = ["name", "type"] as const;
-export const CompoundSchema: ValueSchema = {
-  name: "string",
-  type: "string",
-  option: "string",
-  success: "boolean",
-} as const;
+export const CompoundSchema = Type.Object({
+  name: Type.String(),
+  type: Type.String(),
+  option: Type.String(),
+  success: Type.Boolean(),
+});
 
 export const SearchPrimaryKeyNames = ["id"] as const;
-export const SearchSchema: ValueSchema = {
-  id: "string",
-  category: "string",
-  subcategory: "string",
-  value: "number",
-  createdAt: "date",
-  updatedAt: "date",
-} as const;
+export const SearchSchema = Type.Object({
+  id: Type.String(),
+  category: Type.String(),
+  subcategory: Type.String(),
+  value: Type.Number(),
+  createdAt: TypeDateTime(),
+  updatedAt: TypeDateTime(),
+});
 
 export function runGenericTabularRepositoryTests(
   createCompoundPkRepository: () => Promise<
@@ -66,39 +68,49 @@ export function runGenericTabularRepositoryTests(
   // Only run compound index tests if createCompoundRepository is provided
   if (createSearchableRepository) {
     describe("with searchable indexes", () => {
-      let repository: ITabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>;
+      let searchableRepo: ITabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>;
 
       beforeEach(async () => {
-        repository = await createSearchableRepository();
+        searchableRepo = await createSearchableRepository();
       });
 
       afterEach(async () => {
-        await repository.deleteAll();
+        await searchableRepo.deleteAll();
       });
 
       it("should store and search using compound indexes", async () => {
         // Insert test data
-        await repository.put({
+        await searchableRepo.put({
           id: "1",
           category: "electronics",
           subcategory: "phones",
           value: 100,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
-        await repository.put({
+        await searchableRepo.put({
           id: "2",
           category: "electronics",
           subcategory: "laptops",
           value: 200,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
-        await repository.put({ id: "3", category: "books", subcategory: "fiction", value: 300 });
-
+        await searchableRepo.put({
+          id: "3",
+          category: "books",
+          subcategory: "fiction",
+          value: 300,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
         // Test searching with single column
-        const electronicsOnly = await repository.search({ category: "electronics" });
+        const electronicsOnly = await searchableRepo.search({ category: "electronics" });
         expect(electronicsOnly?.length).toBe(2);
         expect(electronicsOnly?.map((item) => item.id).sort()).toEqual(["1", "2"]);
 
         // Test searching with compound criteria
-        const electronicsPhones = await repository.search({
+        const electronicsPhones = await searchableRepo.search({
           category: "electronics",
           subcategory: "phones",
         });
@@ -106,7 +118,7 @@ export function runGenericTabularRepositoryTests(
         expect(electronicsPhones?.[0].id).toBe("1");
 
         // Test searching with non-existent values
-        const nonExistent = await repository.search({
+        const nonExistent = await searchableRepo.search({
           category: "electronics",
           subcategory: "tablets",
         });
@@ -115,25 +127,29 @@ export function runGenericTabularRepositoryTests(
 
       it("should handle searching with multiple criteria in different orders", async () => {
         // Insert test data
-        await repository.put({
+        await searchableRepo.put({
           id: "1",
           category: "electronics",
           subcategory: "phones",
           value: 100,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
-        await repository.put({
+        await searchableRepo.put({
           id: "2",
           category: "electronics",
           subcategory: "phones",
           value: 200,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
 
         // Search with criteria in different orders should work the same
-        const search1 = await repository.search({
+        const search1 = await searchableRepo.search({
           category: "electronics",
           subcategory: "phones",
         });
-        const search2 = await repository.search({
+        const search2 = await searchableRepo.search({
           subcategory: "phones",
           category: "electronics",
         });
@@ -146,32 +162,38 @@ export function runGenericTabularRepositoryTests(
 
       it("should handle partial matches with compound indexes", async () => {
         // Insert test data
-        await repository.put({
+        await searchableRepo.put({
           id: "1",
           category: "electronics",
           subcategory: "phones",
           value: 100,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
-        await repository.put({
+        await searchableRepo.put({
           id: "2",
           category: "electronics",
           subcategory: "phones",
           value: 200,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
-        await repository.put({
+        await searchableRepo.put({
           id: "3",
           category: "electronics",
           subcategory: "laptops",
           value: 300,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
 
         // Search with value field
-        const highValue = await repository.search({ value: 300 });
+        const highValue = await searchableRepo.search({ value: 300 });
         expect(highValue?.length).toBe(1);
         expect(highValue?.[0].id).toBe("3");
 
         // Search with multiple fields including a non-indexed one
-        const expensivePhones = await repository.search({
+        const expensivePhones = await searchableRepo.search({
           subcategory: "phones",
           value: 200,
         });
@@ -194,27 +216,40 @@ export function runGenericTabularRepositoryTests(
       it("should delete entries older than a specified date using createdAt", async () => {
         // Create test data with different dates
         const now = new Date();
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-        const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+        const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
+        const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
         // Add test entries
-        await repository.put({ id: "1", name: "Recent", createdAt: now, updatedAt: now });
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
         await repository.put({
           id: "2",
-          name: "Yesterday",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
           createdAt: yesterday,
           updatedAt: yesterday,
         });
         await repository.put({
           id: "3",
-          name: "Two days ago",
+          category: "electronics",
+          subcategory: "phones",
+          value: 300,
           createdAt: twoDaysAgo,
           updatedAt: twoDaysAgo,
         });
         await repository.put({
           id: "4",
-          name: "Three days ago",
+          category: "electronics",
+          subcategory: "phones",
+          value: 400,
           createdAt: threeDaysAgo,
           updatedAt: threeDaysAgo,
         });
@@ -234,26 +269,39 @@ export function runGenericTabularRepositoryTests(
       it("should delete entries older than a specified date using updatedAt", async () => {
         // Create test data with different dates
         const now = new Date();
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+        const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
 
         // Add test entries with mixed dates
-        await repository.put({ id: "1", name: "Recent both", createdAt: now, updatedAt: now });
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
         await repository.put({
           id: "2",
-          name: "Old created, recent updated",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
           createdAt: twoDaysAgo,
-          updatedAt: now,
+          updatedAt: now.toISOString(),
         });
         await repository.put({
           id: "3",
-          name: "Recent created, old updated",
-          createdAt: now,
+          category: "electronics",
+          subcategory: "phones",
+          value: 300,
+          createdAt: now.toISOString(),
           updatedAt: twoDaysAgo,
         });
         await repository.put({
           id: "4",
-          name: "Old both",
+          category: "electronics",
+          subcategory: "phones",
+          value: 400,
           createdAt: twoDaysAgo,
           updatedAt: twoDaysAgo,
         });
@@ -274,7 +322,7 @@ export function runGenericTabularRepositoryTests(
         // Verify repository is empty
         expect(await repository.getAll()).toBeUndefined();
 
-        const result = await repository.deleteSearch("createdAt", new Date(), "<");
+        const result = await repository.deleteSearch("createdAt", new Date().toISOString(), "<");
         expect(result).toBeUndefined();
       });
 
@@ -284,11 +332,24 @@ export function runGenericTabularRepositoryTests(
         const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
         // Add test entries
-        await repository.put({ id: "1", name: "Recent 1", createdAt: now, updatedAt: now });
-        await repository.put({ id: "2", name: "Recent 2", createdAt: now, updatedAt: yesterday });
-
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
+          createdAt: now.toISOString(),
+          updatedAt: yesterday.toISOString(),
+        });
         // Try to delete entries older than 3 days ago
-        const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+        const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
         await repository.deleteSearch("createdAt", threeDaysAgo, "<");
 
         // Verify all entries still exist

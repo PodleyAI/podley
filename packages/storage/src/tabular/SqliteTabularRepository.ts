@@ -7,16 +7,13 @@
 
 import { Sqlite } from "@ellmers/sqlite";
 import { createServiceToken } from "@ellmers/util";
+import { Static, TObject, TSchema } from "@sinclair/typebox";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import {
-  ExcludeDateKeyOptionType,
-  ExtractPrimaryKey,
-  ExtractValue,
-  ITabularRepository,
-  SchemaToType,
-  ValueOptionType,
-  ValueSchema,
-} from "./ITabularRepository";
+import { ValueOptionType } from "./ITabularRepository";
+import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
+
+// Define local type for SQL operations
+type ExcludeDateKeyOptionType = Exclude<string | number | bigint, Date>;
 
 export const SQLITE_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository.sqlite"
@@ -33,11 +30,11 @@ const Database = Sqlite.Database;
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class SqliteTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** The SQLite database instance */
@@ -128,18 +125,14 @@ export class SqliteTabularRepository<
    * @param type - The TypeScript/JavaScript type to map
    * @returns The corresponding SQLite column type
    */
-  protected mapTypeToSQL(type: string): string {
-    // Basic type mapping; extend according to your needs
-    switch (type) {
+  protected mapTypeToSQL(typeDef: TSchema): string {
+    if (typeDef.contentEncoding === "blob") return "BLOB";
+    switch (typeDef.type) {
       case "string":
         return "TEXT";
       case "boolean": // SQLite uses INTEGER for boolean
       case "number":
         return "INTEGER";
-      case "blob":
-        return "BLOB";
-      case "date":
-        return "TEXT";
       default:
         return "TEXT";
     }
@@ -188,11 +181,11 @@ export class SqliteTabularRepository<
     const sql = `
       SELECT * FROM \`${this.table}\` WHERE ${whereClauses}
     `;
-    const stmt = this.db.prepare<Entity, ExcludeDateKeyOptionType[]>(sql);
+    const stmt = this.db.prepare<Entity, ValueOptionType[]>(sql);
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const value: Entity | null = stmt.get(...params);
     if (value) {
-      for (const [key, type] of Object.entries(this.valueSchema)) {
+      for (const key in this.valueSchema.properties) {
         // @ts-ignore
         value[key] = this.sqlToJsValue(key, value[key]);
       }
@@ -308,7 +301,7 @@ export class SqliteTabularRepository<
     column: keyof Entity,
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): string {
-    if (!this.schema[column as keyof Schema]) {
+    if (!(column in this.schema.properties)) {
       throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
     }
     return `${String(column)} ${operator} ?`;
@@ -322,7 +315,7 @@ export class SqliteTabularRepository<
    */
   async deleteSearch(
     column: keyof Entity,
-    value: ValueOptionType,
+    value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
     const whereClause = this.generateWhereClause(column, operator);

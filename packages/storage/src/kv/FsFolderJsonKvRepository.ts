@@ -5,35 +5,25 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  JSONValue,
-  ValueOptionType,
-  KeyOptionType,
-  KeyOption,
-  ValueOption,
-} from "../tabular/ITabularRepository";
-import { KvViaTabularRepository } from "./KvViaTabularRepository";
+import { createServiceToken } from "@ellmers/util";
+import { TSchema, Type } from "@sinclair/typebox";
 import { FsFolderTabularRepository } from "../tabular/FsFolderTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
-import { createServiceToken } from "@ellmers/util";
+import { KvViaTabularRepository } from "./KvViaTabularRepository";
 
 export const FS_FOLDER_JSON_KV_REPOSITORY = createServiceToken<IKvRepository<string, any, any>>(
   "storage.kvRepository.fsFolderJson"
 );
 
 /**
- * Abstract base class for key-value storage repositories.
- * Has a basic event emitter for listening to repository events.
+ * A key-value repository implementation that stores values as JSON files in a specified folder.
+ * Uses a tabular repository abstraction for file-based persistence.
  *
  * @template Key - The type of the primary key
  * @template Value - The type of the value being stored
  * @template Combined - Combined type of Key & Value
  */
-export class FsFolderJsonKvRepository<
-  Key extends KeyOptionType = KeyOptionType,
-  Value extends ValueOptionType = JSONValue,
-  Combined = { key: Key; value: Value },
-> extends KvViaTabularRepository<Key, Value, Combined> {
+export class FsFolderJsonKvRepository extends KvViaTabularRepository {
   public tabularRepository: FsFolderTabularRepository<
     typeof DefaultKeyValueSchema,
     typeof DefaultKeyValueKey
@@ -44,10 +34,10 @@ export class FsFolderJsonKvRepository<
    */
   constructor(
     public folderPath: string,
-    primaryKeyType: KeyOption,
-    valueType: ValueOption
+    keySchema: TSchema = Type.String(),
+    valueSchema: TSchema = Type.Any()
   ) {
-    super(primaryKeyType, valueType);
+    super(keySchema, valueSchema);
     this.tabularRepository = new FsFolderTabularRepository(
       folderPath,
       DefaultKeyValueSchema,

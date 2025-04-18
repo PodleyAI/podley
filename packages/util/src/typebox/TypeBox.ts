@@ -6,12 +6,25 @@
 //    *******************************************************************************
 
 import { type TObject, type TSchema, Type } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 
-export const TypeOptionalArray = <T extends TSchema>(type: T) =>
+export const TypeOptionalArray = <T extends TSchema>(
+  type: T,
+  annotations: Record<string, unknown> = {}
+) =>
   Type.Union([type, Type.Array(type)], {
     title: type.title,
     description: type.description,
+    ...annotations,
   });
+
+export const TypeDateTime = (annotations: Record<string, unknown> = {}) =>
+  Type.String({ format: "date-time", ...annotations });
+
+export const TypeBlob = (annotations: Record<string, unknown> = {}) =>
+  Type.Transform(Type.Any({ contentEncoding: "blob", ...annotations }))
+    .Decode((value) => value as Uint8Array)
+    .Encode((value) => Buffer.from(value));
 
 export function areSemanticallyCompatible(
   outputSchema: TSchema,
@@ -45,12 +58,22 @@ export function simplifySchema(schema: TSchema): TSchema {
     for (const arrayMember of arrayMembers) {
       const baseType = arrayMember.items.type;
       if (nonArrayMembers.some((member: any) => member.type === baseType)) {
-        return nonArrayMembers.find((member: any) => member.type === baseType);
+        let result = nonArrayMembers.find((member: any) => member.type === baseType);
+        result = simplifySchema(result);
+        if (result) return { ...result, isArray: true };
       }
     }
   }
 
-  // If there are properties (i.e. an object schema), apply simplification recursively.
+  if (schema.anyOf) {
+    const nullMember = schema.anyOf.find((member: any) => member.type === "null");
+    if (nullMember) {
+      const result = schema.anyOf.filter((member: any) => member.type !== "null");
+      if (result.length === 1) return { ...result[0], isNullable: true };
+      return { ...schema, anyOf: result, isNullable: true };
+    }
+  }
+
   if (schema.properties && typeof schema.properties === "object") {
     const newProperties: any = {};
     for (const key in schema.properties) {
@@ -59,7 +82,6 @@ export function simplifySchema(schema: TSchema): TSchema {
     return { ...schema, properties: newProperties };
   }
 
-  // If the schema is an array, simplify its items.
   if (schema.type === "array" && schema.items) {
     return { ...schema, items: simplifySchema(schema.items) };
   }

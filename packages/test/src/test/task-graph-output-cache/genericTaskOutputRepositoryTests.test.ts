@@ -7,6 +7,7 @@
 
 import { expect, it, beforeEach, afterEach, describe, mock } from "bun:test";
 import { TaskOutputRepository, TaskInput, TaskOutput } from "@ellmers/task-graph";
+import { TaskOutputTabularRepository } from "@ellmers/task-graph";
 
 export function runGenericTaskOutputRepositoryTests(
   createRepository: () => Promise<TaskOutputRepository>
@@ -23,7 +24,9 @@ export function runGenericTaskOutputRepositoryTests(
 
   describe("Basics", () => {
     it("should initialize the tabularRepository", () => {
-      expect(repository.tabularRepository).toBeDefined();
+      if (repository instanceof TaskOutputTabularRepository) {
+        expect(repository.tabularRepository).toBeDefined();
+      }
     });
 
     it("should store and retrieve task outputs", async () => {

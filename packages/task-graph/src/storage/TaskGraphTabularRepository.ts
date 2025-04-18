@@ -6,14 +6,15 @@
 //    *******************************************************************************
 
 import type { TabularRepository } from "@ellmers/storage";
+import { Type } from "@sinclair/typebox";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { createGraphFromGraphJSON } from "../task/TaskJSON";
 import { TaskGraphRepository } from "./TaskGraphRepository";
 
-export const TaskGraphSchema = {
-  key: "string",
-  value: "string",
-} as const;
+export const TaskGraphSchema = Type.Object({
+  key: Type.String(),
+  value: Type.String(),
+});
 
 export const TaskGraphPrimaryKeyNames = ["key"] as const;
 

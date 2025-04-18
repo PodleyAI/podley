@@ -5,21 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import path from "node:path";
-import { readFile, writeFile, rm, readdir } from "node:fs/promises";
-import { mkdirSync } from "node:fs";
+import { createServiceToken, sleep } from "@ellmers/util";
+import { Static, TObject } from "@sinclair/typebox";
 import { glob } from "glob";
-import {
-  ValueSchema,
-  ExtractPrimaryKey,
-  ExtractValue,
-  SchemaToType,
-  ITabularRepository,
-  ValueOptionType,
-} from "./ITabularRepository";
+import { mkdirSync } from "node:fs";
+import { readdir, readFile, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
-import { sleep } from "@ellmers/util";
-import { createServiceToken } from "@ellmers/util";
 
 export const FS_FOLDER_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository.fsFolder"
@@ -33,11 +26,11 @@ export const FS_FOLDER_TABULAR_REPOSITORY = createServiceToken<ITabularRepositor
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class FsFolderTabularRepository<
-  Schema extends ValueSchema,
-  PrimaryKeyNames extends ReadonlyArray<keyof Schema>,
+  Schema extends TObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
   // computed types
   PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = SchemaToType<Schema>,
+  Entity = Static<Schema>,
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   private folderPath: string;
@@ -203,7 +196,7 @@ export class FsFolderTabularRepository<
    */
   async deleteSearch(
     column: keyof Entity,
-    value: ValueOptionType,
+    value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
     throw new Error("Search not supported for FsFolderTabularRepository");
