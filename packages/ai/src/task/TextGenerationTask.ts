@@ -8,72 +8,101 @@
 import {
   CreateWorkflow,
   JobQueueTaskConfig,
-  TaskInputDefinition,
-  TaskOutputDefinition,
   TaskRegistry,
+  TypeReplicateArray,
   Workflow,
 } from "@ellmers/task-graph";
-import { ConvertAllToOptionalArray } from "@ellmers/util";
+import { Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
-import { model_generation } from "./base/TaskIOTypes";
+import { TypeModel } from "./base/AiTaskSchemas";
+import { TypeOptionalArray } from "@ellmers/util";
 
-export type TextGenerationTaskInput = {
-  prompt: string;
-  model: model_generation;
-};
-export type TextGenerationTaskOutput = {
-  text: string;
-};
-type TextGenerationTaskInputReplicate = ConvertAllToOptionalArray<TextGenerationTaskInput>;
-type TextGenerationTaskOutputReplicate = ConvertAllToOptionalArray<TextGenerationTaskOutput>;
+export const TextGenerationInputSchema = Type.Object({
+  model: TypeReplicateArray(TypeModel("model:TextGenerationTask")),
+  prompt: TypeReplicateArray(
+    Type.String({
+      title: "Prompt",
+      description: "The prompt to generate text from",
+    })
+  ),
+  maxTokens: Type.Optional(
+    Type.Number({
+      title: "Max Tokens",
+      description: "The maximum number of tokens to generate",
+      minimum: 1,
+      maximum: 4096,
+    })
+  ),
+  temperature: Type.Optional(
+    Type.Number({
+      title: "Temperature",
+      description: "The temperature to use for sampling",
+      minimum: 0,
+      maximum: 2,
+    })
+  ),
+  topP: Type.Optional(
+    Type.Number({
+      title: "Top-p",
+      description: "The top-p value to use for sampling",
+      minimum: 0,
+      maximum: 1,
+    })
+  ),
+  frequencyPenalty: Type.Optional(
+    Type.Number({
+      title: "Frequency Penalty",
+      description: "The frequency penalty to use",
+      minimum: -2,
+      maximum: 2,
+    })
+  ),
+  presencePenalty: Type.Optional(
+    Type.Number({
+      title: "Presence Penalty",
+      description: "The presence penalty to use",
+      minimum: -2,
+      maximum: 2,
+    })
+  ),
+});
 
-/**
- * This generates text from a prompt
- */
+export const TextGenerationOutputSchema = Type.Object({
+  text: TypeOptionalArray(
+    Type.String({
+      title: "Text",
+      description: "The generated text",
+    })
+  ),
+});
+
+export type TextGenerationTaskInput = Static<typeof TextGenerationInputSchema>;
+export type TextGenerationTaskOutput = Static<typeof TextGenerationOutputSchema>;
+
 export class TextGenerationTask extends AiTask<
-  TextGenerationTaskInputReplicate,
-  TextGenerationTaskOutputReplicate
+  TextGenerationTaskInput,
+  TextGenerationTaskOutput,
+  JobQueueTaskConfig
 > {
   public static type = "TextGenerationTask";
   public static category = "Text Model";
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "prompt",
-      name: "Prompt",
-      valueType: "text",
-      isArray: "replicate",
-    },
-    {
-      id: "model",
-      name: "Model",
-      valueType: "model_generation",
-      isArray: "replicate",
-    },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    { id: "text", name: "Text", valueType: "text", isArray: "replicate" },
-  ] as const;
+  public static inputSchema = TextGenerationInputSchema;
+  public static outputSchema = TextGenerationOutputSchema;
 }
-TaskRegistry.registerTask(TextGenerationTask);
 
+TaskRegistry.registerTask(TextGenerationTask);
 /**
- * Convenience function to run text generation tasks.
- * Creates and executes a TextGenerationCompoundTask with the provided input.
- * @param input The input parameters for text generation (prompts and models)
- * @returns Promise resolving to the generated text output(s)
+ * Task for generating text using a language model
  */
-export const TextGeneration = (
-  input: TextGenerationTaskInputReplicate,
-  config?: JobQueueTaskConfig
-) => {
+export const TextGeneration = (input: TextGenerationTaskInput, config?: JobQueueTaskConfig) => {
   return new TextGenerationTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
     TextGeneration: CreateWorkflow<
-      TextGenerationTaskInputReplicate,
-      TextGenerationTaskOutputReplicate,
+      TextGenerationTaskInput,
+      TextGenerationTaskOutput,
       JobQueueTaskConfig
     >;
   }

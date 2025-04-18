@@ -8,14 +8,12 @@
 import {
   Workflow,
   CreateWorkflow,
-  TaskInputDefinition,
-  TaskOutputDefinition,
   TaskRegistry,
   JobQueueTaskConfig,
   Task,
 } from "@ellmers/task-graph";
 import { Document, DocumentFragment } from "../source/Document";
-
+import { Type } from "@sinclair/typebox";
 export type DocumentSplitterTaskInput = {
   parser: "txt" | "md";
   file: Document;
@@ -31,33 +29,19 @@ export class DocumentSplitterTask extends Task<
 > {
   public static type = "DocumentSplitterTask";
   public static category = "Input";
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "parser",
-      name: "Kind",
-      valueType: "doc_parser",
-      defaultValue: "txt",
-    },
-    {
-      id: "file",
-      name: "File",
-      valueType: "document",
-    },
-    // {
-    //   id: "variant",
-    //   name: "Variant",
-    //   valueType: "doc_variant",
-    //   defaultValue: "tree",
-    // },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    {
-      id: "texts",
-      name: "Texts",
-      valueType: "text",
-      isArray: true,
-    },
-  ] as const;
+  public static inputSchema = Type.Object({
+    parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {
+      name: "Document Kind",
+      description: "The kind of document (txt or md)",
+    }),
+    // file: Type.Instance(Document),
+  });
+  public static outputSchema = Type.Object({
+    texts: Type.Array(Type.String(), {
+      name: "Text Chunks",
+      description: "The text chunks of the document",
+    }),
+  });
 
   flattenFragmentsToTexts(item: DocumentFragment | Document): string[] {
     if (item instanceof Document) {
@@ -75,6 +59,7 @@ export class DocumentSplitterTask extends Task<
     return { texts: this.flattenFragmentsToTexts(this.runInputData.file) };
   }
 }
+
 TaskRegistry.registerTask(DocumentSplitterTask);
 
 export const DocumentSplitter = (input: DocumentSplitterTaskInput) => {

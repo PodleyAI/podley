@@ -6,6 +6,7 @@
 //    *******************************************************************************
 
 export * from "./task/TaskTypes";
+export * from "./task/TaskSchema";
 export * from "./task/TaskError";
 export * from "./task/ITask";
 export * from "./task/TaskEvents";

@@ -21,11 +21,11 @@ import {
   type Provenance,
   type TaskConfig,
   type TaskInput,
-  type TaskInputDefinition,
   type TaskOutput,
-  type TaskOutputDefinition,
   type TaskTypeName,
 } from "./TaskTypes";
+import { Type, type TObject } from "@sinclair/typebox";
+import { TypeCheck, TypeCompiler } from "@sinclair/typebox/compiler";
 import { TaskGraph } from "../task-graph/TaskGraph";
 
 /**
@@ -63,14 +63,14 @@ export class Task<
   public static cacheable: boolean = true;
 
   /**
-   * Input definitions for this task
+   * Input schema for this task
    */
-  public static inputs: readonly TaskInputDefinition[] = [];
+  public static inputSchema: TObject = Type.Object({});
 
   /**
-   * Output definitions for this task
+   * Output schema for this task
    */
-  public static outputs: readonly TaskOutputDefinition[] = [];
+  public static outputSchema: TObject = Type.Object({});
 
   // ========================================================================
   // Task Execution Methods - Core logic provided by subclasses
@@ -172,17 +172,17 @@ export class Task<
   // ========================================================================
 
   /**
-   * Gets input definitions for this task
+   * Gets input schema for this task
    */
-  get inputs(): readonly TaskInputDefinition[] {
-    return (this.constructor as typeof Task).inputs;
+  get inputSchema(): TObject {
+    return (this.constructor as typeof Task).inputSchema;
   }
 
   /**
-   * Gets output definitions for this task
+   * Gets output schema for this task
    */
-  get outputs(): readonly TaskOutputDefinition[] {
-    return (this.constructor as typeof Task).outputs ?? [];
+  get outputSchema(): TObject {
+    return (this.constructor as typeof Task).outputSchema;
   }
 
   public get type(): TaskTypeName {
@@ -310,15 +310,20 @@ export class Task<
   // ========================================================================
 
   /**
-   * Gets default input values from static input definitions
+   * Gets default input values from input schema
    */
   getDefaultInputsFromStaticInputDefinitions(): Partial<Input> {
-    return this.inputs.reduce<Record<string, any>>((acc, cur) => {
-      if (cur.defaultValue !== undefined) {
-        acc[cur.id] = cur.defaultValue;
-      }
-      return acc;
-    }, {}) as Partial<Input>;
+    const schema = this.inputSchema as TObject;
+    return Object.entries(schema.properties || {}).reduce<Record<string, any>>(
+      (acc, [id, prop]) => {
+        const defaultValue = (prop as any).default;
+        if (defaultValue !== undefined) {
+          acc[id] = defaultValue;
+        }
+        return acc;
+      },
+      {}
+    ) as Partial<Input>;
   }
 
   /**
@@ -339,14 +344,26 @@ export class Task<
    * @param input Input values to set
    */
   public setInput(input: Partial<Input>): void {
-    for (const inputdef of this.inputs) {
-      const inputId = inputdef.id as keyof Input;
+    const schema = this.inputSchema as TObject;
+    const properties = schema.properties || {};
+
+    for (const [id, prop] of Object.entries(properties)) {
+      const inputId = id as keyof Input;
       if (input[inputId] !== undefined) {
         this.runInputData[inputId] = input[inputId];
-      } else if (this.runInputData[inputId] === undefined && inputdef.defaultValue !== undefined) {
-        this.runInputData[inputId] = inputdef.defaultValue;
+      } else if (this.runInputData[inputId] === undefined && prop.default !== undefined) {
+        this.runInputData[inputId] = prop.default;
       }
     }
+  }
+
+  /**
+   * Stub for narrowing input. Override in subclasses for custom logic.
+   * @param input The input to narrow
+   * @returns The (possibly narrowed) input
+   */
+  public async narrowInput(input: Input): Promise<Input> {
+    return input;
   }
 
   // ========================================================================
@@ -405,122 +422,37 @@ export class Task<
   // ========================================================================
 
   /**
-   * Validates an item against the task's input definition
-   *
-   * @param valueType The type of the item
-   * @param item The item to validate
-   * @returns True if the item is valid, otherwise throws an error
-   * @throws TaskInvalidInputError if the item is invalid
+   * The compiled input schema
    */
-  async validateInputValue(valueType: string, item: any): Promise<boolean> {
-    switch (valueType) {
-      case "any":
-        return true;
-      case "number": {
-        const valid = typeof item === "bigint" || typeof item === "number";
-        if (!valid) {
-          throw new TaskInvalidInputError(`${item} is not a number`);
-        }
-        return valid;
-      }
-      case "text":
-      case "string": {
-        const valid = typeof item === "string";
-        if (!valid) {
-          throw new TaskInvalidInputError(`${item} is not a string`);
-        }
-        return valid;
-      }
-      case "boolean": {
-        const valid = typeof item === "boolean";
-        if (!valid) {
-          throw new TaskInvalidInputError(`${item} is not a boolean`);
-        }
-        return valid;
-      }
-      case "function": {
-        const valid = typeof item === "function";
-        if (!valid) {
-          throw new TaskInvalidInputError(`${item} is not a function`);
-        }
-        return valid;
-      }
-      default:
-        throw new TaskInvalidInputError(`validateInputValue: Unknown value type: ${valueType}`);
+  private static _inputSchemaTypeChecker: TypeCheck<TObject> | undefined;
+
+  /**
+   * Gets the compiled input schema
+   */
+  protected static getInputSchemaTypeChecker(): TypeCheck<TObject> {
+    if (!Task._inputSchemaTypeChecker) {
+      Task._inputSchemaTypeChecker = TypeCompiler.Compile(Task.inputSchema);
     }
+    return Task._inputSchemaTypeChecker;
   }
 
   /**
-   * Validates an input item against the task's input definition
-   *
-   * @param input The input to validate
-   * @param inputId The id of the input to validate
-   * @returns True if the input is valid, otherwise throws an error
-   * @throws TaskInvalidInputError if the input is invalid
-   */
-  public async validateInputDefinition(
-    input: Partial<Input>,
-    inputId: keyof Input
-  ): Promise<boolean> {
-    const classRef = this.constructor as typeof Task;
-    const inputdef = this.inputs.find((def) => def.id === inputId);
-
-    if (!inputdef) {
-      throw new TaskInvalidInputError(
-        `validateInputDefinition: Unknown input id: ${inputId as string}`
-      );
-    }
-
-    if (typeof input !== "object") {
-      throw new TaskInvalidInputError(
-        `validateInputDefinition: Input is not an object: ${inputId as string}`
-      );
-    }
-
-    if (input[inputId] === undefined) {
-      if (inputdef.defaultValue !== undefined) {
-        input[inputId] = inputdef.defaultValue;
-      } else {
-        if (!inputdef.optional && inputdef.valueType !== "any") {
-          throw new TaskInvalidInputError(
-            `No default value for '${inputId as string}' in a ${classRef.type} so assumed required and not given (id:${this.config.id})`
-          );
-        }
-      }
-    }
-
-    // force the input to be an array if the input definition says it is an array
-    if (inputdef.isArray === true && !Array.isArray(input[inputId])) {
-      input[inputId] = [input[inputId]] as any;
-    }
-
-    let inputlist: any[] = [];
-    if (inputdef.isArray && Array.isArray(input[inputId])) {
-      inputlist = input[inputId] as any[];
-    } else {
-      inputlist = [input[inputId]];
-    }
-
-    const validationPromises = inputlist.map((item) =>
-      this.validateInputValue(inputdef.valueType as string, item)
-    );
-
-    const validationResults = await Promise.allSettled(validationPromises);
-    return validationResults.every((result) => result.status === "fulfilled");
-  }
-
-  /**
-   * Validates an input data object against the task's input definition
-   *
-   * @param input The input to validate
-   * @returns True if the input is valid, otherwise throws an error
-   * @throws TaskInvalidInputError if the input is invalid
+   * Validates an input data object against the task's input schema
    */
   public async validateInput(input: Partial<Input>): Promise<boolean> {
-    for (const inputdef of this.inputs) {
-      if (inputdef.optional && input[inputdef.id] === undefined) continue;
-      await this.validateInputDefinition(input, inputdef.id);
+    const schema = this.inputSchema as TObject;
+
+    // validate the partial input against the schema
+    const checker = (this.constructor as typeof Task).getInputSchemaTypeChecker();
+    if (!checker.Check(input)) {
+      const errors = [...checker.Errors(input)];
+      throw new TaskInvalidInputError(
+        `Input ${JSON.stringify(input)} does not match schema: ${errors
+          .map((e) => `${e.message} (${e.path.slice(1)})`)
+          .join(", ")}`
+      );
     }
+
     return true;
   }
 

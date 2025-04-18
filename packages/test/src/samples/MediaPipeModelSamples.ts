@@ -2,7 +2,7 @@ import { TENSORFLOW_MEDIAPIPE } from "@ellmers/ai-provider";
 import { getGlobalModelRepository, Model } from "@ellmers/ai";
 
 async function addMediaPipeModel(info: Partial<Model>, tasks: string[]) {
-  const name = "MEDIAPIPE " + info.name;
+  const name = "mediapipe:" + info.name;
 
   const model = Object.assign(
     {

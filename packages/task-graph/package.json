@@ -36,6 +36,7 @@
   "dependencies": {
     "@ellmers/job-queue": "workspace:*",
     "@ellmers/storage": "workspace:*",
-    "@ellmers/util": "workspace:*"
+    "@ellmers/util": "workspace:*",
+    "@sinclair/typebox": "^0.34.31"
   }
 }

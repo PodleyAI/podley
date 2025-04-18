@@ -6,19 +6,19 @@
 //    *******************************************************************************
 
 import {
-  TaskOutput,
-  Workflow,
   CreateWorkflow,
-  TaskRegistry,
-  TaskInput,
-  TaskInputDefinition,
-  TaskOutputDefinition,
-  TaskConfig,
-  Task,
+  DATAFLOW_ALL_PORTS,
   IExecuteConfig,
   IExecuteReactiveConfig,
-  DATAFLOW_ALL_PORTS,
+  Task,
+  TaskConfig,
+  TaskConfigurationError,
+  TaskInput,
+  TaskOutput,
+  TaskRegistry,
+  Workflow,
 } from "@ellmers/task-graph";
+import { Type } from "@sinclair/typebox";
 
 interface LambdaTaskConfig<
   Input extends TaskInput = TaskInput,
@@ -48,35 +48,38 @@ export class LambdaTask<
 
   constructor(input: Partial<Input> = {}, config: Partial<Config> = {}) {
     if (!config.execute && !config.executeReactive) {
-      throw new Error("LambdaTask must have either execute or executeReactive function in config");
+      throw new TaskConfigurationError(
+        "LambdaTask must have either execute or executeReactive function in config"
+      );
     }
     super(input, config as Config);
   }
 
   /**
-   * Input definition for LambdaTask
-   * - fn: The function to execute
+   * Input schema for LambdaTask
    * - input: Optional input data to pass to the function
    */
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: DATAFLOW_ALL_PORTS, // Can accept any port
-      name: "Input",
-      valueType: "any", // Can accept any type of input
-    },
-  ] as const;
+  public static inputSchema = Type.Object({
+    [DATAFLOW_ALL_PORTS]: Type.Optional(
+      Type.Any({
+        title: "Input",
+        description: "Input data to pass to the function",
+      })
+    ),
+  });
 
   /**
-   * Output definition for LambdaTask
+   * Output schema for LambdaTask
    * The output will be whatever the provided function returns
    */
-  public static outputs: TaskOutputDefinition[] = [
-    {
-      id: DATAFLOW_ALL_PORTS, // Can return on any port
-      name: "Output",
-      valueType: "any", // Can return any type of value
-    },
-  ] as const;
+  public static outputSchema = Type.Object({
+    [DATAFLOW_ALL_PORTS]: Type.Optional(
+      Type.Any({
+        title: "Output",
+        description: "Output data from the function",
+      })
+    ),
+  });
 
   async execute(input: Input, config: IExecuteConfig): Promise<Output> {
     if (typeof this.config.execute === "function") {

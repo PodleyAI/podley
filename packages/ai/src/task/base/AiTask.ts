@@ -13,10 +13,12 @@ import {
   getTaskQueueRegistry,
   JobQueueTask,
   JobQueueTaskConfig,
+  TaskConfigurationError,
   type TaskInput,
-  TaskInvalidInputError,
   type TaskOutput,
 } from "@ellmers/task-graph";
+import { simplifySchema } from "@ellmers/util";
+import { type TSchema } from "@sinclair/typebox";
 import { AiJob } from "../../job/AiJob";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
 
@@ -37,7 +39,7 @@ export class AiTask<
    */
   constructor(input: Input = {} as Input, config: Config = {} as Config) {
     config.name ||= `${new.target.type || new.target.name}${
-      input?.model ? " with model " + input?.model : ""
+      input.model ? " with model " + input.model : ""
     }`;
     super(input, config);
     this.jobClass = AiJob<Input, Output>;
@@ -54,15 +56,15 @@ export class AiTask<
   async createJob(input: Input & { model: string }) {
     const runtype = (this.constructor as any).runtype ?? (this.constructor as any).type;
     const modelname = input.model;
-    if (!modelname) throw new Error("JobQueueTaskTask: No model name found");
+    if (!modelname) throw new TaskConfigurationError("JobQueueTask: No model name found");
     const model = await getGlobalModelRepository().findByName(modelname);
 
     if (!model) {
-      throw new Error(`JobQueueTaskTask: No model ${modelname} found`);
+      throw new TaskConfigurationError(`JobQueueTask: No model ${modelname} found`);
     }
     const queue = getTaskQueueRegistry().getQueue(model.provider);
     if (!queue) {
-      throw new Error(`JobQueueTaskTask: No queue for model ${model.provider}`);
+      throw new TaskConfigurationError(`JobQueueTask: No queue for model ${model.provider}`);
     }
     this.config.queueName = queue.queueName;
     const job = new AiJob({
@@ -79,27 +81,67 @@ export class AiTask<
 
   /**
    * Validates that a model name really exists
-   * @param valueType The type of the item ("model")
+   * @param schema The schema to validate against
    * @param item The item to validate
    * @returns True if the item is valid, false otherwise
    */
-  async validateInputValue(valueType: string, item: any) {
-    const modelRepo = getGlobalModelRepository();
-
-    if (valueType === "model" || valueType.startsWith("model_")) {
-      const model = await modelRepo.findByName(item);
-      if (!model) {
-        throw new TaskInvalidInputError(`${valueType} not found: ${item}`);
+  async validateInput(input: Input): Promise<boolean> {
+    // TODO(str): this is very inefficient, we should cache the results, including intermediate results
+    const inputSchemaProperties = simplifySchema(this.inputSchema).properties;
+    const modelTaskProperties = Object.entries<TSchema>(inputSchemaProperties).filter(
+      ([key, value]) => value.semantic?.startsWith("model:")
+    );
+    if (modelTaskProperties.length > 0) {
+      const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
+      for (const [key, propSchema] of modelTaskProperties) {
+        let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
+        for (const model of requestedModels) {
+          const foundModel = taskModels?.find((m) => m.name === model);
+          if (!foundModel) {
+            throw new TaskConfigurationError(`AiTask: Missing model for "${key}" named "${model}"`);
+          }
+        }
       }
-      const tasks = await modelRepo.findTasksByModel(item);
-      const type = (this.constructor as typeof AiTask).type;
-      const valid = !!tasks?.includes(type) || type === "DownloadModelTask";
-      if (!valid) {
-        throw new TaskInvalidInputError(`${item} not valid for ${valueType} task: ${type}`);
+    }
+    const modelPlainProperties = Object.entries<TSchema>(inputSchemaProperties).filter(
+      ([key, value]) => value.semantic === "model"
+    );
+    if (modelPlainProperties.length > 0) {
+      for (const [key, propSchema] of modelPlainProperties) {
+        let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
+        for (const model of requestedModels) {
+          const foundModel = await getGlobalModelRepository().findByName(model);
+          if (!foundModel) {
+            throw new TaskConfigurationError(`AiTask: Missing model for "${key}" named "${model}"`);
+          }
+        }
       }
-      return valid;
     }
 
-    return super.validateInputValue(valueType, item);
+    return super.validateInput(input);
+  }
+
+  // dataflows can strip some models that are incompatible with the target task
+  // if all of them are stripped, then the task will fail in validateInput
+  async narrowInput(input: Input): Promise<Input> {
+    // TODO(str): this is very inefficient, we should cache the results, including intermediate results
+    const inputSchemaProperties = simplifySchema(this.inputSchema).properties;
+    const modelTaskProperties = Object.entries<TSchema>(inputSchemaProperties).filter(
+      ([key, value]) => value.semantic?.startsWith("model:")
+    );
+    if (modelTaskProperties.length > 0) {
+      const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
+      for (const [key, propSchema] of modelTaskProperties) {
+        let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
+        let usingModels = requestedModels.filter((model: string) =>
+          taskModels?.find((m) => m.name === model)
+        );
+
+        // we alter input to be the models that were found for this kind of input
+        usingModels = usingModels.length > 1 ? usingModels : usingModels[0];
+        (input as any)[key] = usingModels;
+      }
+    }
+    return input;
   }
 }

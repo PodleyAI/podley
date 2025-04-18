@@ -101,7 +101,7 @@ describe("TaskSubGraphRunner", () => {
       const squareTask = new TestSquareTask({ input: 5 }, { id: "square" });
       const failingTask = new FailingTask({}, { id: "failing" });
       graph.addTasks([squareTask, failingTask]);
-      graph.addDataflow(new Dataflow("square", "output", "failing", "input"));
+      graph.addDataflow(new Dataflow("square", "output", "failing", "in"));
 
       let error: TaskError | undefined;
       try {

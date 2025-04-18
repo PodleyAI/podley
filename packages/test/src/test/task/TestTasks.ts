@@ -14,18 +14,16 @@
 import {
   CreateWorkflow,
   IExecuteConfig,
-  JobQueueTaskConfig,
   Task,
   TaskAbortedError,
   TaskConfig,
   TaskError,
   TaskFailedError,
   TaskInput,
-  TaskInputDefinition,
-  TaskOutputDefinition,
   Workflow,
 } from "@ellmers/task-graph";
-import { ConvertAllToArrays, ConvertSomeToOptionalArray, sleep } from "@ellmers/util";
+import { sleep } from "@ellmers/util";
+import { Type } from "@sinclair/typebox";
 
 /**
  * Standard input type for basic test tasks
@@ -50,35 +48,19 @@ export type TestIOTaskOutput = {
 export class TestIOTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   static readonly type = "TestIOTask";
 
-  // Define input schema
-  static readonly inputs = [
-    {
-      id: "key",
-      name: "Input",
-      valueType: "text",
-      defaultValue: "default",
-    },
-  ] as const;
+  static readonly inputSchema = Type.Object({
+    key: Type.String({
+      default: "default",
+    }),
+  });
 
-  // Define output schema
-  static readonly outputs = [
-    {
-      id: "reactiveOnly",
-      name: "Output",
-      valueType: "boolean",
-    },
-    {
-      id: "all",
-      name: "Output",
-      valueType: "boolean",
-    },
-    {
-      id: "key",
-      name: "Output",
-      valueType: "text",
-      optional: true,
-    },
-  ] as const;
+  static readonly outputSchema = Type.Object({
+    reactiveOnly: Type.Boolean({}),
+    all: Type.Boolean({}),
+    key: Type.String({
+      default: "default",
+    }),
+  });
 
   /**
    * Implementation of reactive run mode
@@ -127,28 +109,23 @@ type SimpleProcessingOutput = {
 export class SimpleProcessingTask extends Task<SimpleProcessingInput, SimpleProcessingOutput> {
   static readonly type = "SimpleProcessingTask";
 
-  // Define input/output definitions
-  static readonly inputs = [
-    {
-      id: "value",
-      name: "Input Value",
-      valueType: "text",
-      defaultValue: "default",
-    },
-  ] as const;
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    value: Type.String({
+      description: "Input value to process",
+      default: "default",
+    }),
+  });
 
-  static readonly outputs = [
-    {
-      id: "processed",
-      name: "Processed Flag",
-      valueType: "boolean",
-    },
-    {
-      id: "result",
-      name: "Result Value",
-      valueType: "text",
-    },
-  ] as const;
+  // Define output schema
+  static readonly outputSchema = Type.Object({
+    processed: Type.Boolean({
+      description: "Flag indicating if the value was processed",
+    }),
+    result: Type.String({
+      description: "Processed result value",
+    }),
+  });
 
   /**
    * Full implementation for processing input values
@@ -186,31 +163,28 @@ export class FailingTask extends Task {
   declare runInputData: { in: number };
   declare runOutputData: { out: number };
 
-  // Define input/output definitions
-  static inputs = [
-    {
-      id: "in",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    in: Type.Number({
+      description: "Input number",
+      default: 0,
+    }),
+  });
 
-  static outputs = [
-    {
-      id: "out",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
+  // Define output schema
+  static readonly outputSchema = Type.Object({
+    out: Type.Number({
+      description: "Output number",
+    }),
+  });
 
   /**
-   * Implementation that always throws an error after checking for abort signals
+   * Always throws an error to simulate task failure
    */
   async execute(input: TaskInput, executeConfig: IExecuteConfig): Promise<{ out: number }> {
     // Add a small delay to ensure abortion has time to take effect
     await sleep(5);
-    if (executeConfig.signal.aborted) {
+    if (executeConfig.signal?.aborted) {
       throw new TaskAbortedError(ABORT_MESSAGE);
     }
     throw new TaskFailedError(FAILURE_MESSAGE);
@@ -230,10 +204,22 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   progressValue = 0.5;
   delayMs = 0;
 
+  static readonly inputSchema = Type.Object({
+    key: Type.String({
+      default: "default",
+    }),
+  });
+
+  static readonly outputSchema = Type.Object({
+    reactiveOnly: Type.Boolean({}),
+    all: Type.Boolean({}),
+    key: Type.String({}),
+  });
+
   /**
-   * Implementation with configurable behavior based on instance properties
+   * Executes the task with configurable behavior for testing
    */
-  async execute(input: TaskInput, { updateProgress, signal }: IExecuteConfig): Promise<any> {
+  async execute(input: TestIOTaskInput, { updateProgress, signal }: IExecuteConfig): Promise<any> {
     if (signal.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
@@ -251,83 +237,83 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
     }
 
     if (this.shouldThrowError) {
-      throw new Error("Controlled test error");
+      throw new TaskError("Test error");
     }
 
-    return { success: true };
+    return {
+      reactiveOnly: false,
+      all: true,
+      key: input.key,
+    };
   }
 }
 
 /**
- * Input type for number squaring task
+ * Input type for squaring a number
  */
 export type TestSquareTaskInput = {
   input: number;
 };
 
 /**
- * Output type for number squaring task
+ * Output type for squared number
  */
 export type TestSquareTaskOutput = {
   output: number;
 };
 
 /**
- * Task that squares a number - simple mathematical operation example
+ * Task that squares its input number
  */
 export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareTask";
 
-  static readonly inputs: TaskInputDefinition[] = [
-    {
-      id: "input",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    input: Type.Number({
+      description: "Number to square",
+    }),
+  });
 
-  static readonly outputs: TaskOutputDefinition[] = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
+  static readonly outputSchema = Type.Object({
+    output: Type.Number({
+      description: "Squared number",
+    }),
+  });
 
   /**
-   * Squares the input number
+   * Reactive implementation that squares the input number
    */
   async executeReactive(input: TestSquareTaskInput): Promise<TestSquareTaskOutput> {
-    return { output: input.input * input.input };
+    return {
+      output: input.input * input.input,
+    };
   }
 }
 
 /**
- * Task that squares a number - simple mathematical operation example
+ * Non-reactive version of TestSquareTask
+ * Only implements execute() for testing differences between reactive and non-reactive tasks
  */
 export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareNonReactiveTask";
 
-  static readonly inputs: TaskInputDefinition[] = [
-    {
-      id: "input",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    input: Type.Number({
+      description: "Number to square",
+    }),
+  });
 
-  static readonly outputs: TaskOutputDefinition[] = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
+  // Define output schema
+  static readonly outputSchema = Type.Object({
+    output: Type.Number({
+      description: "Squared number",
+    }),
+  });
 
   /**
-   * Squares the input number
+   * Non-reactive implementation that squares the input number
    */
   async execute(input: TestSquareTaskInput): Promise<TestSquareTaskOutput> {
     return { output: input.input * input.input };
@@ -335,48 +321,46 @@ export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSqu
 }
 
 /**
- * Input type for the double task
+ * Input type for doubling a number
  */
 export type TestDoubleTaskInput = {
   input: number;
 };
 
 /**
- * Output type for the double task
+ * Output type for doubled number
  */
 export type TestDoubleTaskOutput = {
   output: number;
 };
 
 /**
- * Task that doubles a number - simple mathematical operation example
- * Note: The implementation actually squares the number instead of doubling it.
- * This appears to be a bug in the original code.
+ * Task that doubles its input number
  */
 export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutput> {
   static readonly type = "TestDoubleTask";
-  static readonly inputs: TaskInputDefinition[] = [
-    {
-      id: "input",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
 
-  static readonly outputs: TaskOutputDefinition[] = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    input: Type.Number({
+      description: "Number to double",
+    }),
+  });
+
+  // Define output schema
+  static readonly outputSchema = Type.Object({
+    output: Type.Number({
+      description: "Doubled number",
+    }),
+  });
 
   /**
-   * Should double the input number but currently squares it
+   * Reactive implementation that doubles the input number
    */
   async executeReactive(input: TestDoubleTaskInput): Promise<TestDoubleTaskOutput> {
-    return { output: input.input * 2 };
+    return {
+      output: input.input * 2,
+    };
   }
 }
 
@@ -386,31 +370,26 @@ export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutp
  */
 export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareErrorTask";
-  static inputs = [
-    {
-      id: "input",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
 
-  static outputs = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    input: Type.Number({
+      description: "Number to square (will throw error)",
+    }),
+  });
+
+  // Define output schema
+  static readonly outputSchema = Type.Object({
+    output: Type.Number({
+      description: "Squared number (never returned due to error)",
+    }),
+  });
 
   /**
-   * Throws an error when input is 2, otherwise squares the input
+   * Always throws an error to test error handling
    */
   async executeReactive(input: TestSquareTaskInput): Promise<TestSquareTaskOutput> {
-    if (input.input === 2) {
-      throw new TaskError("Test error");
-    }
-    return { output: input.input * input.input };
+    throw new TaskError("Test error");
   }
 }
 
@@ -419,112 +398,167 @@ export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTas
  */
 export class TestSimpleTask extends Task<{ input: string }, { output: string }> {
   static type = "TestSimpleTask";
-  declare runInputData: { input: string };
-  declare runOutputData: { output: string };
 
-  static inputs: TaskInputDefinition[] = [{ id: "input", name: "Input", valueType: "string" }];
-  static outputs: TaskOutputDefinition[] = [{ id: "output", name: "Output", valueType: "string" }];
+  static readonly inputSchema = Type.Object({
+    input: Type.String({
+      description: "Input string",
+    }),
+  });
 
-  /**
-   * Processes input by adding a prefix
-   */
-  async execute(input: TaskInput): Promise<any> {
+  static readonly outputSchema = Type.Object({
+    output: Type.String({
+      description: "Output string",
+    }),
+  });
+
+  async execute(input: { input: string }): Promise<{ output: string }> {
     return { output: `processed-${input.input}` };
   }
 }
 
 /**
- * Task with custom output field names for testing output mapping
+ * Task that uses a custom output property name
  */
 export class TestOutputTask extends Task<{ input: string }, { customOutput: string }> {
   static type = "TestOutputTask";
   declare runInputData: { input: string };
   declare runOutputData: { customOutput: string };
 
-  static inputs: TaskInputDefinition[] = [{ id: "input", name: "Input", valueType: "string" }];
-  static outputs: TaskOutputDefinition[] = [
-    { id: "customOutput", name: "Custom Output", valueType: "string" },
-  ];
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    input: Type.String({
+      description: "Input string",
+    }),
+  });
+
+  // Define output schema
+  static readonly outputSchema = Type.Object({
+    customOutput: Type.String({
+      description: "Custom output string",
+    }),
+  });
 
   /**
-   * Processes input and outputs to a custom field name
+   * Returns the input in a custom output property
    */
   async execute(input: TaskInput): Promise<any> {
-    return { customOutput: `processed-${input.input}` };
+    return { customOutput: (input as { input: string }).input };
   }
 }
 
 /**
- * Task with custom input field names for testing input mapping
+ * Task that uses a custom input property name
  */
 export class TestInputTask extends Task<{ customInput: string }, { output: string }> {
   static type = "TestInputTask";
   declare runInputData: { customInput: string };
   declare runOutputData: { output: string };
 
-  static inputs: TaskInputDefinition[] = [
-    { id: "customInput", name: "Custom Input", valueType: "string" },
-  ];
-  static outputs: TaskOutputDefinition[] = [{ id: "output", name: "Output", valueType: "string" }];
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    customInput: Type.String({
+      description: "Custom input string",
+    }),
+  });
+
+  // Define output schema
+  static readonly outputSchema = Type.Object({
+    output: Type.String({
+      description: "Output string",
+    }),
+  });
 
   /**
-   * Processes custom input field and returns standard output
+   * Returns the custom input in the output property
    */
   async execute(input: TaskInput): Promise<any> {
-    return { output: `processed-${input.customInput}` };
+    return { output: (input as { customInput: string }).customInput };
   }
 }
 
 /**
- * Task that runs for a long time to test cancellation and progress reporting
+ * Task that runs for a long time to test task abortion
  */
 export class LongRunningTask extends Task {
   static type = "LongRunningTask";
-  static inputs: TaskInputDefinition[] = [];
-  static outputs: TaskOutputDefinition[] = [];
+
+  // Define empty input schema
+  static readonly inputSchema = Type.Object({});
+
+  // Define empty output schema
+  static readonly outputSchema = Type.Object({});
 
   /**
-   * Simulates a long-running operation with progress updates
-   * Checks for abort signals to demonstrate proper cancellation
+   * Runs indefinitely until aborted
    */
   async execute(input: TaskInput, executeConfig: IExecuteConfig): Promise<any> {
-    for (let i = 0; i < 10; i++) {
-      if (executeConfig.signal.aborted) {
-        throw new TaskAbortedError("Task aborted");
+    while (true) {
+      if (executeConfig.signal?.aborted) {
+        throw new TaskAbortedError(ABORT_MESSAGE);
       }
-      await sleep(10);
-      executeConfig.updateProgress(i / 10);
+      await sleep(100);
     }
   }
 }
 
 /**
- * Simple task for testing string inputs and outputs
+ * Task that processes string input
  */
 export class StringTask extends Task<{ input: string }, { output: string }, TaskConfig> {
   static type = "StringTask";
-  static inputs: TaskInputDefinition[] = [{ id: "input", valueType: "string", name: "Input" }];
-  static outputs: TaskOutputDefinition[] = [{ id: "output", valueType: "string", name: "Output" }];
 
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    input: Type.String({
+      description: "Input string",
+    }),
+  });
+
+  // Define output schema
+  static readonly outputSchema = Type.Object({
+    output: Type.String({
+      description: "Output string",
+    }),
+  });
+
+  /**
+   * Returns the input string as output
+   */
   async execute() {
-    return { output: "string" };
+    return { output: this.runInputData.input };
   }
 }
 
 /**
- * Simple task for testing number inputs and outputs
+ * Task that processes number input
  */
 export class NumberTask extends Task<{ input: number }, { output: number }, TaskConfig> {
   static type = "NumberTask";
-  static inputs: TaskInputDefinition[] = [{ id: "input", valueType: "number", name: "Input" }];
-  static outputs: TaskOutputDefinition[] = [{ id: "output", valueType: "number", name: "Output" }];
 
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    input: Type.Number({
+      description: "Input number",
+    }),
+  });
+
+  // Define output schema
+  static readonly outputSchema = Type.Object({
+    output: Type.Number({
+      description: "Output number",
+    }),
+  });
+
+  /**
+   * Returns the input number as output
+   */
   async execute() {
-    return { output: 123 };
+    return { output: this.runInputData.input };
   }
 }
+
 /**
- * Input type for addition task
+ * Input type for adding two numbers
  */
 type TestAddTaskInput = {
   a: number;
@@ -532,45 +566,42 @@ type TestAddTaskInput = {
 };
 
 /**
- * Output type for addition task
+ * Output type for sum of two numbers
  */
 type TestAddTaskOutput = {
   output: number;
 };
 
 /**
- * Task that adds two numbers together
+ * Task that adds two numbers
  */
 export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
   static readonly type = "TestAddTask";
-  static inputs = [
-    {
-      id: "a",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-    {
-      id: "b",
-      name: "Input",
-      valueType: "number",
-      defaultValue: 0,
-    },
-  ] as const;
 
-  static outputs = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
+  // Define input schema
+  static readonly inputSchema = Type.Object({
+    a: Type.Number({
+      description: "First number to add",
+    }),
+    b: Type.Number({
+      description: "Second number to add",
+    }),
+  });
+
+  // Define output schema
+  static readonly outputSchema = Type.Object({
+    output: Type.Number({
+      description: "Sum of the two numbers",
+    }),
+  });
 
   /**
-   * Adds two input numbers
+   * Adds the two input numbers
    */
   async executeReactive(input: TestAddTaskInput) {
-    return { output: input.a + input.b };
+    return {
+      output: input.a + input.b,
+    };
   }
 }
 

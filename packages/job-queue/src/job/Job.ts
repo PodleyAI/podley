@@ -8,6 +8,7 @@
 import type { JobQueue } from "./JobQueue";
 import type { JobProgressListener } from "./JobQueueEventListeners";
 import { JobStatus } from "./IJobQueue";
+import { JobError } from "./JobError";
 
 /**
  * Details about a job that reflect the structure in the database.
@@ -105,7 +106,7 @@ export class Job<Input, Output> {
     this.progressDetails = progressDetails;
   }
   async execute(signal: AbortSignal): Promise<Output> {
-    throw new Error("Method not implemented.");
+    throw new JobError("Method not implemented.");
   }
 
   private progressListeners: Set<JobProgressListener> = new Set();

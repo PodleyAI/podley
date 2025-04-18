@@ -20,15 +20,8 @@ import type {
 } from "./TaskEvents";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
-import type {
-  Provenance,
-  TaskConfig,
-  TaskInput,
-  TaskInputDefinition,
-  TaskOutput,
-  TaskOutputDefinition,
-  TaskStatus,
-} from "./TaskTypes";
+import type { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
+import { TObject } from "@sinclair/typebox";
 
 /**
  * Configuration for task execution
@@ -60,8 +53,8 @@ export interface ITaskStaticProperties {
   readonly type: string;
   readonly category: string;
   readonly cacheable: boolean;
-  readonly inputs: readonly TaskInputDefinition[];
-  readonly outputs: readonly TaskOutputDefinition[];
+  readonly inputSchema: TObject;
+  readonly outputSchema: TObject;
 }
 
 /**
@@ -104,16 +97,15 @@ export interface ITaskIO<Input extends TaskInput, Output extends TaskOutput> {
   runInputData: Input;
   runOutputData: Output;
 
-  get inputs(): readonly TaskInputDefinition[]; // this gets local access for static input definition property
-  get outputs(): readonly TaskOutputDefinition[]; // this gets local access for static output definition property
-  get type(): string; // this gets local access for static type property
+  get inputSchema(): TObject; // gets local access for static inputSchema property
+  get outputSchema(): TObject; // gets local access for static outputSchema property
+  get type(): string; // gets local access for static type property
 
   resetInputData(): void;
   setInput(input: Partial<Input>): void;
-  validateInputValue(valueType: string, item: any): Promise<boolean>;
-  validateInputDefinition(input: Partial<Input>, inputId: keyof Input): Promise<boolean>;
   validateInput(input: Partial<Input>): Promise<boolean>;
   get cacheable(): boolean;
+  narrowInput(input: Input): Promise<Input>;
 }
 
 export interface ITaskInternalGraph {

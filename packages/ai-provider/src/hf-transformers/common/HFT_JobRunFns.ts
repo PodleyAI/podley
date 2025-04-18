@@ -6,43 +6,43 @@
 //    *******************************************************************************
 
 import {
-  DownloadModelTaskInput,
-  DownloadModelTaskOutput,
-  TextEmbeddingTaskInput,
-  TextEmbeddingTaskOutput,
-  TextGenerationTaskInput,
-  TextGenerationTaskOutput,
-  TextTranslationTaskInput,
-  TextTranslationTaskOutput,
-  TextRewriterTaskInput,
-  TextRewriterTaskOutput,
-  TextSummaryTaskInput,
-  TextSummaryTaskOutput,
-  TextQuestionAnswerTaskInput,
-  TextQuestionAnswerTaskOutput,
-  Model,
-  ElVector,
   AiProviderRunFn,
+  DownloadModelTaskExecuteInput,
+  Model,
+  TextEmbeddingInputSchema,
+  TextEmbeddingOutputSchema,
+  TextGenerationInputSchema,
+  TextGenerationOutputSchema,
+  TextQuestionAnswerInputSchema,
+  TextQuestionAnswerOutputSchema,
+  TextRewriterInputSchema,
+  TextRewriterOutputSchema,
+  TextSummaryInputSchema,
+  TextSummaryOutputSchema,
+  TextTranslationInputSchema,
+  TextTranslationOutputSchema,
+  TypedArray,
 } from "@ellmers/ai";
 import { PermanentJobError } from "@ellmers/job-queue";
+import { DeReplicateStatic } from "@ellmers/task-graph";
 import {
+  DocumentQuestionAnsweringSingle,
+  type FeatureExtractionPipeline,
   pipeline,
   type PipelineType,
-  type FeatureExtractionPipeline,
-  type TextGenerationPipeline,
   // @ts-ignore temporary "fix"
   type PretrainedModelOptions,
-  TextStreamer,
-  TextGenerationSingle,
+  QuestionAnsweringPipeline,
   SummarizationPipeline,
+  SummarizationSingle,
+  type TextGenerationPipeline,
+  TextGenerationSingle,
+  TextStreamer,
   TranslationPipeline,
   TranslationSingle,
-  QuestionAnsweringPipeline,
-  SummarizationSingle,
-  DocumentQuestionAnsweringSingle,
 } from "@sroussey/transformers";
-import { QUANTIZATION_DATA_TYPES } from "./HFT_Constants";
 import { CallbackStatus } from "./HFT_CallbackStatus";
+import { QUANTIZATION_DATA_TYPES } from "./HFT_Constants";
 
 const pipelines = new Map<string, any>();
 
@@ -90,16 +90,14 @@ const getPipeline = async (
  * This is shared between inline and worker implementations.
  */
 export const HFT_Download: AiProviderRunFn<
-  DownloadModelTaskInput,
-  Pick<DownloadModelTaskOutput, "model" | "dimensions" | "normalize">
+  DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteInput
 > = async (input, model, onProgress, signal) => {
   // Download the model by creating a pipeline
   await getPipeline(model!, onProgress, { abort_signal: signal });
 
   return {
     model: input.model!,
-    dimensions: model!.nativeDimensions || 0,
-    normalize: model!.normalize || true,
   };
 };
 
@@ -108,8 +106,8 @@ export const HFT_Download: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextEmbedding: AiProviderRunFn<
-  TextEmbeddingTaskInput,
-  TextEmbeddingTaskOutput
+  DeReplicateStatic<typeof TextEmbeddingInputSchema>,
+  DeReplicateStatic<typeof TextEmbeddingOutputSchema>
 > = async (input, model, onProgress, signal) => {
   const generateEmbedding: FeatureExtractionPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -134,10 +132,7 @@ export const HFT_TextEmbedding: AiProviderRunFn<
     );
   }
 
-  // @ts-ignore
-  const vector = new ElVector(hfVector.data, model.normalize ?? true);
-
-  return { vector };
+  return { vector: hfVector.data as TypedArray };
 };
 
 /**
@@ -145,8 +140,8 @@ export const HFT_TextEmbedding: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextGeneration: AiProviderRunFn<
-  TextGenerationTaskInput,
-  TextGenerationTaskOutput
+  DeReplicateStatic<typeof TextGenerationInputSchema>,
+  DeReplicateStatic<typeof TextGenerationOutputSchema>
 > = async (input, model, onProgress, signal) => {
   const generateText: TextGenerationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -177,8 +172,8 @@ export const HFT_TextGeneration: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextTranslation: AiProviderRunFn<
-  TextTranslationTaskInput,
-  Partial<TextTranslationTaskOutput>
+  DeReplicateStatic<typeof TextTranslationInputSchema>,
+  DeReplicateStatic<typeof TextTranslationOutputSchema>
 > = async (input, model, onProgress, signal) => {
   const translate: TranslationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -192,9 +187,9 @@ export const HFT_TextTranslation: AiProviderRunFn<
     ...(signal ? { abort_signal: signal } : {}),
   } as any);
 
-  let translatedText = "";
+  let translatedText: string | string[] = "";
   if (Array.isArray(result)) {
-    translatedText = (result[0] as TranslationSingle)?.translation_text || "";
+    translatedText = result.map((r) => (r as TranslationSingle)?.translation_text || "");
   } else {
     translatedText = (result as TranslationSingle)?.translation_text || "";
   }
@@ -210,8 +205,8 @@ export const HFT_TextTranslation: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextRewriter: AiProviderRunFn<
-  TextRewriterTaskInput,
-  TextRewriterTaskOutput
+  DeReplicateStatic<typeof TextRewriterInputSchema>,
+  DeReplicateStatic<typeof TextRewriterOutputSchema>
 > = async (input, model, onProgress, signal) => {
   const generateText: TextGenerationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -248,12 +243,10 @@ export const HFT_TextRewriter: AiProviderRunFn<
  * Core implementation for text summarization using Hugging Face Transformers.
  * This is shared between inline and worker implementations.
  */
-export const HFT_TextSummary: AiProviderRunFn<TextSummaryTaskInput, TextSummaryTaskOutput> = async (
-  input,
-  model,
-  onProgress,
-  signal
-) => {
+export const HFT_TextSummary: AiProviderRunFn<
+  DeReplicateStatic<typeof TextSummaryInputSchema>,
+  DeReplicateStatic<typeof TextSummaryOutputSchema>
+> = async (input, model, onProgress, signal) => {
   const generateSummary: SummarizationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
   });
@@ -281,8 +274,8 @@ export const HFT_TextSummary: AiProviderRunFn<TextSummaryTaskInput, TextSummaryT
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextQuestionAnswer: AiProviderRunFn<
-  TextQuestionAnswerTaskInput,
-  TextQuestionAnswerTaskOutput
+  DeReplicateStatic<typeof TextQuestionAnswerInputSchema>,
+  DeReplicateStatic<typeof TextQuestionAnswerOutputSchema>
 > = async (input, model, onProgress, signal) => {
   // Get the question answering pipeline
   const generateAnswer: QuestionAnsweringPipeline = await getPipeline(model!, onProgress, {

@@ -28,10 +28,9 @@ export class ArrayTask<
   public static type = "ArrayTask";
 
   /**
-   * Whether this task is a compound task (contains subtasks)
+   * Make this task have results that look like an array
    */
   public static readonly compoundMerge = "last-or-property-array";
-
   /**
    * Regenerates the task subgraph based on input arrays
    */
@@ -39,11 +38,13 @@ export class ArrayTask<
     // Check if any inputs are arrays
     const arrayInputs = new Map<string, any[]>();
     let hasArrayInputs = false;
-    for (const inputDef of this.inputs) {
-      const inputId = inputDef.id;
+    const inputSchema = this.inputSchema;
+    const keys = Object.keys(inputSchema.properties);
+    for (const inputId of keys) {
       const inputValue = this.runInputData[inputId];
+      const inputDef = inputSchema.properties[inputId];
 
-      if (inputDef.isArray === "replicate" && Array.isArray(inputValue) && inputValue.length > 0) {
+      if (inputDef.replicate === true && Array.isArray(inputValue) && inputValue.length > 1) {
         arrayInputs.set(inputId, inputValue);
         hasArrayInputs = true;
       }
@@ -71,7 +72,7 @@ export class ArrayTask<
       // Create a new instance of this same class
       const { id, name, ...rest } = this.config;
       const task = new (this.constructor as any)(
-        { ...this.defaults, ...combination },
+        { ...this.defaults, ...this.runInputData, ...combination },
         { ...rest, id: `${id}_${uuid4()}` }
       );
       return task;

@@ -8,42 +8,30 @@
 import {
   CreateWorkflow,
   JobQueueTaskConfig,
-  TaskInputDefinition,
-  TaskOutputDefinition,
   TaskRegistry,
+  TypeReplicateArray,
   Workflow,
 } from "@ellmers/task-graph";
-import { ConvertAllToOptionalArray } from "@ellmers/util";
-import { getGlobalModelRepository } from "../model/ModelRegistry";
-import {
-  model,
-  model_classification,
-  model_embedding,
-  model_generation,
-  model_question_answering,
-  model_rewriting,
-  model_summarization,
-  model_translation,
-} from "./base/TaskIOTypes";
+import { TypeOptionalArray } from "@ellmers/util";
+import { Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
+import { TypeModel } from "./base/AiTaskSchemas";
 
-export type DownloadModelTaskInput = {
+const DownloadModelInputSchema = Type.Object({
+  model: TypeReplicateArray(TypeModel("model")),
+});
+
+const DownloadModelOutputSchema = Type.Object({
+  model: TypeOptionalArray(TypeModel("model")),
+});
+export type DownloadModelTaskRunInput = Static<typeof DownloadModelInputSchema>;
+export type DownloadModelTaskRunOutput = Static<typeof DownloadModelOutputSchema>;
+export type DownloadModelTaskExecuteInput = {
   model: string;
 };
-export type DownloadModelTaskOutput = {
-  model: model;
-  dimensions: number;
-  normalize: boolean;
-  model_embedding: model_embedding;
-  model_generation: model_generation;
-  model_summarization: model_summarization;
-  model_question_answering: model_question_answering;
-  model_rewriting: model_rewriting;
-  model_translation: model_translation;
-  model_classification: model_classification;
+export type DownloadModelTaskExecuteOutput = {
+  model: string;
 };
-type DownloadModelTaskInputReplicate = ConvertAllToOptionalArray<DownloadModelTaskInput>;
-type DownloadModelTaskOutputReplicate = ConvertAllToOptionalArray<DownloadModelTaskOutput>;
 
 /**
  * Download a model from a remote source and cache it locally.
@@ -52,88 +40,20 @@ type DownloadModelTaskOutputReplicate = ConvertAllToOptionalArray<DownloadModelT
  * This task has a side effect of downloading the model and caching it locally outside of the task system
  */
 export class DownloadModelTask extends AiTask<
-  DownloadModelTaskInput,
-  DownloadModelTaskOutput,
+  DownloadModelTaskRunInput,
+  DownloadModelTaskRunOutput,
   JobQueueTaskConfig
 > {
   public static type = "DownloadModelTask";
   public static category = "Text Model";
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "model",
-      name: "Model",
-      valueType: "model",
-      isArray: "replicate",
-    },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    {
-      id: "model",
-      name: "Model",
-      valueType: "model",
-      isArray: "replicate",
-    },
-    {
-      id: "dimensions",
-      name: "Dimensions",
-      valueType: "number",
-      isArray: "replicate",
-    },
-    {
-      id: "normalize",
-      name: "Normalize",
-      valueType: "boolean",
-      isArray: "replicate",
-    },
-    {
-      id: "model_embedding",
-      name: "",
-      valueType: "model_embedding",
-      isArray: "replicate",
-    },
-    {
-      id: "model_generation",
-      name: "",
-      valueType: "model_generation",
-      isArray: "replicate",
-    },
-    {
-      id: "model_summarization",
-      name: "",
-      valueType: "model_summarization",
-      isArray: "replicate",
-    },
-    {
-      id: "model_question_answering",
-      name: "",
-      valueType: "model_question_answering",
-      isArray: "replicate",
-    },
-    {
-      id: "model_rewriting",
-      name: "",
-      valueType: "model_rewriting",
-      isArray: "replicate",
-    },
-    {
-      id: "model_translation",
-      name: "",
-      valueType: "model_translation",
-      isArray: "replicate",
-    },
-    {
-      id: "model_classification",
-      name: "",
-      valueType: "model_classification",
-      isArray: "replicate",
-    },
-  ] as const;
-  static cacheable = false; // the download has its own cache
+  public static inputSchema = DownloadModelInputSchema;
+  public static outputSchema = DownloadModelOutputSchema;
+  public static cacheable = false;
 
   public files: { file: string; progress: number }[] = [];
 
-  constructor(input: Partial<DownloadModelTaskInputReplicate>, config: JobQueueTaskConfig = {}) {
-    super(input as DownloadModelTaskInput, config);
+  constructor(input: Partial<DownloadModelTaskRunInput>, config: JobQueueTaskConfig = {}) {
+    super(input as DownloadModelTaskRunInput, config);
     this.on("progress", this.processProgress.bind(this));
     this.on("start", () => {
       this.files = [];
@@ -148,7 +68,7 @@ export class DownloadModelTask extends AiTask<
    */
   processProgress(
     progress: number,
-    message?: string,
+    message: string = "",
     details?: { file?: string; progress: number; text?: number }
   ): void {
     if (details?.file) {
@@ -163,45 +83,6 @@ export class DownloadModelTask extends AiTask<
       this.progress = progress;
     }
   }
-
-  async executeReactive(
-    input: DownloadModelTaskInput,
-    output: DownloadModelTaskOutput
-  ): Promise<DownloadModelTaskOutput> {
-    const model = await getGlobalModelRepository().findByName(input.model);
-    if (model) {
-      const tasks = (await getGlobalModelRepository().findTasksByModel(model.name)) || [];
-      tasks.forEach((task) => {
-        // output[String(task).toLowerCase()] = model.name;
-      });
-      output.model = model.name;
-      output.dimensions = model.usingDimensions!;
-      output.normalize = model.normalize!;
-      if (tasks.includes("TextEmbeddingTask")) {
-        output.model_embedding = model.name;
-      }
-      if (tasks.includes("TextGenerationTask")) {
-        output.model_generation = model.name;
-      }
-      if (tasks.includes("TextSummaryTask")) {
-        output.model_summarization = model.name;
-      }
-      if (tasks.includes("TextQuestionAnswerTask")) {
-        output.model_question_answering = model.name;
-      }
-      if (tasks.includes("TextTranslationTask")) {
-        output.model_translation = model.name;
-      }
-      if (tasks.includes("TextRewriterTask")) {
-        output.model_rewriting = model.name;
-      }
-      if (tasks.includes("TextClassificationTask")) {
-        output.model_classification = model.name;
-      }
-    }
-
-    return output;
-  }
 }
 
 TaskRegistry.registerTask(DownloadModelTask);
@@ -212,18 +93,15 @@ TaskRegistry.registerTask(DownloadModelTask);
  * @param input - Input containing model(s) to download
  * @returns Promise resolving to the downloaded model(s)
  */
-export const DownloadModel = (
-  input: DownloadModelTaskInputReplicate,
-  config?: JobQueueTaskConfig
-) => {
+export const DownloadModel = (input: DownloadModelTaskRunInput, config?: JobQueueTaskConfig) => {
   return new DownloadModelTask(input, config).run();
 };
 
 declare module "@ellmers/task-graph" {
   interface Workflow {
     DownloadModel: CreateWorkflow<
-      DownloadModelTaskInputReplicate,
-      DownloadModelTaskOutputReplicate,
+      DownloadModelTaskRunInput,
+      DownloadModelTaskRunOutput,
       JobQueueTaskConfig
     >;
   }
