@@ -32,7 +32,6 @@ export type DownloadModelTaskExecuteInput = {
 export type DownloadModelTaskExecuteOutput = {
   model: string;
 };
-
 /**
  * Download a model from a remote source and cache it locally.
  *

@@ -19,6 +19,8 @@ import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { IWorkflow } from "./IWorkflow";
 import { TaskGraph } from "./TaskGraph";
 import { CompoundMergeStrategy } from "./TaskGraphRunner";
+import { getLastTask, parallel, pipe, PipeFunction, Taskish } from "./Conversions";
+import { simplifySchema } from "../task/TaskSchema";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskIO, O extends TaskIO, C extends TaskConfig> = (

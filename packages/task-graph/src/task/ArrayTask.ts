@@ -10,6 +10,7 @@ import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 import { GraphAsTask } from "./GraphAsTask";
+import { simplifySchema } from "./TaskSchema";
 
 /**
  * ArrayTask is a compound task that either:
