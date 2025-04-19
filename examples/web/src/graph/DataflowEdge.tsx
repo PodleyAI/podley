@@ -6,18 +6,10 @@
 //    *******************************************************************************
 
 import { Dataflow, TaskStatus } from "@ellmers/task-graph";
-import {
-  BaseEdge,
-  Edge,
-  EdgeProps,
-  getBezierPath,
-  EdgeLabelRenderer,
-  ViewportPortal,
-} from "@xyflow/react";
-import React, { useEffect, useState, useContext } from "react";
-import { getStatusColorBg } from "./util";
-import { DialogContext } from "./RunGraphFlow";
+import { BaseEdge, Edge, EdgeLabelRenderer, EdgeProps, getBezierPath } from "@xyflow/react";
+import React, { useEffect, useState } from "react";
 import { DataDialog } from "../components/DataDialog";
+import { getStatusColorBg } from "./util";
 
 export type DataflowEdgeData = {
   dataflow: Dataflow;
@@ -73,7 +65,6 @@ export const DataflowEdge: React.FC<EdgeProps<Edge<DataflowEdgeData, string>>> =
   const [animatedDashOffset, setAnimatedDashOffset] = useState(0);
   type EdgePathParams = [string, { strokePath: string }];
   const [edgePathParams, setEdgePathParams] = useState<EdgePathParams | null>(null);
-  const { showDialog } = useContext(DialogContext);
   const [showDataDialog, setShowDataDialog] = useState(false);
 
   useEffect(() => {

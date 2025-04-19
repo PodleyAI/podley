@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ArrayTask, Dataflow, GraphAsTask, TaskGraph, TaskGraphEvents } from "@ellmers/task-graph";
+import { Dataflow, TaskGraph, TaskGraphEvents } from "@ellmers/task-graph";
 import {
   Controls,
   Edge,
@@ -16,58 +16,20 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
-  ViewportPortal,
 } from "@xyflow/react";
-import React, {
-  Dispatch,
-  SetStateAction,
-  useEffect,
-  useRef,
-  createContext,
-  useContext,
-  useState,
-} from "react";
+import React, { createContext, Dispatch, SetStateAction, useEffect, useRef } from "react";
+import { FiClipboard, FiDownload, FiFileText, FiUpload } from "react-icons/fi";
+import { computeLayout, GraphPipelineCenteredLayout, GraphPipelineLayout } from "../layout";
+import { DataflowEdge, DataflowEdgeData } from "./DataflowEdge";
+import { TaskNode, TaskNodeData } from "./TaskNode";
+import { updateNode } from "./util";
 
 import "@xyflow/react/dist/base.css";
 import "./RunGraphFlow.css";
 
-import { FiClipboard, FiDownload, FiFileText, FiUpload } from "react-icons/fi";
-import {
-  ArrayTaskNode,
-  ArrayTaskNodeData,
-  DataflowEdge,
-  DataflowEdgeData,
-  GraphAsTaskNode,
-  GraphAsTaskNodeData,
-  TaskNode,
-  TaskNodeData,
-  updateNode,
-} from ".";
-import { computeLayout, GraphPipelineCenteredLayout, GraphPipelineLayout } from "../layout";
-import { DataDialog } from "../components/DataDialog";
-
-// Create a context for managing dialog state
-type DialogState = {
-  isOpen: boolean;
-  title: string;
-  data: Record<string, unknown> | null;
-};
-
-type DialogContextType = {
-  showDialog: (title: string, data: Record<string, unknown>) => void;
-  hideDialog: () => void;
-};
-
-export const DialogContext = createContext<DialogContextType>({
-  showDialog: () => {},
-  hideDialog: () => {},
-});
-
 // Define node types
 const nodeTypes: NodeTypes = {
   task: TaskNode,
-  arrayTask: ArrayTaskNode,
-  graphAsTask: GraphAsTaskNode,
 };
 
 // Define edge types
@@ -111,12 +73,12 @@ function doNodeLayout(
   });
 }
 
-const categoryIcons = {
-  "Text Model": <FiFileText />,
-  Input: <FiUpload />,
-  Output: <FiDownload />,
-  Utility: <FiClipboard />,
-};
+// const categoryIcons = {
+//   "Text Model": <FiFileText />,
+//   Input: <FiUpload />,
+//   Output: <FiDownload />,
+//   Utility: <FiClipboard />,
+// };
 
 function sortNodes(nodes: Node<TaskNodeData>[]): Node<TaskNodeData>[] {
   // Map to hold nodes grouped by their parent ID
@@ -165,15 +127,7 @@ export const RunGraphFlow: React.FC<{
     const newNodes = tasks.map((task, index) => {
       // Determine node type based on task type
       let type = "task";
-      let data: TaskNodeData | ArrayTaskNodeData | GraphAsTaskNodeData = { task };
-
-      if (task instanceof ArrayTask) {
-        type = "arrayTask";
-        data = { task: task as ArrayTask };
-      } else if (task instanceof GraphAsTask) {
-        type = "graphAsTask";
-        data = { task: task as GraphAsTask };
-      }
+      let data: TaskNodeData = { task };
 
       return {
         id: task.config.id,
