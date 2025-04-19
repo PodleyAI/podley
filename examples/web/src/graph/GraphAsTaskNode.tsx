@@ -11,7 +11,7 @@ import React, { useEffect, useState } from "react";
 import { NodeContainer } from "./NodeContainer";
 import { NodeHeader } from "./NodeHeader";
 import { ProgressBar } from "../components/ProgressBar";
-import { JsonTree } from "../components/JsonTree";
+import { TaskDataButtons } from "../components/TaskDataButtons";
 import { getStatusColorBg, getTruncatedTaskId } from "./util";
 
 export type GraphAsTaskNodeData = {
@@ -26,7 +26,6 @@ export const GraphAsTaskNode: React.FC<NodeProps<Node<GraphAsTaskNodeData, strin
   const [subGraph, setSubGraph] = useState<TaskGraph | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [progress, setProgress] = useState<number>(data.task.progress);
-  const [outputData, setOutputData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     const task = data.task;
@@ -34,7 +33,6 @@ export const GraphAsTaskNode: React.FC<NodeProps<Node<GraphAsTaskNodeData, strin
     // Initial state
     setStatus(task.status);
     setSubGraph(task.subGraph);
-    setOutputData(task.runOutputData);
 
     // Subscribe to all relevant task events
     const unsubscribes: (() => void)[] = [];
@@ -42,14 +40,12 @@ export const GraphAsTaskNode: React.FC<NodeProps<Node<GraphAsTaskNodeData, strin
     unsubscribes.push(
       task.subscribe("status", () => {
         setStatus(task.status);
-        setOutputData(task.runOutputData);
       })
     );
 
     unsubscribes.push(
       task.subscribe("progress", () => {
         setProgress(task.progress);
-        setOutputData(task.runOutputData);
       })
     );
 
@@ -141,16 +137,8 @@ export const GraphAsTaskNode: React.FC<NodeProps<Node<GraphAsTaskNodeData, strin
   return (
     <NodeContainer isConnectable={isConnectable} status={status}>
       <NodeHeader title={data.task.type} description={data.task.config.name} status={status} />
-
+      <TaskDataButtons task={data.task} />
       <ProgressBar progress={progress} status={status} showText={true} />
-
-      {/* Output data preview */}
-      {(status === TaskStatus.COMPLETED || status === TaskStatus.PROCESSING) && outputData && (
-        <div className="output-data fade-in">
-          <div className="text-xs font-semibold mb-1">Output:</div>
-          <JsonTree data={outputData} expandLevel={0} />
-        </div>
-      )}
 
       {/* Sub-graph controls */}
       {subGraph && (

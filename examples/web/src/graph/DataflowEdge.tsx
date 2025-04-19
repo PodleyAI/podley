@@ -6,9 +6,18 @@
 //    *******************************************************************************
 
 import { Dataflow, TaskStatus } from "@ellmers/task-graph";
-import { BaseEdge, Edge, EdgeProps, getBezierPath } from "@xyflow/react";
-import React, { useEffect, useState } from "react";
+import {
+  BaseEdge,
+  Edge,
+  EdgeProps,
+  getBezierPath,
+  EdgeLabelRenderer,
+  ViewportPortal,
+} from "@xyflow/react";
+import React, { useEffect, useState, useContext } from "react";
 import { getStatusColorBg } from "./util";
+import { DialogContext } from "./RunGraphFlow";
+import { DataDialog } from "../components/DataDialog";
 
 export type DataflowEdgeData = {
   dataflow: Dataflow;
@@ -64,6 +73,8 @@ export const DataflowEdge: React.FC<EdgeProps<Edge<DataflowEdgeData, string>>> =
   const [animatedDashOffset, setAnimatedDashOffset] = useState(0);
   type EdgePathParams = [string, { strokePath: string }];
   const [edgePathParams, setEdgePathParams] = useState<EdgePathParams | null>(null);
+  const { showDialog } = useContext(DialogContext);
+  const [showDataDialog, setShowDataDialog] = useState(false);
 
   useEffect(() => {
     // Update status from data
@@ -147,25 +158,39 @@ export const DataflowEdge: React.FC<EdgeProps<Edge<DataflowEdgeData, string>>> =
 
       {/* Data label for completed edges with data */}
       {data?.dataflow?.value && (
-        <foreignObject
-          width={80}
-          height={20}
-          x={(sourceX + targetX) / 2 - 40}
-          y={(sourceY + targetY) / 2 - 10}
-          style={{
-            fontSize: "10px",
-            textAlign: "center",
-            pointerEvents: "none",
-          }}
-        >
-          <span
-            className={`ml-2 text-xs px-1.5 rounded-full mr-2 border border-blue-800 ${getStatusColorBg(
-              status
-            )}`}
+        <>
+          <foreignObject
+            width={80}
+            height={20}
+            x={(sourceX + targetX) / 2 - 40}
+            y={(sourceY + targetY) / 2 - 10}
+            style={{
+              fontSize: "10px",
+              textAlign: "center",
+              pointerEvents: "none",
+            }}
           >
-            {Object.keys(data.dataflow.value).length}
-          </span>
-        </foreignObject>
+            <span
+              onClick={() => setShowDataDialog(true)}
+              className={`ml-2 text-xs px-1.5 rounded-full mr-2 border border-blue-800 ${getStatusColorBg(
+                status
+              )}`}
+              style={{ pointerEvents: "all", cursor: "pointer" }}
+            >
+              {Object.keys(data.dataflow.value).length}
+            </span>
+          </foreignObject>
+          <EdgeLabelRenderer>
+            {showDataDialog && (
+              <DataDialog
+                isOpen={showDataDialog}
+                onClose={() => setShowDataDialog(false)}
+                data={data.dataflow.value}
+                title={`Dataflow - ${data.dataflow.id}`}
+              />
+            )}
+          </EdgeLabelRenderer>
+        </>
       )}
     </>
   );

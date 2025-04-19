@@ -11,7 +11,7 @@ import React, { useEffect, useState } from "react";
 import { NodeContainer } from "./NodeContainer";
 import { NodeHeader } from "./NodeHeader";
 import { ProgressBar } from "../components/ProgressBar";
-import { JsonTree } from "../components/JsonTree";
+import { TaskDataButtons } from "../components/TaskDataButtons";
 
 export type ArrayTaskNodeData = {
   task: ArrayTask;
@@ -24,14 +24,12 @@ export const ArrayTaskNode: React.FC<NodeProps<Node<ArrayTaskNodeData, string>>>
   const [status, setStatus] = useState<TaskStatus>(data.task.status);
   const [progress, setProgress] = useState<number>(data.task.progress);
   const [subTasks, setSubTasks] = useState<ITask[]>([]);
-  const [outputData, setOutputData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     const task = data.task;
 
     setStatus(task.status);
     setProgress(task.progress);
-    setOutputData(task.runOutputData);
     if (task.hasChildren()) {
       setSubTasks(task.subGraph.getTasks());
     }
@@ -42,14 +40,12 @@ export const ArrayTaskNode: React.FC<NodeProps<Node<ArrayTaskNodeData, string>>>
       task.subscribe("status", () => {
         setStatus(task.status);
         setProgress(task.progress);
-        setOutputData(task.runOutputData);
       })
     );
 
     unsubscribes.push(
       task.subscribe("progress", (progress) => {
         setProgress(progress);
-        setOutputData(task.runOutputData);
       })
     );
 
@@ -68,16 +64,8 @@ export const ArrayTaskNode: React.FC<NodeProps<Node<ArrayTaskNodeData, string>>>
   return (
     <NodeContainer isConnectable={isConnectable} status={status}>
       <NodeHeader title={data.task.type} description={data.task.config.name} status={status} />
-
+      <TaskDataButtons task={data.task} />
       <ProgressBar progress={progress} status={status} showText={true} />
-
-      {/* Output data preview */}
-      {status === TaskStatus.COMPLETED && outputData && (
-        <div className="output-data fade-in">
-          <div className="text-xs font-semibold mb-1">Output:</div>
-          <JsonTree data={outputData} expandLevel={0} />
-        </div>
-      )}
 
       {/* Sub-tasks progress */}
       {subTasks.length > 0 && (
@@ -131,6 +119,7 @@ const ArraySubTask: React.FC<{ subTask: ITask }> = ({ subTask }) => {
       unsubscribes.forEach((unsubscribe) => unsubscribe());
     };
   }, [subTask.progress, subTask.status]);
+
   return (
     <div key={subTask.config.id as string} className="text-xs subtask-progress">
       <div className="flex justify-between mb-1">

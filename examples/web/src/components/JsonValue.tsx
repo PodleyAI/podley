@@ -45,5 +45,5 @@ export const JsonValue: React.FC<JsonValueProps> = ({ value }) => {
     return <span>{String(value)}</span>;
   };
 
-  return <div className="json-value">{getFormattedValue()}</div>;
+  return <span className="json-value">{getFormattedValue()}</span>;
 };

@@ -23,7 +23,7 @@ type JsonTreeProps = {
  */
 export const JsonTree: React.FC<JsonTreeProps> = ({
   data,
-  expandLevel = 3,
+  expandLevel = 1,
   label,
   isRoot = true,
 }) => {

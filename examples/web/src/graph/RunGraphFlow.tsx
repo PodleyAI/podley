@@ -16,8 +16,17 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  ViewportPortal,
 } from "@xyflow/react";
-import React, { Dispatch, SetStateAction, useEffect, useRef } from "react";
+import React, {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useRef,
+  createContext,
+  useContext,
+  useState,
+} from "react";
 
 import "@xyflow/react/dist/base.css";
 import "./RunGraphFlow.css";
@@ -35,6 +44,24 @@ import {
   updateNode,
 } from ".";
 import { computeLayout, GraphPipelineCenteredLayout, GraphPipelineLayout } from "../layout";
+import { DataDialog } from "../components/DataDialog";
+
+// Create a context for managing dialog state
+type DialogState = {
+  isOpen: boolean;
+  title: string;
+  data: Record<string, unknown> | null;
+};
+
+type DialogContextType = {
+  showDialog: (title: string, data: Record<string, unknown>) => void;
+  hideDialog: () => void;
+};
+
+export const DialogContext = createContext<DialogContextType>({
+  showDialog: () => {},
+  hideDialog: () => {},
+});
 
 // Define node types
 const nodeTypes: NodeTypes = {
