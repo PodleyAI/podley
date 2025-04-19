@@ -1,0 +1,124 @@
+/* JSON Tree Main Styles */
+.json-tree {
+  font-family: "Fira Mono", monospace;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-color, rgb(243, 244, 246));
+}
+
+.json-tree-root {
+  border-radius: 4px;
+  padding: 0.5rem;
+  overflow: auto;
+}
+
+.json-tree-label {
+  color: var(--json-label-color, #9cdcfe);
+  margin-right: 0.25rem;
+}
+
+/* JSON Value Types */
+.json-string {
+  color: var(--json-string-color, #ce9178);
+  word-break: break-word;
+}
+
+.json-number {
+  color: var(--json-number-color, #b5cea8);
+}
+
+.json-boolean {
+  color: var(--json-boolean-color, #569cd6);
+}
+
+.json-null {
+  color: var(--json-null-color, #569cd6);
+  font-style: italic;
+}
+
+.json-undefined {
+  color: var(--json-undefined-color, #808080);
+  font-style: italic;
+}
+
+/* Toggle Icons */
+.json-toggle {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 3px;
+  padding: 2px;
+}
+
+.json-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.json-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  color: var(--json-toggle-color, #808080);
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.json-toggle-icon.collapsed {
+  transform: rotate(270deg);
+}
+
+.json-toggle-icon.expanded {
+  transform: rotate(0deg);
+}
+
+.json-preview {
+  color: var(--json-preview-color, #d4d4d4);
+}
+
+/* Object Styles */
+.json-object-content {
+  padding-left: 1rem;
+  border-left: 1px dotted rgba(255, 255, 255, 0.1);
+  margin-left: 0.4rem;
+}
+
+.json-property {
+  margin: 0.2rem 0;
+}
+
+/* Array Styles */
+.json-array-content {
+  padding-left: 1rem;
+  border-left: 1px dotted rgba(255, 255, 255, 0.1);
+  margin-left: 0.4rem;
+}
+
+.json-array-item {
+  margin: 0.2rem 0;
+}
+
+/* Empty containers */
+.json-empty {
+  color: var(--json-empty-color, #808080);
+  font-style: italic;
+  padding: 0.2rem 0;
+}
+
+/* Animation for fade in */
+.json-tree-root {
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

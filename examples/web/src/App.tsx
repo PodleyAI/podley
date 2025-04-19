@@ -29,14 +29,14 @@ import {
   registerHuggingfaceLocalModels,
   registerMediaPipeTfJsLocalModels,
 } from "@ellmers/test";
-import { ReactFlowProvider } from "@xyflow/react";
+import { ReactFlowProvider, useEdgesState, useNodesState } from "@xyflow/react";
 import { useCallback, useEffect, useState } from "react";
-import { GraphStoreStatus } from "./GraphStoreStatus";
-import { JsonEditor } from "./JsonEditor";
-import { OutputRepositoryStatus } from "./OutputRepositoryStatus";
-import { QueuesStatus } from "./QueueStatus";
+import { GraphStoreStatus } from "./status/GraphStoreStatus";
+import { JsonEditor } from "./editor/JsonEditor";
+import { OutputRepositoryStatus } from "./status/OutputRepositoryStatus";
+import { QueuesStatus } from "./status/QueueStatus";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
-import { RunGraphFlow } from "./RunGraphFlow";
+import { RunGraphFlow } from "./graph/RunGraphFlow";
 
 register_TFMP_ClientJobFns(
   new Worker(new URL("./worker_tfmp.ts", import.meta.url), { type: "module" })
@@ -131,7 +131,7 @@ const setupWorkflow = async () => {
   });
 };
 setupWorkflow();
-let workflow = window["workflow"];
+let workflow: Workflow = window["workflow"];
 
 const initialJsonObj: JsonTaskItem[] = workflow.toDependencyJSON();
 const initialJson = JSON.stringify(initialJsonObj, null, 2);
@@ -220,7 +220,9 @@ export const App = () => {
             <JsonEditor
               json={jsonData}
               onJsonChange={setNewJson}
-              run={() => workflow.run()}
+              run={() => {
+                workflow.run();
+              }}
               stop={() => workflow.abort()}
               running={isRunning}
               aborting={isAborting}
