@@ -28,9 +28,14 @@ export async function runWorkflow(workflow: IWorkflow) {
 }
 
 export async function runSingleTask(task: Task) {
-  const graph = new TaskGraph();
-  graph.addTask(task);
-  await runGraph(graph);
+  if (process.stdout.isTTY) {
+    const graph = new TaskGraph();
+    graph.addTask(task);
+    await runTaskGraphToInk(graph);
+  } else {
+    const result = await task.run();
+    console.log(JSON.stringify(result, null, 2));
+  }
 }
 
 export async function runGraph(graph: ITaskGraph) {
