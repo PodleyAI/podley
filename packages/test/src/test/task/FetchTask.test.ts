@@ -236,6 +236,7 @@ describe("FetchTask", () => {
     }).catch((e) => e);
 
     expect(error).toBeInstanceOf(JobTaskFailedError);
+    expect(error.jobError).toBeInstanceOf(RetryableJobError);
     expect(error.jobError.message).toContain("429");
     expect(error.jobError.retryDate).toBeInstanceOf(Date);
 

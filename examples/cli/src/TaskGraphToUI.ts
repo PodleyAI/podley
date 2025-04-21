@@ -54,7 +54,7 @@ const runTaskGraphToInk = async (graph: ITaskGraph) => {
   });
   let results: any;
   try {
-    await sleep(150);
+    await sleep(50);
     results = await graph.run();
   } catch (e: any) {}
   await sleep(150);
