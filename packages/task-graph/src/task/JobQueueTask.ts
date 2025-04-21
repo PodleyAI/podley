@@ -6,9 +6,9 @@
 //    *******************************************************************************
 
 import { Job } from "@ellmers/job-queue";
-import { IExecuteConfig } from "./ITask";
 import { ArrayTask } from "./ArrayTask";
-import { JobTaskFailedError, TaskConfigurationError, TaskFailedError } from "./TaskError";
+import { IExecuteConfig } from "./ITask";
+import { JobTaskFailedError, TaskConfigurationError } from "./TaskError";
 import { TaskEventListeners } from "./TaskEvents";
 import { getTaskQueueRegistry } from "./TaskQueueRegistry";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
