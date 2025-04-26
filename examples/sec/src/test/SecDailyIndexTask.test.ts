@@ -7,7 +7,7 @@
 
 import { getTaskQueueRegistry, setTaskQueueRegistry } from "@ellmers/task-graph";
 import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
-import { FetchDailyIndexTask } from "../task/FetchDailyIndexTask";
+import { FetchDailyIndexTask } from "../task/index/FetchDailyIndexTask";
 import { TaskFailedError } from "@ellmers/task-graph";
 // @ts-expect-error ts(2307)
 import master20240101 from "./mock_data/master.20240101.idx" with { type: "text" };

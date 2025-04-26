@@ -13,13 +13,14 @@ import { SEC_RAW_DATA_FOLDER } from "../util/tokens";
 import { SecFetchFileOutputCache } from "./SecFetchFileOutputCache";
 import { SecFetchTask } from "./SecFetchTask";
 
+export type response_type = "text" | "json" | "blob" | "arraybuffer";
 export interface SecCachedFetchTaskInput extends TaskInput {
   cik: number;
   date?: string;
 }
 
 export abstract class SecCachedFetchTask<
-  I extends SecCachedFetchTaskInput = SecCachedFetchTaskInput,
+  I extends TaskInput = SecCachedFetchTaskInput,
   O extends TaskOutput = FetchTaskOutput,
 > extends SecFetchTask<I & FetchTaskInput, O> {
   static type = "SecCachedFetchTask";
@@ -27,8 +28,10 @@ export abstract class SecCachedFetchTask<
   static cacheable = true;
   static immutable = false;
 
-  abstract inputToFileName(input: any): string;
-  abstract inputToUrl(input: any): string;
+  response_type?: response_type;
+
+  abstract inputToFileName(input: I): string;
+  abstract inputToUrl(input: I): string;
 
   constructor(input: I, config: Partial<TaskConfig> = {}) {
     super(input as I & FetchTaskInput, config);
@@ -42,7 +45,7 @@ export abstract class SecCachedFetchTask<
       }
       this.config.outputCache = new SecFetchFileOutputCache({
         folderPath: folderPath,
-        inputToFileName: this.inputToFileName,
+        inputToFileName: this.inputToFileName.bind(this),
       });
     }
   }
@@ -50,41 +53,45 @@ export abstract class SecCachedFetchTask<
   execute(input: I, executeConfig: IExecuteConfig): Promise<O | undefined> {
     const uri = new URL(this.inputToUrl(input));
     const ext = uri.pathname.split(".").pop() ?? "json";
-    let response_type: "text" | "json" | "blob" | "arraybuffer" = "json";
-    switch (ext) {
-      case "txt":
-      case "xml":
-      case "csv":
-      case "html":
-      case "htm":
-        response_type = "text";
-        break;
-      case "json":
-        response_type = "json";
-        break;
-      case "pdf":
-      case "doc":
-      case "docx":
-      case "xls":
-      case "xlsx":
-      case "ppt":
-      case "pptx":
-      case "gif":
-      case "jpg":
-      case "jpeg":
-      case "png":
-      case "ico":
-      case "webp":
-        response_type = "blob";
-        break;
-      default:
-        response_type = "blob";
-        break;
+
+    if (!this.response_type) {
+      switch (ext) {
+        case "idx":
+        case "txt":
+        case "xml":
+        case "xbrl":
+        case "csv":
+        case "html":
+        case "htm":
+          this.response_type = "text";
+          break;
+        case "json":
+          this.response_type = "json";
+          break;
+        case "pdf":
+        case "doc":
+        case "docx":
+        case "xls":
+        case "xlsx":
+        case "ppt":
+        case "pptx":
+        case "gif":
+        case "jpg":
+        case "jpeg":
+        case "png":
+        case "ico":
+        case "webp":
+          this.response_type = "blob";
+          break;
+        default:
+          this.response_type = "blob";
+          break;
+      }
     }
 
     const fetchInput = {
       url: this.inputToUrl(input),
-      response_type: response_type,
+      response_type: this.response_type,
     };
 
     return super.execute(fetchInput as I & FetchTaskInput, executeConfig);

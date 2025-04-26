@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
-import { Factoid } from "../types/CompanyFacts";
-import { query_run } from "../util/db";
+import { Factoid } from "../../types/CompanyFacts";
+import { query_run } from "../../util/db";
 
 export type StoreCompanyFactsTaskInput = {
   facts: Factoid[];

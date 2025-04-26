@@ -3,7 +3,7 @@
 import type { YYYYdMMdDD, OptionalFullDateString, SecBoolean } from "./base-types";
 import type { Form } from "./form-names";
 
-export interface CompanySubmission {
+export interface Submission {
   cik: string;
   entityType: string;
   sic: string;

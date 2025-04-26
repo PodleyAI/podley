@@ -7,16 +7,15 @@
 
 import type { Command } from "commander";
 import { runTasks } from "@ellmers/cli";
-import { FetchDailyIndexTask } from "../task/FetchDailyIndexTask";
+import { FetchDailyIndexTask } from "../task/index/FetchDailyIndexTask";
 
 export function AddDailyIndexCommands(program: Command) {
   program
     .command("daily-index")
     .description("get the daily index for a given date")
     .argument("<date>", "date to get the daily index for")
-    .option("--limit <number>", "limit the number of records to return")
-    .action(async (date: string, options) => {
-      const task = new FetchDailyIndexTask({ date, limit: options.limit });
+    .action(async (date: string) => {
+      const task = new FetchDailyIndexTask({ date });
       try {
         await runTasks(task);
       } catch (error) {

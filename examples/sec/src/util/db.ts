@@ -34,6 +34,14 @@ export function createDb() {
   });
 
   query_run(
+    `CREATE TABLE IF NOT EXISTS cik_last_update (
+      cik unsigned int not null,
+      last_update date not null,
+      primary key (cik)
+    )`
+  );
+
+  query_run(
     `CREATE TABLE IF NOT EXISTS processed_submissions (
       cik unsigned int not null,
       last_processed date null,

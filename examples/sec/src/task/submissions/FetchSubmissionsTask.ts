@@ -15,26 +15,26 @@ import {
   Workflow,
 } from "@ellmers/task-graph";
 import { FetchTaskOutput } from "@ellmers/tasks";
-import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../fetch/SecCachedFetchTask";
-import { CompanySubmission } from "../types/edgar/company-submissions";
-import { Filings } from "../types/FilingMetaData";
+import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../../fetch/SecCachedFetchTask";
+import { Submission } from "../../types/edgar/company-submissions";
+import { Filings } from "../../types/FilingMetaData";
 
 // NOTE: company submissions are mutable, so we need to pass in a date to break the cache
 
-export interface FetchCompanySubmissionsInput extends SecCachedFetchTaskInput {
+export interface FetchSubmissionsInput extends SecCachedFetchTaskInput {
   file: string;
   date?: string;
 }
 
-export type FetchCompanySubmissionsOutput = {
-  submission: Omit<CompanySubmission, "filings" | "files">;
+export type FetchSubmissionsOutput = {
+  submission: Omit<Submission, "filings" | "files">;
   filings: Filings;
   files: { name: string; filingCount: number; filingFrom: string; filingTo: string }[];
 };
 
-class SecFetchCompanySubmissionsTask extends SecCachedFetchTask<FetchCompanySubmissionsInput> {
-  static readonly type = "SecFetchCompanySubmissionsTask";
-  static readonly category = "Hidden";
+class SecFetchSubmissionsTask extends SecCachedFetchTask<FetchSubmissionsInput> {
+  static readonly type = "SecFetchSubmissionsTask";
+  static readonly category = "SEC";
   static readonly immutable = false;
 
   public static inputs: TaskInputDefinition[] = [
@@ -57,23 +57,20 @@ class SecFetchCompanySubmissionsTask extends SecCachedFetchTask<FetchCompanySubm
     },
   ] as const;
 
-  inputToFileName(input: FetchCompanySubmissionsInput): string {
+  inputToFileName(input: FetchSubmissionsInput): string {
     const cik = input.cik.toString().padStart(10, "0");
     const fileName = input.file || `CIK${cik}.json`;
     return `submissions/${fileName}`;
   }
-  inputToUrl(input: FetchCompanySubmissionsInput): string {
+  inputToUrl(input: FetchSubmissionsInput): string {
     const cik = input.cik.toString().padStart(10, "0");
     const fileName = input.file || `CIK${cik}.json`;
     return `https://data.sec.gov/submissions/${fileName}${input.date ? `?date=${input.date}` : ""}`;
   }
 }
 
-export class FetchCompanySubmissionsTask extends Task<
-  FetchCompanySubmissionsInput,
-  FetchCompanySubmissionsOutput
-> {
-  static readonly type = "FetchCompanySubmissions";
+export class FetchSubmissionsTask extends Task<FetchSubmissionsInput, FetchSubmissionsOutput> {
+  static readonly type = "FetchSubmissions";
   static readonly category = "SEC";
   static readonly cacheable = true;
 
@@ -111,20 +108,20 @@ export class FetchCompanySubmissionsTask extends Task<
   ];
 
   async execute(
-    input: FetchCompanySubmissionsInput,
+    input: FetchSubmissionsInput,
     config: IExecuteConfig
-  ): Promise<FetchCompanySubmissionsOutput> {
+  ): Promise<FetchSubmissionsOutput> {
     const cik = input.cik;
     if (!cik) throw new TaskFailedError("CIK is required");
     const date = input.date;
 
     const builder = config.own(new Workflow());
     builder.pipe(
-      new SecFetchCompanySubmissionsTask(input, {
+      new SecFetchSubmissionsTask(input, {
         id: "fetch-company-submissions",
       }),
       async (input) => {
-        const edgarJson = input.json as unknown as CompanySubmission;
+        const edgarJson = input.json as unknown as Submission;
 
         const { filings, ...submission } = edgarJson;
 
@@ -144,7 +141,7 @@ export class FetchCompanySubmissionsTask extends Task<
         for (const file of input.files || []) {
           const fileName = file.name;
           graph.addTask(
-            new SecFetchCompanySubmissionsTask(
+            new SecFetchSubmissionsTask(
               {
                 cik: cik,
                 date: date,
@@ -171,6 +168,6 @@ export class FetchCompanySubmissionsTask extends Task<
       }
     );
     const output = await builder.run();
-    return output as FetchCompanySubmissionsOutput;
+    return output as FetchSubmissionsOutput;
   }
 }
