@@ -36,8 +36,8 @@ To facilitate data retrieval, maintaining a full list of CIK numbers and their a
 
 You can retrieve and process this file using the following:
 
-- **Task:** [FetchAllCikNamesTask.ts](./src/task/FetchAllCikNamesTask.ts)
-- **Command:** [BootstrapAllCikNames.ts](./src/commands/BootstrapAllCikNames.ts)
+- **Task:** [FetchAllCikNamesTask.ts](./src/task/base/FetchAllCikNamesTask.ts)
+- **Command:** [BootstrapAllCikNames.ts](./src/commands/base/BootstrapAllCikNames.ts)
 
 ```bash
 ./src/sec.ts bootstrap-all-cik-names
