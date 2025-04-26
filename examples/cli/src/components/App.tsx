@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import React from "react";
-import { Box, Text } from "tuir";
+import { Box, Text } from "retuink";
 import TaskGraphUI from "./TaskGraphUI";
 import { ITaskGraph } from "@ellmers/task-graph";
 

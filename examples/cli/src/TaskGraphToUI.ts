@@ -7,7 +7,7 @@
 
 import { Task, TaskGraph, IWorkflow, ITaskGraph, Taskish, Workflow } from "@ellmers/task-graph";
 import React from "react";
-import { render } from "tuir";
+import { render } from "retuink";
 import App from "./components/App";
 import { sleep } from "@ellmers/util";
 

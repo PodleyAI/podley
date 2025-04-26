@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import React, { useState, useEffect } from "react";
-import { Text } from "tuir";
+import { Text } from "retuink";
 
 /**
  * createBar

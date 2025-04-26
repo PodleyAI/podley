@@ -8,7 +8,7 @@
 import { ITask, ITaskGraph, TaskStatus, ArrayTask } from "@ellmers/task-graph";
 import type { FC } from "react";
 import { useEffect, useState } from "react";
-import { Box, Text } from "tuir";
+import { Box, Text } from "retuink";
 import { createBar, Spinner, symbols } from "./Elements";
 import TaskGraphUI from "./TaskGraphUI";
 import { DownloadModelTask } from "@ellmers/ai";
@@ -162,34 +162,6 @@ export const TaskUI: FC<{
           </Box>
         ) : null}
       </Box>
-      {status == TaskStatus.PROCESSING &&
-        details &&
-        message == "Downloading model" &&
-        details.map((d: any) => (
-          <Box marginLeft={2} key={d.file}>
-            <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(d.progress / 100, 10)} ${d.file} ${Math.round(d.progress)}%`}</Text>
-          </Box>
-        ))}
-      {status == TaskStatus.PROCESSING && text && message == "Generating" && (
-        <Box marginLeft={2}>
-          <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(progress / 100, 10)} ${text}`}</Text>
-        </Box>
-      )}
-      {status == TaskStatus.PROCESSING ? (
-        <Box marginLeft={2}>
-          <Text color="gray">{`${symbols.arrowRight} ${JSON.stringify(task.runInputData).slice(0, 200)}`}</Text>
-        </Box>
-      ) : null}
-      {status == TaskStatus.COMPLETED ? (
-        <Box marginLeft={2}>
-          <Text color="gray">{`${symbols.arrowDown} ${JSON.stringify(task.runOutputData).slice(0, 200)}`}</Text>
-        </Box>
-      ) : null}
-      {error ? (
-        <Box marginLeft={2}>
-          <Text color="red">{`${symbols.warning} ${error}`}</Text>
-        </Box>
-      ) : null}
       {arrayProgress ? (
         <Box marginLeft={2}>
           <Text color="gray">{`${symbols.arrowDashedRight} Processing array tasks: ${arrayProgress.completed}/${arrayProgress.total} completed ${createBar(arrayProgress.completed / arrayProgress.total, 10)}`}</Text>
@@ -206,6 +178,40 @@ export const TaskUI: FC<{
           ))}
         </Box>
       )}
+      {status == TaskStatus.PROCESSING &&
+        details &&
+        message == "Downloading model" &&
+        details.map((d: any) => (
+          <Box marginLeft={2} key={d.file}>
+            <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(d.progress / 100, 10)} ${d.file} ${Math.round(d.progress)}%`}</Text>
+          </Box>
+        ))}
+      {status == TaskStatus.PROCESSING && text && message == "Generating" && (
+        <Box marginLeft={2}>
+          <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(progress / 100, 10)} ${text}`}</Text>
+        </Box>
+      )}
+      {status == TaskStatus.PROCESSING ? (
+        <Box marginLeft={2}>
+          <Text
+            color="gray"
+            wrap="truncate-middle"
+          >{`${symbols.arrowRight} ${JSON.stringify(task.runInputData).slice(0, 200)}`}</Text>
+        </Box>
+      ) : null}
+      {status == TaskStatus.COMPLETED ? (
+        <Box marginLeft={2}>
+          <Text
+            color="gray"
+            wrap="truncate-middle"
+          >{`${symbols.arrowDown} ${JSON.stringify(task.runOutputData).slice(0, 200)}`}</Text>
+        </Box>
+      ) : null}
+      {error ? (
+        <Box marginLeft={2}>
+          <Text color="red">{`${symbols.warning} ${error}`}</Text>
+        </Box>
+      ) : null}
     </Box>
   );
 };

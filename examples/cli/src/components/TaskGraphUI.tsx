@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import React, { useState, useEffect } from "react";
-import { Box } from "tuir";
+import { Box } from "retuink";
 import { ITask, ITaskGraph } from "@ellmers/task-graph";
 import { TaskUI } from "./TaskUI";
 
