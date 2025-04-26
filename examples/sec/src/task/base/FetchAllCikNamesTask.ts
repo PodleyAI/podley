@@ -14,8 +14,8 @@ import {
   TaskOutput,
   TaskOutputDefinition,
 } from "@ellmers/task-graph";
-import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../fetch/SecCachedFetchTask";
-import { SecFetchTask } from "../fetch/SecFetchTask";
+import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../../fetch/SecCachedFetchTask";
+import { SecFetchTask } from "../../fetch/SecFetchTask";
 
 // NOTE: cik names are mutable, so we use date to break the cache
 

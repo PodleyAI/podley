@@ -39,7 +39,8 @@ export class SecFetchFileOutputCache extends TaskOutputRepository {
     } else if (response_type === "blob") {
       return output.blob;
     } else {
-      throw new Error(`Unsupported response type: ${response_type}`);
+      console.warn(`Unknown response type: ${response_type}, assuming text`);
+      return output.text;
     }
   }
 
@@ -65,10 +66,9 @@ export class SecFetchFileOutputCache extends TaskOutputRepository {
    */
   async saveOutput(taskType: string, input: TaskInput, output: TaskOutput): Promise<void> {
     const filePath = path.join(this.folderPath, this.inputToFileName(input));
-    const response_type = filePath.split(".").pop() ?? "json";
     await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, this.outputSerializer(output, response_type), {
-      encoding: response_type !== "blob" ? "utf-8" : "binary",
+    await writeFile(filePath, this.outputSerializer(output, input.response_type as string), {
+      encoding: input.response_type !== "blob" ? "utf-8" : "binary",
     });
     this.emit("output_saved", taskType);
   }
@@ -98,8 +98,7 @@ export class SecFetchFileOutputCache extends TaskOutputRepository {
       const data = await readFile(filePath);
       if (data) {
         this.emit("output_retrieved", taskType);
-        const response_type = filePath.split(".").pop() ?? "json";
-        return this.outputDeserializer(data, response_type);
+        return this.outputDeserializer(data, inputs.response_type as string);
       }
     } catch (error) {}
     return undefined;

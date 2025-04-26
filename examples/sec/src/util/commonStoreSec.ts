@@ -1,5 +1,12 @@
-import { Address } from "../types/edgar/company-submissions";
-import { cleanAddress, cleanCompanyName, cleanName, cleanPhoneNumber } from "./dataCleaningUtils";
+import { Address, CompanySubmission } from "../types/edgar/company-submissions";
+import { FilingMetaData } from "../types/FilingMetaData";
+import {
+  cleanAddress,
+  cleanCompanyName,
+  cleanEin,
+  cleanName,
+  cleanPhoneNumber,
+} from "./dataCleaningUtils";
 import { query_run } from "./db";
 
 export function todayYYYYdMMdDD() {
@@ -16,6 +23,87 @@ export function processCikName(cik: number, name: string) {
     {
       $cik: cik,
       $name: name,
+    }
+  );
+}
+
+export function processSubmissionSic(sic: string, sicDescription: string) {
+  query_run(
+    `INSERT INTO sic(sic,description)
+      VALUES($sic,$description)
+      ON CONFLICT DO NOTHING`,
+    {
+      $sic: sic,
+      $description: sicDescription,
+    }
+  );
+}
+
+export function processSubmissionEntity(submission: Omit<CompanySubmission, "filings" | "files">) {
+  query_run(
+    `INSERT OR REPLACE INTO entities(cik,name,type,sic,ein,description,website,investor_website,category,fiscal_year,state_incorporation,state_incorporation_desc)
+      VALUES($cik,$name,$type,$sic,$ein,$description,$website,$investor_website,$category,$fiscal_year,$state_incorporation,$state_incorporation_desc)`,
+    {
+      $cik: parseInt(submission.cik),
+      $name: submission.name,
+      $type: submission.entityType,
+      $sic: submission.sic || null,
+      $ein: cleanEin(submission.ein || ""),
+      $description: submission.description || null,
+      $website: submission.website || null,
+      $investor_website: submission.investorWebsite || null,
+      $category: submission.category || null,
+      $fiscal_year: submission.fiscalYearEnd || null,
+      $state_incorporation: submission.stateOfIncorporation || null,
+      $state_incorporation_desc: submission.stateOfIncorporationDescription || null,
+    }
+  );
+}
+
+export function processSubmissionFilings(cik: number, filing: FilingMetaData) {
+  query_run(
+    `INSERT OR REPLACE INTO filings(cik,accession_number,filing_date,report_date,acceptance_date,form,file_number,film_number,primary_doc,primary_doc_description,size,is_xbrl,is_inline_xbrl,items,act) 
+        VALUES ($cik,$accession_number,$filing_date,$report_date,$acceptance_date,$form,$file_number,$film_number,$primary_doc,$primary_doc_description,$size,$is_xbrl,$is_inline_xbrl,$items,$act)`,
+    {
+      $cik: cik,
+      $accession_number: filing.accessionNumber,
+      $filing_date: filing.filingDate,
+      $report_date: filing.reportDate,
+      $acceptance_date: filing.acceptanceDateTime,
+      $form: filing.form,
+      $file_number: filing.fileNumber,
+      $film_number: filing.filmNumber,
+      $primary_doc: filing.primaryDocument,
+      $primary_doc_description: filing.primaryDocDescription,
+      $size: filing.size,
+      $is_xbrl: filing.isXBRL === "1",
+      $is_inline_xbrl: filing.isInlineXBRL === "1",
+      $items: filing.items,
+      $act: filing.act,
+    }
+  );
+}
+
+export function processUpdateProcessing(cik: number) {
+  query_run(
+    `INSERT OR REPLACE INTO processed_submissions(cik,last_processed)
+      VALUES($cik,$last_processed)`,
+    {
+      $cik: cik,
+      $last_processed: todayYYYYdMMdDD(),
+    }
+  );
+}
+
+export function processSubmissionTickers(cik: number, ticker: string, exchange: string) {
+  query_run(
+    `INSERT OR REPLACE INTO entity_tickers(cik,ticker,exchange)
+        VALUES($cik,$ticker,$exchange)
+        ON CONFLICT DO NOTHING`,
+    {
+      $cik: cik,
+      $ticker: ticker,
+      $exchange: exchange || "",
     }
   );
 }

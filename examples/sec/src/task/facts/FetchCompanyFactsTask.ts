@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import { IExecuteConfig, Task, TaskAbortedError, TaskInputDefinition } from "@ellmers/task-graph";
-import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../fetch/SecCachedFetchTask";
-import { CompanyFacts, Factoid } from "../types/CompanyFacts";
+import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../../fetch/SecCachedFetchTask";
+import { CompanyFacts, Factoid } from "../../types/CompanyFacts";
 
 // NOTE: company facts are mutable, so we need to pass in a date to break the cache
 

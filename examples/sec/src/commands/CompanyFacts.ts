@@ -8,8 +8,8 @@
 import { runWorkflow } from "@ellmers/cli";
 import { Workflow } from "@ellmers/task-graph";
 import type { Command } from "commander";
-import { FetchCompanyFactsTask } from "../task/FetchCompanyFactsTask";
-import { StoreCompanyFactsTask } from "../task/StoreCompanyFactsTask";
+import { FetchCompanyFactsTask } from "../task/facts/FetchCompanyFactsTask";
+import { StoreCompanyFactsTask } from "../task/facts/StoreCompanyFactsTask";
 
 export function CompanyFacts(program: Command) {
   program

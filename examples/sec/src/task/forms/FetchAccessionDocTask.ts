@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { TaskInput, TaskInputDefinition } from "@ellmers/task-graph";
-import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../fetch/SecCachedFetchTask";
+import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../../fetch/SecCachedFetchTask";
 
 // NOTE: accession documents are immutable, so we don't need to pass in a date for invalidation
 

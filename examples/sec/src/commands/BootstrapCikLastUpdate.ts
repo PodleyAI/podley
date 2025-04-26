@@ -6,18 +6,24 @@
 //    *******************************************************************************
 
 import { runTasks } from "@ellmers/cli";
+import { pipe } from "@ellmers/task-graph";
 import type { Command } from "commander";
-import { MasterIndexAggregateLastDateTask } from "../task/MasterIndexAggregateLastDateTask";
+import { FetchQuarterlyIndexRangeTask } from "../task/index/FetchQuarterlyIndexRangeTask";
+import { StoreCikLastUpdatedTask } from "../task/index/StoreCikLastUpdatedTask";
 
 export function BootstrapCikLastUpdate(program: Command) {
   program
     .command("bootstrap-cik-last-update")
     .description("bootstrap the cik last update task")
-    .argument("<file_name>", "the file name of the master index last date task")
-    .action(async (file_name: string) => {
-      const task = new MasterIndexAggregateLastDateTask({ file_name });
+    .argument("<year>", "the year to bootstrap the cik last update task")
+    .action(async (year: string) => {
+      const yearInt = parseInt(year);
+      const flow = pipe([
+        new FetchQuarterlyIndexRangeTask({ startYear: yearInt }),
+        new StoreCikLastUpdatedTask(),
+      ]);
       try {
-        await runTasks(task);
+        await runTasks(flow);
       } catch (error) {
         console.error("Error running bootstrap cik last update task:", error);
       }

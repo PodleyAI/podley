@@ -7,8 +7,8 @@
 
 import { Workflow } from "@ellmers/task-graph";
 import type { Command } from "commander";
-import { FetchCompanySubmissionsTask } from "../task/FetchCompanySubmissionsTask";
-import { StoreCompanySubmissionsTask } from "../task/StoreCompanySubmissionsTask";
+import { FetchSubmissionsTask } from "../task/submissions/FetchSubmissionsTask";
+import { StoreSubmissionsTask } from "../task/submissions/StoreSubmissionsTask";
 import { runWorkflow } from "@ellmers/cli";
 
 export function CompanySubmissions(program: Command) {
@@ -20,11 +20,11 @@ export function CompanySubmissions(program: Command) {
     .action(async (cik: string, options) => {
       const wf = new Workflow();
       wf.pipe(
-        new FetchCompanySubmissionsTask({
+        new FetchSubmissionsTask({
           date: options.date,
           cik: parseInt(cik),
         }),
-        new StoreCompanySubmissionsTask()
+        new StoreSubmissionsTask()
       );
       try {
         await runWorkflow(wf);
