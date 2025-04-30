@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { Text } from "retuink";
 
 /**
@@ -82,24 +82,22 @@ export const symbols = {
   arrowDashedRight: "⇢",
 };
 
-export const Spinner = () => {
-  const interval = 90;
-  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+const SPINNER_INTERVAL = 90;
+const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
-  const [frameIndex, setFrameIndex] = useState(0);
+export const Spinner = memo(
+  ({ color }: { color?: string }) => {
+    const [frameIndex, setFrameIndex] = useState(0);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setFrameIndex((currentFrameIndex) => {
-        const isLastFrame = currentFrameIndex === frames.length - 1;
-        return isLastFrame ? 0 : currentFrameIndex + 1;
-      });
-    }, interval);
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setFrameIndex((prevIndex) => (prevIndex + 1) % SPINNER_FRAMES.length);
+      }, SPINNER_INTERVAL);
 
-    return () => {
-      clearInterval(timer);
-    };
-  }, []);
+      return () => clearInterval(timer);
+    }, []);
 
-  return <Text>{frames[frameIndex]}</Text>;
-};
+    return <Text color={color}>{SPINNER_FRAMES[frameIndex]}</Text>;
+  },
+  (prevProps, nextProps) => prevProps.color === nextProps.color
+);

@@ -56,7 +56,7 @@ export class DelayTask<
           throw new TaskAbortedError("Task aborted");
         }
         await sleep(chunkSize);
-        executeConfig.updateProgress(i / iterations);
+        executeConfig.updateProgress((100 * i) / iterations, `Delaying for ${delay}ms`);
       }
     } else {
       await sleep(delay);

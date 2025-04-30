@@ -9,7 +9,7 @@ import type { Command } from "commander";
 import { runTasks } from "./TaskGraphToUI";
 import { TaskGraph, Workflow, JsonTaskItem } from "@ellmers/task-graph";
 import { DownloadModelTask, getGlobalModelRepository } from "@ellmers/ai";
-import { JsonTask } from "@ellmers/tasks";
+import { DelayTask, JsonTask } from "@ellmers/tasks";
 
 export function AddBaseCommands(program: Command) {
   program
@@ -169,6 +169,19 @@ export function AddBaseCommands(program: Command) {
         await runTasks(workflow);
       } catch (error) {
         console.error("Error running workflow:", error);
+      }
+    });
+
+  program
+    .command("delay")
+    .description("delay for a given number of seconds")
+    .option("--seconds <seconds>", "time to delay")
+    .action(async (options) => {
+      const task = new DelayTask({ delay: parseInt(options.seconds) || 2000 });
+      try {
+        await runTasks(task);
+      } catch (error) {
+        console.error("Error running delay task:", error);
       }
     });
 }

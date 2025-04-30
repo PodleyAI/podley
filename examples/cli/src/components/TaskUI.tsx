@@ -7,43 +7,42 @@
 
 import { ITask, ITaskGraph, TaskStatus, ArrayTask } from "@ellmers/task-graph";
 import type { FC } from "react";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Box, Text } from "retuink";
 import { createBar, Spinner, symbols } from "./Elements";
 import TaskGraphUI from "./TaskGraphUI";
 import { DownloadModelTask } from "@ellmers/ai";
 
-const getSymbol = (state: TaskStatus) => {
-  if (state === TaskStatus.PROCESSING) {
-    return (
-      <Text color="yellow">
-        <Spinner />
-      </Text>
-    );
-  }
+const StatusIcon = memo(
+  ({ status }: { status: TaskStatus }) => {
+    if (status === TaskStatus.PROCESSING) {
+      return <Spinner color="yellow" />;
+    }
 
-  if (state === TaskStatus.ABORTING) {
-    return <Text color="yellow">{symbols.warning}</Text>;
-  }
+    if (status === TaskStatus.ABORTING) {
+      return <Text color="yellow">{symbols.warning}</Text>;
+    }
 
-  if (state === TaskStatus.FAILED) {
-    return <Text color="red">{symbols.cross}</Text>;
-  }
+    if (status === TaskStatus.FAILED) {
+      return <Text color="red">{symbols.cross}</Text>;
+    }
 
-  if (state === TaskStatus.SKIPPED) {
-    return <Text color="gray">{symbols.info}</Text>;
-  }
+    if (status === TaskStatus.SKIPPED) {
+      return <Text color="gray">{symbols.info}</Text>;
+    }
 
-  if (state === TaskStatus.COMPLETED) {
-    return <Text color="green">{symbols.tick}</Text>;
-  }
+    if (status === TaskStatus.COMPLETED) {
+      return <Text color="green">{symbols.tick}</Text>;
+    }
 
-  if (state === TaskStatus.PENDING) {
-    return <Text color="gray">{symbols.squareSmallFilled}</Text>;
-  }
+    if (status === TaskStatus.PENDING) {
+      return <Text color="gray">{symbols.squareSmallFilled}</Text>;
+    }
 
-  return " ";
-};
+    return " ";
+  },
+  (prevProps, nextProps) => prevProps.status === nextProps.status
+);
 
 export const TaskUI: FC<{
   task: ITask;
@@ -68,24 +67,25 @@ export const TaskUI: FC<{
     };
 
     const onProgress = (...args: any[]) => {
-      const [progress, message, details] = args;
-      setProgress(progress);
-      setMessage(message);
-      if (message === "Downloading model" && details) {
+      const [newProgress, newMessage, newDetails] = args;
+
+      setProgress(newProgress);
+      setMessage(newMessage);
+
+      if (newMessage === "Downloading model" && newDetails) {
         setDetails((oldDetails: any) => {
           if (oldDetails == null) {
-            return [details];
+            return [newDetails];
           }
-          const found = oldDetails.find((d: any) => d.file === details.file);
+          const found = oldDetails.find((d: any) => d.file === newDetails.file);
           if (found) {
-            return oldDetails.map((d: any) => (d.file === details.file ? details : d));
+            return oldDetails.map((d: any) => (d.file === newDetails.file ? newDetails : d));
           }
-          return [...oldDetails, details];
+          return [...oldDetails, newDetails];
         });
-      } else if (message == "Generating") {
-        setText((text) => text + details.text);
+      } else if (newMessage === "Generating" && newDetails?.text) {
+        setText((prevText) => prevText + newDetails.text);
       }
-      setCount((count) => count + 1);
     };
 
     const onComplete = () => {
@@ -94,11 +94,11 @@ export const TaskUI: FC<{
 
     const onError = (error: any) => {
       setStatus(TaskStatus.FAILED);
-      setError((err: string | null) => (err ? `${err}\n${error.message}` : error.message));
+      setError((prevErr) => (prevErr ? `${prevErr}\n${error.message}` : error.message));
     };
 
     const onRegenerate = () => {
-      setCount((counter) => counter + 1);
+      setCount((c) => c + 1);
       if (
         task &&
         task instanceof ArrayTask &&
@@ -119,7 +119,7 @@ export const TaskUI: FC<{
 
     const onAbort = () => {
       setStatus(TaskStatus.ABORTING);
-      setError((err: string | null) => (err ? `${err}\nAborted` : "Aborted"));
+      setError((prevErr) => (prevErr ? `${prevErr}\nAborted` : "Aborted"));
     };
 
     onRegenerate();
@@ -141,18 +141,16 @@ export const TaskUI: FC<{
     };
   }, [task, graph]);
 
-  let icon = getSymbol(task.status);
-
   const containerKey = `${task.config.id}-${count}`;
 
   return (
     <Box key={containerKey} flexDirection="column">
       <Box>
         <Box marginRight={1}>
-          <Text>{icon}</Text>
+          <StatusIcon status={status} />
         </Box>
         <Text>{task.config.name || (task.config.id as string)}</Text>
-        {status === TaskStatus.PROCESSING ? (
+        {status === TaskStatus.PROCESSING && (
           <Box marginLeft={1}>
             <Text dimColor>[{status}]</Text>
             <Text dimColor>
@@ -160,7 +158,7 @@ export const TaskUI: FC<{
                 ` ${createBar(progress / 100, 20)} ${message} ${Math.round(progress)}%`}
             </Text>
           </Box>
-        ) : null}
+        )}
       </Box>
       {arrayProgress ? (
         <Box marginLeft={2}>
@@ -191,27 +189,27 @@ export const TaskUI: FC<{
           <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(progress / 100, 10)} ${text}`}</Text>
         </Box>
       )}
-      {status == TaskStatus.PROCESSING ? (
+      {status == TaskStatus.PROCESSING && (
         <Box marginLeft={2}>
           <Text
             color="gray"
             wrap="truncate-middle"
           >{`${symbols.arrowRight} ${JSON.stringify(task.runInputData).slice(0, 200)}`}</Text>
         </Box>
-      ) : null}
-      {status == TaskStatus.COMPLETED ? (
+      )}
+      {status == TaskStatus.COMPLETED && (
         <Box marginLeft={2}>
           <Text
             color="gray"
             wrap="truncate-middle"
           >{`${symbols.arrowDown} ${JSON.stringify(task.runOutputData).slice(0, 200)}`}</Text>
         </Box>
-      ) : null}
-      {error ? (
+      )}
+      {error && (
         <Box marginLeft={2}>
           <Text color="red">{`${symbols.warning} ${error}`}</Text>
         </Box>
-      ) : null}
+      )}
     </Box>
   );
 };
