@@ -7,6 +7,7 @@
 
 import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
 import { query_run } from "../../util/db";
+import { sleep } from "@ellmers/util";
 
 export type StoreCikLastUpdatedTaskOutput = {
   success: boolean;
@@ -66,11 +67,11 @@ export class StoreCikLastUpdatedTask extends Task<
           $last_update: last_known_update,
         }
       );
-      const newProgress = Math.round((index++ / length) * 100);
+      const newProgress = Math.round((index++ / length) * 1000) / 10;
       if (newProgress > progress) {
-        // round numbers, so max 100 times
         config.updateProgress(newProgress, `cik: ${cik}`);
         progress = newProgress;
+        await sleep(0);
       }
     }
     return { success: true };

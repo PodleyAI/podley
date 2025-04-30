@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
-import { query_run } from "../util/db";
+import { query_run } from "../../util/db";
 import { FetchAllCikNamesTask, FetchAllCikNamesTaskOutput } from "./FetchAllCikNamesTask";
 
 export type StoreCikNamesTaskOutput = {

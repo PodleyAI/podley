@@ -13,4 +13,4 @@ packages/cli-sec/
 packages/ngraph/
 .cache/
 .turbo
-.env.*
+.env.local
