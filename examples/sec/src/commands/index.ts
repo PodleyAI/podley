@@ -6,13 +6,13 @@
 //    *******************************************************************************
 
 import { Command } from "commander";
+import { EnvToDI } from "../config/EnvToDI";
 import { BootstrapAllCikNames } from "./BootstrapAllCikNames";
 import { BootstrapCikLastUpdate } from "./BootstrapCikLastUpdate";
 import { CompanyFacts } from "./CompanyFacts";
 import { CompanySubmissions } from "./CompanySubmissions";
 import { AddDailyIndexCommands } from "./DailyIndex";
 import { SetupDB } from "./SetupDB";
-import { EnvToDI } from "../config/EnvToDI";
 
 export const AddCommands = (program: Command) => {
   EnvToDI();

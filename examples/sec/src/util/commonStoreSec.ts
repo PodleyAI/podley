@@ -1,4 +1,4 @@
-import { Address, CompanySubmission } from "../types/edgar/company-submissions";
+import { Address, Submission } from "../types/edgar/company-submissions";
 import { FilingMetaData } from "../types/FilingMetaData";
 import {
   cleanAddress,
@@ -39,7 +39,7 @@ export function processSubmissionSic(sic: string, sicDescription: string) {
   );
 }
 
-export function processSubmissionEntity(submission: Omit<CompanySubmission, "filings" | "files">) {
+export function processSubmissionEntity(submission: Omit<Submission, "filings" | "files">) {
   query_run(
     `INSERT OR REPLACE INTO entities(cik,name,type,sic,ein,description,website,investor_website,category,fiscal_year,state_incorporation,state_incorporation_desc)
       VALUES($cik,$name,$type,$sic,$ein,$description,$website,$investor_website,$category,$fiscal_year,$state_incorporation,$state_incorporation_desc)`,

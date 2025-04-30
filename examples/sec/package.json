@@ -39,7 +39,6 @@
     "fast-xml-parser": "^5.0.9",
     "html-entities": "^2.5.2",
     "pdf2json": "^3.1.5",
-    "r3bl-ts-utils": "^2.0.9",
     "words-to-numbers": "^1.5.1"
   },
   "devDependencies": {

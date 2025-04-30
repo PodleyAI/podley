@@ -9,9 +9,12 @@ import { describe, expect, it } from "bun:test";
 import { objectOfArraysAsArrayOfObjects } from "@ellmers/util";
 // @ts-ignore
 import submissions1017389 from "./mock_data/submissions_1017389.json" with { type: "json" };
+import { EnvToDI } from "../config/EnvToDI";
 type Submissions = typeof submissions1017389;
 
 describe("SEC Submissions", () => {
+  EnvToDI();
+
   it("should iterate over the submissions", async () => {
     // calc the fastest way, iterating over the underlying array
     let totalArray = submissions1017389.filings.recent.size.reduce((acc, curr) => acc + curr, 0);

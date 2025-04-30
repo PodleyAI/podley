@@ -20,7 +20,9 @@ import master20240102 from "./mock_data/master.20240102.idx" with { type: "text"
 // import { SecJobQueueName } from "../config/Constants";
 // import { InMemoryQueueStorage } from "@ellmers/storage";
 // import { InMemoryRateLimiter } from "@ellmers/job-queue";
+import { EnvToDI } from "../config/EnvToDI";
 
+EnvToDI();
 // Create base mock response
 const createMockResponse20240102 = (): Response => {
   return new Response(master20240102, {
@@ -82,20 +84,11 @@ describe("SEC FetchDailyIndexTask", () => {
     setTaskQueueRegistry(null);
   });
 
-  it("should get the daily index via mock limit records", async () => {
+  it("should get the daily index", async () => {
     const results = await new FetchDailyIndexTask({
       date: "2024-01-02",
-      limit: 10,
     }).run();
-    expect(results.updateList.length).toEqual(1);
-  });
-
-  it("should get the daily index via mock limit records", async () => {
-    const results = await new FetchDailyIndexTask({
-      date: "2024-01-02",
-      limit: 100,
-    }).run();
-    expect(results.updateList.length).toEqual(34);
+    expect(results.updateList.length).toEqual(3036);
   });
 
   it("should fail to get the daily index", async () => {
@@ -104,7 +97,6 @@ describe("SEC FetchDailyIndexTask", () => {
     try {
       const task = new FetchDailyIndexTask({
         date: "2024-01-01",
-        limit: 100,
       });
       await task.run();
       console.log("This should NOT be seen");
