@@ -1,0 +1,36 @@
+---
+description: 
+globs: *.ts,*.tsx
+alwaysApply: false
+---
+Do not import from files with any of the following names: index, node, bun, browser, common
+
+Use import type whenever you are importing a type.
+
+Prefer top-level `import type` over inline `import { type ... }` when there is only a type being imported
+
+```ts
+// BAD
+import { type TUser } from "./user";
+```
+
+```ts
+// GOOD
+import type { TUser } from "./user";
+```
+
+When mixed, then keep to a single line:
+```ts
+// BAD
+import { type TUser } from "./user";
+import { User } from "./user";
+```
+
+```ts
+// GOOD
+import { User, type TUser } from "./user";
+```
+
+Merge the two lines when you get a chance.
+
+If a type is being imported and there is not `type` keyword before it, then add it.

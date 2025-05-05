@@ -1,6 +1,0 @@
----
-description: Import
-globs: *.ts, *.tsx, *.js, *.jsx
-alwaysApply: false
----
-Do not import from files with the name: index, node, bun, browser

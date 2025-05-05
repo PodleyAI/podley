@@ -1,0 +1,21 @@
+---
+description: 
+globs: *.ts,*.tsx
+alwaysApply: false
+---
+Do not introduce new enums into the codebase. 
+
+If you require enum-like behaviour, use an `as const` object:
+
+```ts
+const backendToFrontendEnum = {
+  xs: "EXTRA_SMALL",
+  sm: "SMALL",
+  md: "MEDIUM",
+} as const;
+
+type LowerCaseEnum = keyof typeof backendToFrontendEnum; // "xs" | "sm" | "md"
+
+type UpperCaseEnum =
+  (typeof backendToFrontendEnum)[LowerCaseEnum]; // "EXTRA_SMALL" | "SMALL" | "MEDIUM"
+```
