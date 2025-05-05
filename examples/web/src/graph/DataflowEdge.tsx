@@ -168,7 +168,7 @@ export const DataflowEdge: React.FC<EdgeProps<Edge<DataflowEdgeData, string>>> =
               )}`}
               style={{ pointerEvents: "all", cursor: "pointer" }}
             >
-              {Object.keys(data.dataflow.value).length}
+              ⧉
             </span>
           </foreignObject>
           <EdgeLabelRenderer>
