@@ -33,7 +33,7 @@ export type ModelEventParameters<Event extends ModelEvents> = EventParameters<
 
 export const ModelSchema = Type.Object({
   name: Type.String(),
-  details: Type.String()
+  details: Type.Any(),
 });
 export const ModelPrimaryKeyNames = ["name"] as const;
 
@@ -42,7 +42,7 @@ export const ModelPrimaryKeyNames = ["name"] as const;
  */
 export const Task2ModelSchema = Type.Object({
   task: Type.String(),
-  model: Type.String()
+  model: Type.String(),
 });
 export const Task2ModelPrimaryKeyNames = ["task", "model"] as const;
 
