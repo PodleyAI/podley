@@ -37,32 +37,39 @@ export class DebugLogTask<
   Output extends DebugLogTaskOutput = DebugLogTaskOutput,
   Config extends TaskConfig = TaskConfig,
 > extends Task<Input, Output, Config> {
-  static type = "DebugLogTask";
-  static category = "Output";
+  public static type = "DebugLogTask";
+  public static category = "Utility";
   static readonly cacheable = false;
 
-  public static inputSchema = Type.Object({
-    console: Type.Array(
-      Type.Any({
-        title: "Messages",
-        description: "Messages to log",
-      })
-    ),
-    log_level: Type.Union(
-      log_levels.map((level) => Type.Literal(level)),
-      {
-        title: "Log Level",
-        default: DEFAULT_LOG_LEVEL,
-      }
-    ),
-  });
+  public static inputSchema() {
+    return Type.Object({
+      console: Type.Optional(
+        Type.String({
+          title: "Message",
+          description: "The message to log",
+        })
+      ),
+      log_level: Type.Optional(
+        Type.Union(
+          log_levels.map((level) => Type.Literal(level)),
+          {
+            title: "Log Level",
+            description: "The log level to use",
+            default: DEFAULT_LOG_LEVEL,
+          }
+        )
+      ),
+    });
+  }
 
-  public static outputSchema = Type.Object({
-    console: Type.Any({
-      title: "Messages",
-      description: "Messages that were logged",
-    }),
-  });
+  public static outputSchema() {
+    return Type.Object({
+      console: Type.Unknown({
+        title: "Messages",
+        description: "The messages logged by the task",
+      }),
+    });
+  }
 
   async executeReactive(input: Input, output: Output) {
     const { log_level = DEFAULT_LOG_LEVEL, console: messages } = input;

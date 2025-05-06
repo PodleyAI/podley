@@ -48,8 +48,12 @@ export type TextRewriterTaskOutput = Static<typeof TextRewriterOutputSchema>;
 export class TextRewriterTask extends AiTask<TextRewriterTaskInput, TextRewriterTaskOutput> {
   public static type = "TextRewriterTask";
   public static category = "Text Model";
-  public static inputSchema = TextRewriterInputSchema;
-  public static outputSchema = TextRewriterOutputSchema;
+  public static inputSchema() {
+    return TextRewriterInputSchema;
+  }
+  public static outputSchema() {
+    return TextRewriterOutputSchema;
+  }
 }
 
 TaskRegistry.registerTask(TextRewriterTask);

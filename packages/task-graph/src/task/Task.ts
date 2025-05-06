@@ -65,12 +65,16 @@ export class Task<
   /**
    * Input schema for this task
    */
-  public static inputSchema: TObject = Type.Object({});
+  public static inputSchema(): TObject {
+    return Type.Object({});
+  }
 
   /**
    * Output schema for this task
    */
-  public static outputSchema: TObject = Type.Object({});
+  public static outputSchema(): TObject {
+    return Type.Object({});
+  }
 
   // ========================================================================
   // Task Execution Methods - Core logic provided by subclasses
@@ -175,14 +179,14 @@ export class Task<
    * Gets input schema for this task
    */
   get inputSchema(): TObject {
-    return (this.constructor as typeof Task).inputSchema;
+    return (this.constructor as typeof Task).inputSchema();
   }
 
   /**
    * Gets output schema for this task
    */
   get outputSchema(): TObject {
-    return (this.constructor as typeof Task).outputSchema;
+    return (this.constructor as typeof Task).outputSchema();
   }
 
   public get type(): TaskTypeName {
@@ -440,7 +444,7 @@ export class Task<
    */
   protected static getInputSchemaTypeChecker(): TypeCheck<TObject> {
     if (!Task._inputSchemaTypeChecker) {
-      Task._inputSchemaTypeChecker = TypeCompiler.Compile(Task.inputSchema);
+      Task._inputSchemaTypeChecker = TypeCompiler.Compile(Task.inputSchema());
     }
     return Task._inputSchemaTypeChecker;
   }

@@ -32,22 +32,26 @@ export class DelayTask<
   static readonly type = "DelayTask";
   static readonly category = "Utility";
 
-  static inputSchema = Type.Object({
-    delay: Type.Optional(
-      Type.Number({
-        title: "Delay (ms)",
-        default: 1,
-      })
-    ),
-    pass_through: Type.Optional(
-      Type.Any({
-        title: "Pass Through",
-        description: "Pass through data to the output",
-      })
-    ),
-  });
+  static inputSchema() {
+    return Type.Object({
+      delay: Type.Optional(
+        Type.Number({
+          title: "Delay (ms)",
+          default: 1,
+        })
+      ),
+      pass_through: Type.Optional(
+        Type.Any({
+          title: "Pass Through",
+          description: "Pass through data to the output",
+        })
+      ),
+    });
+  }
 
-  static outputSchema = Type.Object({});
+  static outputSchema() {
+    return Type.Object({});
+  }
 
   async execute(input: Input, executeConfig: IExecuteConfig): Promise<Output> {
     const delay = input.delay;

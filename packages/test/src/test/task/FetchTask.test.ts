@@ -203,13 +203,7 @@ describe("FetchTask", () => {
       "https://api.example.com/not-found",
     ];
 
-    const results = await Promise.allSettled(
-      urls.map((url) =>
-        Fetch({
-          url,
-        })
-      )
-    );
+    const results = await Promise.allSettled(urls.map((url) => Fetch({ url })));
 
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results[0].status).toBe("fulfilled");

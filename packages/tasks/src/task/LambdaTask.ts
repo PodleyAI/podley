@@ -42,9 +42,9 @@ export class LambdaTask<
   Output extends TaskOutput = TaskOutput,
   Config extends LambdaTaskConfig<Input, Output> = LambdaTaskConfig<Input, Output>,
 > extends Task<Input, Output, Config> {
-  static readonly type = "LambdaTask";
-  static readonly category = "Utility";
-  static readonly cacheable = true;
+  public static type = "LambdaTask";
+  public static category = "Utility";
+  public static cacheable = true;
 
   constructor(input: Partial<Input> = {}, config: Partial<Config> = {}) {
     if (!config.execute && !config.executeReactive) {
@@ -59,27 +59,29 @@ export class LambdaTask<
    * Input schema for LambdaTask
    * - input: Optional input data to pass to the function
    */
-  public static inputSchema = Type.Object({
-    [DATAFLOW_ALL_PORTS]: Type.Optional(
-      Type.Any({
-        title: "Input",
-        description: "Input data to pass to the function",
-      })
-    ),
-  });
+  public static inputSchema() {
+    return Type.Object({
+      [DATAFLOW_ALL_PORTS]: Type.Optional(
+        Type.Any({
+          title: "Input",
+          description: "Input data to pass to the function",
+        })
+      ),
+    });
+  }
 
   /**
    * Output schema for LambdaTask
    * The output will be whatever the provided function returns
    */
-  public static outputSchema = Type.Object({
-    [DATAFLOW_ALL_PORTS]: Type.Optional(
-      Type.Any({
+  public static outputSchema() {
+    return Type.Object({
+      [DATAFLOW_ALL_PORTS]: Type.Any({
         title: "Output",
-        description: "Output data from the function",
-      })
-    ),
-  });
+        description: "The output from the execute function",
+      }),
+    });
+  }
 
   async execute(input: Input, config: IExecuteConfig): Promise<Output> {
     if (typeof this.config.execute === "function") {

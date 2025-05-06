@@ -48,8 +48,12 @@ export type TextEmbeddingTaskOutput = Static<typeof TextEmbeddingOutputSchema>;
 export class TextEmbeddingTask extends AiTask<TextEmbeddingTaskInput, TextEmbeddingTaskOutput> {
   public static type = "TextEmbeddingTask";
   public static category = "Text Model";
-  public static inputSchema = TextEmbeddingInputSchema;
-  public static outputSchema = TextEmbeddingOutputSchema;
+  public static inputSchema() {
+    return TextEmbeddingInputSchema;
+  }
+  public static outputSchema() {
+    return TextEmbeddingOutputSchema;
+  }
 }
 
 TaskRegistry.registerTask(TextEmbeddingTask);

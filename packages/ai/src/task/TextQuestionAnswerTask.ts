@@ -55,8 +55,12 @@ export class TextQuestionAnswerTask extends AiTask<
 > {
   public static type = "TextQuestionAnswerTask";
   public static category = "Text Model";
-  public static inputSchema = TextQuestionAnswerInputSchema;
-  public static outputSchema = TextQuestionAnswerOutputSchema;
+  public static inputSchema() {
+    return TextQuestionAnswerInputSchema;
+  }
+  public static outputSchema() {
+    return TextQuestionAnswerOutputSchema;
+  }
 }
 
 TaskRegistry.registerTask(TextQuestionAnswerTask);

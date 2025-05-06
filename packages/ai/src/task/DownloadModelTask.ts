@@ -46,8 +46,12 @@ export class DownloadModelTask extends AiTask<
 > {
   public static type = "DownloadModelTask";
   public static category = "Text Model";
-  public static inputSchema = DownloadModelInputSchema;
-  public static outputSchema = DownloadModelOutputSchema;
+  public static inputSchema() {
+    return DownloadModelInputSchema;
+  }
+  public static outputSchema() {
+    return DownloadModelOutputSchema;
+  }
   public static cacheable = false;
 
   public files: { file: string; progress: number }[] = [];

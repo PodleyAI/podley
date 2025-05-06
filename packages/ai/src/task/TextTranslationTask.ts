@@ -64,8 +64,12 @@ export class TextTranslationTask extends AiTask<
 > {
   public static type = "TextTranslationTask";
   public static category = "Text Model";
-  public static inputSchema = TextTranslationInputSchema;
-  public static outputSchema = TextTranslationOutputSchema;
+  public static inputSchema() {
+    return TextTranslationInputSchema;
+  }
+  public static outputSchema() {
+    return TextTranslationOutputSchema;
+  }
 }
 
 TaskRegistry.registerTask(TextTranslationTask);

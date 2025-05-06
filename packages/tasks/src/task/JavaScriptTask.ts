@@ -18,23 +18,32 @@ export type JavaScriptTaskOutput = {
 };
 
 export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutput> {
-  static readonly type = "JavaScriptTask";
-  static readonly category = "Utility";
+  public static type = "JavaScriptTask";
+  public static category = "Utility";
 
-  public static inputSchema = Type.Object({
-    code: Type.String({
-      title: "Code",
-    }),
-    input: Type.Any({
-      title: "Input",
-    }),
-  });
+  public static inputSchema() {
+    return Type.Object({
+      code: Type.String({
+        title: "Code",
+        description: "JavaScript code to execute",
+      }),
+      input: Type.Optional(
+        Type.Any({
+          title: "Input",
+          description: "Input data to pass to the JavaScript code",
+        })
+      ),
+    });
+  }
 
-  public static outputSchema = Type.Object({
-    output: Type.Any({
-      title: "Output",
-    }),
-  });
+  public static outputSchema() {
+    return Type.Object({
+      output: Type.Unknown({
+        title: "Output",
+        description: "The output of the JavaScript code",
+      }),
+    });
+  }
 
   async executeReactive(input: JavaScriptTaskInput, output: JavaScriptTaskOutput) {
     if (input.code) {

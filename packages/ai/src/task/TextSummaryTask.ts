@@ -43,8 +43,12 @@ export type TextSummaryTaskOutput = Static<typeof TextSummaryOutputSchema>;
 export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTaskOutput> {
   public static type = "TextSummaryTask";
   public static category = "Text Model";
-  public static inputSchema = TextSummaryInputSchema;
-  public static outputSchema = TextSummaryOutputSchema;
+  public static inputSchema() {
+    return TextSummaryInputSchema;
+  }
+  public static outputSchema() {
+    return TextSummaryOutputSchema;
+  }
 }
 
 TaskRegistry.registerTask(TextSummaryTask);

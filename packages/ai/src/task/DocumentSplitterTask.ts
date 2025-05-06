@@ -28,20 +28,24 @@ export class DocumentSplitterTask extends Task<
   JobQueueTaskConfig
 > {
   public static type = "DocumentSplitterTask";
-  public static category = "Input";
-  public static inputSchema = Type.Object({
-    parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {
-      name: "Document Kind",
-      description: "The kind of document (txt or md)",
-    }),
-    // file: Type.Instance(Document),
-  });
-  public static outputSchema = Type.Object({
-    texts: Type.Array(Type.String(), {
-      name: "Text Chunks",
-      description: "The text chunks of the document",
-    }),
-  });
+  public static category = "Document";
+  public static inputSchema() {
+    return Type.Object({
+      parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {
+        name: "Document Kind",
+        description: "The kind of document (txt or md)",
+      }),
+      // file: Type.Instance(Document),
+    });
+  }
+  public static outputSchema() {
+    return Type.Object({
+      texts: Type.Array(Type.String(), {
+        name: "Text Chunks",
+        description: "The text chunks of the document",
+      }),
+    });
+  }
 
   flattenFragmentsToTexts(item: DocumentFragment | Document): string[] {
     if (item instanceof Document) {

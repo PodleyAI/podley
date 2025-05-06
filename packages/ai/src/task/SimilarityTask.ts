@@ -77,8 +77,12 @@ export class SimilarityTask extends ArrayTask<
   static readonly category = "AI/Similarity";
   static readonly cacheable = true;
 
-  public static override inputSchema = SimilarityInputSchema;
-  public static override outputSchema = SimilarityOutputSchema;
+  public static override inputSchema() {
+    return SimilarityInputSchema;
+  }
+  public static override outputSchema() {
+    return SimilarityOutputSchema;
+  }
 
   // @ts-ignore (TODO: fix this)
   async executeReactive(

@@ -28,6 +28,7 @@ export interface FetchTaskInput extends TaskIO {
   body?: string;
   response_type?: "json" | "text" | "blob" | "arraybuffer";
   queueName?: string;
+  timeout?: number;
 }
 export interface FetchTaskOutput extends TaskIO {
   json?: JSONValue;
@@ -186,79 +187,74 @@ export class FetchTask<
   public static type = "FetchTask";
   public static category = "Input";
 
-  public static inputSchema = Type.Object({
-    url: Type.String({
-      title: "URL",
-      format: "url",
-    }),
-    method: Type.Optional(
-      Type.Union(
-        [
-          Type.Literal("GET"),
-          Type.Literal("POST"),
-          Type.Literal("PUT"),
-          Type.Literal("DELETE"),
-          Type.Literal("PATCH"),
-        ],
-        {
-          title: "Method",
-          default: "GET",
-        }
-      )
-    ),
-    headers: Type.Optional(
-      Type.Record(Type.String(), Type.String(), {
-        title: "Headers",
-      })
-    ),
-    body: Type.Optional(
-      Type.String({
-        title: "Body",
-      })
-    ),
-    response_type: Type.Optional(
-      Type.Union(
-        [
-          Type.Literal("json"),
-          Type.Literal("text"),
-          Type.Literal("blob"),
-          Type.Literal("arraybuffer"),
-        ],
-        {
-          title: "Response Type",
-          default: "json",
-        }
-      )
-    ),
-    queueName: Type.Optional(
-      Type.String({
-        title: "Queue Name",
-      })
-    ),
-  });
+  public static inputSchema() {
+    return Type.Object({
+      url: Type.String({
+        title: "URL",
+        description: "The URL to fetch from",
+        format: "url",
+      }),
+      method: Type.Optional(
+        Type.Union(
+          [
+            Type.Literal("GET"),
+            Type.Literal("POST"),
+            Type.Literal("PUT"),
+            Type.Literal("DELETE"),
+            Type.Literal("PATCH"),
+          ],
+          {
+            title: "Method",
+            description: "The HTTP method to use",
+            default: "GET",
+          }
+        )
+      ),
+      headers: Type.Optional(
+        Type.Record(Type.String(), Type.String(), {
+          title: "Headers",
+          description: "The headers to send with the request",
+        })
+      ),
+      body: Type.Optional(
+        Type.String({
+          title: "Body",
+          description: "The body of the request",
+        }),
+        true
+      ),
+      response_type: Type.Optional(
+        Type.Union(
+          [
+            Type.Literal("json"),
+            Type.Literal("text"),
+            Type.Literal("blob"),
+            Type.Literal("arraybuffer"),
+          ],
+          {
+            title: "Response Type",
+            default: "json",
+          }
+        )
+      ),
+      timeout: Type.Optional(
+        Type.Number({
+          title: "Timeout",
+          description: "Request timeout in milliseconds",
+        })
+      ),
+      queueName: Type.Optional(Type.String()),
+    });
+  }
 
-  public static outputSchema = Type.Object({
-    json: Type.Optional(
-      Type.Any({
-        title: "JSON Response",
-      })
-    ),
-    text: Type.Optional(
-      Type.String({
-        title: "Text Response",
-      })
-    ),
-    blob: Type.Optional(
-      Type.Any({
-        title: "Blob Response",
-      })
-    ),
-    arraybuffer: Type.Optional(
-      Type.Any({
-        title: "ArrayBuffer Response",
-      })
-    ),
-  });
+  public static outputSchema() {
+    return Type.Object({
+      text: Type.Optional(Type.String()),
+      json: Type.Optional(Type.Unknown()),
+      blob: Type.Optional(Type.Unsafe<Blob>({ type: "blob" })),
+      arraybuffer: Type.Optional(Type.Unsafe<ArrayBuffer>({ type: "arraybuffer" })),
+    });
+  }
 
   constructor(input: Input = {} as Input, config: Config = {} as Config) {
     config.queueName = input?.queueName ?? config.queueName;

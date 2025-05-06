@@ -39,13 +39,17 @@ class MultiplyRunTask extends ArrayTask<
   ConvertAllToOptionalArray<MultiplyOutput>,
   TaskConfig
 > {
-  public static inputSchema = Type.Object({
-    a: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
-    b: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
-  });
-  public static outputSchema = Type.Object({
-    result: TypeOptionalArray(Type.Number()),
-  });
+  public static inputSchema() {
+    return Type.Object({
+      a: TypeReplicateArray(Type.Number({ default: 0 })),
+      b: TypeReplicateArray(Type.Number({ default: 0 })),
+    });
+  }
+  public static outputSchema() {
+    return Type.Object({
+      result: TypeOptionalArray(Type.Number()),
+    });
+  }
 
   public async execute(input: MultiplyInput, config: IExecuteConfig): Promise<MultiplyOutput> {
     // Simple multiplication - at this point, we know the inputs are not arrays
@@ -62,13 +66,17 @@ class MultiplyRunReactiveTask extends ArrayTask<
   ConvertAllToOptionalArray<MultiplyInput>,
   ConvertAllToOptionalArray<MultiplyOutput>
 > {
-  public static inputSchema = Type.Object({
-    a: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
-    b: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
-  });
-  public static outputSchema = Type.Object({
-    result: TypeOptionalArray(Type.Number()),
-  });
+  public static inputSchema() {
+    return Type.Object({
+      a: TypeReplicateArray(Type.Number({ default: 0 })),
+      b: TypeReplicateArray(Type.Number({ default: 0 })),
+    });
+  }
+  public static outputSchema() {
+    return Type.Object({
+      result: TypeOptionalArray(Type.Number()),
+    });
+  }
 
   public async executeReactive(
     input: MultiplyInput,
@@ -91,12 +99,16 @@ class SquareRunTask extends ArrayTask<
   ConvertAllToOptionalArray<SquareInput>,
   ConvertAllToOptionalArray<SquareOutput>
 > {
-  public static inputSchema = Type.Object({
-    a: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
-  });
-  public static outputSchema = Type.Object({
-    result: TypeOptionalArray(Type.Number()),
-  });
+  public static inputSchema() {
+    return Type.Object({
+      a: TypeReplicateArray(Type.Number({ default: 0 })),
+    });
+  }
+  public static outputSchema() {
+    return Type.Object({
+      result: TypeOptionalArray(Type.Number()),
+    });
+  }
 
   public async execute(input: SquareInput, config: IExecuteConfig): Promise<SquareOutput> {
     return {
@@ -109,12 +121,16 @@ class SquareRunReactiveTask extends ArrayTask<
   ConvertAllToOptionalArray<SquareInput>,
   ConvertAllToOptionalArray<SquareOutput>
 > {
-  public static inputSchema = Type.Object({
-    a: TypeReplicateArray(Type.Number({ defaultValue: 0 })),
-  });
-  public static outputSchema = Type.Object({
-    result: TypeOptionalArray(Type.Number()),
-  });
+  public static inputSchema() {
+    return Type.Object({
+      a: TypeReplicateArray(Type.Number({ default: 0 })),
+    });
+  }
+  public static outputSchema() {
+    return Type.Object({
+      result: TypeOptionalArray(Type.Number()),
+    });
+  }
 
   public async executeReactive(input: SquareInput, output: SquareOutput): Promise<SquareOutput> {
     return {

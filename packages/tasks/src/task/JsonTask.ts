@@ -37,22 +37,26 @@ export class JsonTask<
   Output extends JsonTaskOutput = JsonTaskOutput,
   Config extends TaskConfig = TaskConfig,
 > extends GraphAsTask<Input, Output, Config> {
-  static readonly type = "JsonTask";
-  static readonly category = "Utility";
+  public static type = "JsonTask";
+  public static category = "Utility";
 
-  public static inputSchema = Type.Object({
-    json: Type.String({
-      title: "JSON",
-      description: "JSON string input",
-    }),
-  });
+  public static inputSchema() {
+    return Type.Object({
+      json: Type.String({
+        title: "JSON",
+        description: "The JSON to parse",
+      }),
+    });
+  }
 
-  public static outputSchema = Type.Object({
-    output: Type.Any({
-      title: "Output",
-      description: "Output depends on the generated task graph",
-    }),
-  });
+  public static outputSchema() {
+    return Type.Object({
+      output: Type.Any({
+        title: "Output",
+        description: "Output depends on the generated task graph",
+      }),
+    });
+  }
 
   /**
    * Regenerates the entire task graph based on the current JSON input

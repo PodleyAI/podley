@@ -86,8 +86,12 @@ export class TextGenerationTask extends AiTask<
 > {
   public static type = "TextGenerationTask";
   public static category = "Text Model";
-  public static inputSchema = TextGenerationInputSchema;
-  public static outputSchema = TextGenerationOutputSchema;
+  public static inputSchema() {
+    return TextGenerationInputSchema;
+  }
+  public static outputSchema() {
+    return TextGenerationOutputSchema;
+  }
 }
 
 TaskRegistry.registerTask(TextGenerationTask);

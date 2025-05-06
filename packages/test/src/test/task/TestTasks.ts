@@ -48,19 +48,23 @@ export type TestIOTaskOutput = {
 export class TestIOTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   static readonly type = "TestIOTask";
 
-  static readonly inputSchema = Type.Object({
-    key: Type.String({
-      default: "default",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      key: Type.String({
+        default: "default",
+      }),
+    });
+  }
 
-  static readonly outputSchema = Type.Object({
-    reactiveOnly: Type.Boolean({}),
-    all: Type.Boolean({}),
-    key: Type.String({
-      default: "default",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      reactiveOnly: Type.Boolean({}),
+      all: Type.Boolean({}),
+      key: Type.String({
+        default: "default",
+      }),
+    });
+  }
 
   /**
    * Implementation of reactive run mode
@@ -110,22 +114,26 @@ export class SimpleProcessingTask extends Task<SimpleProcessingInput, SimpleProc
   static readonly type = "SimpleProcessingTask";
 
   // Define input schema
-  static readonly inputSchema = Type.Object({
-    value: Type.String({
-      description: "Input value to process",
-      default: "default",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      value: Type.String({
+        description: "Input value to process",
+        default: "default",
+      }),
+    });
+  }
 
   // Define output schema
-  static readonly outputSchema = Type.Object({
-    processed: Type.Boolean({
-      description: "Flag indicating if the value was processed",
-    }),
-    result: Type.String({
-      description: "Processed result value",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      processed: Type.Boolean({
+        description: "Flag indicating if the value was processed",
+      }),
+      result: Type.String({
+        description: "Processed result value",
+      }),
+    });
+  }
 
   /**
    * Full implementation for processing input values
@@ -164,19 +172,23 @@ export class FailingTask extends Task {
   declare runOutputData: { out: number };
 
   // Define input schema
-  static readonly inputSchema = Type.Object({
-    in: Type.Number({
-      description: "Input number",
-      default: 0,
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      in: Type.Number({
+        description: "Input number",
+        default: 0,
+      }),
+    });
+  }
 
   // Define output schema
-  static readonly outputSchema = Type.Object({
-    out: Type.Number({
-      description: "Output number",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      out: Type.Number({
+        description: "Output number",
+      }),
+    });
+  }
 
   /**
    * Always throws an error to simulate task failure
@@ -204,17 +216,21 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   progressValue = 0.5;
   delayMs = 0;
 
-  static readonly inputSchema = Type.Object({
-    key: Type.String({
-      default: "default",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      key: Type.String({
+        default: "default",
+      }),
+    });
+  }
 
-  static readonly outputSchema = Type.Object({
-    reactiveOnly: Type.Boolean({}),
-    all: Type.Boolean({}),
-    key: Type.String({}),
-  });
+  static outputSchema() {
+    return Type.Object({
+      reactiveOnly: Type.Boolean({}),
+      all: Type.Boolean({}),
+      key: Type.String({}),
+    });
+  }
 
   /**
    * Executes the task with configurable behavior for testing
@@ -268,18 +284,21 @@ export type TestSquareTaskOutput = {
 export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareTask";
 
-  // Define input schema
-  static readonly inputSchema = Type.Object({
-    input: Type.Number({
-      description: "Number to square",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      input: Type.Number({
+        description: "Number to square",
+      }),
+    });
+  }
 
-  static readonly outputSchema = Type.Object({
-    output: Type.Number({
-      description: "Squared number",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      output: Type.Number({
+        description: "Squared number",
+      }),
+    });
+  }
 
   /**
    * Reactive implementation that squares the input number
@@ -298,19 +317,21 @@ export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutp
 export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareNonReactiveTask";
 
-  // Define input schema
-  static readonly inputSchema = Type.Object({
-    input: Type.Number({
-      description: "Number to square",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      input: Type.Number({
+        description: "Number to square",
+      }),
+    });
+  }
 
-  // Define output schema
-  static readonly outputSchema = Type.Object({
-    output: Type.Number({
-      description: "Squared number",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      output: Type.Number({
+        description: "Squared number",
+      }),
+    });
+  }
 
   /**
    * Non-reactive implementation that squares the input number
@@ -340,19 +361,21 @@ export type TestDoubleTaskOutput = {
 export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutput> {
   static readonly type = "TestDoubleTask";
 
-  // Define input schema
-  static readonly inputSchema = Type.Object({
-    input: Type.Number({
-      description: "Number to double",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      input: Type.Number({
+        description: "Number to double",
+      }),
+    });
+  }
 
-  // Define output schema
-  static readonly outputSchema = Type.Object({
-    output: Type.Number({
-      description: "Doubled number",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      output: Type.Number({
+        description: "Doubled number",
+      }),
+    });
+  }
 
   /**
    * Reactive implementation that doubles the input number
@@ -371,19 +394,21 @@ export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutp
 export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareErrorTask";
 
-  // Define input schema
-  static readonly inputSchema = Type.Object({
-    input: Type.Number({
-      description: "Number to square (will throw error)",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      input: Type.Number({
+        description: "Number to square (will throw error)",
+      }),
+    });
+  }
 
-  // Define output schema
-  static readonly outputSchema = Type.Object({
-    output: Type.Number({
-      description: "Squared number (never returned due to error)",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      output: Type.Number({
+        description: "Squared number (never returned due to error)",
+      }),
+    });
+  }
 
   /**
    * Always throws an error to test error handling
@@ -399,17 +424,19 @@ export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTas
 export class TestSimpleTask extends Task<{ input: string }, { output: string }> {
   static type = "TestSimpleTask";
 
-  static readonly inputSchema = Type.Object({
-    input: Type.String({
-      description: "Input string",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      input: Type.String({
+        description: "Input string",
+      }),
+    });
+  }
 
-  static readonly outputSchema = Type.Object({
-    output: Type.String({
-      description: "Output string",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      output: Type.String({ description: "Output string" }),
+    });
+  }
 
   async execute(input: { input: string }): Promise<{ output: string }> {
     return { output: `processed-${input.input}` };
@@ -424,19 +451,21 @@ export class TestOutputTask extends Task<{ input: string }, { customOutput: stri
   declare runInputData: { input: string };
   declare runOutputData: { customOutput: string };
 
-  // Define input schema
-  static readonly inputSchema = Type.Object({
-    input: Type.String({
-      description: "Input string",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      input: Type.String({
+        description: "Input string",
+      }),
+    });
+  }
 
-  // Define output schema
-  static readonly outputSchema = Type.Object({
-    customOutput: Type.String({
-      description: "Custom output string",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      customOutput: Type.String({
+        description: "Custom output string",
+      }),
+    });
+  }
 
   /**
    * Returns the input in a custom output property
@@ -454,19 +483,21 @@ export class TestInputTask extends Task<{ customInput: string }, { output: strin
   declare runInputData: { customInput: string };
   declare runOutputData: { output: string };
 
-  // Define input schema
-  static readonly inputSchema = Type.Object({
-    customInput: Type.String({
-      description: "Custom input string",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      customInput: Type.String({
+        description: "Custom input string",
+      }),
+    });
+  }
 
-  // Define output schema
-  static readonly outputSchema = Type.Object({
-    output: Type.String({
-      description: "Output string",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      output: Type.String({
+        description: "Output string",
+      }),
+    });
+  }
 
   /**
    * Returns the custom input in the output property
@@ -481,12 +512,6 @@ export class TestInputTask extends Task<{ customInput: string }, { output: strin
  */
 export class LongRunningTask extends Task {
   static type = "LongRunningTask";
-
-  // Define empty input schema
-  static readonly inputSchema = Type.Object({});
-
-  // Define empty output schema
-  static readonly outputSchema = Type.Object({});
 
   /**
    * Runs indefinitely until aborted
@@ -507,19 +532,21 @@ export class LongRunningTask extends Task {
 export class StringTask extends Task<{ input: string }, { output: string }, TaskConfig> {
   static type = "StringTask";
 
-  // Define input schema
-  static readonly inputSchema = Type.Object({
-    input: Type.String({
-      description: "Input string",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      input: Type.String({
+        description: "Input string",
+      }),
+    });
+  }
 
-  // Define output schema
-  static readonly outputSchema = Type.Object({
-    output: Type.String({
-      description: "Output string",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      output: Type.String({
+        description: "Output string",
+      }),
+    });
+  }
 
   /**
    * Returns the input string as output
@@ -535,19 +562,21 @@ export class StringTask extends Task<{ input: string }, { output: string }, Task
 export class NumberTask extends Task<{ input: number }, { output: number }, TaskConfig> {
   static type = "NumberTask";
 
-  // Define input schema
-  static readonly inputSchema = Type.Object({
-    input: Type.Number({
-      description: "Input number",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      input: Type.Number({
+        description: "Input number",
+      }),
+    });
+  }
 
-  // Define output schema
-  static readonly outputSchema = Type.Object({
-    output: Type.Number({
-      description: "Output number",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      output: Type.Number({
+        description: "Output number",
+      }),
+    });
+  }
 
   /**
    * Returns the input number as output
@@ -578,22 +607,24 @@ type TestAddTaskOutput = {
 export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
   static readonly type = "TestAddTask";
 
-  // Define input schema
-  static readonly inputSchema = Type.Object({
-    a: Type.Number({
-      description: "First number to add",
-    }),
-    b: Type.Number({
-      description: "Second number to add",
-    }),
-  });
+  static inputSchema() {
+    return Type.Object({
+      a: Type.Number({
+        description: "First number",
+      }),
+      b: Type.Number({
+        description: "Second number",
+      }),
+    });
+  }
 
-  // Define output schema
-  static readonly outputSchema = Type.Object({
-    output: Type.Number({
-      description: "Sum of the two numbers",
-    }),
-  });
+  static outputSchema() {
+    return Type.Object({
+      output: Type.Number({
+        description: "Sum of a and b",
+      }),
+    });
+  }
 
   /**
    * Adds the two input numbers

@@ -53,8 +53,8 @@ export interface ITaskStaticProperties {
   readonly type: string;
   readonly category: string;
   readonly cacheable: boolean;
-  readonly inputSchema: TObject;
-  readonly outputSchema: TObject;
+  readonly inputSchema: () => TObject;
+  readonly outputSchema: () => TObject;
 }
 
 /**
