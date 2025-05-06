@@ -12,7 +12,7 @@ import {
   TypeReplicateArray,
   Workflow,
 } from "@ellmers/task-graph";
-import { Type, type Static } from "@sinclair/typebox";
+import { TObject, Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypedArray, TypeModel } from "./base/AiTaskSchemas";
 
@@ -48,10 +48,10 @@ export type TextEmbeddingTaskOutput = Static<typeof TextEmbeddingOutputSchema>;
 export class TextEmbeddingTask extends AiTask<TextEmbeddingTaskInput, TextEmbeddingTaskOutput> {
   public static type = "TextEmbeddingTask";
   public static category = "Text Model";
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return TextEmbeddingInputSchema;
   }
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return TextEmbeddingOutputSchema;
   }
 }

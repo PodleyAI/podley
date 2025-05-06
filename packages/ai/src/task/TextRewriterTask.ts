@@ -12,7 +12,7 @@ import {
   TypeReplicateArray,
   Workflow,
 } from "@ellmers/task-graph";
-import { Type, type Static } from "@sinclair/typebox";
+import { TObject, Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 
@@ -48,10 +48,10 @@ export type TextRewriterTaskOutput = Static<typeof TextRewriterOutputSchema>;
 export class TextRewriterTask extends AiTask<TextRewriterTaskInput, TextRewriterTaskOutput> {
   public static type = "TextRewriterTask";
   public static category = "Text Model";
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return TextRewriterInputSchema;
   }
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return TextRewriterOutputSchema;
   }
 }

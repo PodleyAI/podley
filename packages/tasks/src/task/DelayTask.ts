@@ -16,7 +16,7 @@ import {
   Workflow,
 } from "@ellmers/task-graph";
 import { sleep } from "@ellmers/util";
-import { Type } from "@sinclair/typebox";
+import { TObject, Type } from "@sinclair/typebox";
 
 export type DelayTaskInput = {
   delay: number;
@@ -32,7 +32,7 @@ export class DelayTask<
   static readonly type = "DelayTask";
   static readonly category = "Utility";
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       delay: Type.Optional(
         Type.Number({
@@ -49,7 +49,7 @@ export class DelayTask<
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({});
   }
 

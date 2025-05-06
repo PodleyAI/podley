@@ -7,7 +7,7 @@
 
 import { Interpreter } from "../util/interpreter";
 import { TaskConfig, Workflow, CreateWorkflow, TaskRegistry, Task } from "@ellmers/task-graph";
-import { Type } from "@sinclair/typebox";
+import { TObject, Type } from "@sinclair/typebox";
 
 export type JavaScriptTaskInput = {
   code: string;
@@ -21,7 +21,7 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
   public static type = "JavaScriptTask";
   public static category = "Utility";
 
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return Type.Object({
       code: Type.String({
         title: "Code",
@@ -36,7 +36,7 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
     });
   }
 
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return Type.Object({
       output: Type.Unknown({
         title: "Output",

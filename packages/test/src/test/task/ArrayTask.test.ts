@@ -39,13 +39,13 @@ class MultiplyRunTask extends ArrayTask<
   ConvertAllToOptionalArray<MultiplyOutput>,
   TaskConfig
 > {
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return Type.Object({
       a: TypeReplicateArray(Type.Number({ default: 0 })),
       b: TypeReplicateArray(Type.Number({ default: 0 })),
     });
   }
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return Type.Object({
       result: TypeOptionalArray(Type.Number()),
     });
@@ -66,13 +66,13 @@ class MultiplyRunReactiveTask extends ArrayTask<
   ConvertAllToOptionalArray<MultiplyInput>,
   ConvertAllToOptionalArray<MultiplyOutput>
 > {
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return Type.Object({
       a: TypeReplicateArray(Type.Number({ default: 0 })),
       b: TypeReplicateArray(Type.Number({ default: 0 })),
     });
   }
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return Type.Object({
       result: TypeOptionalArray(Type.Number()),
     });
@@ -99,12 +99,12 @@ class SquareRunTask extends ArrayTask<
   ConvertAllToOptionalArray<SquareInput>,
   ConvertAllToOptionalArray<SquareOutput>
 > {
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return Type.Object({
       a: TypeReplicateArray(Type.Number({ default: 0 })),
     });
   }
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return Type.Object({
       result: TypeOptionalArray(Type.Number()),
     });
@@ -121,12 +121,12 @@ class SquareRunReactiveTask extends ArrayTask<
   ConvertAllToOptionalArray<SquareInput>,
   ConvertAllToOptionalArray<SquareOutput>
 > {
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return Type.Object({
       a: TypeReplicateArray(Type.Number({ default: 0 })),
     });
   }
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return Type.Object({
       result: TypeOptionalArray(Type.Number()),
     });

@@ -23,7 +23,7 @@ import {
   Workflow,
 } from "@ellmers/task-graph";
 import { sleep } from "@ellmers/util";
-import { Type } from "@sinclair/typebox";
+import { TObject, Type } from "@sinclair/typebox";
 
 /**
  * Standard input type for basic test tasks
@@ -48,7 +48,7 @@ export type TestIOTaskOutput = {
 export class TestIOTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   static readonly type = "TestIOTask";
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       key: Type.String({
         default: "default",
@@ -56,7 +56,7 @@ export class TestIOTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       reactiveOnly: Type.Boolean({}),
       all: Type.Boolean({}),
@@ -114,7 +114,7 @@ export class SimpleProcessingTask extends Task<SimpleProcessingInput, SimpleProc
   static readonly type = "SimpleProcessingTask";
 
   // Define input schema
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       value: Type.String({
         description: "Input value to process",
@@ -124,7 +124,7 @@ export class SimpleProcessingTask extends Task<SimpleProcessingInput, SimpleProc
   }
 
   // Define output schema
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       processed: Type.Boolean({
         description: "Flag indicating if the value was processed",
@@ -172,7 +172,7 @@ export class FailingTask extends Task {
   declare runOutputData: { out: number };
 
   // Define input schema
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       in: Type.Number({
         description: "Input number",
@@ -182,7 +182,7 @@ export class FailingTask extends Task {
   }
 
   // Define output schema
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       out: Type.Number({
         description: "Output number",
@@ -216,7 +216,7 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   progressValue = 0.5;
   delayMs = 0;
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       key: Type.String({
         default: "default",
@@ -224,7 +224,7 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       reactiveOnly: Type.Boolean({}),
       all: Type.Boolean({}),
@@ -284,7 +284,7 @@ export type TestSquareTaskOutput = {
 export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareTask";
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       input: Type.Number({
         description: "Number to square",
@@ -292,7 +292,7 @@ export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutp
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       output: Type.Number({
         description: "Squared number",
@@ -317,7 +317,7 @@ export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutp
 export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareNonReactiveTask";
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       input: Type.Number({
         description: "Number to square",
@@ -325,7 +325,7 @@ export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSqu
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       output: Type.Number({
         description: "Squared number",
@@ -361,7 +361,7 @@ export type TestDoubleTaskOutput = {
 export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutput> {
   static readonly type = "TestDoubleTask";
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       input: Type.Number({
         description: "Number to double",
@@ -369,7 +369,7 @@ export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutp
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       output: Type.Number({
         description: "Doubled number",
@@ -394,7 +394,7 @@ export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutp
 export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareErrorTask";
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       input: Type.Number({
         description: "Number to square (will throw error)",
@@ -402,7 +402,7 @@ export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTas
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       output: Type.Number({
         description: "Squared number (never returned due to error)",
@@ -424,7 +424,7 @@ export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTas
 export class TestSimpleTask extends Task<{ input: string }, { output: string }> {
   static type = "TestSimpleTask";
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       input: Type.String({
         description: "Input string",
@@ -432,7 +432,7 @@ export class TestSimpleTask extends Task<{ input: string }, { output: string }> 
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       output: Type.String({ description: "Output string" }),
     });
@@ -451,7 +451,7 @@ export class TestOutputTask extends Task<{ input: string }, { customOutput: stri
   declare runInputData: { input: string };
   declare runOutputData: { customOutput: string };
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       input: Type.String({
         description: "Input string",
@@ -459,7 +459,7 @@ export class TestOutputTask extends Task<{ input: string }, { customOutput: stri
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       customOutput: Type.String({
         description: "Custom output string",
@@ -483,7 +483,7 @@ export class TestInputTask extends Task<{ customInput: string }, { output: strin
   declare runInputData: { customInput: string };
   declare runOutputData: { output: string };
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       customInput: Type.String({
         description: "Custom input string",
@@ -491,7 +491,7 @@ export class TestInputTask extends Task<{ customInput: string }, { output: strin
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       output: Type.String({
         description: "Output string",
@@ -532,7 +532,7 @@ export class LongRunningTask extends Task {
 export class StringTask extends Task<{ input: string }, { output: string }, TaskConfig> {
   static type = "StringTask";
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       input: Type.String({
         description: "Input string",
@@ -540,7 +540,7 @@ export class StringTask extends Task<{ input: string }, { output: string }, Task
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       output: Type.String({
         description: "Output string",
@@ -562,7 +562,7 @@ export class StringTask extends Task<{ input: string }, { output: string }, Task
 export class NumberTask extends Task<{ input: number }, { output: number }, TaskConfig> {
   static type = "NumberTask";
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       input: Type.Number({
         description: "Input number",
@@ -570,7 +570,7 @@ export class NumberTask extends Task<{ input: number }, { output: number }, Task
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       output: Type.Number({
         description: "Output number",
@@ -607,7 +607,7 @@ type TestAddTaskOutput = {
 export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
   static readonly type = "TestAddTask";
 
-  static inputSchema() {
+  static inputSchema(): TObject {
     return Type.Object({
       a: Type.Number({
         description: "First number",
@@ -618,7 +618,7 @@ export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
     });
   }
 
-  static outputSchema() {
+  static outputSchema(): TObject {
     return Type.Object({
       output: Type.Number({
         description: "Sum of a and b",

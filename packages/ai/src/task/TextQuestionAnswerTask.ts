@@ -12,7 +12,7 @@ import {
   TypeReplicateArray,
   Workflow,
 } from "@ellmers/task-graph";
-import { Type, type Static } from "@sinclair/typebox";
+import { TObject, Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 import { TypeOptionalArray } from "@ellmers/util";
@@ -55,10 +55,10 @@ export class TextQuestionAnswerTask extends AiTask<
 > {
   public static type = "TextQuestionAnswerTask";
   public static category = "Text Model";
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return TextQuestionAnswerInputSchema;
   }
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return TextQuestionAnswerOutputSchema;
   }
 }

@@ -18,7 +18,7 @@ import {
   GraphAsTask,
   TaskConfigurationError,
 } from "@ellmers/task-graph";
-import { Type } from "@sinclair/typebox";
+import { TObject, Type } from "@sinclair/typebox";
 
 interface JsonTaskInput extends TaskInput {
   json: string;
@@ -40,7 +40,7 @@ export class JsonTask<
   public static type = "JsonTask";
   public static category = "Utility";
 
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return Type.Object({
       json: Type.String({
         title: "JSON",
@@ -49,7 +49,7 @@ export class JsonTask<
     });
   }
 
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return Type.Object({
       output: Type.Any({
         title: "Output",

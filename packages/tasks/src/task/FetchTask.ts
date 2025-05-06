@@ -18,7 +18,7 @@ import {
 } from "@ellmers/task-graph";
 import { AbortSignalJobError, Job, PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
 import { JSONValue } from "@ellmers/storage";
-import { Type } from "@sinclair/typebox";
+import { TObject, Type } from "@sinclair/typebox";
 
 export type url = string;
 export interface FetchTaskInput extends TaskIO {
@@ -187,7 +187,7 @@ export class FetchTask<
   public static type = "FetchTask";
   public static category = "Input";
 
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return Type.Object({
       url: Type.String({
         title: "URL",
@@ -247,7 +247,7 @@ export class FetchTask<
     });
   }
 
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return Type.Object({
       text: Type.Optional(Type.String()),
       json: Type.Optional(Type.Unknown()),

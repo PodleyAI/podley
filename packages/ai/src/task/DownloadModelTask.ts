@@ -13,7 +13,7 @@ import {
   Workflow,
 } from "@ellmers/task-graph";
 import { TypeOptionalArray } from "@ellmers/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { TObject, Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 
@@ -46,10 +46,10 @@ export class DownloadModelTask extends AiTask<
 > {
   public static type = "DownloadModelTask";
   public static category = "Text Model";
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return DownloadModelInputSchema;
   }
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return DownloadModelOutputSchema;
   }
   public static cacheable = false;

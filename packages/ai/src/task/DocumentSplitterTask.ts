@@ -13,7 +13,7 @@ import {
   Task,
 } from "@ellmers/task-graph";
 import { Document, DocumentFragment } from "../source/Document";
-import { Type } from "@sinclair/typebox";
+import { TObject, Type } from "@sinclair/typebox";
 export type DocumentSplitterTaskInput = {
   parser: "txt" | "md";
   file: Document;
@@ -29,7 +29,7 @@ export class DocumentSplitterTask extends Task<
 > {
   public static type = "DocumentSplitterTask";
   public static category = "Document";
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return Type.Object({
       parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {
         name: "Document Kind",
@@ -38,7 +38,7 @@ export class DocumentSplitterTask extends Task<
       // file: Type.Instance(Document),
     });
   }
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return Type.Object({
       texts: Type.Array(Type.String(), {
         name: "Text Chunks",

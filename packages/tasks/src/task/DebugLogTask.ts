@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { Workflow, TaskRegistry, CreateWorkflow, TaskConfig, Task } from "@ellmers/task-graph";
-import { Type } from "@sinclair/typebox";
+import { TObject, Type } from "@sinclair/typebox";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
@@ -41,7 +41,7 @@ export class DebugLogTask<
   public static category = "Utility";
   static readonly cacheable = false;
 
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return Type.Object({
       console: Type.Optional(
         Type.String({
@@ -62,7 +62,7 @@ export class DebugLogTask<
     });
   }
 
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return Type.Object({
       console: Type.Unknown({
         title: "Messages",

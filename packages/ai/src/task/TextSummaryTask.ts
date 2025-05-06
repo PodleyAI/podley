@@ -13,7 +13,7 @@ import {
   TypeReplicateArray,
 } from "@ellmers/task-graph";
 import { AiTask } from "./base/AiTask";
-import { Type, type Static } from "@sinclair/typebox";
+import { TObject, Type, type Static } from "@sinclair/typebox";
 import { TypeModel } from "./base/AiTaskSchemas";
 
 export const TextSummaryInputSchema = Type.Object({
@@ -43,10 +43,10 @@ export type TextSummaryTaskOutput = Static<typeof TextSummaryOutputSchema>;
 export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTaskOutput> {
   public static type = "TextSummaryTask";
   public static category = "Text Model";
-  public static inputSchema() {
+  public static inputSchema(): TObject {
     return TextSummaryInputSchema;
   }
-  public static outputSchema() {
+  public static outputSchema(): TObject {
     return TextSummaryOutputSchema;
   }
 }
