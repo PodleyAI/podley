@@ -6,7 +6,6 @@
 //    *******************************************************************************
 
 import { type TObject, type TSchema, Type } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
 
 export const TypeOptionalArray = <T extends TSchema>(
   type: T,
@@ -20,6 +19,13 @@ export const TypeOptionalArray = <T extends TSchema>(
 
 export const TypeDateTime = (annotations: Record<string, unknown> = {}) =>
   Type.String({ format: "date-time", ...annotations });
+
+export const TypeDate = (annotations: Record<string, unknown> = {}) =>
+  Type.String({ format: "date", ...annotations });
+
+export const TypeNullable = <T extends TSchema>(T: T) => {
+  return Type.Union([T, Type.Null()]);
+};
 
 export const TypeBlob = (annotations: Record<string, unknown> = {}) =>
   Type.Transform(Type.Any({ contentEncoding: "blob", ...annotations }))

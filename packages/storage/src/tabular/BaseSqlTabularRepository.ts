@@ -56,7 +56,7 @@ export abstract class BaseSqlTabularRepository<
    * @returns SQL string containing primary key column definitions
    */
   protected constructPrimaryKeyColumns($delimiter: string = ""): string {
-    const cols = Object.entries<TSchema>(simplifySchema(this.primaryKeySchema).properties)
+    const cols = Object.entries<TSchema>(this.primaryKeySchema.properties)
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
         return `${$delimiter}${key}${$delimiter} ${sqlType} NOT NULL`;
@@ -70,10 +70,12 @@ export abstract class BaseSqlTabularRepository<
    * @returns SQL string containing value column definitions
    */
   protected constructValueColumns($delimiter: string = ""): string {
-    const cols = Object.entries<TSchema>(simplifySchema(this.valueSchema).properties)
+    const cols = Object.entries<TSchema>(this.valueSchema.properties)
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
-        return `${$delimiter}${key}${$delimiter} ${sqlType} NULL`;
+        // Check if the property is nullable based on schema definition
+        const nullable = this.isNullable(typeDef);
+        return `${$delimiter}${key}${$delimiter} ${sqlType}${nullable ? " NULL" : " NOT NULL"}`;
       })
       .join(", ");
     if (cols.length > 0) {
@@ -81,6 +83,30 @@ export abstract class BaseSqlTabularRepository<
     } else {
       return "";
     }
+  }
+
+  /**
+   * Determines if a schema type allows null values
+   * @param typeDef - The schema type definition
+   * @returns true if the type allows null values
+   */
+  protected isNullable(typeDef: TSchema): boolean {
+    // Check for union types that include null
+    if (typeDef.anyOf && Array.isArray(typeDef.anyOf)) {
+      return typeDef.anyOf.some((type: any) => type.type === "null");
+    }
+
+    // Check for TypeBox Optional/ReadonlyOptional types
+    if (typeDef.kind === "Optional" || typeDef.kind === "ReadonlyOptional") {
+      return true;
+    }
+
+    // Check for nullable keyword if it exists
+    if ("nullable" in typeDef && typeDef.nullable === true) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -100,6 +126,22 @@ export abstract class BaseSqlTabularRepository<
   }
 
   /**
+   * Gets the real underlying type from possibly union types
+   * For example, for Type.Union([Type.String(), Type.Null()]), this extracts the String type
+   * @param typeDef - The schema to extract from
+   * @returns The non-null type from the schema
+   */
+  protected getNonNullType(typeDef: TSchema): TSchema {
+    if (typeDef.anyOf && Array.isArray(typeDef.anyOf)) {
+      const nonNullType = typeDef.anyOf.find((t: any) => t.type !== "null");
+      if (nonNullType) {
+        return nonNullType;
+      }
+    }
+    return typeDef;
+  }
+
+  /**
    * Converts a value object into an ordered array based on the valueSchema
    * This ensures consistent parameter ordering for SQL queries
    * @param value - The value object to convert
@@ -109,7 +151,7 @@ export abstract class BaseSqlTabularRepository<
   protected getValueAsOrderedArray(value: Value): ValueOptionType[] {
     const orderedParams: ValueOptionType[] = [];
     const valueAsRecord = value as Record<string, Entity[keyof Entity]>;
-    for (const key in simplifySchema(this.valueSchema).properties) {
+    for (const key in this.valueSchema.properties) {
       if (Object.prototype.hasOwnProperty.call(valueAsRecord, key)) {
         orderedParams.push(this.jsToSqlValue(key, valueAsRecord[key]));
       } else {
@@ -143,15 +185,23 @@ export abstract class BaseSqlTabularRepository<
   }
 
   protected jsToSqlValue(column: string, value: Entity[keyof Entity]): ValueOptionType {
-    const typeDef = simplifySchema(this.schema.properties[column]);
+    const typeDef = this.schema.properties[column];
     if (!typeDef) {
       return value as ValueOptionType;
     }
 
-    if (typeDef.contentEncoding === "blob") {
+    // Handle null values for nullable columns
+    if (value === null && this.isNullable(typeDef)) {
+      return null;
+    }
+
+    // Extract the non-null type for proper handling
+    const actualType = this.getNonNullType(typeDef);
+
+    if (actualType.contentEncoding === "blob") {
       return Buffer.from(value as Uint8Array);
     } else if (value instanceof Date) {
-      // Convert all Date objects to ISO string regardless of type definition (not that is should be a Date object, but just in case)
+      // Convert all Date objects to ISO string regardless of type definition
       return value.toISOString();
     } else {
       return value as ValueOptionType;
@@ -160,12 +210,20 @@ export abstract class BaseSqlTabularRepository<
 
   protected sqlToJsValue(column: string, value: ValueOptionType): Entity[keyof Entity] {
     // Get the type definition
-    const typeDef = simplifySchema(this.schema.properties[column]);
+    const typeDef = this.schema.properties[column];
     if (!typeDef) {
       return value as Entity[keyof Entity];
     }
 
-    if (typeDef.contentEncoding === "blob" && value instanceof Buffer) {
+    // Handle null values
+    if (value === null && this.isNullable(typeDef)) {
+      return null as any;
+    }
+
+    // Extract the non-null type for proper handling
+    const actualType = this.getNonNullType(typeDef);
+
+    if (actualType.contentEncoding === "blob" && value instanceof Buffer) {
       return new Uint8Array(value) as Entity[keyof Entity];
     } else {
       return value as Entity[keyof Entity];

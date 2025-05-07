@@ -122,19 +122,56 @@ export class SqliteTabularRepository<
 
   /**
    * Maps TypeScript/JavaScript types to their SQLite column type equivalents
-   * @param type - The TypeScript/JavaScript type to map
+   * Uses additional schema information like minimum/maximum values, nullable status,
+   * and string lengths to create more optimized column types.
+   *
+   * @param typeDef - The TypeScript/JavaScript type definition
    * @returns The corresponding SQLite column type
    */
   protected mapTypeToSQL(typeDef: TSchema): string {
-    if (typeDef.contentEncoding === "blob") return "BLOB";
-    switch (typeDef.type) {
+    // Get the actual non-null type for proper mapping
+    const actualType = this.getNonNullType(typeDef);
+
+    // Handle BLOB type
+    if (actualType.contentEncoding === "blob") return "BLOB";
+
+    switch (actualType.type) {
       case "string":
+        // Handle special string formats
+        if (actualType.format === "date-time") return "TEXT"; // SQLite doesn't have a native TIMESTAMP
+        if (actualType.format === "date") return "TEXT";
+
+        // For strings with max length constraints, we can still note this in the schema
+        // even though SQLite doesn't enforce VARCHAR lengths
+        if (typeof actualType.maxLength === "number") {
+          return `TEXT /* VARCHAR(${actualType.maxLength}) */`;
+        }
+
         return "TEXT";
-      case "boolean": // SQLite uses INTEGER for boolean
+
       case "number":
+        // SQLite has limited numeric types, but we can use INTEGER for integers
+        // and REAL for floating point numbers
+
+        // The multipleOf property in JSON Schema specifies that a number must be a
+        // multiple of a given value. When set to 1, it means the number must be a
+        // whole number multiple of 1, which effectively means it must be an integer.
+        if (typeDef.multipleOf === 1 || typeDef.type === "integer") {
+          return "INTEGER";
+        }
+
+        return "REAL";
+
+      case "boolean":
+        // SQLite uses INTEGER 0/1 for boolean
         return "INTEGER";
+
+      case "array":
+      case "object":
+        return "TEXT /* JSON */";
+
       default:
-        return "TEXT";
+        return "TEXT /* unknown type */";
     }
   }
 
@@ -235,9 +272,7 @@ export class SqliteTabularRepository<
       .join(" AND ");
     const whereClauseValues = Object.values(key);
 
-    const sql = `
-      SELECT * FROM \`${this.table}\` WHERE ${whereClauses}
-    `;
+    const sql = `SELECT * FROM \`${this.table}\` WHERE ${whereClauses}`;
     const stmt = this.db.prepare<Entity, ExcludeDateKeyOptionType[]>(sql);
     // @ts-ignore
     const result = stmt.all(...whereClauseValues);
