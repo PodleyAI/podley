@@ -29,7 +29,7 @@ export function CompanyFacts(program: Command) {
       try {
         await runWorkflow(workflow);
       } catch (error) {
-        console.error("Error running daily index task:", error);
+        console.error("Error fetching or storing company facts:", error);
       }
     });
 }

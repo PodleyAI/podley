@@ -29,7 +29,7 @@ export function CompanySubmissions(program: Command) {
       try {
         await runWorkflow(wf);
       } catch (error) {
-        console.error("Error running daily index task:", error);
+        console.error("Error running company submissions workflow:", error);
       }
     });
 }

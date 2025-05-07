@@ -23,7 +23,7 @@ export function SetupDB(program: Command) {
       try {
         await runWorkflow(workflow);
       } catch (error) {
-        console.error("Error running daily index task:", error);
+        console.error("Error setting up the database:", error);
       }
     });
 }
