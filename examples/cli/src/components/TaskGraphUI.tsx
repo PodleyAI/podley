@@ -27,32 +27,23 @@ const TaskGraphUI: React.FC<TaskGraphUIProps> = ({ graph }) => {
     setStatus((a) => a + 1);
   };
 
-  // Set up event listeners for task status changes
   useEffect(() => {
-    const setupTaskListeners = (currentTask: ITask) => {
-      // Set up listeners for this task
-      currentTask.on("regenerate", forceUpdate);
-    };
     const rootTasks = findRootTasks(graph);
-
-    // Set up listeners for the main task and all its subtasks
-    rootTasks.forEach((task) => setupTaskListeners(task));
     setTasks(rootTasks);
 
-    // Set up a timer to periodically refresh the UI
+    const events = ["task_added", "task_removed", "task_replaced"] as const;
+    const graphCleanupFunctions = events.map((event) => graph.subscribe(event, forceUpdate));
 
     return () => {
-      rootTasks.forEach((task) => task.events.removeAllListeners());
+      graphCleanupFunctions.forEach((cleanup) => cleanup());
     };
   }, [graph]);
 
   return (
     <Box flexDirection="column">
-      <Box flexDirection="row">
-        {tasks.map((taskItem) => (
-          <TaskUI key={`${taskItem.config.id}`} graph={graph} task={taskItem} />
-        ))}
-      </Box>
+      {tasks.map((taskItem) => (
+        <TaskUI key={`${taskItem.config.id}+${status}`} graph={graph} task={taskItem} />
+      ))}
     </Box>
   );
 };

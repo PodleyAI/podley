@@ -21,9 +21,9 @@ await register_HFT_ClientJobFns(
 );
 await register_HFT_InMemoryQueue();
 
-await registerMediaPipeTfJsLocalModels();
-await register_TFMP_InlineJobFns();
-await register_TFMP_InMemoryQueue();
+// await registerMediaPipeTfJsLocalModels();
+// await register_TFMP_InlineJobFns();
+// await register_TFMP_InMemoryQueue();
 
 await program.parseAsync(process.argv);
 

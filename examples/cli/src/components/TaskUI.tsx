@@ -14,32 +14,41 @@ import TaskGraphUI from "./TaskGraphUI";
 import { DownloadModelTask } from "@ellmers/ai";
 
 const StatusIcon = memo(
-  ({ status }: { status: TaskStatus }) => {
+  ({ status, dependant }: { status: TaskStatus; dependant: boolean }) => {
+    const dep = (
+      <Text color="grey">{!dependant ? symbols.arrowDashedRight : symbols.arrowDashedDown} </Text>
+    );
+    let sym = null;
     if (status === TaskStatus.PROCESSING) {
-      return <Spinner color="yellow" />;
+      sym = <Spinner color="yellow" />;
     }
 
     if (status === TaskStatus.ABORTING) {
-      return <Text color="yellow">{symbols.warning}</Text>;
+      sym = <Text color="yellow">{symbols.warning}</Text>;
     }
 
     if (status === TaskStatus.FAILED) {
-      return <Text color="red">{symbols.cross}</Text>;
+      sym = <Text color="red">{symbols.cross}</Text>;
     }
 
     if (status === TaskStatus.SKIPPED) {
-      return <Text color="gray">{symbols.info}</Text>;
+      sym = <Text color="gray">{symbols.info}</Text>;
     }
 
     if (status === TaskStatus.COMPLETED) {
-      return <Text color="green">{symbols.tick}</Text>;
+      sym = <Text color="green">{symbols.tick}</Text>;
     }
 
     if (status === TaskStatus.PENDING) {
-      return <Text color="gray">{symbols.squareSmallFilled}</Text>;
+      sym = <Text color="gray">{symbols.squareSmallFilled}</Text>;
     }
 
-    return " ";
+    return (
+      <>
+        {dep}
+        {sym}
+      </>
+    );
   },
   (prevProps, nextProps) => prevProps.status === nextProps.status
 );
@@ -47,7 +56,8 @@ const StatusIcon = memo(
 export const TaskUI: FC<{
   task: ITask;
   graph: ITaskGraph;
-}> = ({ task, graph }) => {
+  dependant?: boolean;
+}> = ({ task, graph, dependant = false }) => {
   const [count, setCount] = useState<number>(0);
   const [status, setStatus] = useState<TaskStatus>(task.status);
   const [progress, setProgress] = useState<number>(task.progress);
@@ -94,7 +104,7 @@ export const TaskUI: FC<{
 
     const onError = (error: any) => {
       setStatus(TaskStatus.FAILED);
-      setError((prevErr) => (prevErr ? `${prevErr}\n${error.message}` : error.message));
+      setError((prevErr) => (prevErr ? `${prevErr}\n${error?.message}` : error?.message));
     };
 
     const onRegenerate = () => {
@@ -145,37 +155,38 @@ export const TaskUI: FC<{
 
   return (
     <Box key={containerKey} flexDirection="column">
-      <Box>
-        <Box marginRight={1}>
-          <StatusIcon status={status} />
+      <Box height={1}>
+        <Box marginRight={1} flexShrink={0}>
+          <StatusIcon status={status} dependant={dependant} />
         </Box>
-        <Text>{task.config.name || (task.config.id as string)}</Text>
+
+        <Box flexShrink={0}>
+          <Text>{task.config.name || (task.config.id as string)}</Text>
+        </Box>
+
         {status === TaskStatus.PROCESSING && (
-          <Box marginLeft={1}>
+          <Box marginLeft={2} flexShrink={1}>
             <Text dimColor>[{status}]</Text>
             <Text dimColor>
               {progress > 0 &&
-                ` ${createBar(progress / 100, 20)} ${message} ${Math.round(progress)}%`}
+                ` ${createBar(progress / 100, 20)} ${message ?? ""} ${Math.round(progress)}%`}
             </Text>
           </Box>
         )}
+        {status == TaskStatus.COMPLETED && (
+          <Box marginLeft={2} flexShrink={1}>
+            <Text
+              color="gray"
+              wrap="truncate"
+            >{`${symbols.arrowRight} ${JSON.stringify(task.runOutputData).slice(0, 150)}`}</Text>
+          </Box>
+        )}
+        {error && (
+          <Box marginLeft={2} flexShrink={1}>
+            <Text color="red">{`${symbols.warning} ${error}`}</Text>
+          </Box>
+        )}
       </Box>
-      {arrayProgress ? (
-        <Box marginLeft={2}>
-          <Text color="gray">{`${symbols.arrowDashedRight} Processing array tasks: ${arrayProgress.completed}/${arrayProgress.total} completed ${createBar(arrayProgress.completed / arrayProgress.total, 10)}`}</Text>
-        </Box>
-      ) : subGraph && !(task instanceof ArrayTask) ? (
-        <Box flexDirection="row" marginLeft={2} borderStyle="round">
-          <TaskGraphUI graph={subGraph} />
-        </Box>
-      ) : null}
-      {dependantChildren && (
-        <Box flexDirection="row" marginLeft={2}>
-          {dependantChildren.map((taskItem) => (
-            <TaskUI key={`${taskItem.config.id}`} task={taskItem} graph={graph} />
-          ))}
-        </Box>
-      )}
       {status == TaskStatus.PROCESSING &&
         details &&
         message == "Downloading model" &&
@@ -186,7 +197,7 @@ export const TaskUI: FC<{
         ))}
       {status == TaskStatus.PROCESSING && text && message == "Generating" && (
         <Box marginLeft={2}>
-          <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(progress / 100, 10)} ${text}`}</Text>
+          <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(progress / 100, 10)} ${text ?? ""}`}</Text>
         </Box>
       )}
       {status == TaskStatus.PROCESSING && (
@@ -197,17 +208,21 @@ export const TaskUI: FC<{
           >{`${symbols.arrowRight} ${JSON.stringify(task.runInputData).slice(0, 200)}`}</Text>
         </Box>
       )}
-      {status == TaskStatus.COMPLETED && (
+      {arrayProgress && (
         <Box marginLeft={2}>
-          <Text
-            color="gray"
-            wrap="truncate-middle"
-          >{`${symbols.arrowDown} ${JSON.stringify(task.runOutputData).slice(0, 200)}`}</Text>
+          <Text color="gray">{`${symbols.arrowDashedRight} Processing array tasks: ${arrayProgress.completed}/${arrayProgress.total} completed ${createBar(arrayProgress.completed / arrayProgress.total, 10)}`}</Text>
         </Box>
       )}
-      {error && (
-        <Box marginLeft={2}>
-          <Text color="red">{`${symbols.warning} ${error}`}</Text>
+      {!arrayProgress && subGraph && !(task instanceof ArrayTask) && (
+        <Box flexDirection="column" marginLeft={2} borderColor="gray">
+          <TaskGraphUI graph={subGraph} />
+        </Box>
+      )}
+      {dependantChildren && (
+        <Box flexDirection="column" marginLeft={0}>
+          {dependantChildren.map((taskItem) => (
+            <TaskUI key={`${taskItem.config.id}`} task={taskItem} graph={graph} dependant={true} />
+          ))}
         </Box>
       )}
     </Box>
