@@ -18,7 +18,7 @@ import { getLastTask, parallel, pipe, PipeFunction, Taskish } from "./Conversion
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { IWorkflow } from "./IWorkflow";
 import { TaskGraph } from "./TaskGraph";
-import { CompoundMergeStrategy } from "./TaskGraphRunner";
+import { CompoundMergeStrategy, GraphResultMap } from "./TaskGraphRunner";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskIO, O extends TaskIO, C extends TaskConfig> = (
@@ -42,6 +42,11 @@ export type WorkflowEventParameters<Event extends WorkflowEvents> = EventParamet
   WorkflowEventListeners,
   Event
 >;
+
+class WorkflowTask extends GraphAsTask<any, any> {
+  public static readonly type = "Workflow";
+  public static readonly compoundMerge = "last-or-property-array" as CompoundMergeStrategy;
+}
 
 // Task ID counter
 let taskIdCounter = 0;
@@ -459,12 +464,7 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
   }
 
   toTask(): GraphAsTask {
-    const task = new GraphAsTask(
-      {},
-      {
-        compoundMerge: "last-or-property-array",
-      }
-    );
+    const task = new WorkflowTask();
     task.subGraph = this.toTaskGraph();
     return task;
   }

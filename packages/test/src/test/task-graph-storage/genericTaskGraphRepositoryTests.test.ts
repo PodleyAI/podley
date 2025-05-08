@@ -56,8 +56,8 @@ export function runGenericTaskGraphRepositoryTests(
     graph.addTasks(tasks);
     graph.addDataflows(edges);
 
-    expect(graph.getDataflow("task1.output1 -> task2.input1")).toBeDefined();
-    expect(graph.getDataflow("task2.output2 -> task3.input2")).toBeDefined();
+    expect(graph.getDataflow("task1[output1] ==> task2[input1]")).toBeDefined();
+    expect(graph.getDataflow("task2[output2] ==> task3[input2]")).toBeDefined();
 
     await repository.saveTaskGraph(id, graph);
 

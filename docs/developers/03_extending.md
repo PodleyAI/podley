@@ -41,13 +41,11 @@ type SimpleDebugLogTaskInputs = {
   message: any;
 };
 export class SimpleDebugLogTask extends Task<SimpleDebugLogTaskInputs> {
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "message",
-      name: "Input",
-      valueType: "any",
-    },
-  ] as const;
+  public static inputSchema = () => {
+    return Type.Object({
+      message: Type.Any(),
+    });
+  };
   execute() {
     console.dir(this.runInputData.message, { depth: null });
   }
@@ -73,20 +71,22 @@ type SimpleDebugLogTaskOutputs = {
 };
 export class SimpleDebugLogTask extends Task<SimpleDebugLogTaskInputs, SimpleDebugLogTaskOutputs> {
   public static cacheable = false;
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "message",
-      name: "Input",
-      valueType: "any",
-    },
-  ] as const;
-  public static outputs: TaskOutputDefinition[] = [
-    {
-      id: "output",
-      name: "Output",
-      valueType: "any",
-    },
-  ] as const;
+  public static inputSchema = () => {
+    return Type.Object({
+      message: Type.Any({
+        title: "Message",
+        description: "The message to log",
+      }),
+    });
+  };
+  public static outputSchema = () => {
+    return Type.Object({
+      output: Type.Any({
+        title: "Output",
+        description: "The output of the task",
+      }),
+    });
+  };
   execute() {
     console.dir(this.runInputData.message, { depth: null });
     this.runOutputData.output = this.runInputData.message;

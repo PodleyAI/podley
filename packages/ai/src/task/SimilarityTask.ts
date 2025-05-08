@@ -91,7 +91,7 @@ export class SimilarityTask extends ArrayTask<
   ) {
     let similarities = [];
     const fns = { cosine };
-    const fnName = (similarity + "_similarity") as keyof typeof fns;
+    const fnName = similarity as keyof typeof fns;
     const fn = fns[fnName];
 
     for (const embedding of input) {

@@ -126,15 +126,7 @@ export function IsEmail(value: string): boolean {
   return Email.test(value);
 }
 
-FormatRegistry.Set("ip-address-4", IsIPv4);
-FormatRegistry.Set("ip-address-6", IsIPv6);
-FormatRegistry.Set("date", IsDate);
-FormatRegistry.Set("time", IsTime);
-FormatRegistry.Set("date-time", IsDateTime);
-FormatRegistry.Set("email", IsEmail);
-FormatRegistry.Set("uuid", IsUuid);
-
-FormatRegistry.Set("url", (value) => {
+export const IsUri = (value: string) => {
   if (value && typeof value === "string") {
     try {
       new URL(value);
@@ -143,4 +135,13 @@ FormatRegistry.Set("url", (value) => {
     }
   }
   return true;
-});
+};
+
+FormatRegistry.Set("ip-address-4", IsIPv4);
+FormatRegistry.Set("ip-address-6", IsIPv6);
+FormatRegistry.Set("date", IsDate);
+FormatRegistry.Set("time", IsTime);
+FormatRegistry.Set("date-time", IsDateTime);
+FormatRegistry.Set("email", IsEmail);
+FormatRegistry.Set("uuid", IsUuid);
+FormatRegistry.Set("uri", IsUri);

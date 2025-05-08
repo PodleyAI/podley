@@ -185,9 +185,12 @@ export class TaskGraphRunner {
     await Promise.allSettled(Array.from(this.inProgressFunctions.values()));
 
     if (this.failedTaskErrors.size > 0) {
-      throw this.failedTaskErrors.values().next().value;
+      const latestError = this.failedTaskErrors.values().next().value!;
+      this.handleError(latestError);
+      throw latestError;
     }
     if (this.abortController?.signal.aborted) {
+      await this.handleAbort();
       throw new TaskAbortedError();
     }
 
@@ -273,7 +276,6 @@ export class TaskGraphRunner {
         changed = true;
       } else {
         if (overrides[inputId] === undefined) continue;
-
         const isArray =
           prop.type === "array" ||
           (prop.type === "any" &&
@@ -382,8 +384,9 @@ export class TaskGraphRunner {
     const dataflows = this.graph.getTargetDataflows(node.config.id);
     for (const dataflow of dataflows) {
       const compatibility = dataflow.semanticallyCompatible(this.graph, dataflow);
+      // console.log("pushOutputFromNodeToEdges", dataflow.id, compatibility, Object.keys(results));
       if (compatibility === "static") {
-        dataflow.setPortData({ ...results }, nodeProvenance);
+        dataflow.setPortData(results, nodeProvenance);
       } else if (compatibility === "runtime") {
         const task = this.graph.getTask(dataflow.targetTaskId)!;
         const narrowed = await task.narrowInput({ ...results });
@@ -535,6 +538,7 @@ export class TaskGraphRunner {
     this.inProgressTasks.clear();
     this.inProgressFunctions.clear();
     this.failedTaskErrors.clear();
+    this.graph.emit("start");
   }
 
   protected async handleStartReactive(): Promise<void> {
@@ -550,6 +554,7 @@ export class TaskGraphRunner {
    */
   protected async handleComplete(): Promise<void> {
     this.running = false;
+    this.graph.emit("complete");
   }
 
   protected async handleCompleteReactive(): Promise<void> {
@@ -559,7 +564,7 @@ export class TaskGraphRunner {
   /**
    * Handles errors during task graph execution
    */
-  protected async handleError(): Promise<void> {
+  protected async handleError(error: TaskError): Promise<void> {
     await Promise.allSettled(
       this.graph.getTasks().map(async (task: ITask) => {
         if ([TaskStatus.PROCESSING].includes(task.status)) {
@@ -568,6 +573,7 @@ export class TaskGraphRunner {
       })
     );
     this.running = false;
+    this.graph.emit("error", error);
   }
 
   protected async handleErrorReactive(): Promise<void> {
@@ -583,8 +589,8 @@ export class TaskGraphRunner {
         task.abort();
       }
     });
-
     this.running = false;
+    this.graph.emit("abort");
   }
 
   protected async handleAbortReactive(): Promise<void> {
@@ -602,8 +608,8 @@ export class TaskGraphRunner {
         }
       })
     );
-
     this.running = false;
+    this.graph.emit("skip");
   }
 
   /**

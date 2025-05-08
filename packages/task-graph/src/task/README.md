@@ -7,11 +7,11 @@ This module provides a flexible task processing system with support for various 
 - [Task Types](#task-types)
   - [A Simple Task](#a-simple-task)
   - [GraphAsTask](#graphastask)
-  - [ArrayTask](#ArrayTask)
+  - [ArrayTask](#arraytask)
   - [Job Queue Tasks](#job-queue-tasks)
 - [Task Lifecycle](#task-lifecycle)
 - [Event Handling](#event-handling)
-- [Input/Output Definitions](#inputoutput-definitions)
+- [Input/Output Schemas](#inputoutput-schemas)
 - [Registry \& Queues](#registry--queues)
 - [Error Handling](#error-handling)
 - [Testing](#testing)
@@ -110,26 +110,29 @@ task.on("abort", () => console.log("Task aborted"));
 task.on("regenerate", () => console.log("Task regenerated"));
 ```
 
-## Input/Output Definitions
+## Input/Output Schemas
+
+The input and output schemas are json schemas that are used to validate the input and output of the task, created via TypeBox.
 
 ```typescript
-static inputs = [
-  {
-    id: "username",
-    name: "User Name",
-    valueType: "string",
-    defaultValue: "guest",
-    optional: true
-  }
-];
+static inputSchema = () => {
+  return Type.Object({
+    username: Type.Optional(Type.String({
+      title: "User Name",
+      description: "The name of the user",
+      default: "guest",
+    }),
+  });
+};
 
-static outputs = [
-  {
-    id: "result",
-    name: "Processing Result",
-    valueType: "number"
-  }
-];
+static outputSchema = () => {
+  return Type.Object({
+    result: Type.Number({
+      title: "Processing Result",
+      description: "The result of the processing",
+    }),
+  });
+};
 ```
 
 ## Registry & Queues

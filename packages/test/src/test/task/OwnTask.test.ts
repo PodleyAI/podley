@@ -56,8 +56,8 @@ describe("Task own functionality", () => {
       expect(subTasks[0]).toBeInstanceOf(Task);
 
       // Second and third tasks should be GraphAsTask instances
-      expect(subTasks[1].type).toBe("GraphAsTask");
-      expect(subTasks[2].type).toBe("GraphAsTask");
+      expect(subTasks[1].type).toBe("Own[Graph]");
+      expect(subTasks[2].type).toBe("Own[Workflow]");
 
       // Verify the wrapped graphs have their tasks
       expect(subTasks[1].hasChildren()).toBe(true);

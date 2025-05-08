@@ -33,3 +33,8 @@ export type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 export type ObjectToArray<T extends Record<string, any>> = {
   [K in keyof T]: T[K][];
 };
+
+// Converts an object of properties that are arrays to an object of properties of the type of array element
+export type ArrayToObject<T extends Record<string, any>> = {
+  [K in keyof T]: T[K] extends Array<infer U> ? U : T[K];
+};

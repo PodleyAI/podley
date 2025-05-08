@@ -5,9 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DirectedAcyclicGraph, uuid4 } from "@ellmers/util";
+import { DirectedAcyclicGraph, EventEmitter, uuid4 } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
-import { ITask } from "../task/ITask";
+import type { ITask } from "../task/ITask";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
 import type { Provenance, TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
 import { ensureTask, type PipeFunction } from "./Conversions";
@@ -15,11 +15,15 @@ import { Dataflow, type DataflowIdType } from "./Dataflow";
 import type { ITaskGraph } from "./ITaskGraph";
 import {
   EventTaskGraphToDagMapping,
+  GraphEventDagEvents,
+  GraphEventDagParameters,
   TaskGraphEventListener,
-  TaskGraphEventParameters,
   TaskGraphEvents,
+  TaskGraphEventStatusParameters,
+  TaskGraphStatusEvents,
+  TaskGraphStatusListeners,
 } from "./TaskGraphEvents";
-import { CompoundMergeStrategy, NamedGraphResult, TaskGraphRunner } from "./TaskGraphRunner";
+import { CompoundMergeStrategy, type NamedGraphResult, TaskGraphRunner } from "./TaskGraphRunner";
 
 /**
  * Configuration for running a task graph
@@ -345,6 +349,17 @@ export class TaskGraph implements ITaskGraph {
   // ========================================================================
 
   /**
+   * Event emitter for task lifecycle events
+   */
+  public get events(): EventEmitter<TaskGraphStatusListeners> {
+    if (!this._events) {
+      this._events = new EventEmitter<TaskGraphStatusListeners>();
+    }
+    return this._events;
+  }
+  protected _events: EventEmitter<TaskGraphStatusListeners> | undefined;
+
+  /**
    * Subscribes to an event
    * @param name - The event name to listen for
    * @param fn - The callback function to execute when the event occurs
@@ -364,7 +379,14 @@ export class TaskGraph implements ITaskGraph {
    * @param fn - The callback function to execute when the event occurs
    */
   on<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
-    this._dag.on(EventTaskGraphToDagMapping[name], fn);
+    const dagEvent = EventTaskGraphToDagMapping[name as keyof typeof EventTaskGraphToDagMapping];
+    if (dagEvent) {
+      return this._dag.on(dagEvent, fn);
+    }
+    return this.events.on(
+      name as TaskGraphStatusEvents,
+      fn as TaskGraphEventListener<TaskGraphStatusEvents>
+    );
   }
 
   /**
@@ -373,7 +395,14 @@ export class TaskGraph implements ITaskGraph {
    * @param fn - The callback function to execute when the event occurs
    */
   off<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
-    this._dag.off(EventTaskGraphToDagMapping[name], fn);
+    const dagEvent = EventTaskGraphToDagMapping[name as keyof typeof EventTaskGraphToDagMapping];
+    if (dagEvent) {
+      return this._dag.off(dagEvent, fn);
+    }
+    return this.events.off(
+      name as TaskGraphStatusEvents,
+      fn as TaskGraphEventListener<TaskGraphStatusEvents>
+    );
   }
 
   /**
@@ -381,8 +410,42 @@ export class TaskGraph implements ITaskGraph {
    * @param name - The event name to emit
    * @param args - The arguments to pass to the event listener
    */
-  emit<Event extends TaskGraphEvents>(name: Event, ...args: TaskGraphEventParameters<Event>) {
-    this._dag.emit(EventTaskGraphToDagMapping[name], ...args);
+  emit<E extends GraphEventDagEvents>(name: E, ...args: GraphEventDagParameters<E>): void;
+  emit<E extends TaskGraphStatusEvents>(name: E, ...args: TaskGraphEventStatusParameters<E>): void;
+  emit(name: string, ...args: any[]): void {
+    const dagEvent = EventTaskGraphToDagMapping[name as keyof typeof EventTaskGraphToDagMapping];
+    if (dagEvent) {
+      // @ts-ignore
+      return this.emit_dag(name, ...args);
+    } else {
+      // @ts-ignore
+      return this.emit_local(name, ...args);
+    }
+  }
+
+  /**
+   * Emits an event for the specified event
+   * @param name - The event name to emit
+   * @param args - The arguments to pass to the event listener
+   */
+  protected emit_local<Event extends TaskGraphStatusEvents>(
+    name: Event,
+    ...args: TaskGraphEventStatusParameters<Event>
+  ) {
+    return this.events?.emit(name, ...args);
+  }
+
+  /**
+   * Emits an event for the specified event
+   * @param name - The event name to emit
+   * @param args - The arguments to pass to the event listener
+   */
+  protected emit_dag<Event extends GraphEventDagEvents>(
+    name: Event,
+    ...args: GraphEventDagParameters<Event>
+  ) {
+    const dagEvent = EventTaskGraphToDagMapping[name as keyof typeof EventTaskGraphToDagMapping];
+    return this._dag.emit(dagEvent, ...args);
   }
 }
 

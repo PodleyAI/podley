@@ -6,16 +6,18 @@
 //    *******************************************************************************
 
 import { globalServiceRegistry } from "@ellmers/util";
-import { GraphAsTask, Workflow } from "../node";
 import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { ITaskGraph } from "../task-graph/ITaskGraph";
 import { IWorkflow } from "../task-graph/IWorkflow";
 import { TaskGraph } from "../task-graph/TaskGraph";
+import { ensureTask, type Taskish } from "../task-graph/Conversions";
 import { IRunConfig, ITask } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
 import { Task } from "./Task";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
+import { GraphAsTask } from "../task/GraphAsTask";
+import { Workflow } from "../task-graph/Workflow";
 
 /**
  * Responsible for running tasks
@@ -161,17 +163,9 @@ export class TaskRunner<
   // Protected methods
   // ========================================================================
 
-  protected own<T extends ITask<any, any, any>>(i: T): T;
-  protected own<T extends ITaskGraph>(i: T): T;
-  protected own<T extends IWorkflow>(i: T): T;
-  protected own<T extends ITask<any, any, any> | ITaskGraph | IWorkflow>(i: T): T {
-    if (i instanceof Task) {
-      this.task.subGraph.addTask(i);
-    } else if (i instanceof TaskGraph) {
-      this.task.subGraph.addTask(new GraphAsTask({}, { subGraph: i }));
-    } else if (i instanceof Workflow) {
-      this.task.subGraph.addTask(new GraphAsTask({}, { subGraph: i.graph }));
-    }
+  protected own<T extends Taskish<any, any>>(i: T): T {
+    const task = ensureTask(i, { isOwned: true });
+    this.task.subGraph.addTask(task);
     return i;
   }
 

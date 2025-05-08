@@ -5,16 +5,47 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { Type } from "@sinclair/typebox";
 import { GraphAsTask } from "../task/GraphAsTask";
 import type { IExecuteConfig, ITask } from "../task/ITask";
 import { Task } from "../task/Task";
 import type { TaskIO } from "../task/TaskTypes";
-import { Dataflow } from "./Dataflow";
-import { ITaskGraph } from "./ITaskGraph";
-import { Workflow } from "./Workflow";
+import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
+import type { ITaskGraph } from "./ITaskGraph";
 import type { IWorkflow } from "./IWorkflow";
 import { TaskGraph } from "./TaskGraph";
-import { CompoundMergeStrategy } from "./TaskGraphRunner";
+import type { CompoundMergeStrategy } from "./TaskGraphRunner";
+import { Workflow } from "./Workflow";
+
+class ListeningGraphAsTask extends GraphAsTask<any, any> {
+  constructor(input: any, config: any) {
+    super(input, config);
+    this.subGraph.on("start", () => {
+      this.emit("start");
+    });
+    this.subGraph.on("complete", () => {
+      this.emit("complete");
+    });
+    this.subGraph.on("error", (e) => {
+      this.emit("error", e);
+    });
+  }
+}
+
+class OwnGraphTask extends ListeningGraphAsTask {
+  public static readonly type = "Own[Graph]";
+}
+
+class OwnWorkflowTask extends ListeningGraphAsTask {
+  public static readonly type = "Own[Workflow]";
+}
+class GraphTask extends GraphAsTask {
+  public static readonly type = "Graph";
+}
+
+class WorkflowTask extends GraphAsTask {
+  public static readonly type = "Workflow";
+}
 
 // Update PipeFunction type to be more specific about input/output types
 export type PipeFunction<I extends TaskIO = any, O extends TaskIO = any> = (
@@ -34,8 +65,16 @@ function convertPipeFunctionToTask<I extends TaskIO, O extends TaskIO>(
 ): ITask<I, O> {
   class QuickTask extends Task<I, O> {
     public static type = fn.name ? `𝑓 ${fn.name}` : "𝑓";
-    public static inputs = [{ id: "*", name: "input", valueType: "any" }];
-    public static outputs = [{ id: "*", name: "output", valueType: "any" }];
+    public static inputSchema = () => {
+      return Type.Object({
+        [DATAFLOW_ALL_PORTS]: Type.Any(),
+      });
+    };
+    public static outputSchema = () => {
+      return Type.Object({
+        [DATAFLOW_ALL_PORTS]: Type.Any(),
+      });
+    };
     public static cacheable = false;
     public async execute(input: I, config: IExecuteConfig) {
       return fn(input, config);
@@ -46,16 +85,24 @@ function convertPipeFunctionToTask<I extends TaskIO, O extends TaskIO>(
 
 export function ensureTask<I extends TaskIO, O extends TaskIO>(
   arg: Taskish<I, O>,
-  config?: any
+  config: any = {}
 ): ITask<any, any, any> {
   if (arg instanceof Task) {
     return arg;
   }
   if (arg instanceof TaskGraph) {
-    return new GraphAsTask({}, { subGraph: arg });
+    if (config.isOwned) {
+      return new OwnGraphTask({}, { ...config, subGraph: arg });
+    } else {
+      return new GraphTask({}, { ...config, subGraph: arg });
+    }
   }
   if (arg instanceof Workflow) {
-    return new GraphAsTask({}, { subGraph: arg.graph });
+    if (config.isOwned) {
+      return new OwnWorkflowTask({}, { ...config, subGraph: arg.graph });
+    } else {
+      return new WorkflowTask({}, { ...config, subGraph: arg.graph });
+    }
   }
   return convertPipeFunctionToTask(arg as PipeFunction<I, O>, config);
 }
@@ -144,7 +191,11 @@ export function parallel(
   const config = {
     compoundMerge: mergeFn,
   };
-  const mergeTask = new GraphAsTask(input, config);
+  const name = `‖${args.map((arg) => "𝑓").join("‖")}‖`;
+  class ParallelTask extends GraphAsTask<any, any> {
+    public static type = name;
+  }
+  const mergeTask = new ParallelTask(input, config);
   mergeTask.subGraph!.addTasks(tasks);
   workflow.graph.addTask(mergeTask);
   if (previousTask) {

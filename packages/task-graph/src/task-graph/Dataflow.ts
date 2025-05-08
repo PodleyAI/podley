@@ -16,8 +16,9 @@ import {
   DataflowEvents,
 } from "./DataflowEvents";
 import { TaskGraph } from "./TaskGraph";
+import { Type } from "@sinclair/typebox";
 
-export type DataflowIdType = `${string}.${string} -> ${string}.${string}`;
+export type DataflowIdType = `${string}[${string}] ==> ${string}[${string}]`;
 
 export const DATAFLOW_ALL_PORTS = "*";
 export const DATAFLOW_ERROR_PORT = "[error]";
@@ -33,7 +34,7 @@ export class Dataflow {
     public targetTaskPortId: string
   ) {}
   get id(): DataflowIdType {
-    return `${this.sourceTaskId}.${this.sourceTaskPortId} -> ${this.targetTaskId}.${this.targetTaskPortId}`;
+    return `${this.sourceTaskId}[${this.sourceTaskPortId}] ==> ${this.targetTaskId}[${this.targetTaskPortId}]`;
   }
   public value: any = undefined;
   public provenance: Provenance = {};
@@ -113,16 +114,14 @@ export class Dataflow {
     const targetSchema = graph.getTask(dataflow.targetTaskId)!.inputSchema;
     const sourceSchema = graph.getTask(dataflow.sourceTaskId)!.outputSchema;
 
-    const targetSchemaProperty = simplifySchema(
+    const targetSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.targetTaskPortId
-        ? targetSchema
-        : targetSchema.properties[dataflow.targetTaskPortId]
-    );
-    const sourceSchemaProperty = simplifySchema(
+        ? Type.Any()
+        : simplifySchema(targetSchema.properties[dataflow.targetTaskPortId]);
+    const sourceSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.sourceTaskPortId
-        ? sourceSchema
-        : sourceSchema.properties[dataflow.sourceTaskPortId]
-    );
+        ? Type.Any()
+        : simplifySchema(sourceSchema.properties[dataflow.sourceTaskPortId]);
 
     const semanticallyCompatible = areSemanticallyCompatible(
       sourceSchemaProperty,

@@ -5,23 +5,31 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventParameters, GraphEvents } from "@ellmers/util";
+import { EventParameters } from "@ellmers/util";
 import { ITask } from "../task/ITask";
 import { Dataflow } from "./Dataflow";
 
 /**
  * Events that can be emitted by the TaskGraph
  */
-type BaseGraphEvents = keyof GraphEventListeners;
 
-type TaskGraphStatusListeners = {
+export type TaskGraphStatusListeners = {
   graph_progress: (progress: number, message?: string, ...args: any[]) => void;
-  task_status: (task: ITask) => void;
-  dataflow_status: (dataflow: Dataflow) => void;
+  start: () => void;
+  complete: () => void;
+  error: (error: Error) => void;
+  abort: () => void;
+  skip: () => void;
 };
-type TaskGraphStatusEvents = keyof TaskGraphStatusListeners;
+export type TaskGraphStatusEvents = keyof TaskGraphStatusListeners;
+export type TaskGraphStatusListener<Event extends TaskGraphStatusEvents> =
+  TaskGraphStatusListeners[Event];
+export type TaskGraphEventStatusParameters<Event extends TaskGraphStatusEvents> = EventParameters<
+  TaskGraphStatusListeners,
+  Event
+>;
 
-type GraphEventListeners = {
+export type GraphEventDagListeners = {
   task_added: (task: ITask) => void;
   task_removed: (task: ITask) => void;
   task_replaced: (task: ITask) => void;
@@ -29,18 +37,23 @@ type GraphEventListeners = {
   dataflow_removed: (dataflow: Dataflow) => void;
   dataflow_replaced: (dataflow: Dataflow) => void;
 };
-
-export type TaskGraphEventListeners = TaskGraphStatusListeners & GraphEventListeners;
-export type TaskGraphEvents = keyof TaskGraphEventListeners;
-
-export type TaskGraphEventListener<Event extends TaskGraphEvents> = TaskGraphEventListeners[Event];
-
-export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParameters<
-  TaskGraphEventListeners,
+export type GraphEventDagEvents = keyof GraphEventDagListeners;
+export type GraphEventDagListener<Event extends GraphEventDagEvents> =
+  GraphEventDagListeners[Event];
+export type GraphEventDagParameters<Event extends GraphEventDagEvents> = EventParameters<
+  GraphEventDagListeners,
   Event
 >;
 
-export const EventDagToTaskGraphMapping: Record<GraphEvents<ITask, Dataflow>, BaseGraphEvents> = {
+export type TaskGraphListeners = TaskGraphStatusListeners & GraphEventDagListeners;
+export type TaskGraphEvents = keyof TaskGraphListeners;
+export type TaskGraphEventListener<Event extends TaskGraphEvents> = TaskGraphListeners[Event];
+export type TaskGraphEventParameters<Event extends TaskGraphEvents> = EventParameters<
+  TaskGraphListeners,
+  Event
+>;
+
+export const EventDagToTaskGraphMapping = {
   "node-added": "task_added",
   "node-removed": "task_removed",
   "node-replaced": "task_replaced",
@@ -49,7 +62,7 @@ export const EventDagToTaskGraphMapping: Record<GraphEvents<ITask, Dataflow>, Ba
   "edge-replaced": "dataflow_replaced",
 } as const;
 
-export const EventTaskGraphToDagMapping: Record<BaseGraphEvents, GraphEvents<ITask, Dataflow>> = {
+export const EventTaskGraphToDagMapping = {
   task_added: "node-added",
   task_removed: "node-removed",
   task_replaced: "node-replaced",

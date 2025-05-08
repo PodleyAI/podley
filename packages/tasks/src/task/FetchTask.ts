@@ -192,7 +192,7 @@ export class FetchTask<
       url: Type.String({
         title: "URL",
         description: "The URL to fetch from",
-        format: "url",
+        format: "uri",
       }),
       method: Type.Optional(
         Type.Union(
