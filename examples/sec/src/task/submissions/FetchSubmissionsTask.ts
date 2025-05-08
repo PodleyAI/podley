@@ -11,104 +11,54 @@ import {
   Task,
   TaskFailedError,
   TaskGraph,
-  TaskInputDefinition,
   Workflow,
 } from "@ellmers/task-graph";
 import { FetchTaskOutput } from "@ellmers/tasks";
-import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../../fetch/SecCachedFetchTask";
-import { Submission } from "../../types/edgar/company-submissions";
-import { Filings } from "../../types/FilingMetaData";
+import { TypeDateTime } from "@ellmers/util";
+import { Static, TObject, Type } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
+import {
+  CompanySubmissionSchema,
+  FullCompanySubmissionSchema,
+  TypeFilings,
+  TypeSecCik,
+  Filings,
+} from "../../types/CompanySubmission";
+import { SecFetchSubmissionsTask } from "./SecFetchSubmissionsTask";
 
 // NOTE: company submissions are mutable, so we need to pass in a date to break the cache
 
-export interface FetchSubmissionsInput extends SecCachedFetchTaskInput {
-  file: string;
-  date?: string;
-}
+const FetchSubmissionsTaskInputSchema = () =>
+  Type.Object({
+    cik: TypeSecCik(),
+    date: Type.Optional(TypeDateTime()),
+  });
 
-export type FetchSubmissionsOutput = {
-  submission: Omit<Submission, "filings" | "files">;
-  filings: Filings;
-  files: { name: string; filingCount: number; filingFrom: string; filingTo: string }[];
-};
+export type FetchSubmissionsTaskInput = Static<ReturnType<typeof FetchSubmissionsTaskInputSchema>>;
 
-class SecFetchSubmissionsTask extends SecCachedFetchTask<FetchSubmissionsInput> {
-  static readonly type = "SecFetchSubmissionsTask";
-  static readonly category = "SEC";
-  static readonly immutable = false;
+const FetchSubmissionsTaskOutputSchema = () =>
+  Type.Object({
+    submission: CompanySubmissionSchema(),
+    filings: TypeFilings(),
+  });
 
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "cik",
-      name: "CIK",
-      valueType: "number",
-    },
-    {
-      id: "file",
-      name: "File",
-      valueType: "string",
-      optional: true,
-    },
-    {
-      id: "date",
-      name: "Date",
-      valueType: "string",
-      optional: true,
-    },
-  ] as const;
+export type FetchSubmissionsOutput = Static<ReturnType<typeof FetchSubmissionsTaskOutputSchema>>;
 
-  inputToFileName(input: FetchSubmissionsInput): string {
-    const cik = input.cik.toString().padStart(10, "0");
-    const fileName = input.file || `CIK${cik}.json`;
-    return `submissions/${fileName}`;
-  }
-  inputToUrl(input: FetchSubmissionsInput): string {
-    const cik = input.cik.toString().padStart(10, "0");
-    const fileName = input.file || `CIK${cik}.json`;
-    return `https://data.sec.gov/submissions/${fileName}${input.date ? `?date=${input.date}` : ""}`;
-  }
-}
-
-export class FetchSubmissionsTask extends Task<FetchSubmissionsInput, FetchSubmissionsOutput> {
+export class FetchSubmissionsTask extends Task<FetchSubmissionsTaskInput, FetchSubmissionsOutput> {
   static readonly type = "FetchSubmissions";
   static readonly category = "SEC";
   static readonly cacheable = true;
 
-  static readonly inputs = [
-    {
-      id: "cik",
-      name: "CIK",
-      valueType: "number",
-    },
-    {
-      id: "date",
-      name: "Date",
-      valueType: "string",
-      optional: true,
-    },
-  ];
+  public static inputSchema(): TObject {
+    return FetchSubmissionsTaskInputSchema();
+  }
 
-  static readonly outputs = [
-    {
-      id: "submission",
-      name: "Submission",
-      valueType: "any",
-    },
-    {
-      id: "filings",
-      name: "Filings",
-      valueType: "any",
-    },
-    {
-      id: "files",
-      name: "Files",
-      valueType: "any",
-      isArray: true,
-    },
-  ];
+  public static outputSchema(): TObject {
+    return FetchSubmissionsTaskOutputSchema();
+  }
 
   async execute(
-    input: FetchSubmissionsInput,
+    input: FetchSubmissionsTaskInput,
     config: IExecuteConfig
   ): Promise<FetchSubmissionsOutput> {
     const cik = input.cik;
@@ -120,24 +70,18 @@ export class FetchSubmissionsTask extends Task<FetchSubmissionsInput, FetchSubmi
       new SecFetchSubmissionsTask(input, {
         id: "fetch-company-submissions",
       }),
-      async (input) => {
-        const edgarJson = input.json as unknown as Submission;
-
+      async function cleanupInput(input) {
+        const edgarJson = Value.Encode(FullCompanySubmissionSchema(), input.json);
         const { filings, ...submission } = edgarJson;
 
         const { recent, files } = filings;
         return { submission, filings: recent, files };
       },
-      async (input, config) => {
+      async function combineFilings(input, config) {
         const graph = config.own(new TaskGraph());
-        graph.addTask(
-          async () => {
-            return input;
-          },
-          {
-            id: "pass-through",
-          }
-        );
+        graph.addTask(async function passThroughOriginalFilings() {
+          return { filings: input.filings };
+        });
         for (const file of input.files || []) {
           const fileName = file.name;
           graph.addTask(
@@ -151,9 +95,9 @@ export class FetchSubmissionsTask extends Task<FetchSubmissionsInput, FetchSubmi
             )
           );
           graph.addTask(
-            async (input: FetchTaskOutput, config: IExecuteConfig) => {
+            async function reduceFilings(input: FetchTaskOutput, config: IExecuteConfig) {
               // example submissions/CIK0000001750-submissions-001.json
-              const filings = input.json as unknown as Filings;
+              const filings = Value.Encode(TypeFilings(), input.json);
               return {
                 filings: filings,
               };
@@ -163,8 +107,19 @@ export class FetchSubmissionsTask extends Task<FetchSubmissionsInput, FetchSubmi
           graph.addDataflow(new Dataflow(`fetch-${fileName}`, "json", `parse-${fileName}`, "json"));
         }
 
-        const result = await graph.run();
-        return graph.mergeExecuteOutputsToRunOutput(result, "last-or-property-array");
+        const graphResult = await graph.run();
+        let allFilings: { [key: string]: any[] } = {};
+        for (const result of graphResult) {
+          const { filings } = result.data as { filings: Filings };
+          for (const key of Object.keys(filings)) {
+            if (!allFilings[key]) {
+              allFilings[key] = [];
+            }
+            allFilings[key].push(...filings[key as keyof Filings]);
+          }
+        }
+
+        return { submission: input.submission, filings: allFilings };
       }
     );
     const output = await builder.run();

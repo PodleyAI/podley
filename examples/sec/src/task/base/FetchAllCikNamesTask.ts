@@ -5,56 +5,47 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  IExecuteConfig,
-  Task,
-  TaskAbortedError,
-  TaskInput,
-  TaskInputDefinition,
-  TaskOutput,
-  TaskOutputDefinition,
-} from "@ellmers/task-graph";
-import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../../fetch/SecCachedFetchTask";
+import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
+import { TypeDateTime } from "@ellmers/util";
+import { Static, TObject, Type } from "@sinclair/typebox";
+import { SecCachedFetchTask } from "../../fetch/SecCachedFetchTask";
 import { SecFetchTask } from "../../fetch/SecFetchTask";
+import { TypeSecCik } from "../../types/CompanySubmission";
 
 // NOTE: cik names are mutable, so we use date to break the cache
 
-interface FetchAllCikNamesTaskInput extends TaskInput {
-  date?: string;
-}
+const FetchAllCikNamesTaskInputSchema = () =>
+  Type.Object({
+    date: Type.Optional(TypeDateTime()),
+  });
 
-export interface FetchAllCikNamesTaskOutput extends TaskOutput {
-  cikList: { name: string; cik: number }[];
-}
+const FetchAllCikNamesTaskOutputSchema = () =>
+  Type.Object({
+    cikList: Type.Array(Type.Object({ name: Type.String(), cik: TypeSecCik() })),
+  });
+
+export type FetchAllCikNamesTaskInput = Static<ReturnType<typeof FetchAllCikNamesTaskInputSchema>>;
+export type FetchAllCikNamesTaskOutput = Static<
+  ReturnType<typeof FetchAllCikNamesTaskOutputSchema>
+>;
 
 export class SecFetchCikLookupTask extends SecCachedFetchTask<
-  FetchAllCikNamesTaskInput & SecCachedFetchTaskInput
+  FetchAllCikNamesTaskInput,
+  FetchAllCikNamesTaskOutput
 > {
   static readonly type = "SecFetchCikLookupTask";
   static readonly category = "Hidden";
   static readonly immutable = true;
 
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "date",
-      name: "Date",
-      valueType: "string",
-    },
-  ] as const;
+  public static inputSchema(): TObject {
+    return FetchAllCikNamesTaskInputSchema();
+  }
 
-  public static outputs: TaskOutputDefinition[] = [
-    {
-      id: "cikList",
-      name: "CIK List",
-      valueType: "object",
-      isArray: true,
-    },
-  ] as const;
-
-  inputToFileName(input: { date?: string }): string {
+  inputToFileName(input: FetchAllCikNamesTaskInput): string {
     return `cik-lookup-data.txt`;
   }
-  inputToUrl(input: { date?: string }): string {
+
+  inputToUrl(input: FetchAllCikNamesTaskInput): string {
     const date = input.date || new Date().toISOString().split("T")[0];
     return `https://www.sec.gov/Archives/edgar/cik-lookup-data.txt${date ? `?date=${date}` : ""}`;
   }
@@ -69,15 +60,21 @@ export class FetchAllCikNamesTask extends Task<
   static readonly cacheable = true;
   static readonly compoundMerge = "last";
 
+  public static inputSchema(): TObject {
+    return FetchAllCikNamesTaskInputSchema();
+  }
+
+  public static outputSchema(): TObject {
+    return FetchAllCikNamesTaskOutputSchema();
+  }
+
   async execute(
     input: FetchAllCikNamesTaskInput,
     config: IExecuteConfig
   ): Promise<FetchAllCikNamesTaskOutput> {
     const secFetch = config.own(
       new SecFetchTask({
-        url:
-          (input.url ?? `https://www.sec.gov/Archives/edgar/cik-lookup-data.txt`) +
-          (input.date ? `?date=${input.date}` : ""),
+        url: `https://www.sec.gov/Archives/edgar/cik-lookup-data.txt${input.date ? `?date=${input.date}` : ""}`,
         response_type: "text",
       })
     );

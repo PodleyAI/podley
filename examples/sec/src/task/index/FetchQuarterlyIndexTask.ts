@@ -5,10 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IExecuteConfig, Task, TaskAbortedError, TaskInputDefinition } from "@ellmers/task-graph";
+import { IExecuteConfig, Task } from "@ellmers/task-graph";
+import { TypeDateTime } from "@ellmers/util";
+import { TObject, Type } from "@sinclair/typebox";
 import { parse } from "csv-parse/sync";
 import { response_type, SecCachedFetchTask } from "../../fetch/SecCachedFetchTask";
 import { parseDate } from "../../util/parseDate";
+import { TypeSecCik } from "../../types/CompanySubmission";
 
 // NOTE: ONLY PREVIOUS QUARTYS master index are immutable, current one is not (though should switch to daily)
 
@@ -27,14 +30,16 @@ class SecFetchQuarterlyIndexTask extends SecCachedFetchTask<FetchQuarterlyIndexT
 
   response_type: response_type = "text";
 
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "date",
-      name: "Date",
-      valueType: "string",
-      optional: true,
-    },
-  ] as const;
+  public static inputSchema(): TObject {
+    return Type.Object({
+      date: Type.Optional(
+        TypeDateTime({
+          title: "Date",
+          description: "The date to fetch the quarterly index for",
+        })
+      ),
+    });
+  }
 
   inputToFileName(input: FetchQuarterlyIndexTaskInput): string {
     const { year, month, day } = parseDate(input.date);
@@ -56,22 +61,17 @@ export class FetchQuarterlyIndexTask extends Task<
   static readonly category = "SEC";
   static readonly cacheable = true;
 
-  static readonly inputs = [
-    {
-      id: "date",
-      name: "Date",
-      valueType: "string",
-    },
-  ] as const;
+  public static inputSchema(): TObject {
+    return Type.Object({
+      date: Type.Optional(TypeDateTime()),
+    });
+  }
 
-  static readonly outputs = [
-    {
-      id: "updateList",
-      name: "Update List",
-      valueType: "object",
-      isArray: true,
-    },
-  ] as const;
+  public static outputSchema(): TObject {
+    return Type.Object({
+      updateList: Type.Array(Type.Tuple([TypeSecCik(), TypeDateTime()])),
+    });
+  }
 
   async execute(
     input: FetchQuarterlyIndexTaskInput,
@@ -83,8 +83,7 @@ export class FetchQuarterlyIndexTask extends Task<
     const secData = await secFetch.run();
     let data = secData.text!;
 
-    const linecountestimate = 25000000;
-    const cikMap = new Map<number, string>();
+    // const cikMap = new Map<number, string>();
 
     let loc = data.indexOf("-------");
     loc = data.indexOf("\n", loc + 1);
@@ -130,7 +129,6 @@ export class FetchQuarterlyIndexTask extends Task<
     //     progress = newProgress;
     //   }
     // }
-
-    return { updateList: Array.from(cikMap.entries()) };
+    // return { updateList: Array.from(cikMap.entries()) };
   }
 }

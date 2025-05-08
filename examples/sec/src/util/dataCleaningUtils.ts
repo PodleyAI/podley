@@ -1,7 +1,14 @@
+//    *******************************************************************************
+//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *                                                                             *
+//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
+//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
+//    *******************************************************************************
+
 import { AddressParser } from "@sroussey/parse-address";
 import { getRegionCodeForCountryCode, parsePhoneNumber } from "awesome-phonenumber";
 import { StateSolicitationCodeEnum } from "../types/edgar/state-country";
-import { Address } from "../types/edgar/company-submissions";
+import { Address } from "../types/CompanySubmission";
 
 const intlPhoneCodes1 = [1, 7];
 
@@ -150,6 +157,7 @@ export function cleanAddress(address: Address | null): {
     cleanerAddress.stateOrCountry &&
     Object.keys(StateSolicitationCodeEnum).includes(cleanerAddress.stateOrCountry)
   ) {
+    cleanerAddress.isForeignLocation = false;
     const parts = parser.parseStreet([cleanerAddress.street1, cleanerAddress.street2].join(","));
     if (parts) {
       const { number, prefix, street, type, suffix, sec_unit_type, sec_unit_num } = parts;
@@ -167,7 +175,10 @@ export function cleanAddress(address: Address | null): {
   }
 
   const { stateOrCountryDescription, ...smallerAddress } = cleanerAddress;
-  const hashable = Object.values(smallerAddress).join("|").toLowerCase();
+  const hashable = Object.values(smallerAddress)
+    .map((v) => (typeof v == "boolean" ? (v ? "1" : "0") : v))
+    .join("|")
+    .toLowerCase();
 
   if (hashable == "||||") return { hash: null, address: null };
   return { hash: hashable, address: cleanerAddress };

@@ -7,7 +7,7 @@
 
 import { JobQueueTaskConfig, TaskIO } from "@ellmers/task-graph";
 import { FetchTask, FetchTaskInput, FetchTaskOutput } from "@ellmers/tasks";
-import { SecJobQueueName } from "../config/Constants";
+import { SecJobQueueName, SecUserAgent } from "../config/Constants";
 import { SecFetchJob } from "./SecFetchJob";
 
 /**
@@ -21,12 +21,11 @@ export class SecFetchTask<
   constructor(input: FetchTaskInput = {} as FetchTaskInput, config: Config = {} as Config) {
     config.queueName = SecJobQueueName;
     input.queueName = SecJobQueueName;
-    input.response_type ??= "text";
 
     if (input.headers) {
-      input.headers["User-Agent"] = "SEC-Fetch-Task <sr@embarc.com>";
+      input.headers["User-Agent"] = SecUserAgent;
     } else {
-      input.headers = { "User-Agent": "SEC-Fetch-Task <sr@embarc.com>" };
+      input.headers = { "User-Agent": SecUserAgent };
     }
 
     super(input as Input, config);

@@ -5,7 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IExecuteConfig, Task, TaskAbortedError, Workflow, parallel } from "@ellmers/task-graph";
+import {
+  IExecuteConfig,
+  Task,
+  TaskAbortedError,
+  TaskError,
+  Workflow,
+  parallel,
+} from "@ellmers/task-graph";
 import { processUpdateProcessing } from "../../util/commonStoreSec";
 import { FetchSubmissionsOutput, FetchSubmissionsTask } from "./FetchSubmissionsTask";
 import { StoreSubmissionCikNameTask } from "./StoreSubmissionCikNameTask";
@@ -14,6 +21,7 @@ import { StoreSubmissionEntitiesTask } from "./StoreSubmissionEntitiesTask";
 import { StoreSubmissionFilingsTask } from "./StoreSubmissionFilingsTask";
 import { StoreSubmissionSicTask } from "./StoreSubmissionSicTask";
 import { StoreSubmissionTickersTask } from "./StoreSubmissionTickersTask";
+import { TObject, Type } from "@sinclair/typebox";
 
 export type StoreSubmissionsTaskInput = FetchSubmissionsOutput;
 
@@ -29,14 +37,15 @@ export class StoreSubmissionsTask extends Task<
   static readonly category = "SEC";
   static readonly cacheable = false;
 
-  static readonly inputs = FetchSubmissionsTask.outputs;
-  static readonly outputs = [
-    {
-      id: "success",
-      name: "Success",
-      valueType: "boolean",
-    },
-  ];
+  static inputSchema(): TObject {
+    return FetchSubmissionsTask.outputSchema();
+  }
+
+  static outputSchema(): TObject {
+    return Type.Object({
+      success: Type.Boolean({ title: "Successful" }),
+    });
+  }
 
   async execute(
     input: StoreSubmissionsTaskInput,
@@ -46,11 +55,8 @@ export class StoreSubmissionsTask extends Task<
       throw new TaskAbortedError();
     }
     let { submission } = input;
-    if (Array.isArray(submission)) {
-      submission = submission[0];
-    }
-    if (!submission) return { success: false };
-    const cik = parseInt(submission.cik);
+    if (!submission) throw new TaskError("No submission data");
+    const cik = submission.cik;
 
     const workflow = config.own(new Workflow());
     workflow.pipe(
@@ -68,9 +74,6 @@ export class StoreSubmissionsTask extends Task<
       }
     );
     await workflow.run();
-
-    // TODO: check if any tasks failed
-
     return { success: true };
   }
 }

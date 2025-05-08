@@ -1,5 +1,12 @@
-import { Address, Submission } from "../types/edgar/company-submissions";
-import { FilingMetaData } from "../types/FilingMetaData";
+//    *******************************************************************************
+//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *                                                                             *
+//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
+//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
+//    *******************************************************************************
+
+import { Address, CompanySubmission } from "../types/CompanySubmission";
+import { Filing } from "../types/CompanySubmission";
 import {
   cleanAddress,
   cleanCompanyName,
@@ -39,12 +46,12 @@ export function processSubmissionSic(sic: string, sicDescription: string) {
   );
 }
 
-export function processSubmissionEntity(submission: Omit<Submission, "filings" | "files">) {
+export function processSubmissionEntity(submission: CompanySubmission) {
   query_run(
     `INSERT OR REPLACE INTO entities(cik,name,type,sic,ein,description,website,investor_website,category,fiscal_year,state_incorporation,state_incorporation_desc)
       VALUES($cik,$name,$type,$sic,$ein,$description,$website,$investor_website,$category,$fiscal_year,$state_incorporation,$state_incorporation_desc)`,
     {
-      $cik: parseInt(submission.cik),
+      $cik: submission.cik,
       $name: submission.name,
       $type: submission.entityType,
       $sic: submission.sic || null,
@@ -60,7 +67,7 @@ export function processSubmissionEntity(submission: Omit<Submission, "filings" |
   );
 }
 
-export function processSubmissionFilings(cik: number, filing: FilingMetaData) {
+export function processSubmissionFilings(cik: number, filing: Filing) {
   query_run(
     `INSERT OR REPLACE INTO filings(cik,accession_number,filing_date,report_date,acceptance_date,form,file_number,film_number,primary_doc,primary_doc_description,size,is_xbrl,is_inline_xbrl,items,act) 
         VALUES ($cik,$accession_number,$filing_date,$report_date,$acceptance_date,$form,$file_number,$film_number,$primary_doc,$primary_doc_description,$size,$is_xbrl,$is_inline_xbrl,$items,$act)`,
@@ -76,8 +83,8 @@ export function processSubmissionFilings(cik: number, filing: FilingMetaData) {
       $primary_doc: filing.primaryDocument,
       $primary_doc_description: filing.primaryDocDescription,
       $size: filing.size,
-      $is_xbrl: filing.isXBRL === "1",
-      $is_inline_xbrl: filing.isInlineXBRL === "1",
+      $is_xbrl: filing.isXBRL,
+      $is_inline_xbrl: filing.isInlineXBRL,
       $items: filing.items,
       $act: filing.act,
     }

@@ -115,7 +115,8 @@ export class Dataflow {
     const sourceSchema = graph.getTask(dataflow.sourceTaskId)!.outputSchema;
 
     const targetSchemaProperty =
-      DATAFLOW_ALL_PORTS === dataflow.targetTaskPortId
+      DATAFLOW_ALL_PORTS === dataflow.targetTaskPortId ||
+      Object.keys(targetSchema.properties).includes(DATAFLOW_ALL_PORTS)
         ? Type.Any()
         : targetSchema.properties[dataflow.targetTaskPortId];
     const sourceSchemaProperty =

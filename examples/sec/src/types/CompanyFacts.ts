@@ -7,8 +7,10 @@
 
 // data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json
 
-import { ValueSchema } from "@ellmers/storage";
+import { TypeDate, TypeNullable } from "@ellmers/util";
+import { Static, Type } from "@sinclair/typebox";
 import { Frame, YYYYdMMdDD } from "./BaseTypes";
+import { TypeSECForm } from "./CompanySubmission";
 import { Form } from "./FormNames";
 
 export interface CompanyFacts {
@@ -41,54 +43,23 @@ export interface FactSummary {
   frame?: Frame;
 }
 
-export enum FP {
-  Fy = "FY",
-  Q1 = "Q1",
-  Q2 = "Q2",
-  Q3 = "Q3",
-  Q4 = "Q4",
-}
+export const FP = ["FY", "Q1", "Q2", "Q3", "Q4"] as const;
+export type FP = (typeof FP)[number];
 
-export type Factoid = {
-  cik: number;
-  grouping: string;
-  name: string;
-  filed_date: YYYYdMMdDD;
-  form: Form;
-  units: string;
-  frame: Frame | null;
-  accession_number: string;
-  start_date: YYYYdMMdDD | null;
-  end_date: YYYYdMMdDD;
-  val: number;
-  fy: number;
-  fp: FP;
-};
+export const FactoidSchema = Type.Object({
+  cik: Type.Number({ format: "cik", minimum: 0 }),
+  grouping: Type.String({ maxLength: 10 }), // dei or us-gaap
+  name: Type.String(),
+  filed_date: TypeDate(),
+  form: TypeSECForm(),
+  val_unit: Type.String({ maxLength: 12 }),
+  val: Type.Number(),
+  frame: TypeNullable(Type.String({ maxLength: 12 })),
+  accession_number: Type.String({ maxLength: 20 }),
+  start_date: TypeNullable(TypeDate()),
+  end_date: TypeDate(),
+  fy: Type.Number({ format: "year" }),
+  fp: Type.Union(FP.map((fp) => Type.Literal(fp))),
+});
 
-export const FactoidSchema: ValueSchema = {
-  cik: "number",
-  grouping: "string",
-  name: "string",
-  filed_date: "date",
-  form: "string",
-  units: "string",
-  frame: "string",
-  accession_number: "string",
-  start_date: "date",
-  end_date: "date",
-  val: "number",
-  fy: "number",
-  fp: "string",
-} as const;
-
-export const FactoidKey = [
-  "cik",
-  "name",
-  "grouping",
-  "accession_number",
-  "frame",
-  "units",
-  "fy",
-  "fp",
-  "val",
-] as const;
+export type Factoid = Static<typeof FactoidSchema>;

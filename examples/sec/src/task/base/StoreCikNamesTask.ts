@@ -8,6 +8,7 @@
 import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
 import { query_run } from "../../util/db";
 import { FetchAllCikNamesTask, FetchAllCikNamesTaskOutput } from "./FetchAllCikNamesTask";
+import { TObject, Type } from "@sinclair/typebox";
 
 export type StoreCikNamesTaskOutput = {
   success: boolean;
@@ -21,14 +22,15 @@ export class StoreCikNamesTask extends Task<FetchAllCikNamesTaskOutput, StoreCik
   static readonly category = "SEC";
   static readonly cacheable = false;
 
-  static readonly inputs = FetchAllCikNamesTask.outputs;
-  static readonly outputs = [
-    {
-      id: "success",
-      name: "Success",
-      valueType: "boolean",
-    },
-  ];
+  public static inputSchema(): TObject {
+    return FetchAllCikNamesTask.inputSchema();
+  }
+
+  public static outputSchema(): TObject {
+    return Type.Object({
+      success: Type.Boolean(),
+    });
+  }
 
   async execute(
     input: FetchAllCikNamesTaskOutput,

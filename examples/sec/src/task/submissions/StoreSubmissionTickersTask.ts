@@ -5,10 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
+import { IExecuteConfig, Task, TaskAbortedError, TaskError } from "@ellmers/task-graph";
 import { FetchSubmissionsOutput, FetchSubmissionsTask } from "./FetchSubmissionsTask";
 import { processSubmissionTickers } from "../../util/commonStoreSec";
-
+import { TObject, Type } from "@sinclair/typebox";
 export type StoreSubmissionTickersTaskInput = FetchSubmissionsOutput;
 
 export type StoreSubmissionTickersTaskOutput = {
@@ -23,14 +23,15 @@ export class StoreSubmissionTickersTask extends Task<
   static readonly category = "SEC";
   static readonly cacheable = false;
 
-  static readonly inputs = FetchSubmissionsTask.outputs;
-  static readonly outputs = [
-    {
-      id: "success",
-      name: "Success",
-      valueType: "boolean",
-    },
-  ];
+  static inputSchema(): TObject {
+    return FetchSubmissionsTask.outputSchema();
+  }
+
+  static outputSchema(): TObject {
+    return Type.Object({
+      success: Type.Boolean({ title: "Successful" }),
+    });
+  }
 
   async execute(
     input: StoreSubmissionTickersTaskInput,
@@ -43,8 +44,8 @@ export class StoreSubmissionTickersTask extends Task<
     if (Array.isArray(submission)) {
       submission = submission[0];
     }
-    if (!submission) return { success: false };
-    const cik = parseInt(submission.cik);
+    if (!submission) throw new TaskError("No submission data");
+    const cik = submission.cik;
 
     const { tickers, exchanges } = submission;
     if (tickers && exchanges) {

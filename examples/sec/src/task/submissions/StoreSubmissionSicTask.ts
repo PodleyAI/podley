@@ -5,9 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
+import { IExecuteConfig, Task, TaskAbortedError, TaskError } from "@ellmers/task-graph";
 import { processSubmissionSic } from "../../util/commonStoreSec";
 import { FetchSubmissionsOutput, FetchSubmissionsTask } from "./FetchSubmissionsTask";
+import { TObject, Type } from "@sinclair/typebox";
 
 export type StoreSubmissionSicTaskInput = FetchSubmissionsOutput;
 
@@ -26,14 +27,15 @@ export class StoreSubmissionSicTask extends Task<
   static readonly category = "SEC";
   static readonly cacheable = false;
 
-  static readonly inputs = FetchSubmissionsTask.outputs;
-  static readonly outputs = [
-    {
-      id: "success",
-      name: "Success",
-      valueType: "boolean",
-    },
-  ];
+  static inputSchema(): TObject {
+    return FetchSubmissionsTask.outputSchema();
+  }
+
+  static outputSchema(): TObject {
+    return Type.Object({
+      success: Type.Boolean({ title: "Successful" }),
+    });
+  }
 
   async execute(
     input: StoreSubmissionSicTaskInput,
@@ -46,7 +48,7 @@ export class StoreSubmissionSicTask extends Task<
     if (Array.isArray(submission)) {
       submission = submission[0];
     }
-    if (!submission) return { success: false };
+    if (!submission) throw new TaskError("No submission data");
 
     const { sic, sicDescription } = submission;
     if (sic && sicDescription) {

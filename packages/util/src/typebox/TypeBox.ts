@@ -81,7 +81,9 @@ export function simplifySchema(
   annotations: Record<string, unknown> = {}
 ): TSchema {
   if (!schema) {
-    throw new Error("Schema is undefined");
+    const e = new Error("Schema is undefined");
+    console.error(e.stack);
+    throw e;
   }
   if (schema[Kind] === "Any") {
     return schema;

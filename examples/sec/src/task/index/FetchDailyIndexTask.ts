@@ -5,10 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IExecuteConfig, Task, TaskInputDefinition } from "@ellmers/task-graph";
+import { IExecuteConfig, Task } from "@ellmers/task-graph";
+import { TypeDateTime } from "@ellmers/util";
+import { TObject, Type } from "@sinclair/typebox";
 import { parse } from "csv-parse/sync";
 import { response_type, SecCachedFetchTask } from "../../fetch/SecCachedFetchTask";
 import { parseDate } from "../../util/parseDate";
+import { TypeSecCik } from "../../types/CompanySubmission";
 
 // NOTE: daily index is immutable, but date is part of the url
 
@@ -27,14 +30,16 @@ class SecFetchDailyIndexTask extends SecCachedFetchTask<FetchDailyIndexTaskInput
 
   response_type: response_type = "text";
 
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "date",
-      name: "Date",
-      valueType: "string",
-      optional: true,
-    },
-  ] as const;
+  public static inputSchema(): TObject {
+    return Type.Object({
+      date: Type.Optional(
+        TypeDateTime({
+          title: "Date",
+          description: "The date to fetch the daily index for",
+        })
+      ),
+    });
+  }
 
   inputToFileName(input: FetchDailyIndexTaskInput): string {
     const { year, month, day } = parseDate(input.date);
@@ -55,22 +60,22 @@ export class FetchDailyIndexTask extends Task<FetchDailyIndexTaskInput, FetchDai
   static readonly category = "SEC";
   static readonly cacheable = true;
 
-  static readonly inputs = [
-    {
-      id: "date",
-      name: "Date",
-      valueType: "string",
-    },
-  ] as const;
+  public static inputSchema(): TObject {
+    return Type.Object({
+      date: Type.Optional(
+        TypeDateTime({
+          title: "Date",
+          description: "The date to fetch the daily index for",
+        })
+      ),
+    });
+  }
 
-  static readonly outputs = [
-    {
-      id: "updateList",
-      name: "Update List",
-      valueType: "number",
-      isArray: true,
-    },
-  ] as const;
+  public static outputSchema(): TObject {
+    return Type.Object({
+      updateList: Type.Array(Type.Tuple([TypeSecCik(), TypeDateTime()])),
+    });
+  }
 
   async execute(
     input: FetchDailyIndexTaskInput,

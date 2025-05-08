@@ -5,11 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { runWorkflow } from "@ellmers/cli";
 import { Workflow } from "@ellmers/task-graph";
 import type { Command } from "commander";
 import { FetchSubmissionsTask } from "../task/submissions/FetchSubmissionsTask";
 import { StoreSubmissionsTask } from "../task/submissions/StoreSubmissionsTask";
-import { runWorkflow } from "@ellmers/cli";
 
 export function CompanySubmissions(program: Command) {
   program

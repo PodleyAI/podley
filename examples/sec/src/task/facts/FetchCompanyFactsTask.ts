@@ -5,38 +5,37 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IExecuteConfig, Task, TaskAbortedError, TaskInputDefinition } from "@ellmers/task-graph";
-import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../../fetch/SecCachedFetchTask";
-import { CompanyFacts, Factoid } from "../../types/CompanyFacts";
+import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
+import { TypeDateTime } from "@ellmers/util";
+import { Static, TObject, Type } from "@sinclair/typebox";
+import { SecCachedFetchTask } from "../../fetch/SecCachedFetchTask";
+import { CompanyFacts, Factoid, FactoidSchema } from "../../types/CompanyFacts";
+import { TypeSecCik } from "../../types/CompanySubmission";
 
 // NOTE: company facts are mutable, so we need to pass in a date to break the cache
 
-export interface FetchCompanyFactsTaskInput extends SecCachedFetchTaskInput {
-  date: string;
-}
+const inputSchema = () =>
+  Type.Object({
+    cik: TypeSecCik(),
+    date: Type.Optional(TypeDateTime()),
+  });
 
-export type FetchCompanyFactsTaskOutput = {
-  facts: Factoid[];
-};
+export type FetchCompanyFactsTaskInput = Static<ReturnType<typeof inputSchema>>;
+
+const outputSchema = () =>
+  Type.Object({
+    facts: Type.Array(FactoidSchema),
+  });
+export type FetchCompanyFactsTaskOutput = Static<ReturnType<typeof outputSchema>>;
 
 class SecFetchCompanyFactsTask extends SecCachedFetchTask<FetchCompanyFactsTaskInput> {
   static readonly type = "SecFetchCompanyFactsTask";
   static readonly category = "Hidden";
   static readonly immutable = false;
 
-  public static inputs: TaskInputDefinition[] = [
-    {
-      id: "cik",
-      name: "CIK",
-      valueType: "number",
-    },
-    {
-      id: "date",
-      name: "Date",
-      valueType: "string",
-      optional: true,
-    },
-  ] as const;
+  public static inputSchema(): TObject {
+    return inputSchema();
+  }
 
   inputToFileName(input: FetchCompanyFactsTaskInput): string {
     return `companyfacts/CIK${input.cik.toString().padStart(10, "0")}.json`;
@@ -57,6 +56,14 @@ export class FetchCompanyFactsTask extends Task<
   static readonly type = "FetchCompanyFactsTask";
   static readonly category = "SEC";
   static readonly cacheable = true;
+
+  public static inputSchema(): TObject {
+    return inputSchema();
+  }
+
+  public static outputSchema(): TObject {
+    return outputSchema();
+  }
 
   async execute(
     input: FetchCompanyFactsTaskInput,
@@ -85,7 +92,7 @@ export class FetchCompanyFactsTask extends Task<
               name,
               filed_date: summary.filed,
               form: summary.form,
-              units: unit,
+              val_unit: unit,
               frame: summary.frame || null,
               accession_number: summary.accn,
               start_date: summary.start || null,

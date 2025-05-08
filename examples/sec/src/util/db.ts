@@ -1,5 +1,13 @@
+//    *******************************************************************************
+//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *                                                                             *
+//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
+//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
+//    *******************************************************************************
+
 import { Sqlite } from "@ellmers/sqlite";
 import { globalServiceRegistry } from "@ellmers/util";
+import { mkdirSync } from "fs";
 import path from "path";
 import { SEC_DB_FOLDER, SEC_DB_NAME } from "./tokens";
 
@@ -16,7 +24,7 @@ function getDb() {
     });
     query_run("PRAGMA synchronous = 0");
     query_run("PRAGMA cache_size = 1000000");
-    // query_run('PRAGMA locking_mode = EXCLUSIVE');
+    query_run("PRAGMA locking_mode = EXCLUSIVE");
     query_run("PRAGMA temp_store = MEMORY");
     query_run("PRAGMA journal_mode = OFF");
   }
@@ -24,6 +32,10 @@ function getDb() {
 }
 
 export function createDb() {
+  const dir = globalServiceRegistry.get(SEC_DB_FOLDER);
+  try {
+    mkdirSync(dir, { recursive: true });
+  } catch (err) {}
   const location = path.join(
     globalServiceRegistry.get(SEC_DB_FOLDER),
     `${globalServiceRegistry.get(SEC_DB_NAME)}.sqlite`
@@ -313,7 +325,7 @@ export function createDb() {
       name text,
       filed_date char(10),
       form char(10),
-      units char(12),
+      val_unit char(12),
       frame text,
       accession_number char(20) not null,
       start_date text,
@@ -325,7 +337,7 @@ export function createDb() {
   );
 
   query_run(
-    `CREATE UNIQUE INDEX IF NOT EXISTS facts ON company_facts(cik,grouping,name,accession_number,frame,units,fy,fp,val)`
+    `CREATE UNIQUE INDEX IF NOT EXISTS facts ON company_facts(cik,grouping,name,accession_number,frame,val_unit,fy,fp,val)`
   );
   query_run(`CREATE INDEX IF NOT EXISTS company_facts_name ON company_facts(cik,name)`);
 
@@ -411,6 +423,7 @@ export function createDb() {
 
   db.close();
 }
+
 let cache = new Map();
 export function query<ReturnType, ParamsType extends Sqlite.SQLQueryBindings>(
   sql: string,
@@ -480,15 +493,29 @@ export function query_all<ReturnType = any>(
 
 export function query_run<ReturnType = any>(
   sql: string,
-  params?: Sqlite.SQLQueryBindings,
+  params?: Sqlite.SQLQueryBindings | Sqlite.SQLQueryBindings[],
   prepare = true
 ) {
+  function tryRun(params?: Sqlite.SQLQueryBindings | Sqlite.SQLQueryBindings[]) {
+    const prep = query<ReturnType, Sqlite.SQLQueryBindings>(sql, prepare);
+    if (Array.isArray(params)) {
+      const db = getDb();
+      const insertMany = db.transaction((rows: Sqlite.SQLQueryBindings[]) => {
+        for (const row of rows) {
+          prep?.run(row);
+        }
+      });
+      insertMany(params);
+    } else {
+      return prep?.run(params ? params : null);
+    }
+  }
   try {
-    return query<ReturnType, Sqlite.SQLQueryBindings>(sql, prepare)?.run(params ? params : null);
+    return tryRun(params);
   } catch (err) {
     if (err == "Error: database is locked") {
       Bun.sleepSync(2000);
-      return query<ReturnType, Sqlite.SQLQueryBindings>(sql, prepare)?.run(params ? params : null);
+      return tryRun(params);
     } else throw new Error(`${err} in ${sql} \n with ${JSON.stringify(params)}`);
   }
 }

@@ -6,8 +6,10 @@
 //    *******************************************************************************
 
 import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
+import { sleep, TypeDateTime } from "@ellmers/util";
+import { TObject, Type } from "@sinclair/typebox";
+import { TypeSecCik } from "../../types/CompanySubmission";
 import { query_run } from "../../util/db";
-import { sleep } from "@ellmers/util";
 
 export type StoreCikLastUpdatedTaskOutput = {
   success: boolean;
@@ -28,22 +30,17 @@ export class StoreCikLastUpdatedTask extends Task<
   static readonly category = "SEC";
   static readonly cacheable = false;
 
-  static readonly inputs = [
-    {
-      id: "updateList",
-      name: "Update List",
-      valueType: "object",
-      isArray: true,
-    },
-  ] as const;
+  public static inputSchema(): TObject {
+    return Type.Object({
+      updateList: Type.Array(Type.Tuple([TypeSecCik(), TypeDateTime()])),
+    });
+  }
 
-  static readonly outputs = [
-    {
-      id: "success",
-      name: "Success",
-      valueType: "boolean",
-    },
-  ];
+  public static outputSchema(): TObject {
+    return Type.Object({
+      success: Type.Boolean(),
+    });
+  }
 
   async execute(
     input: StoreCikLastUpdatedTaskInput,

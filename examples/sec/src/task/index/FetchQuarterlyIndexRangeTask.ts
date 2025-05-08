@@ -7,15 +7,41 @@
 
 import { IExecuteConfig, NamedGraphResult, Task, TaskGraph } from "@ellmers/task-graph";
 import { FetchQuarterlyIndexTask, FetchQuarterlyIndexTaskOutput } from "./FetchQuarterlyIndexTask";
+import { TypeSecCik } from "../../types/CompanySubmission";
+import { TypeDateTime } from "@ellmers/util";
+import { Static, TObject, Type } from "@sinclair/typebox";
 
 // NOTE: ONLY PREVIOUS QUARTERS' master index are immutable, current one is not (though should switch to daily)
 
-type FetchQuarterlyIndexRangeTaskInput = {
-  startYear: number;
-  startQuarter?: number;
-  endYear?: number;
-  endQuarter?: number;
-};
+const FetchQuarterlyIndexRangeTaskInputSchema = () =>
+  Type.Object({
+    startYear: Type.Number({
+      title: "Start Year",
+      description: "The start year of the range to fetch",
+    }),
+    startQuarter: Type.Optional(
+      Type.Number({
+        title: "Start Quarter",
+        description: "The start quarter of the range to fetch",
+      })
+    ),
+    endYear: Type.Optional(
+      Type.Number({
+        title: "End Year",
+        description: "The end year of the range to fetch",
+      })
+    ),
+    endQuarter: Type.Optional(
+      Type.Number({
+        title: "End Quarter",
+        description: "The end quarter of the range to fetch",
+      })
+    ),
+  });
+
+export type FetchQuarterlyIndexRangeTaskInput = Static<
+  ReturnType<typeof FetchQuarterlyIndexRangeTaskInputSchema>
+>;
 
 type FetchQuarterlyIndexRangeTaskOutput = {
   updateList: [cik: number, last_known_update: string][];
@@ -29,40 +55,15 @@ export class FetchQuarterlyIndexRangeTask extends Task<
   static readonly category = "SEC";
   static readonly cacheable = true;
 
-  static readonly inputs = [
-    {
-      id: "startYear",
-      name: "Start Year",
-      valueType: "number",
-    },
-    {
-      id: "startQuarter",
-      name: "Start Quarter",
-      valueType: "number",
-      optional: true,
-    },
-    {
-      id: "endYear",
-      name: "End Year",
-      valueType: "number",
-      optional: true,
-    },
-    {
-      id: "endQuarter",
-      name: "End Quarter",
-      valueType: "number",
-      optional: true,
-    },
-  ] as const;
+  public static inputSchema(): TObject {
+    return FetchQuarterlyIndexRangeTaskInputSchema();
+  }
 
-  static readonly outputs = [
-    {
-      id: "updateList",
-      name: "Update List",
-      valueType: "object",
-      isArray: true,
-    },
-  ] as const;
+  public static outputSchema(): TObject {
+    return Type.Object({
+      updateList: Type.Array(Type.Tuple([TypeSecCik(), TypeDateTime()])),
+    });
+  }
 
   async execute(
     input: FetchQuarterlyIndexRangeTaskInput,
