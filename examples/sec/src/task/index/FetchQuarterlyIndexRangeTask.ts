@@ -18,23 +18,29 @@ const FetchQuarterlyIndexRangeTaskInputSchema = () =>
     startYear: Type.Number({
       title: "Start Year",
       description: "The start year of the range to fetch",
+      minimum: 1993,
     }),
     startQuarter: Type.Optional(
       Type.Number({
         title: "Start Quarter",
         description: "The start quarter of the range to fetch",
+        minimum: 1,
+        maximum: 4,
       })
     ),
     endYear: Type.Optional(
       Type.Number({
         title: "End Year",
         description: "The end year of the range to fetch",
+        minimum: 1993,
       })
     ),
     endQuarter: Type.Optional(
       Type.Number({
         title: "End Quarter",
         description: "The end quarter of the range to fetch",
+        minimum: 1,
+        maximum: 4,
       })
     ),
   });
@@ -88,8 +94,9 @@ export class FetchQuarterlyIndexRangeTask extends Task<
       const fetchYear = startYear + Math.floor(i / 4);
       const fetchMonth = (i % 4) * 3 + 1;
       const fetchDay = 1;
+      const date = `${fetchYear}-${fetchMonth.toString().padStart(2, "0")}-${fetchDay.toString().padStart(2, "0")}`;
       const task = new FetchQuarterlyIndexTask({
-        date: `${fetchYear}-${fetchMonth}-${fetchDay}`,
+        date,
       });
       tasks.addTask(task);
     }

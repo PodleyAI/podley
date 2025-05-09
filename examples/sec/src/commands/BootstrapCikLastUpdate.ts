@@ -18,6 +18,9 @@ export function BootstrapCikLastUpdate(program: Command) {
     .argument("<year>", "the year to bootstrap the cik last update task")
     .action(async (year: string) => {
       const yearInt = parseInt(year);
+      if (yearInt < 1993 || yearInt > new Date().getFullYear() + 1) {
+        throw new Error("Invalid year");
+      }
       const flow = pipe([
         new FetchQuarterlyIndexRangeTask({ startYear: yearInt }),
         new StoreCikLastUpdatedTask(),

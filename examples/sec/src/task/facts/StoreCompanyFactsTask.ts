@@ -47,9 +47,7 @@ export class StoreCompanyFactsTask extends Task<
     const factsArray: Factoid[] = input.facts.filter((f) => !!f);
     if (!factsArray) throw new TaskError("No facts data to store");
 
-    const estimatedFacts = factsArray.length;
     let progress = 0;
-    let index = 0;
     const batchSize = 1000;
     const batches = Math.ceil(factsArray.length / batchSize);
     for (let i = 0; i < batches; i++) {

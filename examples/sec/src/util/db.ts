@@ -54,6 +54,17 @@ export function createDb() {
   );
 
   query_run(
+    `CREATE TABLE IF NOT EXISTS processed_facts (
+      cik unsigned int not null,
+      last_processed date null,
+      primary key (cik)
+    )`
+  );
+  query_run(
+    `CREATE INDEX IF NOT EXISTS processed_facts_last_processed ON processed_facts(last_processed)`
+  );
+
+  query_run(
     `CREATE TABLE IF NOT EXISTS processed_submissions (
       cik unsigned int not null,
       last_processed date null,
@@ -63,6 +74,7 @@ export function createDb() {
   query_run(
     `CREATE INDEX IF NOT EXISTS processed_submissions_last_processed ON processed_submissions(last_processed)`
   );
+
   query_run(
     `CREATE TABLE IF NOT EXISTS processed_filings (
       cik unsigned int not null,

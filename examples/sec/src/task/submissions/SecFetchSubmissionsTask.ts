@@ -5,15 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TypeDateTime } from "@ellmers/util";
 import { Static, TObject, Type } from "@sinclair/typebox";
-import {
-  response_type,
-  SecCachedFetchTask,
-  SecCachedFetchTaskInput,
-} from "../../fetch/SecCachedFetchTask";
+import { SecCachedFetchTask } from "../../fetch/SecCachedFetchTask";
 import { FullCompanySubmissionSchema, TypeSecCik } from "../../types/CompanySubmission";
-import { JobQueueTaskConfig } from "@ellmers/task-graph";
+import { TypeOptionalSecDate } from "../../util/parseDate";
 
 // NOTE: company submissions are mutable, so we need to pass in a date to break the cache
 
@@ -21,7 +16,7 @@ const SecFetchSubmissionsTaskInputSchema = () =>
   Type.Object({
     cik: TypeSecCik(),
     file: Type.Optional(Type.String()),
-    date: Type.Optional(TypeDateTime()),
+    date: TypeOptionalSecDate(),
   });
 
 export type SecFetchSubmissionsTaskInput = Static<

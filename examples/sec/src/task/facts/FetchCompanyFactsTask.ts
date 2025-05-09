@@ -6,18 +6,18 @@
 //    *******************************************************************************
 
 import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
-import { TypeDateTime } from "@ellmers/util";
 import { Static, TObject, Type } from "@sinclair/typebox";
 import { SecCachedFetchTask } from "../../fetch/SecCachedFetchTask";
 import { CompanyFacts, Factoid, FactoidSchema } from "../../types/CompanyFacts";
 import { TypeSecCik } from "../../types/CompanySubmission";
+import { secDate, TypeOptionalSecDate } from "../../util/parseDate";
 
 // NOTE: company facts are mutable, so we need to pass in a date to break the cache
 
 const inputSchema = () =>
   Type.Object({
     cik: TypeSecCik(),
-    date: Type.Optional(TypeDateTime()),
+    date: TypeOptionalSecDate(),
   });
 
 export type FetchCompanyFactsTaskInput = Static<ReturnType<typeof inputSchema>>;
@@ -41,8 +41,8 @@ class SecFetchCompanyFactsTask extends SecCachedFetchTask<FetchCompanyFactsTaskI
     return `companyfacts/CIK${input.cik.toString().padStart(10, "0")}.json`;
   }
   inputToUrl(input: FetchCompanyFactsTaskInput): string {
-    const date = input.date || new Date().toISOString().split("T")[0];
-    return `https://data.sec.gov/api/xbrl/companyfacts/CIK${input.cik.toString().padStart(10, "0")}.json?date=${date}`;
+    const date = input.date ? secDate(input.date) : undefined;
+    return `https://data.sec.gov/api/xbrl/companyfacts/CIK${input.cik.toString().padStart(10, "0")}.json${date ? `?date=${date}` : ""}`;
   }
 }
 

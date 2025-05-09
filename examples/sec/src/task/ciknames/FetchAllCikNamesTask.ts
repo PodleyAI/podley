@@ -6,17 +6,17 @@
 //    *******************************************************************************
 
 import { IExecuteConfig, Task, TaskAbortedError } from "@ellmers/task-graph";
-import { TypeDateTime } from "@ellmers/util";
 import { Static, TObject, Type } from "@sinclair/typebox";
 import { SecCachedFetchTask } from "../../fetch/SecCachedFetchTask";
 import { SecFetchTask } from "../../fetch/SecFetchTask";
 import { TypeSecCik } from "../../types/CompanySubmission";
+import { TypeSecDate } from "../../util/parseDate";
 
 // NOTE: cik names are mutable, so we use date to break the cache
 
 const FetchAllCikNamesTaskInputSchema = () =>
   Type.Object({
-    date: Type.Optional(TypeDateTime()),
+    date: Type.Optional(TypeSecDate()),
   });
 
 const FetchAllCikNamesTaskOutputSchema = () =>

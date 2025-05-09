@@ -7,9 +7,9 @@
 
 import { runWorkflow } from "@ellmers/cli";
 import type { Command } from "commander";
-import { FetchAllCikNamesTask } from "../task/base/FetchAllCikNamesTask";
+import { FetchAllCikNamesTask } from "../task/ciknames/FetchAllCikNamesTask";
 import { pipe } from "@ellmers/task-graph";
-import { StoreCikNamesTask } from "../task/base/StoreCikNamesTask";
+import { StoreCikNamesTask } from "../task/ciknames/StoreCikNamesTask";
 
 export function BootstrapAllCikNames(program: Command) {
   program

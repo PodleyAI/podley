@@ -10,6 +10,7 @@ import { Workflow } from "@ellmers/task-graph";
 import type { Command } from "commander";
 import { FetchCompanyFactsTask } from "../task/facts/FetchCompanyFactsTask";
 import { StoreCompanyFactsTask } from "../task/facts/StoreCompanyFactsTask";
+import { secDate } from "../util/parseDate";
 
 export function CompanyFacts(program: Command) {
   program
@@ -21,7 +22,7 @@ export function CompanyFacts(program: Command) {
       const workflow = new Workflow();
       workflow.pipe(
         new FetchCompanyFactsTask({
-          date: options.date,
+          date: secDate(options.date),
           cik: parseInt(cik),
         }),
         new StoreCompanyFactsTask()

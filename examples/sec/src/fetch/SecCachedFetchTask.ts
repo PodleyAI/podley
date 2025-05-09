@@ -5,10 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IExecuteConfig, TaskConfig, TaskInput, TaskOutput } from "@ellmers/task-graph";
+import { IExecuteConfig, TaskConfig, TaskOutput } from "@ellmers/task-graph";
 import { FetchTaskInput, FetchTaskOutput } from "@ellmers/tasks";
 import { globalServiceRegistry } from "@ellmers/util";
 import path from "node:path";
+import { YYYYdMMdDD } from "../util/parseDate";
 import { SEC_RAW_DATA_FOLDER } from "../util/tokens";
 import { SecFetchFileOutputCache } from "./SecFetchFileOutputCache";
 import { SecFetchTask } from "./SecFetchTask";
@@ -16,7 +17,7 @@ import { SecFetchTask } from "./SecFetchTask";
 export type response_type = "text" | "json" | "blob" | "arraybuffer";
 export interface SecCachedFetchTaskInput {
   cik: number;
-  date?: string;
+  date?: YYYYdMMdDD;
   response_type?: response_type;
 }
 

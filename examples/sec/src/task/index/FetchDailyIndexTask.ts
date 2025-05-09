@@ -6,12 +6,17 @@
 //    *******************************************************************************
 
 import { IExecuteConfig, Task } from "@ellmers/task-graph";
-import { TypeDateTime } from "@ellmers/util";
 import { TObject, Type } from "@sinclair/typebox";
 import { parse } from "csv-parse/sync";
 import { response_type, SecCachedFetchTask } from "../../fetch/SecCachedFetchTask";
-import { parseDate } from "../../util/parseDate";
 import { TypeSecCik } from "../../types/CompanySubmission";
+import {
+  parseDate,
+  secDate,
+  TypeOptionalSecDate,
+  TypeSecDate,
+  YYYYdMMdDD,
+} from "../../util/parseDate";
 
 // NOTE: daily index is immutable, but date is part of the url
 
@@ -32,12 +37,10 @@ class SecFetchDailyIndexTask extends SecCachedFetchTask<FetchDailyIndexTaskInput
 
   public static inputSchema(): TObject {
     return Type.Object({
-      date: Type.Optional(
-        TypeDateTime({
-          title: "Date",
-          description: "The date to fetch the daily index for",
-        })
-      ),
+      date: TypeSecDate({
+        title: "Date",
+        description: "The date to fetch the daily index for",
+      }),
     });
   }
 
@@ -62,18 +65,16 @@ export class FetchDailyIndexTask extends Task<FetchDailyIndexTaskInput, FetchDai
 
   public static inputSchema(): TObject {
     return Type.Object({
-      date: Type.Optional(
-        TypeDateTime({
-          title: "Date",
-          description: "The date to fetch the daily index for",
-        })
-      ),
+      date: TypeOptionalSecDate({
+        title: "Date",
+        description: "The date to fetch the daily index for",
+      }),
     });
   }
 
   public static outputSchema(): TObject {
     return Type.Object({
-      updateList: Type.Array(Type.Tuple([TypeSecCik(), TypeDateTime()])),
+      updateList: Type.Array(Type.Tuple([TypeSecCik(), TypeSecDate()])),
     });
   }
 
@@ -81,9 +82,9 @@ export class FetchDailyIndexTask extends Task<FetchDailyIndexTaskInput, FetchDai
     input: FetchDailyIndexTaskInput,
     config: IExecuteConfig
   ): Promise<FetchDailyIndexTaskOutput> {
-    if (!input.date) return { updateList: [] };
+    const date = input.date ? secDate(input.date) : secDate(new Date());
 
-    const secFetch = config.own(new SecFetchDailyIndexTask({ date: input.date }));
+    const secFetch = config.own(new SecFetchDailyIndexTask({ date }));
     const secData = await secFetch.run();
     let data = secData.text!;
     let loc = data.indexOf("-------");
@@ -104,7 +105,7 @@ export class FetchDailyIndexTask extends Task<FetchDailyIndexTaskInput, FetchDai
       const cik = parseInt(cikStr);
       updates.add(cik);
     }
-    const updateList = Array.from(updates).map((cik) => [cik, input.date] as [number, string]);
+    const updateList = Array.from(updates).map((cik) => [cik, date] as [number, YYYYdMMdDD]);
     return { updateList };
   }
 }

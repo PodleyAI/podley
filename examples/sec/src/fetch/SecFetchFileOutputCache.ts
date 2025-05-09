@@ -10,6 +10,8 @@ import { FetchTaskOutput } from "@ellmers/tasks";
 import { mkdirSync } from "node:fs";
 import { mkdir, readFile, writeFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { secDate } from "../util/parseDate";
+import { YYYYdMMdDD } from "../util/parseDate";
 
 interface SecFetchFileOutputCacheOptions {
   folderPath: string;
@@ -81,15 +83,15 @@ export class SecFetchFileOutputCache extends TaskOutputRepository {
    */
   async getOutput(
     taskType: string,
-    inputs: TaskInput & { date?: string }
+    inputs: TaskInput & { date?: YYYYdMMdDD }
   ): Promise<TaskOutput | undefined> {
     const filePath = path.join(this.folderPath, this.inputToFileName(inputs));
     try {
       if (inputs.date) {
         const stats = await stat(filePath);
         // if the file was created a day before the date, return undefined
-        const fileDate = new Date(stats.mtime).toISOString().split("T")[0];
-        const inputDate = inputs.date;
+        const fileDate = secDate(new Date(stats.mtime));
+        const inputDate = secDate(inputs.date);
         if (fileDate < inputDate) {
           return undefined;
         }

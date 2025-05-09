@@ -10,6 +10,7 @@ import { Workflow } from "@ellmers/task-graph";
 import type { Command } from "commander";
 import { FetchSubmissionsTask } from "../task/submissions/FetchSubmissionsTask";
 import { StoreSubmissionsTask } from "../task/submissions/StoreSubmissionsTask";
+import { secDate } from "../util/parseDate";
 
 export function CompanySubmissions(program: Command) {
   program
@@ -21,7 +22,7 @@ export function CompanySubmissions(program: Command) {
       const wf = new Workflow();
       wf.pipe(
         new FetchSubmissionsTask({
-          date: options.date,
+          date: secDate(options.date),
           cik: parseInt(cik),
         }),
         new StoreSubmissionsTask()

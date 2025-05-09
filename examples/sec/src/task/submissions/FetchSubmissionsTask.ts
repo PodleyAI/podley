@@ -14,16 +14,16 @@ import {
   Workflow,
 } from "@ellmers/task-graph";
 import { FetchTaskOutput } from "@ellmers/tasks";
-import { TypeDateTime } from "@ellmers/util";
 import { Static, TObject, Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import {
   CompanySubmissionSchema,
+  Filings,
   FullCompanySubmissionSchema,
   TypeFilings,
   TypeSecCik,
-  Filings,
 } from "../../types/CompanySubmission";
+import { secDate, TypeOptionalSecDate } from "../../util/parseDate";
 import { SecFetchSubmissionsTask } from "./SecFetchSubmissionsTask";
 
 // NOTE: company submissions are mutable, so we need to pass in a date to break the cache
@@ -31,7 +31,7 @@ import { SecFetchSubmissionsTask } from "./SecFetchSubmissionsTask";
 const FetchSubmissionsTaskInputSchema = () =>
   Type.Object({
     cik: TypeSecCik(),
-    date: Type.Optional(TypeDateTime()),
+    date: TypeOptionalSecDate(),
   });
 
 export type FetchSubmissionsTaskInput = Static<ReturnType<typeof FetchSubmissionsTaskInputSchema>>;
@@ -63,7 +63,7 @@ export class FetchSubmissionsTask extends Task<FetchSubmissionsTaskInput, FetchS
   ): Promise<FetchSubmissionsOutput> {
     const cik = input.cik;
     if (!cik) throw new TaskFailedError("CIK is required");
-    const date = input.date;
+    const date = input.date ? secDate(input.date) : undefined;
 
     const builder = config.own(new Workflow());
     builder.pipe(

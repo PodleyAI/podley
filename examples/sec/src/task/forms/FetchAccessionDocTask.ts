@@ -7,12 +7,13 @@
 
 import { TaskInput } from "@ellmers/task-graph";
 import { TObject, Type } from "@sinclair/typebox";
-import { SecCachedFetchTask, SecCachedFetchTaskInput } from "../../fetch/SecCachedFetchTask";
+import { SecCachedFetchTask } from "../../fetch/SecCachedFetchTask";
 import { TypeSecCik } from "../../types/CompanySubmission";
 
 // NOTE: accession documents are immutable, so we don't need to pass in a date for invalidation
 
-export interface SecFetchAccessionDocTaskInput extends SecCachedFetchTaskInput {
+export interface SecFetchAccessionDocTaskInput {
+  cik: number;
   accessionNumber: string;
   fileName: string;
 }
