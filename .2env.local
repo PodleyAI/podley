@@ -1,0 +1,4 @@
+
+SEC_RAW_DATA_FOLDER=/Users/steve/Code/sec-data
+SEC_DB_FOLDER=/Users/steve/Code/sec-db
+SEC_DB_NAME=edgar

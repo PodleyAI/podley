@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Document Schema",
+  "description": "Schema for the Document class representing a document with its content and metadata",
+  "definitions": {
+    "DocumentMetadata": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": ["title"]
+    },
+    "DocumentSectionMetadata": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": ["title"]
+    },
+    "DocumentFragmentMetadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "TextFragment": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["text"]
+        },
+        "metadata": {
+          "$ref": "#/definitions/DocumentFragmentMetadata"
+        },
+        "content": {
+          "type": "string"
+        }
+      },
+      "required": ["type", "content"]
+    },
+    "TableFragment": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["table"]
+        },
+        "metadata": {
+          "$ref": "#/definitions/DocumentFragmentMetadata"
+        },
+        "content": {
+          "type": "object"
+        }
+      },
+      "required": ["type", "content"]
+    },
+    "ImageFragment": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["image"]
+        },
+        "metadata": {
+          "$ref": "#/definitions/DocumentFragmentMetadata"
+        },
+        "content": {
+          "type": "object"
+        }
+      },
+      "required": ["type", "content"]
+    },
+    "DocumentSection": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["section"]
+        },
+        "metadata": {
+          "$ref": "#/definitions/DocumentSectionMetadata"
+        },
+        "fragments": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/definitions/TextFragment" },
+              { "$ref": "#/definitions/TableFragment" },
+              { "$ref": "#/definitions/ImageFragment" },
+              { "$ref": "#/definitions/DocumentSection" }
+            ]
+          }
+        }
+      },
+      "required": ["type", "metadata", "fragments"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["document"]
+    },
+    "metadata": {
+      "$ref": "#/definitions/DocumentMetadata"
+    },
+    "fragments": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/TextFragment" },
+          { "$ref": "#/definitions/TableFragment" },
+          { "$ref": "#/definitions/ImageFragment" },
+          { "$ref": "#/definitions/DocumentSection" }
+        ]
+      }
+    }
+  },
+  "required": ["type", "metadata", "fragments"]
+}
