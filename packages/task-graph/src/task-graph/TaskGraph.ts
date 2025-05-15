@@ -5,14 +5,14 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { DirectedAcyclicGraph } from "@ellmers/util";
+import { DirectedAcyclicGraph, uuid4 } from "@ellmers/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { ITask } from "../task/ITask";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
-import { Provenance, TaskIdType, TaskOutput } from "../task/TaskTypes";
-import { ensureTask, PipeFunction } from "./Conversions";
-import { Dataflow, DataflowIdType } from "./Dataflow";
-import { ITaskGraph } from "./ITaskGraph";
+import type { Provenance, TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
+import { ensureTask, type PipeFunction } from "./Conversions";
+import { Dataflow, type DataflowIdType } from "./Dataflow";
+import type { ITaskGraph } from "./ITaskGraph";
 import {
   EventTaskGraphToDagMapping,
   TaskGraphEventListener,
@@ -89,9 +89,10 @@ export class TaskGraph implements ITaskGraph {
    * @throws TaskError if any tasks have failed
    */
   public run<ExecuteOutput extends TaskOutput>(
-    config?: TaskGraphRunConfig
+    input: TaskInput = {} as TaskInput,
+    config: TaskGraphRunConfig
   ): Promise<NamedGraphResult<ExecuteOutput>> {
-    return this.runner.runGraph<ExecuteOutput>({
+    return this.runner.runGraph<ExecuteOutput>(input, {
       outputCache: config?.outputCache || this.outputCache,
       parentProvenance: config?.parentProvenance || {},
       parentSignal: config?.parentSignal || undefined,
@@ -235,6 +236,15 @@ export class TaskGraph implements ITaskGraph {
   }
 
   /**
+   * Removes a data flow from the task graph
+   * @param dataflow The data flow to remove
+   * @returns The current task graph
+   */
+  public removeDataflow(dataflow: Dataflow) {
+    return this._dag.removeEdge(dataflow.sourceTaskId, dataflow.targetTaskId, dataflow.id);
+  }
+
+  /**
    * Retrieves the data flows that are sources of a given task
    * @param taskId The id of the task to retrieve sources for
    * @returns An array of data flows that are sources of the given task
@@ -277,6 +287,10 @@ export class TaskGraph implements ITaskGraph {
    */
   public removeTask(taskId: unknown) {
     return this._dag.removeNode(taskId);
+  }
+
+  public resetGraph() {
+    this.runner.resetGraph(this, uuid4());
   }
 
   /**

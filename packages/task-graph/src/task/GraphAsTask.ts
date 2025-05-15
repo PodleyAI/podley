@@ -90,6 +90,9 @@ export class GraphAsTask<
       this.subGraph!.getTasks().forEach((node) => {
         node.resetInputData();
       });
+      this.subGraph!.getDataflows().forEach((dataflow) => {
+        dataflow.reset();
+      });
     }
   }
 

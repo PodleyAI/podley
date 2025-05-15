@@ -91,6 +91,17 @@ describe("Workflow", () => {
       expect(result).toEqual({ output: "processed-test" });
     });
 
+    it("should run the task graph with provided input parameters", async () => {
+      workflow = workflow.TestSimpleTask();
+
+      const startSpy = spyOn(workflow.events, "emit");
+      const result = await workflow.run({ input: "custom-input" });
+
+      expect(startSpy).toHaveBeenCalledWith("start");
+      expect(startSpy).toHaveBeenCalledWith("complete");
+      expect(result).toEqual({ output: "processed-custom-input" });
+    });
+
     it("should emit error event when task execution fails", async () => {
       workflow = workflow.FailingTask();
 

@@ -27,11 +27,14 @@ export class GraphAsTaskRunner<
         this.task.emit("progress", progress, message, ...args);
       }
     );
-    const results = await this.task.subGraph!.run<Output>({
-      parentProvenance: this.nodeProvenance || {},
-      parentSignal: this.abortController?.signal,
-      outputCache: this.outputCache,
-    });
+    const results = await this.task.subGraph!.run<Output>(
+      {},
+      {
+        parentProvenance: this.nodeProvenance || {},
+        parentSignal: this.abortController?.signal,
+        outputCache: this.outputCache,
+      }
+    );
     unsubscribe();
     return results;
   }

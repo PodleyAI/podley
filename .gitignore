@@ -1,5 +1,3 @@
-data-in/
-data-out/
 node_modules/
 .DS_Store
 tsconfig.tsbuildinfo
@@ -14,3 +12,5 @@ packages/ngraph/
 .cache/
 .turbo
 .env.*
+sec-data/
+sec-db/

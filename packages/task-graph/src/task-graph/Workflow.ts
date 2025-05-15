@@ -259,14 +259,15 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
   /**
    * Runs the task graph
    *
+   * @param input - The input to the task graph
    * @returns The output of the task graph
    */
-  public async run() {
+  public async run(input: Input = {} as Input) {
     this.events.emit("start");
     this._abortController = new AbortController();
 
     try {
-      const output = await this.graph.run<Output>({
+      const output = await this.graph.run<Output>(input, {
         parentSignal: this._abortController.signal,
         parentProvenance: {},
         outputCache: this._repository,

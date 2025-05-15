@@ -101,8 +101,8 @@ describe("TaskGraphRunner", () => {
       };
 
       graph.addTasks([sourceTask, targetTask, errorTask]);
-      graph.addDataflow(new DataflowArrow("source.output -> target.input"));
-      graph.addDataflow(new DataflowArrow("error-source.output -> target.input"));
+      graph.addDataflow(new DataflowArrow("source[output] ==> target[input]"));
+      graph.addDataflow(new DataflowArrow("error-source[output] ==> target[input]"));
 
       runner = new TaskGraphRunner(graph);
     });

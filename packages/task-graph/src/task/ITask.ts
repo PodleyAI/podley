@@ -108,6 +108,7 @@ export interface ITaskIO<Input extends TaskInput, Output extends TaskOutput> {
   get outputs(): readonly TaskOutputDefinition[]; // this gets local access for static output definition property
   get type(): string; // this gets local access for static type property
 
+  setDefaults(defaults: Partial<Input>): void;
   resetInputData(): void;
   setInput(input: Partial<Input>): void;
   validateInputValue(valueType: string, item: any): Promise<boolean>;

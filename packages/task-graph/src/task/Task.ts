@@ -334,6 +334,15 @@ export class Task<
   }
 
   /**
+   * Sets the default input values for the task
+   *
+   * @param defaults The default input values to set
+   */
+  public setDefaults(defaults: Partial<Input>): void {
+    this.defaults = defaults;
+  }
+
+  /**
    * Sets input values for the task
    *
    * @param input Input values to set

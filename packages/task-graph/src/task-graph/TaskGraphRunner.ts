@@ -125,6 +125,7 @@ export class TaskGraphRunner {
   // ========================================================================
 
   public async runGraph<ExecuteOutput extends TaskOutput>(
+    input: TaskInput = {} as TaskInput,
     config?: TaskGraphRunConfig
   ): Promise<NamedGraphResult<ExecuteOutput>> {
     await this.handleStart(config);
@@ -144,9 +145,15 @@ export class TaskGraphRunner {
           break;
         }
 
+        const isRootTask = this.graph.getSourceDataflows(task.config.id).length === 0;
+
         const runAsync = async () => {
           try {
-            const taskPromise = this.runTaskWithProvenance(task, config?.parentProvenance || {});
+            const taskPromise = this.runTaskWithProvenance(
+              task,
+              isRootTask ? input : {},
+              config?.parentProvenance || {}
+            );
             this.inProgressTasks!.set(task.config.id, taskPromise);
             const taskResult = await taskPromise;
 
@@ -404,6 +411,7 @@ export class TaskGraphRunner {
    */
   protected async runTaskWithProvenance<T>(
     task: ITask,
+    input: TaskInput,
     parentProvenance: Provenance
   ): Promise<GraphSingleResult<T>> {
     // Update provenance for the current task
@@ -415,10 +423,11 @@ export class TaskGraphRunner {
     this.provenanceInput.set(task.config.id, nodeProvenance);
     this.copyInputFromEdgesToNode(task);
 
-    const results = await task.runner.run(
-      {},
-      { nodeProvenance, outputCache: this.outputCache, onProgress: this.handleProgress }
-    );
+    const results = await task.runner.run(input, {
+      nodeProvenance,
+      outputCache: this.outputCache,
+      onProgress: this.handleProgress,
+    });
 
     this.pushOutputFromNodeToEdges(task, results, nodeProvenance);
 

@@ -172,13 +172,20 @@ export class Dataflow {
  *
  * This is a helper class that parses a data flow id string into a Dataflow object
  *
- * @param dataflow - The data flow string, e.g. "sourceTaskId.sourceTaskPortId -> targetTaskId.targetTaskPortId"
+ * @param dataflow - The data flow string, e.g. "sourceTaskId[sourceTaskPortId] ==> targetTaskId[targetTaskPortId]"
  */
 export class DataflowArrow extends Dataflow {
   constructor(dataflow: DataflowIdType) {
-    const [source, target] = dataflow.split(" -> ");
-    const [sourceTaskId, sourceTaskPortId] = source.split(".");
-    const [targetTaskId, targetTaskPortId] = target.split(".");
+    // Parse the dataflow string using regex
+    const pattern =
+      /^([a-zA-Z0-9-]+?)\[([a-zA-Z0-9-]+?)\] ==> ([a-zA-Z0-9-]+?)\[([a-zA-Z0-9-]+?)\]$/;
+    const match = dataflow.match(pattern);
+
+    if (!match) {
+      throw new Error(`Invalid dataflow format: ${dataflow}`);
+    }
+
+    const [, sourceTaskId, sourceTaskPortId, targetTaskId, targetTaskPortId] = match;
     super(sourceTaskId, sourceTaskPortId, targetTaskId, targetTaskPortId);
   }
 }

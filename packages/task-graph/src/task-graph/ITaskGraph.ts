@@ -6,22 +6,17 @@
 //    *******************************************************************************
 
 import { ITask } from "../task/ITask";
-import { JsonTaskItem } from "../task/TaskJSON";
-import { TaskGraphJson } from "../task/TaskJSON";
-import { TaskIdType, TaskOutput } from "../task/TaskTypes";
-import { DataflowIdType } from "./Dataflow";
-import { Dataflow } from "./Dataflow";
+import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
+import { TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
+import { Dataflow, DataflowIdType } from "./Dataflow";
 import type { TaskGraphRunConfig } from "./TaskGraph";
-import type {
-  TaskGraphEventListener,
-  TaskGraphEventParameters,
-  TaskGraphEvents,
-} from "./TaskGraphEvents";
+import type { TaskGraphEventListener, TaskGraphEvents } from "./TaskGraphEvents";
 import { CompoundMergeStrategy, NamedGraphResult, TaskGraphRunner } from "./TaskGraphRunner";
 
 export interface ITaskGraph {
   get runner(): TaskGraphRunner;
   run<ExecuteOutput extends TaskOutput>(
+    input?: TaskInput,
     config?: TaskGraphRunConfig
   ): Promise<NamedGraphResult<ExecuteOutput>>;
   runReactive<Output extends TaskOutput>(): Promise<NamedGraphResult<Output>>;
