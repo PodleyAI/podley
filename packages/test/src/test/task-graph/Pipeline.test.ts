@@ -5,9 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, expect, it, beforeEach, afterEach, spyOn } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { Task } from "@ellmers/task-graph";
-import { Type } from "@sinclair/typebox";
 import { pipe, Workflow } from "@ellmers/task-graph";
 import { InMemoryTaskOutputRepository } from "../../binding/InMemoryTaskOutputRepository";
 // Define input and output types for our tasks
@@ -31,18 +30,6 @@ abstract class MathTask extends Task<NumberInput, NumberOutput> {
       valueType: "number",
     },
   ] as const;
-
-  public static inputSchema() {
-    return Type.Object({
-      value: Type.Number(),
-    });
-  }
-
-  public static outputSchema() {
-    return Type.Object({
-      value: Type.Number(),
-    });
-  }
 }
 
 // Create a task that doubles a number
