@@ -90,7 +90,7 @@ export class TaskGraph implements ITaskGraph {
    */
   public run<ExecuteOutput extends TaskOutput>(
     input: TaskInput = {} as TaskInput,
-    config: TaskGraphRunConfig
+    config: TaskGraphRunConfig = {}
   ): Promise<NamedGraphResult<ExecuteOutput>> {
     return this.runner.runGraph<ExecuteOutput>(input, {
       outputCache: config?.outputCache || this.outputCache,
