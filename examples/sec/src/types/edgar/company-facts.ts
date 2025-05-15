@@ -1,6 +1,7 @@
 // data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json
 
-import { Frame, YYYYdMMdDD } from "./base-types";
+import { YYYYdMMdDD } from "../../util/parseDate";
+import { Frame } from "../BaseTypes";
 import { Form } from "./form-names";
 export interface CompanyFacts {
   cik: number;

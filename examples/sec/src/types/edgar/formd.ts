@@ -3,7 +3,8 @@
 // file://public/formDSubmission.xsd.xml
 // file://public/statesOfSolicitationCodes.xsd.xml
 
-import { YYYYdMMdDD, YYYY } from "./base-types";
+import { YYYYdMMdDD } from "../../util/parseDate";
+import { YYYY } from "../BaseTypes";
 import { StateOrCountryCode, StateOrCountryEnum, StateSolicitationCode } from "./state-country";
 
 export interface EdgarFormDType {

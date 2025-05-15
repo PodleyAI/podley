@@ -13,13 +13,13 @@ import { TaskFailedError } from "@ellmers/task-graph";
 import master20240101 from "./mock_data/master.20240101.idx" with { type: "text" };
 // @ts-expect-error ts(2307)
 import master20240102 from "./mock_data/master.20240102.idx" with { type: "text" };
-// import { FetchTaskOutput } from "@ellmers/tasks";
-// import { JobQueue } from "@ellmers/job-queue";
-// import { FetchTaskInput } from "@ellmers/tasks";
-// import { SecFetchJob } from "../job-queue/SecFetchJob";
-// import { SecJobQueueName } from "../config/Constants";
-// import { InMemoryQueueStorage } from "@ellmers/storage";
-// import { InMemoryRateLimiter } from "@ellmers/job-queue";
+import { FetchTaskOutput } from "@ellmers/tasks";
+import { JobQueue } from "@ellmers/job-queue";
+import { FetchTaskInput } from "@ellmers/tasks";
+import { SecFetchJob } from "../fetch/SecFetchJob";
+import { SecJobQueueName } from "../config/Constants";
+import { InMemoryQueueStorage } from "@ellmers/storage";
+import { InMemoryRateLimiter } from "@ellmers/job-queue";
 import { EnvToDI } from "../config/EnvToDI";
 
 EnvToDI();
@@ -68,14 +68,14 @@ describe("SEC FetchDailyIndexTask", () => {
 
   beforeAll(() => {
     (global as any).fetch = mockFetch;
-    // getTaskQueueRegistry().registerQueue(
-    //   new JobQueue<FetchTaskInput, FetchTaskOutput, SecFetchJob>(SecJobQueueName, SecFetchJob, {
-    //     storage: new InMemoryQueueStorage(SecJobQueueName),
-    //     limiter: new InMemoryRateLimiter(10, 1),
-    //     waitDurationInMilliseconds: 1,
-    //   })
-    // );
-    // getTaskQueueRegistry().startQueues();
+    getTaskQueueRegistry().registerQueue(
+      new JobQueue<FetchTaskInput, FetchTaskOutput, SecFetchJob>(SecJobQueueName, SecFetchJob, {
+        storage: new InMemoryQueueStorage(SecJobQueueName),
+        limiter: new InMemoryRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
+        waitDurationInMilliseconds: 1,
+      })
+    );
+    getTaskQueueRegistry().startQueues();
   });
 
   afterAll(() => {

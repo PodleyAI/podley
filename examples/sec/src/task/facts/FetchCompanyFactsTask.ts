@@ -14,19 +14,21 @@ import { secDate, TypeOptionalSecDate } from "../../util/parseDate";
 
 // NOTE: company facts are mutable, so we need to pass in a date to break the cache
 
-const inputSchema = () =>
+const FetchCompanyFactsTaskInput = () =>
   Type.Object({
     cik: TypeSecCik(),
     date: TypeOptionalSecDate(),
   });
 
-export type FetchCompanyFactsTaskInput = Static<ReturnType<typeof inputSchema>>;
+export type FetchCompanyFactsTaskInput = Static<ReturnType<typeof FetchCompanyFactsTaskInput>>;
 
-const outputSchema = () =>
+const FetchCompanyFactsTaskOutput = () =>
   Type.Object({
+    cik: TypeSecCik(),
     facts: Type.Array(FactoidSchema),
+    date: TypeOptionalSecDate(),
   });
-export type FetchCompanyFactsTaskOutput = Static<ReturnType<typeof outputSchema>>;
+export type FetchCompanyFactsTaskOutput = Static<ReturnType<typeof FetchCompanyFactsTaskOutput>>;
 
 class SecFetchCompanyFactsTask extends SecCachedFetchTask<FetchCompanyFactsTaskInput> {
   static readonly type = "SecFetchCompanyFactsTask";
@@ -34,7 +36,7 @@ class SecFetchCompanyFactsTask extends SecCachedFetchTask<FetchCompanyFactsTaskI
   static readonly immutable = false;
 
   public static inputSchema(): TObject {
-    return inputSchema();
+    return FetchCompanyFactsTaskInput();
   }
 
   inputToFileName(input: FetchCompanyFactsTaskInput): string {
@@ -58,22 +60,24 @@ export class FetchCompanyFactsTask extends Task<
   static readonly cacheable = true;
 
   public static inputSchema(): TObject {
-    return inputSchema();
+    return FetchCompanyFactsTaskInput();
   }
 
   public static outputSchema(): TObject {
-    return outputSchema();
+    return FetchCompanyFactsTaskOutput();
   }
 
+  private _secFetch?: SecFetchCompanyFactsTask;
   async execute(
     input: FetchCompanyFactsTaskInput,
     config: IExecuteConfig
   ): Promise<FetchCompanyFactsTaskOutput> {
     const cik = input.cik;
-    if (!cik) return { facts: [] };
+    if (!cik) return { facts: [], cik: 0 };
 
-    const secFetch = config.own(new SecFetchCompanyFactsTask(input));
-    const secData = await secFetch.run();
+    this._secFetch ??= config.own(new SecFetchCompanyFactsTask(input));
+    this._secFetch.setDefaults(input);
+    const secData = await this._secFetch.run();
     const companyFacts = secData.json! as unknown as CompanyFacts;
     const facts = companyFacts.facts;
     // linearize the facts
@@ -105,6 +109,6 @@ export class FetchCompanyFactsTask extends Task<
         });
       });
     });
-    return { facts: factsArray };
+    return { cik, facts: factsArray, date: input.date ? secDate(input.date) : undefined };
   }
 }

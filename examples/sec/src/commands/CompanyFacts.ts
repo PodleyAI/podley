@@ -22,7 +22,7 @@ export function CompanyFacts(program: Command) {
       const workflow = new Workflow();
       workflow.pipe(
         new FetchCompanyFactsTask({
-          date: secDate(options.date),
+          date: options.date ? secDate(options.date) : undefined,
           cik: parseInt(cik),
         }),
         new StoreCompanyFactsTask()

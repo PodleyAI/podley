@@ -122,7 +122,7 @@ export class FetchQuarterlyIndexTask extends Task<
 
             rowCount += 1;
             totalRecords = Math.max(totalRecords, rowCount);
-            const newProgress = Math.round((rowCount / totalRecords) * 100);
+            const newProgress = Math.round(((rowCount / totalRecords) * 100) / 5) * 5;
             if (newProgress > progress) {
               config.updateProgress(newProgress, `count: ${rowCount}`);
               progress = newProgress;

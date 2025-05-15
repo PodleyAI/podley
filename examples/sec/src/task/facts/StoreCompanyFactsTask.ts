@@ -9,11 +9,9 @@ import { IExecuteConfig, Task, TaskAbortedError, TaskError } from "@ellmers/task
 import { TObject, Type } from "@sinclair/typebox";
 import { Factoid } from "../../types/CompanyFacts";
 import { query_run } from "../../util/db";
-import { FetchCompanyFactsTask } from "./FetchCompanyFactsTask";
+import { FetchCompanyFactsTask, FetchCompanyFactsTaskOutput } from "./FetchCompanyFactsTask";
 
-export type StoreCompanyFactsTaskInput = {
-  facts: Factoid[];
-};
+export type StoreCompanyFactsTaskInput = FetchCompanyFactsTaskOutput;
 
 export type StoreCompanyFactsTaskOutput = {
   success: boolean;
@@ -75,9 +73,8 @@ export class StoreCompanyFactsTask extends Task<
           };
         });
       query_run(
-        `INSERT INTO company_facts(cik,grouping,name,filed_date,form,val_unit,frame,accession_number,start_date,end_date,val,fy,fp)
-          VALUES($cik,$grouping,$name,$filed_date,$form,$val_unit,$frame,$accession_number,$start_date,$end_date,$val,$fy,$fp)
-          ON CONFLICT DO NOTHING`,
+        `INSERT OR REPLACE INTO company_facts(cik,grouping,name,filed_date,form,val_unit,frame,accession_number,start_date,end_date,val,fy,fp)
+          VALUES($cik,$grouping,$name,$filed_date,$form,$val_unit,$frame,$accession_number,$start_date,$end_date,$val,$fy,$fp)`,
         batch
       );
       const newProgress = Math.round((i / batches) * 100);
@@ -86,6 +83,16 @@ export class StoreCompanyFactsTask extends Task<
         config.updateProgress(newProgress);
         progress = newProgress;
       }
+    }
+    if (input.date) {
+      query_run(
+        `INSERT OR REPLACE INTO processed_facts(cik,last_processed)
+        VALUES($cik,$last_processed)`,
+        {
+          $cik: input.cik,
+          $last_processed: input.date,
+        }
+      );
     }
     return { success: true };
   }
