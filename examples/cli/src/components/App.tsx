@@ -16,10 +16,13 @@ type AppProps = {
 
 const App: React.FC<AppProps> = ({ graph }) => {
   return (
-    <Box flexDirection="column">
-      <Text bold>Ellmers Task Graph Runner</Text>
-
-      <TaskGraphUI graph={graph} />
+    <Box flexDirection="column" height="100%" flexGrow={1}>
+      <Box height={1}>
+        <Text bold>Ellmers Task Graph Runner</Text>
+      </Box>
+      <Box flexDirection="column" flexGrow={1} overflow="hidden">
+        <TaskGraphUI graph={graph} />
+      </Box>
     </Box>
   );
 };

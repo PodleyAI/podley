@@ -63,7 +63,7 @@ export const symbols = {
   tick: "✔",
   info: "ℹ",
   warning: "⚠",
-  cross: "✖",
+  cross: "×",
   squareSmallFilled: "◼",
   pointer: "❯",
   arrowUp: "↑",

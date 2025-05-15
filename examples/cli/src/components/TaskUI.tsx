@@ -8,7 +8,7 @@
 import { ITask, ITaskGraph, TaskStatus, ArrayTask } from "@ellmers/task-graph";
 import type { FC } from "react";
 import { memo, useEffect, useState } from "react";
-import { Box, Text } from "retuink";
+import { Box, List, Text, useList, useListItem } from "retuink";
 import { createBar, Spinner, symbols } from "./Elements";
 import TaskGraphUI from "./TaskGraphUI";
 import { DownloadModelTask } from "@ellmers/ai";
@@ -104,7 +104,7 @@ export const TaskUI: FC<{
 
     const onError = (error: any) => {
       setStatus(TaskStatus.FAILED);
-      setError((prevErr) => (prevErr ? `${prevErr}\n${error?.message}` : error?.message));
+      setError((prevErr) => (prevErr ? `${error?.message}` : error?.message));
     };
 
     const onRegenerate = () => {
@@ -163,8 +163,16 @@ export const TaskUI: FC<{
         <Box flexShrink={0}>
           <Text>{task.config.name || (task.config.id as string)}</Text>
         </Box>
+        {status == TaskStatus.PROCESSING && progress == 0 && (
+          <Box marginLeft={2}>
+            <Text
+              color="gray"
+              wrap="truncate-middle"
+            >{`${symbols.arrowLeft} ${JSON.stringify(task.runInputData).slice(0, 200)}`}</Text>
+          </Box>
+        )}
 
-        {status === TaskStatus.PROCESSING && (
+        {status === TaskStatus.PROCESSING && progress > 0 && (
           <Box marginLeft={2} flexShrink={1}>
             <Text dimColor>[{status}]</Text>
             <Text dimColor>
@@ -200,14 +208,6 @@ export const TaskUI: FC<{
           <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(progress / 100, 10)} ${text ?? ""}`}</Text>
         </Box>
       )}
-      {status == TaskStatus.PROCESSING && (
-        <Box marginLeft={2}>
-          <Text
-            color="gray"
-            wrap="truncate-middle"
-          >{`${symbols.arrowRight} ${JSON.stringify(task.runInputData).slice(0, 200)}`}</Text>
-        </Box>
-      )}
       {arrayProgress && (
         <Box marginLeft={2}>
           <Text color="gray">{`${symbols.arrowDashedRight} Processing array tasks: ${arrayProgress.completed}/${arrayProgress.total} completed ${createBar(arrayProgress.completed / arrayProgress.total, 10)}`}</Text>
@@ -219,7 +219,7 @@ export const TaskUI: FC<{
         </Box>
       )}
       {dependantChildren && (
-        <Box flexDirection="column" marginLeft={0}>
+        <Box flexDirection="column">
           {dependantChildren.map((taskItem) => (
             <TaskUI key={`${taskItem.config.id}`} task={taskItem} graph={graph} dependant={true} />
           ))}

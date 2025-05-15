@@ -5,9 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import React, { useState, useEffect } from "react";
-import { Box } from "retuink";
 import { ITask, ITaskGraph } from "@ellmers/task-graph";
+import React, { useEffect, useState } from "react";
+import { Box } from "retuink";
 import { TaskUI } from "./TaskUI";
 
 type TaskGraphUIProps = {
@@ -39,10 +39,18 @@ const TaskGraphUI: React.FC<TaskGraphUIProps> = ({ graph }) => {
     };
   }, [graph]);
 
+  const height = tasks.length > 10 ? true : undefined;
+  const filteredTasks = height ? tasks.slice(tasks.length - 5, tasks.length) : tasks;
+
   return (
-    <Box flexDirection="column">
-      {tasks.map((taskItem) => (
-        <TaskUI key={`${taskItem.config.id}+${status}`} graph={graph} task={taskItem} />
+    <Box
+      flexDirection="column"
+      borderStyle={height ? "round" : undefined}
+      borderColor="gray"
+      key={status}
+    >
+      {filteredTasks.map((taskItem) => (
+        <TaskUI key={`${taskItem.config.id}`} graph={graph} task={taskItem} />
       ))}
     </Box>
   );

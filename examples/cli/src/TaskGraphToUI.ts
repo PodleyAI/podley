@@ -49,7 +49,9 @@ export async function runGraph(graph: ITaskGraph) {
 
 const runTaskGraphToInk = async (graph: ITaskGraph) => {
   // preserveScreen();
-  const { unmount } = render(React.createElement(App, { graph }));
+  const { unmount } = render(React.createElement(App, { graph }), {
+    throttle: 50,
+  });
   let results: any;
   try {
     await sleep(150);
