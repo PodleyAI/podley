@@ -47,6 +47,13 @@ describe("SingleTask", () => {
       const output = await task.runReactive({ key: "valueparams" });
       expect(output).toEqual({ key: "valueparams", reactiveOnly: true, all: false });
     });
+    it("should use inputSchema default values when no input is provided", async () => {
+      const task = new TestIOTask();
+      const output = await task.run();
+      // The inputSchema defines a default value of "default" for the key property
+      expect(task.runInputData).toEqual({ key: "default" });
+      expect(output).toEqual({ key: "full", reactiveOnly: false, all: true });
+    });
   });
   describe("SimpleProcessingTask", () => {
     let task: SimpleProcessingTask;
