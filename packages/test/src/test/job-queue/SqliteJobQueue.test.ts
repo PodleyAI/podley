@@ -16,7 +16,10 @@ const db = new Sqlite.Database(":memory:");
 describe("SqliteJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new SqliteQueueStorage(db, queueName),
-    (queueName: string, maxRequests: number, windowSizeInSeconds: number) =>
-      new SqliteRateLimiter(db, queueName, maxRequests, windowSizeInSeconds)
+    (queueName: string, maxExecutions: number, windowSizeInSeconds: number) =>
+      new SqliteRateLimiter(db, queueName, {
+        maxExecutions,
+        windowSizeInSeconds,
+      })
   );
 });

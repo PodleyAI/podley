@@ -5,9 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { ILimiter, RateLimiterWithBackoffOptions } from "@ellmers/job-queue";
 import type { Sqlite } from "@ellmers/sqlite";
 import { createServiceToken, toSQLiteTimestamp } from "@ellmers/util";
-import { ILimiter } from "@ellmers/job-queue";
 
 export const SQLITE_JOB_RATE_LIMITER = createServiceToken<ILimiter>("jobqueue.limiter.rate.sqlite");
 
@@ -18,20 +18,62 @@ export const SQLITE_JOB_RATE_LIMITER = createServiceToken<ILimiter>("jobqueue.li
 export class SqliteRateLimiter implements ILimiter {
   private readonly db: Sqlite.Database;
   private readonly queueName: string;
-  private readonly maxExecutions: number;
   private readonly windowSizeInMilliseconds: number;
+  private currentBackoffDelay: number;
 
   constructor(
     db: Sqlite.Database,
     queueName: string,
-    maxExecutions: number,
-    windowSizeInSeconds: number
+    {
+      maxExecutions,
+      windowSizeInSeconds,
+      initialBackoffDelay = 1_000,
+      backoffMultiplier = 2,
+      maxBackoffDelay = 600_000, // 10 minutes
+    }: RateLimiterWithBackoffOptions
   ) {
+    if (maxExecutions <= 0) {
+      throw new Error("maxExecutions must be greater than 0");
+    }
+    if (windowSizeInSeconds <= 0) {
+      throw new Error("windowSizeInSeconds must be greater than 0");
+    }
+    if (initialBackoffDelay <= 0) {
+      throw new Error("initialBackoffDelay must be greater than 0");
+    }
+    if (backoffMultiplier <= 1) {
+      throw new Error("backoffMultiplier must be greater than 1");
+    }
+    if (maxBackoffDelay <= initialBackoffDelay) {
+      throw new Error("maxBackoffDelay must be greater than initialBackoffDelay");
+    }
+
     this.db = db;
     this.queueName = queueName;
-    this.maxExecutions = maxExecutions;
     this.windowSizeInMilliseconds = windowSizeInSeconds * 1000;
+    this.maxExecutions = maxExecutions;
+    this.initialBackoffDelay = initialBackoffDelay;
+    this.backoffMultiplier = backoffMultiplier;
+    this.maxBackoffDelay = maxBackoffDelay;
+    this.currentBackoffDelay = initialBackoffDelay;
     this.ensureTableExists();
+  }
+
+  private readonly maxExecutions: number;
+  private readonly initialBackoffDelay: number;
+  private readonly backoffMultiplier: number;
+  private readonly maxBackoffDelay: number;
+
+  private addJitter(base: number): number {
+    // full jitter in [base, 2*base)
+    return base + Math.random() * base;
+  }
+
+  private increaseBackoff() {
+    this.currentBackoffDelay = Math.min(
+      this.currentBackoffDelay * this.backoffMultiplier,
+      this.maxBackoffDelay
+    );
   }
 
   public ensureTableExists() {
@@ -80,7 +122,8 @@ export class SqliteRateLimiter implements ILimiter {
       nextAvailableResult &&
       new Date(nextAvailableResult.next_available_at + "Z").getTime() > Date.now()
     ) {
-      return false; // Next available time is in the future, cannot proceed
+      this.increaseBackoff();
+      return false;
     }
 
     const thresholdTime = toSQLiteTimestamp(new Date(Date.now() - this.windowSizeInMilliseconds));
@@ -92,7 +135,15 @@ export class SqliteRateLimiter implements ILimiter {
       )
       .get(this.queueName, thresholdTime!) as { attempt_count: number };
 
-    return result.attempt_count < this.maxExecutions;
+    const canProceedNow = result.attempt_count < this.maxExecutions;
+
+    if (!canProceedNow) {
+      this.increaseBackoff();
+    } else {
+      this.currentBackoffDelay = this.initialBackoffDelay;
+    }
+
+    return canProceedNow;
   }
 
   /**
@@ -106,6 +157,20 @@ export class SqliteRateLimiter implements ILimiter {
           VALUES (?)`
       )
       .run(this.queueName);
+
+    // Check if we need to set a backoff time
+    const result = this.db
+      .prepare(
+        `SELECT COUNT(*) AS attempt_count
+          FROM job_queue_execution_tracking
+          WHERE queue_name = ?`
+      )
+      .get(this.queueName) as { attempt_count: number };
+
+    if (result.attempt_count >= this.maxExecutions) {
+      const backoffExpires = new Date(Date.now() + this.addJitter(this.currentBackoffDelay));
+      await this.setNextAvailableTime(backoffExpires);
+    }
   }
 
   async recordJobCompletion(): Promise<void> {

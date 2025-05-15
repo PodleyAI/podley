@@ -180,7 +180,7 @@ aiProviderRegistry.registerRunFn(
   HuggingFaceLocal_TextRewriterRun
 );
 const jobQueue = new JobQueue<TaskInput, TaskOutput>("test", Job, {
-  limiter: new InMemoryRateLimiter(4, 1),
+  limiter: new InMemoryRateLimiter({ maxExecutions: 4, windowSizeInSeconds: 1 }),
   storage: new InMemoryQueueStorage<TaskInput, TaskOutput>("test"),
 });
 getTaskQueueRegistry().registerQueue(jobQueue);

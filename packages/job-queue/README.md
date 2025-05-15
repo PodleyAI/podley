@@ -152,7 +152,7 @@ const limiter = new DelayLimiter(100); // Minimum 100ms between job starts
 import { Job, InMemoryJobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
 
 const queue = new InMemoryJobQueue<MyJobInput, MyJobOutput>("browser-queue", Job, {
-  limiter: new InMemoryRateLimiter(10, 1), // 10 jobs/second
+  limiter: new InMemoryRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
 });
 
 // equivalent example on how to use the storage class directly
@@ -162,7 +162,7 @@ import { InMemoryQueueStorage } from "@ellmers/storage";
 
 const queue = new JobQueue<MyJobInput, MyJobOutput>("browser-queue", Job, {
   storage: new InMemoryQueueStorage("browser-queue"),
-  limiter: new InMemoryRateLimiter(10, 1), // 10 jobs/second
+  limiter: new InMemoryRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
 });
 ```
 
@@ -172,7 +172,7 @@ const queue = new JobQueue<MyJobInput, MyJobOutput>("browser-queue", Job, {
 import { IndexedDbJobQueue, IndexedDbRateLimiter } from "@ellmers/job-queue";
 
 const queue = new IndexedDbJobQueue<MyJobInput, MyJobOutput>("browser-queue", Job, {
-  limiter: new InMemoryRateLimiter(10, 1), // 10 jobs/second
+  limiter: new InMemoryRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
 });
 ```
 
@@ -182,7 +182,7 @@ const queue = new IndexedDbJobQueue<MyJobInput, MyJobOutput>("browser-queue", Jo
 import { SqliteJobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
 
 const queue = new SqliteJobQueue(db, "sqlite-queue", Job, {
-  limiter: new SqliteRateLimiter(10, 1), // 10 jobs/second
+  limiter: new SqliteRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
 });
 ```
 
@@ -192,7 +192,7 @@ const queue = new SqliteJobQueue(db, "sqlite-queue", Job, {
 import { PostgresJobQueue, PostgresRateLimiter } from "@ellmers/job-queue";
 
 const queue = new PostgresJobQueue(postgresPool, "pg-queue", Job, {
-  limiter: new PostgresRateLimiter(10, 1), // 10 jobs/second
+  limiter: new PostgresRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
 });
 ```
 

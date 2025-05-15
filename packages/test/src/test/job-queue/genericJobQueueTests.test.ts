@@ -87,7 +87,7 @@ export function runGenericJobQueueTests(
     queueName: string,
     options?: JobQueueOptions<TInput, TOutput>
   ) => IQueueStorage<TInput, TOutput>,
-  limiter?: (queueName: string, maxRequests: number, windowSizeInSeconds: number) => ILimiter
+  limiter?: (queueName: string, maxExecutions: number, windowSizeInSeconds: number) => ILimiter
 ) {
   let jobQueue: JobQueue<TInput, TOutput, TestJob>;
   console.log("running generic job queue tests for", storage.name, limiter?.name);

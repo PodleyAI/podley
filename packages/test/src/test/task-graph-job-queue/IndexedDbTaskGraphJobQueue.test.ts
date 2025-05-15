@@ -17,7 +17,7 @@ describe("IndexedDbTaskGraphJobQueue", () => {
     const queueName = `idx_test_queue_${uuid4()}`;
     return new JobQueue(queueName, TestJob, {
       storage: new IndexedDbQueueStorage(queueName),
-      limiter: new InMemoryRateLimiter(1, 10),
+      limiter: new InMemoryRateLimiter({ maxExecutions: 1, windowSizeInSeconds: 10 }),
       waitDurationInMilliseconds: 1,
     });
   });

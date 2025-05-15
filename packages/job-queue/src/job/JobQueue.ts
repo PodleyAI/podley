@@ -717,6 +717,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
 
       this.stats.retriedJobs++;
       this.events.emit("job_retry", this.queueName, job.id, job.runAfter);
+      // console.log(`Rescheduled job ${job.id} to ${job.runAfter}`);
     } catch (err) {
       console.error("rescheduleJob", err);
     }

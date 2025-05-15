@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken } from "@ellmers/util";
-import { ILimiter } from "./ILimiter";
+import { ILimiter, RateLimiterWithBackoffOptions } from "./ILimiter";
 
 export const MEMORY_JOB_RATE_LIMITER = createServiceToken<ILimiter>("jobqueue.limiter.rate.memory");
 
@@ -16,62 +16,108 @@ export const MEMORY_JOB_RATE_LIMITER = createServiceToken<ILimiter>("jobqueue.li
  */
 export class InMemoryRateLimiter implements ILimiter {
   private requests: Date[] = [];
-  private nextAvailableTime: Date = new Date();
-  private readonly maxRequests: number;
-  private readonly windowSizeInMilliseconds: number;
+  private nextAvailableTime = new Date();
+  private currentBackoffDelay: number;
 
-  constructor(maxRequests: number, windowSizeInSeconds: number) {
-    this.maxRequests = maxRequests;
-    this.windowSizeInMilliseconds = windowSizeInSeconds * 1000;
+  private readonly maxExecutions: number;
+  private readonly windowSizeInMilliseconds: number;
+  private readonly initialBackoffDelay: number;
+  private readonly backoffMultiplier: number;
+  private readonly maxBackoffDelay: number;
+
+  constructor({
+    maxExecutions,
+    windowSizeInSeconds,
+    initialBackoffDelay = 1_000,
+    backoffMultiplier = 2,
+    maxBackoffDelay = 600_000, // 10 minutes
+  }: RateLimiterWithBackoffOptions) {
+    if (maxExecutions <= 0) {
+      throw new Error("maxExecutions must be greater than 0");
+    }
+    if (windowSizeInSeconds <= 0) {
+      throw new Error("windowSizeInSeconds must be greater than 0");
+    }
+    if (initialBackoffDelay <= 0) {
+      throw new Error("initialBackoffDelay must be greater than 0");
+    }
+    if (backoffMultiplier <= 1) {
+      throw new Error("backoffMultiplier must be greater than 1");
+    }
+    if (maxBackoffDelay <= initialBackoffDelay) {
+      throw new Error("maxBackoffDelay must be greater than initialBackoffDelay");
+    }
+
+    this.maxExecutions = maxExecutions;
+    this.windowSizeInMilliseconds = windowSizeInSeconds * 1_000;
+    this.initialBackoffDelay = initialBackoffDelay;
+    this.backoffMultiplier = backoffMultiplier;
+    this.maxBackoffDelay = maxBackoffDelay;
+    this.currentBackoffDelay = initialBackoffDelay;
   }
 
   private removeOldRequests() {
-    const now = new Date();
-    const threshold = new Date(now.getTime() - this.windowSizeInMilliseconds);
-    this.requests = this.requests.filter((date) => date > threshold);
-    // Also consider nextAvailableTime in the cleaning process
-    if (this.nextAvailableTime < now) {
-      this.nextAvailableTime = now; // Reset if past the delay
+    const now = Date.now();
+    const cutoff = now - this.windowSizeInMilliseconds;
+    this.requests = this.requests.filter((d) => d.getTime() > cutoff);
+
+    // if our scheduled time is in the past, reset it to now
+    if (this.nextAvailableTime.getTime() < now) {
+      this.nextAvailableTime = new Date(now);
     }
+  }
+
+  private increaseBackoff() {
+    this.currentBackoffDelay = Math.min(
+      this.currentBackoffDelay * this.backoffMultiplier,
+      this.maxBackoffDelay
+    );
+  }
+
+  private addJitter(base: number): number {
+    // full jitter in [base, 2*base)
+    return base + Math.random() * base;
   }
 
   async canProceed(): Promise<boolean> {
     this.removeOldRequests();
-    return (
-      this.requests.length < this.maxRequests && Date.now() >= this.nextAvailableTime.getTime()
-    );
+
+    const now = Date.now();
+    const okRequestCount = this.requests.length < this.maxExecutions;
+    const okTime = now >= this.nextAvailableTime.getTime();
+    const canProceedNow = okRequestCount && okTime;
+
+    if (!canProceedNow) {
+      this.increaseBackoff();
+    } else {
+      this.currentBackoffDelay = this.initialBackoffDelay;
+    }
+
+    return canProceedNow;
   }
 
   async recordJobStart(): Promise<void> {
     this.requests.push(new Date());
-    if (this.requests.length >= this.maxRequests) {
-      const earliestRequest = this.requests[0];
-      this.nextAvailableTime = new Date(earliestRequest.getTime() + this.windowSizeInMilliseconds);
+
+    if (this.requests.length >= this.maxExecutions) {
+      const earliest = this.requests[0].getTime();
+      const windowExpires = earliest + this.windowSizeInMilliseconds;
+      const backoffExpires = Date.now() + this.addJitter(this.currentBackoffDelay);
+      this.nextAvailableTime = new Date(Math.max(windowExpires, backoffExpires));
     }
   }
 
   async recordJobCompletion(): Promise<void> {
-    // No action needed for rate limiting on job completion
+    // no-op
   }
 
   async getNextAvailableTime(): Promise<Date> {
     this.removeOldRequests();
-    // Consider both the rate limit and externally set next available time
-    if (this.requests.length >= this.maxRequests) {
-      const oldestRequestTime = this.requests[0];
-      return new Date(
-        Math.max(
-          oldestRequestTime.getTime() + this.windowSizeInMilliseconds,
-          this.nextAvailableTime.getTime()
-        )
-      );
-    }
     return new Date(Math.max(Date.now(), this.nextAvailableTime.getTime()));
   }
 
   async setNextAvailableTime(date: Date): Promise<void> {
-    // Set the next available time if it's in the future
-    if (date > this.nextAvailableTime) {
+    if (date.getTime() > this.nextAvailableTime.getTime()) {
       this.nextAvailableTime = date;
     }
   }
@@ -79,5 +125,6 @@ export class InMemoryRateLimiter implements ILimiter {
   async clear(): Promise<void> {
     this.requests = [];
     this.nextAvailableTime = new Date();
+    this.currentBackoffDelay = this.initialBackoffDelay;
   }
 }

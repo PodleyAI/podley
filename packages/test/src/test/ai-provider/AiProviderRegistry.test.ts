@@ -47,11 +47,11 @@ describe("AiProviderRegistry", () => {
 
   beforeEach(() => {
     queue = new JobQueue(TEST_PROVIDER, AiJob<TaskInput, TaskOutput>, {
-      limiter: new InMemoryRateLimiter(4, 1),
+      limiter: new InMemoryRateLimiter({ maxExecutions: 4, windowSizeInSeconds: 1 }),
       storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(TEST_PROVIDER),
       waitDurationInMilliseconds: 1,
     });
-    setTaskQueueRegistry(new TaskQueueRegistry<TaskInput, TaskOutput>());
+    setTaskQueueRegistry(new TaskQueueRegistry());
     const taskQueueRegistry = getTaskQueueRegistry();
     taskQueueRegistry.registerQueue(queue);
     setAiProviderRegistry(new AiProviderRegistry()); // Ensure we're using the test registry

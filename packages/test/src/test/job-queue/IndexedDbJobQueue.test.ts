@@ -14,7 +14,7 @@ import { InMemoryRateLimiter } from "@ellmers/job-queue";
 describe("IndexedDbJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new IndexedDbQueueStorage(queueName),
-    (queueName: string, maxRequests: number, windowSizeInSeconds: number) =>
-      new InMemoryRateLimiter(maxRequests, windowSizeInSeconds)
+    (queueName: string, maxExecutions: number, windowSizeInSeconds: number) =>
+      new InMemoryRateLimiter({ maxExecutions, windowSizeInSeconds })
   );
 });

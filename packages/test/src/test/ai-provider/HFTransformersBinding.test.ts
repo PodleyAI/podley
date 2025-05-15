@@ -87,7 +87,7 @@ describe("HFTransformersBinding", () => {
         AiJob<TaskInput, TaskOutput>,
         {
           storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(db, "test"),
-          limiter: new SqliteRateLimiter(db, "test", 4, 1),
+          limiter: new SqliteRateLimiter(db, "test", { maxExecutions: 4, windowSizeInSeconds: 1 }),
           waitDurationInMilliseconds: 1,
         }
       );

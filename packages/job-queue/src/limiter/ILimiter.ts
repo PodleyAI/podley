@@ -20,3 +20,14 @@ export interface ILimiter {
   setNextAvailableTime(date: Date): Promise<void>;
   clear(): Promise<void>;
 }
+
+export interface RateLimiterOptions {
+  readonly maxExecutions: number;
+  readonly windowSizeInSeconds: number;
+}
+
+export interface RateLimiterWithBackoffOptions extends RateLimiterOptions {
+  readonly initialBackoffDelay?: number;
+  readonly backoffMultiplier?: number;
+  readonly maxBackoffDelay?: number;
+}

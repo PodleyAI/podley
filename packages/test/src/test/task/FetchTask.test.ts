@@ -82,7 +82,7 @@ describe("FetchTask", () => {
   test("respects rate limiting with InMemoryQueue", async () => {
     const queueName = "rate-limited-queue";
     // Create a rate limiter that allows 1 request per minute
-    const rateLimiter = new InMemoryRateLimiter(1, 1); // 1 request per 1 minute window
+    const rateLimiter = new InMemoryRateLimiter({ maxExecutions: 1, windowSizeInSeconds: 1 }); // 1 request per 1 minute window
 
     // Create a queue with the base Job type to match TaskQueueRegistry's expectations
     const queue = new JobQueue<FetchTaskInput, FetchTaskOutput>(queueName, FetchJob, {

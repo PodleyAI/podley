@@ -13,7 +13,7 @@ import { runGenericJobQueueTests } from "./genericJobQueueTests.test";
 describe("InMemoryJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new InMemoryQueueStorage(queueName),
-    (queueName: string, maxRequests: number, windowSizeInSeconds: number) =>
-      new InMemoryRateLimiter(maxRequests, windowSizeInSeconds)
+    (queueName: string, maxExecutions: number, windowSizeInSeconds: number) =>
+      new InMemoryRateLimiter({ maxExecutions, windowSizeInSeconds })
   );
 });

@@ -5,9 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ILimiter } from "@ellmers/job-queue";
-import { Pool } from "pg";
+import { ILimiter, RateLimiterWithBackoffOptions } from "@ellmers/job-queue";
 import { createServiceToken } from "@ellmers/util";
+import { Pool } from "pg";
 
 export const POSTGRES_JOB_RATE_LIMITER = createServiceToken<ILimiter>(
   "jobqueue.limiter.rate.postgres"
@@ -19,18 +19,61 @@ export const POSTGRES_JOB_RATE_LIMITER = createServiceToken<ILimiter>(
  */
 export class PostgresRateLimiter implements ILimiter {
   private readonly windowSizeInMilliseconds: number;
+  private currentBackoffDelay: number;
 
   constructor(
     protected readonly db: Pool,
     private readonly queueName: string,
-    private readonly maxExecutions: number,
-    windowSizeInSeconds: number
+    {
+      maxExecutions,
+      windowSizeInSeconds,
+      initialBackoffDelay = 1_000,
+      backoffMultiplier = 2,
+      maxBackoffDelay = 600_000, // 10 minutes
+    }: RateLimiterWithBackoffOptions
   ) {
+    if (maxExecutions <= 0) {
+      throw new Error("maxExecutions must be greater than 0");
+    }
+    if (windowSizeInSeconds <= 0) {
+      throw new Error("windowSizeInSeconds must be greater than 0");
+    }
+    if (initialBackoffDelay <= 0) {
+      throw new Error("initialBackoffDelay must be greater than 0");
+    }
+    if (backoffMultiplier <= 1) {
+      throw new Error("backoffMultiplier must be greater than 1");
+    }
+    if (maxBackoffDelay <= initialBackoffDelay) {
+      throw new Error("maxBackoffDelay must be greater than initialBackoffDelay");
+    }
+
     this.windowSizeInMilliseconds = windowSizeInSeconds * 1000;
+    this.maxExecutions = maxExecutions;
+    this.initialBackoffDelay = initialBackoffDelay;
+    this.backoffMultiplier = backoffMultiplier;
+    this.maxBackoffDelay = maxBackoffDelay;
+    this.currentBackoffDelay = initialBackoffDelay;
     this.dbPromise = this.ensureTableExists();
   }
 
+  private readonly maxExecutions: number;
+  private readonly initialBackoffDelay: number;
+  private readonly backoffMultiplier: number;
+  private readonly maxBackoffDelay: number;
   private dbPromise: Promise<void>;
+
+  private addJitter(base: number): number {
+    // full jitter in [base, 2*base)
+    return base + Math.random() * base;
+  }
+
+  private increaseBackoff() {
+    this.currentBackoffDelay = Math.min(
+      this.currentBackoffDelay * this.backoffMultiplier,
+      this.maxBackoffDelay
+    );
+  }
 
   public async ensureTableExists() {
     await this.db.query(`
@@ -78,10 +121,11 @@ export class PostgresRateLimiter implements ILimiter {
     const nextAvailableTime = nextAvailableResult.rows[0]?.next_available_at;
 
     if (nextAvailableTime && new Date(nextAvailableTime).getTime() > Date.now()) {
+      this.increaseBackoff();
       return false;
     }
 
-    // Retrieve the largest next_available_at and count of attempts in the window
+    // Retrieve the count of attempts in the window
     const result = await this.db.query(
       `
       SELECT 
@@ -95,8 +139,15 @@ export class PostgresRateLimiter implements ILimiter {
     );
 
     const attemptCount = result.rows[0]?.attempt_count;
+    const canProceedNow = attemptCount < this.maxExecutions;
 
-    return attemptCount < this.maxExecutions;
+    if (!canProceedNow) {
+      this.increaseBackoff();
+    } else {
+      this.currentBackoffDelay = this.initialBackoffDelay;
+    }
+
+    return canProceedNow;
   }
 
   /**
@@ -112,6 +163,21 @@ export class PostgresRateLimiter implements ILimiter {
     `,
       [this.queueName]
     );
+
+    // Check if we need to set a backoff time
+    const result = await this.db.query(
+      `
+      SELECT COUNT(*) AS attempt_count
+      FROM job_queue_execution_tracking
+      WHERE queue_name = $1
+    `,
+      [this.queueName]
+    );
+
+    if (result.rows[0].attempt_count >= this.maxExecutions) {
+      const backoffExpires = new Date(Date.now() + this.addJitter(this.currentBackoffDelay));
+      await this.setNextAvailableTime(backoffExpires);
+    }
   }
 
   async recordJobCompletion(): Promise<void> {
