@@ -16,6 +16,7 @@ import { SetupDB } from "./SetupDB";
 import { UpdateAllCompanyFacts } from "./UpdateAllCompanyFacts";
 import { SecJobQueue } from "../fetch/SecJobQueue";
 import { getTaskQueueRegistry } from "@ellmers/task-graph";
+import { UpdateAllSubmissions } from "./UpdateAllSubmissions";
 
 export const AddCommands = (program: Command) => {
   EnvToDI();
@@ -28,4 +29,5 @@ export const AddCommands = (program: Command) => {
   CompanySubmissions(program);
   SetupDB(program);
   UpdateAllCompanyFacts(program);
+  UpdateAllSubmissions(program);
 };

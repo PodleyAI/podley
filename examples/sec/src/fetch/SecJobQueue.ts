@@ -5,7 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { InMemoryRateLimiter, JobQueue } from "@ellmers/job-queue";
+import {
+  CompositeLimiter,
+  EvenlySpacedRateLimiter,
+  InMemoryRateLimiter,
+  JobQueue,
+} from "@ellmers/job-queue";
 import { InMemoryQueueStorage } from "@ellmers/storage";
 import { FetchTaskInput, FetchTaskOutput } from "@ellmers/tasks";
 import { SecJobQueueName } from "../config/Constants";
@@ -16,7 +21,10 @@ export const SecJobQueue = new JobQueue<FetchTaskInput, FetchTaskOutput, SecFetc
   SecFetchJob,
   {
     storage: new InMemoryQueueStorage(SecJobQueueName),
-    limiter: new InMemoryRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
+    limiter: new CompositeLimiter([
+      new InMemoryRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
+      new EvenlySpacedRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
+    ]),
     waitDurationInMilliseconds: 1,
   }
 );

@@ -22,7 +22,7 @@ export function CompanySubmissions(program: Command) {
       const wf = new Workflow();
       wf.pipe(
         new FetchSubmissionsTask({
-          date: secDate(options.date),
+          date: options.date ? secDate(options.date) : undefined,
           cik: parseInt(cik),
         }),
         new StoreSubmissionsTask()
