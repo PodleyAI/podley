@@ -14,11 +14,6 @@ export const MISCELLANEOUS_FILINGS = [
   ],
   ["8-K/A", "Amendment to a previously filed 8-K."],
   [
-    "N-14AE",
-    "Initial statement with automatic effectiveness for investment companies business combination.",
-  ],
-  ["N-14AE/A", "Pre-effective amendment to a previously filed N-14AE."],
-  [
     "N-30B-2",
     "Periodic and interim reports mailed to shareholders. Filed by registered investment companies.",
   ],
@@ -53,6 +48,12 @@ export const MISCELLANEOUS_FILINGS = [
   ["BULK/A", "Amendment to a previously filed BULK."],
   ["SD", "Specialized disclosure report pursuant to Section 13(r) of the Exchange Act."],
   ["SD/A", "Amendment to a previously filed SD."],
+  ["TH", "Notification of reliance on temporary hardship exemption."],
+  [
+    "12G3-2B",
+    "Submission under Exchange Act Rule 12g3-2(b) to maintain exemption from Section 12(g) registration for foreign private issuers.",
+  ],
+  ["REVOKED", "Commission order revoking Exchange Act registration [Section 12(j)]."],
 ] as const;
 export const MISCELLANEOUS_FORM_NAMES = MISCELLANEOUS_FILINGS.map(([name]) => name);
 export type MiscellaneousFilingsForm = (typeof MISCELLANEOUS_FORM_NAMES)[number];

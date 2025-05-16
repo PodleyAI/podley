@@ -17,6 +17,12 @@ export const ASSET_BACKED_EXHIBIT = [
     "Periodic distribution reports by asset-backed issuers pursuant to Rule 13a-17 or 15d-17.",
   ],
   ["10-D/A", "Amendment to a previously filed 10-D."],
+  ["SF-3", "Registration statement for asset-backed securities under the Securities Act of 1933."],
+  ["SF-3/A", "Amendment to a previously filed SF-3."],
+  ["SF-3MEP", "Post-effective amendment to a previously filed SF-3."],
+  ["SF-1", "Registration statement for asset-backed securities under the Securities Act of 1933."],
+  ["SF-1/A", "Amendment to a previously filed SF-1."],
+  ["SF-1MEP", "Post-effective amendment to a previously filed SF-1."],
 ] as const;
 export const ASSET_BACKED_EXHIBIT_FORM_NAMES = ASSET_BACKED_EXHIBIT.map(([name]) => name);
 export type AssetBackedExhibitForm = (typeof ASSET_BACKED_EXHIBIT_FORM_NAMES)[number];

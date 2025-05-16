@@ -68,6 +68,38 @@ export const INVESTMENT_COMPANY_ACT = [
   ["N-8F/A", "Amendment to a previously filed N-8F."],
   ["N-18F1", "Initial notification of election pursuant to Rule 18f-1 filed on Form N-18F-1."],
   ["N-18F1/A", "Amendment to a previously filed N-18F1."],
+  ["N-23-3", "Notification of repurchase offer pursuant to Rule 23c-3 (17 CFR 270.23c-3)."],
+  [
+    "N-23C-1",
+    "Statement by Registered Closed-End Investment Company with respect to purchases of its own securities pursuant to Rule N-23C-1 during the last calendar month.",
+  ],
+  ["N-23C-1/A", "Amendment to a previously filed N-23C-1."],
+  ["N-23C-2", "Notice by registered closed-end investment companies…pursuant to Rule 23c-2."],
+  ["N-23C-2/A", "Amendment to a previously filed N-23C-2."],
+  [
+    "N-23C-3",
+    "Notification of repurchase offer pursuant to Rule 23c-3 of the Investment Company Act of 1940.",
+  ],
+  ["N-23C-3/A", "Amendment to a previously filed N-23C-3."],
+  [
+    "N-23C3A",
+    "Notification of repurchase offer pursuant to Rule 23c-3 of the Investment Company Act of 1940.",
+  ],
+  [
+    "N-23C3B",
+    "Notification of repurchase offer pursuant to Rule 23c-3 of the Investment Company Act of 1940.",
+  ],
+  ["N-27D-1", "Accounting of segregated trust account."],
+  [
+    "N-27E-1",
+    "Notice to periodic payment plan certificate holders of 18-month surrender rights with respect to periodic payment plan certificates.",
+  ],
+  [
+    "N-27F-1",
+    "Notice to periodic payment plan certificate holders of 45-day surrender rights with respect to periodic payment plan certificates.",
+  ],
+  ["N-27I-1", "Notice of right of cancellation and refund."],
+  ["N-27I-2", "Notice of withdrawal right."],
 ] as const;
 export const INVESTMENT_COMPANY_ACT_FORM_NAMES = INVESTMENT_COMPANY_ACT.map(([name]) => name);
 export type InvestmentCompanyActForm = (typeof INVESTMENT_COMPANY_ACT_FORM_NAMES)[number];

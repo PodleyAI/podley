@@ -33,6 +33,7 @@ import { REGISTERED_INVESTMENT_COMPANIES } from "./forms/REGISTERED_INVESTMENT_C
 import { MISCELLANEOUS_INVESTMENT } from "./forms/MISCELLANEOUS_INVESTMENT";
 import { MISCELLANEOUS_FILINGS } from "./forms/MISCELLANEOUS_FILINGS";
 import { CORRESPONDENCE_SUBMISSION_TYPES } from "./forms/CORRESPONDENCE_SUBMISSION_TYPES";
+import { MUNICIPAL_ADVISOR } from "./forms/MUNICIPAL_ADVISOR";
 
 export const FORMS = [
   ["Registration Statements", REGISTRATION_STATEMENTS],
@@ -67,6 +68,7 @@ export const FORMS = [
   ["Periodic Reports for Registered Investment Companies", REGISTERED_INVESTMENT_COMPANIES],
   ["Miscellaneous Investment Company Reports", MISCELLANEOUS_INVESTMENT],
   ["Correspondence Submission Types", CORRESPONDENCE_SUBMISSION_TYPES],
+  ["Municipal Advisor Filings", MUNICIPAL_ADVISOR],
 ] as const;
 
 export const ALL_FORMS = FORMS.flatMap(([_, forms]) => forms.map(([name]) => name));

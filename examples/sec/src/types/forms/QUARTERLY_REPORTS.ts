@@ -14,6 +14,10 @@ export const QUARTERLY_REPORTS = [
   ],
   ["10-Q/A", "Amendment to a previously filed 10-Q."],
   [
+    "NTN 10Q",
+    "Notice under Rule 12b-25 of inability to timely file all or part of a Form 10-Q or 10-QSB.",
+  ],
+  [
     "10QSB",
     "A quarterly report which provides a continuing view of a company's financial position during the year. The 10QSB form is filed by small businesses.",
   ],

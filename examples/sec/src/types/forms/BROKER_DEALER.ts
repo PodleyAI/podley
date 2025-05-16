@@ -16,6 +16,12 @@ export const BROKER_DEALER = [
   ["X-17A-5/A", "Amendment to a previously filed X-17A-5."],
   ["FOCUSN", "Normalized FOCUS report filed by broker-dealers."],
   ["FOCUSN/A", "Amendment to a previously filed FOCUSN."],
+  ["7-M", "Irrevocable Appointment by individual non-resident broker or dealer."],
+  [
+    "8-M",
+    "Irrevocable Appointment of Agent for Service of Process by corporate non-resident broker or dealer.",
+  ],
+  ["9-M", "Irrevocable Appointment by partnership non-resident broker or dealer."],
 ] as const;
 export const BROKER_DEALER_FORM_NAMES = BROKER_DEALER.map(([name]) => name);
 export type BrokerDealerForm = (typeof BROKER_DEALER_FORM_NAMES)[number];

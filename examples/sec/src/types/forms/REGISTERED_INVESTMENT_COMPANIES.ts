@@ -11,6 +11,10 @@ export const REGISTERED_INVESTMENT_COMPANIES = [
   ["N-CEN", "Annual Report for Registered Investment Companies"],
   ["N-CEN/A", "Amendment to a previously filed N-CEN."],
   ["NT N-CEN", "Notice under Exchange Act Rule 12b-25 of inability to timely file Form N-CEN."],
+  ["NT N-CEN/A", "Amendment to a previously filed NT N-CEN."],
+  ["NT-NCEN", "Notice under Exchange Act Rule 12b-25 of inability to timely file Form N-CEN."],
+  ["NT-NCEN/A", "Amendment to a previously filed NT-NCEN."],
+  ["NTFNCEN", "Notice under Exchange Act Rule 12b-25 of inability to timely file Form N-CEN."],
   [
     "N-CSR",
     "Certified annual shareholder report of registered management investment companies filed on Form N-CSR.",
@@ -33,16 +37,33 @@ export const REGISTERED_INVESTMENT_COMPANIES = [
   ["N-MFP2/A", "Amendment to a previously filed N-MFP2."],
   ["NT N-MFP2", "Notice under Exchange Act Rule 12b-25 of inability to timely file Form N-MFP2."],
   [
+    "N-VP",
+    "Notice of Variable Contracts filed pursuant to Rule 12b-25 of the Investment Company Act.",
+  ],
+  ["N-VP/A", "Amendment to a previously filed N-VP."],
+  [
     "N-VPFS",
     "Financial statements for certain variable contracts filed pursuant to the Investment Company Act.",
   ],
   ["N-VPFS/A", "Amendment to a previously filed N-VPFS."],
   ["NPORT-EX", "Portfolio Holdings Exhibit to Form N-PORT."],
   ["NPORT-EX/A", "Amendment to a previously filed NPORT-EX."],
+  [
+    "NT NPORT-EX",
+    "Notice under Exchange Act Rule 12b-25 of inability to timely file the Portfolio Holdings Exhibit to Form N-PORT.",
+  ],
   ["NPORT-NP", "Monthly Portfolio Investments Report on Form N-PORT (Non-Public)."],
   ["NPORT-NP/A", "Amendment to a previously filed NPORT-NP."],
+  [
+    "NT NPORT-NP",
+    "Notice under Exchange Act Rule 12b-25 of inability to timely file the Monthly Portfolio Investments Report on Form N-PORT (Non-Public).",
+  ],
   ["NPORT-P", "Monthly Portfolio Investments Report on Form N-PORT (Public)."],
   ["NPORT-P/A", "Amendment to a previously filed NPORT-P."],
+  [
+    "NT NPORT-P",
+    "Notice under Exchange Act Rule 12b-25 of inability to timely file the Portfolio Holdings Exhibit to Form N-PORT.",
+  ],
   [
     "N-PX",
     "Annual Report of Proxy Voting Record of Registered Management Investment Companies filed on Form N-PX.",

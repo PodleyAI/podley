@@ -22,6 +22,7 @@ export const ANNUAL_REPORTS = [
   ["10-K405/A", "Amendment to a previously filed 10-K405."],
   ["NT 10-K", "Notification that form 10-K will be submitted late."],
   ["NT 10-K/A", "Amendment to a previously filed NT 10-K."],
+  ["NTN 10K", "Notice under Rule 12b-25 of inability to timely file all or part of a Form 10-K."],
   [
     "10KSB",
     "An annual report which provides a comprehensive overview of the company for the past year. The 10KSB is filed by small businesses.",
@@ -90,6 +91,8 @@ export const ANNUAL_REPORTS = [
     "Annual and transition report of foreign private issuers filed pursuant to sections 13 or 15(d) of the Securities Exchange Act.",
   ],
   ["20-F/A", "Amendment to a previously filed 20-F."],
+  ["NT 20-F", "Notification that form 20-F will be submitted late."],
+  ["NT 20-F/A", "Amendment to a previously filed NT 20-F."],
   ["ARS", "Annual report to security holders."],
 ] as const;
 

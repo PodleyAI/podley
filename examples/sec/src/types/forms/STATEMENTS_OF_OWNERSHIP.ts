@@ -6,6 +6,7 @@
 //    *******************************************************************************
 
 /* OFFICIAL descriptions at https://www.sec.gov/info/edgar/forms/edgform.pdf */
+/* More from LLMs and https://velocitylaw.com/Library/PublicOfferingsOrExchangesAndBlueSky/SEC%20Form%20Types%20-%20S%20Forms%2C%20and%20all%20others.pdf */
 
 export const STATEMENTS_OF_OWNERSHIP = [
   [
@@ -23,10 +24,15 @@ export const STATEMENTS_OF_OWNERSHIP = [
   ["SC 13E1/A", "Amendment to a previously filed SC 13E1."],
   ["SC 13E3", "Going private transaction by certain issuers."],
   ["SC 13E3/A", "Amendment to a previously filed SC 13E3."],
-  ["SC 13E4", "Issuer tender offer statement."],
+  ["SC 13E4", "Issuer tender offer statement. Also known as a 'self tender'. Replaced by SC TO-I."],
   ["SC 13E4/A", "Amendment to a previously filed SC 13E4."],
   ["SC 13E4F", "Issuer tender offer statement filed pursuant to Rule 13(e)(4) by foreign issuers."],
-  ["SC 13E4F/A", "Amendment to a previously filed SC 13E4F."],
+  ["SC 13E4F/A", "Amendment to a previously filed SC 13E-4F."],
+  [
+    "SC 13E-4F",
+    "Issuer tender offer statement filed pursuant to Rule 13(e)(4) by foreign issuers.",
+  ],
+  ["SC 13E-4F/A", "Amendment to a previously filed SC 13E-4F."],
   ["SC 14D1", "Tender offer statement."],
   ["SC 14D1/A", "Amendment to a previously filed SC 14D1."],
   [

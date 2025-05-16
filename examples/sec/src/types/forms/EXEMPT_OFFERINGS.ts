@@ -9,7 +9,8 @@
 
 export const EXEMPT_OFFERINGS = [
   ["1-A", "Reg-A Offering Statement"],
-  ["1-A/A", "Pre-qualification amendment for offering statement"],
+  ["1-A/A", "Amendment to a previously filed 1-A"],
+  ["1/A", "Amendment to a previously filed 1-A (misspelled 1-A/A)"],
   ["1-A POS", "Post-qualification amendment to offering statement"],
   ["1-A-W", "Offering Statement Withdrawal"],
   ["1-A-W/A", "Offering Statement Withdrawal Amendment"],
