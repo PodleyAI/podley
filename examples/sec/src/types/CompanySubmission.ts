@@ -59,8 +59,8 @@ export const TypeFilings = () =>
     acceptanceDateTime: Type.Array(Type.String()),
     act: Type.Array(Type.String()),
     form: Type.Array(TypeSECForm()),
-    filmNumber: Type.Array(Type.String({ maxLength: 20 })),
-    fileNumber: Type.Array(Type.String({ maxLength: 20 })),
+    filmNumber: Type.Array(Type.String()), // can be list of film numbers separated by commas
+    fileNumber: Type.Array(Type.String()), // can be list of file numbers separated by commas
     items: Type.Array(Type.String()),
     size: Type.Array(Type.Number()),
     isXBRL: Type.Array(TypeSECBoolean()),
@@ -81,8 +81,8 @@ export const CompanySubmissionSchema = () =>
     insiderTransactionForOwnerExists: TypeSECBoolean(),
     insiderTransactionForIssuerExists: TypeSECBoolean(),
     name: Type.String(),
-    tickers: Type.Array(Type.String()),
-    exchanges: Type.Array(Type.String()),
+    tickers: TypeNullable(Type.Array(TypeNullable(Type.String()))),
+    exchanges: TypeNullable(Type.Array(TypeNullable(Type.String()))),
     ein: TypeNullable(Type.String()),
     description: Type.String(),
     website: Type.String(),
@@ -95,7 +95,7 @@ export const CompanySubmissionSchema = () =>
       mailing: TypeAddress(),
       business: TypeAddress(),
     }),
-    phone: Type.String(),
+    phone: TypeNullable(Type.String()),
     flags: Type.String(),
     formerNames: Type.Array(
       Type.Object({
