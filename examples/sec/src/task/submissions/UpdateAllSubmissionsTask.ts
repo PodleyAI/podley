@@ -11,6 +11,7 @@ import { query_all, query_run } from "../../util/db";
 import { parseDate } from "../../util/parseDate";
 import { FetchSubmissionsTask } from "./FetchSubmissionsTask";
 import { StoreSubmissionsTask } from "./StoreSubmissionsTask";
+import { processUpdateProcessing } from "../../util/commonStoreSec";
 
 export type UpdateAllSubmissionsTaskInput = {};
 
@@ -49,19 +50,7 @@ export class UpdateAllSubmissionsTask extends Task<
     if (needsUpating?.length) {
       const wf = config.own(pipe([new FetchSubmissionsTask(), new StoreSubmissionsTask()]));
       for (const result of needsUpating) {
-        try {
-          await wf.run({ cik: result.cik, date: result.last_update });
-        } catch (e) {
-          const { year, month, day } = parseDate(result.last_update);
-          query_run(
-            `INSERT OR REPLACE INTO processed_submissions(cik,last_processed)
-            VALUES($cik,$last_processed)`,
-            {
-              $cik: result.cik,
-              $last_processed: `${year + 1}-${month}-${day}`,
-            }
-          );
-        }
+        runWorkflow(wf, { cik: parseInt(result.cik), date: result.last_update });
       }
     }
 
@@ -83,13 +72,15 @@ export class UpdateAllSubmissionsTask extends Task<
       for (let i = 0; i < workflowsNumber; i++) {
         workflows.push(config.own(pipe([new FetchSubmissionsTask(), new StoreSubmissionsTask()])));
       }
+      console.log(`Processing ${needsInitialProcessing.length} submissions`);
+      console.log(workflows.map((w) => w.graph.getTasks().map((t) => t.config.id)));
       for (let i = 0; i < needsInitialProcessing.length; i += BATCH_SIZE) {
         const batch = needsInitialProcessing.slice(i, i + BATCH_SIZE);
         const promises = [];
         for (let j = 0; j < batch.length; j++) {
           promises.push(
             runWorkflow(workflows[j], {
-              cik: batch[j].cik,
+              cik: parseInt(batch[j].cik),
               date: batch[j].last_update,
             })
           );
@@ -101,19 +92,13 @@ export class UpdateAllSubmissionsTask extends Task<
   }
 }
 
-async function runWorkflow(wf: IWorkflow<any, any>, input: { cik: string; date: string }) {
+async function runWorkflow(wf: IWorkflow<any, any>, input: { cik: number; date: string }) {
   try {
     const result = await wf.run(input);
+    processUpdateProcessing(input.cik, true);
     return result;
   } catch (e) {
     const { year, month, day } = parseDate(input.date);
-    query_run(
-      `INSERT OR REPLACE INTO processed_submissions(cik,last_processed)
-        VALUES($cik,$last_processed)`,
-      {
-        $cik: input.cik,
-        $last_processed: `${year + 1}-${month}-${day}`,
-      }
-    );
+    processUpdateProcessing(input.cik, false);
   }
 }

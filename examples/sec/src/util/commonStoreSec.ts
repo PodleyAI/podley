@@ -91,13 +91,14 @@ export function processSubmissionFilings(cik: number, filing: Filing) {
   );
 }
 
-export function processUpdateProcessing(cik: number) {
+export function processUpdateProcessing(cik: number, success: boolean) {
   query_run(
-    `INSERT OR REPLACE INTO processed_submissions(cik,last_processed)
-      VALUES($cik,$last_processed)`,
+    `INSERT OR REPLACE INTO processed_submissions(cik,last_processed,success)
+      VALUES($cik,$last_processed,$success)`,
     {
       $cik: cik,
       $last_processed: todayYYYYdMMdDD(),
+      $success: success,
     }
   );
 }
