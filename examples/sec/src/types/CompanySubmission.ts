@@ -7,11 +7,13 @@
 
 import { Static, Type, FormatRegistry } from "@sinclair/typebox";
 import { ArrayToObject, TypeNullable } from "@ellmers/util";
+import { ALL_FORMS } from "./FormNames";
 // import { ALL_FORMS } from "./FormNames";
 
 // const TypeSECForm = () => Type.Union(ALL_FORMS.map((f) => Type.Literal(f)));
 
 FormatRegistry.Set("sec-form", (value: string) => {
+  if (!ALL_FORMS.includes(value as any)) console.warn(`Unknown SEC form: ${value}`);
   return true;
   // if (ALL_FORMS.includes(value as any)) {
   //   return true;
@@ -57,8 +59,8 @@ export const TypeFilings = () =>
     acceptanceDateTime: Type.Array(Type.String()),
     act: Type.Array(Type.String()),
     form: Type.Array(TypeSECForm()),
-    filmNumber: Type.Array(Type.String({ maxLength: 10 })),
-    fileNumber: Type.Array(Type.String({ maxLength: 10 })),
+    filmNumber: Type.Array(Type.String({ maxLength: 20 })),
+    fileNumber: Type.Array(Type.String({ maxLength: 20 })),
     items: Type.Array(Type.String()),
     size: Type.Array(Type.Number()),
     isXBRL: Type.Array(TypeSECBoolean()),
