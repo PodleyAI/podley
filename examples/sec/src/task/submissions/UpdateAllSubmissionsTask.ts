@@ -98,7 +98,6 @@ async function runWorkflow(wf: IWorkflow<any, any>, input: { cik: number; date: 
     processUpdateProcessing(input.cik, true);
     return result;
   } catch (e) {
-    const { year, month, day } = parseDate(input.date);
     processUpdateProcessing(input.cik, false);
   }
 }

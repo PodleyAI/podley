@@ -45,7 +45,7 @@ const FetchSubmissionsTaskOutputSchema = () =>
 export type FetchSubmissionsOutput = Static<ReturnType<typeof FetchSubmissionsTaskOutputSchema>>;
 
 export class FetchSubmissionsTask extends Task<FetchSubmissionsTaskInput, FetchSubmissionsOutput> {
-  static readonly type = "FetchSubmissions";
+  static readonly type = "FetchSubmissionsTask";
   static readonly category = "SEC";
   static readonly cacheable = true;
 

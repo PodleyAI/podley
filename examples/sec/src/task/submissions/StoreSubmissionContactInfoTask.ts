@@ -48,10 +48,12 @@ export class StoreSubmissionContactInfoTask extends Task<
     if (!submission) throw new TaskError("No submission data");
     const cik = submission.cik;
 
-    insertPhone(submission.phone, "entity:contact", cik);
+    if (submission.phone) {
+      insertPhone(submission.phone, "entity:contact", cik);
+    }
 
     for (const [kind, address] of Object.entries(submission.addresses)) {
-      insertAddress(address, "entity:" + kind, cik);
+      if (address) insertAddress(address, "entity:" + kind, cik);
     }
 
     return { success: true };

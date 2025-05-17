@@ -52,6 +52,7 @@ export class StoreSubmissionTickersTask extends Task<
       for (const i in tickers) {
         const ticker = tickers[i];
         const exchange = exchanges[i];
+        if (!ticker || !exchange) continue;
         processSubmissionTickers(cik, ticker, exchange);
       }
     }

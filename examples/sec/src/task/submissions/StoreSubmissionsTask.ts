@@ -69,7 +69,7 @@ export class StoreSubmissionsTask extends Task<
         new StoreSubmissionFilingsTask(input),
       ]),
       function updateProcessing() {
-        processUpdateProcessing(cik);
+        processUpdateProcessing(cik, true);
         return { success: true };
       }
     );
