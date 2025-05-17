@@ -5,7 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_QUALIF extends Form {
+  static readonly name = "Qualification of Offering Statement";
+  static readonly description = "Qualification of an offering statement and ready to sell.";
+  static readonly forms = ["QUALIF"] as const;
+}

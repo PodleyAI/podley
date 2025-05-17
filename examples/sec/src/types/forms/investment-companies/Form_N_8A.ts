@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_N_8A extends Form {
+  static readonly name = "Registration of Investment Companies";
+  static readonly description =
+    "Registration statement for investment companies pursuant to Section 8(a) of the Investment Company Act of 1940";
+  static readonly forms = ["N-8A", "N-8A/A"] as const;
+}

@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_35_APP extends Form {
+  static readonly name = "Proposed Transaction Statement";
+  static readonly description =
+    "Statement concerning proposed transaction for which no form of application is prescribed filed pursuant to Rule 20(e) of the Public Utility Holding Company Act.";
+  static readonly forms = ["35-APP", "35-APP/A"] as const;
+}

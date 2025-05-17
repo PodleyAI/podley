@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_U_13E_1 extends Form {
+  static readonly name = "Service Company Report";
+  static readonly description =
+    "Report by affiliate service companies or independent service companies.";
+  static readonly forms = ["U-13E-1", "U-13E-1/A"] as const;
+}

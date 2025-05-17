@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_SP_15D2 extends Form {
+  static readonly name = "Form SP 15D2";
+  static readonly description =
+    "Special financial report pursuant to Rule 15d-2 of the Securities Exchange Act.";
+  static readonly forms = ["SP 15D2", "SP 15D2/A"] as const;
+}

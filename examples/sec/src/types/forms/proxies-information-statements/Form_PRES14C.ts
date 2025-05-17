@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_PRES14C extends Form {
+  static readonly name = "Preliminary Information Statement for Special Meeting";
+  static readonly description =
+    "A preliminary information statement relating to a special meeting.";
+  static readonly forms = ["PRES14C"] as const;
+}

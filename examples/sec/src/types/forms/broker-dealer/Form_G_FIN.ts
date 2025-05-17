@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_G_FIN extends Form {
+  static readonly name = "Government Securities";
+  static readonly description =
+    "Broker acting as government-securities brokers or dealers under the Government Securities Act of 1986.";
+  static readonly forms = ["G-FIN", "G-FIN/A"] as const;
+}

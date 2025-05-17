@@ -5,7 +5,16 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form_APP_WD } from "./Form_APP_WD";
+import { Form_APP_ORDR } from "./Form_APP_ORDR";
+import { Form_APP_NTC } from "./Form_APP_NTC";
+import { Form_APP_WDG } from "./Form_APP_WDG";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export const APPLICATION_WITHDRAWAL_FORM_NAMES = [
+  ...Form_APP_WD.forms,
+  ...Form_APP_ORDR.forms,
+  ...Form_APP_NTC.forms,
+  ...Form_APP_WDG.forms,
+] as const;
+
+export type ApplicationWithdrawalForm = (typeof APPLICATION_WITHDRAWAL_FORM_NAMES)[number];

@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_40OIP extends Form {
+  static readonly name = "ICA Application (OIP Reviewed)";
+  static readonly description =
+    "Application under the Investment Company Act reviewed by the Office of Insurance Products.";
+  static readonly forms = ["40-OIP", "40-OIP/A"] as const;
+}

@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_MA_A extends Form {
+  static readonly name = "Municipal Advisor Annual Update";
+  static readonly description =
+    "Annual update of municipal advisor registration under Section 15B(a)(2) of the Exchange Act.";
+  static readonly forms = ["MA-A", "MA-A/A"] as const;
+}

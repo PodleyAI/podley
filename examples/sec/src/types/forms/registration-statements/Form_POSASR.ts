@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_POSASR extends Form {
+  static readonly name = "Post-Effective Amendment to Automatic Shelf Registration Statement";
+  static readonly description =
+    "Post-effective amendment to automatic shelf registration statement pursuant to Rule 415 under the Securities Act of 1933";
+  static readonly forms = ["POSASR", "POSASR/A"] as const;
+}

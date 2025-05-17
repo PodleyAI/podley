@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_SC_14D9 extends Form {
+  static readonly name = "Solicitation/Recommendation Statement";
+  static readonly description =
+    "This filing is made by a person making a solicitation or recommendation with respect to a tender offer.";
+  static readonly forms = ["SC 14D9", "SC 14D9/A"] as const;
+}

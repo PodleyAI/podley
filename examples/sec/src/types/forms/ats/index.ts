@@ -5,7 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form_ATS_N } from "./Form_ATS_N";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export const ATS_FORM_NAMES = [...Form_ATS_N.forms] as const;
+
+export type AtsForm = (typeof ATS_FORM_NAMES)[number];

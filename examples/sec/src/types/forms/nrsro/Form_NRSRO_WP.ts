@@ -5,7 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_NRSRO_WP extends Form {
+  static readonly name = "NRSRO Annual Report";
+  static readonly description = "Annual report for NRSROs regarding their performance.";
+  static readonly forms = ["NRSRO-WP", "NRSRO-WP/A"] as const;
+}

@@ -5,7 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form_MA } from "./Form_MA";
+import { Form_MA_A } from "./Form_MA_A";
+import { Form_MA_I } from "./Form_MA_I";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export const MUNICIPAL_ADVISOR_FORM_NAMES = [
+  ...Form_MA.forms,
+  ...Form_MA_A.forms,
+  ...Form_MA_I.forms,
+] as const;
+export type MunicipalAdvisorForm = (typeof MUNICIPAL_ADVISOR_FORM_NAMES)[number];

@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_424B8 extends Form {
+  static readonly name = "Prospectus Filed Pursuant to Rule 424(b)(8)";
+  static readonly description =
+    "A prospectus filed pursuant to Rule 424(b)(8) under the Securities Act of 1933";
+  static readonly forms = ["424B8"] as const;
+}

@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_N_2 extends Form {
+  static readonly name = "Closed End Management Investment Company Registration";
+  static readonly description =
+    "Registration statement of closed-end management investment companies";
+  static readonly forms = ["N-2", "N-2/A", "N-2MEF"] as const;
+}

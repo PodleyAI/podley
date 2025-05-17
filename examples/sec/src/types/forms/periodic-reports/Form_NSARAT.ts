@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_NSARAT extends Form {
+  static readonly name = "Transitional Semi-Annual Report for Management Companies";
+  static readonly description =
+    "Transitional semi-annual report for registered investment companies (Management).";
+  static readonly forms = ["NSAR-AT", "NSAR-AT/A"] as const;
+}

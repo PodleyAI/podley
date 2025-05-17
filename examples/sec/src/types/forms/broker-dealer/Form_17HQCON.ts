@@ -5,7 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_17HQCON extends Form {
+  static readonly name = "Confidential Broker-Dealer Quarterly 17-H Report";
+  static readonly description = "Confidential broker-dealer quarterly 17-H report.";
+  static readonly forms = ["17HQCON", "17HQCON/A"] as const;
+}

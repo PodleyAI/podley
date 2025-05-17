@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_ABS_EE extends Form {
+  static readonly name = "Electronic Exhibits for Asset-Backed Securities";
+  static readonly description =
+    "Form for Submission of Electronic Exhibits in asset-backed securities offerings.";
+  static readonly forms = ["ABS-EE", "ABS-EE/A"] as const;
+}

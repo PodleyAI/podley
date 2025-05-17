@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_NTN_10K extends Form {
+  static readonly name = "Rule 12b-25 Notification for 10-K";
+  static readonly description =
+    "Notice under Rule 12b-25 of inability to timely file all or part of a Form 10-K.";
+  static readonly forms = ["NTN 10K"] as const;
+}

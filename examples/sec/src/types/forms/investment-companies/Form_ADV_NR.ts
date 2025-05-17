@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_ADV_NR extends Form {
+  static readonly name = "Appointment of Agent for Service of Process";
+  static readonly description =
+    "Appointment of agent for service of process by a non-resident general partner or managing agent of an investment adviser.";
+  static readonly forms = ["ADV-NR"] as const;
+}

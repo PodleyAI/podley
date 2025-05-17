@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_F_3 extends Form {
+  static readonly name = "F-3";
+  static readonly description =
+    "Registration statement for foreign private issuers with substantial U.S. market interest and reporting history";
+  static readonly forms = ["F-3", "F-3/A", "F-3MEF", "F-3 POS"] as const;
+}

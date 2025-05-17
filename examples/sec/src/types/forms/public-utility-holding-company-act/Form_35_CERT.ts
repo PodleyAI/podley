@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_35_CERT extends Form {
+  static readonly name = "Terms and Conditions Certificate";
+  static readonly description =
+    "Certificate concerning terms and conditions filed pursuant to Rule 24 of the Public Utility Holding Company Act.";
+  static readonly forms = ["35-CERT", "35-CERT/A"] as const;
+}

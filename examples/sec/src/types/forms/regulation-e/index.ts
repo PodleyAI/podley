@@ -5,7 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form_1_E } from "./Form_1_E";
+import { Form_1_E_AD } from "./Form_1_E_AD";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export const REGULATION_E_FORM_NAMES = [...Form_1_E.forms, ...Form_1_E_AD.forms] as const;
+
+export type RegulationEForm = (typeof REGULATION_E_FORM_NAMES)[number];

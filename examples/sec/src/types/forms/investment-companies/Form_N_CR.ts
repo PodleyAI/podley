@@ -5,7 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_N_CR extends Form {
+  static readonly name = "Form N-CR";
+  static readonly description = "Current Report of Money Market Fund Material Events.";
+  static readonly forms = ["N-CR", "N-CR/A"] as const;
+}

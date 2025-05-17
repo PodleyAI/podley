@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_N_VPFS extends Form {
+  static readonly name = "Financial Statements for Variable Contracts";
+  static readonly description =
+    "Financial statements for certain variable contracts filed pursuant to the Investment Company Act.";
+  static readonly forms = ["N-VPFS", "N-VPFS/A"] as const;
+}

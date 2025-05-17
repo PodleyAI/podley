@@ -5,7 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form_CFPORTAL } from "./Form_CFPORTAL";
+import { Form_CFPORTAL_W } from "./Form_CFPORTAL_W";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export const PORTAL_FORM_NAMES = [...Form_CFPORTAL.forms, ...Form_CFPORTAL_W.forms] as const;
+
+export type PortalForm = (typeof PORTAL_FORM_NAMES)[number];

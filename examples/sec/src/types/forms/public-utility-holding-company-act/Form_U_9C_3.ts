@@ -5,7 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_U_9C_3 extends Form {
+  static readonly name = "Energy and Gas Companies Quarterly Report";
+  static readonly description = "Quarterly report concerning energy and gas-related companies.";
+  static readonly forms = ["U-9C-3", "U-9C-3/A"] as const;
+}

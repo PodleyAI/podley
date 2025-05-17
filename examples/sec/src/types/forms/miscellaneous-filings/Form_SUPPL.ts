@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_SUPPL extends Form {
+  static readonly name = "Supplemental Information";
+  static readonly description =
+    "Supplemental information filed pursuant to the Securities Act of 1933 or the Securities Exchange Act of 1934";
+  static readonly forms = ["SUPPL"] as const;
+}

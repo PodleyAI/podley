@@ -5,7 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_CW extends Form {
+  static readonly name = "Offering Statement Withdrawal (Regulation Crowdfunding)";
+  static readonly description = "Offering Statement Withdrawal";
+  static readonly forms = ["C-W", "C/A-W"] as const;
+}

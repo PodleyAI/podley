@@ -5,7 +5,11 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ALL_FORMS, AllForms } from "./forms/all-forms";
+import { Form } from "../Form";
 
-export { ALL_FORMS };
-export type Form = AllForms;
+export class Form_MSD extends Form {
+  static readonly name = "Municipal Securities Dealer Registration";
+  static readonly description =
+    "Application for registration as a municipal securities dealer pursuant to Exchange Act Rule 15B(a).";
+  static readonly forms = ["MSD", "MSD/A", "MSD-W", "MSDW", "MSDCO"] as const;
+}
