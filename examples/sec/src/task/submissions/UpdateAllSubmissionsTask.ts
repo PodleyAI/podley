@@ -7,11 +7,11 @@
 
 import { IExecuteConfig, IWorkflow, pipe, Task } from "@ellmers/task-graph";
 import { TObject, Type } from "@sinclair/typebox";
-import { query_all, query_run } from "../../util/db";
-import { parseDate } from "../../util/parseDate";
+import { sleep } from "@ellmers/util";
+import { processUpdateProcessing } from "../../util/commonStoreSec";
+import { query_all } from "../../util/db";
 import { FetchSubmissionsTask } from "./FetchSubmissionsTask";
 import { StoreSubmissionsTask } from "./StoreSubmissionsTask";
-import { processUpdateProcessing } from "../../util/commonStoreSec";
 
 export type UpdateAllSubmissionsTaskInput = {};
 
@@ -46,13 +46,7 @@ export class UpdateAllSubmissionsTask extends Task<
           ON cik_last_update.cik = processed_submissions.cik
         WHERE cik_last_update.last_update > processed_submissions.last_processed 
         ORDER BY cik_last_update.last_update DESC`);
-
-    if (needsUpating?.length) {
-      const wf = config.own(pipe([new FetchSubmissionsTask(), new StoreSubmissionsTask()]));
-      for (const result of needsUpating) {
-        runWorkflow(wf, { cik: parseInt(result.cik), date: result.last_update });
-      }
-    }
+    const needsUpatingCount = needsUpating?.length ?? 0;
 
     const needsInitialProcessing = query_all<{
       cik: string;
@@ -64,16 +58,28 @@ export class UpdateAllSubmissionsTask extends Task<
           ON cik_last_update.cik = processed_submissions.cik
         WHERE processed_submissions.last_processed IS NULL
         ORDER BY cik_last_update.last_update DESC`);
+    const needsInitialProcessingCount = needsInitialProcessing?.length ?? 0;
+    const totalCount = needsUpatingCount + needsInitialProcessingCount;
 
-    if (needsInitialProcessing?.length) {
+    if (needsUpatingCount) {
+      const wf = config.own(pipe([new FetchSubmissionsTask(), new StoreSubmissionsTask()]));
+      for (let i = 0; i < needsUpatingCount; i++) {
+        const result = needsUpating[i];
+        runWorkflow(wf, { cik: parseInt(result.cik), date: result.last_update });
+        config.updateProgress(
+          Math.ceil((i / totalCount) * 100),
+          `Processed ${i} of ${totalCount} submissions (updating)`
+        );
+      }
+    }
+
+    if (needsInitialProcessingCount) {
       const BATCH_SIZE = 2;
-      const workflowsNumber = Math.min(needsInitialProcessing.length, BATCH_SIZE);
+      const workflowsNumber = Math.min(needsInitialProcessingCount, BATCH_SIZE);
       const workflows: IWorkflow<any, any>[] = [];
       for (let i = 0; i < workflowsNumber; i++) {
         workflows.push(config.own(pipe([new FetchSubmissionsTask(), new StoreSubmissionsTask()])));
       }
-      console.log(`Processing ${needsInitialProcessing.length} submissions`);
-      console.log(workflows.map((w) => w.graph.getTasks().map((t) => t.config.id)));
       for (let i = 0; i < needsInitialProcessing.length; i += BATCH_SIZE) {
         const batch = needsInitialProcessing.slice(i, i + BATCH_SIZE);
         const promises = [];
@@ -86,6 +92,11 @@ export class UpdateAllSubmissionsTask extends Task<
           );
         }
         await Promise.all(promises);
+        await sleep(0);
+        config.updateProgress(
+          Math.ceil(((i + needsUpatingCount) / totalCount) * 100),
+          `Processed ${i + needsUpatingCount} of ${totalCount} submissions (initial processing)`
+        );
       }
     }
     return { success: true };

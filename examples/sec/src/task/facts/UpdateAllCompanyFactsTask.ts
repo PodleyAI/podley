@@ -11,6 +11,7 @@ import { query_all, query_run } from "../../util/db";
 import { parseDate } from "../../util/parseDate";
 import { FetchCompanyFactsTask } from "./FetchCompanyFactsTask";
 import { StoreCompanyFactsTask } from "./StoreCompanyFactsTask";
+import { sleep } from "@ellmers/util";
 
 export type UpdateAllCompanyFactsTaskInput = {};
 
@@ -45,10 +46,25 @@ export class UpdateAllCompanyFactsTask extends Task<
           ON cik_last_update.cik = processed_facts.cik
         WHERE cik_last_update.last_update > processed_facts.last_processed 
         ORDER BY cik_last_update.last_update DESC`);
+    const needsUpatingCount = needsUpating?.length ?? 0;
 
-    if (needsUpating?.length) {
+    const needsProcessing = query_all<{
+      cik: string;
+      last_update: string;
+      last_processed: string;
+    }>(`
+          SELECT cik_last_update.cik, cik_last_update.last_update, processed_facts.last_processed FROM cik_last_update
+            LEFT JOIN processed_facts
+              ON cik_last_update.cik = processed_facts.cik
+            WHERE processed_facts.last_processed IS NULL
+            ORDER BY cik_last_update.last_update DESC`);
+    const needsProcessingCount = needsProcessing?.length ?? 0;
+    const totalCount = needsUpatingCount + needsProcessingCount;
+
+    if (needsUpatingCount) {
       const wf = config.own(pipe([new FetchCompanyFactsTask(), new StoreCompanyFactsTask()]));
-      for (const result of needsUpating) {
+      for (let i = 0; i < needsUpatingCount; i++) {
+        const result = needsUpating[i];
         try {
           await wf.run({ cik: result.cik, date: result.last_update });
         } catch (e) {
@@ -62,19 +78,13 @@ export class UpdateAllCompanyFactsTask extends Task<
             }
           );
         }
+        await sleep(0);
+        config.updateProgress(
+          Math.ceil((i / totalCount) * 100),
+          `Processed ${i} of ${totalCount} company facts (updating)`
+        );
       }
     }
-
-    const needsProcessing = query_all<{
-      cik: string;
-      last_update: string;
-      last_processed: string;
-    }>(`
-      SELECT cik_last_update.cik, cik_last_update.last_update, processed_facts.last_processed FROM cik_last_update
-        LEFT JOIN processed_facts
-          ON cik_last_update.cik = processed_facts.cik
-        WHERE processed_facts.last_processed IS NULL
-        ORDER BY cik_last_update.last_update DESC`);
 
     if (needsProcessing?.length) {
       const BATCH_SIZE = 10;
@@ -97,6 +107,11 @@ export class UpdateAllCompanyFactsTask extends Task<
           );
         }
         await Promise.all(promises);
+        await sleep(0);
+        config.updateProgress(
+          Math.ceil(((i + needsUpatingCount) / totalCount) * 100),
+          `Processed ${i + needsUpatingCount} of ${totalCount} company facts (initial processing)`
+        );
       }
     }
     return { success: true };

@@ -35,10 +35,10 @@ export const TypeAddress = (annotations: Record<string, unknown> = {}) =>
       stateOrCountry: TypeNullable(Type.String()),
       zipCode: TypeNullable(Type.String()),
       stateOrCountryDescription: TypeNullable(Type.String()),
-      isForeignLocation: TypeNullable(TypeSECBoolean()),
-      foreignStateTerritory: TypeNullable(Type.String()),
-      country: TypeNullable(Type.String()),
-      countryCode: TypeNullable(Type.String()),
+      isForeignLocation: Type.Optional(TypeNullable(TypeSECBoolean())),
+      foreignStateTerritory: Type.Optional(TypeNullable(Type.String())),
+      country: Type.Optional(TypeNullable(Type.String())),
+      countryCode: Type.Optional(TypeNullable(Type.String())),
     },
     annotations
   );
