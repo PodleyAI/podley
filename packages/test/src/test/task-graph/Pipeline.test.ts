@@ -9,27 +9,25 @@ import { describe, expect, it } from "bun:test";
 import { Task } from "@ellmers/task-graph";
 import { pipe, Workflow } from "@ellmers/task-graph";
 import { InMemoryTaskOutputRepository } from "../../binding/InMemoryTaskOutputRepository";
+import { Type } from "@sinclair/typebox";
+
 // Define input and output types for our tasks
 type NumberInput = { value: number };
 type NumberOutput = { value: number };
 
 abstract class MathTask extends Task<NumberInput, NumberOutput> {
   public static category = "Math";
-  public static inputs = [
-    {
-      id: "value",
-      name: "Input",
-      valueType: "number",
-    },
-  ] as const;
+  public static inputSchema() {
+    return Type.Object({
+      value: Type.Number(),
+    });
+  }
 
-  public static outputs = [
-    {
-      id: "value",
-      name: "Output",
-      valueType: "number",
-    },
-  ] as const;
+  public static outputSchema() {
+    return Type.Object({
+      value: Type.Number(),
+    });
+  }
 }
 
 // Create a task that doubles a number
