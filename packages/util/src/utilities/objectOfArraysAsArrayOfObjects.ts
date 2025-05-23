@@ -29,6 +29,7 @@ export function objectOfArraysAsArrayOfObjects<T extends Record<string, any>>(da
   const length = data[keys[0]].length;
   for (const key of keys) {
     if (data[key].length !== length) {
+      console.error("All arrays must have the same length", key, data[key].length, length, data);
       throw new Error("All arrays must have the same length");
     }
   }

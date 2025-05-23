@@ -629,4 +629,24 @@ export class Task<
     }
     return this._subGraph;
   }
+
+  /**
+   * Regenerates the task graph, which is internal state to execute() with config.own()
+   *
+   * This is a destructive operation that removes all dataflows and tasks from the graph.
+   * It is used to reset the graph to a clean state.
+   *
+   * GraphAsTask and others override this and do not call super
+   */
+  public regenerateGraph(): void {
+    if (this.hasChildren()) {
+      for (const dataflow of this.subGraph.getDataflows()) {
+        this.subGraph.removeDataflow(dataflow);
+      }
+      for (const child of this.subGraph.getTasks()) {
+        this.subGraph.removeTask(child.config.id);
+      }
+    }
+    this.events.emit("regenerate");
+  }
 }

@@ -466,11 +466,9 @@ export class TaskGraphRunner {
   public resetGraph(graph: TaskGraph, runnerId: string) {
     graph.getTasks().forEach((node) => {
       this.resetTask(graph, node, runnerId);
+      node.regenerateGraph();
       if (node.hasChildren()) {
         this.resetGraph(node.subGraph, runnerId);
-      }
-      if ("regenerateGraph" in node && typeof node.regenerateGraph === "function") {
-        node.regenerateGraph();
       }
     });
     graph.getDataflows().forEach((dataflow) => {

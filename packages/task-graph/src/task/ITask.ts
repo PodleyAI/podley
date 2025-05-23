@@ -120,6 +120,7 @@ export interface ITaskIO<Input extends TaskInput, Output extends TaskOutput> {
 export interface ITaskInternalGraph {
   subGraph: TaskGraph;
   hasChildren(): boolean;
+  regenerateGraph(): void;
 }
 
 /**
@@ -178,7 +179,6 @@ export interface IGraphAsTask<
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
 > extends ITask<Input, Output, Config> {
-  regenerateGraph(): void;
   get compoundMerge(): CompoundMergeStrategy;
 }
 
