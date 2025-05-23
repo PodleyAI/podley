@@ -58,13 +58,14 @@ export const TaskUI: FC<{
   graph: ITaskGraph;
   dependant?: boolean;
 }> = ({ task, graph, dependant = false }) => {
-  const [count, setCount] = useState<number>(0);
   const [status, setStatus] = useState<TaskStatus>(task.status);
+  const [input, setInput] = useState<string>(JSON.stringify(task.runInputData).slice(0, 200));
+  const [output, setOutput] = useState<string>(JSON.stringify(task.runOutputData).slice(0, 200));
   const [progress, setProgress] = useState<number>(task.progress);
-  const [message, setMessage] = useState<string>("");
-  const [details, setDetails] = useState<any>(undefined);
-  const [text, setText] = useState<string>("");
-  const [subGraph, setSubGraph] = useState<ITaskGraph | null>(null);
+  const [progressMessage, setProgressMessage] = useState<string>("");
+  const [progressDetails, setProgressDetails] = useState<any>(undefined);
+  const [progressGenerationText, setProgressGenerationText] = useState<string>("");
+  const [subGraphTasks, setSubGraphTasks] = useState<ITask[]>([]);
   const [dependantChildren, setDependantChildren] = useState<ITask[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [arrayProgress, setArrayProgress] = useState<{ completed: number; total: number } | null>(
@@ -74,16 +75,24 @@ export const TaskUI: FC<{
   useEffect(() => {
     const onStart = () => {
       setStatus(TaskStatus.PROCESSING);
+      setInput(JSON.stringify(task.runInputData).slice(0, 200));
+      setOutput(JSON.stringify(task.runOutputData).slice(0, 200));
+      setError(null);
+      setArrayProgress(null);
+      setProgressGenerationText("");
+      setProgressMessage("");
+      setProgress(0);
+      setProgressDetails(undefined);
     };
 
     const onProgress = (...args: any[]) => {
       const [newProgress, newMessage, newDetails] = args;
 
       setProgress(newProgress);
-      setMessage(newMessage);
+      setProgressMessage(newMessage);
 
       if (newMessage === "Downloading model" && newDetails) {
-        setDetails((oldDetails: any) => {
+        setProgressDetails((oldDetails: any) => {
           if (oldDetails == null) {
             return [newDetails];
           }
@@ -94,12 +103,14 @@ export const TaskUI: FC<{
           return [...oldDetails, newDetails];
         });
       } else if (newMessage === "Generating" && newDetails?.text) {
-        setText((prevText) => prevText + newDetails.text);
+        setProgressGenerationText((prevText) => prevText + newDetails.text);
       }
     };
 
     const onComplete = () => {
       setStatus(TaskStatus.COMPLETED);
+      setOutput(JSON.stringify(task.runOutputData).slice(0, 200));
+      setError(null);
     };
 
     const onError = (error: any) => {
@@ -108,7 +119,6 @@ export const TaskUI: FC<{
     };
 
     const onRegenerate = () => {
-      setCount((c) => c + 1);
       if (
         task &&
         task instanceof ArrayTask &&
@@ -120,19 +130,22 @@ export const TaskUI: FC<{
           completed: tasks.filter((t: ITask) => t.status === TaskStatus.COMPLETED).length,
           total: tasks.length,
         });
-        setSubGraph(null);
+        setSubGraphTasks([]);
       } else {
-        setSubGraph(task.hasChildren() ? task.subGraph : null);
+        const childTasks = task.hasChildren() ? task.subGraph.getTasks() : [];
+        const tasks = childTasks.filter(
+          (t: ITask) => task.subGraph.getSourceDataflows(t.config.id).length == 0
+        );
+        setSubGraphTasks(tasks);
       }
-      setDependantChildren(graph.getTargetTasks(task.config.id));
     };
 
     const onAbort = () => {
       setStatus(TaskStatus.ABORTING);
       setError((prevErr) => (prevErr ? `${prevErr}\nAborted` : "Aborted"));
     };
-
     onRegenerate();
+    setDependantChildren(graph.getTargetTasks(task.config.id));
 
     task.on("start", onStart);
     task.on("progress", onProgress);
@@ -151,10 +164,8 @@ export const TaskUI: FC<{
     };
   }, [task, graph]);
 
-  const containerKey = `${task.config.id}-${count}`;
-
   return (
-    <Box key={containerKey} flexDirection="column">
+    <Box key={task.config.id as string} flexDirection="column">
       <Box height={1}>
         <Box marginRight={1} flexShrink={0}>
           <StatusIcon status={status} dependant={dependant} />
@@ -165,10 +176,7 @@ export const TaskUI: FC<{
         </Box>
         {status == TaskStatus.PROCESSING && progress == 0 && (
           <Box marginLeft={2}>
-            <Text
-              color="gray"
-              wrap="truncate-middle"
-            >{`${symbols.arrowLeft} ${JSON.stringify(task.runInputData).slice(0, 200)}`}</Text>
+            <Text color="gray" wrap="truncate-middle">{`${symbols.arrowLeft} ${input}`}</Text>
           </Box>
         )}
 
@@ -177,16 +185,13 @@ export const TaskUI: FC<{
             <Text dimColor>[{status}]</Text>
             <Text dimColor>
               {progress > 0 &&
-                ` ${createBar(progress / 100, 20)} ${message ?? ""} ${Math.round(progress)}%`}
+                ` ${createBar(progress / 100, 20)} ${progressMessage ?? ""} ${Math.round(progress)}%`}
             </Text>
           </Box>
         )}
         {status == TaskStatus.COMPLETED && (
           <Box marginLeft={2} flexShrink={1}>
-            <Text
-              color="gray"
-              wrap="truncate"
-            >{`${symbols.arrowRight} ${JSON.stringify(task.runOutputData).slice(0, 150)}`}</Text>
+            <Text color="gray" wrap="truncate">{`${symbols.arrowRight} ${output}`}</Text>
           </Box>
         )}
         {error && (
@@ -196,26 +201,30 @@ export const TaskUI: FC<{
         )}
       </Box>
       {status == TaskStatus.PROCESSING &&
-        details &&
-        message == "Downloading model" &&
-        details.map((d: any) => (
+        progressDetails &&
+        progressMessage == "Downloading model" &&
+        progressDetails.map((d: any) => (
           <Box marginLeft={2} key={d.file}>
             <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(d.progress / 100, 10)} ${d.file} ${Math.round(d.progress)}%`}</Text>
           </Box>
         ))}
-      {status == TaskStatus.PROCESSING && text && message == "Generating" && (
-        <Box marginLeft={2}>
-          <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(progress / 100, 10)} ${text ?? ""}`}</Text>
-        </Box>
-      )}
+      {status == TaskStatus.PROCESSING &&
+        progressGenerationText &&
+        progressMessage == "Generating" && (
+          <Box marginLeft={2}>
+            <Text color="gray">{`${symbols.arrowDashedRight} ${createBar(progress / 100, 10)} ${progressGenerationText ?? ""}`}</Text>
+          </Box>
+        )}
       {arrayProgress && (
         <Box marginLeft={2}>
           <Text color="gray">{`${symbols.arrowDashedRight} Processing array tasks: ${arrayProgress.completed}/${arrayProgress.total} completed ${createBar(arrayProgress.completed / arrayProgress.total, 10)}`}</Text>
         </Box>
       )}
-      {!arrayProgress && subGraph && !(task instanceof ArrayTask) && (
+      {!arrayProgress && subGraphTasks.length > 0 && !(task instanceof ArrayTask) && (
         <Box flexDirection="column" marginLeft={2} borderColor="gray">
-          <TaskGraphUI graph={subGraph} />
+          {subGraphTasks.map((taskItem) => (
+            <TaskUI key={`${taskItem.config.id}`} task={taskItem} graph={task.subGraph} />
+          ))}
         </Box>
       )}
       {dependantChildren && (
