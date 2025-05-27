@@ -5,7 +5,6 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { simplifySchema } from "@ellmers/util";
 import { Static } from "@sinclair/typebox";
 import type { TabularRepository } from "../tabular/TabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
@@ -39,7 +38,7 @@ export abstract class KvViaTabularRepository<
   public async put(key: Key, value: Value): Promise<void> {
     // Handle objects that need to be JSON-stringified, TODO(str): should put in the type
     const shouldStringify = !["number", "boolean", "string", "blob"].includes(
-      simplifySchema(this.valueSchema).type
+      this.valueSchema.type
     );
 
     if (shouldStringify) {
@@ -58,9 +57,7 @@ export abstract class KvViaTabularRepository<
   public async get(key: Key): Promise<Value | undefined> {
     const result = await this.tabularRepository.get({ key });
     if (result) {
-      const shouldParse = !["number", "boolean", "string", "blob"].includes(
-        simplifySchema(this.valueSchema).type
-      );
+      const shouldParse = !["number", "boolean", "string", "blob"].includes(this.valueSchema.type);
 
       if (shouldParse) {
         try {
@@ -96,9 +93,7 @@ export abstract class KvViaTabularRepository<
           ({
             key: value.key,
             value: (() => {
-              const shouldParse = !["number", "boolean", "string"].includes(
-                simplifySchema(this.valueSchema).type
-              );
+              const shouldParse = !["number", "boolean", "string"].includes(this.valueSchema.type);
 
               if (shouldParse && typeof value.value === "string") {
                 try {

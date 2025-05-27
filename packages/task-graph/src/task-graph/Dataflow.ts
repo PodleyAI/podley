@@ -5,7 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { areSemanticallyCompatible, EventEmitter, simplifySchema } from "@ellmers/util";
+import { areSemanticallyCompatible, EventEmitter } from "@ellmers/util";
+import { Type } from "@sinclair/typebox";
 import { TaskError } from "../task/TaskError";
 import { DataflowJson } from "../task/TaskJSON";
 import { Provenance, TaskIdType, TaskOutput, TaskStatus } from "../task/TaskTypes";
@@ -16,7 +17,6 @@ import {
   DataflowEvents,
 } from "./DataflowEvents";
 import { TaskGraph } from "./TaskGraph";
-import { Type } from "@sinclair/typebox";
 
 export type DataflowIdType = `${string}[${string}] ==> ${string}[${string}]`;
 
@@ -117,11 +117,11 @@ export class Dataflow {
     const targetSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.targetTaskPortId
         ? Type.Any()
-        : simplifySchema(targetSchema.properties[dataflow.targetTaskPortId]);
+        : targetSchema.properties[dataflow.targetTaskPortId];
     const sourceSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.sourceTaskPortId
         ? Type.Any()
-        : simplifySchema(sourceSchema.properties[dataflow.sourceTaskPortId]);
+        : sourceSchema.properties[dataflow.sourceTaskPortId];
 
     const semanticallyCompatible = areSemanticallyCompatible(
       sourceSchemaProperty,

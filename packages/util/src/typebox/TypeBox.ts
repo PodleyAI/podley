@@ -47,14 +47,28 @@ export function areSemanticallyCompatible(
   outputSchema: TSchema,
   inputSchema: TSchema
 ): "static" | "runtime" | "incompatible" {
-  const source = outputSchema.semantic;
-  const target = inputSchema.semantic;
+  const source = schemaSemantic(outputSchema);
+  const target = schemaSemantic(inputSchema);
   if (!source || !target) return "static"; // No info — assume generic compatibility
   if (source === target) return "static";
 
   if (target.startsWith(source + ":")) return "runtime";
 
   return "incompatible";
+}
+
+export function forwardAnnotations(schema: TSchema, annotations: Record<string, unknown>) {
+  return {
+    ...(schema.title ? { title: schema.title } : {}),
+    ...(schema.description ? { description: schema.description } : {}),
+    ...(schema.default ? { default: schema.default } : {}),
+    ...(schema.replicate ? { replicate: schema.replicate } : {}),
+    ...(schema.semantic ? { semantic: schema.semantic } : {}),
+    ...(schema.optional ? { optional: schema.optional } : {}),
+    ...(schema.isArray ? { isArray: schema.isArray } : {}),
+    ...(schema.isNullable ? { isNullable: schema.isNullable } : {}),
+    ...annotations,
+  };
 }
 
 /**
@@ -72,13 +86,12 @@ export function simplifySchema(
   if (schema[Kind] === "Any") {
     return schema;
   }
-  annotations = {
+  annotations = forwardAnnotations(schema, {
+    ...(schema[OptionalKind]
+      ? { optional: true, isNullable: true, default: schema.default ?? null }
+      : {}),
     ...annotations,
-    ...(schema[OptionalKind] ? { optional: true, isNullable: true, default: null } : {}),
-    ...(schema.title ? { title: schema.title } : {}),
-    ...(schema.description ? { description: schema.description } : {}),
-    ...(schema.default ? { default: schema.default } : {}),
-  };
+  });
 
   // Check for union types (represented as 'anyOf' in the JSON schema)
   if (schema.anyOf && Array.isArray(schema.anyOf)) {
@@ -89,14 +102,13 @@ export function simplifySchema(
     );
     if (arrayMembers.length === 1 && nonArrayMembers.length === 1) {
       // This is for OptionalArray and ReplicatedArray
-      return {
-        ...nonArrayMembers[0],
-        ...(schema.replicate ? { replicate: schema.replicate } : {}),
-        ...(schema.title ? { title: schema.title } : {}),
-        ...(schema.description ? { description: schema.description } : {}),
-        ...(schema.default ? { default: schema.default } : {}),
+      annotations = forwardAnnotations(nonArrayMembers[0], {
         ...annotations,
         isArray: true,
+      });
+      return {
+        ...nonArrayMembers[0],
+        ...annotations,
       };
     }
   }
@@ -106,23 +118,21 @@ export function simplifySchema(
     const nullMember = schema.anyOf.find((member: any) => member.type === "null");
     if (nullMember) {
       const result = schema.anyOf.filter((member: any) => member.type !== "null");
+      annotations = forwardAnnotations(result[0], {
+        isNullable: true,
+        default: null,
+        ...annotations,
+      });
       if (result.length === 1) {
         return {
           ...result[0],
-          isNullable: true,
-          default: null,
-          ...(schema.title ? { title: schema.title } : {}),
-          ...(schema.description ? { description: schema.description } : {}),
-          ...(schema.default ? { default: schema.default } : {}),
           ...annotations,
         };
       }
       return {
         ...schema,
-        anyOf: result,
-        isNullable: true,
-        default: null,
         ...annotations,
+        anyOf: result,
       };
     }
   }
@@ -139,5 +149,16 @@ export function simplifySchema(
     return { ...schema, items: simplifySchema(schema.items, annotations) };
   }
 
-  return schema;
+  return { ...schema, ...annotations };
+}
+
+/**
+ * Returns the semantic of a schema.
+ * This is a convenience function that simplifies the schema and returns the semantic annotation.
+ * @param schema - The schema to get the semantic of.
+ * @returns The semantic of the schema if it exists, otherwise undefined.
+ */
+export function schemaSemantic(schema: TSchema): string | undefined {
+  const simplified = simplifySchema(schema);
+  return simplified.semantic;
 }

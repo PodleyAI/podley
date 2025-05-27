@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter, simplifySchema, type EventParameters } from "@ellmers/util";
+import { EventEmitter, type EventParameters } from "@ellmers/util";
 import { TObject, TSchema } from "@sinclair/typebox";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { GraphAsTask } from "../task/GraphAsTask";
@@ -18,7 +18,7 @@ import { getLastTask, parallel, pipe, PipeFunction, Taskish } from "./Conversion
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { IWorkflow } from "./IWorkflow";
 import { TaskGraph } from "./TaskGraph";
-import { CompoundMergeStrategy, GraphResultMap } from "./TaskGraphRunner";
+import { CompoundMergeStrategy } from "./TaskGraphRunner";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends TaskIO, O extends TaskIO, C extends TaskConfig> = (
@@ -137,8 +137,8 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
       if (parent && this.graph.getTargetDataflows(parent.config.id).length === 0) {
         // Find matches between parent outputs and task inputs based on valueType
         const matches = new Map<string, string>();
-        const sourceSchema = simplifySchema(parent.outputSchema) as TObject;
-        const targetSchema = simplifySchema(task.inputSchema) as TObject;
+        const sourceSchema = parent.outputSchema as TObject;
+        const targetSchema = task.inputSchema as TObject;
 
         const makeMatch = (
           comparator: (

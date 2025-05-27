@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken, simplifySchema, TypeBlob } from "@ellmers/util";
+import { createServiceToken, TypeBlob } from "@ellmers/util";
 import { TSchema, Type } from "@sinclair/typebox";
 import { mkdir, readFile, rmdir, unlink, writeFile } from "fs/promises";
 import path from "path";
@@ -52,7 +52,7 @@ export class FsFolderKvRepository<
     let content: string;
     if (value === null) {
       content = "";
-    } else if (simplifySchema(this.valueSchema).type === "object") {
+    } else if (this.valueSchema.type === "object") {
       content = JSON.stringify(value);
     } else if (typeof value === "object") {
       // Handle 'json' type schema from tests
@@ -74,7 +74,7 @@ export class FsFolderKvRepository<
    */
   public async get(key: Key): Promise<Value | undefined> {
     const localPath = path.join(this.folderPath, this.pathWriter(key));
-    const typeDef = simplifySchema(this.valueSchema);
+    const typeDef = this.valueSchema;
     try {
       const encoding = typeDef.contentEncoding === "blob" ? "binary" : "utf-8";
       const content = (await readFile(localPath, { encoding })).trim();

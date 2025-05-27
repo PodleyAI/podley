@@ -17,7 +17,7 @@ import {
   type TaskInput,
   type TaskOutput,
 } from "@ellmers/task-graph";
-import { simplifySchema } from "@ellmers/util";
+import { schemaSemantic } from "@ellmers/util";
 import { type TSchema } from "@sinclair/typebox";
 import { AiJob } from "../../job/AiJob";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
@@ -87,9 +87,8 @@ export class AiTask<
    */
   async validateInput(input: Input): Promise<boolean> {
     // TODO(str): this is very inefficient, we should cache the results, including intermediate results
-    const inputSchemaProperties = simplifySchema(this.inputSchema).properties;
-    const modelTaskProperties = Object.entries<TSchema>(inputSchemaProperties).filter(
-      ([key, value]) => value.semantic?.startsWith("model:")
+    const modelTaskProperties = Object.entries<TSchema>(this.inputSchema.properties).filter(
+      ([key, schema]) => schemaSemantic(schema)?.startsWith("model:")
     );
     if (modelTaskProperties.length > 0) {
       const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
@@ -103,8 +102,8 @@ export class AiTask<
         }
       }
     }
-    const modelPlainProperties = Object.entries<TSchema>(inputSchemaProperties).filter(
-      ([key, value]) => value.semantic === "model"
+    const modelPlainProperties = Object.entries<TSchema>(this.inputSchema.properties).filter(
+      ([key, schema]) => schemaSemantic(schema) === "model"
     );
     if (modelPlainProperties.length > 0) {
       for (const [key, propSchema] of modelPlainProperties) {
@@ -125,9 +124,8 @@ export class AiTask<
   // if all of them are stripped, then the task will fail in validateInput
   async narrowInput(input: Input): Promise<Input> {
     // TODO(str): this is very inefficient, we should cache the results, including intermediate results
-    const inputSchemaProperties = simplifySchema(this.inputSchema).properties;
-    const modelTaskProperties = Object.entries<TSchema>(inputSchemaProperties).filter(
-      ([key, value]) => value.semantic?.startsWith("model:")
+    const modelTaskProperties = Object.entries<TSchema>(this.inputSchema.properties).filter(
+      ([key, schema]) => schemaSemantic(schema)?.startsWith("model:")
     );
     if (modelTaskProperties.length > 0) {
       const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);

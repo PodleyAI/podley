@@ -5,7 +5,6 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { simplifySchema } from "@ellmers/util";
 import { Static, TObject, TSchema } from "@sinclair/typebox";
 import { ExtractPrimaryKey, ExtractValue, ValueOptionType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
