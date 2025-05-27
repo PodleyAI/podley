@@ -37,6 +37,6 @@
     "@ellmers/job-queue": "workspace:*",
     "@ellmers/storage": "workspace:*",
     "@ellmers/util": "workspace:*",
-    "@sinclair/typebox": "^0.34.31"
+    "@sinclair/typebox": "^0.34.33"
   }
 }

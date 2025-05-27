@@ -37,7 +37,7 @@
     "@ellmers/storage": "workspace:*",
     "@ellmers/task-graph": "workspace:*",
     "@ellmers/util": "workspace:*",
-    "@sinclair/typebox": "^0.34.31"
+    "@sinclair/typebox": "^0.34.33"
   },
   "devDependencies": {
     "@types/pg": "^8.11.11"

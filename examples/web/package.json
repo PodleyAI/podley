@@ -21,7 +21,7 @@
     "@ellmers/util": "workspace:*",
     "@mediapipe/tasks-text": "^0.10.21",
     "@radix-ui/react-icons": "^1.3.2",
-    "@sinclair/typebox": "^0.34.31",
+    "@sinclair/typebox": "^0.34.33",
     "@sroussey/transformers": "3.4.0-2",
     "@uiw/codemirror-theme-vscode": "^4.23.10",
     "@uiw/react-codemirror": "^4.23.10",
