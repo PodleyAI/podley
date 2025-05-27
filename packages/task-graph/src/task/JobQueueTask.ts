@@ -1,11 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Job } from "@ellmers/job-queue";
+import { Job } from "@podley/job-queue";
 import { IExecuteConfig } from "./ITask";
 import { ArrayTask } from "./ArrayTask";
 import { JobTaskFailedError, TaskConfigurationError, TaskFailedError } from "./TaskError";

@@ -1,12 +1,12 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
 import { createServiceToken, globalServiceRegistry } from "../di";
-import { Worker, parentPort } from "@ellmers/util";
+import { Worker, parentPort } from "@podley/util";
 
 /**
  * Extracts transferables from an object.

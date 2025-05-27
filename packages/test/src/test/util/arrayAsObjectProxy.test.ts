@@ -1,12 +1,12 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
 import { describe, expect, it } from "bun:test";
-import { objectOfArraysAsArrayOfObjects } from "@ellmers/util";
+import { objectOfArraysAsArrayOfObjects } from "@podley/util";
 
 describe("Object of arrays to array of objects proxy", () => {
   it("should return the initial length and numeric index access", () => {

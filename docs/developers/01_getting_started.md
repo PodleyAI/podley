@@ -28,8 +28,8 @@
 This project is not yet ready to be published on npm. So for now, use the source Luke.
 
 ```bash
-git clone https://github.com/sroussey/ellmers.git
-cd ellmers
+git clone https://github.com/podleyai/podley.git
+cd podley
 bun install
 bun run build
 cd examples/web
@@ -47,8 +47,8 @@ After this, plese read [Architecture](02_architecture.md) before attempting to [
 ## Using Workflow & a config helper
 
 ```ts
-import { Workflow } from "@ellmers/task-graph";
-import { register_HFT_InMemoryQueue } from "@ellmers/test";
+import { Workflow } from "@podley/task-graph";
+import { register_HFT_InMemoryQueue } from "@podley/test";
 // config and start up
 register_HFT_InMemoryQueue();
 
@@ -79,8 +79,8 @@ import {
   DebugLog,
   Dataflow,
   TaskGraph,
-} from "@ellmers/task-graph";
-import { register_HFT_InMemoryQueue } from "@ellmers/test";
+} from "@podley/task-graph";
+import { register_HFT_InMemoryQueue } from "@podley/test";
 
 // config and start up
 register_HFT_InMemoryQueue();
@@ -133,22 +133,22 @@ import {
   TaskInput,
   TaskOutput,
   getTaskQueueRegistry,
-} from "@ellmers/task-graph";
+} from "@podley/task-graph";
 
 import {
   DownloadModelTask,
   TextRewriterCompoundTask,
   getAiProviderRegistry,
   getGlobalModelRepository,
-} from "@ellmers/ai";
+} from "@podley/ai";
 
 import {
   HuggingFaceLocal_DownloadRun,
   HuggingFaceLocal_TextRewriterRun,
-} from "@ellmers/ai-provider";
+} from "@podley/ai-provider";
 
-import { JobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
-import { InMemoryQueueStorage } from "@ellmers/storage";
+import { JobQueue, InMemoryRateLimiter } from "@podley/job-queue";
+import { InMemoryQueueStorage } from "@podley/storage";
 // config and start up
 getGlobalModelRepository(new InMemoryModelRepository());
 await getGlobalModelRepository().addModel({
@@ -253,7 +253,7 @@ Tasks are the smallest unit of work, therefore they take simple inputs. GraphAsT
 An example is TextEmbeddingTask and TextEmbeddingCompoundTask. The first takes a single model input, the second accepts an array of model inputs. Since models can have different providers, the Compound version creates a single task version for each model input. The workflow is smart enough to know that the Compound version is needed when an array is passed, and as such, you don't need to differentiate between the two:
 
 ```ts
-import { Workflow } from "@ellmers/task-graph";
+import { Workflow } from "@podley/task-graph";
 const workflow = new Workflow();
 workflow.TextEmbedding({
   model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
@@ -265,7 +265,7 @@ await workflow.run();
 OR
 
 ```ts
-import { Workflow } from "@ellmers/task-graph";
+import { Workflow } from "@podley/task-graph";
 const workflow = new Workflow();
 workflow.TextEmbedding({
   model: ["onnx:Xenova/LaMini-Flan-T5-783M:q8", "Universal Sentence Encoder"],
@@ -277,7 +277,7 @@ await workflow.run();
 The workflow will look at outputs of one task and automatically connect it to the input of the next task, if the output and input names and types match. If they don't, you can use the `rename` method to rename the output of the first task to match the input of the second task.
 
 ```ts
-import { Workflow } from "@ellmers/task-graph";
+import { Workflow } from "@podley/task-graph";
 const workflow = new Workflow();
 workflow
   .DownloadModel({
@@ -360,7 +360,7 @@ There is a JSONTask that can be used to build a graph. This is useful for saving
 The JSON above is a good example as it shows how to use a compound task with multiple inputs. Compound tasks export arrays, so use a compound task to consume the output of another compound task. The `dependencies` object is used to specify which output of which task is used as input for the current task. It is a shorthand for creating a data flow (an edge) in the graph.
 
 ```ts
-import { JSONTask } from "@ellmers/task-graph";
+import { JSONTask } from "@podley/task-graph";
 const json = require("./example.json");
 const task = new JSONTask({ json });
 await task.run();
@@ -465,7 +465,7 @@ This is a collection of utility functions.
 
 ### `examples/cli`
 
-An example project that uses the library in a CLI settings using listr2 (`cat example.json | ellmers json`, for example)
+An example project that uses the library in a CLI settings using listr2 (`cat example.json | podley json`, for example)
 
 ![cli example](img/cli.png)
 

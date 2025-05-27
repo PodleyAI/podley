@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -7,9 +7,9 @@
 
 import "fake-indexeddb/auto";
 import { describe } from "bun:test";
-import { IndexedDbQueueStorage } from "@ellmers/storage";
+import { IndexedDbQueueStorage } from "@podley/storage";
 import { runGenericJobQueueTests } from "./genericJobQueueTests.test";
-import { InMemoryRateLimiter } from "@ellmers/job-queue";
+import { InMemoryRateLimiter } from "@podley/job-queue";
 
 describe("IndexedDbJobQueue", () => {
   runGenericJobQueueTests(

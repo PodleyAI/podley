@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -9,10 +9,10 @@ import {
   TaskGraphTabularRepository,
   TaskGraphSchema,
   TaskGraphPrimaryKeyNames,
-} from "@ellmers/task-graph";
-import { PostgresTabularRepository } from "@ellmers/storage";
+} from "@podley/task-graph";
+import { PostgresTabularRepository } from "@podley/storage";
 import type { Pool } from "pg";
-import { createServiceToken } from "@ellmers/util";
+import { createServiceToken } from "@podley/util";
 
 export const POSTGRES_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphTabularRepository>(
   "taskgraph.taskGraphRepository.postgres"

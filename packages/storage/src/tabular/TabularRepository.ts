@@ -1,11 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken, EventEmitter, makeFingerprint } from "@ellmers/util";
+import { createServiceToken, EventEmitter, makeFingerprint } from "@podley/util";
 import { Static, TObject, Type } from "@sinclair/typebox";
 import {
   ExtractPrimaryKey,

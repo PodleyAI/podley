@@ -1,11 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken, TypeBlob } from "@ellmers/util";
+import { createServiceToken, TypeBlob } from "@podley/util";
 import { TSchema, Type } from "@sinclair/typebox";
 import { mkdir, readFile, rmdir, unlink, writeFile } from "fs/promises";
 import path from "path";

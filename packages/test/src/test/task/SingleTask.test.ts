@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -7,7 +7,7 @@
 
 import { describe, expect, it, beforeEach, spyOn } from "bun:test";
 import { EventTestTask, SimpleProcessingTask, TestIOTask } from "./TestTasks";
-import { Task, TaskStatus, TaskAbortedError, TaskError } from "@ellmers/task-graph";
+import { Task, TaskStatus, TaskAbortedError, TaskError } from "@podley/task-graph";
 
 describe("SingleTask", () => {
   describe("TestIOTask", () => {

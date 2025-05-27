@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -21,8 +21,8 @@ import {
   TaskFailedError,
   TaskInput,
   Workflow,
-} from "@ellmers/task-graph";
-import { sleep } from "@ellmers/util";
+} from "@podley/task-graph";
+import { sleep } from "@podley/util";
 import { TObject, Type } from "@sinclair/typebox";
 
 /**
@@ -639,7 +639,7 @@ export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
 /**
  * Module augmentation to register test task types in the workflow system
  */
-declare module "@ellmers/task-graph" {
+declare module "@podley/task-graph" {
   interface Workflow {
     TestSimpleTask: CreateWorkflow<{ input: string }, { output: string }, TaskConfig>;
     TestOutputTask: CreateWorkflow<{ input: string }, { customOutput: string }, TaskConfig>;

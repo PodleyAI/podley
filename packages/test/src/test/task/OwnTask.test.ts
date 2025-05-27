@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Task, TaskGraph, TaskInput, TaskOutput, Workflow } from "@ellmers/task-graph";
+import { Task, TaskGraph, TaskInput, TaskOutput, Workflow } from "@podley/task-graph";
 
 // A test task that creates other tasks during execution
 class TaskCreatorTask extends Task {

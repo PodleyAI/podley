@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -7,7 +7,7 @@
 
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import { Task, TaskGraph, Workflow } from "@ellmers/task-graph";
+import { Task, TaskGraph, Workflow } from "@podley/task-graph";
 import "./main.css";
 import { isDarkMode, installDevToolsFormatters } from "./ConsoleFormatters";
 import {
@@ -15,8 +15,8 @@ import {
   TextRewriterTask,
   TextEmbeddingTask,
   TextTranslationTask,
-} from "@ellmers/ai";
-import { DebugLogTask, DelayTask, FetchTask, JsonTask, LambdaTask } from "@ellmers/tasks";
+} from "@podley/ai";
+import { DebugLogTask, DelayTask, FetchTask, JsonTask, LambdaTask } from "@podley/tasks";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   // <React.StrictMode>
@@ -49,7 +49,7 @@ const grey = dark ? "#aaa" : "#333";
 const yellow = dark ? "#f3ce49" : "#a68307";
 const orange = dark ? "#da885e" : "#953402";
 
-console.log("%cWelcome to Ellmers!", "color: green; font-size: 16px;");
+console.log("%cWelcome to Podley!", "color: green; font-size: 16px;");
 console.log(
   "%cOpen DevTools settings, and under Console, turn on 'enable custom formatters' for best experience. Then reload the page.",
   "color: red;"

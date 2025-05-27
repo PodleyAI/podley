@@ -172,5 +172,5 @@ bun test
 ## Installation
 
 ```bash
-bun add @ellmers/task-system
+bun add @podley/task-system
 ```

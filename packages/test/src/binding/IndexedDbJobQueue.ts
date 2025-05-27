@@ -1,13 +1,13 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Job, JobConstructorParam, JobQueue, JobQueueOptions } from "@ellmers/job-queue";
-import { IndexedDbQueueStorage } from "@ellmers/storage";
-import { createServiceToken } from "@ellmers/util";
+import { Job, JobConstructorParam, JobQueue, JobQueueOptions } from "@podley/job-queue";
+import { IndexedDbQueueStorage } from "@podley/storage";
+import { createServiceToken } from "@podley/util";
 
 export const INDEXED_DB_JOB_QUEUE =
   createServiceToken<JobQueue<any, any, any>>("jobQueue.indexedDb");

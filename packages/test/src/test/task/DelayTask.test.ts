@@ -1,13 +1,13 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
 import { beforeEach, describe, expect, it } from "bun:test";
-import { DelayTask } from "@ellmers/tasks";
-import { TaskStatus, TaskAbortedError } from "@ellmers/task-graph";
+import { DelayTask } from "@podley/tasks";
+import { TaskStatus, TaskAbortedError } from "@podley/task-graph";
 
 describe("DelayTask", () => {
   let task: DelayTask;

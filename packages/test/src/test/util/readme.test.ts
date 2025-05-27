@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { edgeIdentity } from "./graph.test";
-import { Graph, DirectedGraph, DirectedAcyclicGraph } from "@ellmers/util";
+import { Graph, DirectedGraph, DirectedAcyclicGraph } from "@podley/util";
 
 describe("The Readme", () => {
   it("runs the first example correctly", () => {

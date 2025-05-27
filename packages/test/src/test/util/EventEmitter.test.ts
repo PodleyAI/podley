@@ -1,12 +1,12 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach, mock } from "bun:test";
-import { EventEmitter } from "@ellmers/util";
+import { EventEmitter } from "@podley/util";
 
 // Define event types for testing
 interface TestEvents extends Record<string, (...args: any) => any> {

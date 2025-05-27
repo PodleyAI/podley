@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -11,7 +11,7 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
-} from "@ellmers/task-graph";
+} from "@podley/task-graph";
 import { TObject, Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypedArray, TypeModel } from "./base/AiTaskSchemas";
@@ -67,7 +67,7 @@ export const TextEmbedding = async (input: TextEmbeddingTaskInput, config?: JobQ
   return new TextEmbeddingTask(input, config).run();
 };
 
-declare module "@ellmers/task-graph" {
+declare module "@podley/task-graph" {
   interface Workflow {
     TextEmbedding: CreateWorkflow<
       TextEmbeddingTaskInput,

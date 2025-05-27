@@ -1,11 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IndexedDbTabularRepository } from "@ellmers/storage";
+import { IndexedDbTabularRepository } from "@podley/storage";
 import {
   Task2ModelSchema,
   Task2ModelPrimaryKeyNames,

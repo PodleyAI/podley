@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -11,11 +11,11 @@ import {
   TaskRegistry,
   Workflow,
   TypeReplicateArray,
-} from "@ellmers/task-graph";
+} from "@podley/task-graph";
 import { AiTask } from "./base/AiTask";
 import { TObject, Type, type Static } from "@sinclair/typebox";
 import { TypeLanguage, TypeModel } from "./base/AiTaskSchemas";
-import { TypeOptionalArray } from "@ellmers/util";
+import { TypeOptionalArray } from "@podley/util";
 
 export const TextTranslationInputSchema = Type.Object({
   text: TypeReplicateArray(
@@ -84,7 +84,7 @@ export const TextTranslation = (input: TextTranslationTaskInput, config?: JobQue
   return new TextTranslationTask(input, config).run();
 };
 
-declare module "@ellmers/task-graph" {
+declare module "@podley/task-graph" {
   interface Workflow {
     TextTranslation: CreateWorkflow<
       TextTranslationTaskInput,

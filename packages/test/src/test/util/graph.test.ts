@@ -2,7 +2,7 @@
 // previous fork: https://github.com/sroussey/typescript-graph
 // license: MIT
 
-import { Graph, NodeAlreadyExistsError, NodeDoesntExistError, serialize } from "@ellmers/util";
+import { Graph, NodeAlreadyExistsError, NodeDoesntExistError, serialize } from "@podley/util";
 import { hash } from "bun";
 import { describe, expect, it } from "bun:test";
 

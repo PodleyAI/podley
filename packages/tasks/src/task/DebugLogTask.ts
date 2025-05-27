@@ -1,11 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Workflow, TaskRegistry, CreateWorkflow, TaskConfig, Task } from "@ellmers/task-graph";
+import { Workflow, TaskRegistry, CreateWorkflow, TaskConfig, Task } from "@podley/task-graph";
 import { TObject, Type } from "@sinclair/typebox";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
@@ -89,7 +89,7 @@ export const DebugLog = (input: DebugLogTaskInput, config: TaskConfig = {}) => {
   return new DebugLogTask(input, config).run();
 };
 
-declare module "@ellmers/task-graph" {
+declare module "@podley/task-graph" {
   interface Workflow {
     DebugLog: CreateWorkflow<DebugLogTaskInput, DebugLogTaskOutput, TaskConfig>;
   }

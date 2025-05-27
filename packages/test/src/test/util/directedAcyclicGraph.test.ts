@@ -3,7 +3,7 @@
 // license: MIT
 
 import { describe, expect, it } from "bun:test";
-import { DirectedGraph, DirectedAcyclicGraph, CycleError } from "@ellmers/util";
+import { DirectedGraph, DirectedAcyclicGraph, CycleError } from "@podley/util";
 import { nodeIdentity, edgeIdentity } from "./graph.test";
 
 /***

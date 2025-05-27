@@ -1,4 +1,4 @@
-# @ellmers/tasks
+# @podley/tasks
 
 A package for building and running DAG pipelines of AI tasks. Provides various task types for common operations and workflow management.
 
@@ -23,13 +23,13 @@ A package for building and running DAG pipelines of AI tasks. Provides various t
 ## Installation
 
 ```bash
-bun add @ellmers/tasks
+bun add @podley/tasks
 ```
 
 ## Basic Usage
 
 ```typescript
-import { Workflow, Fetch, DebugLog, Delay } from "@ellmers/tasks";
+import { Workflow, Fetch, DebugLog, Delay } from "@podley/tasks";
 
 const workflow = new Workflow()
   .Fetch({ url: "https://api.example.com/data" })

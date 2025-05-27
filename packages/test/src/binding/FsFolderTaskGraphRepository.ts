@@ -1,17 +1,17 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { FsFolderTabularRepository } from "@ellmers/storage";
+import { FsFolderTabularRepository } from "@podley/storage";
 import {
   TaskGraphPrimaryKeyNames,
   TaskGraphTabularRepository,
   TaskGraphSchema,
-} from "@ellmers/task-graph";
-import { createServiceToken } from "@ellmers/util";
+} from "@podley/task-graph";
+import { createServiceToken } from "@podley/util";
 
 export const FS_FOLDER_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphTabularRepository>(
   "taskgraph.taskGraphRepository.fsFolder"

@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -12,9 +12,9 @@ import type {
   AiProviderRunFn,
   TextEmbeddingOutputSchema,
   TextEmbeddingInputSchema,
-} from "@ellmers/ai";
-import { PermanentJobError } from "@ellmers/job-queue";
-import { DeReplicateStatic } from "@ellmers/task-graph";
+} from "@podley/ai";
+import { PermanentJobError } from "@podley/job-queue";
+import { DeReplicateStatic } from "@podley/task-graph";
 
 /**
  * Core implementation for downloading and caching a MediaPipe TFJS model.

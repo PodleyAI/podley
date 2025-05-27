@@ -1,13 +1,13 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
 import { expect, it, beforeEach, afterEach, describe, mock } from "bun:test";
-import { TaskOutputRepository, TaskInput, TaskOutput } from "@ellmers/task-graph";
-import { TaskOutputTabularRepository } from "@ellmers/task-graph";
+import { TaskOutputRepository, TaskInput, TaskOutput } from "@podley/task-graph";
+import { TaskOutputTabularRepository } from "@podley/task-graph";
 
 export function runGenericTaskOutputRepositoryTests(
   createRepository: () => Promise<TaskOutputRepository>

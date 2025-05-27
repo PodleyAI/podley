@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -17,7 +17,7 @@ import {
   TaskOutput,
   TaskRegistry,
   Workflow,
-} from "@ellmers/task-graph";
+} from "@podley/task-graph";
 import { TObject, Type } from "@sinclair/typebox";
 
 interface LambdaTaskConfig<
@@ -142,7 +142,7 @@ export function Lambda<I extends TaskInput, O extends TaskOutput>(
 }
 
 // Add Lambda task workflow to Workflow interface
-declare module "@ellmers/task-graph" {
+declare module "@podley/task-graph" {
   interface Workflow {
     Lambda: <I extends TaskInput, O extends TaskOutput>(
       input: Partial<I>,

@@ -1,6 +1,6 @@
 # ELLMERS
 
-[![License](https://img.shields.io/badge/license-Apache2-blue.svg)](https://github.com/sroussey/ellmers/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-Apache2-blue.svg)](https://github.com/podleyai/podley/blob/main/LICENSE)
 
 ## Overview
 
@@ -39,7 +39,7 @@ Packages:
 
 ### Web
 
-[Demo](https://ellmers-web.netlify.app/)
+[Demo](https://podley-web.netlify.app/)
 
 ![Web](docs/developers/img/web.png)
 ![Console](docs/developers/img/console.png)

@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -15,9 +15,9 @@ import {
   TaskConfig,
   TaskIO,
   TaskConfigurationError,
-} from "@ellmers/task-graph";
-import { AbortSignalJobError, Job, PermanentJobError, RetryableJobError } from "@ellmers/job-queue";
-import { JSONValue } from "@ellmers/storage";
+} from "@podley/task-graph";
+import { AbortSignalJobError, Job, PermanentJobError, RetryableJobError } from "@podley/job-queue";
+import { JSONValue } from "@podley/storage";
 import { TObject, Type } from "@sinclair/typebox";
 
 export type url = string;
@@ -274,7 +274,7 @@ export const Fetch = async (
   return result as FetchTaskOutput;
 };
 
-declare module "@ellmers/task-graph" {
+declare module "@podley/task-graph" {
   interface Workflow {
     Fetch: CreateWorkflow<FetchTaskInput, FetchTaskOutput, TaskConfig>;
   }

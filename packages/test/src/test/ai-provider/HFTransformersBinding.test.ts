@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -11,19 +11,19 @@ import {
   getGlobalModelRepository,
   InMemoryModelRepository,
   setGlobalModelRepository,
-} from "@ellmers/ai";
-import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@ellmers/ai-provider";
-import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
-import { InMemoryQueueStorage, SqliteQueueStorage } from "@ellmers/storage";
+} from "@podley/ai";
+import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@podley/ai-provider";
+import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@podley/job-queue";
+import { InMemoryQueueStorage, SqliteQueueStorage } from "@podley/storage";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
   TaskInput,
   TaskOutput,
   Workflow,
-} from "@ellmers/task-graph";
-import { sleep } from "@ellmers/util";
-import { Sqlite } from "@ellmers/sqlite";
+} from "@podley/task-graph";
+import { sleep } from "@podley/util";
+import { Sqlite } from "@podley/sqlite";
 import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 
 const db = new Sqlite.Database(":memory:");

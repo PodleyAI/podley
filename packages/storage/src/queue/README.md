@@ -1,6 +1,6 @@
 # ELLMERS Queue Storage Package
 
-This is not a job queue implementation. It is a storage implementation for job queues. See the [@ellmers/job-queue](../../../job-queue/README.md) package for a job queue implementation that uses these storage implementations.
+This is not a job queue implementation. It is a storage implementation for job queues. See the [@podley/job-queue](../../../job-queue/README.md) package for a job queue implementation that uses these storage implementations.
 
 - [Features](#features)
 - [Performance Considerations](#performance-considerations)

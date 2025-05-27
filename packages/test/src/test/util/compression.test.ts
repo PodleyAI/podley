@@ -1,12 +1,12 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
 import { describe, expect, it } from "bun:test";
-import { compress, decompress } from "@ellmers/util";
+import { compress, decompress } from "@podley/util";
 
 describe("Compression", () => {
   it("should compress and decompress a JSON object", async () => {

@@ -1,11 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IKvRepository, DefaultKeyValueSchema } from "@ellmers/storage";
+import { IKvRepository, DefaultKeyValueSchema } from "@podley/storage";
 import { Static, TNumber, TSchema, TString, Type } from "@sinclair/typebox";
 import { beforeEach, describe, expect, it } from "bun:test";
 

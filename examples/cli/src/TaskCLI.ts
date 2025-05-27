@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -7,9 +7,9 @@
 
 import type { Command } from "commander";
 import { runTasks } from "./TaskGraphToUI";
-import { TaskGraph, Workflow, JsonTaskItem } from "@ellmers/task-graph";
-import { DownloadModelTask, getGlobalModelRepository } from "@ellmers/ai";
-import { DelayTask, JsonTask } from "@ellmers/tasks";
+import { TaskGraph, Workflow, JsonTaskItem } from "@podley/task-graph";
+import { DownloadModelTask, getGlobalModelRepository } from "@podley/ai";
+import { DelayTask, JsonTask } from "@podley/tasks";
 
 export function AddBaseCommands(program: Command) {
   program

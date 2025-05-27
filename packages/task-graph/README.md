@@ -1,4 +1,4 @@
-# @ellmers/task-graph
+# @podley/task-graph
 
 A lightweight library for building and executing DAG (Directed Acyclic Graph) pipelines of AI tasks. Provides persistent storage solutions and workflow management for complex task orchestration.
 
@@ -14,13 +14,13 @@ A lightweight library for building and executing DAG (Directed Acyclic Graph) pi
 ## Installation
 
 ```bash
-bun add @ellmers/task-graph
+bun add @podley/task-graph
 ```
 
 ## Basic Usage
 
 ```typescript
-import { TaskGraph, Dataflow } from "@ellmers/task-graph";
+import { TaskGraph, Dataflow } from "@podley/task-graph";
 
 // Define tasks
 class DataLoader extends Task {

@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -8,8 +8,8 @@
 import { describe } from "bun:test";
 import { PGlite } from "@electric-sql/pglite";
 import { Pool } from "pg";
-import { PostgresRateLimiter } from "@ellmers/job-queue";
-import { PostgresQueueStorage } from "@ellmers/storage";
+import { PostgresRateLimiter } from "@podley/job-queue";
+import { PostgresQueueStorage } from "@podley/storage";
 import { runGenericJobQueueTests } from "./genericJobQueueTests.test";
 
 const db = new PGlite() as unknown as Pool;

@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -9,7 +9,7 @@ import React, { useState, useEffect } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import { json } from "@codemirror/lang-json";
-import { JsonTask } from "@ellmers/tasks";
+import { JsonTask } from "@podley/tasks";
 
 import "./JsonEditor.css";
 

@@ -1,11 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { PostgresTabularRepository } from "@ellmers/storage";
+import { PostgresTabularRepository } from "@podley/storage";
 import {
   runGenericTabularRepositoryTests,
   CompoundPrimaryKeyNames,
@@ -13,7 +13,7 @@ import {
   SearchPrimaryKeyNames,
   SearchSchema,
 } from "./genericTabularRepositoryTests.test";
-import { uuid4 } from "@ellmers/util";
+import { uuid4 } from "@podley/util";
 import { describe } from "bun:test";
 import type { Pool } from "pg";
 import { PGlite } from "@electric-sql/pglite";

@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { edgeIdentity, nodeIdentity } from "./graph.test";
-import { DirectedGraph, NodeDoesntExistError } from "@ellmers/util";
+import { DirectedGraph, NodeDoesntExistError } from "@podley/util";
 
 /***
  * Directed Graph test

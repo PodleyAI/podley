@@ -1,4 +1,4 @@
-# @ellmers/job-queue
+# @podley/job-queue
 
 A simple job queue system for managing and processing asynchronous tasks with rate limiting, and cross-platform persistence.
 
@@ -38,7 +38,7 @@ A simple job queue system for managing and processing asynchronous tasks with ra
 ## Installation
 
 ```bash
-bun add @ellmers/job-queue
+bun add @podley/job-queue
 ```
 
 ## Basic Usage
@@ -46,7 +46,7 @@ bun add @ellmers/job-queue
 ### Creating a Queue
 
 ```typescript
-import { Job, InMemoryJobQueue } from "@ellmers/job-queue";
+import { Job, InMemoryJobQueue } from "@podley/job-queue";
 
 // Define your job type
 interface MyJobInput {
@@ -114,7 +114,7 @@ queue.on("job_progress", (queueName, jobId, progress) => {
 ### Composite Limiter
 
 ```typescript
-import { CompositeLimiter, ConcurrencyLimiter, DelayLimiter } from "@ellmers/job-queue";
+import { CompositeLimiter, ConcurrencyLimiter, DelayLimiter } from "@podley/job-queue";
 
 const limiter = new CompositeLimiter([
   new ConcurrencyLimiter(5), // Max 5 concurrent jobs
@@ -131,7 +131,7 @@ const limiter = new CompositeLimiter([
 ### Concurrency Limiter
 
 ```typescript
-import { ConcurrencyLimiter } from "@ellmers/job-queue";
+import { ConcurrencyLimiter } from "@podley/job-queue";
 
 const limiter = new ConcurrencyLimiter(15); // Max 15 jobs at a time
 ```
@@ -139,7 +139,7 @@ const limiter = new ConcurrencyLimiter(15); // Max 15 jobs at a time
 ### Delay Limiter
 
 ```typescript
-import { DelayLimiter } from "@ellmers/job-queue";
+import { DelayLimiter } from "@podley/job-queue";
 
 const limiter = new DelayLimiter(100); // Minimum 100ms between job starts
 ```
@@ -149,7 +149,7 @@ const limiter = new DelayLimiter(100); // Minimum 100ms between job starts
 ### InMemory (Anywhere)
 
 ```typescript
-import { Job, InMemoryJobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
+import { Job, InMemoryJobQueue, InMemoryRateLimiter } from "@podley/job-queue";
 
 const queue = new InMemoryJobQueue<MyJobInput, MyJobOutput>("browser-queue", Job, {
   limiter: new InMemoryRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
@@ -157,8 +157,8 @@ const queue = new InMemoryJobQueue<MyJobInput, MyJobOutput>("browser-queue", Job
 
 // equivalent example on how to use the storage class directly
 
-import { Job, JobQueue, InMemoryRateLimiter } from "@ellmers/job-queue";
-import { InMemoryQueueStorage } from "@ellmers/storage";
+import { Job, JobQueue, InMemoryRateLimiter } from "@podley/job-queue";
+import { InMemoryQueueStorage } from "@podley/storage";
 
 const queue = new JobQueue<MyJobInput, MyJobOutput>("browser-queue", Job, {
   storage: new InMemoryQueueStorage("browser-queue"),
@@ -169,7 +169,7 @@ const queue = new JobQueue<MyJobInput, MyJobOutput>("browser-queue", Job, {
 ### IndexedDB (Browser)
 
 ```typescript
-import { IndexedDbJobQueue, IndexedDbRateLimiter } from "@ellmers/job-queue";
+import { IndexedDbJobQueue, IndexedDbRateLimiter } from "@podley/job-queue";
 
 const queue = new IndexedDbJobQueue<MyJobInput, MyJobOutput>("browser-queue", Job, {
   limiter: new InMemoryRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
@@ -179,7 +179,7 @@ const queue = new IndexedDbJobQueue<MyJobInput, MyJobOutput>("browser-queue", Jo
 ### Sqlite (Node.js/Bun)
 
 ```typescript
-import { SqliteJobQueue, SqliteRateLimiter } from "@ellmers/job-queue";
+import { SqliteJobQueue, SqliteRateLimiter } from "@podley/job-queue";
 
 const queue = new SqliteJobQueue(db, "sqlite-queue", Job, {
   limiter: new SqliteRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),
@@ -189,7 +189,7 @@ const queue = new SqliteJobQueue(db, "sqlite-queue", Job, {
 ### PostgreSQL (Node.js/Bun)
 
 ```typescript
-import { PostgresJobQueue, PostgresRateLimiter } from "@ellmers/job-queue";
+import { PostgresJobQueue, PostgresRateLimiter } from "@podley/job-queue";
 
 const queue = new PostgresJobQueue(postgresPool, "pg-queue", Job, {
   limiter: new PostgresRateLimiter({ maxExecutions: 10, windowSizeInSeconds: 1 }),

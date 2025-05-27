@@ -1,12 +1,12 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach, afterEach, spyOn } from "bun:test";
-import { sleep } from "@ellmers/util";
+import { sleep } from "@podley/util";
 import {
   NumberTask,
   StringTask,
@@ -23,7 +23,7 @@ import {
   WorkflowError,
   CreateWorkflow,
   ITaskConstructor,
-} from "@ellmers/task-graph";
+} from "@podley/task-graph";
 const colsoleError = globalThis.console.error;
 
 describe("Workflow", () => {

@@ -1,13 +1,13 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TaskInput, TaskOutput } from "@ellmers/task-graph";
+import { TaskInput, TaskOutput } from "@podley/task-graph";
 import { Model } from "../model/Model";
-import { globalServiceRegistry, WORKER_MANAGER } from "@ellmers/util";
+import { globalServiceRegistry, WORKER_MANAGER } from "@podley/util";
 
 /**
  * Type for the run function for the AiJob

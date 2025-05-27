@@ -1,12 +1,12 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
 import { beforeEach, describe, expect, it, spyOn } from "bun:test";
-import { sleep } from "@ellmers/util";
+import { sleep } from "@podley/util";
 import {
   Dataflow,
   TaskGraph,
@@ -19,7 +19,7 @@ import {
   TaskRegistry,
   TaskOutput,
   GraphSingleResult,
-} from "@ellmers/task-graph";
+} from "@podley/task-graph";
 import {
   TestSquareTask,
   TestDoubleTask,
@@ -27,7 +27,7 @@ import {
   LongRunningTask,
   FAILURE_MESSAGE,
 } from "../task/TestTasks";
-import { TaskError } from "@ellmers/task-graph";
+import { TaskError } from "@podley/task-graph";
 
 TaskRegistry.all.clear();
 

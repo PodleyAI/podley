@@ -32,15 +32,15 @@ A collection of storage implementations for tabular data with multiple backend s
 ## Installation
 
 ```bash
-bun add @ellmers/storage
+bun add @podley/storage
 # or
-npm install @ellmers/storage
+npm install @podley/storage
 ```
 
 ## Basic Usage
 
 ```typescript
-import { InMemoryTabularRepository } from "@ellmers/storage/tabular";
+import { InMemoryTabularRepository } from "@podley/storage/tabular";
 
 // Define schema and primary keys
 const schema = {

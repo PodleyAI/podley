@@ -1,17 +1,17 @@
 #!/usr/bin/env bun
 
-import { register_HFT_InlineJobFns, register_TFMP_InlineJobFns } from "@ellmers/ai-provider";
-import { getTaskQueueRegistry } from "@ellmers/task-graph";
+import { register_HFT_InlineJobFns, register_TFMP_InlineJobFns } from "@podley/ai-provider";
+import { getTaskQueueRegistry } from "@podley/task-graph";
 import {
   register_HFT_InMemoryQueue,
   register_TFMP_InMemoryQueue,
   registerHuggingfaceLocalModels,
   registerMediaPipeTfJsLocalModels,
-} from "@ellmers/test";
+} from "@podley/test";
 import { program } from "commander";
 import { AddBaseCommands } from "./TaskCLI";
 
-program.version("1.0.0").description("A CLI to run Ellmers.");
+program.version("1.0.0").description("A CLI to run Podley.");
 
 AddBaseCommands(program);
 

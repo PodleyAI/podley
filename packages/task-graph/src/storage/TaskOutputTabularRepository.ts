@@ -1,12 +1,12 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { type TabularRepository } from "@ellmers/storage";
-import { compress, decompress, makeFingerprint, TypeBlob, TypeDateTime } from "@ellmers/util";
+import { type TabularRepository } from "@podley/storage";
+import { compress, decompress, makeFingerprint, TypeBlob, TypeDateTime } from "@podley/util";
 import { Type } from "@sinclair/typebox";
 import { TaskInput, TaskOutput } from "../task/TaskTypes";
 import { TaskOutputRepository } from "./TaskOutputRepository";

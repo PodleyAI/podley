@@ -1,16 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  createServiceToken,
-  globalServiceRegistry,
-  WORKER_SERVER,
-  parentPort,
-} from "@ellmers/util";
+import { createServiceToken, globalServiceRegistry, WORKER_SERVER, parentPort } from "@podley/util";
 import { TFMP_Download, TFMP_TextEmbedding } from "../common/TFMP_JobRunFns";
 
 // Register the worker functions

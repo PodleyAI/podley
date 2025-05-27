@@ -1,17 +1,17 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ITask, ITaskGraph, TaskStatus, ArrayTask } from "@ellmers/task-graph";
+import { ITask, ITaskGraph, TaskStatus, ArrayTask } from "@podley/task-graph";
 import type { FC } from "react";
 import { memo, useEffect, useState } from "react";
 import { Box, List, Text, useList, useListItem } from "retuink";
 import { createBar, Spinner, symbols } from "./Elements";
 import TaskGraphUI from "./TaskGraphUI";
-import { DownloadModelTask } from "@ellmers/ai";
+import { DownloadModelTask } from "@podley/ai";
 
 const StatusIcon = memo(
   ({ status, dependant }: { status: TaskStatus; dependant: boolean }) => {

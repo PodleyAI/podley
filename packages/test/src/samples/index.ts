@@ -1,15 +1,15 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { AiJob, AiProviderInput } from "@ellmers/ai";
-import { TENSORFLOW_MEDIAPIPE } from "@ellmers/ai-provider";
-import { ConcurrencyLimiter, JobQueue } from "@ellmers/job-queue";
-import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@ellmers/task-graph";
-import { InMemoryQueueStorage } from "@ellmers/storage";
+import { AiJob, AiProviderInput } from "@podley/ai";
+import { TENSORFLOW_MEDIAPIPE } from "@podley/ai-provider";
+import { ConcurrencyLimiter, JobQueue } from "@podley/job-queue";
+import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@podley/task-graph";
+import { InMemoryQueueStorage } from "@podley/storage";
 export * from "./MediaPipeModelSamples";
 export * from "./ONNXModelSamples";
 

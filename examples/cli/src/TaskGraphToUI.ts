@@ -1,15 +1,15 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Task, TaskGraph, IWorkflow, ITaskGraph, Taskish, Workflow } from "@ellmers/task-graph";
+import { Task, TaskGraph, IWorkflow, ITaskGraph, Taskish, Workflow } from "@podley/task-graph";
 import React from "react";
 import { render } from "retuink";
 import App from "./components/App";
-import { sleep } from "@ellmers/util";
+import { sleep } from "@podley/util";
 
 export async function runTasks(taskish: Taskish) {
   if (taskish instanceof Workflow) {

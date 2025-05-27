@@ -1,15 +1,15 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import type { Sqlite } from "@ellmers/sqlite";
-import { uuid4 } from "@ellmers/util";
-import { makeFingerprint, sleep } from "@ellmers/util";
+import type { Sqlite } from "@podley/sqlite";
+import { uuid4 } from "@podley/util";
+import { makeFingerprint, sleep } from "@podley/util";
 import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
-import { createServiceToken } from "@ellmers/util";
+import { createServiceToken } from "@podley/util";
 
 export const SQLITE_QUEUE_STORAGE =
   createServiceToken<IQueueStorage<any, any>>("jobqueue.storage.sqlite");

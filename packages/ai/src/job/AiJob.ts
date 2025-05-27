@@ -1,12 +1,12 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { AbortSignalJobError, Job, JobStatus, PermanentJobError } from "@ellmers/job-queue";
-import { TaskInput, TaskOutput } from "@ellmers/task-graph";
+import { AbortSignalJobError, Job, JobStatus, PermanentJobError } from "@podley/job-queue";
+import { TaskInput, TaskOutput } from "@podley/task-graph";
 import { getAiProviderRegistry } from "../provider/AiProviderRegistry";
 import { getGlobalModelRepository } from "../model/ModelRegistry";
 

@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -12,7 +12,7 @@ import {
   TaskRegistry,
   Workflow,
   TaskError,
-} from "@ellmers/task-graph";
+} from "@podley/task-graph";
 import { Type, type Static } from "@sinclair/typebox";
 import { TypedArray } from "./base/AiTaskSchemas";
 
@@ -117,7 +117,7 @@ export const Similarity = (input: SimilarityTaskInput, config?: JobQueueTaskConf
   return new SimilarityTask(input, config).run();
 };
 
-declare module "@ellmers/task-graph" {
+declare module "@podley/task-graph" {
   interface Workflow {
     Similarity: CreateWorkflow<SimilarityTaskInput, SimilarityTaskOutput, JobQueueTaskConfig>;
   }

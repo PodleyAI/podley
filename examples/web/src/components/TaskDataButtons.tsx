@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ITask, TaskStatus } from "@ellmers/task-graph";
+import { ITask, TaskStatus } from "@podley/task-graph";
 import { ViewportPortal } from "@xyflow/react";
 import { DataDialog } from "./DataDialog";
 

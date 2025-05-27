@@ -1,11 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { ArrayTask, ITask, TaskStatus } from "@ellmers/task-graph";
+import { ArrayTask, ITask, TaskStatus } from "@podley/task-graph";
 import { Node, NodeProps } from "@xyflow/react";
 import React, { useEffect, useState } from "react";
 import { NodeContainer } from "./NodeContainer";

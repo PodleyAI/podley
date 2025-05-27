@@ -1,11 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { getGlobalModelRepository, ModelRepository, setGlobalModelRepository } from "@ellmers/ai";
+import { getGlobalModelRepository, ModelRepository, setGlobalModelRepository } from "@podley/ai";
 import { afterEach, beforeEach, expect, it } from "bun:test";
 
 const HF_TRANSFORMERS_ONNX = "HF_TRANSFORMERS_ONNX";

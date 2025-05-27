@@ -1,6 +1,6 @@
 import { OptionalKind, Type } from "@sinclair/typebox";
 import { describe, expect, test } from "bun:test";
-import { simplifySchema } from "@ellmers/util";
+import { simplifySchema } from "@podley/util";
 
 describe("simplifySchema", () => {
   test("should throw error for undefined schema", () => {

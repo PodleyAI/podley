@@ -1,4 +1,4 @@
-# @ellmers/storage
+# @podley/storage
 
 Modular storage solutions for ELLMERS platform with multiple backend implementations. Provides consistent interfaces for key-value storage and job queue persistence.
 
@@ -28,7 +28,7 @@ Modular storage solutions for ELLMERS platform with multiple backend implementat
 ## Installation
 
 ```bash
-bun install @ellmers/storage
+bun install @podley/storage
 ```
 
 ## Modules
@@ -38,7 +38,7 @@ bun install @ellmers/storage
 Structured data storage with schema support for complex operations:
 
 ```typescript
-import { SqliteTabularRepository } from "@ellmers/storage/tabular";
+import { SqliteTabularRepository } from "@podley/storage/tabular";
 
 const tabularStore = new SqliteTabularRepository(
   database,
@@ -56,7 +56,7 @@ const tabularStore = new SqliteTabularRepository(
 Flexible key-value storage with multiple implementations:
 
 ```typescript
-import { FsFolderKvRepository } from "@ellmers/storage/kv";
+import { FsFolderKvRepository } from "@podley/storage/kv";
 
 const kvStore = new FsFolderKvRepository("./data", "string", "json");
 await kvStore.put("config", { darkMode: true });
@@ -69,7 +69,7 @@ await kvStore.put("config", { darkMode: true });
 Persistent job queue implementations with lifecycle management (_not meant to be used directly_):
 
 ```typescript
-import { IndexedDbQueueStorage } from "@ellmers/storage/queue";
+import { IndexedDbQueueStorage } from "@podley/storage/queue";
 
 const jobQueue = new IndexedDbQueueStorage("processing-queue");
 await jobQueue.add({ input: "process_data" });

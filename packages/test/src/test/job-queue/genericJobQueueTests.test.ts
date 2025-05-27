@@ -1,12 +1,12 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IQueueStorage, IndexedDbQueueStorage } from "@ellmers/storage";
-import { BaseError, sleep, uuid4 } from "@ellmers/util";
+import { IQueueStorage, IndexedDbQueueStorage } from "@podley/storage";
+import { BaseError, sleep, uuid4 } from "@podley/util";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   AbortSignalJobError,
@@ -18,7 +18,7 @@ import {
   JobStatus,
   PermanentJobError,
   RetryableJobError,
-} from "@ellmers/job-queue";
+} from "@podley/job-queue";
 
 export interface TInput {
   [key: string]: any;

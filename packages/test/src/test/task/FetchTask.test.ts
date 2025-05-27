@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -10,12 +10,12 @@ import {
   JobQueue,
   PermanentJobError,
   RetryableJobError,
-} from "@ellmers/job-queue";
-import { InMemoryQueueStorage } from "@ellmers/storage";
-import { JobTaskFailedError } from "@ellmers/task-graph";
-import { getTaskQueueRegistry, setTaskQueueRegistry } from "@ellmers/task-graph";
-import { Fetch, FetchJob, FetchTaskInput, FetchTaskOutput } from "@ellmers/tasks";
-import { sleep } from "@ellmers/util";
+} from "@podley/job-queue";
+import { InMemoryQueueStorage } from "@podley/storage";
+import { JobTaskFailedError } from "@podley/task-graph";
+import { getTaskQueueRegistry, setTaskQueueRegistry } from "@podley/task-graph";
+import { Fetch, FetchJob, FetchTaskInput, FetchTaskOutput } from "@podley/tasks";
+import { sleep } from "@podley/util";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
 
 // Create base mock response

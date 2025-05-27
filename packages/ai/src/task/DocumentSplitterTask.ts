@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -11,7 +11,7 @@ import {
   TaskRegistry,
   JobQueueTaskConfig,
   Task,
-} from "@ellmers/task-graph";
+} from "@podley/task-graph";
 import { Document, DocumentFragment } from "../source/Document";
 import { TObject, Type } from "@sinclair/typebox";
 export type DocumentSplitterTaskInput = {
@@ -70,7 +70,7 @@ export const DocumentSplitter = (input: DocumentSplitterTaskInput) => {
   return new DocumentSplitterTask(input).run();
 };
 
-declare module "@ellmers/task-graph" {
+declare module "@podley/task-graph" {
   interface Workflow {
     DocumentSplitter: CreateWorkflow<
       DocumentSplitterTaskInput,

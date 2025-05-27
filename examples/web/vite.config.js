@@ -17,16 +17,16 @@ export default defineConfig({
         manualChunks: {
           "huggingface-transformers": ["@sroussey/transformers"],
           "tf-mediapipe": ["@mediapipe/tasks-text"],
-          ellmers: [
-            "@ellmers/ai",
-            "@ellmers/ai-provider",
-            "@ellmers/job-queue",
-            "@ellmers/storage",
-            "@ellmers/task-graph",
-            "@ellmers/tasks",
-            "@ellmers/test",
-            "@ellmers/util",
-            "@ellmers/sqlite",
+          podley: [
+            "@podley/ai",
+            "@podley/ai-provider",
+            "@podley/job-queue",
+            "@podley/storage",
+            "@podley/task-graph",
+            "@podley/tasks",
+            "@podley/test",
+            "@podley/util",
+            "@podley/sqlite",
           ],
           react: [
             "react",

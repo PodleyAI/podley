@@ -1,14 +1,14 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
 import { describe, expect, it, beforeEach, afterEach } from "bun:test";
-import { ITabularRepository } from "@ellmers/storage";
+import { ITabularRepository } from "@podley/storage";
 import { Type } from "@sinclair/typebox";
-import { TypeDateTime } from "@ellmers/util";
+import { TypeDateTime } from "@podley/util";
 
 export const CompoundPrimaryKeyNames = ["name", "type"] as const;
 export const CompoundSchema = Type.Object({

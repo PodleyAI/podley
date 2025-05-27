@@ -1,11 +1,11 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { createServiceToken } from "@ellmers/util";
+import { createServiceToken } from "@podley/util";
 import { ILimiter, RateLimiterOptions } from "./ILimiter";
 
 export const EVENLY_SPACED_JOB_RATE_LIMITER = createServiceToken<ILimiter>(

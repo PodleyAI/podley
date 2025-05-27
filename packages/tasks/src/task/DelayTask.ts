@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -14,8 +14,8 @@ import {
   TaskOutput,
   TaskRegistry,
   Workflow,
-} from "@ellmers/task-graph";
-import { sleep } from "@ellmers/util";
+} from "@podley/task-graph";
+import { sleep } from "@podley/util";
 import { TObject, Type } from "@sinclair/typebox";
 
 export type DelayTaskInput = {
@@ -87,7 +87,7 @@ export const Delay = (input: DelayTaskInput, config: TaskConfig = {}) => {
   return task.run();
 };
 
-declare module "@ellmers/task-graph" {
+declare module "@podley/task-graph" {
   interface Workflow {
     Delay: CreateWorkflow<DelayTaskInput, DelayTaskOutput, TaskConfig>;
   }

@@ -1,5 +1,5 @@
 //    *******************************************************************************
-//    *   ELLMERS: Embedding Large Language Model Experiential Retrieval Service    *
+//    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -13,17 +13,17 @@ import {
   getGlobalModelRepository,
   Model,
   setAiProviderRegistry,
-} from "@ellmers/ai";
-import { InMemoryRateLimiter, JobQueue } from "@ellmers/job-queue";
-import { InMemoryQueueStorage } from "@ellmers/storage";
+} from "@podley/ai";
+import { InMemoryRateLimiter, JobQueue } from "@podley/job-queue";
+import { InMemoryQueueStorage } from "@podley/storage";
 import {
   TaskInput,
   TaskOutput,
   TaskQueueRegistry,
   getTaskQueueRegistry,
   setTaskQueueRegistry,
-} from "@ellmers/task-graph";
-import { sleep } from "@ellmers/util";
+} from "@podley/task-graph";
+import { sleep } from "@podley/util";
 import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 // Constants for testing
 const TEST_PROVIDER = "test-provider";
