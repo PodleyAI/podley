@@ -83,9 +83,12 @@ export class FetchQuarterlyIndexTask extends Task<
     input: FetchQuarterlyIndexTaskInput,
     config: IExecuteConfig
   ): Promise<FetchQuarterlyIndexTaskOutput> {
-    if (!input.date) return { updateList: [] };
+    let date = input.date;
+    if (!date) {
+      date = secDate(new Date());
+    }
 
-    const secFetch = config.own(new SecFetchQuarterlyIndexTask({ date: input.date }));
+    const secFetch = config.own(new SecFetchQuarterlyIndexTask({ date }));
     const secData = await secFetch.run();
     let data = secData.text!;
     let loc = data.indexOf("-------");

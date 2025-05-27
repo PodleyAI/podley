@@ -10,21 +10,27 @@ import { pipe } from "@ellmers/task-graph";
 import type { Command } from "commander";
 import { FetchQuarterlyIndexRangeTask } from "../task/index/FetchQuarterlyIndexRangeTask";
 import { StoreCikLastUpdatedTask } from "../task/index/StoreCikLastUpdatedTask";
+import { FetchQuarterlyIndexTask } from "../task/index/FetchQuarterlyIndexTask";
 
 export function BootstrapCikLastUpdate(program: Command) {
   program
     .command("bootstrap-cik-last-update")
     .description("bootstrap the cik last update task")
-    .argument("<year>", "the year to bootstrap the cik last update task")
+    .argument("[year]", "the year to bootstrap the cik last update task")
     .action(async (year: string) => {
-      const yearInt = parseInt(year);
-      if (yearInt < 1993 || yearInt > new Date().getFullYear() + 1) {
+      const yearInt = year ? parseInt(year) : undefined;
+      if (yearInt && (yearInt < 1993 || yearInt > new Date().getFullYear() + 1)) {
         throw new Error("Invalid year");
       }
-      const flow = pipe([
-        new FetchQuarterlyIndexRangeTask({ startYear: yearInt }),
-        new StoreCikLastUpdatedTask(),
-      ]);
+      let flow;
+      if (yearInt) {
+        flow = pipe([
+          new FetchQuarterlyIndexRangeTask({ startYear: yearInt }),
+          new StoreCikLastUpdatedTask(),
+        ]);
+      } else {
+        flow = pipe([new FetchQuarterlyIndexTask(), new StoreCikLastUpdatedTask()]);
+      }
       try {
         await runTasks(flow);
       } catch (error) {
