@@ -19,10 +19,14 @@
     "docs": "typedoc",
     "format": "eslint --fix && prettier \"{packages,examples}/*/src/**/*.{js,ts,tsx,json}\" --check --write",
     "release": "turbo run build-package && bun publish",
-    "test": "bun test"
+    "test": "bun test",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "publish": "turbo run build-types build-package build-example && changeset publish"
   },
   "dependencies": {},
   "devDependencies": {
+    "@changesets/cli": "^2.29.4",
     "@types/bun": "^1.2.8",
     "@types/react": "19.0.12",
     "@types/react-dom": "19.0.4",

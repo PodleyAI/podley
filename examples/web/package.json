@@ -1,6 +1,6 @@
 {
   "name": "@podley/web",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "concurrently --kill-others -c 'auto' -n app,types 'bunx --bun vite' 'tsc -w --noEmit --preserveWatchOutput'",
