@@ -22,7 +22,7 @@
     "test": "bun test",
     "changeset": "changeset",
     "version": "changeset version",
-    "publish": "changeset publish"
+    "publish": "bun ./scripts/publish-workspaces.ts"
   },
   "dependencies": {},
   "devDependencies": {
@@ -47,7 +47,7 @@
     "typescript": "5.8.3"
   },
   "engines": {
-    "bun": "^1.2.6"
+    "bun": "^1.2.15"
   },
   "packageManager": "bun@1.2.6",
   "trustedDependencies": [
