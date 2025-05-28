@@ -11,7 +11,7 @@ import {
 import { program } from "commander";
 import { AddBaseCommands } from "./TaskCLI";
 
-program.version("1.0.0").description("A CLI to run Podley.");
+program.version("1.0.0").description("A CLI to run tasks.");
 
 AddBaseCommands(program);
 
@@ -23,6 +23,6 @@ await register_HFT_InMemoryQueue();
 // await register_TFMP_InlineJobFns();
 // await register_TFMP_InMemoryQueue();
 
-await program.parseAsync(process.argv);
+program.parse(process.argv);
 
 getTaskQueueRegistry().stopQueues();

@@ -9,7 +9,7 @@ The Embedding Large Language Model Experiential retrieval Service (ELLMERS) is a
 ## Features
 
 - Support for multiple LLM models
-- Support for differnt instruction transformations
+- Support for different instruction transformations
 - Support for multiple dimensionalities for testing
 - Support for different storage backends
 - Support for different retreival strategies

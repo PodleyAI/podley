@@ -36,7 +36,6 @@
     "@podley/tasks": "workspace:*",
     "@podley/test": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sinclair/typebox": "^0.34.33",
     "@mediapipe/tasks-text": "^0.10.21",
     "@sroussey/transformers": "3.5.1-2",
     "@types/react": "=18.3.12",
