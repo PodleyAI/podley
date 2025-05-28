@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { readFile } from "fs/promises";
+import { readdir, readFile } from "fs/promises";
 import { join } from "path";
 import { execSync } from "child_process";
 import { glob } from "glob";
@@ -17,7 +17,7 @@ interface RootPackageJson {
 }
 
 interface PublishError {
-  workspace: string;
+  packageName: string;
   error: string;
   isVersionConflict: boolean;
   output?: string;
@@ -52,15 +52,19 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishE
 
     if (packageJson.publishConfig?.access) {
       const access = packageJson.publishConfig.access;
-      const output = execSync(`bun publish --access ${access}`, {
+      const output = execSync(`bun publish --access ${access} 2>&1`, {
         cwd: workspacePath,
         stdio: "pipe",
       }).toString();
 
-      // Check if the output contains an error message
-      if (output.includes("You cannot publish over the previously published versions")) {
+      // Check if the output contains a version conflict error message
+      const isVersionConflict = output.includes(
+        "You cannot publish over the previously published versions"
+      );
+
+      if (isVersionConflict) {
         return {
-          workspace: workspacePath,
+          packageName: packageJson.name,
           error: "Version already published",
           isVersionConflict: true,
           output,
@@ -70,7 +74,7 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishE
       // Check for other error messages in the output
       if (output.toLowerCase().includes("error") || output.toLowerCase().includes("failed")) {
         return {
-          workspace: workspacePath,
+          packageName: packageJson.name,
           error: "Publish failed",
           isVersionConflict: false,
           output,
@@ -80,8 +84,11 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishE
     return null;
   } catch (error) {
     // This would only catch if the command itself fails to execute
+    const packageJson = JSON.parse(
+      await readFile(join(workspacePath, "package.json"), "utf-8")
+    ) as PackageJson;
     return {
-      workspace: workspacePath,
+      packageName: packageJson.name,
       error: error instanceof Error ? error.message : String(error),
       isVersionConflict: false,
     };
@@ -109,7 +116,7 @@ async function main(): Promise<void> {
     if (versionConflicts.length > 0) {
       console.log("\nVersion conflicts (not considered failures):");
       for (const error of versionConflicts) {
-        console.log(`\n${error.workspace}:`);
+        console.log(`\n${error.packageName}:`);
         console.log(error.error);
       }
     }
@@ -117,7 +124,7 @@ async function main(): Promise<void> {
     if (otherErrors.length > 0) {
       console.error("\nPublishing failed for the following workspaces:");
       for (const error of otherErrors) {
-        console.error(`\n${error.workspace}:`);
+        console.error(`\n${error.packageName}:`);
         console.error(error.error);
         if (error.output) {
           console.error("\nCommand output:");
