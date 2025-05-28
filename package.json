@@ -27,7 +27,7 @@
   "dependencies": {},
   "devDependencies": {
     "@changesets/cli": "^2.29.4",
-    "@types/bun": "^1.2.8",
+    "@types/bun": "^1.2.14",
     "@types/react": "19.0.12",
     "@types/react-dom": "19.0.4",
     "@typescript-eslint/eslint-plugin": "^8.29.0",
