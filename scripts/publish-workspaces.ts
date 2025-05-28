@@ -52,42 +52,38 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishE
 
     if (packageJson.publishConfig?.access) {
       const access = packageJson.publishConfig.access;
-      console.log(`\nPublishing ${packageJson.name} with access: ${access}`);
-      execSync(`bun publish --access ${access}`, {
+      const output = execSync(`bun publish --access ${access}`, {
         cwd: workspacePath,
-        stdio: "inherit",
-      });
-      console.log(`Successfully published ${packageJson.name}`);
+        stdio: "pipe",
+      }).toString();
+
+      // Check if the output contains an error message
+      if (output.includes("You cannot publish over the previously published versions")) {
+        return {
+          workspace: workspacePath,
+          error: "Version already published",
+          isVersionConflict: true,
+          output,
+        };
+      }
+
+      // Check for other error messages in the output
+      if (output.toLowerCase().includes("error") || output.toLowerCase().includes("failed")) {
+        return {
+          workspace: workspacePath,
+          error: "Publish failed",
+          isVersionConflict: false,
+          output,
+        };
+      }
     }
     return null;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const isVersionConflict = errorMessage.includes(
-      "You cannot publish over the previously published versions"
-    );
-
-    // Capture the command output if it's not a version conflict
-    let output: string | undefined;
-    if (!isVersionConflict) {
-      try {
-        const packageJson = JSON.parse(
-          await readFile(join(workspacePath, "package.json"), "utf-8")
-        ) as PackageJson;
-        const access = packageJson.publishConfig?.access;
-        output = execSync(`bun publish --access ${access}`, {
-          cwd: workspacePath,
-          stdio: "pipe",
-        }).toString();
-      } catch (e) {
-        output = e instanceof Error ? e.message : String(e);
-      }
-    }
-
+    // This would only catch if the command itself fails to execute
     return {
       workspace: workspacePath,
-      error: errorMessage,
-      isVersionConflict,
-      output,
+      error: error instanceof Error ? error.message : String(error),
+      isVersionConflict: false,
     };
   }
 }
