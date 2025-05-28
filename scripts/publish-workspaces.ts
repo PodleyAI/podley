@@ -16,6 +16,12 @@ interface RootPackageJson {
   workspaces: string[];
 }
 
+interface PublishError {
+  workspace: string;
+  error: string;
+  isVersionConflict: boolean;
+}
+
 async function findWorkspaces(): Promise<string[]> {
   const workspaces: string[] = [];
 
@@ -38,7 +44,7 @@ async function findWorkspaces(): Promise<string[]> {
   return workspaces;
 }
 
-async function checkAndPublishWorkspace(workspacePath: string): Promise<void> {
+async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishError | null> {
   try {
     const packageJsonPath = join(workspacePath, "package.json");
     const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8")) as PackageJson;
@@ -52,12 +58,18 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<void> {
       });
       console.log(`Successfully published ${packageJson.name}`);
     }
+    return null;
   } catch (error) {
-    console.error(
-      `Failed to publish ${workspacePath}:`,
-      error instanceof Error ? error.message : String(error)
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isVersionConflict = errorMessage.includes(
+      "You cannot publish over the previously published versions"
     );
-    process.exit(1);
+
+    return {
+      workspace: workspacePath,
+      error: errorMessage,
+      isVersionConflict,
+    };
   }
 }
 
@@ -66,11 +78,38 @@ async function main(): Promise<void> {
   const workspaces = await findWorkspaces();
   console.log(`Found ${workspaces.length} workspaces`);
 
+  const errors: PublishError[] = [];
+
   for (const workspace of workspaces) {
-    await checkAndPublishWorkspace(workspace);
+    const error = await checkAndPublishWorkspace(workspace);
+    if (error) {
+      errors.push(error);
+    }
   }
 
-  console.log("\nWorkspace publishing process completed");
+  if (errors.length > 0) {
+    const versionConflicts = errors.filter((e) => e.isVersionConflict);
+    const otherErrors = errors.filter((e) => !e.isVersionConflict);
+
+    if (versionConflicts.length > 0) {
+      console.log("\nVersion conflicts (not considered failures):");
+      for (const error of versionConflicts) {
+        console.log(`\n${error.workspace}:`);
+        console.log(error.error);
+      }
+    }
+
+    if (otherErrors.length > 0) {
+      console.error("\nPublishing failed for the following workspaces:");
+      for (const error of otherErrors) {
+        console.error(`\n${error.workspace}:`);
+        console.error(error.error);
+      }
+      process.exit(1);
+    }
+  }
+
+  console.log("\nWorkspace publishing process completed successfully");
 }
 
 main().catch((error) => {
