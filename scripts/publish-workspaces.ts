@@ -31,6 +31,7 @@ async function findWorkspaces(): Promise<string[]> {
       workspaces.push(...dirs);
     } catch (error) {
       console.error(`Error processing workspace pattern ${pattern}:`, error);
+      process.exit(1);
     }
   }
 
@@ -45,24 +46,18 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<void> {
     if (packageJson.publishConfig?.access) {
       const access = packageJson.publishConfig.access;
       console.log(`\nPublishing ${packageJson.name} with access: ${access}`);
-      try {
-        execSync(`bun publish --access ${access}`, {
-          cwd: workspacePath,
-          stdio: "inherit",
-        });
-        console.log(`Successfully published ${packageJson.name}`);
-      } catch (error) {
-        console.error(
-          `Failed to publish ${packageJson.name}:`,
-          error instanceof Error ? error.message : String(error)
-        );
-      }
+      execSync(`bun publish --access ${access}`, {
+        cwd: workspacePath,
+        stdio: "inherit",
+      });
+      console.log(`Successfully published ${packageJson.name}`);
     }
   } catch (error) {
     console.error(
-      `Error processing ${workspacePath}:`,
+      `Failed to publish ${workspacePath}:`,
       error instanceof Error ? error.message : String(error)
     );
+    process.exit(1);
   }
 }
 

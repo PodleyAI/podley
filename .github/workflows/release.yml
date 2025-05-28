@@ -47,7 +47,9 @@ jobs:
       - name: Test
         run: bun run test
 
+      - name: Create .npmrc
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+
       - name: Publish
         run: bun run publish
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
