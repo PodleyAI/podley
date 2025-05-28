@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 
-import { readdir, readFile } from "fs/promises";
-import { join } from "path";
 import { execSync } from "child_process";
+import { readFile } from "fs/promises";
 import { glob } from "glob";
+import { join } from "path";
 
 interface PackageJson {
   name: string;
@@ -46,53 +46,51 @@ async function findWorkspaces(): Promise<string[]> {
 }
 
 async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishError | null> {
-  try {
-    const packageJsonPath = join(workspacePath, "package.json");
-    const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8")) as PackageJson;
+  const packageJsonPath = join(workspacePath, "package.json");
+  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8")) as PackageJson;
 
-    if (packageJson.publishConfig?.access) {
-      const access = packageJson.publishConfig.access;
-      const output = execSync(`bun publish --access ${access} 2>&1`, {
-        cwd: workspacePath,
-        stdio: "pipe",
-      }).toString();
-
-      // Check if the output contains a version conflict error message
-      const isVersionConflict = output.includes(
-        "You cannot publish over the previously published versions"
-      );
-
-      if (isVersionConflict) {
-        return {
-          packageName: packageJson.name,
-          error: "Version already published",
-          isVersionConflict: true,
-          output,
-        };
-      }
-
-      // Check for other error messages in the output
-      if (output.toLowerCase().includes("error") || output.toLowerCase().includes("failed")) {
-        return {
-          packageName: packageJson.name,
-          error: "Publish failed",
-          isVersionConflict: false,
-          output,
-        };
-      }
-    }
+  if (!packageJson.publishConfig?.access) {
     return null;
+  }
+
+  const access = packageJson.publishConfig.access;
+  let output: string;
+
+  try {
+    output = execSync(`bun publish --access ${access} --no-color 2>&1`, {
+      cwd: workspacePath,
+      stdio: "pipe",
+    }).toString();
   } catch (error) {
-    // This would only catch if the command itself fails to execute
-    const packageJson = JSON.parse(
-      await readFile(join(workspacePath, "package.json"), "utf-8")
-    ) as PackageJson;
+    // If execSync throws, the error output is in the error object
+    output = error instanceof Error ? error.message : String(error);
+  }
+
+  // Check if the output contains a version conflict error message
+  const isVersionConflict = output.includes(
+    "You cannot publish over the previously published versions"
+  );
+
+  if (isVersionConflict) {
     return {
       packageName: packageJson.name,
-      error: error instanceof Error ? error.message : String(error),
-      isVersionConflict: false,
+      error: "Version already published",
+      isVersionConflict: true,
+      output,
     };
   }
+
+  // Check for other error messages in the output
+  if (output.toLowerCase().includes("error") || output.toLowerCase().includes("failed")) {
+    return {
+      packageName: packageJson.name,
+      error: "Publish failed",
+      isVersionConflict: false,
+      output,
+    };
+  }
+
+  return null;
 }
 
 async function main(): Promise<void> {
