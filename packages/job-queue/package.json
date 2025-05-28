@@ -1,7 +1,7 @@
 {
   "name": "@podley/job-queue",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Podley is a tool for building and running DAG pipelines of AI tasks.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -16,7 +16,8 @@
     "build-bun": "bun build --target=bun --sourcemap=external --packages=external --outdir ./dist ./src/bun.ts",
     "build-types": "rm -f tsconfig.tsbuildinfo && tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "test": "bun test"
+    "test": "bun test",
+    "prepare": "node -e \"const pkg=require('./package.json');pkg.exports['.'].bun='./dist/bun.js';pkg.exports['.'].types='./dist/bun.d.ts';require('fs').writeFileSync('package.json',JSON.stringify(pkg,null,2))\""
   },
   "exports": {
     ".": {
@@ -35,7 +36,7 @@
     "pg": "^8.14.1"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.11"
+    "@types/pg": "^8.15.2"
   },
   "files": [
     "dist"

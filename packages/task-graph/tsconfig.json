@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src/**/*"],
-  "files": ["./src/bun.ts", "src/task-graph/TaskGraphEvents.ts"],
+  "files": ["./src/bun.ts"],
   "exclude": ["dist"],
   "compilerOptions": {
     "composite": true,

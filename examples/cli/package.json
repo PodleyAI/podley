@@ -1,7 +1,7 @@
 {
   "name": "@podley/cli",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Podley is a tool for building and running DAG pipelines of AI tasks.",
   "scripts": {
     "dev": "concurrently -c 'auto' -n 'cli:' 'bun:dev-*'",
@@ -15,9 +15,10 @@
     "build-js-worker-hft": "bun build --target=node --outdir ./dist ./src/worker_hft.ts",
     "build-lib": "bun build --target=bun --packages=external --outdir ./dist ./src/lib.ts",
     "build-types": "rm -f tsconfig.tsbuildinfo && tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "node -e \"const pkg=require('./package.json');pkg.exports['.'].bun='./dist/lib.js';pkg.exports['.'].types='./dist/lib.d.ts';require('fs').writeFileSync('package.json',JSON.stringify(pkg,null,2))\""
   },
-  "bin": "./src/podley.js",
+  "bin": "./dist/podley.js",
   "files": [
     "dist"
   ],
@@ -40,7 +41,7 @@
     "@sroussey/transformers": "3.5.1-2",
     "@types/react": "=18.3.12",
     "chalk": "^5.4.1",
-    "commander": "^13.1.0",
+    "commander": "^14.0.0",
     "is-unicode-supported": "^2.1.0",
     "react": "=18.3.1",
     "react-reconciler": "^0.31.0",

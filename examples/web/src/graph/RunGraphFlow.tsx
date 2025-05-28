@@ -17,8 +17,7 @@ import {
   useNodesState,
   useReactFlow,
 } from "@xyflow/react";
-import React, { createContext, Dispatch, SetStateAction, useEffect, useRef } from "react";
-import { FiClipboard, FiDownload, FiFileText, FiUpload } from "react-icons/fi";
+import React, { Dispatch, SetStateAction, useEffect, useRef } from "react";
 import { computeLayout, GraphPipelineCenteredLayout, GraphPipelineLayout } from "../layout";
 import { DataflowEdge, DataflowEdgeData } from "./DataflowEdge";
 import { TaskNode, TaskNodeData } from "./TaskNode";

@@ -22,7 +22,7 @@
     "test": "bun test",
     "changeset": "changeset",
     "version": "changeset version",
-    "publish": "turbo run build-types build-package build-example && changeset publish"
+    "publish": "changeset publish"
   },
   "dependencies": {},
   "devDependencies": {
