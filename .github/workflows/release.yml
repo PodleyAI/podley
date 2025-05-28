@@ -13,6 +13,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
+    environment:
+      name: publish
+
     steps:
       - name: Check NPM_TOKEN presence
         run: |
