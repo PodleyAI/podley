@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { execSync } from "child_process";
+import { spawn } from "child_process";
 import { readFile } from "fs/promises";
 import { glob } from "glob";
 import { join } from "path";
@@ -45,6 +45,39 @@ async function findWorkspaces(): Promise<string[]> {
   return workspaces;
 }
 
+async function runCommand(command: string, args: string[], cwd: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    child.on("close", (code) => {
+      const output = stdout + stderr;
+      if (code === 0) {
+        resolve(output);
+      } else {
+        reject(new Error(output));
+      }
+    });
+
+    child.on("error", (error) => {
+      reject(error);
+    });
+  });
+}
+
 async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishError | null> {
   const packageJsonPath = join(workspacePath, "package.json");
   const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8")) as PackageJson;
@@ -57,12 +90,8 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishE
   let output: string;
 
   try {
-    output = execSync(`bun publish --access ${access} --no-color 2>&1`, {
-      cwd: workspacePath,
-      stdio: "pipe",
-    }).toString();
+    output = await runCommand("bun", ["publish", "--access", access, "--no-color"], workspacePath);
   } catch (error) {
-    // If execSync throws, the error output is in the error object
     output = error instanceof Error ? error.message : String(error);
   }
 
