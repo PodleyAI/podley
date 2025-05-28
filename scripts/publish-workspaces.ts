@@ -20,6 +20,7 @@ interface PublishError {
   workspace: string;
   error: string;
   isVersionConflict: boolean;
+  output?: string;
 }
 
 async function findWorkspaces(): Promise<string[]> {
@@ -65,10 +66,28 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishE
       "You cannot publish over the previously published versions"
     );
 
+    // Capture the command output if it's not a version conflict
+    let output: string | undefined;
+    if (!isVersionConflict) {
+      try {
+        const packageJson = JSON.parse(
+          await readFile(join(workspacePath, "package.json"), "utf-8")
+        ) as PackageJson;
+        const access = packageJson.publishConfig?.access;
+        output = execSync(`bun publish --access ${access}`, {
+          cwd: workspacePath,
+          stdio: "pipe",
+        }).toString();
+      } catch (e) {
+        output = e instanceof Error ? e.message : String(e);
+      }
+    }
+
     return {
       workspace: workspacePath,
       error: errorMessage,
       isVersionConflict,
+      output,
     };
   }
 }
@@ -104,6 +123,10 @@ async function main(): Promise<void> {
       for (const error of otherErrors) {
         console.error(`\n${error.workspace}:`);
         console.error(error.error);
+        if (error.output) {
+          console.error("\nCommand output:");
+          console.error(error.output);
+        }
       }
       process.exit(1);
     }
