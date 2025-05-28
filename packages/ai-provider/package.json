@@ -16,9 +16,11 @@
     "prepare": "node -e \"const pkg=require('./package.json');pkg.exports['.'].bun='./dist/index.js';pkg.exports['.'].types='./dist/index.d.ts';require('fs').writeFileSync('package.json',JSON.stringify(pkg,null,2))\""
   },
   "exports": {
-    "bun": "./src/index.ts",
-    "types": "./src/index.ts",
-    "import": "./dist/index.js"
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
   },
   "files": [
     "dist"
