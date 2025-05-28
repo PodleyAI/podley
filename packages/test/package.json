@@ -43,5 +43,8 @@
   },
   "peerDependencies": {
     "@electric-sql/pglite": "^0.2.17"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
