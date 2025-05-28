@@ -38,7 +38,7 @@
     "@podley/util": "workspace:*",
     "@sinclair/typebox": "^0.34.33",
     "@mediapipe/tasks-text": "^0.10.21",
-    "@sroussey/transformers": "3.4.0-2",
+    "@sroussey/transformers": "3.5.1-2",
     "@types/react": "=18.3.12",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",

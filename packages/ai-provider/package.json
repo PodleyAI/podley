@@ -30,7 +30,7 @@
     "@podley/util": "workspace:*"
   },
   "peerDependencies": {
-    "@sroussey/transformers": "3.4.0-2",
+    "@sroussey/transformers": "3.5.1-2",
     "@mediapipe/tasks-text": "^0.10.21"
   }
 }
