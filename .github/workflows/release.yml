@@ -14,6 +14,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check NPM_TOKEN presence
+        run: |
+          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "NPM_TOKEN is missing!"
+            exit 1
+          else
+            echo "NPM_TOKEN is available."
+          fi
+
       - uses: actions/checkout@v3
 
       - uses: actions/setup-node@v4
