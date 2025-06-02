@@ -30,7 +30,7 @@ export class IndexedDbTabularRepository<
   Value = ExtractValue<Schema, PrimaryKeyNames>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** Promise that resolves to the IndexedDB database instance */
-  private dbPromise: Promise<IDBDatabase> | undefined;
+  private db: IDBDatabase | undefined;
 
   /**
    * Creates a new IndexedDB-based tabular repository.
@@ -47,6 +47,14 @@ export class IndexedDbTabularRepository<
     indexes: Array<keyof Entity | Array<keyof Entity>> = []
   ) {
     super(schema, primaryKeyNames, indexes);
+  }
+
+  /**
+   * Sets up the IndexedDB database table with the required schema and indexes.
+   * Must be called before using any other methods.
+   */
+  public async setupDatabase(): Promise<IDBDatabase> {
+    if (this.db) return this.db;
     const pkColumns = super.primaryKeyColumns() as string[];
 
     // Create index definitions for both single and compound indexes
@@ -74,7 +82,8 @@ export class IndexedDbTabularRepository<
     const primaryKey = pkColumns.length === 1 ? pkColumns[0] : pkColumns;
 
     // Ensure that our table is created/upgraded only if the structure (indexes) has changed.
-    this.dbPromise = ensureIndexedDbTable(this.table, primaryKey, expectedIndexes);
+    this.db = await ensureIndexedDbTable(this.table, primaryKey, expectedIndexes);
+    return this.db;
   }
 
   /**
@@ -84,9 +93,8 @@ export class IndexedDbTabularRepository<
    * @emits put - Emitted when the value is successfully stored
    */
   async put(record: Entity): Promise<void> {
+    const db = await this.setupDatabase();
     const { key } = this.separateKeyValueFromCombined(record);
-    if (!this.dbPromise) throw new Error("Database not initialized");
-    const db = await this.dbPromise;
     // Merge key and value, ensuring all fields are at the root level for indexing
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readwrite");
@@ -122,8 +130,7 @@ export class IndexedDbTabularRepository<
    * @emits get - Emitted when the value is successfully retrieved
    */
   async get(key: PrimaryKey): Promise<Entity | undefined> {
-    if (!this.dbPromise) throw new Error("Database not initialized");
-    const db = await this.dbPromise;
+    const db = await this.setupDatabase();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readonly");
       const store = transaction.objectStore(this.table);
@@ -146,8 +153,7 @@ export class IndexedDbTabularRepository<
    * @returns Array of all entries in the repository.
    */
   async getAll(): Promise<Entity[] | undefined> {
-    if (!this.dbPromise) throw new Error("Database not initialized");
-    const db = await this.dbPromise;
+    const db = await this.setupDatabase();
     const transaction = db.transaction(this.table, "readonly");
     const store = transaction.objectStore(this.table);
     const request = store.getAll();
@@ -167,7 +173,7 @@ export class IndexedDbTabularRepository<
    * @returns Array of matching records or undefined.
    */
   async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
-    if (!this.dbPromise) throw new Error("Database not initialized");
+    const db = await this.setupDatabase();
     const searchKeys = Object.keys(key) as Array<keyof Entity>;
     if (searchKeys.length === 0) {
       return undefined;
@@ -178,8 +184,6 @@ export class IndexedDbTabularRepository<
     if (!bestIndex) {
       throw new Error("No suitable index found for the search criteria");
     }
-
-    const db = await this.dbPromise;
 
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readonly");
@@ -246,8 +250,7 @@ export class IndexedDbTabularRepository<
    * @param key - The key object to delete.
    */
   async delete(key: PrimaryKey): Promise<void> {
-    if (!this.dbPromise) throw new Error("Database not initialized");
-    const db = await this.dbPromise;
+    const db = await this.setupDatabase();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readwrite");
       const store = transaction.objectStore(this.table);
@@ -265,8 +268,7 @@ export class IndexedDbTabularRepository<
    * @emits clearall - Emitted when all values are deleted
    */
   async deleteAll(): Promise<void> {
-    if (!this.dbPromise) throw new Error("Database not initialized");
-    const db = await this.dbPromise;
+    const db = await this.setupDatabase();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readwrite");
       const store = transaction.objectStore(this.table);
@@ -284,8 +286,7 @@ export class IndexedDbTabularRepository<
    * @returns Count of stored items.
    */
   async size(): Promise<number> {
-    if (!this.dbPromise) throw new Error("Database not initialized");
-    const db = await this.dbPromise;
+    const db = await this.setupDatabase();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readonly");
       const store = transaction.objectStore(this.table);
@@ -306,8 +307,7 @@ export class IndexedDbTabularRepository<
     value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
-    if (!this.dbPromise) throw new Error("Database not initialized");
-    const db = await this.dbPromise;
+    const db = await this.setupDatabase();
 
     return new Promise(async (resolve, reject) => {
       try {

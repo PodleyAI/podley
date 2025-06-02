@@ -52,16 +52,18 @@ export class PostgresTabularRepository<
   ) {
     super(table, schema, primaryKeyNames, indexes);
     this.db = db;
-    this.dbPromise = this.setupDatabase();
   }
 
-  private dbPromise: Promise<void> | undefined;
+  #setup = false;
 
   /**
    * Initializes the database table with the required schema.
    * Creates the table if it doesn't exist with primary key and value columns.
    */
-  private async setupDatabase(): Promise<void> {
+  public async setupDatabase(): Promise<Pool> {
+    if (this.#setup) {
+      return this.db;
+    }
     const sql = `
       CREATE TABLE IF NOT EXISTS "${this.table}" (
         ${this.constructPrimaryKeyColumns()} ${this.constructValueColumns()},
@@ -108,6 +110,8 @@ export class PostgresTabularRepository<
         createdIndexes.add(columnKey);
       }
     }
+    this.#setup = true;
+    return this.db;
   }
 
   /**
@@ -299,7 +303,7 @@ export class PostgresTabularRepository<
    * @emits "put" event with the key when successful
    */
   async put(entity: Entity): Promise<void> {
-    await this.dbPromise;
+    const db = await this.setupDatabase();
     const { key, value } = this.separateKeyValueFromCombined(entity);
     const sql = `
       INSERT INTO "${this.table}" (
@@ -326,7 +330,7 @@ export class PostgresTabularRepository<
     const primaryKeyParams = this.getPrimaryKeyAsOrderedArray(key);
     const valueParams = this.getValueAsOrderedArray(value);
     const params = [...primaryKeyParams, ...valueParams];
-    await this.db.query(sql, params);
+    await db.query(sql, params);
     this.events.emit("put", entity);
   }
 
@@ -338,14 +342,14 @@ export class PostgresTabularRepository<
    * @emits "get" event with the key when successful
    */
   async get(key: PrimaryKey): Promise<Entity | undefined> {
-    await this.dbPromise;
+    const db = await this.setupDatabase();
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((discriminatorKey, i) => `${discriminatorKey} = $${i + 1}`)
       .join(" AND ");
 
     const sql = `SELECT ${this.valueColumnList()} FROM "${this.table}" WHERE ${whereClauses}`;
     const params = this.getPrimaryKeyAsOrderedArray(key);
-    const result = await this.db.query(sql, params);
+    const result = await db.query(sql, params);
 
     let val: Entity | undefined;
     if (result.rows.length > 0) {
@@ -370,7 +374,7 @@ export class PostgresTabularRepository<
    * @returns Promise resolving to an array of combined row objects or undefined if not found
    */
   public async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
-    await this.dbPromise;
+    const db = await this.setupDatabase();
     const searchKeys = Object.keys(key);
     if (searchKeys.length === 0) {
       return undefined;
@@ -403,7 +407,7 @@ export class PostgresTabularRepository<
 
     const sql = `SELECT * FROM "${this.table}" WHERE ${whereClauses}`;
     // @ts-ignore
-    const result = await this.db.query<Entity, any[]>(sql, whereClauseValues);
+    const result = await db.query<Entity, any[]>(sql, whereClauseValues);
 
     if (result.rows.length > 0) {
       this.events.emit("search", key, result.rows);
@@ -421,14 +425,14 @@ export class PostgresTabularRepository<
    * @emits "delete" event with the key when successful
    */
   async delete(value: PrimaryKey | Entity): Promise<void> {
-    await this.dbPromise;
+    const db = await this.setupDatabase();
     const { key } = this.separateKeyValueFromCombined(value as Entity);
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key, i) => `${key} = $${i + 1}`)
       .join(" AND ");
 
     const params = this.getPrimaryKeyAsOrderedArray(key);
-    await this.db.query(`DELETE FROM "${this.table}" WHERE ${whereClauses}`, params);
+    await db.query(`DELETE FROM "${this.table}" WHERE ${whereClauses}`, params);
     this.events.emit("delete", key as keyof Entity);
   }
 
@@ -437,9 +441,9 @@ export class PostgresTabularRepository<
    * @returns Promise resolving to an array of entries or undefined if not found
    */
   async getAll(): Promise<Entity[] | undefined> {
-    await this.dbPromise;
+    const db = await this.setupDatabase();
     const sql = `SELECT * FROM "${this.table}"`;
-    const result = await this.db.query(sql);
+    const result = await db.query(sql);
     return result.rows.length ? result.rows : undefined;
   }
 
@@ -448,8 +452,8 @@ export class PostgresTabularRepository<
    * @emits "clearall" event when successful
    */
   async deleteAll(): Promise<void> {
-    await this.dbPromise;
-    await this.db.query(`DELETE FROM "${this.table}"`);
+    const db = await this.setupDatabase();
+    await db.query(`DELETE FROM "${this.table}"`);
     this.events.emit("clearall");
   }
 
@@ -459,8 +463,8 @@ export class PostgresTabularRepository<
    * @returns Promise resolving to the count of stored items
    */
   async size(): Promise<number> {
-    await this.dbPromise;
-    const result = await this.db.query(`SELECT COUNT(*) FROM "${this.table}"`);
+    const db = await this.setupDatabase();
+    const result = await db.query(`SELECT COUNT(*) FROM "${this.table}"`);
     return parseInt(result.rows[0].count, 10);
   }
 
@@ -485,10 +489,10 @@ export class PostgresTabularRepository<
     value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
-    await this.dbPromise;
     const whereClause = this.generateWhereClause(column, operator);
 
-    await this.db.query(`DELETE FROM "${this.table}" WHERE ${whereClause}`, [
+    const db = await this.setupDatabase();
+    await db.query(`DELETE FROM "${this.table}" WHERE ${whereClause}`, [
       this.jsToSqlValue(column as string, value),
     ]);
     this.events.emit("delete", column as keyof Entity);

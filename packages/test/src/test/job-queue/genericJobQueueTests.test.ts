@@ -285,15 +285,26 @@ export function runGenericJobQueueTests(
         })
       );
       let abortEventTriggered = false;
-      jobQueue.on("job_aborting", (qn: any, jobId: any) => {
-        if (jobId === jobId) {
+      jobQueue.on("job_aborting", (qn: any, eventJobId: any) => {
+        if (eventJobId === jobId) {
           abortEventTriggered = true;
         }
       });
       const waitPromise = jobQueue.waitFor(jobId);
       expect(await jobQueue.size()).toBe(1);
       await jobQueue.start();
-      await sleep(1);
+
+      // Wait for job to start processing
+      let attempts = 0;
+      while (attempts < 100) {
+        const jobcheck = await jobQueue.get(jobId);
+        if (jobcheck?.status === JobStatus.PROCESSING) {
+          break;
+        }
+        await sleep(10);
+        attempts++;
+      }
+
       const jobcheck = await jobQueue.get(jobId);
       expect(jobcheck?.status).toBe(JobStatus.PROCESSING);
       try {

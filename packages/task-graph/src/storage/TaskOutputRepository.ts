@@ -95,6 +95,11 @@ export abstract class TaskOutputRepository {
   }
 
   /**
+   * Sets up the database for the task output repository
+   */
+  abstract setupDatabase(): Promise<void>;
+
+  /**
    * Saves a task output to the repository
    * @param taskType The type of task to save the output for
    * @param inputs The input parameters for the task

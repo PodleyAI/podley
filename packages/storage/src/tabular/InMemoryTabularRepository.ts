@@ -48,6 +48,13 @@ export class InMemoryTabularRepository<
   }
 
   /**
+   * Sets up the database for the repository (no-op for in-memory)
+   */
+  async setupDatabase(): Promise<void> {
+    // No setup needed for in-memory storage
+  }
+
+  /**
    * Stores a key-value pair in the repository
    * @param value - The combined object to store
    * @emits 'put' event with the fingerprint ID when successful

@@ -8,8 +8,7 @@
 import { createServiceToken, sleep } from "@podley/util";
 import { Static, TObject } from "@sinclair/typebox";
 import { glob } from "glob";
-import { mkdirSync } from "node:fs";
-import { readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { readdir, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
@@ -51,13 +50,22 @@ export class FsFolderTabularRepository<
   ) {
     super(schema, primaryKeyNames, indexes);
     this.folderPath = path.join(folderPath);
+  }
+
+  /**
+   * Sets up the directory for the repository (creates directory)
+   */
+  async setupDirectory(): Promise<void> {
     try {
-      mkdirSync(this.folderPath, { recursive: true });
+      await mkdir(this.folderPath, { recursive: true });
     } catch (error) {
       // CI system sometimes has issues temporarily
-      setTimeout(() => {
-        mkdirSync(this.folderPath, { recursive: true });
-      }, 0);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      try {
+        await mkdir(this.folderPath, { recursive: true });
+      } catch {
+        // Ignore error if directory already exists
+      }
     }
   }
 
@@ -68,6 +76,7 @@ export class FsFolderTabularRepository<
    * @emits 'put' event when successful
    */
   async put(entity: Entity): Promise<void> {
+    await this.setupDirectory();
     const filePath = await this.getFilePath(entity);
     try {
       await writeFile(filePath, JSON.stringify(entity));
@@ -90,6 +99,7 @@ export class FsFolderTabularRepository<
    * @emits 'get' event with the fingerprint ID and value when found
    */
   async get(key: PrimaryKey): Promise<Entity | undefined> {
+    await this.setupDirectory();
     const filePath = await this.getFilePath(key);
     try {
       const data = await readFile(filePath, "utf-8");
@@ -108,6 +118,7 @@ export class FsFolderTabularRepository<
    * @emits 'delete' event with the fingerprint ID when successful
    */
   async delete(value: PrimaryKey | Entity): Promise<void> {
+    await this.setupDirectory();
     const { key } = this.separateKeyValueFromCombined(value as Entity);
     const filePath = await this.getFilePath(key);
     try {
@@ -123,6 +134,7 @@ export class FsFolderTabularRepository<
    * @returns Array of combined objects (rows) if found, undefined otherwise
    */
   async getAll(): Promise<Entity[] | undefined> {
+    await this.setupDirectory();
     try {
       const files = await readdir(this.folderPath);
       const jsonFiles = files.filter((file) => file.endsWith(".json"));
@@ -153,6 +165,7 @@ export class FsFolderTabularRepository<
    * @emits 'clearall' event when successful
    */
   async deleteAll(): Promise<void> {
+    await this.setupDirectory();
     // Delete all files in the folder ending in .json
     await rm(this.folderPath, { recursive: true, force: true });
     this.events.emit("clearall");
@@ -163,6 +176,7 @@ export class FsFolderTabularRepository<
    * @returns Promise resolving to the count of stored items
    */
   async size(): Promise<number> {
+    await this.setupDirectory();
     // Count all files in the folder ending in .json
     const globPattern = path.join(this.folderPath, "*.json");
     const files = await glob(globPattern);

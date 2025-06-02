@@ -50,7 +50,7 @@ export class SqliteTabularRepository<
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
-    dbOrPath: string,
+    dbOrPath: string | Sqlite.Database,
     table: string = "tabular_store",
     schema: Schema,
     primaryKeyNames: PrimaryKeyNames,
@@ -62,13 +62,14 @@ export class SqliteTabularRepository<
     } else {
       this.db = dbOrPath;
     }
-    this.setupDatabase();
   }
 
+  #setup = false;
   /**
    * Creates the database table if it doesn't exist with the defined schema
    */
-  public setupDatabase(): void {
+  public async setupDatabase(): Promise<Sqlite.Database> {
+    if (this.#setup) return this.db;
     const sql = `
       CREATE TABLE IF NOT EXISTS \`${this.table}\` (
         ${this.constructPrimaryKeyColumns()} ${this.constructValueColumns()},
@@ -118,6 +119,8 @@ export class SqliteTabularRepository<
         createdIndexes.add(columnKey);
       }
     }
+    this.#setup = true;
+    return this.db;
   }
 
   /**
@@ -182,6 +185,7 @@ export class SqliteTabularRepository<
    * @emits 'put' event when successful
    */
   async put(entity: Entity): Promise<void> {
+    const db = await this.setupDatabase();
     const { key, value } = this.separateKeyValueFromCombined(entity);
     const sql = `
       INSERT OR REPLACE INTO \`${
@@ -192,7 +196,7 @@ export class SqliteTabularRepository<
         ${this.valueColumns().length > 0 ? ", " + this.valueColumns().map((i) => "?") : ""}
       )
     `;
-    const stmt = this.db.prepare(sql);
+    const stmt = db.prepare(sql);
 
     const primaryKeyParams = this.getPrimaryKeyAsOrderedArray(key);
     const valueParams = this.getValueAsOrderedArray(value);
@@ -211,6 +215,7 @@ export class SqliteTabularRepository<
    * @emits 'get' event when successful
    */
   async get(key: PrimaryKey): Promise<Entity | undefined> {
+    const db = await this.setupDatabase();
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `\`${key}\` = ?`)
       .join(" AND ");
@@ -218,7 +223,7 @@ export class SqliteTabularRepository<
     const sql = `
       SELECT * FROM \`${this.table}\` WHERE ${whereClauses}
     `;
-    const stmt = this.db.prepare<Entity, ValueOptionType[]>(sql);
+    const stmt = db.prepare<Entity, ValueOptionType[]>(sql);
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const value: Entity | null = stmt.get(...params);
     if (value) {
@@ -242,6 +247,7 @@ export class SqliteTabularRepository<
    * @returns Promise resolving to an array of combined key-value objects or undefined if not found
    */
   public async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
+    const db = await this.setupDatabase();
     const searchKeys = Object.keys(key) as Array<keyof Entity>;
     if (searchKeys.length === 0) {
       return undefined;
@@ -273,7 +279,7 @@ export class SqliteTabularRepository<
     const whereClauseValues = Object.values(key);
 
     const sql = `SELECT * FROM \`${this.table}\` WHERE ${whereClauses}`;
-    const stmt = this.db.prepare<Entity, ExcludeDateKeyOptionType[]>(sql);
+    const stmt = db.prepare<Entity, ExcludeDateKeyOptionType[]>(sql);
     // @ts-ignore
     const result = stmt.all(...whereClauseValues);
 
@@ -292,11 +298,12 @@ export class SqliteTabularRepository<
    * @emits 'delete' event when successful
    */
   async delete(key: PrimaryKey): Promise<void> {
+    const db = await this.setupDatabase();
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `${key} = ?`)
       .join(" AND ");
     const params = this.getPrimaryKeyAsOrderedArray(key);
-    const stmt = this.db.prepare(`DELETE FROM \`${this.table}\` WHERE ${whereClauses}`);
+    const stmt = db.prepare(`DELETE FROM \`${this.table}\` WHERE ${whereClauses}`);
     stmt.run(...params);
     this.events.emit("delete", key as keyof Entity);
   }
@@ -306,8 +313,9 @@ export class SqliteTabularRepository<
    * @returns Promise resolving to an array of entries or undefined if not found
    */
   async getAll(): Promise<Entity[] | undefined> {
+    const db = await this.setupDatabase();
     const sql = `SELECT * FROM \`${this.table}\``;
-    const stmt = this.db.prepare<Entity, []>(sql);
+    const stmt = db.prepare<Entity, []>(sql);
     const value = stmt.all();
     return value.length ? value : undefined;
   }
@@ -317,7 +325,8 @@ export class SqliteTabularRepository<
    * @emits 'clearall' event when successful
    */
   async deleteAll(): Promise<void> {
-    this.db.exec(`DELETE FROM \`${this.table}\``);
+    const db = await this.setupDatabase();
+    db.exec(`DELETE FROM \`${this.table}\``);
     this.events.emit("clearall");
   }
 
@@ -326,7 +335,8 @@ export class SqliteTabularRepository<
    * @returns The count of entries
    */
   async size(): Promise<number> {
-    const stmt = this.db.prepare<{ count: number }, []>(`
+    const db = await this.setupDatabase();
+    const stmt = db.prepare<{ count: number }, []>(`
       SELECT COUNT(*) AS count FROM \`${this.table}\`
     `);
     return stmt.get()?.count || 0;
@@ -353,8 +363,9 @@ export class SqliteTabularRepository<
     value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
+    const db = await this.setupDatabase();
     const whereClause = this.generateWhereClause(column, operator);
-    const stmt = this.db.prepare(`DELETE FROM \`${this.table}\` WHERE ${whereClause}`);
+    const stmt = db.prepare(`DELETE FROM \`${this.table}\` WHERE ${whereClause}`);
     // @ts-ignore
     stmt.run(this.jsToSqlValue(column as string, value));
     this.events.emit("delete", column as keyof Entity);
