@@ -7,7 +7,7 @@
 
 import {
   ArrayTask,
-  IExecuteConfig,
+  IExecuteContext,
   ITask,
   TaskConfig,
   TaskGraph,
@@ -17,7 +17,7 @@ import {
   TypeReplicateArray,
 } from "@podley/task-graph";
 import { ConvertAllToOptionalArray, TypeOptionalArray } from "@podley/util";
-import { Type } from "@sinclair/typebox";
+import { Type, TObject } from "@sinclair/typebox";
 import { describe, expect, spyOn, test } from "bun:test";
 
 // Define our input and output types
@@ -51,7 +51,7 @@ class MultiplyRunTask extends ArrayTask<
     });
   }
 
-  public async execute(input: MultiplyInput, config: IExecuteConfig): Promise<MultiplyOutput> {
+  public async execute(input: MultiplyInput, context: IExecuteContext): Promise<MultiplyOutput> {
     // Simple multiplication - at this point, we know the inputs are not arrays
     return {
       result: input.a * input.b,
@@ -110,7 +110,7 @@ class SquareRunTask extends ArrayTask<
     });
   }
 
-  public async execute(input: SquareInput, config: IExecuteConfig): Promise<SquareOutput> {
+  public async execute(input: SquareInput, context: IExecuteContext): Promise<SquareOutput> {
     return {
       result: input.a * input.a,
     };

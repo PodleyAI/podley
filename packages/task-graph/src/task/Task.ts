@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, uuid4 } from "@podley/util";
-import type { IExecuteConfig, IExecuteReactiveConfig, ITask } from "./ITask";
+import type { IExecuteContext, IExecuteReactiveContext, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
 import {
   type TaskEventListener,
@@ -88,8 +88,8 @@ export class Task<
    * @throws TaskError if the task fails
    * @returns The output of the task or undefined if no changes
    */
-  public async execute(input: Input, config: IExecuteConfig): Promise<Output | undefined> {
-    if (config.signal?.aborted) {
+  public async execute(input: Input, context: IExecuteContext): Promise<Output | undefined> {
+    if (context.signal?.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
     return undefined;
@@ -107,7 +107,7 @@ export class Task<
   public async executeReactive(
     input: Input,
     output: Output,
-    config: IExecuteReactiveConfig
+    context: IExecuteReactiveContext
   ): Promise<Output | undefined> {
     return output;
   }

@@ -6,20 +6,20 @@ class TaskCreatorTask extends Task {
   static type = "TaskCreatorTask";
   static category = "Test";
 
-  async execute(input: TaskInput, config: any): Promise<TaskOutput> {
+  async execute(input: TaskInput, context: any): Promise<TaskOutput> {
     // Create a simple task
     const simpleTask = new Task();
-    config.own(simpleTask);
+    context.own(simpleTask);
 
     // Create a task graph
     const taskGraph = new TaskGraph();
     taskGraph.addTask(new Task());
-    config.own(taskGraph);
+    context.own(taskGraph);
 
     // Create a workflow
     const workflow = new Workflow();
     workflow.graph.addTask(new Task());
-    config.own(workflow);
+    context.own(workflow);
 
     return {};
   }

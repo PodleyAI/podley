@@ -21,7 +21,7 @@ import {
   Job,
   PermanentJobError,
   RetryableJobError,
-  IJobExecuteConfig,
+  IJobExecuteContext,
 } from "@podley/job-queue";
 import { JSONValue } from "@podley/storage";
 import { TObject, Type } from "@sinclair/typebox";
@@ -50,7 +50,7 @@ export type FetchTaskConfig = TaskConfig & {
 async function fetchWithProgress(
   url: string,
   options: RequestInit = {},
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => Promise<void>
 ): Promise<Response> {
   if (!options.signal) {
     throw new TaskConfigurationError("An AbortSignal must be provided.");
@@ -87,7 +87,7 @@ async function fetchWithProgress(
             controller.enqueue(value);
             receivedBytes += value.length;
             if (onProgress && totalBytes) {
-              onProgress((receivedBytes / totalBytes) * 100);
+              await onProgress((receivedBytes / totalBytes) * 100);
             }
           }
         } catch (error) {
@@ -123,16 +123,16 @@ export class FetchJob<
   /**
    * Executes the job using the provided function.
    */
-  async execute(input: Input, config: IJobExecuteConfig): Promise<Output> {
+  async execute(input: Input, context: IJobExecuteContext): Promise<Output> {
     const response = await fetchWithProgress(
       input.url!,
       {
         method: input.method,
         headers: input.headers,
         body: input.body,
-        signal: config.signal,
+        signal: context.signal,
       },
-      (progress: number) => config.updateProgress(progress)
+      async (progress: number) => await context.updateProgress(progress)
     );
 
     if (response.ok) {

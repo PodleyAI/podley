@@ -49,12 +49,12 @@ class MyTask extends Task {
   });
 
   // typically you either override execute or executeReactive, but not both
-  async execute(input: MyTaskInput, config: IExecuteConfig) {
+  async execute(input: MyTaskInput, { signal, updateProgress }: IExecuteContext) {
     await sleep(1000);
-    if (config.signal?.aborted) {
+    if (signal.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
-    config.updateProgress(0.5, "Processing...");
+    await updateProgress(0.5, "Processing...");
     // Do something with the input that takes a long time
     await sleep(1000);
     return { result: input.input * 2 };

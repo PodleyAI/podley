@@ -175,7 +175,7 @@ export class TaskRunner<
   protected async executeTask(input: Input): Promise<Output | undefined> {
     const result = await this.task.execute(input, {
       signal: this.abortController!.signal,
-      updateProgress: this.handleProgress,
+      updateProgress: this.handleProgress.bind(this),
       nodeProvenance: this.nodeProvenance,
       own: this.own,
     });
@@ -228,14 +228,19 @@ export class TaskRunner<
       this.outputCache = cache;
     }
 
-    if (config.onProgress) {
-      this.onProgress = config.onProgress;
+    if (config.updateProgress) {
+      this.updateProgress = config.updateProgress;
     }
 
     this.task.emit("start");
     this.task.emit("status", this.task.status);
   }
-  private onProgress = (task: ITask, progress: number, message?: string, ...args: any[]) => {};
+  private updateProgress = async (
+    task: ITask,
+    progress: number,
+    message?: string,
+    ...args: any[]
+  ) => {};
 
   protected async handleStartReactive(): Promise<void> {
     this.reactiveRunning = true;
@@ -324,9 +329,13 @@ export class TaskRunner<
    * @param progress Progress value (0-100)
    * @param args Additional arguments
    */
-  protected handleProgress(progress: number, ...args: any[]): void {
+  protected async handleProgress(
+    progress: number,
+    message?: string,
+    ...args: any[]
+  ): Promise<void> {
     this.task.progress = progress;
-    this.onProgress(this.task, progress, ...args);
-    this.task.emit("progress", progress, ...args);
+    await this.updateProgress(this.task, progress, message, ...args);
+    this.task.emit("progress", progress, message, ...args);
   }
 }

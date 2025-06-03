@@ -8,8 +8,8 @@
 import {
   CreateWorkflow,
   DATAFLOW_ALL_PORTS,
-  IExecuteConfig,
-  IExecuteReactiveConfig,
+  IExecuteContext,
+  IExecuteReactiveContext,
   Task,
   TaskConfig,
   TaskConfigurationError,
@@ -24,11 +24,11 @@ interface LambdaTaskConfig<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
 > extends TaskConfig {
-  execute?: (input: Input, config: IExecuteConfig) => Promise<Output>;
+  execute?: (input: Input, context: IExecuteContext) => Promise<Output>;
   executeReactive?: (
     input: Input,
     output: Output,
-    config: IExecuteReactiveConfig
+    context: IExecuteReactiveContext
   ) => Promise<Output>;
 }
 
@@ -83,9 +83,9 @@ export class LambdaTask<
     });
   }
 
-  async execute(input: Input, config: IExecuteConfig): Promise<Output> {
+  async execute(input: Input, context: IExecuteContext): Promise<Output> {
     if (typeof this.config.execute === "function") {
-      return await this.config.execute(input, config);
+      return await this.config.execute(input, context);
     }
     return {} as Output;
   }
@@ -94,9 +94,9 @@ export class LambdaTask<
    * Executes the provided function with the given input
    * Throws an error if no function is provided or if the provided value is not callable
    */
-  async executeReactive(input: Input, output: Output, config: IExecuteReactiveConfig) {
+  async executeReactive(input: Input, output: Output, context: IExecuteReactiveContext) {
     if (typeof this.config.executeReactive === "function") {
-      return (await this.config.executeReactive(input, output, config)) ?? output;
+      return (await this.config.executeReactive(input, output, context)) ?? output;
     }
     return output;
   }
@@ -119,7 +119,7 @@ export function process(value: string | number | boolean): string | number {
  * Convenience function to create and run a LambdaTask
  */
 export function Lambda<I extends TaskInput, O extends TaskOutput>(
-  fn: (input: I, config: IExecuteConfig) => Promise<O>
+  fn: (input: I, context: IExecuteContext) => Promise<O>
 ): Promise<TaskOutput>;
 export function Lambda<I extends TaskInput, O extends TaskOutput>(
   input: I,
@@ -127,7 +127,7 @@ export function Lambda<I extends TaskInput, O extends TaskOutput>(
 ): Promise<TaskOutput>;
 
 export function Lambda<I extends TaskInput, O extends TaskOutput>(
-  input: I | ((input: I, config: IExecuteConfig) => Promise<O>),
+  input: I | ((input: I, context: IExecuteContext) => Promise<O>),
   config?: LambdaTaskConfig<I, O>
 ): Promise<TaskOutput> {
   if (typeof input === "function") {

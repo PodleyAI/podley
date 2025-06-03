@@ -24,16 +24,16 @@ import type { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "
 import { TObject } from "@sinclair/typebox";
 
 /**
- * Configuration for task execution
+ * Context for task execution
  */
-export interface IExecuteConfig {
+export interface IExecuteContext {
   signal: AbortSignal;
   nodeProvenance: Provenance;
-  updateProgress: (progress: number, message?: string, ...args: any[]) => void;
+  updateProgress: (progress: number, message?: string, ...args: any[]) => Promise<void>;
   own: <T extends ITask | ITaskGraph | IWorkflow>(i: T) => T;
 }
 
-export type IExecuteReactiveConfig = Pick<IExecuteConfig, "own">;
+export type IExecuteReactiveContext = Pick<IExecuteContext, "own">;
 
 /**
  * Configuration for running a task
@@ -41,7 +41,12 @@ export type IExecuteReactiveConfig = Pick<IExecuteConfig, "own">;
 export interface IRunConfig {
   nodeProvenance?: Provenance;
   outputCache?: TaskOutputRepository | boolean;
-  onProgress?: (task: ITask, progress: number, message?: string, ...args: any[]) => void;
+  updateProgress?: (
+    task: ITask,
+    progress: number,
+    message?: string,
+    ...args: any[]
+  ) => Promise<void>;
 }
 
 /**
@@ -65,11 +70,11 @@ export interface ITaskExecution<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
 > {
-  execute(input: Input, config: IExecuteConfig): Promise<Output | undefined>;
+  execute(input: Input, context: IExecuteContext): Promise<Output | undefined>;
   executeReactive(
     input: Input,
     output: Output,
-    config: IExecuteReactiveConfig
+    context: IExecuteReactiveContext
   ): Promise<Output | undefined>;
 }
 

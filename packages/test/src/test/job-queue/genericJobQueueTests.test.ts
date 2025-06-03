@@ -10,7 +10,7 @@ import { BaseError, sleep, uuid4 } from "@podley/util";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   AbortSignalJobError,
-  IJobExecuteConfig,
+  IJobExecuteContext,
   ILimiter,
   Job,
   JobError,
@@ -29,7 +29,7 @@ export interface TOutput {
 }
 
 export class TestJob extends Job<TInput, TOutput> {
-  public async execute(input: TInput, config: IJobExecuteConfig): Promise<TOutput> {
+  public async execute(input: TInput, context: IJobExecuteContext): Promise<TOutput> {
     if (input.taskType === "failing") {
       throw new JobError("Job failed as expected");
     }
@@ -44,7 +44,7 @@ export class TestJob extends Job<TInput, TOutput> {
 
     if (input.taskType === "long_running") {
       return new Promise<TOutput>((resolve, reject) => {
-        config.signal.addEventListener(
+        context.signal.addEventListener(
           "abort",
           () => {
             reject(new AbortSignalJobError("Aborted via signal"));
@@ -55,7 +55,7 @@ export class TestJob extends Job<TInput, TOutput> {
     }
     if (input.taskType === "progress") {
       return new Promise<TOutput>(async (resolve, reject) => {
-        config.signal.addEventListener(
+        context.signal.addEventListener(
           "abort",
           () => {
             reject(new AbortSignalJobError("Aborted via signal"));
@@ -66,13 +66,13 @@ export class TestJob extends Job<TInput, TOutput> {
         try {
           // Simulate progress updates
           await sleep(0);
-          await config.updateProgress(25, "Starting task");
+          await context.updateProgress(25, "Starting task");
           await sleep(0);
-          await config.updateProgress(50, "Halfway there");
+          await context.updateProgress(50, "Halfway there");
           await sleep(0);
-          await config.updateProgress(75, "Almost done", { stage: "almost final" });
+          await context.updateProgress(75, "Almost done", { stage: "almost final" });
           await sleep(0);
-          await config.updateProgress(100, "Completed", { stage: "final" });
+          await context.updateProgress(100, "Completed", { stage: "final" });
           resolve({ result: "completed with progress" });
         } catch (error) {
           reject(error);

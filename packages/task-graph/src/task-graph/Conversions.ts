@@ -7,7 +7,7 @@
 
 import { Type } from "@sinclair/typebox";
 import { GraphAsTask } from "../task/GraphAsTask";
-import type { IExecuteConfig, ITask } from "../task/ITask";
+import type { IExecuteContext, ITask } from "../task/ITask";
 import { Task } from "../task/Task";
 import type { TaskIO } from "../task/TaskTypes";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
@@ -50,7 +50,7 @@ class WorkflowTask extends GraphAsTask {
 // Update PipeFunction type to be more specific about input/output types
 export type PipeFunction<I extends TaskIO = any, O extends TaskIO = any> = (
   input: I,
-  config: IExecuteConfig
+  context: IExecuteContext
 ) => O | Promise<O>;
 
 export type Taskish<A extends TaskIO = TaskIO, B extends TaskIO = TaskIO> =
@@ -76,8 +76,8 @@ function convertPipeFunctionToTask<I extends TaskIO, O extends TaskIO>(
       });
     };
     public static cacheable = false;
-    public async execute(input: I, config: IExecuteConfig) {
-      return fn(input, config);
+    public async execute(input: I, context: IExecuteContext) {
+      return fn(input, context);
     }
   }
   return new QuickTask({}, config);

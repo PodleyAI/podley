@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { Job } from "@podley/job-queue";
-import { IExecuteConfig } from "./ITask";
+import { IExecuteContext } from "./ITask";
 import { ArrayTask } from "./ArrayTask";
 import { JobTaskFailedError, TaskConfigurationError, TaskFailedError } from "./TaskError";
 import { TaskEventListeners } from "./TaskEvents";
@@ -55,11 +55,11 @@ export abstract class JobQueueTask<
     this.jobClass = Job<Input, Output>;
   }
 
-  async execute(input: Input, executeConfig: IExecuteConfig): Promise<Output | undefined> {
+  async execute(input: Input, executeContext: IExecuteContext): Promise<Output | undefined> {
     let cleanup: () => void = () => {};
 
     try {
-      // executeConfig.updateProgress(0.009, "Creating job");
+      // executeContext.updateProgress(0.009, "Creating job");
       const job = await this.createJob(input);
 
       const queue = getTaskQueueRegistry().getQueue<Input, Output>(this.config.queueName!);
@@ -70,18 +70,12 @@ export abstract class JobQueueTask<
         if ((this.constructor as typeof JobQueueTask).canRunDirectly) {
           cleanup = job.onJobProgress(
             (progress: number, message: string, details: Record<string, any> | null) => {
-              executeConfig.updateProgress(progress, message, details);
+              executeContext.updateProgress(progress, message, details);
             }
           );
           output = await job.execute(job.input, {
-            signal: executeConfig.signal,
-            updateProgress: (
-              progress: number,
-              message?: string,
-              details?: Record<string, any> | null
-            ) => {
-              executeConfig.updateProgress(progress, message, details);
-            },
+            signal: executeContext.signal,
+            updateProgress: executeContext.updateProgress.bind(this),
           });
         } else {
           throw new TaskConfigurationError(
@@ -93,7 +87,7 @@ export abstract class JobQueueTask<
         this.config.currentJobId = jobId;
         this.config.runnerId = job.jobRunId; // TODO: think about this more
         cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
-          executeConfig.updateProgress(progress, message, details);
+          executeContext.updateProgress(progress, message, details);
         });
         output = (await queue.waitFor(jobId)) as Output | undefined;
         if (output === undefined) {

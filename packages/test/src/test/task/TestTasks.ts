@@ -13,7 +13,7 @@
 
 import {
   CreateWorkflow,
-  IExecuteConfig,
+  IExecuteContext,
   Task,
   TaskAbortedError,
   TaskConfig,
@@ -141,9 +141,9 @@ export class SimpleProcessingTask extends Task<SimpleProcessingInput, SimpleProc
    */
   async execute(
     input: SimpleProcessingInput,
-    { updateProgress }: IExecuteConfig
+    { updateProgress }: IExecuteContext
   ): Promise<SimpleProcessingOutput> {
-    updateProgress(0.5);
+    await updateProgress(0.5);
     // Process the input value
     const result = `Processed: ${input.value}`;
     return { processed: true, result };
@@ -193,10 +193,10 @@ export class FailingTask extends Task {
   /**
    * Always throws an error to simulate task failure
    */
-  async execute(input: TaskInput, executeConfig: IExecuteConfig): Promise<{ out: number }> {
+  async execute(input: TaskInput, executeContext: IExecuteContext): Promise<{ out: number }> {
     // Add a small delay to ensure abortion has time to take effect
     await sleep(5);
-    if (executeConfig.signal?.aborted) {
+    if (executeContext.signal?.aborted) {
       throw new TaskAbortedError(ABORT_MESSAGE);
     }
     throw new TaskFailedError(FAILURE_MESSAGE);
@@ -235,7 +235,7 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   /**
    * Executes the task with configurable behavior for testing
    */
-  async execute(input: TestIOTaskInput, { updateProgress, signal }: IExecuteConfig): Promise<any> {
+  async execute(input: TestIOTaskInput, { updateProgress, signal }: IExecuteContext): Promise<any> {
     if (signal.aborted) {
       throw new TaskAbortedError("Task aborted");
     }
@@ -516,9 +516,9 @@ export class LongRunningTask extends Task {
   /**
    * Runs indefinitely until aborted
    */
-  async execute(input: TaskInput, executeConfig: IExecuteConfig): Promise<any> {
+  async execute(input: TaskInput, executeContext: IExecuteContext): Promise<any> {
     while (true) {
-      if (executeConfig.signal?.aborted) {
+      if (executeContext.signal?.aborted) {
         throw new TaskAbortedError(ABORT_MESSAGE);
       }
       await sleep(100);

@@ -442,7 +442,8 @@ export class TaskGraphRunner {
     const results = await task.runner.run(input, {
       nodeProvenance,
       outputCache: this.outputCache,
-      onProgress: this.handleProgress,
+      updateProgress: async (task: ITask, progress: number, message?: string, ...args: any[]) =>
+        await this.handleProgress(task, progress, message, ...args),
     });
 
     await this.pushOutputFromNodeToEdges(task, results, nodeProvenance);

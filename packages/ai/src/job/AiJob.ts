@@ -10,7 +10,7 @@ import {
   Job,
   JobStatus,
   PermanentJobError,
-  IJobExecuteConfig,
+  IJobExecuteContext,
 } from "@podley/job-queue";
 import { TaskInput, TaskOutput } from "@podley/task-graph";
 import { getAiProviderRegistry } from "../provider/AiProviderRegistry";
@@ -36,8 +36,8 @@ export class AiJob<
   /**
    * Executes the job using the provided function.
    */
-  async execute(input: AiProviderInput<Input>, config: IJobExecuteConfig): Promise<Output> {
-    if (config.signal.aborted || this.status === JobStatus.ABORTING) {
+  async execute(input: AiProviderInput<Input>, context: IJobExecuteContext): Promise<Output> {
+    if (context.signal.aborted || this.status === JobStatus.ABORTING) {
       throw new AbortSignalJobError("Abort signal aborted before execution of job");
     }
 
@@ -49,8 +49,8 @@ export class AiJob<
           reject(new AbortSignalJobError("Abort signal seen, ending job"));
         };
 
-        config.signal.addEventListener("abort", handler, { once: true });
-        abortHandler = () => config.signal.removeEventListener("abort", handler);
+        context.signal.addEventListener("abort", handler, { once: true });
+        abortHandler = () => context.signal.removeEventListener("abort", handler);
       });
 
       const runFn = async () => {
@@ -68,10 +68,10 @@ export class AiJob<
         if (modelName && !model) {
           throw new PermanentJobError(`Model ${modelName} not found`);
         }
-        if (config.signal?.aborted) {
+        if (context.signal?.aborted) {
           throw new AbortSignalJobError("Job aborted");
         }
-        return await fn(input.taskInput, model, config.updateProgress, config.signal);
+        return await fn(input.taskInput, model, context.updateProgress, context.signal);
       };
       const runFnPromise = runFn();
 

@@ -11,15 +11,15 @@ import { JobStatus } from "./IJobQueue";
 import { JobError } from "./JobError";
 
 /**
- * Configuration for job execution
+ * Context for job execution
  */
-export interface IJobExecuteConfig {
+export interface IJobExecuteContext {
   signal: AbortSignal;
   updateProgress: (
     progress: number,
     message?: string,
     details?: Record<string, any> | null
-  ) => void;
+  ) => Promise<void>;
 }
 
 /**
@@ -118,7 +118,7 @@ export class Job<Input, Output> {
     this.progressDetails = progressDetails;
   }
 
-  async execute(input: Input, config: IJobExecuteConfig): Promise<Output> {
+  async execute(input: Input, context: IJobExecuteContext): Promise<Output> {
     throw new JobError("Method not implemented.");
   }
 
