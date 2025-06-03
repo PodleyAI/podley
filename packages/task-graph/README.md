@@ -74,4 +74,4 @@ bun test
 
 ## License
 
-Apache 2.0 - See [LICENSE](../../LICENSE) for details.
+Apache 2.0 - See [LICENSE](./LICENSE) for details.
