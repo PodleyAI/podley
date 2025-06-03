@@ -10,6 +10,7 @@ import { BaseError, sleep, uuid4 } from "@podley/util";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   AbortSignalJobError,
+  IJobExecuteConfig,
   ILimiter,
   Job,
   JobError,
@@ -28,22 +29,22 @@ export interface TOutput {
 }
 
 export class TestJob extends Job<TInput, TOutput> {
-  public async execute(signal: AbortSignal): Promise<TOutput> {
-    if (this.input.taskType === "failing") {
+  public async execute(input: TInput, config: IJobExecuteConfig): Promise<TOutput> {
+    if (input.taskType === "failing") {
       throw new JobError("Job failed as expected");
     }
 
-    if (this.input.taskType === "failing_retryable") {
+    if (input.taskType === "failing_retryable") {
       throw new RetryableJobError("Job failed but can be retried");
     }
 
-    if (this.input.taskType === "permanent_fail") {
+    if (input.taskType === "permanent_fail") {
       throw new PermanentJobError("Permanent failure - do not retry");
     }
 
-    if (this.input.taskType === "long_running") {
+    if (input.taskType === "long_running") {
       return new Promise<TOutput>((resolve, reject) => {
-        signal.addEventListener(
+        config.signal.addEventListener(
           "abort",
           () => {
             reject(new AbortSignalJobError("Aborted via signal"));
@@ -52,9 +53,9 @@ export class TestJob extends Job<TInput, TOutput> {
         );
       });
     }
-    if (this.input.taskType === "progress") {
+    if (input.taskType === "progress") {
       return new Promise<TOutput>(async (resolve, reject) => {
-        signal.addEventListener(
+        config.signal.addEventListener(
           "abort",
           () => {
             reject(new AbortSignalJobError("Aborted via signal"));
@@ -65,20 +66,20 @@ export class TestJob extends Job<TInput, TOutput> {
         try {
           // Simulate progress updates
           await sleep(0);
-          await this.updateProgress(25, "Starting task");
+          await config.updateProgress(25, "Starting task");
           await sleep(0);
-          await this.updateProgress(50, "Halfway there");
+          await config.updateProgress(50, "Halfway there");
           await sleep(0);
-          await this.updateProgress(75, "Almost done", { stage: "almost final" });
+          await config.updateProgress(75, "Almost done", { stage: "almost final" });
           await sleep(0);
-          await this.updateProgress(100, "Completed", { stage: "final" });
+          await config.updateProgress(100, "Completed", { stage: "final" });
           resolve({ result: "completed with progress" });
         } catch (error) {
           reject(error);
         }
       });
     }
-    return { result: this.input.data.replace("input", "output") };
+    return { result: input.data.replace("input", "output") };
   }
 }
 

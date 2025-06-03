@@ -6,13 +6,13 @@
 //    *******************************************************************************
 
 import { expect, it, beforeEach, afterEach } from "bun:test";
-import { Job, JobQueue } from "@podley/job-queue";
+import { Job, JobQueue, IJobExecuteConfig } from "@podley/job-queue";
 import { getTaskQueueRegistry, JobQueueTask, TaskInput, TaskOutput } from "@podley/task-graph";
 import { TestIOTask } from "../task/TestTasks";
 
 export class TestJob extends Job<TaskInput, TaskOutput> {
-  async execute(signal: AbortSignal): Promise<TaskOutput> {
-    return { result: this.input.a + this.input.b };
+  async execute(input: TaskInput, config: IJobExecuteConfig): Promise<TaskOutput> {
+    return { result: (input as any).a + (input as any).b };
   }
 }
 

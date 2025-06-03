@@ -206,7 +206,10 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
    */
   public async executeJob(job: Job<Input, Output>, signal: AbortSignal): Promise<Output> {
     if (!job) throw new JobNotFoundError("Cannot execute null or undefined job");
-    return await job.execute(signal);
+    return await job.execute(job.input, {
+      signal,
+      updateProgress: this.updateProgress.bind(this, job.id),
+    });
   }
 
   /**

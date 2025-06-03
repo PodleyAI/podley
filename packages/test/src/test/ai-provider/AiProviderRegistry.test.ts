@@ -166,7 +166,10 @@ describe("AiProviderRegistry", () => {
         },
       });
 
-      const result = await job.execute(controller.signal);
+      const result = await job.execute(job.input, {
+        signal: controller.signal,
+        updateProgress: () => {},
+      });
 
       expect(result).toEqual({ result: "success" });
     });

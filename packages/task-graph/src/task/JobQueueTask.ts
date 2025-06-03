@@ -73,7 +73,16 @@ export abstract class JobQueueTask<
               executeConfig.updateProgress(progress, message, details);
             }
           );
-          output = await job.execute(executeConfig.signal);
+          output = await job.execute(job.input, {
+            signal: executeConfig.signal,
+            updateProgress: (
+              progress: number,
+              message?: string,
+              details?: Record<string, any> | null
+            ) => {
+              executeConfig.updateProgress(progress, message, details);
+            },
+          });
         } else {
           throw new TaskConfigurationError(
             `Queue ${this.config.queueName} not found, and ${this.type} cannot run directly`

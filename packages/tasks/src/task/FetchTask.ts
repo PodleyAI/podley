@@ -16,7 +16,13 @@ import {
   TaskIO,
   TaskConfigurationError,
 } from "@podley/task-graph";
-import { AbortSignalJobError, Job, PermanentJobError, RetryableJobError } from "@podley/job-queue";
+import {
+  AbortSignalJobError,
+  Job,
+  PermanentJobError,
+  RetryableJobError,
+  IJobExecuteConfig,
+} from "@podley/job-queue";
 import { JSONValue } from "@podley/storage";
 import { TObject, Type } from "@sinclair/typebox";
 
@@ -117,29 +123,29 @@ export class FetchJob<
   /**
    * Executes the job using the provided function.
    */
-  async execute(signal: AbortSignal): Promise<Output> {
+  async execute(input: Input, config: IJobExecuteConfig): Promise<Output> {
     const response = await fetchWithProgress(
-      this.input.url!,
+      input.url!,
       {
-        method: this.input.method,
-        headers: this.input.headers,
-        body: this.input.body,
-        signal: signal,
+        method: input.method,
+        headers: input.headers,
+        body: input.body,
+        signal: config.signal,
       },
-      this.updateProgress.bind(this)
+      (progress: number) => config.updateProgress(progress)
     );
 
     if (response.ok) {
-      if (this.input.response_type === "json") {
+      if (input.response_type === "json") {
         return { json: await response.json() } as Output;
-      } else if (this.input.response_type === "text") {
+      } else if (input.response_type === "text") {
         return { text: await response.text() } as Output;
-      } else if (this.input.response_type === "blob") {
+      } else if (input.response_type === "blob") {
         return { blob: await response.blob() } as Output;
-      } else if (this.input.response_type === "arraybuffer") {
+      } else if (input.response_type === "arraybuffer") {
         return { arraybuffer: await response.arrayBuffer() } as Output;
       }
-      throw new TaskInvalidInputError(`Invalid response type: ${this.input.response_type}`);
+      throw new TaskInvalidInputError(`Invalid response type: ${input.response_type}`);
     } else {
       if (
         response.status === 429 ||
@@ -164,12 +170,12 @@ export class FetchJob<
         }
 
         throw new RetryableJobError(
-          `Failed to fetch ${this.input.url}: ${response.status} ${response.statusText}`,
+          `Failed to fetch ${input.url}: ${response.status} ${response.statusText}`,
           retryDate
         );
       } else {
         throw new PermanentJobError(
-          `Failed to fetch ${this.input.url}: ${response.status} ${response.statusText}`
+          `Failed to fetch ${input.url}: ${response.status} ${response.statusText}`
         );
       }
     }
