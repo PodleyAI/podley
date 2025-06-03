@@ -90,7 +90,7 @@ export class TaskRunner<
         throw new TaskAbortedError("Promise for task created and aborted before run");
       }
 
-      const inputs = this.task.runInputData;
+      const inputs: Input = this.task.runInputData as Input;
       let outputs: Output | undefined;
       if (this.task.cacheable) {
         outputs = (await this.outputCache?.getOutput(this.task.type, inputs)) as Output;
@@ -108,7 +108,7 @@ export class TaskRunner<
 
       await this.handleComplete();
 
-      return this.task.runOutputData;
+      return this.task.runOutputData as Output;
     } catch (err: any) {
       await this.handleError(err);
       throw err;
@@ -122,7 +122,7 @@ export class TaskRunner<
    */
   public async runReactive(overrides: Partial<Input> = {}): Promise<Output> {
     if (this.task.status === TaskStatus.PROCESSING) {
-      return this.task.runOutputData;
+      return this.task.runOutputData as Output;
     }
     this.task.setInput(overrides);
 
@@ -135,14 +135,14 @@ export class TaskRunner<
       }
 
       const resultReactive = await this.executeTaskReactive(
-        this.task.runInputData,
-        this.task.runOutputData
+        this.task.runInputData as Input,
+        this.task.runOutputData as Output
       );
 
       this.task.runOutputData = resultReactive;
 
       await this.handleCompleteReactive();
-      return this.task.runOutputData;
+      return this.task.runOutputData as Output;
     } catch (err: any) {
       await this.handleErrorReactive();
       throw err;

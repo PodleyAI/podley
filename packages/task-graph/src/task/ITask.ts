@@ -97,21 +97,21 @@ export interface ITaskLifecycle<
 /**
  * Interface for task input/output operations
  */
-export interface ITaskIO<Input extends TaskInput, Output extends TaskOutput> {
-  defaults: Partial<Input>;
-  runInputData: Input;
-  runOutputData: Output;
+export interface ITaskIO<Input extends TaskInput> {
+  defaults: Record<string, any>;
+  runInputData: Record<string, any>;
+  runOutputData: Record<string, any>;
 
   get inputSchema(): TObject; // gets local access for static inputSchema property
   get outputSchema(): TObject; // gets local access for static outputSchema property
   get type(): string; // gets local access for static type property
 
-  setDefaults(defaults: Partial<Input>): void;
+  setDefaults(defaults: Record<string, any>): void;
   resetInputData(): void;
-  setInput(input: Partial<Input>): void;
-  validateInput(input: Partial<Input>): Promise<boolean>;
+  setInput(input: Record<string, any>): void;
+  validateInput(input: Record<string, any>): Promise<boolean>;
   get cacheable(): boolean;
-  narrowInput(input: Input): Promise<Input>;
+  narrowInput(input: Record<string, any>): Promise<Record<string, any>>;
 }
 
 export interface ITaskInternalGraph {
@@ -164,7 +164,7 @@ export interface ITask<
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
 > extends ITaskState<Config>,
-    ITaskIO<Input, Output>,
+    ITaskIO<Input>,
     ITaskEvents,
     ITaskLifecycle<Input, Output, Config>,
     ITaskExecution<Input, Output>,

@@ -213,20 +213,20 @@ export class Task<
    * If no overrides at run time, then this would be equal to the input.
    * resetInputData() will reset inputs to these defaults.
    */
-  defaults: Partial<Input>;
+  defaults: Record<string, any>;
 
   /**
    * The input to the task at the time of the task run.
    * This takes defaults from construction time and overrides from run time.
    * It is the input that created the output.
    */
-  runInputData: Input = {} as Input;
+  runInputData: Record<string, any> = {};
 
   /**
    * The output of the task at the time of the task run.
    * This is the result of the task execution.
    */
-  runOutputData: Output = {} as Output;
+  runOutputData: Record<string, any> = {};
 
   // ========================================================================
   // Task state properties
@@ -290,7 +290,7 @@ export class Task<
    * @param config Configuration for the task
    */
   constructor(
-    callerDefaultInputs: Partial<Input> = {} as Partial<Input>,
+    callerDefaultInputs: Record<string, any> = {} as Record<string, any>,
     config: Partial<Config> = {} as Config
   ) {
     // Initialize input defaults
@@ -336,9 +336,9 @@ export class Task<
   public resetInputData(): void {
     // Use deep clone to avoid state leakage
     try {
-      this.runInputData = structuredClone(this.defaults) as Input;
+      this.runInputData = structuredClone(this.defaults) as Record<string, any>;
     } catch (err) {
-      this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as Input;
+      this.runInputData = JSON.parse(JSON.stringify(this.defaults)) as Record<string, any>;
     }
   }
 
@@ -347,7 +347,7 @@ export class Task<
    *
    * @param defaults The default input values to set
    */
-  public setDefaults(defaults: Partial<Input>): void {
+  public setDefaults(defaults: Record<string, any>): void {
     this.defaults = defaults;
   }
 
@@ -356,12 +356,11 @@ export class Task<
    *
    * @param input Input values to set
    */
-  public setInput(input: Partial<Input>): void {
+  public setInput(input: Record<string, any>): void {
     const schema = this.inputSchema as TObject;
     const properties = schema.properties || {};
 
-    for (const [id, prop] of Object.entries(properties)) {
-      const inputId = id as keyof Input;
+    for (const [inputId, prop] of Object.entries(properties)) {
       if (input[inputId] !== undefined) {
         this.runInputData[inputId] = input[inputId];
       } else if (this.runInputData[inputId] === undefined && prop.default !== undefined) {
@@ -375,7 +374,7 @@ export class Task<
    * @param input The input to narrow
    * @returns The (possibly narrowed) input
    */
-  public async narrowInput(input: Input): Promise<Input> {
+  public async narrowInput(input: Record<string, any>): Promise<Record<string, any>> {
     return input;
   }
 

@@ -85,7 +85,7 @@ export class GraphAsTaskRunner<
       const result = await super.executeTask(this.fixInput(input));
       this.task.runOutputData = result ?? ({} as Output);
     }
-    return this.task.runOutputData;
+    return this.task.runOutputData as Output;
   }
 
   /**
@@ -102,6 +102,6 @@ export class GraphAsTaskRunner<
       const reactiveResults = await super.executeTaskReactive(this.fixInput(input), output);
       this.task.runOutputData = reactiveResults ?? output ?? ({} as Output);
     }
-    return this.task.runOutputData;
+    return this.task.runOutputData as Output;
   }
 }
