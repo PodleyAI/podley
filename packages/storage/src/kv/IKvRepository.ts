@@ -57,6 +57,7 @@ export interface IKvRepository<
 > {
   // Core methods
   put(key: Key, value: Value): Promise<void>;
+  putBulk(items: Array<{ key: Key; value: Value }>): Promise<void>;
   get(key: Key): Promise<Value | undefined>;
   delete(key: Key): Promise<void>;
   getAll(): Promise<Combined[] | undefined>;

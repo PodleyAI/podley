@@ -55,13 +55,6 @@ export class TaskOutputTabularRepository extends TaskOutputRepository {
     this.outputCompression = outputCompression;
   }
 
-  /**
-   * Sets up the database for the task output repository
-   */
-  async setupDatabase(): Promise<void> {
-    await this.tabularRepository.setupDatabase();
-  }
-
   public async keyFromInputs(inputs: TaskInput): Promise<string> {
     return await makeFingerprint(inputs);
   }

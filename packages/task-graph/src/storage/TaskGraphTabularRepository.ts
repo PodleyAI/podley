@@ -54,13 +54,6 @@ export class TaskGraphTabularRepository extends TaskGraphRepository {
   }
 
   /**
-   * Sets up the database for the task graph repository
-   */
-  async setupDatabase(): Promise<void> {
-    await this.tabularRepository.setupDatabase();
-  }
-
-  /**
    * Saves a task graph to persistent storage
    * @param key The unique identifier for the task graph
    * @param output The task graph to save

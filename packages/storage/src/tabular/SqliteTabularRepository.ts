@@ -209,6 +209,49 @@ export class SqliteTabularRepository<
   }
 
   /**
+   * Stores multiple key-value pairs in the database in a bulk operation
+   * @param entities - Array of entities to store
+   * @emits 'put' event for each entity stored
+   */
+  async putBulk(entities: Entity[]): Promise<void> {
+    if (entities.length === 0) return;
+
+    const db = await this.setupDatabase();
+    const allParams: any[] = [];
+    const valuesPerRow = this.primaryKeyColumns().length + this.valueColumns().length;
+
+    // Build the VALUES clauses - one for each entity
+    const valuesClauses = entities
+      .map((entity, index) => {
+        const { key, value } = this.separateKeyValueFromCombined(entity);
+        const primaryKeyParams = this.getPrimaryKeyAsOrderedArray(key);
+        const valueParams = this.getValueAsOrderedArray(value);
+        const entityParams = [...primaryKeyParams, ...valueParams];
+        allParams.push(...entityParams);
+        const placeholders = Array(valuesPerRow).fill("?").join(", ");
+        return `(${placeholders})`;
+      })
+      .join(", ");
+
+    const sql = `
+      INSERT OR REPLACE INTO \`${
+        this.table
+      }\` (${this.primaryKeyColumnList()} ${this.valueColumnList() ? ", " + this.valueColumnList() : ""})
+      VALUES ${valuesClauses}
+    `;
+
+    const stmt = db.prepare(sql);
+
+    // Execute the single statement with all parameters
+    // @ts-ignore
+    stmt.run(...allParams);
+
+    for (const entity of entities) {
+      this.events.emit("put", entity);
+    }
+  }
+
+  /**
    * Retrieves a value from the database by its key
    * @param key - The primary key object to look up
    * @returns The stored value or undefined if not found

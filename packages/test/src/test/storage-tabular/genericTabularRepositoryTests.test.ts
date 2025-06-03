@@ -63,6 +63,27 @@ export function runGenericTabularRepositoryTests(
 
       expect(output == undefined).toEqual(true);
     });
+
+    it("should store multiple entities using putBulk", async () => {
+      const entities = [
+        { name: "key1", type: "string1", option: "value1", success: true },
+        { name: "key2", type: "string2", option: "value2", success: false },
+        { name: "key3", type: "string3", option: "value3", success: true },
+      ];
+
+      await repository.putBulk(entities);
+
+      for (const entity of entities) {
+        const output = await repository.get({ name: entity.name, type: entity.type });
+        expect(output?.option).toEqual(entity.option);
+        expect(!!output?.success).toEqual(entity.success);
+      }
+    });
+
+    it("should handle empty array in putBulk", async () => {
+      await repository.putBulk([]);
+      // Should not throw an error
+    });
   });
 
   // Only run compound index tests if createCompoundRepository is provided

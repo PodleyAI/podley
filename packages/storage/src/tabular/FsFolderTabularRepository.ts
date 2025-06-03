@@ -93,6 +93,16 @@ export class FsFolderTabularRepository<
   }
 
   /**
+   * Stores multiple rows in the repository in a bulk operation
+   * @param entities - Array of entities to store
+   * @emits 'put' event for each entity stored
+   */
+  async putBulk(entities: Entity[]): Promise<void> {
+    await this.setupDirectory();
+    await Promise.all(entities.map(async (entity) => this.put(entity)));
+  }
+
+  /**
    * Retrieves a value by its key
    * @param key - The primary key object to look up
    * @returns The value object if found, undefined otherwise

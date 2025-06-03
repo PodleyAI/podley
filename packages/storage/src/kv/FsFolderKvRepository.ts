@@ -66,6 +66,14 @@ export class FsFolderKvRepository<
   }
 
   /**
+   * Stores multiple rows in the repository in a bulk operation.
+   * @param items - Array of key-value pairs to store
+   */
+  public async putBulk(items: Array<{ key: Key; value: Value }>): Promise<void> {
+    await Promise.all(items.map(async ({ key, value }) => this.put(key, value)));
+  }
+
+  /**
    * Retrieves a value by its key.
    * This is a convenience method that automatically converts simple types to structured format if using default schema.
    *

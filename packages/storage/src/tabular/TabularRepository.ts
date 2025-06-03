@@ -216,6 +216,7 @@ export abstract class TabularRepository<
    * Core abstract methods that must be implemented by concrete repositories
    */
   abstract put(value: Entity): Promise<void>;
+  abstract putBulk(values: Entity[]): Promise<void>;
   abstract get(key: PrimaryKey): Promise<Entity | undefined>;
   abstract delete(key: PrimaryKey | Entity): Promise<void>;
   abstract getAll(): Promise<Entity[] | undefined>;

@@ -111,11 +111,6 @@ export abstract class TaskGraphRepository {
   }
 
   /**
-   * Sets up the database for the task graph repository
-   */
-  abstract setupDatabase(): Promise<void>;
-
-  /**
    * Saves a task graph to persistent storage
    * @param key The unique identifier for the task graph
    * @param output The task graph to save

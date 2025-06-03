@@ -110,6 +110,50 @@ export class IndexedDbTabularRepository<
     });
   }
 
+  /**
+   * Stores multiple rows in the repository in a bulk operation.
+   * @param records - Array of entities to store.
+   * @emits put - Emitted for each record successfully stored
+   */
+  async putBulk(records: Entity[]): Promise<void> {
+    const db = await this.setupDatabase();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(this.table, "readwrite");
+      const store = transaction.objectStore(this.table);
+
+      let completed = 0;
+      let hasError = false;
+
+      transaction.onerror = () => {
+        if (!hasError) {
+          hasError = true;
+          reject(transaction.error);
+        }
+      };
+
+      transaction.oncomplete = () => {
+        if (!hasError) {
+          resolve();
+        }
+      };
+
+      // Add all records to the transaction
+      for (const record of records) {
+        const request = store.put(record);
+        request.onsuccess = () => {
+          this.events.emit("put", record);
+          completed++;
+        };
+        request.onerror = () => {
+          if (!hasError) {
+            hasError = true;
+            reject(request.error);
+          }
+        };
+      }
+    });
+  }
+
   protected getPrimaryKeyAsOrderedArray(key: PrimaryKey) {
     return super
       .getPrimaryKeyAsOrderedArray(key)

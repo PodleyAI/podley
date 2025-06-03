@@ -48,6 +48,26 @@ export abstract class KvViaTabularRepository<
   }
 
   /**
+   * Stores multiple rows in the repository in a bulk operation.
+   * @param items - Array of key-value pairs to store
+   */
+  public async putBulk(items: Array<{ key: Key; value: Value }>): Promise<void> {
+    // Handle objects that need to be JSON-stringified, TODO(str): should put in the type
+    const shouldStringify = !["number", "boolean", "string", "blob"].includes(
+      this.valueSchema.type
+    );
+
+    const entities = items.map(({ key, value }) => {
+      if (shouldStringify) {
+        value = JSON.stringify(value) as Value;
+      }
+      return { key, value };
+    });
+
+    return await this.tabularRepository.putBulk(entities);
+  }
+
+  /**
    * Retrieves a value by its key.
    * This is a convenience method that automatically converts simple types to structured format if using default schema.
    *

@@ -67,6 +67,15 @@ export class InMemoryTabularRepository<
   }
 
   /**
+   * Stores multiple key-value pairs in the repository in a bulk operation
+   * @param values - Array of combined objects to store
+   * @emits 'put' event for each value stored
+   */
+  async putBulk(values: Entity[]): Promise<void> {
+    await Promise.all(values.map(async (value) => this.put(value)));
+  }
+
+  /**
    * Retrieves a value by its key
    * @param key - The primary key object to look up
    * @returns The value object if found, undefined otherwise

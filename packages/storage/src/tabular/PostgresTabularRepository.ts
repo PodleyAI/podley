@@ -335,6 +335,72 @@ export class PostgresTabularRepository<
   }
 
   /**
+   * Stores multiple rows in the database in a bulk operation.
+   * Uses batch INSERT with ON CONFLICT for better performance.
+   *
+   * @param entities - Array of entities to store
+   * @emits "put" event for each entity stored
+   */
+  async putBulk(entities: Entity[]): Promise<void> {
+    if (entities.length === 0) return;
+
+    const db = await this.setupDatabase();
+
+    // Prepare all parameters and build VALUES clause
+    const allParams: any[] = [];
+    const valuesPerRow = this.primaryKeyColumns().length + this.valueColumns().length;
+    let paramIndex = 1;
+
+    // Build the VALUES clauses - one for each entity
+    const valuesClauses = entities
+      .map((entity) => {
+        const { key, value } = this.separateKeyValueFromCombined(entity);
+        const primaryKeyParams = this.getPrimaryKeyAsOrderedArray(key);
+        const valueParams = this.getValueAsOrderedArray(value);
+        const entityParams = [...primaryKeyParams, ...valueParams];
+
+        // Add all parameters for this entity to the flat array
+        allParams.push(...entityParams);
+
+        // Create placeholders for this row using PostgreSQL $1, $2, etc.
+        const placeholders = Array(valuesPerRow)
+          .fill(0)
+          .map(() => `$${paramIndex++}`)
+          .join(", ");
+        return `(${placeholders})`;
+      })
+      .join(", ");
+
+    const sql = `
+      INSERT INTO "${this.table}" (
+        ${this.primaryKeyColumnList()} ${this.valueColumnList() ? ", " + this.valueColumnList() : ""}
+      )
+      VALUES ${valuesClauses}
+      ${
+        !this.valueColumnList()
+          ? ""
+          : `
+      ON CONFLICT (${this.primaryKeyColumnList()}) DO UPDATE
+      SET 
+      ${(this.valueColumns() as string[])
+        .map((col) => {
+          // For the UPDATE part, we need to reference the excluded values
+          return `"${col}" = EXCLUDED."${col}"`;
+        })
+        .join(", ")}
+      `
+      }
+    `;
+
+    await db.query(sql, allParams);
+
+    // Emit events for each entity
+    for (const entity of entities) {
+      this.events.emit("put", entity);
+    }
+  }
+
+  /**
    * Retrieves a value from the database by its primary key.
    *
    * @param key - The primary key object to look up

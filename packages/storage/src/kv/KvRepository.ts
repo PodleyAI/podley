@@ -52,6 +52,12 @@ export abstract class KvRepository<
   abstract put(key: Key, value: Value): Promise<void>;
 
   /**
+   * Stores multiple rows in the repository in a bulk operation.
+   * @param items - Array of key-value pairs to store
+   */
+  abstract putBulk(items: Array<{ key: Key; value: Value }>): Promise<void>;
+
+  /**
    * Retrieves a value by its key.
    * This is a convenience method that automatically converts simple types to structured format if using default schema.
    *
