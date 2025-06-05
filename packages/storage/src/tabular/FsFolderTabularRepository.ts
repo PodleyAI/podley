@@ -7,7 +7,6 @@
 
 import { createServiceToken, sleep } from "@podley/util";
 import { Static, TObject } from "@sinclair/typebox";
-import { glob } from "glob";
 import { readdir, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
@@ -188,9 +187,9 @@ export class FsFolderTabularRepository<
   async size(): Promise<number> {
     await this.setupDirectory();
     // Count all files in the folder ending in .json
-    const globPattern = path.join(this.folderPath, "*.json");
-    const files = await glob(globPattern);
-    return files.length;
+    const files = await readdir(this.folderPath);
+    const jsonFiles = files.filter((file) => file.endsWith(".json"));
+    return jsonFiles.length;
   }
 
   /**
