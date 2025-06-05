@@ -289,7 +289,7 @@ export class Task<
    * @param callerDefaultInputs Default input values provided by the caller
    * @param config Configuration for the task
    */
-  constructor(callerDefaultInputs: Input = {} as Input, config: Partial<Config> = {} as Config) {
+  constructor(callerDefaultInputs: Partial<Input> = {}, config: Partial<Config> = {}) {
     // Initialize input defaults
     const inputDefaults = this.getDefaultInputsFromStaticInputDefinitions();
     this.defaults = Object.assign(inputDefaults, callerDefaultInputs);
