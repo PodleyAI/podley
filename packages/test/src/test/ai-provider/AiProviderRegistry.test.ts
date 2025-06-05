@@ -11,37 +11,22 @@ import {
   AiProviderRegistry,
   getAiProviderRegistry,
   getGlobalModelRepository,
-  Model,
   setAiProviderRegistry,
 } from "@podley/ai";
 import { InMemoryRateLimiter, JobQueue } from "@podley/job-queue";
 import { InMemoryQueueStorage } from "@podley/storage";
 import {
+  getTaskQueueRegistry,
+  setTaskQueueRegistry,
   TaskInput,
   TaskOutput,
   TaskQueueRegistry,
-  getTaskQueueRegistry,
-  setTaskQueueRegistry,
 } from "@podley/task-graph";
-import { sleep } from "@podley/util";
 import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 // Constants for testing
 const TEST_PROVIDER = "test-provider";
 
 describe("AiProviderRegistry", () => {
-  // Create a mock run function that reports progress
-  const mockLongRunningRunFn = async (job: AiJob, input: TaskInput) => {
-    const jobQueue = job.queue!;
-    await jobQueue.updateProgress(job.id, 25, "25% complete");
-    await sleep(0);
-    await jobQueue.updateProgress(job.id, 50, "50% complete");
-    await sleep(0);
-    await jobQueue.updateProgress(job.id, 75, "75% complete");
-    await sleep(0);
-    await jobQueue.updateProgress(job.id, 100, "100% complete");
-    return { result: "success with progress" };
-  };
-
   let queue: JobQueue<AiProviderInput<TaskInput>, TaskOutput>;
   let aiProviderRegistry: AiProviderRegistry;
 
@@ -168,7 +153,7 @@ describe("AiProviderRegistry", () => {
 
       const result = await job.execute(job.input, {
         signal: controller.signal,
-        updateProgress: () => {},
+        updateProgress: async () => {},
       });
 
       expect(result).toEqual({ result: "success" });

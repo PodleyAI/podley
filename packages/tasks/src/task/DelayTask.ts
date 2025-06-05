@@ -20,7 +20,7 @@ import { TObject, Type } from "@sinclair/typebox";
 
 export type DelayTaskInput = {
   delay: number;
-  pass_through: any;
+  pass_through?: any;
 };
 export type DelayTaskOutput = TaskOutput;
 

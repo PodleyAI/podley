@@ -33,6 +33,18 @@
       "bun": "./src/bun.ts",
       "types": "./src/bun.ts",
       "node": "./dist/node.js"
+    },
+    "./bun": {
+      "types": "./src/bun.d.ts",
+      "import": "./dist/bun.js"
+    },
+    "./node": {
+      "types": "./src/node.d.ts",
+      "import": "./dist/node.js"
+    },
+    "./browser": {
+      "types": "./src/browser.ts",
+      "import": "./dist/browser.js"
     }
   },
   "files": [

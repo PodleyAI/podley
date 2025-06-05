@@ -109,7 +109,10 @@ describe("TfMediaPipeBinding", () => {
             db,
             TENSORFLOW_MEDIAPIPE
           ),
-          limiter: new SqliteRateLimiter(db, TENSORFLOW_MEDIAPIPE, 4, 1),
+          limiter: new SqliteRateLimiter(db, TENSORFLOW_MEDIAPIPE, {
+            maxExecutions: 4,
+            windowSizeInSeconds: 1,
+          }),
           waitDurationInMilliseconds: 1,
         }
       );

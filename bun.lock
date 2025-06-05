@@ -27,7 +27,7 @@
     },
     "examples/cli": {
       "name": "@podley/cli",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "bin": "./dist/podley.js",
       "dependencies": {
         "@mediapipe/tasks-text": "^0.10.21",
@@ -89,7 +89,7 @@
     },
     "packages/ai": {
       "name": "@podley/ai",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -106,7 +106,7 @@
     },
     "packages/ai-provider": {
       "name": "@podley/ai-provider",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@podley/ai": "workspace:*",
         "@podley/job-queue": "workspace:*",
@@ -121,7 +121,7 @@
     },
     "packages/job-queue": {
       "name": "@podley/job-queue",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@podley/storage": "workspace:*",
         "@podley/util": "workspace:*",
@@ -135,7 +135,7 @@
     },
     "packages/sqlite": {
       "name": "@podley/sqlite",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
       },
@@ -146,7 +146,7 @@
     },
     "packages/storage": {
       "name": "@podley/storage",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@podley/sqlite": "workspace:*",
         "@podley/util": "workspace:*",
@@ -161,7 +161,7 @@
     },
     "packages/task-graph": {
       "name": "@podley/task-graph",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -171,7 +171,7 @@
     },
     "packages/tasks": {
       "name": "@podley/tasks",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@podley/task-graph": "workspace:*",
         "@podley/util": "workspace:*",
@@ -179,7 +179,7 @@
     },
     "packages/test": {
       "name": "@podley/test",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@podley/ai": "workspace:*",
         "@podley/ai-provider": "workspace:*",
@@ -196,7 +196,7 @@
     },
     "packages/util": {
       "name": "@podley/util",
-      "version": "0.0.4",
+      "version": "0.0.5",
     },
   },
   "trustedDependencies": [
