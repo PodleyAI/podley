@@ -1,19 +1,10 @@
-# ELLMERS
+# PODLEY
 
 [![License](https://img.shields.io/badge/license-Apache2-blue.svg)](https://github.com/podleyai/podley/blob/main/LICENSE)
 
 ## Overview
 
-The Embedding Large Language Model Experiential retrieval Service (ELLMERS) is a simple tool for testing LLM embedding strategies for document retreival. It is designed to be simple to use and easy to extend.
-
-## Features
-
-- Support for multiple LLM models
-- Support for different instruction transformations
-- Support for multiple dimensionalities for testing
-- Support for different storage backends
-- Support for different retreival strategies
-- Support for different document formats
+Simple library to build linear and graph based workflows. It is designed to be simple to use and easy to extend, yet powerful enough to handle cross task rate limits, retries, etc.
 
 ## Authors
 
