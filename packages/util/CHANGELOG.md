@@ -1,5 +1,11 @@
 # @podley/util
 
+## 0.0.8
+
+### Patch Changes
+
+- Fixed publishing bug
+
 ## 0.0.7
 
 ### Patch Changes

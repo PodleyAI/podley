@@ -18,7 +18,7 @@ interface RootPackageJson {
 
 interface PublishError {
   packageName: string;
-  error: string;
+  error: any;
   isVersionConflict: boolean;
   output?: string;
 }
@@ -88,11 +88,14 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishE
 
   const access = packageJson.publishConfig.access;
   let output: string;
+  let error: any;
 
   try {
+    console.log("Publishing", workspacePath);
     output = await runCommand("bun", ["publish", "--access", access, "--no-color"], workspacePath);
-  } catch (error) {
-    output = error instanceof Error ? error.message : String(error);
+  } catch (err) {
+    output = err instanceof Error ? err.message : String(err);
+    error = err;
   }
 
   // Check if the output contains a version conflict error message
@@ -109,13 +112,12 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishE
     };
   }
 
-  // Check for other error messages in the output
-  if (output.toLowerCase().includes("error") || output.toLowerCase().includes("failed")) {
+  if (error) {
     return {
       packageName: packageJson.name,
-      error: "Publish failed",
       isVersionConflict: false,
       output,
+      error,
     };
   }
 
