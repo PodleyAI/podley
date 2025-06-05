@@ -1,7 +1,7 @@
 {
   "name": "@podley/storage",
   "type": "module",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Podley is a tool for building and running DAG pipelines of AI tasks.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
