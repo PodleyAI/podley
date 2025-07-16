@@ -10,6 +10,8 @@ The `@podley/ai-provider` package provides concrete implementations of AI provid
 
 - **HuggingFace Transformers**: Support for ONNX models via HuggingFace Transformers.js
 - **TensorFlow MediaPipe**: Integration with Google's MediaPipe for text processing tasks
+- [FUTURE] **OpenAI Integration**: Support for OpenAI API services
+- [FUTURE] **GGML Support**: Local model execution with GGML format models
 - **Multi-Platform**: Works in browser, Node.js, and Bun environments
 - **Worker Support**: Offload AI computation to web workers for better performance
 - **Type Safety**: Full TypeScript support with comprehensive type definitions
