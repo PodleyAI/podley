@@ -39,10 +39,10 @@
     "@podley/storage": "workspace:*",
     "@podley/task-graph": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sinclair/typebox": "^0.34.33"
+    "@sinclair/typebox": "^0.34.38"
   },
   "devDependencies": {
-    "@types/pg": "^8.15.2"
+    "@types/pg": "^8.15.5"
   },
   "peerDependencies": {
     "pg": "^8.14.1"
