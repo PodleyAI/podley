@@ -1,6 +1,6 @@
 # System Composition
 
-Explaination of the parts in the system.
+Explanation of the parts in the system.
 
 ## Storage
 
@@ -16,7 +16,7 @@ We need to store the data somewhere. We need to be able to retrieve it quickly, 
 
 ### Indexes:
 
-Normally indexes would be part of the storage, but we need to break apart for the use case of an Electron app using SQLite for storage and usearch for the index. Or the indexes could be stored in a separate database as an add-on to some current deployment.
+Normally indexes would be part of the storage, but we need to break apart for the use case of an Electron app using SQLite for storage and `usearch` for the index. Or the indexes could be stored in a separate database as an add-on to some current deployment.
 
 - [ ] In Memory / Code
 - [ ] usearch
@@ -26,7 +26,7 @@ Normally indexes would be part of the storage, but we need to break apart for th
 
 ## Models:
 
-Many models are online, but we also want to be able to test local ones. I don't know if inlining (like I do at the moment) is a good idea. I could convert it to an API call, but it will be fun to test some local models in the browser for funsies. Some local models will require an API at the moment (like llama.cpp) until I build a node module to process directly (is that worth it?) which won't work in the browser anyway, but will work in Electron (needed for the side project that handles my personal data).
+Many models are online, but we also want to be able to test local ones. Some local models will require an API at the moment (like llama.cpp) until a Node module is introduced, which won't work in the browser anyway, but will work in Electron (needed for the side project that handles my personal data).
 
 - [ ] Use a pre-trained model
   - [ ] Local models
@@ -43,6 +43,8 @@ Many models are online, but we also want to be able to test local ones. I don't 
     - [ ] Huggingface
 - [ ] Use a model trained on our data
 
+Note (current support in repo): OpenAI (online), HF Transformers (local/worker), TF MediaPipe (local), GGML via local server.
+
 ## Prompts
 
 Prompts coax an LLM to give us back the results that we want. We have different prompts for different purposes.
@@ -56,11 +58,11 @@ Instructions introduce a pre-processing step on the text before generating embed
 
 ### Q&A Prompts
 
-These take results from the retrieval step and add them the context for the query. This prompt will explain the what the data is and that the LLM should answer the query. Would we want to rewrite the query here as well?
+These take results from the retrieval step and add them to the context for the query. This prompt will explain what the data is and that the LLM should answer the query. We may also rewrite the query here.
 
 ## Query Intent
 
-Oh, this is going to be hard. We need to figure out what the user is asking for. We need to be able to do this in a way that is compatible with the retrieval method. Also, what is the context? Is the query one of a series? Were previous retreivals incorrect?
+Oh, this is going to be hard. We need to figure out what the user is asking for. We need to be able to do this in a way that is compatible with the retrieval method. Also, what is the context? Is the query one of a series? Were previous retrievals incorrect?
 
 ## Retrieval
 
@@ -68,7 +70,7 @@ Based on the query, we want to gather documents to analyze, filter, and re-rank.
 
 ### Vector Similarity Search
 
-The similarity choices can be one of these which might be set based on the tool (like pg-vector) that we use.
+The similarity choices can be one of these which might be set based on the tool (like pgvector) that we use.
 
 - [ ] Inner Product
 - [ ] Cosine Similarity
@@ -102,7 +104,7 @@ OK, now I know why LangChain is called what it is. We have a series of tasks to 
 
 ### Task
 
-A task is a single step in the chain. It is a single function that takes in data and returns data. It is a single step in the chain. Like sending data to an LLM and getting data back.
+A task is a single step in the chain. It is a single function that takes in data and returns data. For example: sending data to an LLM and getting data back.
 
 - [ ] Name
 - [ ] Functionality
@@ -122,4 +124,4 @@ A task list is a series of tasks that are chained together.
 
 ### TaskGraph
 
-A task graph is a series of tasks that are chained together, with the next task determined by the results of the previous tasks. This is a directed acyclic graph.
+A task graph is a series of tasks that are chained together, with the next task determined by the results of the previous tasks. This is a directed acyclic graph (`TaskGraph`).

@@ -3,13 +3,13 @@
 ## Requirements
 
 - We need to have tasks, and some tasks will be chained together as a "strategy" or list of subtasks.
-- We need to sometime run tasks in parallel and sometimes in series.
+- We need to sometimes run tasks in parallel and sometimes in series.
 - Tasks can take a long time, so we need to be able to save the state of a task run and resume it later.
 - We do NOT need to be able to run tasks in a distributed manner. v1.2 thing
 - A task and a task graph (a compound task) should have a similar interface.
 - We need progress events.
 - Authentication and authorization will be supplied to the task by the task runner.
-- convert the task graph to a listr2 task list
+- provide CLI/console runner feedback via events emitted by tasks, dataflows, and graphs
 - be able to represent in a UI (graph, tree, whatever).
 - Have an "editor" graph (coded by the user) and a "runner" graph (run by the system). Inputs might change the run graph.
 
@@ -24,8 +24,8 @@
 
 A task is a single step in the chain where most tasks output will be input for the next task.
 
-Tasks get posted to a job queue and are run by a job queue runner.
+Tasks may be posted to a job queue (see `JobQueueTask`) and run by a job queue runner, or executed inline by the `TaskRunner`/`TaskGraphRunner`.
 
 ## Compound Task
 
-A compound task is GraphAsTask that contains a groups of tasks (in DAG format) that are chained together to look like a single task.
+A compound task is `GraphAsTask` that contains a group of tasks (in DAG format) chained together to look like a single task.

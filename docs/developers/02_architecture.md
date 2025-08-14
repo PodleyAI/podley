@@ -11,16 +11,16 @@
 
 # Architecture Documentation
 
-This document covers the architecture and the reasoning behind the design decisions. For a more practical guide to getting started, see the [Developer Getting Started](./01_getting_started.md) guide. After reading this document, read [extending the system](03_extending.md) to see how to create your own Tasks. And if you want a rambling background on the motivations behind this project, see the [Motivations](../background/01_motivations.md) guide.
+This document covers the architecture and the reasoning behind the design decisions. For a more practical guide to getting started, see the [Developer Getting Started](./01_getting_started.md) guide. After reading this document, read [Extending the System](03_extending.md) to see how to create your own Tasks. And if you want a rambling background on the motivations behind this project, see the [Motivations](../background/01_motivations.md) guide.
 
 ## Design Principles
 
 - **Simple to Use**: The system should be simple to use and easy to extend.
-- **Orthogonal Systems**: The system should be composed of orthogonal systems that can be easily swapped out. For example, there is an optional caching layer in the task graph runner, which was many different caching system options (in memory, indexeddb in browser, filesystem, sqlite, postgres, etc.).
+- **Orthogonal Systems**: The system should be composed of orthogonal systems that can be easily swapped out. For example, there is an optional caching layer in the task graph runner, which has many different caching system options (in memory, IndexedDB in browser, filesystem, SQLite, Postgres, etc.).
 - **Resumable**: The system should be resumable, so that if the user closes the app while processing, they can come back to it later.
 - **No-Code/Low-Code**: The system should be able to be used by no-code/low-code users, so tasks enumerate their inputs and outputs explicitly, as well as some other metadata like if it has side effects, its name and category, etc.
 - **Code Generation**: Ideally you should be able to back and forth from a task graph to code and back again.
-- **Task Graphs**: The system should be based on graphs, where tasks are connected by data flows to for a directed acyclic graph (DAG).
+- **Task Graphs**: The system should be based on graphs, where tasks are connected by data flows to form a directed acyclic graph (DAG).
 
 # Overview
 
@@ -28,8 +28,8 @@ The system is composed of several different systems, several of which that can b
 
 ## Storage
 
-- **TaskGraphRepository**: The TaskGraphRepository is responsible for storing the task graphs that are waiting to be run. There are implementations for in-memory, indexeddb in the browser, filesystem, sqlite, postgres, etc.
-- **TaskOutputRepository**: The TaskOutputRepository is responsible for storing the output of tasks. It can be added to a TaskRunner to provide cacheing of intermediate steps. There are implementations for in-memory, indexeddb in the browser, filesystem, sqlite, postgres, etc. You can create your own to say, only cache the last 10 runs of a task, or cache everything but runs of a task that had a certain input, like a specific model etc.
+- **TaskGraphRepository**: The TaskGraphRepository is responsible for storing the task graphs that are waiting to be run. There are implementations for in-memory, IndexedDB in the browser, filesystem, SQLite, Postgres, etc.
+- **TaskOutputRepository**: The TaskOutputRepository is responsible for storing the output of tasks. It can be added to a TaskRunner to provide caching of intermediate steps. There are implementations for in-memory, IndexedDB in the browser, filesystem, SQLite, Postgres, etc. You can create your own to, say, only cache the last 10 runs of a task, or cache everything but runs of a task that had a certain input, like a specific model etc.
 
 ## Source Data
 
@@ -39,7 +39,7 @@ The system is composed of several different systems, several of which that can b
 
 ## LLM Providers
 
-- **HuggingFace**: The HuggingFace provider is a simple wrapper around the Tranformers.js library and is intended for running models locally. This library uses ONNX under the hood, which is optimized for running on the command line, but it also works in the browser using WASM and soon WebGPU.
+- **Hugging Face**: The Hugging Face provider is a simple wrapper around the Transformers.js library and is intended for running models locally. This library uses ONNX under the hood, which is optimized for running on the command line, but it also works in the browser using WASM and soon WebGPU.
 - **MediaPipe**: The MediaPipe provider is a simple wrapper around the MediaPipe library and is intended for running models locally. This library uses Tensorflow.js under the hood.
 - **OpenAI**: The OpenAI provider is a simple wrapper around the OpenAI API and is intended for running models in the cloud.\*
 - **Anthropic**: The Anthropic provider is a simple wrapper around the Anthropic API and is intended for running models in the cloud.\*
@@ -49,17 +49,17 @@ The system is composed of several different systems, several of which that can b
 Some tasks are run in a queue, so that a full task queue can resume where it left off (in concert with a TaskOutputRepository). Queues handling things like retries, timeouts, and other things that are not directly related to the task itself. There are several storage implementations:
 
 - **InMemoryQueueStorage**: The InMemoryQueueStorage is a simple in-memory queue storage that is not resumable.
-- **IndexedDbQueueStorage**: The IndexedDbQueueStorage is a queue storage that is stored in the browser's indexeddb and is resumable.
-- **SqliteQueueStorage**: The SqliteQueueStorage is a queue storage that is stored in a Sqlite database and is resumable.
+- **IndexedDbQueueStorage**: The IndexedDbQueueStorage is a queue storage that is stored in the browser's IndexedDB and is resumable.
+- **SqliteQueueStorage**: The SqliteQueueStorage is a queue storage that is stored in a SQLite database and is resumable.
 - **PostgresQueueStorage**: The PostgresQueueStorage is a queue storage that is stored in a Postgres database and is resumable.
 
 Queues can have limiters, like only running one task at a time, or based on rate limits.
 
-- **RateLimiter**: The RateLimiter is a simple rate limiter that can be used to limit the number of tasks that are run in a certain time period. If a task using an API errors out, the rate limiter can use details of error response to determine how long to wait before trying again. There are several different rate limiter implementations, including:
+- **RateLimiter**: The RateLimiter is a simple rate limiter that can be used to limit the number of tasks that are run in a certain time period. If a task using an API errors out, the rate limiter can use details of the error response to determine how long to wait before trying again. There are several different rate limiter implementations, including:
   - **SqliteRateLimiter**: The SqliteRateLimiter is a rate limiter that is stored in a Sqlite database.
   - **PostgresRateLimiter**: The PostgresRateLimiter is a rate limiter that is stored in a Postgres database.
   - **InMemoryRateLimiter**: The InMemoryRateLimiter is a rate limiter that is stored in memory.
-  - **IndexedDbRateLimiter**: The IndexedDbRateLimiter is a rate limiter that is stored in the browser's indexeddb.\*
+  - **IndexedDbRateLimiter**: The IndexedDbRateLimiter is a rate limiter that is stored in the browser's IndexedDB.\*
 - **ConcurrencyLimiter**: The ConcurrencyLimiter is a simple concurrency limiter that can be used to limit the number of tasks that are run at the same time.
 - **CompositeLimiter**: The CompositeLimiter is a simple composite limiter that can be used to combine multiple limiters.
 
@@ -87,17 +87,17 @@ flowchart LR
         RewriteTextTask1[RewriteTextTask model 1]
         RewriteTextTask2[RewriteTextTask model 2]
     end
-    subgraph TextEmeddingCompoundTask
+    subgraph TextEmbeddingCompoundTask
         direction LR
-        TextEmeddingTask1[TextEmeddingTask model 1]
-        GenerateTextTask2[TextEmeddingTask model 2]
+        TextEmbeddingTask1[TextEmbeddingTask model 1]
+        TextEmbeddingTask2[TextEmbeddingTask model 2]
     end
   end
 
   A[Load document] --> B[Split document into paragraphs]
   B --> Task
   DownloadModelCompoundTask --> RewriteTextCompoundTask
-  RewriteTextCompoundTask --> TextEmeddingCompoundTask
+  RewriteTextCompoundTask --> TextEmbeddingCompoundTask
   Task --> C[Save to Database]
 
 
@@ -194,9 +194,9 @@ classDiagram
   style TextTranslationTask type:model,stroke-width:2px
 
   class DebugLogTask{
-    any message
+    any console
     log_level level
-    run() message
+    run() console
   }
   OutputTask <|-- DebugLogTask
   style DebugLogTask type:output,stroke-width:1px
@@ -299,8 +299,8 @@ The Workflow provides a fluent interface for constructing task graphs. Key featu
 - **Smart Task Connection**: Automatically connects task outputs to inputs based on naming
 - **Task Management**: Methods for adding, removing, and modifying tasks in the graph
 
-# Warnings / ToDo
+# Warnings / TODO
 
--**Items marked with \* are not yet implemented.** These are good items for a first time contributor to work on. ;)
+-**Items marked with \\\* are not yet implemented.** These are good items for a first-time contributor to work on. ;)
 
 -**Graphs are not yet resumable** While much work has gone into making the system resumable, the TaskRunner has a ways to go before it is fully resumable. This is a major TODO item.

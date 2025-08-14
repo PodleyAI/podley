@@ -2,17 +2,17 @@
 
 ## Introduction
 
-We have Tasks (preprammed to do some action), JobQueueTask types (these get posted to job queues), and GraphAsTask types that contain a whole graph. These are all internal and must be defined in code.
+We have Tasks (preprogrammed to do some action), `JobQueueTask` types (these get posted to job queues), and `GraphAsTask` types that contain a whole graph. These are all internal and must be defined in code.
 
-When an end user want to build a pipeline, they need to be able to define a list of tasks to run. This is where Graphs come in. The directed acyclic graph (DAG) is more flexible than simple chains.
+When an end user wants to build a pipeline, they need to be able to define a list of tasks to run. This is where graphs come in. The directed acyclic graph (DAG) is more flexible than simple chains.
 
-The editor DAG is defined by the end user and saved in the database (nodes and edges), filesystem, etc.
+The editor DAG is defined by the end user and saved in the database (tasks and dataflows), filesystem, etc.
 
 ## Graph
 
-The graph is a DAG. It is a list of nodes and a list of edges. The nodes are the tasks and the edges are the inputs and outputs of the tasks plus some other instrumetation data.
+The graph is a DAG. It is a list of tasks and a list of dataflows. The tasks are the nodes and the dataflows are the connections between task outputs and inputs, plus status and provenance.
 
-We might want to have events based on what happens in the graph (and a suspend/resume for bulk creation/etc). This will be needed to keep UI in sync with the as it runs.
+We expose events for graphs, tasks, and dataflows. A suspend/resume could be added for bulk creation. This helps keep a UI in sync as the graph runs.
 
 ### Node / Task
 
@@ -20,9 +20,8 @@ We might want to have events based on what happens in the graph (and a suspend/r
 
 Notes about requirements for the tasks:
 
-- Must have input list and output list
-  - the input or output will have a type object that JS can read, and not a TS type (though that should get derived from the type object)
-- We need to convert the inputs/outputs to a TypeScript type (or write them separately)
+- Must have input schema and output schema (via TypeBox)
+- The input/output schema is a runtime JSON schema; TS types are inferred separately where helpful
 
 ### Edge / Dataflow
 
@@ -31,12 +30,11 @@ Notes about requirements for the tasks:
 
 Notes about requirements for the edges:
 
-- There can be multiple outputs that go to multiple inputs
-  - I.g., there can and will be multiple edges between two nodes
+- Multiple outputs can feed multiple inputs (multiple dataflows can exist between two tasks)
 
 ### Graph Runner
 
-The graph runner is a simple recursive function that takes a graph and a node and runs the node. If the node is a task, it runs the task. If the node has a sub-graph, it runs the sub-graph.
+`TaskGraphRunner` schedules and executes tasks respecting dependencies. It pushes node outputs to outgoing dataflows and can merge leaf results using a compound strategy.
 
 # User Task Graph
 
@@ -44,12 +42,8 @@ The graph runner is a simple recursive function that takes a graph and a node an
 erDiagram
     TaskGraph ||--o{ Task : tasks
     TaskGraph ||--o{ Dataflow : dataflows
-    Task ||--o{ TaskInput : inputs
-    Task ||--o{ TaskOutput: outputs
-    TaskInput ||--|| ValueType : valueType
-    TaskOutput ||--|| ValueType : valueType
-    Dataflow ||--|| TaskInput : handle
-    Dataflow ||--|| TaskOutput : handle
+    Task ||--o{ TaskInput : inputSchema
+    Task ||--o{ TaskOutput : outputSchema
     Dataflow ||--|| Task : source
     Dataflow ||--|| Task : target
 
@@ -59,17 +53,17 @@ erDiagram
     }
 
     Task{
-      string name
       string id
-      TaskInput[] inputs
-      TaskOutput[] outputs
+      string name
+      TaskInput inputSchema
+      TaskOutput outputSchema
     }
 
     Dataflow{
       string id
-      Task sourceTaskId
-      Task targetTaskId
-      TaskInput sourceTaskInput
-      TaskOutput targetTaskOutput
+      string sourceTaskId
+      string sourceTaskPortId
+      string targetTaskId
+      string targetTaskPortId
     }
 ```

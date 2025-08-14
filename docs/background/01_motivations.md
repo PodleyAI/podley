@@ -6,7 +6,7 @@ The best way to learn is by doing, and taking the least amount of baggage with y
 
 ## Use in my Projects
 
-I have two very different side projects that I am working on, where intelligent retreival is required:
+I have two very different side projects that I am working on, where intelligent retrieval is required:
 
 - A front end to the SEC Edgar database where you can ask questions. It originally started as a way to investigate SPACs during the 2021 SPAC boom. The current state of the app is at [embarc.com](https://embarc.com).
 - An app that pulls all the data about me from all over the internet and my devices and puts it in one app that I can then ask questions of. Like, "How did I meet so and so" and it checks when we connected on LinkedIn, cross references with my calendar and also my location history for that day and the days before.

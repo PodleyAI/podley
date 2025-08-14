@@ -4,7 +4,7 @@ No, we are not talking about math. We have a matrix of ideas to test.
 
 ## Rewriters
 
-The rewriter uses a genarative language model to rewrite the text. This is the same as a prompt, but we are using it to rewrite the text instead of generate it.
+The rewriter uses a generative language model to rewrite the text. This is the same as a prompt, but we are using it to rewrite the text instead of generate it.
 
 The main two areas to test:
 
@@ -54,4 +54,4 @@ We need to prompt the LLM with the retrieved data in a smart manner. Different a
 ## Testing
 
 We need to test a matrix of choices:
-(models for embedding) x (instructions for data and query embedding) x (LLM models for the instructions) x (filtering) x (rankings) x (promptings) x (LLM models for the Q&A).
+(models for embedding) x (instructions for data and query embedding) x (LLM models for the instructions) x (filtering) x (ranking) x (prompting) x (LLM models for the Q&A).

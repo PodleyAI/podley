@@ -5,7 +5,7 @@
   - [Registering Providers](#registering-providers)
   - [Registering Provider plus related Job Queue](#registering-provider-plus-related-job-queue)
     - [In memory:](#in-memory)
-    - [Using Sqlite:](#using-sqlite)
+    - [Using SQLite:](#using-sqlite)
 - [Workflow](#workflow)
 - [JSON Configuration](#json-configuration)
 - [Tasks](#tasks)
@@ -40,7 +40,7 @@ This will bring up a web page where you can edit some json to change the graph, 
 
 Also, you can open DevTools and edit that way (follow the instructions for enabling Console Formatters for best experience). A simple task graph workflow is available there. Just type `workflow` in the console and you can start building a graph. With the custom formatters, you can see the graph as you build it, as well as documentation. Everything self documents.
 
-After this, plese read [Architecture](02_architecture.md) before attempting to [write your own Tasks](03_extending.md).
+After this, please read [Architecture](02_architecture.md) before attempting to [write your own Tasks](03_extending.md).
 
 # Get Shit Done
 
@@ -73,33 +73,28 @@ console.log(graphJson);
 This is equivalent to creating the graph directly, with additional features like caching and reactive execution:
 
 ```ts
-import {
-  DownloadModelTask,
-  TextRewriterCompoundTask,
-  DebugLog,
-  Dataflow,
-  TaskGraph,
-} from "@podley/task-graph";
+import { Dataflow, TaskGraph } from "@podley/task-graph";
+import { DownloadModelTask, TextRewriterTask } from "@podley/ai";
+import { DebugLogTask } from "@podley/tasks";
 import { register_HFT_InMemoryQueue } from "@podley/test";
 
 // config and start up
-register_HFT_InMemoryQueue();
+await register_HFT_InMemoryQueue();
 
 // build and run graph
 const graph = new TaskGraph();
-graph.addTask(new DownloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" }, { id: "1" }));
+graph.addTask(new DownloadModelTask({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" }, { id: "1" }));
 graph.addTask(
-  new TextRewriterCompoundTask(
+  new TextRewriterTask(
     {
       text: "The quick brown fox jumps over the lazy dog.",
       prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
+      // model will be provided by the dataflow below
     },
-    {
-      id: "2",
-    }
+    { id: "2" }
   )
 );
-graph.addTask(new DebugLog({}, { id: "3" }));
+graph.addTask(new DebugLogTask({}, { id: "3" }));
 graph.addDataflow(
   new Dataflow({
     sourceTaskId: "1",
@@ -122,36 +117,29 @@ await graph.run();
 
 ## Using Task and TaskGraph directly (no config helper)
 
-And unrolling the config helpers, we get the following equivalent code:
+And unrolling the helpers, we get the following equivalent code:
 
 ```ts
-import {
-  DebugLog,
-  Dataflow,
-  TaskGraph,
-  ConcurrencyLimiter,
-  TaskInput,
-  TaskOutput,
-  getTaskQueueRegistry,
-} from "@podley/task-graph";
-
+import { Dataflow, TaskGraph, getTaskQueueRegistry } from "@podley/task-graph";
 import {
   DownloadModelTask,
-  TextRewriterCompoundTask,
-  getAiProviderRegistry,
-  getGlobalModelRepository,
+  TextRewriterTask,
+  AiJob,
+  InMemoryModelRepository,
+  setGlobalModelRepository,
 } from "@podley/ai";
-
-import {
-  HuggingFaceLocal_DownloadRun,
-  HuggingFaceLocal_TextRewriterRun,
-} from "@podley/ai-provider";
-
-import { JobQueue, InMemoryRateLimiter } from "@podley/job-queue";
+import { DebugLogTask } from "@podley/tasks";
+import { ConcurrencyLimiter, JobQueue } from "@podley/job-queue";
 import { InMemoryQueueStorage } from "@podley/storage";
-// config and start up
-getGlobalModelRepository(new InMemoryModelRepository());
-await getGlobalModelRepository().addModel({
+import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@podley/ai-provider";
+
+// Provider run functions on this thread
+await register_HFT_InlineJobFns();
+
+// Set up a model repo and models
+const modelRepo = new InMemoryModelRepository();
+setGlobalModelRepository(modelRepo);
+await modelRepo.addModel({
   name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
   url: "Xenova/LaMini-Flan-T5-783M",
   availableOnBrowser: true,
@@ -159,38 +147,22 @@ await getGlobalModelRepository().addModel({
   provider: HF_TRANSFORMERS_ONNX,
   pipeline: "text2text-generation",
 });
-await getGlobalModelRepository().connectTaskToModel(
-  "TextGenerationTask",
-  "onnx:Xenova/LaMini-Flan-T5-783M:q8"
-);
-await getGlobalModelRepository().connectTaskToModel(
-  "TextRewriterTask",
-  "onnx:Xenova/LaMini-Flan-T5-783M:q8"
-);
+await modelRepo.connectTaskToModel("TextGenerationTask", "onnx:Xenova/LaMini-Flan-T5-783M:q8");
+await modelRepo.connectTaskToModel("TextRewriterTask", "onnx:Xenova/LaMini-Flan-T5-783M:q8");
 
-const aiProviderRegistry = getAiProviderRegistry();
-aiProviderRegistry.registerRunFn(
-  HF_TRANSFORMERS_ONNX,
-  DownloadModelTask.type,
-  HuggingFaceLocal_DownloadRun
-);
-aiProviderRegistry.registerRunFn(
-  HF_TRANSFORMERS_ONNX,
-  TextRewriterTask.type,
-  HuggingFaceLocal_TextRewriterRun
-);
-const jobQueue = new JobQueue<TaskInput, TaskOutput>("test", Job, {
-  limiter: new InMemoryRateLimiter({ maxExecutions: 4, windowSizeInSeconds: 1 }),
-  storage: new InMemoryQueueStorage<TaskInput, TaskOutput>("test"),
+// Job queue for the provider
+const queue = new JobQueue(HF_TRANSFORMERS_ONNX, AiJob, {
+  limiter: new ConcurrencyLimiter(1, 10),
+  storage: new InMemoryQueueStorage(HF_TRANSFORMERS_ONNX),
 });
-getTaskQueueRegistry().registerQueue(jobQueue);
-jobQueue.start();
+getTaskQueueRegistry().registerQueue(queue);
+queue.start();
 
-// build and run graph
+// Build and run graph
 const graph = new TaskGraph();
-graph.addTask(new DownloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" }, { id: "1" }));
+graph.addTask(new DownloadModelTask({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" }, { id: "1" }));
 graph.addTask(
-  new TextRewriterCompoundTask(
+  new TextRewriterTask(
     {
       text: "The quick brown fox jumps over the lazy dog.",
       prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
@@ -198,7 +170,7 @@ graph.addTask(
     { id: "2" }
   )
 );
-graph.addTask(new DebugLog({}, { id: "3" }));
+graph.addTask(new DebugLogTask({}, { id: "3" }));
 graph.addDataflow(
   new Dataflow({
     sourceTaskId: "1",
@@ -225,10 +197,10 @@ You can use as much or as little "magic" as you want. The config helpers are the
 
 ### Registering Providers
 
-Tasks are agnostic to the provider. Text embedding can me done with several providers, such as Huggingface / ONNX or MediaPipe locally, or OpenAI etc via API calls.
+Tasks are agnostic to the provider. Text embedding can be done with several providers, such as Hugging Face Transformers (ONNX) or MediaPipe locally, or OpenAI etc via API calls.
 
-- **`register_HFT_InlineJobFns()`** - Registers the Huggingface Local provider. Now you can use a onnx model name for TextEmbedding, etc.
-- **`register_TFMP_InlineJobFns()`** - Registers the MediaPipe TfJs Local provider. Now you can use one of the MediaPipe models.
+- **`register_HFT_InlineJobFns()`** - Registers the Hugging Face Transformers local provider. Now you can use an ONNX model name for `TextEmbedding`, etc.
+- **`register_TFMP_InlineJobFns()`** - Registers the MediaPipe TF.js local provider. Now you can use one of the MediaPipe models.
 
 ### Registering Provider plus related Job Queue
 
@@ -236,13 +208,12 @@ LLM providers have long running functions. These are handled by a Job Queue. The
 
 #### In memory:
 
-- **`register_HFT_InMemoryQueue`** function sets up the Huggingface Local provider (above), and a JobQueue with a Concurrency Limiter so the ONNX queue only runs one task/job at a time.
+- **`register_HFT_InMemoryQueue`** sets up the Hugging Face Transformers provider (above), and a `JobQueue` with a `ConcurrencyLimiter` so the ONNX queue only runs one task/job at a time.
 - **`register_TFMP_InMemoryQueue`** does the same for MediaPipe.
 
-#### Using Sqlite:
+#### Using SQLite:
 
-- **`register_HFT_InlineJobFnsSqlite`** function sets up the Huggingface Local provider, and a SqliteJobQueue with a Concurrency Limiter
-- **`registerMediaPipeTfJsLocalSqlite`** does the same for MediaPipe.
+SQLite-backed queues are available via the storage APIs. Helper functions are forthcoming.
 
 ## Workflow
 
@@ -291,7 +262,7 @@ workflow
 await workflow.run();
 ```
 
-The first task downloads the models (this is separated mostly for ui purposes so progress on the text embedding is separate from the progress of downloading the models). The second task will take the output of the first task and use it as input, in this case the names of the models. The workflow will automatically create that data flow. The `rename` method is used to rename the `vector` output of the embedding task to match the expected `message` input of the second task.
+The first task downloads the models (this is separated mostly for UI purposes so progress on the text embedding is separate from the progress of downloading the models). The second task will take the output of the first task and use it as input, in this case the names of the models. The workflow will automatically create that data flow. The `rename` method is used to rename the `vector` output of the embedding task to match the expected `console` input of the `DebugLog` task.
 
 ## JSON Configuration
 
@@ -301,14 +272,14 @@ There is a JSONTask that can be used to build a graph. This is useful for saving
 [
   {
     "id": "1",
-    "type": "DownloadModelCompoundTask",
+    "type": "DownloadModelTask",
     "input": {
       "model": ["onnx:Xenova/LaMini-Flan-T5-783M:q8", "onnx:Xenova/m2m100_418M:q8"]
     }
   },
   {
     "id": "2",
-    "type": "TextRewriterCompoundTask",
+    "type": "TextRewriterTask",
     "input": {
       "text": "The quick brown fox jumps over the lazy dog.",
       "prompt": ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"]
@@ -316,17 +287,17 @@ There is a JSONTask that can be used to build a graph. This is useful for saving
     "dependencies": {
       "model": {
         "id": "1",
-        "output": "model_generation"
+        "output": "model"
       }
     }
   },
   {
     "id": "3",
-    "type": "TextTranslationCompoundTask",
+    "type": "TextTranslationTask",
     "input": {
       "model": "onnx:Xenova/m2m100_418M:q8",
-      "source": "en",
-      "target": "es"
+      "source_lang": "en",
+      "target_lang": "es"
     },
     "dependencies": {
       "text": {
@@ -339,18 +310,12 @@ There is a JSONTask that can be used to build a graph. This is useful for saving
     "id": "4",
     "type": "DebugLogTask",
     "input": {
-      "level": "info"
+      "log_level": "info"
     },
     "dependencies": {
-      "message": [
-        {
-          "id": "2",
-          "output": "text"
-        },
-        {
-          "id": "3",
-          "output": "text"
-        }
+      "console": [
+        { "id": "2", "output": "text" },
+        { "id": "3", "output": "text" }
       ]
     }
   }
@@ -360,9 +325,9 @@ There is a JSONTask that can be used to build a graph. This is useful for saving
 The JSON above is a good example as it shows how to use a compound task with multiple inputs. Compound tasks export arrays, so use a compound task to consume the output of another compound task. The `dependencies` object is used to specify which output of which task is used as input for the current task. It is a shorthand for creating a data flow (an edge) in the graph.
 
 ```ts
-import { JSONTask } from "@podley/task-graph";
+import { JsonTask } from "@podley/tasks";
 const json = require("./example.json");
-const task = new JSONTask({ json });
+const task = new JsonTask({ json });
 await task.run();
 ```
 
@@ -445,15 +410,15 @@ Simple KV storage with multiple backends.
 
 ### `packages/job-queue`
 
-This is a simple job queue implementation with a concurrency limiters and multiple backends.
+This is a simple job queue implementation with concurrency limiters and multiple backends.
 
 ### `packages/task-graph`
 
-This is the main task handling library, with tasks, compound tasks, data flows, etc. Is uses the job queue for long running tasks, and it has ways to cache results using the storage layer.
+This is the main task handling library, with tasks, compound tasks, data flows, etc. It uses the job queue for long running tasks, and it has ways to cache results using the storage layer.
 
 ### `packages/ai`
 
-These are the LLM tasks, models, etc. These tasks are agnostic to the provider and thus are like abstract versions. AI Proivders contribute the concrete implementations. Which implmentation is used is determined by the model repository.
+These are the LLM tasks, models, etc. These tasks are agnostic to the provider and thus are like abstract versions. AI providers contribute the concrete implementations. Which implementation is used is determined by the model repository.
 
 ### `packages/ai-provider`
 
