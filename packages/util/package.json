@@ -23,8 +23,8 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./src/bun.ts",
-      "types": "./src/bun.ts",
+      "bun": "./dist/bun.js",
+      "types": "./dist/bun.d.ts",
       "node": "./dist/node.js"
     }
   },
@@ -34,5 +34,15 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {}
+  "peerDependencies": {
+    "@sinclair/typebox": "^0.34.38"
+  },
+  "peerDependenciesMeta": {
+    "@sinclair/typebox": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@sinclair/typebox": "^0.34.38"
+  }
 }

@@ -118,6 +118,7 @@ export abstract class ModelRepository {
     await this.modelTabularRepository.put({ name: model.name, details: JSON.stringify(model) });
     this.models.set(model.name, model);
     this.events.emit("model_added", model);
+    return model;
   }
 
   /**

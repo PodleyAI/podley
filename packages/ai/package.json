@@ -23,8 +23,8 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./src/bun.ts",
-      "types": "./src/bun.ts",
+      "bun": "./dist/bun.js",
+      "types": "./dist/bun.d.ts",
       "node": "./dist/node.js"
     }
   },
@@ -34,17 +34,35 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@podley/job-queue": "workspace:*",
     "@podley/storage": "workspace:*",
     "@podley/task-graph": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sinclair/typebox": "^0.34.38"
+    "@sinclair/typebox": "^0.34.38",
+    "pg": "^8.14.1"
+  },
+  "peerDependenciesMeta": {
+    "@podley/job-queue": {
+      "optional": false
+    },
+    "@podley/storage": {
+      "optional": false
+    },
+    "@podley/task-graph": {
+      "optional": false
+    },
+    "@podley/util": {
+      "optional": false
+    }
   },
   "devDependencies": {
+    "@podley/job-queue": "workspace:*",
+    "@podley/storage": "workspace:*",
+    "@podley/task-graph": "workspace:*",
+    "@podley/util": "workspace:*",
+    "@sinclair/typebox": "^0.34.38",
+    "pg": "^8.14.1",
     "@types/pg": "^8.15.5"
-  },
-  "peerDependencies": {
-    "pg": "^8.14.1"
   }
 }

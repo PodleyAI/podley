@@ -23,19 +23,36 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./src/bun.ts",
-      "types": "./src/bun.ts",
+      "bun": "./dist/bun.js",
+      "types": "./dist/bun.d.ts",
       "node": "./dist/node.js"
     }
   },
-  "dependencies": {
-    "@podley/storage": "workspace:*",
-    "@podley/util": "workspace:*"
-  },
   "peerDependencies": {
+    "@podley/storage": "workspace:*",
+    "@podley/util": "workspace:*",
+    "@podley/sqlite": "workspace:*",
     "pg": "^8.16.3"
   },
+  "peerDependenciesMeta": {
+    "@podley/storage": {
+      "optional": false
+    },
+    "@podley/util": {
+      "optional": false
+    },
+    "@podley/sqlite": {
+      "optional": false
+    },
+    "@sinclair/typebox": {
+      "optional": false
+    }
+  },
   "devDependencies": {
+    "@podley/storage": "workspace:*",
+    "@podley/util": "workspace:*",
+    "@podley/sqlite": "workspace:*",
+    "pg": "^8.16.3",
     "@types/pg": "^8.15.5"
   },
   "files": [

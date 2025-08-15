@@ -77,7 +77,7 @@ const resetGraph = () => {
       text: "The quick brown fox jumps over the lazy dog.",
       prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
     })
-    .rename("model_translation", "model", -2)
+    .rename("model", "model", -2)
     .TextTranslation({
       source_lang: "en",
       target_lang: "es",

@@ -105,7 +105,22 @@ export class TaskOutputTabularRepository extends TaskOutputRepository {
     this.emit("output_retrieved", taskType);
     if (output?.value) {
       if (this.outputCompression) {
-        const decompressedValue = await decompress(output.value);
+        // Coerce JSON-serialized binary (from filesystem JSON store) back to Uint8Array
+        const raw: unknown = output.value as unknown;
+        const bytes: Uint8Array =
+          raw instanceof Uint8Array
+            ? raw
+            : Array.isArray(raw)
+              ? new Uint8Array(raw as number[])
+              : raw && typeof raw === "object"
+                ? new Uint8Array(
+                    Object.keys(raw as Record<string, number>)
+                      .filter((k) => /^\d+$/.test(k))
+                      .sort((a, b) => Number(a) - Number(b))
+                      .map((k) => (raw as Record<string, number>)[k])
+                  )
+                : new Uint8Array();
+        const decompressedValue = await decompress(bytes);
         const value = JSON.parse(decompressedValue) as TaskOutput;
         return value as TaskOutput;
       } else {

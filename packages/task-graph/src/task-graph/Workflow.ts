@@ -171,7 +171,10 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
             parentPortOutput.$id !== undefined && parentPortOutput.$id === taskPortInput.$id;
           // $id both blank
           const idTypeBlank = parentPortOutput.$id === undefined && undefined === taskPortInput.$id;
-          const typeMatch = idTypeBlank && parentPortOutput.type === taskPortInput.type;
+          const typeMatch =
+            idTypeBlank &&
+            (parentPortOutput.type === taskPortInput.type ||
+              taskPortInput.anyOf?.some((i: any) => i.type == parentPortOutput.type));
           const outputPortIdMatch = parentOutputPortId === taskInputPortId;
           const outputPortIdOutputInput =
             parentOutputPortId === "output" && taskInputPortId === "input";

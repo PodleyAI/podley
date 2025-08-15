@@ -19,23 +19,37 @@
     "test": "bun test",
     "prepare": "node -e \"const pkg=require('./package.json');pkg.exports['.'].bun='./dist/bun.js';pkg.exports['.'].types='./dist/bun.d.ts';require('fs').writeFileSync('package.json',JSON.stringify(pkg,null,2))\""
   },
-  "dependencies": {
-    "@podley/sqlite": "workspace:*",
-    "@podley/util": "workspace:*"
-  },
   "peerDependencies": {
-    "pg": "^8.16.0"
+    "@sinclair/typebox": "^0.34.38",
+    "@podley/sqlite": "workspace:*",
+    "@podley/util": "workspace:*",
+    "pg": "^8.16.3"
+  },
+  "peerDependenciesMeta": {
+    "@podley/sqlite": {
+      "optional": false
+    },
+    "@podley/util": {
+      "optional": false
+    },
+    "@sinclair/typebox": {
+      "optional": false
+    }
   },
   "devDependencies": {
+    "@podley/sqlite": "workspace:*",
+    "@podley/util": "workspace:*",
+    "@sinclair/typebox": "^0.34.38",
+    "pg": "^8.16.3",
     "@types/pg": "^8.15.5",
-    "fake-indexeddb": "^6.0.1"
+    "fake-indexeddb": "^6.1.0"
   },
   "exports": {
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./src/bun.ts",
-      "types": "./src/bun.ts",
+      "bun": "./dist/bun.js",
+      "types": "./dist/bun.d.ts",
       "node": "./dist/node.js"
     }
   },

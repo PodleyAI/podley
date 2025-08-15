@@ -29,8 +29,8 @@ export const TypeNullable = <T extends TSchema>(T: T) => {
 
 export const TypeBlob = (annotations: Record<string, unknown> = {}) =>
   Type.Transform(Type.Any({ contentEncoding: "blob", ...annotations }))
-    .Decode((value) => value as Uint8Array)
-    .Encode((value) => Buffer.from(value));
+    .Decode((value: unknown) => value as Uint8Array)
+    .Encode((value: Uint8Array) => Buffer.from(value));
 
 TypeRegistry.Set("TypeStringEnum", (schema: { enum: string[] }, value: unknown) => {
   return typeof value === "string" && schema.enum.includes(value);

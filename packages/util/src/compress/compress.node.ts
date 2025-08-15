@@ -16,7 +16,13 @@ export async function compress(
 ): Promise<Uint8Array> {
   const compressFn = algorithm === "br" ? zlib.brotliCompress : zlib.gzip;
   const compressAsync = promisify(compressFn);
-  return compressAsync(Buffer.isBuffer(input) ? input : Buffer.from(input));
+  const compressAsyncTyped = compressAsync as unknown as (
+    source: Buffer | Uint8Array | DataView
+  ) => Promise<Buffer>;
+  const sourceBuffer = Buffer.isBuffer(input) ? input : Buffer.from(input);
+  const result: Buffer = await compressAsyncTyped(sourceBuffer);
+  // Create a Uint8Array view over the Buffer without copying
+  return new Uint8Array(result.buffer, result.byteOffset, result.byteLength);
 }
 
 export async function decompress(
@@ -25,6 +31,10 @@ export async function decompress(
 ): Promise<string> {
   const decompressFn = algorithm === "br" ? zlib.brotliDecompress : zlib.gunzip;
   const decompressAsync = promisify(decompressFn);
-  const result = await decompressAsync(Buffer.from(input));
-  return result.toString();
+  const decompressAsyncTyped = decompressAsync as unknown as (
+    source: Buffer | Uint8Array | DataView
+  ) => Promise<Buffer>;
+  const sourceBuffer = Buffer.isBuffer(input) ? (input as unknown as Buffer) : Buffer.from(input);
+  const resultBuffer: Buffer = await decompressAsyncTyped(sourceBuffer);
+  return resultBuffer.toString();
 }

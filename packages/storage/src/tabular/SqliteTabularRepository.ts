@@ -266,9 +266,10 @@ export class SqliteTabularRepository<
     const sql = `
       SELECT * FROM \`${this.table}\` WHERE ${whereClauses}
     `;
-    const stmt = db.prepare<Entity, ValueOptionType[]>(sql);
+    const stmt = db.prepare(sql);
     const params = this.getPrimaryKeyAsOrderedArray(key);
-    const value: Entity | null = stmt.get(...params);
+    // @ts-ignore - SQLite typing for variadic bindings is overly strict for our union
+    const value: Entity | null = stmt.get(...(params as any));
     if (value) {
       for (const key in this.valueSchema.properties) {
         // @ts-ignore
@@ -347,7 +348,8 @@ export class SqliteTabularRepository<
       .join(" AND ");
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const stmt = db.prepare(`DELETE FROM \`${this.table}\` WHERE ${whereClauses}`);
-    stmt.run(...params);
+    // @ts-ignore - SQLite typing for variadic bindings is overly strict for our union
+    stmt.run(...(params as any));
     this.events.emit("delete", key as keyof Entity);
   }
 

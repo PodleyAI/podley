@@ -85,7 +85,7 @@ export class FsFolderKvRepository<
     const typeDef = this.valueSchema;
     try {
       const encoding = typeDef.contentEncoding === "blob" ? "binary" : "utf-8";
-      const content = (await readFile(localPath, { encoding })).trim();
+      const content = (await readFile(localPath, { encoding })).toString().trim();
 
       if (encoding === "utf-8") {
         if (

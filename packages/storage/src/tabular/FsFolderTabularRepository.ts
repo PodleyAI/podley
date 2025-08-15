@@ -111,7 +111,8 @@ export class FsFolderTabularRepository<
     await this.setupDirectory();
     const filePath = await this.getFilePath(key);
     try {
-      const data = await readFile(filePath, "utf-8");
+      const buf = await readFile(filePath);
+      const data = buf.toString("utf8");
       const entity = JSON.parse(data) as Entity;
       this.events.emit("get", key, entity);
       return entity;
@@ -152,7 +153,8 @@ export class FsFolderTabularRepository<
       }
       const results = await Promise.allSettled(
         jsonFiles.map(async (file) => {
-          const content = await readFile(path.join(this.folderPath, file), "utf-8");
+          const buf = await readFile(path.join(this.folderPath, file));
+          const content = buf.toString("utf8");
           const data = JSON.parse(content) as Entity;
           return data;
         })

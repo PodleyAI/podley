@@ -198,7 +198,17 @@ export abstract class BaseSqlTabularRepository<
     const actualType = this.getNonNullType(typeDef);
 
     if (actualType.contentEncoding === "blob") {
-      return Buffer.from(value as Uint8Array);
+      const v: any = value;
+      if (v instanceof Uint8Array) {
+        return v as unknown as ValueOptionType;
+      }
+      if (typeof Buffer !== "undefined" && v instanceof Buffer) {
+        return new Uint8Array(v) as unknown as ValueOptionType;
+      }
+      if (Array.isArray(v)) {
+        return new Uint8Array(v) as unknown as ValueOptionType;
+      }
+      return v as unknown as ValueOptionType;
     } else if (value instanceof Date) {
       // Convert all Date objects to ISO string regardless of type definition
       return value.toISOString();
@@ -222,8 +232,15 @@ export abstract class BaseSqlTabularRepository<
     // Extract the non-null type for proper handling
     const actualType = this.getNonNullType(typeDef);
 
-    if (actualType.contentEncoding === "blob" && value instanceof Buffer) {
-      return new Uint8Array(value) as Entity[keyof Entity];
+    if (actualType.contentEncoding === "blob") {
+      const v: any = value;
+      if (typeof Buffer !== "undefined" && v instanceof Buffer) {
+        return new Uint8Array(v) as Entity[keyof Entity];
+      }
+      if (v instanceof Uint8Array) {
+        return v as Entity[keyof Entity];
+      }
+      return v as Entity[keyof Entity];
     } else {
       return value as Entity[keyof Entity];
     }

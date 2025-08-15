@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 
 import { spawn } from "child_process";
-import { readFile } from "fs/promises";
-import { glob } from "glob";
+import { readFile, stat } from "fs/promises";
+import { Glob } from "bun";
 import { join } from "path";
 
 interface PackageJson {
@@ -27,15 +27,25 @@ async function findWorkspaces(): Promise<string[]> {
   const workspaces: string[] = [];
 
   // Read root package.json
-  const rootPackageJson = JSON.parse(await readFile("./package.json", "utf-8")) as RootPackageJson;
+  const rootPackageJson = JSON.parse(
+    (await readFile("./package.json", "utf-8")).toString()
+  ) as RootPackageJson;
 
   // Process each workspace pattern
   for (const pattern of rootPackageJson.workspaces) {
     try {
-      const matches = await glob(pattern, { nodir: false, withFileTypes: true });
-      // Filter for directories and get their paths
-      const dirs = matches.filter((match) => match.isDirectory()).map((match) => match.fullpath());
-      workspaces.push(...dirs);
+      const globber = new Glob(pattern);
+      for await (const match of globber.scan({ absolute: true, onlyFiles: false })) {
+        try {
+          const stats = await stat(match);
+          if (stats.isDirectory()) {
+            workspaces.push(match);
+          }
+        } catch (e) {
+          // Ignore entries that cannot be stat'ed
+          continue;
+        }
+      }
     } catch (error) {
       console.error(`Error processing workspace pattern ${pattern}:`, error);
       process.exit(1);
@@ -80,7 +90,9 @@ async function runCommand(command: string, args: string[], cwd: string): Promise
 
 async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishError | null> {
   const packageJsonPath = join(workspacePath, "package.json");
-  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8")) as PackageJson;
+  const packageJson = JSON.parse(
+    await readFile(packageJsonPath, "utf-8").toString()
+  ) as PackageJson;
 
   if (!packageJson.publishConfig?.access) {
     return null;

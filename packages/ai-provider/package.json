@@ -17,8 +17,8 @@
   },
   "exports": {
     ".": {
-      "bun": "./src/index.ts",
-      "types": "./src/index.ts",
+      "bun": "./dist/index.js",
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
   },
@@ -28,14 +28,41 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@podley/ai": "workspace:*",
     "@podley/job-queue": "workspace:*",
     "@podley/storage": "workspace:*",
     "@podley/task-graph": "workspace:*",
-    "@podley/util": "workspace:*"
+    "@podley/util": "workspace:*",
+    "@sroussey/transformers": "3.5.1-2",
+    "@mediapipe/tasks-text": "^0.10.21"
   },
-  "peerDependencies": {
+  "peerDependenciesMeta": {
+    "@podley/ai": {
+      "optional": false
+    },
+    "@podley/job-queue": {
+      "optional": false
+    },
+    "@podley/storage": {
+      "optional": false
+    },
+    "@podley/task-graph": {
+      "optional": false
+    },
+    "@podley/util": {
+      "optional": false
+    },
+    "@sinclair/typebox": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@podley/ai": "workspace:*",
+    "@podley/job-queue": "workspace:*",
+    "@podley/storage": "workspace:*",
+    "@podley/task-graph": "workspace:*",
+    "@podley/util": "workspace:*",
     "@sroussey/transformers": "3.5.1-2",
     "@mediapipe/tasks-text": "^0.10.21"
   }

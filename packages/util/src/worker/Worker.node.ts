@@ -1,12 +1,13 @@
 import { Worker as NodeWorker, isMainThread, parentPort } from "worker_threads";
+import type { WorkerOptions } from "worker_threads";
 import { pathToFileURL } from "url";
+import { URL as NodeURL } from "url";
 
 class WorkerPolyfill extends NodeWorker {
-  constructor(scriptUrl: string | URL, options?: WorkerOptions) {
-    if (typeof scriptUrl === "string") {
-      scriptUrl = pathToFileURL(scriptUrl);
-    }
-    super(scriptUrl, options);
+  constructor(scriptUrl: string | NodeURL, options?: WorkerOptions) {
+    const resolved: string =
+      scriptUrl instanceof NodeURL ? scriptUrl.toString() : pathToFileURL(scriptUrl).toString();
+    super(resolved, options);
   }
 
   addEventListener(event: "message" | "error", listener: (...args: any[]) => void) {
