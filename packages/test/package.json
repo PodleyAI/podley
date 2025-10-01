@@ -1,7 +1,7 @@
 {
   "name": "@podley/test",
   "type": "module",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Podley is a tool for building and running DAG pipelines of AI tasks.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -29,7 +29,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src/**/*.md"
   ],
   "peerDependencies": {
     "@podley/ai": "workspace:*",
@@ -40,8 +41,8 @@
     "@podley/tasks": "workspace:*",
     "@podley/util": "workspace:*",
     "@podley/sqlite": "workspace:*",
-    "@electric-sql/pglite": "^0.2.17",
-    "@sinclair/typebox": "^0.34.38",
+    "@electric-sql/pglite": "^0.3.7",
+    "@sinclair/typebox": "^0.34.41",
     "pg": "^8.16.3"
   },
   "peerDependenciesMeta": {
@@ -82,8 +83,8 @@
     "@podley/tasks": "workspace:*",
     "@podley/util": "workspace:*",
     "@podley/sqlite": "workspace:*",
-    "@electric-sql/pglite": "^0.2.17",
-    "@sinclair/typebox": "^0.34.38",
+    "@electric-sql/pglite": "^0.3.7",
+    "@sinclair/typebox": "^0.34.41",
     "fake-indexeddb": "^6.1.0",
     "pg": "^8.16.3",
     "@types/pg": "^8.15.5"

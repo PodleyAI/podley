@@ -4,6 +4,7 @@ import { spawn } from "child_process";
 import { readFile, stat } from "fs/promises";
 import { Glob } from "bun";
 import { join } from "path";
+import { existsSync } from "fs";
 
 interface PackageJson {
   name: string;
@@ -90,9 +91,16 @@ async function runCommand(command: string, args: string[], cwd: string): Promise
 
 async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishError | null> {
   const packageJsonPath = join(workspacePath, "package.json");
-  const packageJson = JSON.parse(
-    await readFile(packageJsonPath, "utf-8").toString()
-  ) as PackageJson;
+  if (!existsSync(packageJsonPath)) {
+    return {
+      packageName: packageJsonPath,
+      error: "Not a valid package",
+      isVersionConflict: false,
+      output: "No package.json found",
+    };
+  }
+  const packageText = (await readFile(packageJsonPath, "utf-8")).toString();
+  const packageJson = JSON.parse(packageText) as PackageJson;
 
   if (!packageJson.publishConfig?.access) {
     return null;

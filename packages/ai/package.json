@@ -1,7 +1,7 @@
 {
   "name": "@podley/ai",
   "type": "module",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Podley is a tool for building and running DAG pipelines of AI tasks.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -29,7 +29,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src/**/*.md"
   ],
   "publishConfig": {
     "access": "public"
@@ -39,8 +40,8 @@
     "@podley/storage": "workspace:*",
     "@podley/task-graph": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sinclair/typebox": "^0.34.38",
-    "pg": "^8.14.1"
+    "@sinclair/typebox": "^0.34.41",
+    "pg": "^8.16.3"
   },
   "peerDependenciesMeta": {
     "@podley/job-queue": {
@@ -61,8 +62,8 @@
     "@podley/storage": "workspace:*",
     "@podley/task-graph": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sinclair/typebox": "^0.34.38",
-    "pg": "^8.14.1",
+    "@sinclair/typebox": "^0.34.41",
+    "pg": "^8.16.3",
     "@types/pg": "^8.15.5"
   }
 }

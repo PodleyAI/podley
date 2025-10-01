@@ -1,5 +1,16 @@
 # @podley/ai
 
+## 0.0.11
+
+### Patch Changes
+
+- Update dependecies and docs
+- Updated dependencies
+  - @podley/task-graph@0.0.11
+  - @podley/storage@0.0.11
+  - @podley/util@0.0.11
+  - @podley/job-queue@0.0.11
+
 ## 0.0.8
 
 ### Patch Changes

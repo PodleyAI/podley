@@ -1,5 +1,11 @@
 # @podley/sqlite
 
+## 0.0.11
+
+### Patch Changes
+
+- Update dependecies and docs
+
 ## 0.0.8
 
 ### Patch Changes
