@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.12
+
+### Patch Changes
+
+- dev dep sync
+- Updated dependencies
+  - @podley/sqlite@0.0.12
+  - @podley/util@0.0.12
+
 ## 0.0.11
 
 ### Patch Changes

@@ -1,7 +1,7 @@
 {
   "name": "@podley/job-queue",
   "type": "module",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Podley is a tool for building and running DAG pipelines of AI tasks.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",

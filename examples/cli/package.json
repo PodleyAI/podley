@@ -1,7 +1,7 @@
 {
   "name": "@podley/cli",
   "type": "module",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Podley is a tool for building and running DAG pipelines of AI tasks.",
   "scripts": {
     "dev": "concurrently -c 'auto' -n 'cli:' 'bun:dev-*'",
@@ -41,8 +41,8 @@
     "@mediapipe/tasks-text": "^0.10.21",
     "@sroussey/transformers": "3.7.4",
     "@types/react": "=18.3.12",
-    "chalk": "^5.6.0",
-    "commander": "^14.0.0",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.1",
     "is-unicode-supported": "^2.1.0",
     "react": "=18.3.1",
     "react-reconciler": "^0.31.0",

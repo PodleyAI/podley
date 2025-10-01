@@ -1,5 +1,19 @@
 # @podley/cli
 
+## 0.0.12
+
+### Patch Changes
+
+- dev dep sync
+- Updated dependencies
+  - @podley/ai-provider@0.0.12
+  - @podley/storage@0.0.12
+  - @podley/ai@0.0.12
+  - @podley/task-graph@0.0.12
+  - @podley/tasks@0.0.12
+  - @podley/test@0.0.12
+  - @podley/util@0.0.12
+
 ## 0.0.11
 
 ### Patch Changes
