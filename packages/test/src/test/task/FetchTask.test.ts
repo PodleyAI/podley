@@ -146,10 +146,10 @@ describe("FetchTask", () => {
       url: "https://api.example.com/network-error",
     });
 
-    expect(fetchPromise).rejects.toThrow("Network error");
-    expect(fetchPromise).rejects.toBeInstanceOf(JobTaskFailedError);
-    expect(fetchPromise).rejects.toHaveProperty("jobError");
-    expect(fetchPromise).rejects.toHaveProperty(
+    await expect(fetchPromise).rejects.toThrow("Network error");
+    await expect(fetchPromise).rejects.toBeInstanceOf(JobTaskFailedError);
+    await expect(fetchPromise).rejects.toHaveProperty("jobError");
+    await expect(fetchPromise).rejects.toHaveProperty(
       "jobError.message",
       expect.stringContaining("Network error")
     );

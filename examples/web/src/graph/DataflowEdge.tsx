@@ -7,7 +7,7 @@
 
 import { Dataflow, TaskStatus } from "@podley/task-graph";
 import { BaseEdge, Edge, EdgeLabelRenderer, EdgeProps, getBezierPath } from "@xyflow/react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { DataDialog } from "../components/DataDialog";
 import { getStatusColorBg } from "./util";
 
@@ -50,7 +50,7 @@ const EDGE_STYLE_MAP = {
   },
 };
 
-export const DataflowEdge: React.FC<EdgeProps<Edge<DataflowEdgeData, string>>> = ({
+export function DataflowEdge({
   sourceX,
   sourceY,
   targetX,
@@ -60,7 +60,7 @@ export const DataflowEdge: React.FC<EdgeProps<Edge<DataflowEdgeData, string>>> =
   data,
   style = {},
   markerEnd,
-}) => {
+}: EdgeProps<Edge<DataflowEdgeData, string>>): JSX.Element | null {
   const [status, setStatus] = useState<TaskStatus>(data?.dataflow?.status || TaskStatus.PENDING);
   const [animatedDashOffset, setAnimatedDashOffset] = useState(0);
   type EdgePathParams = [string, { strokePath: string }];
@@ -185,4 +185,4 @@ export const DataflowEdge: React.FC<EdgeProps<Edge<DataflowEdgeData, string>>> =
       )}
     </>
   );
-};
+}

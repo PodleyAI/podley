@@ -7,7 +7,7 @@
 
 import { ArrayTask, ITask, TaskStatus } from "@podley/task-graph";
 import { Node, NodeProps } from "@xyflow/react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { NodeContainer } from "./NodeContainer";
 import { NodeHeader } from "./NodeHeader";
 import { ProgressBar } from "../components/ProgressBar";
@@ -19,10 +19,8 @@ export type TaskNodeData = {
   task: ITask;
 };
 
-export const TaskNode: React.FC<NodeProps<Node<TaskNodeData, string>>> = ({
-  data,
-  isConnectable,
-}) => {
+export function TaskNode(props: NodeProps<Node<TaskNodeData, string>>): JSX.Element {
+  const { data, isConnectable } = props;
   const [status, setStatus] = useState<TaskStatus>(data.task.status);
   const [progress, setProgress] = useState<number>(data.task.progress);
   const [subTasks, setSubTasks] = useState<ITask[]>([]);
@@ -107,9 +105,9 @@ export const TaskNode: React.FC<NodeProps<Node<TaskNodeData, string>>> = ({
       </div>
     </>
   );
-};
+}
 
-const SubTask: React.FC<{ subTask: ITask }> = ({ subTask }) => {
+function SubTask({ subTask }: { subTask: ITask }): JSX.Element {
   const [progress, setProgress] = useState<number>(subTask.progress);
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [status, setStatus] = useState<TaskStatus>(subTask.status);
@@ -153,4 +151,4 @@ const SubTask: React.FC<{ subTask: ITask }> = ({ subTask }) => {
       </div>
     </div>
   );
-};
+}

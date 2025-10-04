@@ -95,7 +95,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         progress_details,
         created_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING id`;
 
     const stmt = db.prepare<
@@ -143,7 +143,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     const JobQuery = `
       SELECT *
         FROM job_queue
-        WHERE id = $1 AND queue = $2
+        WHERE id = ? AND queue = ?
         LIMIT 1`;
     const stmt = db.prepare<
       JobStorageFormat<Input, Output> & {
@@ -174,8 +174,8 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     const FutureJobQuery = `
       SELECT * 
         FROM job_queue
-        WHERE queue = $1
-        AND status = $2
+        WHERE queue = ?
+        AND status = ?
         ORDER BY run_after ASC
         LIMIT ${num}`;
     const stmt = db.prepare<
@@ -207,8 +207,8 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     const db = await this.setupDatabase();
     const AbortQuery = `
       UPDATE job_queue
-        SET status = $1
-        WHERE id = $2 AND queue = $3`;
+        SET status = ?  
+        WHERE id = ? AND queue = ?`;
     const stmt = db.prepare(AbortQuery);
     stmt.run(JobStatus.ABORTING, jobId, this.queueName);
   }
@@ -223,7 +223,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     const JobsByRunIdQuery = `
       SELECT *
         FROM job_queue
-        WHERE job_run_id = $1 AND queue = $2`;
+        WHERE job_run_id = ? AND queue = ?`;
     const stmt = db.prepare<
       JobStorageFormat<Input, Output> & {
         input: string;
@@ -264,13 +264,13 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     >(
       `
       UPDATE job_queue 
-      SET status = $1, last_ran_at = $2
+      SET status = ?, last_ran_at = ?
       WHERE id = (
         SELECT id 
         FROM job_queue 
-        WHERE queue = $3 
-        AND status = $4 
-        AND run_after <= $5 
+        WHERE queue = ? 
+        AND status = ? 
+        AND run_after <= ? 
         ORDER BY run_after ASC 
         LIMIT 1
       )
@@ -297,8 +297,8 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     const sizeQuery = `
       SELECT COUNT(*) as count
         FROM job_queue
-        WHERE queue = $1
-        AND status = $2`;
+        WHERE queue = ?
+        AND status = ?`;
     const stmt = db.prepare<{ count: number }, [queue: string, status: string]>(sizeQuery);
     const result = stmt.get(this.queueName, status) as any;
     return result.count;
@@ -323,7 +323,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
             SET 
               status = ?, 
               progress = 100, 
-              progress_message = "", 
+              progress_message = '', 
               progress_details = NULL, 
               completed_at = ?  
             WHERE id = ? AND queue = ?`;
@@ -337,7 +337,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
               error_code = ?, 
               status = ?, 
               progress = 100, 
-              progress_message = "", 
+              progress_message = '', 
               progress_details = NULL, 
               last_ran_at = ?,
               completed_at = ?,

@@ -7,7 +7,7 @@
 
 import { createServiceToken, TypeBlob } from "@podley/util";
 import { TSchema, Type } from "@sinclair/typebox";
-import { mkdir, readFile, rmdir, unlink, writeFile } from "fs/promises";
+import { mkdir, readFile, rm, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { IKvRepository } from "./IKvRepository";
 import { KvRepository } from "./KvRepository";
@@ -130,7 +130,7 @@ export class FsFolderKvRepository<
    */
   public async deleteAll(): Promise<void> {
     const localPath = path.join(this.folderPath);
-    await rmdir(localPath, { recursive: true });
+    await rm(localPath, { recursive: true });
   }
 
   /**

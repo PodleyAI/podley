@@ -124,6 +124,50 @@ export class SqliteTabularRepository<
   }
 
   /**
+   * Convert JS values to SQLite-compatible values. Ensures booleans are stored as 0/1.
+   */
+  protected jsToSqlValue(column: string, value: Entity[keyof Entity]): ValueOptionType {
+    const typeDef = this.schema.properties[column as keyof typeof this.schema.properties] as
+      | TSchema
+      | undefined;
+    if (typeDef) {
+      const actualType = this.getNonNullType(typeDef);
+      if (actualType.type === "boolean") {
+        if (value === null && this.isNullable(typeDef)) {
+          return null;
+        }
+        const v: any = value as any;
+        if (typeof v === "boolean") return v ? 1 : 0;
+        if (typeof v === "number") return v ? 1 : 0;
+        if (typeof v === "string") return v === "1" || v.toLowerCase() === "true" ? 1 : 0;
+      }
+    }
+    return super.jsToSqlValue(column, value);
+  }
+
+  /**
+   * Convert SQLite values to JS values. Ensures 0/1 become booleans where schema says boolean.
+   */
+  protected sqlToJsValue(column: string, value: ValueOptionType): Entity[keyof Entity] {
+    const typeDef = this.schema.properties[column as keyof typeof this.schema.properties] as
+      | TSchema
+      | undefined;
+    if (typeDef) {
+      if (value === null && this.isNullable(typeDef)) {
+        return null as any;
+      }
+      const actualType = this.getNonNullType(typeDef);
+      if (actualType.type === "boolean") {
+        const v: any = value as any;
+        if (typeof v === "boolean") return v as any;
+        if (typeof v === "number") return (v !== 0) as any;
+        if (typeof v === "string") return (v === "1" || v.toLowerCase() === "true") as any;
+      }
+    }
+    return super.sqlToJsValue(column, value);
+  }
+
+  /**
    * Maps TypeScript/JavaScript types to their SQLite column type equivalents
    * Uses additional schema information like minimum/maximum values, nullable status,
    * and string lengths to create more optimized column types.
@@ -271,9 +315,9 @@ export class SqliteTabularRepository<
     // @ts-ignore - SQLite typing for variadic bindings is overly strict for our union
     const value: Entity | null = stmt.get(...(params as any));
     if (value) {
-      for (const key in this.valueSchema.properties) {
+      for (const k in this.schema.properties) {
         // @ts-ignore
-        value[key] = this.sqlToJsValue(key, value[key]);
+        value[k] = this.sqlToJsValue(k, (value as any)[k]);
       }
       this.events.emit("get", key, value);
       return value;
@@ -318,9 +362,12 @@ export class SqliteTabularRepository<
     }
 
     const whereClauses = Object.keys(key)
-      .map((key, i) => `"${key}" = $${i + 1}`)
+      .map((key, i) => `"${key}" = ?`)
       .join(" AND ");
-    const whereClauseValues = Object.values(key);
+    const whereClauseValues = Object.entries(key).map(([k, v]) =>
+      // @ts-ignore
+      this.jsToSqlValue(k, v as any)
+    );
 
     const sql = `SELECT * FROM \`${this.table}\` WHERE ${whereClauses}`;
     const stmt = db.prepare<Entity, ExcludeDateKeyOptionType[]>(sql);
@@ -328,6 +375,12 @@ export class SqliteTabularRepository<
     const result = stmt.all(...whereClauseValues);
 
     if (result.length > 0) {
+      // Convert all returned rows according to schema (not only value columns)
+      for (const row of result as any[]) {
+        for (const k in this.schema.properties) {
+          row[k] = this.sqlToJsValue(k, row[k]);
+        }
+      }
       this.events.emit("search", key, result);
       return result;
     } else {
@@ -362,7 +415,14 @@ export class SqliteTabularRepository<
     const sql = `SELECT * FROM \`${this.table}\``;
     const stmt = db.prepare<Entity, []>(sql);
     const value = stmt.all();
-    return value.length ? value : undefined;
+    if (!value.length) return undefined;
+    // Convert all columns according to schema for each row
+    for (const row of value as any[]) {
+      for (const k in this.schema.properties) {
+        row[k] = this.sqlToJsValue(k, row[k]);
+      }
+    }
+    return value;
   }
 
   /**

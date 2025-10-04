@@ -620,7 +620,7 @@ export function runGenericJobQueueTests(
       expect(pendingAfterBurst).toBeGreaterThan(0);
       // Wait longer for IndexedDB operations to complete
       // @ts-ignore - Accessing protected property for testing
-      await sleep(storage instanceof IndexedDbQueueStorage ? 30 : 3);
+      await sleep(storage.name.includes("IndexedDb") ? 30 : 3);
 
       // Helper function to get job counts with runAttempts
       async function getJobCounts(
