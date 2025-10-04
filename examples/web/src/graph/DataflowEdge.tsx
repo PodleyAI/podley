@@ -60,7 +60,7 @@ export function DataflowEdge({
   data,
   style = {},
   markerEnd,
-}: EdgeProps<Edge<DataflowEdgeData, string>>): JSX.Element | null {
+}: EdgeProps<Edge<DataflowEdgeData, string>>) {
   const [status, setStatus] = useState<TaskStatus>(data?.dataflow?.status || TaskStatus.PENDING);
   const [animatedDashOffset, setAnimatedDashOffset] = useState(0);
   type EdgePathParams = [string, { strokePath: string }];

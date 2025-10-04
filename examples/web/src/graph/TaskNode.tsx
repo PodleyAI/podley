@@ -19,7 +19,7 @@ export type TaskNodeData = {
   task: ITask;
 };
 
-export function TaskNode(props: NodeProps<Node<TaskNodeData, string>>): JSX.Element {
+export function TaskNode(props: NodeProps<Node<TaskNodeData, string>>) {
   const { data, isConnectable } = props;
   const [status, setStatus] = useState<TaskStatus>(data.task.status);
   const [progress, setProgress] = useState<number>(data.task.progress);
@@ -107,7 +107,7 @@ export function TaskNode(props: NodeProps<Node<TaskNodeData, string>>): JSX.Elem
   );
 }
 
-function SubTask({ subTask }: { subTask: ITask }): JSX.Element {
+function SubTask({ subTask }: { subTask: ITask }) {
   const [progress, setProgress] = useState<number>(subTask.progress);
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [status, setStatus] = useState<TaskStatus>(subTask.status);
