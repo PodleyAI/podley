@@ -1,5 +1,20 @@
 # @podley/test
 
+## 0.0.13
+
+### Patch Changes
+
+- Updates based on testing with node
+- Updated dependencies
+  - @podley/ai@0.0.13
+  - @podley/ai-provider@0.0.13
+  - @podley/job-queue@0.0.13
+  - @podley/sqlite@0.0.13
+  - @podley/storage@0.0.13
+  - @podley/task-graph@0.0.13
+  - @podley/tasks@0.0.13
+  - @podley/util@0.0.13
+
 ## 0.0.12
 
 ### Patch Changes

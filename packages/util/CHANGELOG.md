@@ -1,5 +1,11 @@
 # @podley/util
 
+## 0.0.13
+
+### Patch Changes
+
+- Updates based on testing with node
+
 ## 0.0.12
 
 ### Patch Changes

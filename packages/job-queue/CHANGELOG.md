@@ -1,5 +1,15 @@
 # @podley/job-queue
 
+## 0.0.13
+
+### Patch Changes
+
+- Updates based on testing with node
+- Updated dependencies
+  - @podley/sqlite@0.0.13
+  - @podley/storage@0.0.13
+  - @podley/util@0.0.13
+
 ## 0.0.12
 
 ### Patch Changes
