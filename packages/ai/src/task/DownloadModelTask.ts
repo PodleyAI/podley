@@ -46,6 +46,7 @@ export class DownloadModelTask extends AiTask<
 > {
   public static type = "DownloadModelTask";
   public static category = "Text Model";
+  public static description = "Downloads and caches AI models locally with progress tracking";
   public static inputSchema(): TObject {
     return DownloadModelInputSchema;
   }

@@ -86,6 +86,8 @@ export class TextGenerationTask extends AiTask<
 > {
   public static type = "TextGenerationTask";
   public static category = "Text Model";
+  public static description =
+    "Generates text from a prompt using language models with configurable parameters";
   public static inputSchema(): TObject {
     return TextGenerationInputSchema;
   }

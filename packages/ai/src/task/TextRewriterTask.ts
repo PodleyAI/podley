@@ -48,6 +48,7 @@ export type TextRewriterTaskOutput = Static<typeof TextRewriterOutputSchema>;
 export class TextRewriterTask extends AiTask<TextRewriterTaskInput, TextRewriterTaskOutput> {
   public static type = "TextRewriterTask";
   public static category = "Text Model";
+  public static description = "Rewrites text according to a given prompt using language models";
   public static inputSchema(): TObject {
     return TextRewriterInputSchema;
   }

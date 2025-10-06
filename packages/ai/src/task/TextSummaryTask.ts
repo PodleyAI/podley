@@ -43,6 +43,8 @@ export type TextSummaryTaskOutput = Static<typeof TextSummaryOutputSchema>;
 export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTaskOutput> {
   public static type = "TextSummaryTask";
   public static category = "Text Model";
+  public static description =
+    "Summarizes text into a shorter form while preserving key information";
   public static inputSchema(): TObject {
     return TextSummaryInputSchema;
   }

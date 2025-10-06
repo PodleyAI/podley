@@ -20,6 +20,7 @@ export type JavaScriptTaskOutput = {
 export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutput> {
   public static type = "JavaScriptTask";
   public static category = "Utility";
+  public static description = "Executes JavaScript code in a sandboxed interpreter environment";
 
   public static inputSchema(): TObject {
     return Type.Object({

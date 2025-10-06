@@ -29,6 +29,7 @@ export class DocumentSplitterTask extends Task<
 > {
   public static type = "DocumentSplitterTask";
   public static category = "Document";
+  public static description = "Splits documents into text chunks for processing";
   public static inputSchema(): TObject {
     return Type.Object({
       parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {

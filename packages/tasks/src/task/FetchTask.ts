@@ -192,6 +192,8 @@ export class FetchTask<
 > extends JobQueueTask<Input, Output, Config> {
   public static type = "FetchTask";
   public static category = "Input";
+  public static description =
+    "Fetches data from a URL with progress tracking and automatic retry handling";
 
   public static inputSchema(): TObject {
     return Type.Object({

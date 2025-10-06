@@ -55,6 +55,7 @@ export class TextQuestionAnswerTask extends AiTask<
 > {
   public static type = "TextQuestionAnswerTask";
   public static category = "Text Model";
+  public static description = "Answers questions based on provided context using language models";
   public static inputSchema(): TObject {
     return TextQuestionAnswerInputSchema;
   }

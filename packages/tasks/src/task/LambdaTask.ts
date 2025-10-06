@@ -43,7 +43,7 @@ export class LambdaTask<
   Config extends LambdaTaskConfig<Input, Output> = LambdaTaskConfig<Input, Output>,
 > extends Task<Input, Output, Config> {
   public static type = "LambdaTask";
-  public static category = "Utility";
+  public static category = "Hidden";
   public static cacheable = true;
 
   constructor(input: Partial<Input> = {}, config: Partial<Config> = {}) {

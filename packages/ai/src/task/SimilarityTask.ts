@@ -75,6 +75,8 @@ export class SimilarityTask extends ArrayTask<
 > {
   static readonly type = "SimilarityTask";
   static readonly category = "AI/Similarity";
+  public static description =
+    "Compares vectors using similarity functions and returns top-K ranked results";
   static readonly cacheable = true;
 
   public static override inputSchema() {

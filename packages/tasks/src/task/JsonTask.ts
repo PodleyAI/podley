@@ -38,7 +38,7 @@ export class JsonTask<
   Config extends TaskConfig = TaskConfig,
 > extends GraphAsTask<Input, Output, Config> {
   public static type = "JsonTask";
-  public static category = "Utility";
+  public static category = "Hidden";
 
   public static inputSchema(): TObject {
     return Type.Object({

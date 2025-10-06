@@ -48,6 +48,7 @@ export type TextEmbeddingTaskOutput = Static<typeof TextEmbeddingOutputSchema>;
 export class TextEmbeddingTask extends AiTask<TextEmbeddingTaskInput, TextEmbeddingTaskOutput> {
   public static type = "TextEmbeddingTask";
   public static category = "Text Model";
+  public static description = "Generates vector embeddings for text to capture semantic meaning";
   public static inputSchema(): TObject {
     return TextEmbeddingInputSchema;
   }

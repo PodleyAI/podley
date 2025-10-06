@@ -64,6 +64,7 @@ export class TextTranslationTask extends AiTask<
 > {
   public static type = "TextTranslationTask";
   public static category = "Text Model";
+  public static description = "Translates text from one language to another using language models";
   public static inputSchema(): TObject {
     return TextTranslationInputSchema;
   }
