@@ -1,5 +1,20 @@
 # @podley/test
 
+## 0.0.14
+
+### Patch Changes
+
+- Add Supabase as storaged
+- Updated dependencies
+  - @podley/ai-provider@0.0.14
+  - @podley/task-graph@0.0.14
+  - @podley/job-queue@0.0.14
+  - @podley/storage@0.0.14
+  - @podley/sqlite@0.0.14
+  - @podley/tasks@0.0.14
+  - @podley/util@0.0.14
+  - @podley/ai@0.0.14
+
 ## 0.0.13
 
 ### Patch Changes

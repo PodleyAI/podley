@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.14
+
+### Patch Changes
+
+- Add Supabase as storaged
+- Updated dependencies
+  - @podley/sqlite@0.0.14
+  - @podley/util@0.0.14
+
 ## 0.0.13
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @podley/tasks
 
+## 0.0.14
+
+### Patch Changes
+
+- Add Supabase as storaged
+- Updated dependencies
+  - @podley/task-graph@0.0.14
+  - @podley/job-queue@0.0.14
+  - @podley/storage@0.0.14
+  - @podley/util@0.0.14
+
 ## 0.0.13
 
 ### Patch Changes

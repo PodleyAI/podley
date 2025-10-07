@@ -1,5 +1,11 @@
 # @podley/util
 
+## 0.0.14
+
+### Patch Changes
+
+- Add Supabase as storaged
+
 ## 0.0.13
 
 ### Patch Changes
