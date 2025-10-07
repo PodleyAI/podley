@@ -35,8 +35,8 @@
     "@podley/storage": "workspace:*",
     "@podley/task-graph": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sroussey/transformers": "3.7.4",
-    "@mediapipe/tasks-text": "^0.10.21"
+    "@sroussey/transformers": "catalog:",
+    "@mediapipe/tasks-text": "catalog:"
   },
   "peerDependenciesMeta": {
     "@podley/ai": {
@@ -64,7 +64,7 @@
     "@podley/storage": "workspace:*",
     "@podley/task-graph": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sroussey/transformers": "3.7.4",
-    "@mediapipe/tasks-text": "^0.10.21"
+    "@sroussey/transformers": "catalog:",
+    "@mediapipe/tasks-text": "catalog:"
   }
 }

@@ -39,7 +39,7 @@
     "@podley/job-queue": "workspace:*",
     "@podley/storage": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sinclair/typebox": "^0.34.41"
+    "@sinclair/typebox": "catalog:"
   },
   "peerDependenciesMeta": {
     "@podley/job-queue": {

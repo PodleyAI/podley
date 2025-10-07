@@ -40,7 +40,7 @@
     "@podley/storage": "workspace:*",
     "@podley/task-graph": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sinclair/typebox": "^0.34.41",
+    "@sinclair/typebox": "catalog:",
     "pg": "^8.16.3"
   },
   "peerDependenciesMeta": {

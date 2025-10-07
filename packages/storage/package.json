@@ -20,7 +20,7 @@
     "prepare": "node -e \"const pkg=require('./package.json');pkg.exports['.'].bun='./dist/bun.js';pkg.exports['.'].types='./dist/bun.d.ts';require('fs').writeFileSync('package.json',JSON.stringify(pkg,null,2))\""
   },
   "peerDependencies": {
-    "@sinclair/typebox": "^0.34.41",
+    "@sinclair/typebox": "catalog:",
     "@podley/sqlite": "workspace:*",
     "@podley/util": "workspace:*",
     "pg": "^8.16.3"
