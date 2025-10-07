@@ -45,9 +45,9 @@
     "commander": "^14.0.1",
     "is-unicode-supported": "^2.1.0",
     "react": "=18.3.1",
-    "react-reconciler": "^0.31.0",
-    "react-devtools-core": "^4.19.1",
-    "retuink": "^1.1.5",
+    "react-reconciler": "=0.31.0",
+    "react-devtools-core": "=4.19.1",
+    "retuink": "=1.1.5",
     "@sinclair/typebox": "catalog:"
   },
   "publishConfig": {

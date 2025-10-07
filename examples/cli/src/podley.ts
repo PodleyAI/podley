@@ -23,6 +23,6 @@ await register_HFT_InMemoryQueue();
 // await register_TFMP_InlineJobFns();
 // await register_TFMP_InMemoryQueue();
 
-program.parse(process.argv);
+await program.parseAsync(process.argv);
 
 getTaskQueueRegistry().stopQueues();

@@ -27,8 +27,8 @@ export async function runWorkflow(workflow: IWorkflow) {
   await runGraph(workflow.graph);
 }
 
-export async function runSingleTask(task: Task) {
-  if (process.stdout.isTTY) {
+export async function runSingleTask(task: Task): Promise<void> {
+  if (process.stdout.isTTY === true || (process.stdout.isTTY === undefined && !process.env.CI)) {
     const graph = new TaskGraph();
     graph.addTask(task);
     await runTaskGraphToInk(graph);
@@ -38,8 +38,8 @@ export async function runSingleTask(task: Task) {
   }
 }
 
-export async function runGraph(graph: ITaskGraph) {
-  if (process.stdout.isTTY) {
+export async function runGraph(graph: ITaskGraph): Promise<void> {
+  if (process.stdout.isTTY === true || (process.stdout.isTTY === undefined && !process.env.CI)) {
     await runTaskGraphToInk(graph);
   } else {
     const result = await graph.run();
