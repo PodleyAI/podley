@@ -9,7 +9,7 @@ import "fake-indexeddb/auto";
 import { uuid4 } from "@podley/util";
 import { afterEach, describe } from "bun:test";
 import { IndexedDbKvRepository } from "@podley/storage";
-import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests.test";
+import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 
 describe("IndexedDbKvRepository", () => {
   const dbName = `idx_test_${uuid4().replace(/-/g, "_")}`;

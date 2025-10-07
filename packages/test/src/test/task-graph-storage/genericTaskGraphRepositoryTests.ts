@@ -5,7 +5,12 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Dataflow, TaskGraph, TaskGraphRepository } from "@podley/task-graph";
+import {
+  Dataflow,
+  TaskGraph,
+  TaskGraphRepository,
+  TaskGraphTabularRepository,
+} from "@podley/task-graph";
 import { TaskRegistry } from "@podley/task-graph";
 import { expect, it, beforeEach, afterEach } from "bun:test";
 import { TestIOTask } from "../task/TestTasks";
@@ -27,7 +32,9 @@ export function runGenericTaskGraphRepositoryTests(
   });
 
   it("should initialize the tabularRepository", () => {
-    expect(repository.tabularRepository).toBeDefined();
+    if (repository instanceof TaskGraphTabularRepository) {
+      expect(repository.tabularRepository).toBeDefined();
+    }
   });
 
   it("should fail if the task is not registered", async () => {

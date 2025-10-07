@@ -10,7 +10,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { Pool } from "pg";
 import { PostgresRateLimiter } from "@podley/job-queue";
 import { PostgresQueueStorage } from "@podley/storage";
-import { runGenericJobQueueTests } from "./genericJobQueueTests.test";
+import { runGenericJobQueueTests } from "./genericJobQueueTests";
 
 const db = new PGlite() as unknown as Pool;
 

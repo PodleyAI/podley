@@ -240,13 +240,20 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const store = tx.objectStore(this.tableName);
 
     return new Promise((resolve, reject) => {
-      job.run_attempts = job.run_attempts || 1;
-      const request = store.put(job);
+      const getReq = store.get(job.id as string);
+      getReq.onsuccess = () => {
+        const existing = getReq.result as JobStorageFormat<Input, Output> | undefined;
+        const currentAttempts = existing?.run_attempts ?? 0;
+        job.run_attempts = currentAttempts + 1;
+        const putReq = store.put(job);
+        putReq.onsuccess = () => {};
+        putReq.onerror = () => reject(putReq.error);
+      };
+      getReq.onerror = () => reject(getReq.error);
 
       // Don't resolve until transaction is complete
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
-      request.onerror = () => reject(request.error);
     });
   }
 

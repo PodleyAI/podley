@@ -119,6 +119,7 @@ const ProductSchema = Type.Object({
 | IndexedDB    | ❌      | ❌  | ✅      | ✅          |
 | SQLite       | ✅      | ✅  | ❌      | ✅          |
 | PostgreSQL   | ✅      | ✅  | ❌      | ✅          |
+| Supabase     | ✅      | ✅  | ✅      | ✅          |
 | FileSystem   | ✅      | ✅  | ❌      | ✅          |
 
 ### Import Patterns
@@ -167,6 +168,12 @@ import { PostgresKvRepository } from "@podley/storage";
 import { Pool } from "pg";
 const pool = new Pool({ connectionString: "postgresql://..." });
 const pgStore = new PostgresKvRepository(pool, "settings");
+
+// Supabase (Node.js/Bun)
+import { SupabaseKvRepository } from "@podley/storage";
+import { createClient } from "@supabase/supabase-js";
+const supabase = createClient("https://your-project.supabase.co", "your-anon-key");
+const supabaseStore = new SupabaseKvRepository(supabase, "settings");
 ```
 
 #### Bulk Operations
@@ -331,6 +338,19 @@ import { Pool } from "pg";
 const pool = new Pool({ connectionString: "postgresql://..." });
 const pgUsers = new PostgresTabularRepository(pool, "users", UserSchema, ["id"], ["email"]);
 
+// Supabase (Node.js/Bun)
+import { SupabaseTabularRepository } from "@podley/storage";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient("https://your-project.supabase.co", "your-anon-key");
+const supabaseUsers = new SupabaseTabularRepository(
+  supabase,
+  "users",
+  UserSchema,
+  ["id"],
+  ["email"]
+);
+
 // IndexedDB (Browser)
 import { IndexedDbTabularRepository } from "@podley/storage";
 const browserUsers = new IndexedDbTabularRepository("users", UserSchema, ["id"], ["email"]);
@@ -408,12 +428,22 @@ import {
   IndexedDbKvRepository,
   IndexedDbTabularRepository,
   IndexedDbQueueStorage,
+  SupabaseKvRepository,
+  SupabaseTabularRepository,
+  SupabaseQueueStorage,
 } from "@podley/storage";
+import { createClient } from "@supabase/supabase-js";
 
-// All data persists in IndexedDB
+// Local browser storage with IndexedDB
 const settings = new IndexedDbKvRepository("app-settings");
 const userData = new IndexedDbTabularRepository("users", UserSchema, ["id"]);
 const jobQueue = new IndexedDbQueueStorage<any, any>("background-jobs");
+
+// Or use Supabase for cloud storage from the browser
+const supabase = createClient("https://your-project.supabase.co", "your-anon-key");
+const cloudSettings = new SupabaseKvRepository(supabase, "app-settings");
+const cloudUserData = new SupabaseTabularRepository(supabase, "users", UserSchema, ["id"]);
+const cloudJobQueue = new SupabaseQueueStorage(supabase, "background-jobs");
 ```
 
 ### Node.js Environment
@@ -438,12 +468,18 @@ import {
   SqliteTabularRepository,
   FsFolderJsonKvRepository,
   PostgresQueueStorage,
+  SupabaseTabularRepository,
 } from "@podley/storage";
 
 import { Database } from "bun:sqlite";
+import { createClient } from "@supabase/supabase-js";
 
 const db = new Database("./app.db");
 const data = new SqliteTabularRepository(db, "items", ItemSchema, ["id"]);
+
+// Or use Supabase for cloud storage
+const supabase = createClient("https://your-project.supabase.co", "your-anon-key");
+const cloudData = new SupabaseTabularRepository(supabase, "items", ItemSchema, ["id"]);
 ```
 
 ## Advanced Features
@@ -712,6 +748,125 @@ class ConfigManager {
   }
 }
 ```
+
+### Supabase Integration Example
+
+```typescript
+import { createClient } from "@supabase/supabase-js";
+import { Type } from "@sinclair/typebox";
+import {
+  SupabaseTabularRepository,
+  SupabaseKvRepository,
+  SupabaseQueueStorage,
+} from "@podley/storage";
+
+// Initialize Supabase client
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+
+// Define schemas
+const ProductSchema = Type.Object({
+  id: Type.String(),
+  name: Type.String(),
+  price: Type.Number(),
+  category: Type.String(),
+  stock: Type.Number({ minimum: 0 }),
+  createdAt: Type.String({ format: "date-time" }),
+});
+
+const OrderSchema = Type.Object({
+  id: Type.String(),
+  customerId: Type.String(),
+  productId: Type.String(),
+  quantity: Type.Number({ minimum: 1 }),
+  status: Type.Union([
+    Type.Literal("pending"),
+    Type.Literal("processing"),
+    Type.Literal("completed"),
+    Type.Literal("cancelled"),
+  ]),
+  createdAt: Type.String({ format: "date-time" }),
+});
+
+// Create repositories
+const products = new SupabaseTabularRepository(
+  supabase,
+  "products",
+  ProductSchema,
+  ["id"],
+  ["category", "name"] // Indexed columns for fast searching
+);
+
+const orders = new SupabaseTabularRepository(
+  supabase,
+  "orders",
+  OrderSchema,
+  ["id"],
+  ["customerId", "status", ["customerId", "status"]] // Compound index
+);
+
+// Use KV for caching
+const cache = new SupabaseKvRepository(supabase, "cache");
+
+// Use queue for background processing
+type EmailJob = { to: string; subject: string; body: string };
+const emailQueue = new SupabaseQueueStorage<EmailJob, void>(supabase, "emails");
+
+// Example usage
+async function createOrder(customerId: string, productId: string, quantity: number) {
+  // Check product availability
+  const product = await products.get({ id: productId });
+  if (!product || product.stock < quantity) {
+    throw new Error("Insufficient stock");
+  }
+
+  // Create order
+  const order = {
+    id: crypto.randomUUID(),
+    customerId,
+    productId,
+    quantity,
+    status: "pending" as const,
+    createdAt: new Date().toISOString(),
+  };
+  await orders.put(order);
+
+  // Update stock
+  await products.put({
+    ...product,
+    stock: product.stock - quantity,
+  });
+
+  // Queue email notification
+  await emailQueue.add({
+    input: {
+      to: customerId,
+      subject: "Order Confirmation",
+      body: `Your order ${order.id} has been confirmed!`,
+    },
+    run_after: null,
+    max_retries: 3,
+  });
+
+  return order;
+}
+
+// Get customer's orders
+async function getCustomerOrders(customerId: string) {
+  return await orders.search({ customerId });
+}
+
+// Get orders by status
+async function getOrdersByStatus(status: string) {
+  return await orders.search({ status });
+}
+```
+
+**Important Note**
+The implementations assume you have an exec_sql RPC function in your Supabase database for table creation, or that you've created the tables through Supabase migrations. For production use, it's recommended to:
+
+- Create tables using Supabase migrations rather than runtime table creation
+- Set up proper Row Level Security (RLS) policies in Supabase
+- Use service role keys for server-side operations that need elevated permissions
 
 ## Testing
 

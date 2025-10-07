@@ -8,6 +8,12 @@
 export * from "./common";
 
 export * from "./tabular/IndexedDbTabularRepository";
+export * from "./tabular/SupabaseTabularRepository";
+
 export * from "./kv/IndexedDbKvRepository";
+export * from "./kv/SupabaseKvRepository";
+
 export * from "./queue/IndexedDbQueueStorage";
+export * from "./queue/SupabaseQueueStorage";
+
 export * from "./util/IndexedDbTable";

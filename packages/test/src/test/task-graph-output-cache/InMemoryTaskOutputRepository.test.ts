@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { InMemoryTaskOutputRepository } from "../../binding/InMemoryTaskOutputRepository";
-import { runGenericTaskOutputRepositoryTests } from "./genericTaskOutputRepositoryTests.test";
+import { runGenericTaskOutputRepositoryTests } from "./genericTaskOutputRepositoryTests";
 import { describe } from "bun:test";
 
 describe("InMemoryTaskOutputRepository", () => {

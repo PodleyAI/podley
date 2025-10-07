@@ -15,7 +15,7 @@ import {
   CompoundSchema,
   SearchPrimaryKeyNames,
   SearchSchema,
-} from "./genericTabularRepositoryTests.test";
+} from "./genericTabularRepositoryTests";
 
 describe("IndexedDbTabularRepository", () => {
   const dbName = `idx_test_${uuid4().replace(/-/g, "_")}`;

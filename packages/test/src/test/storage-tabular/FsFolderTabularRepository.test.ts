@@ -13,7 +13,7 @@ import {
   CompoundPrimaryKeyNames,
   CompoundSchema,
   SearchPrimaryKeyNames,
-} from "./genericTabularRepositoryTests.test";
+} from "./genericTabularRepositoryTests";
 
 const testDir = ".cache/test/testing";
 

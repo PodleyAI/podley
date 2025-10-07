@@ -12,7 +12,7 @@ import {
   CompoundSchema,
   SearchPrimaryKeyNames,
   SearchSchema,
-} from "./genericTabularRepositoryTests.test";
+} from "./genericTabularRepositoryTests";
 import { describe } from "bun:test";
 
 describe("InMemoryTabularRepository", () => {

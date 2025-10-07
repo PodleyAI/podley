@@ -715,7 +715,6 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       job.progress = 0;
       job.progressMessage = "";
       job.progressDetails = null;
-      job.runAttempts = (job.runAttempts || 0) + 1;
       await this.storage.complete(this.classToStorage(job));
 
       this.stats.retriedJobs++;
@@ -754,7 +753,6 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       job.completedAt = new Date();
       job.progressMessage = "";
       job.progressDetails = null;
-      job.runAttempts = (job.runAttempts || 0) + 1;
       job.error = error.message;
       job.errorCode = error?.constructor?.name ?? null;
 
@@ -786,7 +784,6 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       job.progress = 100;
       job.progressMessage = "";
       job.progressDetails = null;
-      job.runAttempts = (job.runAttempts || 0) + 1;
       job.completedAt = new Date();
       job.output = output ?? null;
       job.error = null;
@@ -1017,7 +1014,6 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       job.progress = 0;
       job.progressMessage = "";
       job.progressDetails = null;
-      job.runAttempts = (job.runAttempts || 0) + 1;
       job.error = "Restarting server";
       await this.storage.complete(this.classToStorage(job));
 

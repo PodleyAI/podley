@@ -7,7 +7,7 @@
 
 import "fake-indexeddb/auto";
 import { IndexedDbTaskOutputRepository } from "../../binding/IndexedDbTaskOutputRepository";
-import { runGenericTaskOutputRepositoryTests } from "./genericTaskOutputRepositoryTests.test";
+import { runGenericTaskOutputRepositoryTests } from "./genericTaskOutputRepositoryTests";
 import { uuid4 } from "@podley/util";
 import { describe } from "bun:test";
 

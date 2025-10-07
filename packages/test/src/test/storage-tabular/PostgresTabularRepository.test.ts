@@ -12,7 +12,7 @@ import {
   CompoundSchema,
   SearchPrimaryKeyNames,
   SearchSchema,
-} from "./genericTabularRepositoryTests.test";
+} from "./genericTabularRepositoryTests";
 import { uuid4 } from "@podley/util";
 import { describe } from "bun:test";
 import type { Pool } from "pg";

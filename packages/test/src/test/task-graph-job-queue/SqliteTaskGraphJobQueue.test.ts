@@ -10,7 +10,7 @@ import { SqliteQueueStorage } from "@podley/storage";
 import { Sqlite } from "@podley/sqlite";
 import { describe } from "bun:test";
 import { uuid4 } from "@podley/util";
-import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests.test";
+import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 
 describe("SqliteTaskGraphJobQueue", () => {
   runGenericTaskGraphJobQueueTests(async () => {

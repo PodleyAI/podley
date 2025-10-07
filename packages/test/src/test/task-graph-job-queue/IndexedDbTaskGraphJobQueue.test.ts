@@ -9,7 +9,7 @@ import "fake-indexeddb/auto";
 import { InMemoryRateLimiter, JobQueue } from "@podley/job-queue";
 import { describe } from "bun:test";
 import { uuid4 } from "@podley/util";
-import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests.test";
+import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 import { IndexedDbQueueStorage } from "@podley/storage";
 
 describe("IndexedDbTaskGraphJobQueue", () => {

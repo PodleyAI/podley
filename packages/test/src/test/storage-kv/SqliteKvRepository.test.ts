@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { SqliteKvRepository } from "@podley/storage";
-import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests.test";
+import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 import { uuid4 } from "@podley/util";
 import { describe } from "bun:test";
 

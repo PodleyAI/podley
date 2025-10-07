@@ -8,7 +8,7 @@
 import { FsFolderKvRepository } from "@podley/storage";
 import { afterEach, beforeEach, describe } from "bun:test";
 import { mkdirSync, rmdirSync } from "fs";
-import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests.test";
+import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 
 const testDir = ".cache/test/testing";
 

@@ -8,7 +8,7 @@
 import { describe } from "bun:test";
 import { InMemoryQueueStorage } from "@podley/storage";
 import { InMemoryRateLimiter } from "@podley/job-queue";
-import { runGenericJobQueueTests } from "./genericJobQueueTests.test";
+import { runGenericJobQueueTests } from "./genericJobQueueTests";
 
 describe("InMemoryJobQueue", () => {
   runGenericJobQueueTests(

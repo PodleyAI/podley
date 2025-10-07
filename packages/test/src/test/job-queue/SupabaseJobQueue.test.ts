@@ -5,21 +5,22 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { SqliteQueueStorage } from "@podley/storage";
-import { SqliteRateLimiter } from "@podley/job-queue";
 import { describe } from "bun:test";
-import { Sqlite } from "@podley/sqlite";
+import { SupabaseQueueStorage } from "@podley/storage";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";
+import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
+import { InMemoryRateLimiter } from "@podley/job-queue";
 
-const db = new Sqlite.Database(":memory:");
+const client = createSupabaseMockClient();
 
-describe("SqliteJobQueue", () => {
+class SupabaseJobQueue extends SupabaseQueueStorage<any, any> {
+  protected isSetup = false; // force setup to run, which is not the default
+}
+
+describe("SupabaseJobQueue", () => {
   runGenericJobQueueTests(
-    (queueName: string) => new SqliteQueueStorage(db, queueName),
+    (queueName: string) => new SupabaseJobQueue(client, queueName),
     (queueName: string, maxExecutions: number, windowSizeInSeconds: number) =>
-      new SqliteRateLimiter(db, queueName, {
-        maxExecutions,
-        windowSizeInSeconds,
-      })
+      new InMemoryRateLimiter({ maxExecutions, windowSizeInSeconds })
   );
 });

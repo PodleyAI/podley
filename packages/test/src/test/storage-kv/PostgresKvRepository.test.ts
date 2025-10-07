@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { PostgresKvRepository } from "@podley/storage";
-import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests.test";
+import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 import { describe } from "bun:test";
 import type { Pool } from "pg";
 import { PGlite } from "@electric-sql/pglite";

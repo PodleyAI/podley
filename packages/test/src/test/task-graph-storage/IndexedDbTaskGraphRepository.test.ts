@@ -7,7 +7,7 @@
 
 import "fake-indexeddb/auto";
 import { IndexedDbTaskGraphRepository } from "../../binding/IndexedDbTaskGraphRepository";
-import { runGenericTaskGraphRepositoryTests } from "./genericTaskGraphRepositoryTests.test";
+import { runGenericTaskGraphRepositoryTests } from "./genericTaskGraphRepositoryTests";
 import { uuid4 } from "@podley/util";
 import { describe } from "bun:test";
 

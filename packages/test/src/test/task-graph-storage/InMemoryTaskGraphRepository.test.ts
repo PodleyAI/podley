@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { InMemoryTaskGraphRepository } from "../../binding/InMemoryTaskGraphRepository";
-import { runGenericTaskGraphRepositoryTests } from "./genericTaskGraphRepositoryTests.test";
+import { runGenericTaskGraphRepositoryTests } from "./genericTaskGraphRepositoryTests";
 import { describe } from "bun:test";
 
 describe("InMemoryTaskGraphRepository", () => {

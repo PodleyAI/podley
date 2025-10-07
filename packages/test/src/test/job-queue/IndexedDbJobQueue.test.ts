@@ -8,7 +8,7 @@
 import "fake-indexeddb/auto";
 import { describe } from "bun:test";
 import { IndexedDbQueueStorage } from "@podley/storage";
-import { runGenericJobQueueTests } from "./genericJobQueueTests.test";
+import { runGenericJobQueueTests } from "./genericJobQueueTests";
 import { InMemoryRateLimiter } from "@podley/job-queue";
 
 describe("IndexedDbJobQueue", () => {

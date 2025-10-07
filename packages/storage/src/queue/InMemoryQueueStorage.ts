@@ -148,9 +148,11 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
    */
   public async complete(job: JobStorageFormat<Input, Output>) {
     await sleep(0);
-    job.run_attempts = job.run_attempts || 1;
     const index = this.jobQueue.findIndex((j) => j.id === job.id);
     if (index !== -1) {
+      const existing = this.jobQueue[index];
+      const currentAttempts = existing?.run_attempts ?? 0;
+      job.run_attempts = currentAttempts + 1;
       this.jobQueue[index] = job;
     }
   }

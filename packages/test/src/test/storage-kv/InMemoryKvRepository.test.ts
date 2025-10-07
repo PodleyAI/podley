@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { InMemoryKvRepository } from "@podley/storage";
-import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests.test";
+import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 import { describe } from "bun:test";
 
 describe("InMemoryKvRepository", () => {

@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { SqliteTaskGraphRepository } from "../../binding/SqliteTaskGraphRepository";
-import { runGenericTaskGraphRepositoryTests } from "./genericTaskGraphRepositoryTests.test";
+import { runGenericTaskGraphRepositoryTests } from "./genericTaskGraphRepositoryTests";
 import { uuid4 } from "@podley/util";
 import { describe } from "bun:test";
 
