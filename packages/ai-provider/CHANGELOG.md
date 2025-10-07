@@ -1,5 +1,17 @@
 # @podley/ai-provider
 
+## 0.0.15
+
+### Patch Changes
+
+- Fix peer deps
+- Updated dependencies
+  - @podley/ai@0.0.15
+  - @podley/job-queue@0.0.15
+  - @podley/storage@0.0.15
+  - @podley/task-graph@0.0.15
+  - @podley/util@0.0.15
+
 ## 0.0.14
 
 ### Patch Changes
