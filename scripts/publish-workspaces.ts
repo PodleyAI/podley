@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 
 import { spawn } from "child_process";
-import { readFile, stat } from "fs/promises";
-import { Glob } from "bun";
+import { readFile } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { findWorkspaces } from "./lib/util";
 
 interface PackageJson {
   name: string;
@@ -13,47 +13,11 @@ interface PackageJson {
   };
 }
 
-interface RootPackageJson {
-  workspaces: string[];
-}
-
 interface PublishError {
   packageName: string;
   error: any;
   isVersionConflict: boolean;
   output?: string;
-}
-
-async function findWorkspaces(): Promise<string[]> {
-  const workspaces: string[] = [];
-
-  // Read root package.json
-  const rootPackageJson = JSON.parse(
-    (await readFile("./package.json", "utf-8")).toString()
-  ) as RootPackageJson;
-
-  // Process each workspace pattern
-  for (const pattern of rootPackageJson.workspaces) {
-    try {
-      const globber = new Glob(pattern);
-      for await (const match of globber.scan({ absolute: true, onlyFiles: false })) {
-        try {
-          const stats = await stat(match);
-          if (stats.isDirectory()) {
-            workspaces.push(match);
-          }
-        } catch (e) {
-          // Ignore entries that cannot be stat'ed
-          continue;
-        }
-      }
-    } catch (error) {
-      console.error(`Error processing workspace pattern ${pattern}:`, error);
-      process.exit(1);
-    }
-  }
-
-  return workspaces;
 }
 
 async function runCommand(command: string, args: string[], cwd: string): Promise<string> {
