@@ -85,7 +85,8 @@ export class TextGenerationTask extends AiTask<
   JobQueueTaskConfig
 > {
   public static type = "TextGenerationTask";
-  public static category = "Text Model";
+  public static category = "AI Text Model";
+  public static title = "Text Generation";
   public static description =
     "Generates text from a prompt using language models with configurable parameters";
   public static inputSchema(): TObject {

@@ -56,7 +56,9 @@ export interface IRunConfig {
  */
 export interface ITaskStaticProperties {
   readonly type: string;
-  readonly category: string;
+  readonly category?: string;
+  readonly title?: string;
+  readonly description?: string;
   readonly cacheable: boolean;
   readonly inputSchema: () => TObject;
   readonly outputSchema: () => TObject;

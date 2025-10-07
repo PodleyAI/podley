@@ -31,6 +31,7 @@ export class DelayTask<
 > extends Task<Input, Output, Config> {
   static readonly type = "DelayTask";
   static readonly category = "Utility";
+  public static title = "Delay";
   public static description = "Delays execution for a specified duration with progress tracking";
 
   static inputSchema(): TObject {

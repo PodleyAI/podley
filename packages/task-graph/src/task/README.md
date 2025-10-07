@@ -39,6 +39,8 @@ interface MyTaskOutput {
 class MyTask extends Task {
   static readonly type = "MyTask"; // Required, unique identifier for the task
   static readonly category = "Utility"; // Optional, used for grouping tasks in UI
+  static readonly title = "My Task"; // Optional, used for a UI
+  static readonly description = "My Task Description"; // Optional, used for a UI
   declare runInputData: MyTaskInput;
   declare runOutputData: MyTaskOutput;
   static inputSchema = Type.Object({

@@ -44,6 +44,8 @@ import { Type } from "@sinclair/typebox";
 class MultiplyBy2Task extends Task<{ value: number }, { result: number }> {
   static readonly type = "MultiplyBy2Task";
   static readonly category = "Math";
+  static readonly title = "Multiply by 2";
+  static readonly description = "Multiplies a number by 2";
 
   static inputSchema() {
     return Type.Object({
@@ -172,10 +174,12 @@ class TextProcessorTask extends Task<MyInput, MyOutput> {
   // Required: Unique type identifier
   static readonly type = "TextProcessorTask";
 
-  // Optional: Category for organization
+  // Optional: Information for a UI
+  static readonly title = "Text Processor";
+  static readonly description = "Processes text";
   static readonly category = "Text Processing";
 
-  // Optional: Whether outputs can be cached (default: true)
+  // Whether outputs can be cached (default: true)
   static readonly cacheable = true;
 
   // Required: Input schema definition
@@ -494,7 +498,6 @@ import { InMemoryTaskOutputRepository } from "@podley/test";
 // A cacheable task that simulates expensive work
 class ExpensiveTask extends Task<{ n: number }, { result: number }> {
   static readonly type = "ExpensiveTask";
-  static readonly category = "Demo";
   static readonly cacheable = true;
 
   static inputSchema() {

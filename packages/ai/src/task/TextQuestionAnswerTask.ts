@@ -54,7 +54,8 @@ export class TextQuestionAnswerTask extends AiTask<
   JobQueueTaskConfig
 > {
   public static type = "TextQuestionAnswerTask";
-  public static category = "Text Model";
+  public static category = "AI Text Model";
+  public static title = "Text Question Answer";
   public static description = "Answers questions based on provided context using language models";
   public static inputSchema(): TObject {
     return TextQuestionAnswerInputSchema;

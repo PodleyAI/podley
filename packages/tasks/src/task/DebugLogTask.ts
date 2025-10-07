@@ -39,6 +39,7 @@ export class DebugLogTask<
 > extends Task<Input, Output, Config> {
   public static type = "DebugLogTask";
   public static category = "Utility";
+  public static title = "Debug Log";
   public static description =
     "Logs messages to the console with configurable log levels for debugging task graphs";
   static readonly cacheable = false;

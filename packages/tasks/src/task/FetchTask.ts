@@ -192,6 +192,7 @@ export class FetchTask<
 > extends JobQueueTask<Input, Output, Config> {
   public static type = "FetchTask";
   public static category = "Input";
+  public static title = "Fetch";
   public static description =
     "Fetches data from a URL with progress tracking and automatic retry handling";
 
