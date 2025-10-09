@@ -143,6 +143,7 @@ export interface ITaskSerialization {
   getProvenance(): Provenance;
   toJSON(): JsonTaskItem | TaskGraphItemJson;
   toDependencyJSON(): JsonTaskItem;
+  id(): unknown;
 }
 
 /**

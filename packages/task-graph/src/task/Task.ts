@@ -466,6 +466,13 @@ export class Task<
   }
 
   /**
+   * Gets the task ID from the config
+   */
+  public id(): unknown {
+    return this.config.id;
+  }
+
+  /**
    * Gets provenance information for the task
    */
   public getProvenance(): Provenance {

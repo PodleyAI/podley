@@ -1,5 +1,15 @@
 # @podley/task-graph
 
+## 0.0.16
+
+### Patch Changes
+
+- Convience method to get task id, other task meta data like title added
+- Updated dependencies
+  - @podley/job-queue@0.0.16
+  - @podley/storage@0.0.16
+  - @podley/util@0.0.16
+
 ## 0.0.15
 
 ### Patch Changes
