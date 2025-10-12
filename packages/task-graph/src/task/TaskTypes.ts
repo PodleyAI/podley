@@ -5,7 +5,6 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TSchema, Type } from "@sinclair/typebox";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import type { Task } from "./Task";
 
@@ -86,6 +85,9 @@ export interface IConfig {
 
   /** Optional cacheable flag to use for this task, overriding the default static property */
   cacheable?: boolean;
+
+  /** Optional user data to use for this task, not used by the task framework except it will be exported as part of the task JSON*/
+  extras?: DataPorts;
 }
 
 /** Type for task ID */

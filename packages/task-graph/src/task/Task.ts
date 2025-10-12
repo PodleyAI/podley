@@ -494,6 +494,7 @@ export class Task<
       type: this.type,
       input: this.defaults,
       ...(Object.keys(provenance).length ? { provenance } : {}),
+      extras: this.config.extras,
     };
     return json;
   }

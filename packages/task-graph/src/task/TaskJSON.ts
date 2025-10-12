@@ -5,7 +5,7 @@
 // //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 // //    *******************************************************************************
 
-import { TaskInput, Provenance, TaskConfig } from "./TaskTypes";
+import { TaskInput, Provenance, TaskConfig, DataPorts } from "./TaskTypes";
 import { TaskRegistry } from "../task/TaskRegistry";
 import { TaskConfigurationError, TaskJSONError } from "../task/TaskError";
 import { TaskGraph } from "../task-graph/TaskGraph";
@@ -51,6 +51,9 @@ export type JsonTaskItem = {
         }>;
   };
 
+  /** Optional user data to use for this task, not used by the task framework except it will be exported as part of the task JSON*/
+  extras?: DataPorts;
+
   /** Optional metadata about task origin */
   provenance?: Provenance;
 
@@ -66,6 +69,7 @@ export type TaskGraphItemJson = {
   name?: string;
   input?: TaskInput;
   provenance?: Provenance;
+  extras?: DataPorts;
   subgraph?: TaskGraphJson;
   merge?: CompoundMergeStrategy;
 };
@@ -98,6 +102,7 @@ const createSingleTaskFromJSON = (item: JsonTaskItem | TaskGraphItemJson) => {
     id: item.id,
     name: item.name,
     provenance: item.provenance ?? {},
+    extras: item.extras,
   };
   const task = new taskClass(item.input ?? {}, taskConfig);
   return task;
