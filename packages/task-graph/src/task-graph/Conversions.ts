@@ -9,7 +9,7 @@ import { Type } from "@sinclair/typebox";
 import { GraphAsTask } from "../task/GraphAsTask";
 import type { IExecuteContext, ITask } from "../task/ITask";
 import { Task } from "../task/Task";
-import type { TaskIO } from "../task/TaskTypes";
+import type { DataPorts } from "../task/TaskTypes";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import type { ITaskGraph } from "./ITaskGraph";
 import type { IWorkflow } from "./IWorkflow";
@@ -48,18 +48,18 @@ class WorkflowTask extends GraphAsTask {
 }
 
 // Update PipeFunction type to be more specific about input/output types
-export type PipeFunction<I extends TaskIO = any, O extends TaskIO = any> = (
+export type PipeFunction<I extends DataPorts = any, O extends DataPorts = any> = (
   input: I,
   context: IExecuteContext
 ) => O | Promise<O>;
 
-export type Taskish<A extends TaskIO = TaskIO, B extends TaskIO = TaskIO> =
+export type Taskish<A extends DataPorts = DataPorts, B extends DataPorts = DataPorts> =
   | PipeFunction<A, B>
   | ITask<A, B>
   | ITaskGraph
   | IWorkflow<A, B>;
 
-function convertPipeFunctionToTask<I extends TaskIO, O extends TaskIO>(
+function convertPipeFunctionToTask<I extends DataPorts, O extends DataPorts>(
   fn: PipeFunction<I, O>,
   config?: any
 ): ITask<I, O> {
@@ -83,7 +83,7 @@ function convertPipeFunctionToTask<I extends TaskIO, O extends TaskIO>(
   return new QuickTask({}, config);
 }
 
-export function ensureTask<I extends TaskIO, O extends TaskIO>(
+export function ensureTask<I extends DataPorts, O extends DataPorts>(
   arg: Taskish<I, O>,
   config: any = {}
 ): ITask<any, any, any> {
@@ -120,39 +120,44 @@ export function connect(
   workflow.graph.addDataflow(new Dataflow(source.config.id, "*", target.config.id, "*"));
 }
 
-export function pipe<A extends TaskIO, B extends TaskIO>(
+export function pipe<A extends DataPorts, B extends DataPorts>(
   [fn1]: [Taskish<A, B>],
   workflow?: IWorkflow<A, B>
 ): IWorkflow<A, B>;
 
-export function pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO>(
+export function pipe<A extends DataPorts, B extends DataPorts, C extends DataPorts>(
   [fn1, fn2]: [Taskish<A, B>, Taskish<B, C>],
   workflow?: IWorkflow<A, C>
 ): IWorkflow<A, C>;
 
-export function pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO, D extends TaskIO>(
+export function pipe<
+  A extends DataPorts,
+  B extends DataPorts,
+  C extends DataPorts,
+  D extends DataPorts,
+>(
   [fn1, fn2, fn3]: [Taskish<A, B>, Taskish<B, C>, Taskish<C, D>],
   workflow?: IWorkflow<A, D>
 ): IWorkflow<A, D>;
 
 export function pipe<
-  A extends TaskIO,
-  B extends TaskIO,
-  C extends TaskIO,
-  D extends TaskIO,
-  E extends TaskIO,
+  A extends DataPorts,
+  B extends DataPorts,
+  C extends DataPorts,
+  D extends DataPorts,
+  E extends DataPorts,
 >(
   [fn1, fn2, fn3, fn4]: [Taskish<A, B>, Taskish<B, C>, Taskish<C, D>, Taskish<D, E>],
   workflow?: IWorkflow<A, E>
 ): IWorkflow<A, E>;
 
 export function pipe<
-  A extends TaskIO,
-  B extends TaskIO,
-  C extends TaskIO,
-  D extends TaskIO,
-  E extends TaskIO,
-  F extends TaskIO,
+  A extends DataPorts,
+  B extends DataPorts,
+  C extends DataPorts,
+  D extends DataPorts,
+  E extends DataPorts,
+  F extends DataPorts,
 >(
   [fn1, fn2, fn3, fn4, fn5]: [
     Taskish<A, B>,
@@ -164,7 +169,7 @@ export function pipe<
   workflow?: IWorkflow<A, F>
 ): IWorkflow<A, F>;
 
-export function pipe<T extends TaskIO = any, O extends TaskIO = TaskIO>(
+export function pipe<T extends DataPorts = any, O extends DataPorts = DataPorts>(
   args: Taskish<T, O>[],
   workflow: IWorkflow<T, O> = new Workflow()
 ): IWorkflow<T, O> {

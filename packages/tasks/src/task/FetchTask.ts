@@ -13,7 +13,7 @@ import {
   JobQueueTaskConfig,
   TaskInvalidInputError,
   TaskConfig,
-  TaskIO,
+  DataPorts,
   TaskConfigurationError,
 } from "@podley/task-graph";
 import {
@@ -27,7 +27,7 @@ import { JSONValue } from "@podley/storage";
 import { TObject, Type } from "@sinclair/typebox";
 
 export type url = string;
-export interface FetchTaskInput extends TaskIO {
+export interface FetchTaskInput extends DataPorts {
   url: url;
   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   headers?: Record<string, string>;
@@ -36,7 +36,7 @@ export interface FetchTaskInput extends TaskIO {
   queueName?: string;
   timeout?: number;
 }
-export interface FetchTaskOutput extends TaskIO {
+export interface FetchTaskOutput extends DataPorts {
   json?: JSONValue;
   text?: string;
   blob?: Blob;

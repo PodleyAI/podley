@@ -13,7 +13,7 @@ import type { ITask, ITaskConstructor } from "../task/ITask";
 import { Task } from "../task/Task";
 import { WorkflowError } from "../task/TaskError";
 import type { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
-import { TaskConfig, TaskIO } from "../task/TaskTypes";
+import { TaskConfig, DataPorts } from "../task/TaskTypes";
 import { getLastTask, parallel, pipe, PipeFunction, Taskish } from "./Conversions";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { IWorkflow } from "./IWorkflow";
@@ -21,7 +21,7 @@ import { TaskGraph } from "./TaskGraph";
 import { CompoundMergeStrategy } from "./TaskGraphRunner";
 
 // Type definitions for the workflow
-export type CreateWorkflow<I extends TaskIO, O extends TaskIO, C extends TaskConfig> = (
+export type CreateWorkflow<I extends DataPorts, O extends DataPorts, C extends TaskConfig> = (
   input?: Partial<I>,
   config?: Partial<C>
 ) => Workflow;
@@ -55,7 +55,7 @@ let taskIdCounter = 0;
  * Class for building and managing a task graph
  * Provides methods for adding tasks, connecting outputs to inputs, and running the task graph
  */
-export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = TaskIO>
+export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPorts = DataPorts>
   implements IWorkflow<Input, Output>
 {
   /**
@@ -92,8 +92,8 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
    * @returns A function that adds the specified task type to a Workflow
    */
   public static createWorkflow<
-    I extends TaskIO,
-    O extends TaskIO,
+    I extends DataPorts,
+    O extends DataPorts,
     C extends TaskConfig = TaskConfig,
   >(taskClass: ITaskConstructor<I, O, C>): CreateWorkflow<I, O, C> {
     const helper = function (
@@ -332,22 +332,22 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
 
   // Replace both the instance and static pipe methods with properly typed versions
   // Pipe method overloads
-  public pipe<A extends TaskIO, B extends TaskIO>(fn1: Taskish<A, B>): IWorkflow<A, B>;
-  public pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO>(
+  public pipe<A extends DataPorts, B extends DataPorts>(fn1: Taskish<A, B>): IWorkflow<A, B>;
+  public pipe<A extends DataPorts, B extends DataPorts, C extends DataPorts>(
     fn1: Taskish<A, B>,
     fn2: Taskish<B, C>
   ): IWorkflow<A, C>;
-  public pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO, D extends TaskIO>(
+  public pipe<A extends DataPorts, B extends DataPorts, C extends DataPorts, D extends DataPorts>(
     fn1: Taskish<A, B>,
     fn2: Taskish<B, C>,
     fn3: Taskish<C, D>
   ): IWorkflow<A, D>;
   public pipe<
-    A extends TaskIO,
-    B extends TaskIO,
-    C extends TaskIO,
-    D extends TaskIO,
-    E extends TaskIO,
+    A extends DataPorts,
+    B extends DataPorts,
+    C extends DataPorts,
+    D extends DataPorts,
+    E extends DataPorts,
   >(
     fn1: Taskish<A, B>,
     fn2: Taskish<B, C>,
@@ -355,12 +355,12 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
     fn4: Taskish<D, E>
   ): IWorkflow<A, E>;
   public pipe<
-    A extends TaskIO,
-    B extends TaskIO,
-    C extends TaskIO,
-    D extends TaskIO,
-    E extends TaskIO,
-    F extends TaskIO,
+    A extends DataPorts,
+    B extends DataPorts,
+    C extends DataPorts,
+    D extends DataPorts,
+    E extends DataPorts,
+    F extends DataPorts,
   >(
     fn1: Taskish<A, B>,
     fn2: Taskish<B, C>,
@@ -368,29 +368,34 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
     fn4: Taskish<D, E>,
     fn5: Taskish<E, F>
   ): IWorkflow<A, F>;
-  public pipe(...args: Taskish<TaskIO, TaskIO>[]): IWorkflow {
+  public pipe(...args: Taskish<DataPorts, DataPorts>[]): IWorkflow {
     return pipe(args as any, this);
   }
 
   // Static pipe method overloads
-  public static pipe<A extends TaskIO, B extends TaskIO>(
+  public static pipe<A extends DataPorts, B extends DataPorts>(
     fn1: PipeFunction<A, B> | ITask<A, B>
   ): IWorkflow;
-  public static pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO>(
+  public static pipe<A extends DataPorts, B extends DataPorts, C extends DataPorts>(
     fn1: PipeFunction<A, B> | ITask<A, B>,
     fn2: PipeFunction<B, C> | ITask<B, C>
   ): IWorkflow;
-  public static pipe<A extends TaskIO, B extends TaskIO, C extends TaskIO, D extends TaskIO>(
+  public static pipe<
+    A extends DataPorts,
+    B extends DataPorts,
+    C extends DataPorts,
+    D extends DataPorts,
+  >(
     fn1: PipeFunction<A, B> | ITask<A, B>,
     fn2: PipeFunction<B, C> | ITask<B, C>,
     fn3: PipeFunction<C, D> | ITask<C, D>
   ): IWorkflow;
   public static pipe<
-    A extends TaskIO,
-    B extends TaskIO,
-    C extends TaskIO,
-    D extends TaskIO,
-    E extends TaskIO,
+    A extends DataPorts,
+    B extends DataPorts,
+    C extends DataPorts,
+    D extends DataPorts,
+    E extends DataPorts,
   >(
     fn1: PipeFunction<A, B> | ITask<A, B>,
     fn2: PipeFunction<B, C> | ITask<B, C>,
@@ -398,12 +403,12 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
     fn4: PipeFunction<D, E> | ITask<D, E>
   ): IWorkflow;
   public static pipe<
-    A extends TaskIO,
-    B extends TaskIO,
-    C extends TaskIO,
-    D extends TaskIO,
-    E extends TaskIO,
-    F extends TaskIO,
+    A extends DataPorts,
+    B extends DataPorts,
+    C extends DataPorts,
+    D extends DataPorts,
+    E extends DataPorts,
+    F extends DataPorts,
   >(
     fn1: PipeFunction<A, B> | ITask<A, B>,
     fn2: PipeFunction<B, C> | ITask<B, C>,
@@ -554,7 +559,7 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
     return this;
   }
 
-  public addTask<I extends TaskIO, O extends TaskIO, C extends TaskConfig = TaskConfig>(
+  public addTask<I extends DataPorts, O extends DataPorts, C extends TaskConfig = TaskConfig>(
     taskClass: ITaskConstructor<I, O, C>,
     input: I,
     config: C
@@ -570,8 +575,8 @@ export class Workflow<Input extends TaskIO = TaskIO, Output extends TaskIO = Tas
  * Helper function for backward compatibility
  */
 export function CreateWorkflow<
-  I extends TaskIO,
-  O extends TaskIO,
+  I extends DataPorts,
+  O extends DataPorts,
   C extends TaskConfig = TaskConfig,
 >(taskClass: any): CreateWorkflow<I, O, C> {
   return Workflow.createWorkflow<I, O, C>(taskClass);

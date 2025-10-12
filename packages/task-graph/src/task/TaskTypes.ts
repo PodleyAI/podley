@@ -37,15 +37,15 @@ export enum TaskStatus {
 // Core Task Data Types
 // ========================================================================
 
-export interface TaskIO {
+export interface DataPorts {
   [key: string]: unknown;
 }
 
 /** Type for task input data */
-export type TaskInput = TaskIO;
+export type TaskInput = DataPorts;
 
 /** Type for task output data */
-export type TaskOutput = TaskIO;
+export type TaskOutput = DataPorts;
 
 export type CompoundTaskOutput =
   | {
@@ -56,7 +56,7 @@ export type CompoundTaskOutput =
     };
 
 /** Type for task provenance metadata */
-export type Provenance = TaskIO;
+export type Provenance = DataPorts;
 
 /** Type for task type names */
 export type TaskTypeName = string;
