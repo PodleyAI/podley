@@ -1,5 +1,19 @@
 # @podley/cli
 
+## 0.0.18
+
+### Patch Changes
+
+- Rename SimilaryTask to VectorSimilarityTask and ensure category and title on Task
+- Updated dependencies
+  - @podley/ai@0.0.18
+  - @podley/ai-provider@0.0.18
+  - @podley/storage@0.0.18
+  - @podley/task-graph@0.0.18
+  - @podley/tasks@0.0.18
+  - @podley/test@0.0.18
+  - @podley/util@0.0.18
+
 ## 0.0.17
 
 ### Patch Changes

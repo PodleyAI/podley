@@ -1,5 +1,15 @@
 # @podley/job-queue
 
+## 0.0.18
+
+### Patch Changes
+
+- Rename SimilaryTask to VectorSimilarityTask and ensure category and title on Task
+- Updated dependencies
+  - @podley/sqlite@0.0.18
+  - @podley/storage@0.0.18
+  - @podley/util@0.0.18
+
 ## 0.0.17
 
 ### Patch Changes
