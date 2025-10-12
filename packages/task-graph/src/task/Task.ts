@@ -489,12 +489,13 @@ export class Task<
    */
   public toJSON(): JsonTaskItem | TaskGraphItemJson {
     const provenance = this.getProvenance();
+    const extras = this.config.extras;
     let json: JsonTaskItem | TaskGraphItemJson = {
       id: this.config.id,
       type: this.type,
       input: this.defaults,
       ...(Object.keys(provenance).length ? { provenance } : {}),
-      extras: this.config.extras,
+      ...(extras && Object.keys(extras).length ? { extras } : {}),
     };
     return json;
   }
