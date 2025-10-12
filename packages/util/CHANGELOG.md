@@ -1,5 +1,11 @@
 # @podley/util
 
+## 0.0.17
+
+### Patch Changes
+
+- Add config.extras as optional property object for other users, to be saved as part of toJSON
+
 ## 0.0.16
 
 ### Patch Changes

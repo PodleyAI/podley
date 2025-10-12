@@ -1,5 +1,20 @@
 # @podley/test
 
+## 0.0.17
+
+### Patch Changes
+
+- Add config.extras as optional property object for other users, to be saved as part of toJSON
+- Updated dependencies
+  - @podley/ai@0.0.17
+  - @podley/ai-provider@0.0.17
+  - @podley/job-queue@0.0.17
+  - @podley/sqlite@0.0.17
+  - @podley/storage@0.0.17
+  - @podley/task-graph@0.0.17
+  - @podley/tasks@0.0.17
+  - @podley/util@0.0.17
+
 ## 0.0.16
 
 ### Patch Changes
