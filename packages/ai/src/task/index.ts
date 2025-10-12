@@ -14,5 +14,5 @@ export * from "./TextSummaryTask";
 export * from "./TextEmbeddingTask";
 export * from "./TextQuestionAnswerTask";
 export * from "./TextTranslationTask";
-export * from "./SimilarityTask";
+export * from "./VectorSimilarityTask";
 export * from "./DownloadModelTask";

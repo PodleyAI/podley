@@ -183,14 +183,14 @@ const result = await task.run();
 
 ### Analysis Tasks
 
-#### SimilarityTask
+#### VectorSimilarityTask
 
 Computes similarity between texts or embeddings.
 
 ```typescript
-import { SimilarityTask } from "@podley/ai";
+import { VectorSimilarityTask } from "@podley/ai";
 
-const task = new SimilarityTask({
+const task = new VectorSimilarityTask({
   model: "onnx:Supabase/gte-small:q8",
   text1: "I love programming",
   text2: "Coding is my passion",
@@ -358,7 +358,7 @@ AI tasks integrate seamlessly with Podley workflows:
 
 ```typescript
 import { Workflow } from "@podley/task-graph";
-import { TextGenerationTask, TextEmbeddingTask, SimilarityTask } from "@podley/ai";
+import { TextGenerationTask, TextEmbeddingTask, VectorSimilarityTask } from "@podley/ai";
 
 const workflow = new Workflow();
 
@@ -372,7 +372,7 @@ const result = await workflow
     model: "onnx:Supabase/gte-small:q8",
     text: workflow.previous().text, // Use previous task output
   })
-  .SimilarityTask({
+  .VectorSimilarityTask({
     model: "onnx:Supabase/gte-small:q8",
     text1: "artificial intelligence",
     embedding2: workflow.previous().vector, // Use embedding from previous task

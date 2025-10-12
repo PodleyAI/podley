@@ -68,13 +68,13 @@ const SimilarityOutputSchema = Type.Object({
 export type SimilarityTaskInput = Static<typeof SimilarityInputSchema>;
 export type SimilarityTaskOutput = Static<typeof SimilarityOutputSchema>;
 
-export class SimilarityTask extends ArrayTask<
+export class VectorSimilarityTask extends ArrayTask<
   SimilarityTaskInput,
   SimilarityTaskOutput,
   JobQueueTaskConfig
 > {
-  static readonly type = "SimilarityTask";
-  static readonly category = "AI/Similarity";
+  static readonly type = "VectorSimilarityTask";
+  static readonly category = "Analysis";
   public static description =
     "Compares vectors using similarity functions and returns top-K ranked results";
   static readonly cacheable = true;
@@ -113,10 +113,10 @@ export class SimilarityTask extends ArrayTask<
   }
 }
 
-TaskRegistry.registerTask(SimilarityTask);
+TaskRegistry.registerTask(VectorSimilarityTask);
 
 export const Similarity = (input: SimilarityTaskInput, config?: JobQueueTaskConfig) => {
-  return new SimilarityTask(input, config).run();
+  return new VectorSimilarityTask(input, config).run();
 };
 
 declare module "@podley/task-graph" {
@@ -125,7 +125,7 @@ declare module "@podley/task-graph" {
   }
 }
 
-Workflow.prototype.Similarity = CreateWorkflow(SimilarityTask);
+Workflow.prototype.Similarity = CreateWorkflow(VectorSimilarityTask);
 
 // ===============================================================================
 
