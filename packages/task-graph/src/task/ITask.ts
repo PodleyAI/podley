@@ -107,6 +107,8 @@ export interface ITaskIO<Input extends TaskInput> {
   get inputSchema(): TObject; // gets local access for static inputSchema property
   get outputSchema(): TObject; // gets local access for static outputSchema property
   get type(): string; // gets local access for static type property
+  get category(): string; // gets local access for static category property
+  get title(): string; // gets local access for static title property
 
   setDefaults(defaults: Record<string, any>): void;
   resetInputData(): void;

@@ -58,6 +58,11 @@ export class Task<
   public static category: string = "Hidden";
 
   /**
+   * The title of this task
+   */
+  public static title: string = "Task";
+
+  /**
    * Whether this task has side effects
    */
   public static cacheable: boolean = true;
@@ -195,6 +200,10 @@ export class Task<
 
   public get category(): string {
     return (this.constructor as typeof Task).category;
+  }
+
+  public get title(): string {
+    return (this.constructor as typeof Task).title;
   }
 
   public get cacheable(): boolean {
