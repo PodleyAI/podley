@@ -33,8 +33,21 @@ export class Dataflow {
     public targetTaskId: TaskIdType,
     public targetTaskPortId: string
   ) {}
+  public static createId(
+    sourceTaskId: TaskIdType,
+    sourceTaskPortId: string,
+    targetTaskId: TaskIdType,
+    targetTaskPortId: string
+  ): DataflowIdType {
+    return `${sourceTaskId}[${sourceTaskPortId}] ==> ${targetTaskId}[${targetTaskPortId}]`;
+  }
   get id(): DataflowIdType {
-    return `${this.sourceTaskId}[${this.sourceTaskPortId}] ==> ${this.targetTaskId}[${this.targetTaskPortId}]`;
+    return Dataflow.createId(
+      this.sourceTaskId,
+      this.sourceTaskPortId,
+      this.targetTaskId,
+      this.targetTaskPortId
+    );
   }
   public value: any = undefined;
   public provenance: Provenance = {};
