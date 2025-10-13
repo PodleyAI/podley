@@ -65,16 +65,17 @@ const SimilarityOutputSchema = Type.Object({
   ),
 });
 
-export type SimilarityTaskInput = Static<typeof SimilarityInputSchema>;
-export type SimilarityTaskOutput = Static<typeof SimilarityOutputSchema>;
+export type VectorSimilarityTaskInput = Static<typeof SimilarityInputSchema>;
+export type VectorSimilarityTaskOutput = Static<typeof SimilarityOutputSchema>;
 
 export class VectorSimilarityTask extends ArrayTask<
-  SimilarityTaskInput,
-  SimilarityTaskOutput,
+  VectorSimilarityTaskInput,
+  VectorSimilarityTaskOutput,
   JobQueueTaskConfig
 > {
   static readonly type = "VectorSimilarityTask";
   static readonly category = "Analysis";
+  static readonly title = "Vector Similarity";
   public static description =
     "Compares vectors using similarity functions and returns top-K ranked results";
   static readonly cacheable = true;
@@ -88,8 +89,8 @@ export class VectorSimilarityTask extends ArrayTask<
 
   // @ts-ignore (TODO: fix this)
   async executeReactive(
-    { query, input, similarity, topK }: SimilarityTaskInput,
-    oldOutput: SimilarityTaskOutput
+    { query, input, similarity, topK }: VectorSimilarityTaskInput,
+    oldOutput: VectorSimilarityTaskOutput
   ) {
     let similarities = [];
     const fns = { cosine };
@@ -115,13 +116,17 @@ export class VectorSimilarityTask extends ArrayTask<
 
 TaskRegistry.registerTask(VectorSimilarityTask);
 
-export const Similarity = (input: SimilarityTaskInput, config?: JobQueueTaskConfig) => {
+export const Similarity = (input: VectorSimilarityTaskInput, config?: JobQueueTaskConfig) => {
   return new VectorSimilarityTask(input, config).run();
 };
 
 declare module "@podley/task-graph" {
   interface Workflow {
-    Similarity: CreateWorkflow<SimilarityTaskInput, SimilarityTaskOutput, JobQueueTaskConfig>;
+    Similarity: CreateWorkflow<
+      VectorSimilarityTaskInput,
+      VectorSimilarityTaskOutput,
+      JobQueueTaskConfig
+    >;
   }
 }
 
