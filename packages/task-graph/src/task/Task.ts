@@ -60,7 +60,7 @@ export class Task<
   /**
    * The title of this task
    */
-  public static title: string = "Task";
+  public static title: string = "";
 
   /**
    * Whether this task has side effects
