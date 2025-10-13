@@ -56,6 +56,10 @@
     "./browser": {
       "types": "./dist/browser.ts",
       "import": "./dist/browser.js"
+    },
+    "./react-native": {
+      "types": "./dist/browser.ts",
+      "import": "./dist/browser.js"
     }
   },
   "files": [

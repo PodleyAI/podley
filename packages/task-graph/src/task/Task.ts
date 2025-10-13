@@ -305,7 +305,7 @@ export class Task<
     this.resetInputData();
 
     // Setup configuration defaults
-    const name = this.type || new.target.type || new.target.name;
+    const name = this.title || new.target.title || new.target.name;
     this.config = Object.assign(
       {
         id: uuid4(),
