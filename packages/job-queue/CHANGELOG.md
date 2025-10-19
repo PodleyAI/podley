@@ -1,5 +1,14 @@
 # @podley/job-queue
 
+## 0.0.20
+
+### Patch Changes
+
+- Updated dependencies [323373c]
+  - @podley/storage@0.0.20
+  - @podley/sqlite@0.0.20
+  - @podley/util@0.0.20
+
 ## 0.0.19
 
 ### Patch Changes

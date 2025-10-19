@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.20
+
+### Patch Changes
+
+- 323373c: Update put and putBulk methods to return stored entities across all tabular repositories
+  update package dependencies
+  - @podley/sqlite@0.0.20
+  - @podley/util@0.0.20
+
 ## 0.0.19
 
 ### Patch Changes
