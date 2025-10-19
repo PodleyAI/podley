@@ -84,6 +84,70 @@ export function runGenericTabularRepositoryTests(
       await repository.putBulk([]);
       // Should not throw an error
     });
+
+    it("should return the entity from put()", async () => {
+      const key = { name: "key1", type: "string1" };
+      const entity = { ...key, option: "value1", success: true };
+
+      const returned = await repository.put(entity);
+
+      // Verify returned entity matches what was stored
+      expect(returned).toBeDefined();
+      expect(returned.name).toEqual(entity.name);
+      expect(returned.type).toEqual(entity.type);
+      expect(returned.option).toEqual(entity.option);
+      expect(!!returned.success).toEqual(entity.success);
+    });
+
+    it("should return updated entity from put() when upserting", async () => {
+      const key = { name: "key1", type: "string1" };
+      const entity1 = { ...key, option: "value1", success: true };
+      const entity2 = { ...key, option: "value2", success: false };
+
+      // First insert
+      const returned1 = await repository.put(entity1);
+      expect(returned1.option).toEqual("value1");
+      expect(!!returned1.success).toEqual(true);
+
+      // Update via upsert
+      const returned2 = await repository.put(entity2);
+      expect(returned2.option).toEqual("value2");
+      expect(!!returned2.success).toEqual(false);
+
+      // Verify database was updated
+      const stored = await repository.get(key);
+      expect(stored?.option).toEqual("value2");
+      expect(!!stored?.success).toEqual(false);
+    });
+
+    it("should return array of entities from putBulk()", async () => {
+      const entities = [
+        { name: "key1", type: "string1", option: "value1", success: true },
+        { name: "key2", type: "string2", option: "value2", success: false },
+        { name: "key3", type: "string3", option: "value3", success: true },
+      ];
+
+      const returned = await repository.putBulk(entities);
+
+      // Verify returned array matches input
+      expect(returned).toBeDefined();
+      expect(returned.length).toEqual(3);
+
+      for (let i = 0; i < entities.length; i++) {
+        expect(returned[i].name).toEqual(entities[i].name);
+        expect(returned[i].type).toEqual(entities[i].type);
+        expect(returned[i].option).toEqual(entities[i].option);
+        expect(!!returned[i].success).toEqual(entities[i].success);
+      }
+    });
+
+    it("should return empty array from putBulk() with empty input", async () => {
+      const returned = await repository.putBulk([]);
+
+      expect(returned).toBeDefined();
+      expect(Array.isArray(returned)).toBe(true);
+      expect(returned.length).toEqual(0);
+    });
   });
 
   // Only run compound index tests if createCompoundRepository is provided
@@ -376,6 +440,182 @@ export function runGenericTabularRepositoryTests(
         // Verify all entries still exist
         const remaining = await repository.getAll();
         expect(remaining?.length).toBe(2);
+      });
+    });
+
+    describe("return value tests with timestamps", () => {
+      let repository: ITabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>;
+
+      beforeEach(async () => {
+        repository = await createSearchableRepository();
+      });
+
+      afterEach(async () => {
+        await repository.deleteAll();
+      });
+
+      it("should return entity with timestamps from put()", async () => {
+        const now = new Date().toISOString();
+        const entity = {
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        const returned = await repository.put(entity);
+
+        // Verify all fields are returned
+        expect(returned).toBeDefined();
+        expect(returned.id).toEqual("1");
+        expect(returned.category).toEqual("electronics");
+        expect(returned.subcategory).toEqual("phones");
+        expect(returned.value).toEqual(100);
+        expect(returned.createdAt).toBeDefined();
+        expect(returned.updatedAt).toBeDefined();
+      });
+
+      it("should return entities with timestamps from putBulk()", async () => {
+        const now = new Date().toISOString();
+        const entities = [
+          {
+            id: "1",
+            category: "electronics",
+            subcategory: "phones",
+            value: 100,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: "2",
+            category: "books",
+            subcategory: "fiction",
+            value: 200,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ];
+
+        const returned = await repository.putBulk(entities);
+
+        // Verify all entities are returned with all fields
+        expect(returned).toBeDefined();
+        expect(returned.length).toEqual(2);
+
+        for (let i = 0; i < entities.length; i++) {
+          expect(returned[i].id).toEqual(entities[i].id);
+          expect(returned[i].category).toEqual(entities[i].category);
+          expect(returned[i].subcategory).toEqual(entities[i].subcategory);
+          expect(returned[i].value).toEqual(entities[i].value);
+          expect(returned[i].createdAt).toBeDefined();
+          expect(returned[i].updatedAt).toBeDefined();
+        }
+      });
+
+      it("should return updated timestamps when upserting", async () => {
+        const now = new Date().toISOString();
+        const entity1 = {
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        // First insert
+        const returned1 = await repository.put(entity1);
+        expect(returned1.value).toEqual(100);
+
+        // Wait a moment to ensure timestamps would differ
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        // Update with new data
+        const later = new Date().toISOString();
+        const entity2 = {
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 150,
+          createdAt: now, // Keep original created time
+          updatedAt: later, // New update time
+        };
+
+        const returned2 = await repository.put(entity2);
+        expect(returned2.value).toEqual(150);
+        expect(returned2.updatedAt).toBeDefined();
+
+        // Verify the update persisted
+        const stored = await repository.get({ id: "1" });
+        expect(stored?.value).toEqual(150);
+      });
+
+      it("should return consistent data between put() result and get()", async () => {
+        const now = new Date().toISOString();
+        const entity = {
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        const returned = await repository.put(entity);
+        const retrieved = await repository.get({ id: "1" });
+
+        // Verify returned and retrieved match
+        expect(retrieved).toBeDefined();
+        expect(returned.id).toEqual(retrieved!.id);
+        expect(returned.category).toEqual(retrieved!.category);
+        expect(returned.subcategory).toEqual(retrieved!.subcategory);
+        expect(returned.value).toEqual(retrieved!.value);
+        expect(returned.createdAt).toEqual(retrieved!.createdAt);
+        expect(returned.updatedAt).toEqual(retrieved!.updatedAt);
+      });
+
+      it("should return consistent data between putBulk() results and getAll()", async () => {
+        const now = new Date().toISOString();
+        const entities = [
+          {
+            id: "1",
+            category: "electronics",
+            subcategory: "phones",
+            value: 100,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: "2",
+            category: "books",
+            subcategory: "fiction",
+            value: 200,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ];
+
+        const returned = await repository.putBulk(entities);
+        const retrieved = await repository.getAll();
+
+        // Verify returned and retrieved match
+        expect(retrieved).toBeDefined();
+        expect(returned.length).toEqual(retrieved!.length);
+
+        // Sort both arrays by id for comparison
+        const sortedReturned = returned.sort((a, b) => a.id.localeCompare(b.id));
+        const sortedRetrieved = retrieved!.sort((a, b) => a.id.localeCompare(b.id));
+
+        for (let i = 0; i < sortedReturned.length; i++) {
+          expect(sortedReturned[i].id).toEqual(sortedRetrieved[i].id);
+          expect(sortedReturned[i].category).toEqual(sortedRetrieved[i].category);
+          expect(sortedReturned[i].subcategory).toEqual(sortedRetrieved[i].subcategory);
+          expect(sortedReturned[i].value).toEqual(sortedRetrieved[i].value);
+          expect(sortedReturned[i].createdAt).toEqual(sortedRetrieved[i].createdAt);
+          expect(sortedReturned[i].updatedAt).toEqual(sortedRetrieved[i].updatedAt);
+        }
       });
     });
   }

@@ -9,7 +9,12 @@ import { createServiceToken } from "@podley/util";
 import { Static, TObject, TSchema } from "@sinclair/typebox";
 import type { Pool } from "pg";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
+import {
+  ExtractPrimaryKey,
+  ExtractValue,
+  ITabularRepository,
+  ValueOptionType,
+} from "./ITabularRepository";
 
 export const POSTGRES_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository.postgres"
@@ -66,7 +71,7 @@ export class PostgresTabularRepository<
     }
     const sql = `
       CREATE TABLE IF NOT EXISTS "${this.table}" (
-        ${this.constructPrimaryKeyColumns()} ${this.constructValueColumns()},
+        ${this.constructPrimaryKeyColumns('"')} ${this.constructValueColumns('"')},
         PRIMARY KEY (${this.primaryKeyColumnList()}) 
       )
     `;
@@ -274,6 +279,32 @@ export class PostgresTabularRepository<
   }
 
   /**
+   * Convert PostgreSQL values to JS values. Ensures numeric strings become numbers where schema says number.
+   */
+  protected sqlToJsValue(column: string, value: ValueOptionType): Entity[keyof Entity] {
+    const typeDef = this.schema.properties[column as keyof typeof this.schema.properties] as
+      | TSchema
+      | undefined;
+    if (typeDef) {
+      if (value === null && this.isNullable(typeDef)) {
+        return null as any;
+      }
+      const actualType = this.getNonNullType(typeDef);
+
+      // Handle numeric types - PostgreSQL can return them as strings
+      if (actualType.type === "number" || actualType.type === "integer") {
+        const v: any = value;
+        if (typeof v === "number") return v as any;
+        if (typeof v === "string") {
+          const parsed = Number(v);
+          if (!isNaN(parsed)) return parsed as any;
+        }
+      }
+    }
+    return super.sqlToJsValue(column, value);
+  }
+
+  /**
    * Determines if a field should be treated as unsigned based on schema properties
    * @param typeDef - The schema type definition
    * @returns true if the field should be treated as unsigned
@@ -298,16 +329,16 @@ export class PostgresTabularRepository<
    * Stores or updates a row in the database.
    * Uses UPSERT (INSERT ... ON CONFLICT DO UPDATE) for atomic operations.
    *
-   * @param key - The primary key object
-   * @param value - The value object to store
-   * @emits "put" event with the key when successful
+   * @param entity - The entity to store
+   * @returns The entity with any server-generated fields updated
+   * @emits "put" event with the updated entity when successful
    */
-  async put(entity: Entity): Promise<void> {
+  async put(entity: Entity): Promise<Entity> {
     const db = await this.setupDatabase();
     const { key, value } = this.separateKeyValueFromCombined(entity);
     const sql = `
       INSERT INTO "${this.table}" (
-        ${this.primaryKeyColumnList()} ${this.valueColumnList() ? ", " + this.valueColumnList() : ""}
+        ${this.primaryKeyColumnList('"')} ${this.valueColumnList() ? ", " + this.valueColumnList('"') : ""}
       )
       VALUES (
         ${[...this.primaryKeyColumns(), ...this.valueColumns()]
@@ -318,20 +349,30 @@ export class PostgresTabularRepository<
         !this.valueColumnList()
           ? ""
           : `
-      ON CONFLICT (${this.primaryKeyColumnList()}) DO UPDATE
+      ON CONFLICT (${this.primaryKeyColumnList('"')}) DO UPDATE
       SET 
       ${(this.valueColumns() as string[])
-        .map((col, i) => `${col} = $${i + this.primaryKeyColumns().length + 1}`)
+        .map((col, i) => `"${col}" = $${i + this.primaryKeyColumns().length + 1}`)
         .join(", ")}
       `
       }
+      RETURNING *
     `;
 
     const primaryKeyParams = this.getPrimaryKeyAsOrderedArray(key);
     const valueParams = this.getValueAsOrderedArray(value);
     const params = [...primaryKeyParams, ...valueParams];
-    await db.query(sql, params);
-    this.events.emit("put", entity);
+    const result = await db.query(sql, params);
+
+    const updatedEntity = result.rows[0] as Entity;
+    // Convert blob fields from SQL to JS values
+    for (const key in this.schema.properties) {
+      // @ts-ignore
+      updatedEntity[key] = this.sqlToJsValue(key, updatedEntity[key]);
+    }
+
+    this.events.emit("put", updatedEntity);
+    return updatedEntity;
   }
 
   /**
@@ -339,10 +380,11 @@ export class PostgresTabularRepository<
    * Uses batch INSERT with ON CONFLICT for better performance.
    *
    * @param entities - Array of entities to store
+   * @returns Array of entities with any server-generated fields updated
    * @emits "put" event for each entity stored
    */
-  async putBulk(entities: Entity[]): Promise<void> {
-    if (entities.length === 0) return;
+  async putBulk(entities: Entity[]): Promise<Entity[]> {
+    if (entities.length === 0) return [];
 
     const db = await this.setupDatabase();
 
@@ -373,14 +415,14 @@ export class PostgresTabularRepository<
 
     const sql = `
       INSERT INTO "${this.table}" (
-        ${this.primaryKeyColumnList()} ${this.valueColumnList() ? ", " + this.valueColumnList() : ""}
+        ${this.primaryKeyColumnList('"')} ${this.valueColumnList() ? ", " + this.valueColumnList('"') : ""}
       )
       VALUES ${valuesClauses}
       ${
         !this.valueColumnList()
           ? ""
           : `
-      ON CONFLICT (${this.primaryKeyColumnList()}) DO UPDATE
+      ON CONFLICT (${this.primaryKeyColumnList('"')}) DO UPDATE
       SET 
       ${(this.valueColumns() as string[])
         .map((col) => {
@@ -390,14 +432,27 @@ export class PostgresTabularRepository<
         .join(", ")}
       `
       }
+      RETURNING *
     `;
 
-    await db.query(sql, allParams);
+    const result = await db.query(sql, allParams);
+
+    const updatedEntities = result.rows.map((row) => {
+      const entity = row as Entity;
+      // Convert blob fields from SQL to JS values
+      for (const key in this.schema.properties) {
+        // @ts-ignore
+        entity[key] = this.sqlToJsValue(key, entity[key]);
+      }
+      return entity;
+    });
 
     // Emit events for each entity
-    for (const entity of entities) {
+    for (const entity of updatedEntities) {
       this.events.emit("put", entity);
     }
+
+    return updatedEntities;
   }
 
   /**
@@ -410,18 +465,18 @@ export class PostgresTabularRepository<
   async get(key: PrimaryKey): Promise<Entity | undefined> {
     const db = await this.setupDatabase();
     const whereClauses = (this.primaryKeyColumns() as string[])
-      .map((discriminatorKey, i) => `${discriminatorKey} = $${i + 1}`)
+      .map((discriminatorKey, i) => `"${discriminatorKey}" = $${i + 1}`)
       .join(" AND ");
 
-    const sql = `SELECT ${this.valueColumnList()} FROM "${this.table}" WHERE ${whereClauses}`;
+    const sql = `SELECT * FROM "${this.table}" WHERE ${whereClauses}`;
     const params = this.getPrimaryKeyAsOrderedArray(key);
     const result = await db.query(sql, params);
 
     let val: Entity | undefined;
     if (result.rows.length > 0) {
       val = result.rows[0] as Entity;
-      // iterate through the schema and check if value is a blob base on the schema
-      for (const key in this.valueSchema.properties) {
+      // Convert all columns according to schema
+      for (const key in this.schema.properties) {
         // @ts-ignore
         val[key] = this.sqlToJsValue(key, val[key]);
       }
@@ -469,13 +524,23 @@ export class PostgresTabularRepository<
     const whereClauses = Object.keys(key)
       .map((key, i) => `"${key}" = $${i + 1}`)
       .join(" AND ");
-    const whereClauseValues = Object.values(key);
+    const whereClauseValues = Object.entries(key).map(([k, v]) =>
+      // @ts-ignore
+      this.jsToSqlValue(k, v as any)
+    );
 
     const sql = `SELECT * FROM "${this.table}" WHERE ${whereClauses}`;
     // @ts-ignore
     const result = await db.query<Entity, any[]>(sql, whereClauseValues);
 
     if (result.rows.length > 0) {
+      // Convert all columns according to schema
+      for (const row of result.rows) {
+        for (const k in this.schema.properties) {
+          // @ts-ignore
+          row[k] = this.sqlToJsValue(k, row[k]);
+        }
+      }
       this.events.emit("search", key, result.rows);
       return result.rows;
     } else {
@@ -510,7 +575,18 @@ export class PostgresTabularRepository<
     const db = await this.setupDatabase();
     const sql = `SELECT * FROM "${this.table}"`;
     const result = await db.query(sql);
-    return result.rows.length ? result.rows : undefined;
+
+    if (result.rows.length > 0) {
+      // Convert all columns according to schema
+      for (const row of result.rows) {
+        for (const key in this.schema.properties) {
+          // @ts-ignore
+          row[key] = this.sqlToJsValue(key, row[key]);
+        }
+      }
+      return result.rows;
+    }
+    return undefined;
   }
 
   /**
@@ -541,7 +617,7 @@ export class PostgresTabularRepository<
     if (!(column in this.schema.properties)) {
       throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
     }
-    return `${String(column)} ${operator} $1`;
+    return `"${String(column)}" ${operator} $1`;
   }
 
   /**

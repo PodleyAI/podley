@@ -44,7 +44,7 @@ export abstract class KvViaTabularRepository<
     if (shouldStringify) {
       value = JSON.stringify(value) as Value;
     }
-    return await this.tabularRepository.put({ key, value });
+    await this.tabularRepository.put({ key, value });
   }
 
   /**
@@ -64,7 +64,7 @@ export abstract class KvViaTabularRepository<
       return { key, value };
     });
 
-    return await this.tabularRepository.putBulk(entities);
+    await this.tabularRepository.putBulk(entities);
   }
 
   /**

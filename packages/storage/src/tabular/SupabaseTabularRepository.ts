@@ -9,7 +9,12 @@ import { createServiceToken } from "@podley/util";
 import { Static, TObject, TSchema } from "@sinclair/typebox";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
+import {
+  ExtractPrimaryKey,
+  ExtractValue,
+  ITabularRepository,
+  ValueOptionType,
+} from "./ITabularRepository";
 
 export const SUPABASE_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository.supabase"
@@ -66,7 +71,7 @@ export class SupabaseTabularRepository<
     }
     const sql = `
       CREATE TABLE IF NOT EXISTS "${this.table}" (
-        ${this.constructPrimaryKeyColumns()}${this.constructValueColumns()},
+        ${this.constructPrimaryKeyColumns('"')} ${this.constructValueColumns('"')},
         PRIMARY KEY (${this.primaryKeyColumnList()}) 
       )
     `;
@@ -281,6 +286,32 @@ export class SupabaseTabularRepository<
   }
 
   /**
+   * Convert Supabase values to JS values. Ensures numeric strings become numbers where schema says number.
+   */
+  protected sqlToJsValue(column: string, value: ValueOptionType): Entity[keyof Entity] {
+    const typeDef = this.schema.properties[column as keyof typeof this.schema.properties] as
+      | TSchema
+      | undefined;
+    if (typeDef) {
+      if (value === null && this.isNullable(typeDef)) {
+        return null as any;
+      }
+      const actualType = this.getNonNullType(typeDef);
+
+      // Handle numeric types - Supabase can return them as strings
+      if (actualType.type === "number" || actualType.type === "integer") {
+        const v: any = value;
+        if (typeof v === "number") return v as any;
+        if (typeof v === "string") {
+          const parsed = Number(v);
+          if (!isNaN(parsed)) return parsed as any;
+        }
+      }
+    }
+    return super.sqlToJsValue(column, value);
+  }
+
+  /**
    * Determines if a field should be treated as unsigned based on schema properties
    * @param typeDef - The schema type definition
    * @returns true if the field should be treated as unsigned
@@ -306,16 +337,28 @@ export class SupabaseTabularRepository<
    * Uses UPSERT (INSERT ... ON CONFLICT DO UPDATE) for atomic operations.
    *
    * @param entity - The entity to store
-   * @emits "put" event with the entity when successful
+   * @returns The entity with any server-generated fields updated
+   * @emits "put" event with the updated entity when successful
    */
-  async put(entity: Entity): Promise<void> {
+  async put(entity: Entity): Promise<Entity> {
     await this.setupDatabase();
-    const { error } = await this.client
+    const { data, error } = await this.client
       .from(this.table)
-      .upsert(entity as any, { onConflict: this.primaryKeyColumnList() });
+      .upsert(entity as any, { onConflict: this.primaryKeyColumnList() })
+      .select()
+      .single();
 
     if (error) throw error;
-    this.events.emit("put", entity);
+    const updatedEntity = data as Entity;
+
+    // Convert all columns from SQL to JS values
+    for (const key in this.schema.properties) {
+      // @ts-ignore
+      updatedEntity[key] = this.sqlToJsValue(key, updatedEntity[key]);
+    }
+
+    this.events.emit("put", updatedEntity);
+    return updatedEntity;
   }
 
   /**
@@ -323,22 +366,31 @@ export class SupabaseTabularRepository<
    * Uses batch INSERT with ON CONFLICT for better performance.
    *
    * @param entities - Array of entities to store
+   * @returns Array of entities with any server-generated fields updated
    * @emits "put" event for each entity stored
    */
-  async putBulk(entities: Entity[]): Promise<void> {
-    if (entities.length === 0) return;
+  async putBulk(entities: Entity[]): Promise<Entity[]> {
+    if (entities.length === 0) return [];
 
     await this.setupDatabase();
-    const { error } = await this.client
+    const { data, error } = await this.client
       .from(this.table)
-      .upsert(entities as any[], { onConflict: this.primaryKeyColumnList() });
+      .upsert(entities as any[], { onConflict: this.primaryKeyColumnList() })
+      .select();
 
     if (error) throw error;
+    const updatedEntities = data as Entity[];
 
-    // Emit events for each entity
-    for (const entity of entities) {
+    // Convert all columns from SQL to JS values and emit events
+    for (const entity of updatedEntities) {
+      for (const key in this.schema.properties) {
+        // @ts-ignore
+        entity[key] = this.sqlToJsValue(key, entity[key]);
+      }
       this.events.emit("put", entity);
     }
+
+    return updatedEntities;
   }
 
   /**
@@ -370,6 +422,13 @@ export class SupabaseTabularRepository<
     }
 
     const val = data as Entity | undefined;
+    if (val) {
+      // Convert all columns from SQL to JS values
+      for (const key in this.schema.properties) {
+        // @ts-ignore
+        val[key] = this.sqlToJsValue(key, val[key]);
+      }
+    }
     this.events.emit("get", key, val);
     return val;
   }
@@ -419,6 +478,13 @@ export class SupabaseTabularRepository<
     if (error) throw error;
 
     if (data && data.length > 0) {
+      // Convert all columns from SQL to JS values
+      for (const row of data) {
+        for (const key in this.schema.properties) {
+          // @ts-ignore
+          row[key] = this.sqlToJsValue(key, row[key]);
+        }
+      }
       this.events.emit("search", searchCriteria, data as Entity[]);
       return data as Entity[];
     } else {
@@ -459,7 +525,18 @@ export class SupabaseTabularRepository<
     const { data, error } = await this.client.from(this.table).select("*");
 
     if (error) throw error;
-    return data && data.length ? (data as Entity[]) : undefined;
+
+    if (data && data.length) {
+      // Convert all columns from SQL to JS values
+      for (const row of data) {
+        for (const key in this.schema.properties) {
+          // @ts-ignore
+          row[key] = this.sqlToJsValue(key, row[key]);
+        }
+      }
+      return data as Entity[];
+    }
+    return undefined;
   }
 
   /**

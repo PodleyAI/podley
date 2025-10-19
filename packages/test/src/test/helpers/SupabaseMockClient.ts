@@ -151,7 +151,25 @@ export function createSupabaseMockClient(): SupabaseClient {
           };
 
           return {
-            select: executeUpsert,
+            select: () => {
+              return {
+                single: async () => {
+                  const result = await executeUpsert();
+                  if (result.error) return result;
+                  // Return single record or first record from array
+                  const singleData = Array.isArray(result.data) ? result.data[0] : result.data;
+                  return { data: singleData, error: null };
+                },
+                then: async (resolve: any, reject: any) => {
+                  try {
+                    const result = await executeUpsert();
+                    resolve(result);
+                  } catch (error) {
+                    reject?.(error);
+                  }
+                },
+              };
+            },
             then: async (resolve: any, reject: any) => {
               try {
                 const result = await executeUpsert();
