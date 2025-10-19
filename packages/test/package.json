@@ -41,7 +41,7 @@
     "@podley/tasks": "workspace:*",
     "@podley/util": "workspace:*",
     "@podley/sqlite": "workspace:*",
-    "@electric-sql/pglite": "^0.3.7",
+    "@electric-sql/pglite": "^0.3.11",
     "@sinclair/typebox": "catalog:",
     "pg": "^8.16.3"
   },
@@ -83,12 +83,12 @@
     "@podley/tasks": "workspace:*",
     "@podley/util": "workspace:*",
     "@podley/sqlite": "workspace:*",
-    "@electric-sql/pglite": "^0.3.10",
+    "@electric-sql/pglite": "^0.3.11",
     "@sinclair/typebox": "catalog:",
-    "fake-indexeddb": "^6.2.2",
+    "fake-indexeddb": "=6.2.2",
     "pg": "^8.16.3",
     "@types/pg": "^8.15.5",
-    "@supabase/supabase-js": "^2.74.0"
+    "@supabase/supabase-js": "^2.75.1"
   },
   "publishConfig": {
     "access": "public"

@@ -57,22 +57,25 @@ export class InMemoryTabularRepository<
   /**
    * Stores a key-value pair in the repository
    * @param value - The combined object to store
-   * @emits 'put' event with the fingerprint ID when successful
+   * @returns The stored entity
+   * @emits 'put' event with the stored entity when successful
    */
-  async put(value: Entity): Promise<void> {
+  async put(value: Entity): Promise<Entity> {
     const { key } = this.separateKeyValueFromCombined(value);
     const id = await makeFingerprint(key);
     this.values.set(id, value);
     this.events.emit("put", value);
+    return value;
   }
 
   /**
    * Stores multiple key-value pairs in the repository in a bulk operation
    * @param values - Array of combined objects to store
+   * @returns Array of stored entities
    * @emits 'put' event for each value stored
    */
-  async putBulk(values: Entity[]): Promise<void> {
-    await Promise.all(values.map(async (value) => this.put(value)));
+  async putBulk(values: Entity[]): Promise<Entity[]> {
+    return await Promise.all(values.map(async (value) => this.put(value)));
   }
 
   /**

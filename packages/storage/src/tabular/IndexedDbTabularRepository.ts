@@ -88,11 +88,11 @@ export class IndexedDbTabularRepository<
 
   /**
    * Stores a row in the repository.
-   * @param key - The key object.
-   * @param value - The value object to store.
+   * @param record - The entity to store.
+   * @returns The stored entity
    * @emits put - Emitted when the value is successfully stored
    */
-  async put(record: Entity): Promise<void> {
+  async put(record: Entity): Promise<Entity> {
     const db = await this.setupDatabase();
     const { key } = this.separateKeyValueFromCombined(record);
     // Merge key and value, ensuring all fields are at the root level for indexing
@@ -105,7 +105,7 @@ export class IndexedDbTabularRepository<
       };
       request.onsuccess = () => {
         this.events.emit("put", record);
-        resolve();
+        resolve(record);
       };
     });
   }
@@ -113,9 +113,10 @@ export class IndexedDbTabularRepository<
   /**
    * Stores multiple rows in the repository in a bulk operation.
    * @param records - Array of entities to store.
+   * @returns Array of stored entities
    * @emits put - Emitted for each record successfully stored
    */
-  async putBulk(records: Entity[]): Promise<void> {
+  async putBulk(records: Entity[]): Promise<Entity[]> {
     const db = await this.setupDatabase();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readwrite");
@@ -133,7 +134,7 @@ export class IndexedDbTabularRepository<
 
       transaction.oncomplete = () => {
         if (!hasError) {
-          resolve();
+          resolve(records);
         }
       };
 

@@ -224,11 +224,11 @@ export class SqliteTabularRepository<
 
   /**
    * Stores a key-value pair in the database
-   * @param key - The primary key object
-   * @param value - The value object to store
+   * @param entity - The entity to store
+   * @returns The entity with any server-generated fields updated
    * @emits 'put' event when successful
    */
-  async put(entity: Entity): Promise<void> {
+  async put(entity: Entity): Promise<Entity> {
     const db = await this.setupDatabase();
     const { key, value } = this.separateKeyValueFromCombined(entity);
     const sql = `
@@ -239,6 +239,7 @@ export class SqliteTabularRepository<
         ${this.primaryKeyColumns().map((i) => "?")}
         ${this.valueColumns().length > 0 ? ", " + this.valueColumns().map((i) => "?") : ""}
       )
+      RETURNING *
     `;
     const stmt = db.prepare(sql);
 
@@ -247,52 +248,81 @@ export class SqliteTabularRepository<
     const params = [...primaryKeyParams, ...valueParams];
 
     // @ts-ignore
-    const result = stmt.run(...params);
+    const updatedEntity = stmt.get(...params) as Entity;
 
-    this.events.emit("put", entity);
+    // Convert all columns according to schema
+    for (const k in this.schema.properties) {
+      // @ts-ignore
+      updatedEntity[k] = this.sqlToJsValue(k, updatedEntity[k]);
+    }
+
+    this.events.emit("put", updatedEntity);
+    return updatedEntity;
   }
 
   /**
    * Stores multiple key-value pairs in the database in a bulk operation
    * @param entities - Array of entities to store
+   * @returns Array of entities with any server-generated fields updated
    * @emits 'put' event for each entity stored
    */
-  async putBulk(entities: Entity[]): Promise<void> {
-    if (entities.length === 0) return;
+  async putBulk(entities: Entity[]): Promise<Entity[]> {
+    if (entities.length === 0) return [];
 
     const db = await this.setupDatabase();
-    const allParams: any[] = [];
-    const valuesPerRow = this.primaryKeyColumns().length + this.valueColumns().length;
 
-    // Build the VALUES clauses - one for each entity
-    const valuesClauses = entities
-      .map((entity, index) => {
+    // For SQLite bulk inserts with RETURNING, we need to do them individually
+    // or use a transaction with multiple INSERT statements
+    const updatedEntities: Entity[] = [];
+
+    // Use a transaction for better performance
+    const transaction = db.transaction((entitiesToInsert: Entity[]) => {
+      for (const entity of entitiesToInsert) {
         const { key, value } = this.separateKeyValueFromCombined(entity);
+        const sql = `
+          INSERT OR REPLACE INTO \`${
+            this.table
+          }\` (${this.primaryKeyColumnList()} ${this.valueColumnList() ? ", " + this.valueColumnList() : ""})
+          VALUES (
+            ${this.primaryKeyColumns()
+              .map(() => "?")
+              .join(", ")}
+            ${
+              this.valueColumns().length > 0
+                ? ", " +
+                  this.valueColumns()
+                    .map(() => "?")
+                    .join(", ")
+                : ""
+            }
+          )
+          RETURNING *
+        `;
+        const stmt = db.prepare(sql);
         const primaryKeyParams = this.getPrimaryKeyAsOrderedArray(key);
         const valueParams = this.getValueAsOrderedArray(value);
-        const entityParams = [...primaryKeyParams, ...valueParams];
-        allParams.push(...entityParams);
-        const placeholders = Array(valuesPerRow).fill("?").join(", ");
-        return `(${placeholders})`;
-      })
-      .join(", ");
+        const params = [...primaryKeyParams, ...valueParams];
 
-    const sql = `
-      INSERT OR REPLACE INTO \`${
-        this.table
-      }\` (${this.primaryKeyColumnList()} ${this.valueColumnList() ? ", " + this.valueColumnList() : ""})
-      VALUES ${valuesClauses}
-    `;
+        // @ts-ignore
+        const updatedEntity = stmt.get(...params) as Entity;
 
-    const stmt = db.prepare(sql);
+        // Convert all columns according to schema
+        for (const k in this.schema.properties) {
+          // @ts-ignore
+          updatedEntity[k] = this.sqlToJsValue(k, updatedEntity[k]);
+        }
 
-    // Execute the single statement with all parameters
-    // @ts-ignore
-    stmt.run(...allParams);
+        updatedEntities.push(updatedEntity);
+      }
+    });
 
-    for (const entity of entities) {
+    transaction(entities);
+
+    for (const entity of updatedEntities) {
       this.events.emit("put", entity);
     }
+
+    return updatedEntities;
   }
 
   /**

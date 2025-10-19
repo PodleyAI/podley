@@ -70,11 +70,11 @@ export class FsFolderTabularRepository<
 
   /**
    * Stores a row in the repository
-   * @param key - The primary key object
-   * @param value - The value object to store
+   * @param entity - The entity to store
+   * @returns The stored entity
    * @emits 'put' event when successful
    */
-  async put(entity: Entity): Promise<void> {
+  async put(entity: Entity): Promise<Entity> {
     await this.setupDirectory();
     const filePath = await this.getFilePath(entity);
     try {
@@ -89,16 +89,18 @@ export class FsFolderTabularRepository<
       }
     }
     this.events.emit("put", entity);
+    return entity;
   }
 
   /**
    * Stores multiple rows in the repository in a bulk operation
    * @param entities - Array of entities to store
+   * @returns Array of stored entities
    * @emits 'put' event for each entity stored
    */
-  async putBulk(entities: Entity[]): Promise<void> {
+  async putBulk(entities: Entity[]): Promise<Entity[]> {
     await this.setupDirectory();
-    await Promise.all(entities.map(async (entity) => this.put(entity)));
+    return await Promise.all(entities.map(async (entity) => this.put(entity)));
   }
 
   /**

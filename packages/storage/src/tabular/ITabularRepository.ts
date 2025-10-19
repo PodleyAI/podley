@@ -72,8 +72,8 @@ export interface ITabularRepository<
   Entity = Static<Schema>,
 > {
   // Core methods
-  put(value: Entity): Promise<void>;
-  putBulk(values: Entity[]): Promise<void>;
+  put(value: Entity): Promise<Entity>;
+  putBulk(values: Entity[]): Promise<Entity[]>;
   get(key: PrimaryKey): Promise<Entity | undefined>;
   delete(key: PrimaryKey | Entity): Promise<void>;
   getAll(): Promise<Entity[] | undefined>;
