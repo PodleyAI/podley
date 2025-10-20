@@ -31,6 +31,7 @@ async function runCommand(command: string, args: string[], cwd: string): Promise
     let stderr = "";
 
     child.stdout.on("data", (data) => {
+      console.log(data.toString());
       stdout += data.toString();
     });
 
