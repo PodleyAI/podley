@@ -20,21 +20,6 @@ import {
 describe("IndexedDbTabularRepository", () => {
   const dbName = `idx_test_${uuid4().replace(/-/g, "_")}`;
 
-  // Clean up after each test
-  afterEach(async () => {
-    // Close any open connections first
-    const closeRequest = indexedDB.open(`${dbName}_simple`);
-    closeRequest.onsuccess = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      db.close();
-    };
-
-    // Delete the test databases
-    indexedDB.deleteDatabase(`${dbName}_simple`);
-    indexedDB.deleteDatabase(`${dbName}_complex`);
-    indexedDB.deleteDatabase(`${dbName}_compound`);
-  });
-
   runGenericTabularRepositoryTests(
     async () =>
       new IndexedDbTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
@@ -42,13 +27,12 @@ describe("IndexedDbTabularRepository", () => {
         CompoundSchema,
         CompoundPrimaryKeyNames
       ),
-    async () => {
-      return new IndexedDbTabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>(
+    async () =>
+      new IndexedDbTabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>(
         `${dbName}_compound`,
         SearchSchema,
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
-      );
-    }
+      )
   );
 });

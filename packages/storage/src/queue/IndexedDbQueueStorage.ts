@@ -5,11 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { uuid4 } from "@podley/util";
-import { makeFingerprint } from "@podley/util";
-import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
+import { createServiceToken, makeFingerprint, uuid4 } from "@podley/util";
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
-import { createServiceToken } from "@podley/util";
+import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
 
 export const INDEXED_DB_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
   "jobqueue.storage.indexedDb"

@@ -5,9 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IKvRepository, DefaultKeyValueSchema } from "@podley/storage";
-import { Static, TNumber, TSchema, TString, Type } from "@sinclair/typebox";
-import { beforeEach, describe, expect, it } from "bun:test";
+import { DefaultKeyValueSchema, IKvRepository } from "@podley/storage";
+import { Static, TSchema, Type } from "@sinclair/typebox";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
 export function runGenericKvRepositoryTests(
   createRepository: (keyType: TSchema, valueType: TSchema) => Promise<IKvRepository<any, any>>
@@ -20,6 +20,11 @@ export function runGenericKvRepositoryTests(
 
     beforeEach(async () => {
       repository = await createRepository(Type.String(), Type.Any());
+    });
+
+    afterEach(async () => {
+      // @ts-ignore
+      repository.db?.close?.();
     });
 
     it("should store and retrieve values for a key", async () => {
