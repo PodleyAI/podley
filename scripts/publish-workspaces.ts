@@ -77,7 +77,11 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishE
 
   try {
     console.log("Publishing", workspacePath);
-    output = await runCommand("bun", ["publish", "--access", access, "--no-color"], workspacePath);
+    output = await runCommand(
+      "bun",
+      ["publish", "--access", access, "--no-color", "--tolerate-republish"],
+      workspacePath
+    );
   } catch (err) {
     output = err instanceof Error ? err.message : String(err);
     error = err;

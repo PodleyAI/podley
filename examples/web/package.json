@@ -1,7 +1,8 @@
 {
   "name": "@podley/web",
-  "version": "0.0.26",
+  "version": "0.0.27",
   "type": "module",
+  "description": "Web interface example for Podley, showcasing a React-based UI for building and visualizing AI task pipelines.",
   "scripts": {
     "dev": "concurrently --kill-others -c 'auto' -n app,types 'bunx --bun vite --port 3800' 'tsc -w --noEmit --preserveWatchOutput'",
     "build-example": "vite build",

@@ -1,8 +1,8 @@
 {
   "name": "@podley/ai-provider",
   "type": "module",
-  "version": "0.0.26",
-  "description": "Podley is a tool for building and running DAG pipelines of AI tasks.",
+  "version": "0.0.27",
+  "description": "AI provider integrations for Podley, supporting OpenAI, Hugging Face Transformers, MediaPipe, and GGML models.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-code": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",

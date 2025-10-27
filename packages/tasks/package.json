@@ -1,8 +1,8 @@
 {
   "name": "@podley/tasks",
   "type": "module",
-  "version": "0.0.26",
-  "description": "Podley is a tool for building and running DAG pipelines of AI tasks.",
+  "version": "0.0.27",
+  "description": "Pre-built task implementations for Podley, including common AI operations and utility functions.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-code": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
