@@ -3,11 +3,11 @@
   "version": "0.0.26",
   "type": "module",
   "scripts": {
-    "dev": "concurrently --kill-others -c 'auto' -n app,types 'bunx --bun vite' 'tsc -w --noEmit --preserveWatchOutput'",
+    "dev": "concurrently --kill-others -c 'auto' -n app,types 'bunx --bun vite --port 3800' 'tsc -w --noEmit --preserveWatchOutput'",
     "build-example": "vite build",
     "build-types": "rm -f tsconfig.tsbuildinfo && tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview --port 3800"
   },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.2",

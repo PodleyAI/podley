@@ -1,0 +1,38 @@
+{
+  "name": "Podley",
+  "build": { "dockerfile": "Dockerfile" },
+
+  // Configure tool-specific properties
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      },
+      "extensions": [
+        "oven.bun-vscode",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  },
+
+  // web example uses port 3800
+  "forwardPorts": [3800],
+
+  "remoteUser": "node",
+
+  "postCreateCommand": "bun --version && node --version && npm --version",
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.12" }
+  }
+}
+
+
+
+
+
+
