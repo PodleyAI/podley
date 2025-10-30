@@ -45,8 +45,6 @@ export function runGenericTabularRepositoryTests(
 
     afterEach(async () => {
       await repository.deleteAll();
-      // @ts-ignore
-      repository.db?.close?.();
     });
 
     it("should store and retrieve values for a key", async () => {

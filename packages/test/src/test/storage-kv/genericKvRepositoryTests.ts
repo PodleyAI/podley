@@ -22,10 +22,7 @@ export function runGenericKvRepositoryTests(
       repository = await createRepository(Type.String(), Type.Any());
     });
 
-    afterEach(async () => {
-      // @ts-ignore
-      repository.db?.close?.();
-    });
+    afterEach(async () => {});
 
     it("should store and retrieve values for a key", async () => {
       const key = "key1";
