@@ -149,8 +149,8 @@ export class TaskGraphRunner {
 
         const runAsync = async () => {
           try {
-            // Filter input to only include keys that are not connected via dataflows
-            const taskInput = this.filterInputForTask(task, input);
+            // Only filter input for non-root tasks; root tasks get the full input
+            const taskInput = isRootTask ? input : this.filterInputForTask(task, input);
             
             const taskPromise = this.runTaskWithProvenance(
               task,
