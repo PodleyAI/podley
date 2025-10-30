@@ -1,6 +1,6 @@
 {
   "name": "Podley",
-  "build": { "dockerfile": "Dockerfile" },
+  "build": { "dockerfile": "./Dockerfile" },
 
   // Configure tool-specific properties
   "customizations": {
@@ -30,9 +30,3 @@
     "ghcr.io/devcontainers/features/python:1": { "version": "3.12" }
   }
 }
-
-
-
-
-
-

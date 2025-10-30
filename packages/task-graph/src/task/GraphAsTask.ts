@@ -16,6 +16,7 @@ export interface GraphAsTaskConfig extends TaskConfig {
   subGraph?: TaskGraph;
   compoundMerge?: CompoundMergeStrategy;
 }
+
 /**
  * A task that contains a subgraph of tasks
  */
