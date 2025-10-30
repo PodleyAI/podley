@@ -18,7 +18,7 @@ export class GraphAsTaskRunner<
   declare task: GraphAsTask<Input, Output, Config>;
 
   /**
-   * Protected method to execute a task subgraphby delegating back to the task itself.
+   * Protected method to execute a task subgraph by delegating back to the task itself.
    */
   protected async executeTaskChildren(input: Input): Promise<NamedGraphResult<Output>> {
     const unsubscribe = this.task.subGraph!.subscribe(
