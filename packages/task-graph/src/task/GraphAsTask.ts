@@ -159,10 +159,13 @@ export class GraphAsTask<
     } else if (merge === "named" || merge === "last-or-named") {
       // For "named" strategies, the output is an array of {id, type, data}
       // This is harder to represent as a schema, so we use a generic structure
-      return Type.Object({
-        // Array of results, each with id, type, and data
-        // Using Type.Any() for flexibility as the actual structure is dynamic
-      });
+      return Type.Array(
+        Type.Object({
+          id: Type.String(),
+          type: Type.String(),
+          data: Type.Any(),
+        })
+      );
     } else if (merge === "unordered-array" || merge === "last-or-unordered-array") {
       // For array strategies, output is { data: [...] }
       return Type.Object({
