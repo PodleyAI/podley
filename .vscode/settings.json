@@ -30,6 +30,11 @@
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true,
+    "files.insertFinalNewline": false
+  },
   "typescript.format.enable": true,
   "typescript.disableAutomaticTypeAcquisition": false,
   "typescript.preferences.importModuleSpecifier": "relative",
