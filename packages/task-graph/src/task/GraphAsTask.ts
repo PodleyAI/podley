@@ -13,6 +13,13 @@ import { type TaskConfig, type TaskInput, type TaskOutput, type TaskTypeName } f
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 import { Type, TObject } from "@sinclair/typebox";
 
+// Set of merge strategies that follow the 'last-or-*' pattern
+const LAST_OR_STRATEGIES = new Set<CompoundMergeStrategy>([
+  "last-or-named",
+  "last-or-property-array",
+  "last-or-unordered-array",
+]);
+
 export interface GraphAsTaskConfig extends TaskConfig {
   subGraph?: TaskGraph;
   compoundMerge?: CompoundMergeStrategy;
@@ -150,7 +157,7 @@ export class GraphAsTask<
     const merge = this.compoundMerge;
 
     // Handle different merge strategies
-    if (merge === "last" || (merge.startsWith("last-or-") && endingNodes.length === 1)) {
+    if (merge === "last" || (LAST_OR_STRATEGIES.has(merge) && endingNodes.length === 1)) {
       // For "last" or single ending node with "last-or-*", return the schema of the last/only node
       const lastNode = endingNodes[endingNodes.length - 1];
       if (lastNode) {
