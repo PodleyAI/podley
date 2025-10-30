@@ -11,6 +11,7 @@ import { Task } from "./Task";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { type TaskConfig, type TaskInput, type TaskOutput, type TaskTypeName } from "./TaskTypes";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
+import { Type, TObject } from "@sinclair/typebox";
 
 export interface GraphAsTaskConfig extends TaskConfig {
   subGraph?: TaskGraph;
@@ -81,6 +82,117 @@ export class GraphAsTask<
   // ========================================================================
   // Input/Output handling
   // ========================================================================
+
+  /**
+   * Override inputSchema to compute it dynamically from the subgraph at runtime
+   * The input schema is the union of all unconnected inputs from all nodes
+   */
+  get inputSchema(): TObject {
+    // If there's no subgraph or it has no children, fall back to the static schema
+    if (!this.hasChildren()) {
+      return (this.constructor as typeof Task).inputSchema();
+    }
+
+    const properties: Record<string, any> = {};
+    const required: string[] = [];
+
+    // For all tasks in the graph, collect their unconnected inputs
+    const tasks = this.subGraph.getTasks();
+
+    for (const task of tasks) {
+      const taskInputSchema = task.inputSchema;
+      const taskProperties = taskInputSchema.properties || {};
+      
+      // Get all inputs that are connected via dataflows
+      const connectedInputs = new Set(
+        this.subGraph.getSourceDataflows(task.config.id).map((df) => df.targetTaskPortId)
+      );
+
+      // Add unconnected inputs to the graph's input schema
+      for (const [inputName, inputProp] of Object.entries(taskProperties)) {
+        if (!connectedInputs.has(inputName)) {
+          // If the same input name exists in multiple nodes, we use the first one
+          // In a more sophisticated implementation, we might want to merge or validate compatibility
+          if (!properties[inputName]) {
+            properties[inputName] = inputProp;
+            
+            // Check if this input is required
+            if (taskInputSchema.required && taskInputSchema.required.includes(inputName)) {
+              required.push(inputName);
+            }
+          }
+        }
+      }
+    }
+
+    return Type.Object(properties, required.length > 0 ? { required } : {});
+  }
+
+  /**
+   * Override outputSchema to compute it dynamically from the subgraph at runtime
+   * The output schema depends on the compoundMerge strategy and the ending nodes
+   */
+  get outputSchema(): TObject {
+    // If there's no subgraph or it has no children, fall back to the static schema
+    if (!this.hasChildren()) {
+      return (this.constructor as typeof Task).outputSchema();
+    }
+
+    const properties: Record<string, any> = {};
+    const required: string[] = [];
+
+    // Find all ending nodes (nodes with no outgoing dataflows)
+    const tasks = this.subGraph.getTasks();
+    const endingNodes = tasks.filter(
+      (task) => this.subGraph.getTargetDataflows(task.config.id).length === 0
+    );
+
+    const merge = this.compoundMerge;
+
+    // Handle different merge strategies
+    if (merge === "last" || (merge.startsWith("last-or-") && endingNodes.length === 1)) {
+      // For "last" or single ending node with "last-or-*", return the schema of the last/only node
+      const lastNode = endingNodes[endingNodes.length - 1];
+      if (lastNode) {
+        return lastNode.outputSchema;
+      }
+    } else if (merge === "named" || merge === "last-or-named") {
+      // For "named" strategies, the output is an array of {id, type, data}
+      // This is harder to represent as a schema, so we use a generic structure
+      return Type.Object({
+        // Array of results, each with id, type, and data
+        // Using Type.Any() for flexibility as the actual structure is dynamic
+      });
+    } else if (merge === "unordered-array" || merge === "last-or-unordered-array") {
+      // For array strategies, output is { data: [...] }
+      return Type.Object({
+        data: Type.Array(Type.Any()),
+      });
+    } else if (merge === "property-array" || merge === "last-or-property-array") {
+      // For property-array strategies, collect properties from all ending nodes
+      // Each property becomes an array if multiple nodes have it
+      for (const task of endingNodes) {
+        const taskOutputSchema = task.outputSchema;
+        const taskProperties = taskOutputSchema.properties || {};
+
+        for (const [outputName, outputProp] of Object.entries(taskProperties)) {
+          if (!properties[outputName]) {
+            // Convert property to array type for property-array merge
+            if (endingNodes.length > 1) {
+              properties[outputName] = Type.Array(outputProp as any);
+            } else {
+              properties[outputName] = outputProp;
+            }
+            
+            // For property-array, properties are generally optional since not all ending nodes may have them
+            // Don't add to required array
+          }
+        }
+      }
+    }
+
+    return Type.Object(properties, required.length > 0 ? { required } : {});
+  }
 
   /**
    * Resets input data to defaults

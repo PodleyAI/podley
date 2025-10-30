@@ -149,9 +149,12 @@ export class TaskGraphRunner {
 
         const runAsync = async () => {
           try {
+            // Filter input to only include keys that are not connected via dataflows
+            const taskInput = this.filterInputForTask(task, input);
+            
             const taskPromise = this.runTaskWithProvenance(
               task,
-              isRootTask ? input : {},
+              taskInput,
               config?.parentProvenance || {}
             );
             this.inProgressTasks!.set(task.config.id, taskPromise);
@@ -255,6 +258,34 @@ export class TaskGraphRunner {
    */
   public async skip(): Promise<void> {
     await this.handleSkip();
+  }
+
+  /**
+   * Filters graph-level input to only include properties that are not connected via dataflows for a given task
+   * @param task The task to filter input for
+   * @param input The graph-level input
+   * @returns Filtered input containing only unconnected properties
+   */
+  protected filterInputForTask(task: ITask, input: TaskInput): TaskInput {
+    // Get all inputs that are connected to this task via dataflows
+    const sourceDataflows = this.graph.getSourceDataflows(task.config.id);
+    const connectedInputs = new Set(
+      sourceDataflows.map((df) => df.targetTaskPortId)
+    );
+
+    // If DATAFLOW_ALL_PORTS ("*") is in the set, all inputs are connected
+    const allPortsConnected = connectedInputs.has(DATAFLOW_ALL_PORTS);
+
+    // Filter out connected inputs from the graph input
+    const filteredInput: TaskInput = {};
+    for (const [key, value] of Object.entries(input)) {
+      // Skip this input if it's explicitly connected OR if all ports are connected
+      if (!connectedInputs.has(key) && !allPortsConnected) {
+        filteredInput[key] = value;
+      }
+    }
+
+    return filteredInput;
   }
 
   /**
