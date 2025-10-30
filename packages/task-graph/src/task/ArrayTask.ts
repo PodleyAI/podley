@@ -10,6 +10,8 @@ import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 import { GraphAsTask } from "./GraphAsTask";
+import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
+import { NamedGraphResult } from "../task-graph/TaskGraphRunner";
 
 /**
  * ArrayTask is a compound task that either:
@@ -86,6 +88,13 @@ export class ArrayTask<
   }
 
   /**
+   * Create a custom runner for ArrayTask that overrides input passing behavior
+   */
+  protected getRunner() {
+    return new ArrayTaskRunner(this);
+  }
+
+  /**
    * Generates all possible combinations of array inputs
    * @param input Input object containing arrays
    * @param inputMakeArray Keys of properties to generate combinations for
@@ -140,5 +149,26 @@ export class ArrayTask<
   toDependencyJSON(): JsonTaskItem {
     const { subtasks, ...result } = super.toDependencyJSON() as JsonTaskItem;
     return result;
+  }
+}
+
+/**
+ * Custom runner for ArrayTask that passes empty input to child tasks.
+ * ArrayTask child tasks get their input values from their defaults (set during task creation),
+ * not from the parent task's input.
+ */
+class ArrayTaskRunner<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends GraphAsTaskRunner<Input, Output, Config> {
+  declare task: ArrayTask<Input, Output, Config>;
+
+  /**
+   * Override to pass empty input to subgraph.
+   * Child tasks will use their defaults instead of parent input.
+   */
+  protected async executeTaskChildren(_input: Input): Promise<NamedGraphResult<Output>> {
+    return super.executeTaskChildren({} as Input);
   }
 }
