@@ -6,11 +6,13 @@
 //    *******************************************************************************
 
 import { uuid4 } from "@podley/util";
+import { TObject } from "@sinclair/typebox";
 import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
+import { GraphResultArray, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTask } from "./GraphAsTask";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
+import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 
 /**
  * ArrayTask is a compound task that either:
@@ -32,12 +34,27 @@ export class ArrayTask<
    * Make this task have results that look like an array
    */
   public static readonly compoundMerge = PROPERTY_ARRAY;
+
+  /**
+   * Gets input schema for this task from the static inputSchema property, which is user defined (reverts GraphAsTask's override)
+   */
+  get inputSchema(): TObject {
+    return (this.constructor as typeof ArrayTask).inputSchema();
+  }
+
+  /**
+   * Gets output schema for this task from the static outputSchema property, which is user defined (reverts GraphAsTask's override)
+   */
+  get outputSchema(): TObject {
+    return (this.constructor as typeof ArrayTask).outputSchema();
+  }
+
   /**
    * Regenerates the task subgraph based on input arrays
    */
   public regenerateGraph(): void {
     // Check if any inputs are arrays
-    const arrayInputs = new Map<string, any[]>();
+    const arrayInputs = new Map<string, Array<Input[keyof Input]>>();
     let hasArrayInputs = false;
     const inputSchema = this.inputSchema;
     const keys = Object.keys(inputSchema.properties);
@@ -93,12 +110,9 @@ export class ArrayTask<
    * @returns Array of input objects with all possible combinations
    */
   protected generateCombinations(input: Input, inputMakeArray: Array<keyof Input>): Input[] {
-    // Helper function to check if a property is an array
-    const isArray = (value: any): value is Array<any> => Array.isArray(value);
-
     // Prepare arrays for combination generation
-    const arraysToCombine: any[][] = inputMakeArray.map((key) =>
-      isArray(input[key]) ? input[key] : []
+    const arraysToCombine: Array<Array<Input[keyof Input]>> = inputMakeArray.map((key) =>
+      Array.isArray(input[key]) ? (input[key] as Array<Input[keyof Input]>) : []
     );
 
     const indices = arraysToCombine.map(() => 0);
@@ -124,7 +138,8 @@ export class ArrayTask<
       // Set values from the arrays based on the current combination
       combination.forEach((valueIndex, arrayIndex) => {
         const key = inputMakeArray[arrayIndex];
-        if (isArray(input[key])) result[key] = input[key][valueIndex];
+        if (Array.isArray(input[key]))
+          result[key] = (input[key] as Array<Input[keyof Input]>)[valueIndex];
       });
 
       return result;
@@ -141,5 +156,43 @@ export class ArrayTask<
   toDependencyJSON(): JsonTaskItem {
     const { subtasks, ...result } = super.toDependencyJSON() as JsonTaskItem;
     return result;
+  }
+
+  /**
+   * Create a custom runner for ArrayTask that overrides input passing behavior
+   * as inputs were already distributed to child tasks during graph regeneration
+   */
+
+  declare _runner: ArrayTaskRunner<Input, Output, Config>;
+
+  /**
+   * Task runner for handling the task execution
+   */
+  override get runner(): ArrayTaskRunner<Input, Output, Config> {
+    if (!this._runner) {
+      this._runner = new ArrayTaskRunner<Input, Output, Config>(this);
+    }
+    return this._runner;
+  }
+}
+
+/**
+ * Custom runner for ArrayTask that passes empty input to child tasks.
+ * ArrayTask child tasks get their input values from their defaults (set during task creation),
+ * not from the parent task's input.
+ */
+class ArrayTaskRunner<
+  Input extends TaskInput = TaskInput,
+  Output extends TaskOutput = TaskOutput,
+  Config extends TaskConfig = TaskConfig,
+> extends GraphAsTaskRunner<Input, Output, Config> {
+  declare task: ArrayTask<Input, Output, Config>;
+
+  /**
+   * Override to pass empty input to subgraph.
+   * Child tasks will use their defaults instead of parent input.
+   */
+  protected async executeTaskChildren(_input: Input): Promise<GraphResultArray<Output>> {
+    return super.executeTaskChildren({} as Input);
   }
 }

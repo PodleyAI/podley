@@ -5,6 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { Type, TObject } from "@sinclair/typebox";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { CompoundMergeStrategy, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
@@ -81,6 +82,104 @@ export class GraphAsTask<
   // ========================================================================
   // Input/Output handling
   // ========================================================================
+
+  /**
+   * Override inputSchema to compute it dynamically from the subgraph at runtime
+   * The input schema is the union of all unconnected inputs from all nodes
+   */
+  get inputSchema(): TObject {
+    // If there's no subgraph or it has no children, fall back to the static schema
+    if (!this.hasChildren()) {
+      return (this.constructor as typeof Task).inputSchema();
+    }
+
+    const properties: Record<string, any> = {};
+    const required: string[] = [];
+
+    // For all tasks in the graph, collect their unconnected inputs
+    const tasks = this.subGraph.getTasks();
+
+    for (const task of tasks) {
+      const taskInputSchema = task.inputSchema;
+      const taskProperties = taskInputSchema.properties || {};
+
+      // Get all inputs that are connected via dataflows
+      const connectedInputs = new Set(
+        this.subGraph.getSourceDataflows(task.config.id).map((df) => df.targetTaskPortId)
+      );
+
+      // Add unconnected inputs to the graph's input schema
+      for (const [inputName, inputProp] of Object.entries(taskProperties)) {
+        if (!connectedInputs.has(inputName)) {
+          // If the same input name exists in multiple nodes, we use the first one
+          // In a more sophisticated implementation, we might want to merge or validate compatibility
+          if (!properties[inputName]) {
+            properties[inputName] = inputProp;
+
+            // Check if this input is required
+            if (taskInputSchema.required && taskInputSchema.required.includes(inputName)) {
+              required.push(inputName);
+            }
+          }
+        }
+      }
+    }
+
+    return Type.Object(properties, required.length > 0 ? { required } : {});
+  }
+
+  /**
+   * Override outputSchema to compute it dynamically from the subgraph at runtime
+   * The output schema depends on the compoundMerge strategy and the ending nodes
+   */
+  get outputSchema(): TObject {
+    // If there's no subgraph or it has no children, fall back to the static schema
+    if (!this.hasChildren()) {
+      return (this.constructor as typeof Task).outputSchema();
+    }
+
+    const properties: Record<string, any> = {};
+    const required: string[] = [];
+
+    // Find all ending nodes (nodes with no outgoing dataflows)
+    const tasks = this.subGraph.getTasks();
+    const endingNodes = tasks.filter(
+      (task) => this.subGraph.getTargetDataflows(task.config.id).length === 0
+    );
+
+    // ONLY handle PROPERTY_ARRAY strategy
+    // Count how many ending nodes produce each property
+    const propertyCount: Record<string, number> = {};
+    const propertySchema: Record<string, any> = {};
+
+    for (const task of endingNodes) {
+      const taskOutputSchema = task.outputSchema;
+      const taskProperties = taskOutputSchema.properties || {};
+
+      for (const [outputName, outputProp] of Object.entries(taskProperties)) {
+        propertyCount[outputName] = (propertyCount[outputName] || 0) + 1;
+        // Store the first schema we encounter for each property
+        if (!propertySchema[outputName]) {
+          propertySchema[outputName] = outputProp;
+        }
+      }
+    }
+
+    // Build the final schema: properties produced by multiple nodes become arrays
+    for (const [outputName, count] of Object.entries(propertyCount)) {
+      const outputProp = propertySchema[outputName];
+
+      if (endingNodes.length === 1) {
+        // Single ending node: use property as-is
+        properties[outputName] = outputProp;
+      } else {
+        // Multiple ending nodes: all properties become arrays due to collectPropertyValues
+        properties[outputName] = Type.Array(outputProp as any);
+      }
+    }
+
+    return Type.Object(properties, required.length > 0 ? { required } : {});
+  }
 
   /**
    * Resets input data to defaults

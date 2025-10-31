@@ -18,9 +18,9 @@ export class GraphAsTaskRunner<
   declare task: GraphAsTask<Input, Output, Config>;
 
   /**
-   * Protected method to execute a task subgraphby delegating back to the task itself.
+   * Protected method to execute a task subgraph by delegating back to the task itself.
    */
-  protected async executeTaskChildren(): Promise<GraphResultArray<Output>> {
+  protected async executeTaskChildren(input: Input): Promise<GraphResultArray<Output>> {
     const unsubscribe = this.task.subGraph!.subscribe(
       "graph_progress",
       (progress: number, message?: string, ...args: any[]) => {
@@ -28,7 +28,7 @@ export class GraphAsTaskRunner<
       }
     );
     const results = await this.task.subGraph!.run<Output>(
-      {},
+      input,
       {
         parentProvenance: this.nodeProvenance || {},
         parentSignal: this.abortController?.signal,
@@ -40,6 +40,11 @@ export class GraphAsTaskRunner<
   }
   /**
    * Protected method for reactive execution delegation
+   * 
+   * Note: Reactive execution doesn't accept input parameters by design.
+   * It works with the graph's internal state and dataflow connections.
+   * Tasks in the subgraph will use their existing runInputData (from defaults
+   * or previous execution) combined with dataflow connections.
    */
   protected async executeTaskChildrenReactive(): Promise<GraphResultArray<Output>> {
     return this.task.subGraph!.runReactive<Output>();
@@ -76,7 +81,7 @@ export class GraphAsTaskRunner<
    */
   protected async executeTask(input: Input): Promise<Output | undefined> {
     if (this.task.hasChildren()) {
-      const runExecuteOutputData = await this.executeTaskChildren();
+      const runExecuteOutputData = await this.executeTaskChildren(input);
       this.task.runOutputData = this.task.subGraph.mergeExecuteOutputsToRunOutput(
         runExecuteOutputData,
         this.task.compoundMerge

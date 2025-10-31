@@ -317,7 +317,7 @@ export class Graph<Node, Edge = true, NodeId = unknown, EdgeId = unknown> {
   }
 
   /**
-   * Returns the in edges for a specific node.
+   * Returns the out edges for a specific node.
    */
   outEdges(
     node1Identity: NodeId
@@ -342,7 +342,7 @@ export class Graph<Node, Edge = true, NodeId = unknown, EdgeId = unknown> {
   }
 
   /**
-   * Returns the out edges for a specific node.
+   * Returns the in edges for a specific node.
    */
   inEdges(
     node2Identity: NodeId
