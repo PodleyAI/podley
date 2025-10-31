@@ -8,8 +8,9 @@
 import { uuid4 } from "@podley/util";
 import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
+import { PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTask } from "./GraphAsTask";
+import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 
 /**
  * ArrayTask is a compound task that either:
@@ -30,7 +31,7 @@ export class ArrayTask<
   /**
    * Make this task have results that look like an array
    */
-  public static readonly compoundMerge = "last-or-property-array";
+  public static readonly compoundMerge = PROPERTY_ARRAY;
   /**
    * Regenerates the task subgraph based on input arrays
    */

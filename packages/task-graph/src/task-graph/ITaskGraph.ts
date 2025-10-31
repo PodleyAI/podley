@@ -11,22 +11,27 @@ import { TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import type { TaskGraphRunConfig } from "./TaskGraph";
 import type { TaskGraphEventListener, TaskGraphEvents } from "./TaskGraphEvents";
-import { CompoundMergeStrategy, NamedGraphResult, TaskGraphRunner } from "./TaskGraphRunner";
+import {
+  CompoundMergeStrategy,
+  GraphResult,
+  GraphResultArray,
+  TaskGraphRunner,
+} from "./TaskGraphRunner";
 
 export interface ITaskGraph {
   get runner(): TaskGraphRunner;
   run<ExecuteOutput extends TaskOutput>(
     input?: TaskInput,
     config?: TaskGraphRunConfig
-  ): Promise<NamedGraphResult<ExecuteOutput>>;
-  runReactive<Output extends TaskOutput>(): Promise<NamedGraphResult<Output>>;
+  ): Promise<GraphResultArray<ExecuteOutput>>;
+  runReactive<Output extends TaskOutput>(): Promise<GraphResultArray<Output>>;
   mergeExecuteOutputsToRunOutput<
     ExecuteOutput extends TaskOutput,
-    Output extends TaskOutput = ExecuteOutput,
+    Merge extends CompoundMergeStrategy = CompoundMergeStrategy,
   >(
-    results: NamedGraphResult<ExecuteOutput>,
-    compoundMerge: CompoundMergeStrategy
-  ): Output;
+    results: GraphResultArray<ExecuteOutput>,
+    compoundMerge: Merge
+  ): GraphResult<ExecuteOutput, Merge>;
   abort(): void;
   skip(): Promise<void>;
   getTask(id: TaskIdType): ITask | undefined;

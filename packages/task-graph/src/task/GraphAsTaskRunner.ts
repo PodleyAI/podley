@@ -5,10 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { NamedGraphResult } from "../task-graph/TaskGraphRunner";
+import { GraphResultArray } from "../task-graph/TaskGraphRunner";
+import { GraphAsTask } from "./GraphAsTask";
 import { TaskRunner } from "./TaskRunner";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
-import { GraphAsTask } from "./GraphAsTask";
 
 export class GraphAsTaskRunner<
   Input extends TaskInput = TaskInput,
@@ -20,7 +20,7 @@ export class GraphAsTaskRunner<
   /**
    * Protected method to execute a task subgraphby delegating back to the task itself.
    */
-  protected async executeTaskChildren(): Promise<NamedGraphResult<Output>> {
+  protected async executeTaskChildren(): Promise<GraphResultArray<Output>> {
     const unsubscribe = this.task.subGraph!.subscribe(
       "graph_progress",
       (progress: number, message?: string, ...args: any[]) => {
@@ -41,7 +41,7 @@ export class GraphAsTaskRunner<
   /**
    * Protected method for reactive execution delegation
    */
-  protected async executeTaskChildrenReactive(): Promise<NamedGraphResult<Output>> {
+  protected async executeTaskChildrenReactive(): Promise<GraphResultArray<Output>> {
     return this.task.subGraph!.runReactive<Output>();
   }
 

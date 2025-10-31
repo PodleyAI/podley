@@ -13,12 +13,16 @@ import type { ITask, ITaskConstructor } from "../task/ITask";
 import { Task } from "../task/Task";
 import { WorkflowError } from "../task/TaskError";
 import type { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
-import { TaskConfig, DataPorts } from "../task/TaskTypes";
+import { DataPorts, TaskConfig } from "../task/TaskTypes";
 import { getLastTask, parallel, pipe, PipeFunction, Taskish } from "./Conversions";
 import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { IWorkflow } from "./IWorkflow";
 import { TaskGraph } from "./TaskGraph";
-import { CompoundMergeStrategy } from "./TaskGraphRunner";
+import {
+  CompoundMergeStrategy,
+  PROPERTY_ARRAY,
+  type PropertyArrayGraphResult,
+} from "./TaskGraphRunner";
 
 // Type definitions for the workflow
 export type CreateWorkflow<I extends DataPorts, O extends DataPorts, C extends TaskConfig> = (
@@ -43,9 +47,9 @@ export type WorkflowEventParameters<Event extends WorkflowEvents> = EventParamet
   Event
 >;
 
-class WorkflowTask extends GraphAsTask<any, any> {
+class WorkflowTask<I extends DataPorts, O extends DataPorts> extends GraphAsTask<I, O> {
   public static readonly type = "Workflow";
-  public static readonly compoundMerge = "last-or-property-array" as CompoundMergeStrategy;
+  public static readonly compoundMerge = PROPERTY_ARRAY as CompoundMergeStrategy;
 }
 
 // Task ID counter
@@ -261,7 +265,7 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
    * @param input - The input to the task graph
    * @returns The output of the task graph
    */
-  public async run(input: Input = {} as Input) {
+  public async run(input: Input = {} as Input): Promise<PropertyArrayGraphResult<Output>> {
     this.events.emit("start");
     this._abortController = new AbortController();
 
@@ -271,12 +275,12 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
         parentProvenance: {},
         outputCache: this._repository,
       });
-      const last = this.graph.mergeExecuteOutputsToRunOutput<Output>(
+      const results = this.graph.mergeExecuteOutputsToRunOutput<Output, typeof PROPERTY_ARRAY>(
         output,
-        "last-or-property-array"
+        PROPERTY_ARRAY
       );
       this.events.emit("complete");
-      return last;
+      return results;
     } catch (error) {
       this.events.emit("error", String(error));
       throw error;
@@ -424,14 +428,14 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
     args: (PipeFunction<any, any> | Task)[],
     mergeFn?: CompoundMergeStrategy
   ): IWorkflow {
-    return parallel(args, mergeFn ?? "last-or-property-array", this);
+    return parallel(args, mergeFn ?? PROPERTY_ARRAY, this);
   }
 
   public static parallel(
     args: (PipeFunction<any, any> | ITask)[],
     mergeFn?: CompoundMergeStrategy
   ): IWorkflow {
-    return parallel(args, mergeFn ?? "last-or-property-array", new Workflow());
+    return parallel(args, mergeFn ?? PROPERTY_ARRAY, new Workflow());
   }
 
   /**

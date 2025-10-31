@@ -28,7 +28,7 @@ const bunUseSource = {
   [`"types": "./dist/bun.d.ts"`]: `"types": "./src/bun.ts"`,
   [`"types": "./dist/index.d.ts"`]: `"types": "./src/index.ts"`,
 };
-const bunUseBuild = {
+const bunUseDist = {
   [`"bun": "./src/bun.ts"`]: `"bun": "./dist/bun.js"`,
   [`"bun": "./src/index.ts"`]: `"bun": "./dist/index.js"`,
   [`"import": "./src/bun.ts"`]: `"import": "./dist/bun.js"`,
@@ -40,21 +40,21 @@ async function main(): Promise<void> {
   // Parse command line arguments
   const args = process.argv.slice(2);
   if (args.length !== 1) {
-    console.error("Usage: bun run bunsrc-workspace.ts <source|build>");
+    console.error("Usage: bun run bunsrc-workspace.ts <source|dist>");
     console.error("  source: Use source files (./src/*.ts)");
-    console.error("  build:  Use built files (./dist/*.js)");
+    console.error("  dist:   Use built files (./dist/*.js)");
     process.exit(1);
   }
 
   const mode = args[0];
-  if (mode !== "source" && mode !== "build") {
-    console.error("Error: Mode must be either 'source' or 'build'");
-    console.error("Usage: bun run bunsrc-workspace.ts <source|build>");
+  if (mode !== "source" && mode !== "dist") {
+    console.error("Error: Mode must be either 'source' or 'dist'");
+    console.error("Usage: bun run bunsrc-workspace.ts <source|dist>");
     process.exit(1);
   }
 
-  const findReplace = mode === "source" ? bunUseSource : bunUseBuild;
-  console.log(`Using ${mode} mode`);
+  const findReplace = mode === "source" ? bunUseSource : bunUseDist;
+  console.log(`Using ${mode} exports`);
 
   const workspaces = await findWorkspaces();
   console.log(`Found ${workspaces.length} workspaces`);

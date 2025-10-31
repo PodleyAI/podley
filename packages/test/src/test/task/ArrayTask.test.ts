@@ -9,6 +9,7 @@ import {
   ArrayTask,
   IExecuteContext,
   ITask,
+  PROPERTY_ARRAY,
   TaskConfig,
   TaskGraph,
   TaskInput,
@@ -17,7 +18,7 @@ import {
   TypeReplicateArray,
 } from "@podley/task-graph";
 import { ConvertAllToOptionalArray, TypeOptionalArray } from "@podley/util";
-import { Type, TObject } from "@sinclair/typebox";
+import { TObject, Type } from "@sinclair/typebox";
 import { describe, expect, spyOn, test } from "bun:test";
 
 // Define our input and output types
@@ -279,9 +280,12 @@ describe("ArrayTask", () => {
         b: 11,
       })
     );
-    const results = await graph.run();
-    const cleanResults = graph.mergeExecuteOutputsToRunOutput(results, "last");
-    expect(cleanResults).toEqual({ result: [0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110] });
+    const results = await graph.run<MultiplyOutput>();
+    const cleanResults = graph.mergeExecuteOutputsToRunOutput<
+      MultiplyOutput,
+      typeof PROPERTY_ARRAY
+    >(results, PROPERTY_ARRAY);
+    expect(cleanResults.result).toEqual([0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110]);
   });
 
   test("emits events correctly", async () => {

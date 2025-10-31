@@ -21,7 +21,7 @@
     "build:release": "turbo run build-types build-package",
     "test": "bun test",
     "changeset": "changeset",
-    "version": "changeset version && bun install",
+    "version": "changeset version && bun ./scripts/bunsrc-workspace.ts dist && bun install",
     "publish-all": "bun run changeset && bun run version && bun run release",
     "publish": "bun ./scripts/publish-workspaces.ts"
   },
