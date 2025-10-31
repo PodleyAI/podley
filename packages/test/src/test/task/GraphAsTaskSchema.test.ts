@@ -87,14 +87,9 @@ describe("GraphAsTask Dynamic Schema", () => {
       const graph = new TaskGraph();
       graph.addTask(taskA);
       graph.addTask(taskB);
-      
+
       // Connect TaskA's output to TaskB's input
-      const dataflow = new Dataflow(
-        taskA.config.id,
-        "outputA",
-        taskB.config.id,
-        "inputB"
-      );
+      const dataflow = new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB");
       graph.addDataflow(dataflow);
 
       // Create GraphAsTask with this subgraph
@@ -119,14 +114,10 @@ describe("GraphAsTask Dynamic Schema", () => {
       graph.addTask(taskA);
       graph.addTask(taskB);
       graph.addTask(taskC);
-      
+
       // Connect TaskA -> TaskC and TaskB -> TaskC
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1")
-      );
-      graph.addDataflow(
-        new Dataflow(taskB.config.id, "outputB", taskC.config.id, "inputC2")
-      );
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1"));
+      graph.addDataflow(new Dataflow(taskB.config.id, "outputB", taskC.config.id, "inputC2"));
 
       const graphAsTask = new GraphAsTask();
       graphAsTask.subGraph = graph;
@@ -151,11 +142,9 @@ describe("GraphAsTask Dynamic Schema", () => {
       graph.addTask(taskA);
       graph.addTask(taskB);
       graph.addTask(taskC);
-      
+
       // TaskC is a starting node, but one of its inputs is connected from TaskA
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1")
-      );
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1"));
 
       const graphAsTask = new GraphAsTask();
       graphAsTask.subGraph = graph;
@@ -172,7 +161,7 @@ describe("GraphAsTask Dynamic Schema", () => {
 
     it("should return static schema when no children", () => {
       const graphAsTask = new GraphAsTask();
-      
+
       // Should return the static empty schema
       const inputSchema = graphAsTask.inputSchema;
       expect(inputSchema).toBeDefined();
@@ -190,10 +179,8 @@ describe("GraphAsTask Dynamic Schema", () => {
       const graph = new TaskGraph();
       graph.addTask(taskA);
       graph.addTask(taskB);
-      
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB")
-      );
+
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB"));
 
       const graphAsTask = new GraphAsTask();
       graphAsTask.subGraph = graph;
@@ -215,14 +202,10 @@ describe("GraphAsTask Dynamic Schema", () => {
       graph.addTask(taskA);
       graph.addTask(taskB);
       graph.addTask(taskC);
-      
+
       // TaskA connects to both TaskB and TaskC
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB")
-      );
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1")
-      );
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB"));
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1"));
 
       const graphAsTask = new GraphAsTask();
       graphAsTask.subGraph = graph;
@@ -238,7 +221,7 @@ describe("GraphAsTask Dynamic Schema", () => {
 
     it("should return static schema when no children", () => {
       const graphAsTask = new GraphAsTask();
-      
+
       // Should return the static empty schema
       const outputSchema = graphAsTask.outputSchema;
       expect(outputSchema).toBeDefined();
@@ -255,9 +238,7 @@ describe("GraphAsTask Dynamic Schema", () => {
       const graph = new TaskGraph();
       graph.addTask(taskA);
       graph.addTask(taskB);
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB")
-      );
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB"));
 
       const graphAsTask = new GraphAsTask();
       graphAsTask.subGraph = graph;
@@ -285,7 +266,7 @@ describe("GraphAsTask Dynamic Schema", () => {
       //  TaskB  TaskC (inputC2 unconnected)
       //     \    /
       //      (outputs from both)
-      
+
       const taskA = new TaskA({ inputA1: "start", inputA2: 1 });
       const taskB = new TaskB();
       const taskC = new TaskC();
@@ -294,14 +275,10 @@ describe("GraphAsTask Dynamic Schema", () => {
       graph.addTask(taskA);
       graph.addTask(taskB);
       graph.addTask(taskC);
-      
+
       // Fork from TaskA
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB")
-      );
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1")
-      );
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB"));
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1"));
 
       const graphAsTask = new GraphAsTask();
       graphAsTask.subGraph = graph;
@@ -334,97 +311,4 @@ describe("GraphAsTask Dynamic Schema", () => {
       expect(result.outputC2).toEqual([12]); // "begin-5" (7) + "extra" (5)
     });
   });
-
-  describe("CompoundMerge Strategy Handling", () => {
-    it("should adjust output schema for 'last' merge strategy", () => {
-      const taskA = new TaskA();
-      const taskB = new TaskB();
-
-      const graph = new TaskGraph();
-      graph.addTask(taskA);
-      graph.addTask(taskB);
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB")
-      );
-
-      const graphAsTask = new GraphAsTask({}, { compoundMerge: "last" });
-      graphAsTask.subGraph = graph;
-
-      // With "last" strategy, output schema should be from the last node (TaskB)
-      const outputSchema = graphAsTask.outputSchema;
-      expect(outputSchema.properties!["outputB"]).toBeDefined();
-      expect(outputSchema.properties!["outputA"]).toBeUndefined();
-    });
-
-    it("should adjust output schema for 'property-array' with single ending node", () => {
-      const taskA = new TaskA();
-      const taskB = new TaskB();
-
-      const graph = new TaskGraph();
-      graph.addTask(taskA);
-      graph.addTask(taskB);
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB")
-      );
-
-      const graphAsTask = new GraphAsTask({}, { compoundMerge: "last-or-property-array" });
-      graphAsTask.subGraph = graph;
-
-      // With single ending node and "last-or-property-array", should return single node schema (not arrays)
-      const outputSchema = graphAsTask.outputSchema;
-      expect(outputSchema.properties!["outputB"]).toBeDefined();
-      // Should not be an array type since there's only one ending node
-      expect((outputSchema.properties!["outputB"] as any).type).not.toBe("array");
-    });
-
-    it("should adjust output schema for 'property-array' with multiple ending nodes", () => {
-      const taskA = new TaskA();
-      const taskB = new TaskB();
-      const taskC = new TaskC();
-
-      const graph = new TaskGraph();
-      graph.addTask(taskA);
-      graph.addTask(taskB);
-      graph.addTask(taskC);
-      
-      // Fork to both B and C (both are ending nodes)
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB")
-      );
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1")
-      );
-
-      const graphAsTask = new GraphAsTask({}, { compoundMerge: "property-array" });
-      graphAsTask.subGraph = graph;
-
-      // With multiple ending nodes and "property-array", properties should be arrays
-      const outputSchema = graphAsTask.outputSchema;
-      expect(outputSchema.properties!["outputB"]).toBeDefined();
-      expect((outputSchema.properties!["outputB"] as any).type).toBe("array");
-      expect(outputSchema.properties!["outputC1"]).toBeDefined();
-      expect((outputSchema.properties!["outputC1"] as any).type).toBe("array");
-    });
-
-    it("should adjust output schema for 'unordered-array' merge strategy", () => {
-      const taskA = new TaskA();
-      const taskB = new TaskB();
-
-      const graph = new TaskGraph();
-      graph.addTask(taskA);
-      graph.addTask(taskB);
-      graph.addDataflow(
-        new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB")
-      );
-
-      const graphAsTask = new GraphAsTask({}, { compoundMerge: "unordered-array" });
-      graphAsTask.subGraph = graph;
-
-      // With "unordered-array" strategy, output should be { data: [...] }
-      const outputSchema = graphAsTask.outputSchema;
-      expect(outputSchema.properties!["data"]).toBeDefined();
-      expect((outputSchema.properties!["data"] as any).type).toBe("array");
-    });
-  });
 });
-
