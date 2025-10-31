@@ -5,29 +5,29 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { beforeEach, describe, expect, it, spyOn } from "bun:test";
-import { sleep } from "@podley/util";
 import {
   Dataflow,
+  GraphResultArray,
+  GraphSingleTaskResult,
+  ITask,
+  TaskAbortedError,
+  TaskError,
+  TaskFailedError,
   TaskGraph,
   TaskGraphRunner,
-  NamedGraphResult,
-  TaskStatus,
-  TaskAbortedError,
-  TaskFailedError,
-  ITask,
-  TaskRegistry,
   TaskOutput,
-  GraphSingleResult,
+  TaskRegistry,
+  TaskStatus,
 } from "@podley/task-graph";
+import { sleep } from "@podley/util";
+import { beforeEach, describe, expect, it } from "bun:test";
 import {
-  TestSquareTask,
-  TestDoubleTask,
   FailingTask,
-  LongRunningTask,
   FAILURE_MESSAGE,
+  LongRunningTask,
+  TestDoubleTask,
+  TestSquareTask,
 } from "../task/TestTasks";
-import { TaskError } from "@podley/task-graph";
 
 TaskRegistry.all.clear();
 
@@ -54,7 +54,9 @@ describe("TaskSubGraphRunner", () => {
       const results = await runner.runGraph<TaskOutput>();
 
       expect(results.length).toEqual(2);
-      expect(results.find((r: GraphSingleResult<TaskOutput>) => r.id === "task2")?.data).toEqual({
+      expect(
+        results.find((r: GraphSingleTaskResult<TaskOutput>) => r.id === "task2")?.data
+      ).toEqual({
         output: 10,
       });
     });
@@ -66,7 +68,7 @@ describe("TaskSubGraphRunner", () => {
       graph.addTask(failingTask);
 
       let error: TaskFailedError | undefined;
-      let result: NamedGraphResult<TaskOutput> | TaskOutput | undefined;
+      let result: GraphResultArray<TaskOutput> | TaskOutput | undefined;
       try {
         result = await runner.runGraph<TaskOutput>();
       } catch (err) {

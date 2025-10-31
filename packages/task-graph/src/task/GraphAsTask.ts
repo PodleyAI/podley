@@ -5,13 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { Type, TObject } from "@sinclair/typebox";
 import { TaskGraph } from "../task-graph/TaskGraph";
-import { CompoundMergeStrategy } from "../task-graph/TaskGraphRunner";
+import { CompoundMergeStrategy, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
+import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 import { Task } from "./Task";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { type TaskConfig, type TaskInput, type TaskOutput, type TaskTypeName } from "./TaskTypes";
-import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
-import { Type, TObject } from "@sinclair/typebox";
 
 export interface GraphAsTaskConfig extends TaskConfig {
   subGraph?: TaskGraph;
@@ -32,7 +32,7 @@ export class GraphAsTask<
 
   public static type: TaskTypeName = "GraphAsTask";
   public static category: string = "Hidden";
-  public static compoundMerge: CompoundMergeStrategy = "last-or-property-array";
+  public static compoundMerge: CompoundMergeStrategy = PROPERTY_ARRAY;
 
   // ========================================================================
   // Constructor

@@ -5,8 +5,18 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, expect, it, beforeEach, afterEach, spyOn } from "bun:test";
+import {
+  CreateWorkflow,
+  PROPERTY_ARRAY,
+  Task,
+  TaskConfig,
+  TaskError,
+  TaskOutputRepository,
+  Workflow,
+  WorkflowError,
+} from "@podley/task-graph";
 import { sleep } from "@podley/util";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import {
   NumberTask,
   StringTask,
@@ -14,16 +24,7 @@ import {
   TestOutputTask,
   TestSimpleTask,
 } from "../task/TestTasks";
-import {
-  Workflow,
-  Task,
-  TaskOutputRepository,
-  TaskConfig,
-  TaskError,
-  WorkflowError,
-  CreateWorkflow,
-  ITaskConstructor,
-} from "@podley/task-graph";
+
 const colsoleError = globalThis.console.error;
 
 describe("Workflow", () => {
@@ -181,7 +182,7 @@ describe("Workflow", () => {
     it("should create a compound task with parallel workflows", async () => {
       workflow.parallel(
         [new TestSimpleTask({ input: "test1" }), new TestSimpleTask({ input: "test2" })],
-        "unordered-array"
+        PROPERTY_ARRAY
       );
 
       expect(workflow.graph.getTasks()).toHaveLength(1);
@@ -190,7 +191,7 @@ describe("Workflow", () => {
       const compoundTask = workflow.graph.getTasks()[0];
       expect(compoundTask.subGraph?.getTasks()).toHaveLength(2);
       const result = await compoundTask.run();
-      expect(result.data).toEqual([{ output: "processed-test1" }, { output: "processed-test2" }]);
+      expect(result).toEqual({ output: ["processed-test1", "processed-test2"] });
     });
   });
 

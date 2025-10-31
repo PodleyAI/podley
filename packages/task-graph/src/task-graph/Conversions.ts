@@ -14,7 +14,7 @@ import { Dataflow, DATAFLOW_ALL_PORTS } from "./Dataflow";
 import type { ITaskGraph } from "./ITaskGraph";
 import type { IWorkflow } from "./IWorkflow";
 import { TaskGraph } from "./TaskGraph";
-import type { CompoundMergeStrategy } from "./TaskGraphRunner";
+import { PROPERTY_ARRAY, type CompoundMergeStrategy } from "./TaskGraphRunner";
 import { Workflow } from "./Workflow";
 
 class ListeningGraphAsTask extends GraphAsTask<any, any> {
@@ -169,10 +169,10 @@ export function pipe<
   workflow?: IWorkflow<A, F>
 ): IWorkflow<A, F>;
 
-export function pipe<T extends DataPorts = any, O extends DataPorts = DataPorts>(
-  args: Taskish<T, O>[],
-  workflow: IWorkflow<T, O> = new Workflow()
-): IWorkflow<T, O> {
+export function pipe<I extends DataPorts, O extends DataPorts>(
+  args: Taskish<I, O>[],
+  workflow: IWorkflow<I, O> = new Workflow<I, O>()
+): IWorkflow<I, O> {
   let previousTask = getLastTask(workflow);
   const tasks = args.map((arg) => ensureTask(arg));
   tasks.forEach((task) => {
@@ -185,11 +185,11 @@ export function pipe<T extends DataPorts = any, O extends DataPorts = DataPorts>
   return workflow;
 }
 
-export function parallel(
-  args: (PipeFunction<any, any> | ITask<any, any, any> | IWorkflow<any, any> | ITaskGraph)[],
-  mergeFn: CompoundMergeStrategy = "last-or-property-array",
-  workflow: IWorkflow = new Workflow()
-): IWorkflow {
+export function parallel<I extends DataPorts = DataPorts, O extends DataPorts = DataPorts>(
+  args: (PipeFunction<I, O> | ITask<I, O> | IWorkflow<I, O> | ITaskGraph)[],
+  mergeFn: CompoundMergeStrategy = PROPERTY_ARRAY,
+  workflow: IWorkflow<I, O> = new Workflow<I, O>()
+): IWorkflow<I, O> {
   let previousTask = getLastTask(workflow);
   const tasks = args.map((arg) => ensureTask(arg));
   const input = {};
@@ -197,7 +197,7 @@ export function parallel(
     compoundMerge: mergeFn,
   };
   const name = `‖${args.map((arg) => "𝑓").join("‖")}‖`;
-  class ParallelTask extends GraphAsTask<any, any> {
+  class ParallelTask extends GraphAsTask<I, O> {
     public static type = name;
   }
   const mergeTask = new ParallelTask(input, config);

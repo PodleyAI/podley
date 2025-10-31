@@ -23,7 +23,12 @@ import {
   TaskGraphStatusEvents,
   TaskGraphStatusListeners,
 } from "./TaskGraphEvents";
-import { CompoundMergeStrategy, type NamedGraphResult, TaskGraphRunner } from "./TaskGraphRunner";
+import {
+  CompoundMergeStrategy,
+  GraphResult,
+  type GraphResultArray,
+  TaskGraphRunner,
+} from "./TaskGraphRunner";
 
 /**
  * Configuration for running a task graph
@@ -95,7 +100,7 @@ export class TaskGraph implements ITaskGraph {
   public run<ExecuteOutput extends TaskOutput>(
     input: TaskInput = {} as TaskInput,
     config: TaskGraphRunConfig = {}
-  ): Promise<NamedGraphResult<ExecuteOutput>> {
+  ): Promise<GraphResultArray<ExecuteOutput>> {
     return this.runner.runGraph<ExecuteOutput>(input, {
       outputCache: config?.outputCache || this.outputCache,
       parentProvenance: config?.parentProvenance || {},
@@ -108,7 +113,7 @@ export class TaskGraph implements ITaskGraph {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskError if any tasks have failed
    */
-  public runReactive<Output extends TaskOutput>(): Promise<NamedGraphResult<Output>> {
+  public runReactive<Output extends TaskOutput>(): Promise<GraphResultArray<Output>> {
     return this.runner.runGraphReactive<Output>();
   }
 
@@ -118,10 +123,14 @@ export class TaskGraph implements ITaskGraph {
    * @param compoundMerge The compound merge strategy to use
    * @returns The run output
    */
+
   public mergeExecuteOutputsToRunOutput<
     ExecuteOutput extends TaskOutput,
-    Output extends TaskOutput = ExecuteOutput,
-  >(results: NamedGraphResult<ExecuteOutput>, compoundMerge: CompoundMergeStrategy): Output {
+    Merge extends CompoundMergeStrategy = CompoundMergeStrategy,
+  >(
+    results: GraphResultArray<ExecuteOutput>,
+    compoundMerge: Merge
+  ): GraphResult<ExecuteOutput, Merge> {
     return this.runner.mergeExecuteOutputsToRunOutput(results, compoundMerge);
   }
 

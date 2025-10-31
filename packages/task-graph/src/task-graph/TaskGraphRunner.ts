@@ -20,44 +20,29 @@ import { DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph, TaskGraphRunConfig } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
 
-export type GraphSingleResult<T> = {
+export type GraphSingleTaskResult<T> = {
   id: unknown;
   type: String;
   data: T;
 };
-export type NamedGraphResult<T> = Array<GraphSingleResult<T>>;
-export type UnorderedArrayGraphResult<T> = { data: T[] };
+export type GraphResultArray<T> = Array<GraphSingleTaskResult<T>>;
 export type PropertyArrayGraphResult<T> = ConvertAllToOptionalArray<T>;
-export type LastOrUnorderedArrayGraphResult<T> = T | UnorderedArrayGraphResult<T>;
-export type LastOrPropertyArrayGraphResult<T> = T | PropertyArrayGraphResult<T>;
-export type LastOrNamedGraphResult<T> = T | NamedGraphResult<T>;
-export type AnyGraphResult<T> =
-  | T
-  | UnorderedArrayGraphResult<T>
-  | PropertyArrayGraphResult<T>
-  | NamedGraphResult<T>;
+export type AnyGraphResult<T> = PropertyArrayGraphResult<T> | GraphResultArray<T>;
+
+export const PROPERTY_ARRAY = "PROPERTY_ARRAY" as const;
+export const GRAPH_RESULT_ARRAY = "GRAPH_RESULT_ARRAY" as const;
 
 export type GraphResultMap<T> = {
-  // last -- output is last item in graph
-  last: T;
-  // named -- output is an array of {id, type, data}
-  named: NamedGraphResult<T>;
-  // last-or-named -- last if one, otherwise named
-  "last-or-named": LastOrNamedGraphResult<T>;
-  // last-or-property-array -- last if one, otherwise property-array
-  "last-or-property-array": LastOrPropertyArrayGraphResult<T>;
-  // last-or-unordered-array -- last if one, otherwise unordered-array
-  "last-or-unordered-array": LastOrUnorderedArrayGraphResult<T>;
-  // property-array -- output is consolidation of each output property into an array
-  "property-array": PropertyArrayGraphResult<T>;
-  // unordered-array -- output is simple array of results
-  "unordered-array": UnorderedArrayGraphResult<T>;
+  // array of results with id for tasks that created them -- output is an array of {id, type, data}[]
+  [GRAPH_RESULT_ARRAY]: GraphResultArray<T>;
+  // property-array -- output is consolidation of each output property, with duplicate properties turned into an array
+  [PROPERTY_ARRAY]: PropertyArrayGraphResult<T>;
 };
 
 /**
  * Enum representing the possible compound merge strategies
  */
-export type CompoundMergeStrategy = keyof GraphResultMap<any>;
+export type CompoundMergeStrategy = typeof PROPERTY_ARRAY | typeof GRAPH_RESULT_ARRAY;
 
 export type GraphResult<
   Output,
@@ -127,10 +112,10 @@ export class TaskGraphRunner {
   public async runGraph<ExecuteOutput extends TaskOutput>(
     input: TaskInput = {} as TaskInput,
     config?: TaskGraphRunConfig
-  ): Promise<NamedGraphResult<ExecuteOutput>> {
+  ): Promise<GraphResultArray<ExecuteOutput>> {
     await this.handleStart(config);
 
-    const results: NamedGraphResult<ExecuteOutput> = [];
+    const results: GraphResultArray<ExecuteOutput> = [];
     let error: TaskError | undefined;
 
     try {
@@ -162,7 +147,7 @@ export class TaskGraphRunner {
 
             if (this.graph.getTargetDataflows(task.config.id).length === 0) {
               // we save the results of all the leaves
-              results.push(taskResult as GraphSingleResult<ExecuteOutput>);
+              results.push(taskResult as GraphSingleTaskResult<ExecuteOutput>);
             }
           } catch (error) {
             this.failedTaskErrors.set(task.config.id, error as TaskError);
@@ -207,10 +192,10 @@ export class TaskGraphRunner {
    * @returns A promise that resolves when all tasks are complete
    * @throws TaskConfigurationError if the graph is already running reactively
    */
-  public async runGraphReactive<Output extends TaskOutput>(): Promise<NamedGraphResult<Output>> {
+  public async runGraphReactive<Output extends TaskOutput>(): Promise<GraphResultArray<Output>> {
     await this.handleStartReactive();
 
-    const results: NamedGraphResult<Output> = [];
+    const results: GraphResultArray<Output> = [];
     try {
       for await (const task of this.reactiveScheduler.tasks()) {
         if (task.status === TaskStatus.PENDING) {
@@ -344,35 +329,29 @@ export class TaskGraphRunner {
   // ========================================================================
   // Protected Handlers
   // ========================================================================
-
   public mergeExecuteOutputsToRunOutput<
     ExecuteOutput extends TaskOutput,
-    Output extends TaskOutput = ExecuteOutput,
-  >(results: NamedGraphResult<ExecuteOutput>, compoundMerge: CompoundMergeStrategy): Output {
-    if (compoundMerge === "last") {
-      return results[results.length - 1].data as unknown as Output;
-    } else if (compoundMerge === "named") {
-      return results as unknown as Output;
-    } else if (compoundMerge === "unordered-array") {
-      return { data: results.map((result) => result.data) } as unknown as Output;
-    } else if (compoundMerge === "property-array") {
-      return { data: results.map((result) => result.data) } as unknown as Output;
-    } else if (compoundMerge === "last-or-named") {
-      return results as unknown as Output;
-    } else if (compoundMerge === "last-or-unordered-array") {
-      return { data: results.map((result) => result.data) } as unknown as Output;
-    } else if (compoundMerge === "last-or-property-array") {
-      let fixedOutput = {} as Output;
+    Merge extends CompoundMergeStrategy = CompoundMergeStrategy,
+  >(
+    results: GraphResultArray<ExecuteOutput>,
+    compoundMerge: Merge
+  ): GraphResult<ExecuteOutput, Merge> {
+    if (compoundMerge === GRAPH_RESULT_ARRAY) {
+      return results as GraphResult<ExecuteOutput, Merge>;
+    }
+
+    if (compoundMerge === PROPERTY_ARRAY) {
+      let fixedOutput = {} as PropertyArrayGraphResult<ExecuteOutput>;
       const outputs = results.map((result: any) => result.data);
       if (outputs.length === 1) {
-        fixedOutput = outputs[0] as unknown as Output;
+        fixedOutput = outputs[0];
       } else if (outputs.length > 1) {
         const collected = collectPropertyValues<ExecuteOutput>(outputs as ExecuteOutput[]);
         if (Object.keys(collected).length > 0) {
-          fixedOutput = collected as unknown as Output;
+          fixedOutput = collected;
         }
       }
-      return fixedOutput;
+      return fixedOutput as GraphResult<ExecuteOutput, Merge>;
     }
     throw new TaskConfigurationError(`Unknown compound merge strategy: ${compoundMerge}`);
   }
@@ -460,7 +439,7 @@ export class TaskGraphRunner {
     task: ITask,
     input: TaskInput,
     parentProvenance: Provenance
-  ): Promise<GraphSingleResult<T>> {
+  ): Promise<GraphSingleTaskResult<T>> {
     // Update provenance for the current task
     const nodeProvenance = {
       ...parentProvenance,
