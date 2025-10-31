@@ -1,5 +1,20 @@
 # @podley/cli
 
+## 0.0.28
+
+### Patch Changes
+
+- 6915093: Calculate input and output schemas for GraphAsTask via inputSchema and outputSchema
+- Updated dependencies [6915093]
+- Updated dependencies [6915093]
+  - @podley/ai-provider@0.0.28
+  - @podley/ai@0.0.28
+  - @podley/task-graph@0.0.28
+  - @podley/test@0.0.28
+  - @podley/util@0.0.28
+  - @podley/tasks@0.0.28
+  - @podley/storage@0.0.28
+
 ## 0.0.20
 
 ### Patch Changes

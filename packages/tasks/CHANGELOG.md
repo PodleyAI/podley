@@ -1,5 +1,16 @@
 # @podley/tasks
 
+## 0.0.28
+
+### Patch Changes
+
+- Updated dependencies [6915093]
+- Updated dependencies [6915093]
+  - @podley/task-graph@0.0.28
+  - @podley/util@0.0.28
+  - @podley/job-queue@0.0.28
+  - @podley/storage@0.0.28
+
 ## 0.0.20
 
 ### Patch Changes

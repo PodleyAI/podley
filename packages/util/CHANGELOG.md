@@ -1,5 +1,11 @@
 # @podley/util
 
+## 0.0.28
+
+### Patch Changes
+
+- 6915093: inputSchema and outputSchema for GraphAsTask
+
 ## 0.0.20
 
 ## 0.0.19

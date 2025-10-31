@@ -1,5 +1,13 @@
 # @podley/storage
 
+## 0.0.28
+
+### Patch Changes
+
+- Updated dependencies [6915093]
+  - @podley/util@0.0.28
+  - @podley/sqlite@0.0.28
+
 ## 0.0.20
 
 ### Patch Changes
