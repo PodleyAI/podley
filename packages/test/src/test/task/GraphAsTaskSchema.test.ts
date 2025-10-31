@@ -311,4 +311,51 @@ describe("GraphAsTask Dynamic Schema", () => {
       expect(result.outputC2).toEqual([12]); // "begin-5" (7) + "extra" (5)
     });
   });
+
+  describe("Merge Strategy", () => {
+    it("should generate correct schema for PROPERTY_ARRAY strategy with single ending node", () => {
+      // Create a graph with single ending node
+      const taskA = new TaskA();
+      const taskB = new TaskB();
+
+      const graph = new TaskGraph();
+      graph.addTask(taskA);
+      graph.addTask(taskB);
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB"));
+
+      const graphAsTask = new GraphAsTask({}, { compoundMerge: "PROPERTY_ARRAY" });
+      graphAsTask.subGraph = graph;
+
+      const outputSchema = graphAsTask.outputSchema;
+
+      // Single ending node: properties should NOT be arrays
+      expect(outputSchema.properties!["outputB"]).toBeDefined();
+      expect((outputSchema.properties!["outputB"] as any).type).not.toBe("array");
+    });
+
+    it("should generate correct schema for PROPERTY_ARRAY strategy with multiple ending nodes", () => {
+      // Create a graph with multiple ending nodes
+      const taskA = new TaskA();
+      const taskB = new TaskB();
+      const taskC = new TaskC();
+
+      const graph = new TaskGraph();
+      graph.addTask(taskA);
+      graph.addTask(taskB);
+      graph.addTask(taskC);
+
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB"));
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1"));
+
+      const graphAsTask = new GraphAsTask({}, { compoundMerge: "PROPERTY_ARRAY" });
+      graphAsTask.subGraph = graph;
+
+      const outputSchema = graphAsTask.outputSchema;
+
+      // Multiple ending nodes: all properties should be arrays (due to collectPropertyValues behavior)
+      expect((outputSchema.properties!["outputB"] as any).type).toBe("array");
+      expect((outputSchema.properties!["outputC1"] as any).type).toBe("array");
+      expect((outputSchema.properties!["outputC2"] as any).type).toBe("array");
+    });
+  });
 });

@@ -147,26 +147,34 @@ export class GraphAsTask<
       (task) => this.subGraph.getTargetDataflows(task.config.id).length === 0
     );
 
-    const merge = this.compoundMerge;
+    // ONLY handle PROPERTY_ARRAY strategy
+    // Count how many ending nodes produce each property
+    const propertyCount: Record<string, number> = {};
+    const propertySchema: Record<string, any> = {};
 
-    // For property-array strategies, collect properties from all ending nodes
-    // Each property becomes an array if multiple nodes have it
     for (const task of endingNodes) {
       const taskOutputSchema = task.outputSchema;
       const taskProperties = taskOutputSchema.properties || {};
 
       for (const [outputName, outputProp] of Object.entries(taskProperties)) {
-        if (!properties[outputName]) {
-          // Convert property to array type for property-array merge
-          if (endingNodes.length > 1) {
-            properties[outputName] = Type.Array(outputProp as any);
-          } else {
-            properties[outputName] = outputProp;
-          }
-
-          // For property-array, properties are generally optional since not all ending nodes may have them
-          // Don't add to required array
+        propertyCount[outputName] = (propertyCount[outputName] || 0) + 1;
+        // Store the first schema we encounter for each property
+        if (!propertySchema[outputName]) {
+          propertySchema[outputName] = outputProp;
         }
+      }
+    }
+
+    // Build the final schema: properties produced by multiple nodes become arrays
+    for (const [outputName, count] of Object.entries(propertyCount)) {
+      const outputProp = propertySchema[outputName];
+
+      if (endingNodes.length === 1) {
+        // Single ending node: use property as-is
+        properties[outputName] = outputProp;
+      } else {
+        // Multiple ending nodes: all properties become arrays due to collectPropertyValues
+        properties[outputName] = Type.Array(outputProp as any);
       }
     }
 
