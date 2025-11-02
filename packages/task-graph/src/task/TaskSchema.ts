@@ -13,7 +13,7 @@ import {
   type TSchema,
   type TUnion,
   Type,
-} from "@sinclair/typebox";
+} from "typebox";
 
 export function TypeReplicateArray<T extends TSchema>(
   type: T,

@@ -13,7 +13,7 @@ import {
   Workflow,
   TaskError,
 } from "@podley/task-graph";
-import { Type, type Static } from "@sinclair/typebox";
+import { Type, type Static } from "typebox";
 import { TypedArray } from "./base/AiTaskSchemas";
 
 export const SimilarityFn = {

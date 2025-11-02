@@ -38,7 +38,7 @@ Here's a simple example that demonstrates the core concepts:
 
 ```typescript
 import { Task, TaskGraph, Dataflow, Workflow } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 // 1. Define a custom task
 class MultiplyBy2Task extends Task<{ value: number }, { result: number }> {
@@ -158,7 +158,7 @@ Workflow is the high-level API that provides:
 
 ```typescript
 import { Task, IExecuteContext } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 interface MyInput {
   text: string;
@@ -492,7 +492,7 @@ Output caching lets repeat executions with identical inputs return instantly wit
 
 ```typescript
 import { Task, TaskGraph, Workflow } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { InMemoryTaskOutputRepository } from "@podley/test";
 
 // A cacheable task that simulates expensive work

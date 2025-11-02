@@ -15,7 +15,7 @@ import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 import { describe } from "bun:test";
 import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
 import { uuid4 } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
+import { Static, TObject } from "typebox";
 import { DefaultKeyValueKey, DefaultKeyValueSchema } from "@podley/storage";
 
 class SupabaseTabularTestRepository<

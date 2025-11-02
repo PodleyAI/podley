@@ -525,7 +525,7 @@ This package depends on:
 - `@podley/storage` - Storage abstractions for model and data persistence
 - `@podley/task-graph` - Task graph system for workflow management
 - `@podley/util` - Utility functions and shared components
-- `@sinclair/typebox` - Runtime type validation and schema definitions
+- `typebox` - Runtime type validation and schema definitions
 
 ## License
 

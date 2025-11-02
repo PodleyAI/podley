@@ -30,7 +30,7 @@
     "caniuse-lite": "^1.0.30001752"
   },
   "catalog": {
-    "@sinclair/typebox": "^0.34.41",
+    "typebox": "^1.0.49",
     "@sroussey/transformers": "3.7.4",
     "@mediapipe/tasks-text": "^0.10.21"
   },

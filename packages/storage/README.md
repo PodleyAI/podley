@@ -56,7 +56,7 @@ const kvUser = await kvStore.get("user:123"); // { name: "Alice", age: 30 }
 ```typescript
 // Tabular Storage (structured data with schemas)
 import { InMemoryTabularRepository } from "@podley/storage";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 const userSchema = Type.Object({
   id: Type.String(),
@@ -95,7 +95,7 @@ yarn add @podley/storage
 All storage implementations are fully typed using TypeScript and TypeBox schemas for runtime validation:
 
 ```typescript
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 // Define your data structure
 const ProductSchema = Type.Object({
@@ -220,7 +220,7 @@ Structured storage with schemas, primary keys, and indexing for complex data rel
 #### Schema Definition
 
 ```typescript
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { InMemoryTabularRepository } from "@podley/storage";
 
 // Define your entity schema
@@ -532,7 +532,7 @@ const line = await orderLines.get({ orderId: "ORD-123", lineNumber: 1 });
 
 ```typescript
 import { FsFolderKvRepository } from "@podley/storage";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 // Control how keys map to file paths and value encoding via schemas
 const files = new FsFolderKvRepository<string, string>(
@@ -630,7 +630,7 @@ interface IQueueStorage<Input, Output> {
 ### User Management System
 
 ```typescript
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { InMemoryTabularRepository, InMemoryKvRepository } from "@podley/storage";
 
 // User profile with tabular storage
@@ -753,7 +753,7 @@ class ConfigManager {
 
 ```typescript
 import { createClient } from "@supabase/supabase-js";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import {
   SupabaseTabularRepository,
   SupabaseKvRepository,

@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventParameters } from "@podley/util";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { JSONValue } from "../tabular/ITabularRepository";
 
 /**

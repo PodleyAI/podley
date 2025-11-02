@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventParameters } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
+import { Static, TObject } from "typebox";
 
 // Generic type for possible value types in the repository
 export type ValueOptionType = string | number | bigint | boolean | null | Uint8Array;

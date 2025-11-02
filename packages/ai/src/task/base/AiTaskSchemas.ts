@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Kind, SchemaOptions, TSchema, Type, TypeRegistry } from "@sinclair/typebox";
+import { Kind, SchemaOptions, TSchema, Type, TypeRegistry } from "typebox";
 
 export const TypedArray = (annotations: Record<string, unknown> = {}) =>
   Type.Union(

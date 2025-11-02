@@ -18,7 +18,7 @@ import {
   TaskRegistry,
   Workflow,
 } from "@podley/task-graph";
-import { TObject, Type } from "@sinclair/typebox";
+import { TObject, Type } from "typebox";
 
 interface LambdaTaskConfig<
   Input extends TaskInput = TaskInput,

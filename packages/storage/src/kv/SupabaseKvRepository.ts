@@ -7,7 +7,7 @@
 
 import { createServiceToken } from "@podley/util";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { TSchema, Type } from "@sinclair/typebox";
+import { TSchema, Type } from "typebox";
 import { SupabaseTabularRepository } from "../tabular/SupabaseTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";

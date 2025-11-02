@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { DefaultKeyValueSchema, IKvRepository } from "@podley/storage";
-import { Static, TSchema, Type } from "@sinclair/typebox";
+import { Static, TSchema, Type } from "typebox";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
 export function runGenericKvRepositoryTests(

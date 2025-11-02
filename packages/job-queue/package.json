@@ -44,7 +44,7 @@
     "@podley/sqlite": {
       "optional": false
     },
-    "@sinclair/typebox": {
+    "typebox": {
       "optional": false
     }
   },

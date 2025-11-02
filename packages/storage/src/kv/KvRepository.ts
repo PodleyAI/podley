@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken, EventEmitter, makeFingerprint } from "@podley/util";
-import { TAny, TNumber, TSchema, TString, Type } from "@sinclair/typebox";
+import { TAny, TNumber, TSchema, TString, Type } from "typebox";
 import { JSONValue } from "../tabular/ITabularRepository";
 import {
   IKvRepository,

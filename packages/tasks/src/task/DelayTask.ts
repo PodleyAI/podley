@@ -16,7 +16,7 @@ import {
   Workflow,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
-import { TObject, Type } from "@sinclair/typebox";
+import { TObject, Type } from "typebox";
 
 export type DelayTaskInput = {
   delay: number;

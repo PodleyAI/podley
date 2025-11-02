@@ -1,5 +1,5 @@
 import { Dataflow, GraphAsTask, Task, TaskGraph } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { describe, expect, it } from "bun:test";
 
 // Test tasks with specific input/output schemas

@@ -12,7 +12,7 @@ import {
   TypeReplicateArray,
   Workflow,
 } from "@podley/task-graph";
-import { TObject, Type, type Static } from "@sinclair/typebox";
+import { TObject, Type, type Static } from "typebox";
 import { AiTask } from "./base/AiTask";
 import { TypedArray, TypeModel } from "./base/AiTaskSchemas";
 

@@ -13,7 +13,7 @@ import {
   Workflow,
 } from "@podley/task-graph";
 import { TypeOptionalArray } from "@podley/util";
-import { TObject, Type, type Static } from "@sinclair/typebox";
+import { TObject, Type, type Static } from "typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 

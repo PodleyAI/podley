@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { uuid4 } from "@podley/util";
-import { TObject } from "@sinclair/typebox";
+import { TObject } from "typebox";
 import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { GraphResultArray, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";

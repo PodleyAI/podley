@@ -5,7 +5,27 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Kind, OptionalKind, type TSchema, Type, TypeRegistry } from "@sinclair/typebox";
+import { TSchema, Type } from "typebox";
+
+const Kind = "~kind";
+const OptionalKind = "~optional";
+
+class TStringEnumType<T extends readonly string[]> extends Type.Base<T[number]> {
+  public readonly type = "string";
+  public readonly enum: [...T];
+  private readonly allowed: Set<string>;
+
+  constructor(values: [...T], annotations: Record<string, unknown> = {}) {
+    super();
+    this.enum = [...values] as [...T];
+    this.allowed = new Set(values);
+    Object.assign(this, annotations);
+  }
+
+  public override Check(value: unknown): value is T[number] {
+    return typeof value === "string" && this.allowed.has(value as string);
+  }
+}
 
 export const TypeOptionalArray = <T extends TSchema>(
   type: T,
@@ -28,20 +48,14 @@ export const TypeNullable = <T extends TSchema>(T: T) => {
 };
 
 export const TypeBlob = (annotations: Record<string, unknown> = {}) =>
-  Type.Transform(Type.Any({ contentEncoding: "blob", ...annotations }))
+  Type.Codec(Type.Any({ contentEncoding: "blob", ...annotations }))
     .Decode((value: unknown) => value as Uint8Array)
     .Encode((value: Uint8Array) => Buffer.from(value));
 
-TypeRegistry.Set("TypeStringEnum", (schema: { enum: string[] }, value: unknown) => {
-  return typeof value === "string" && schema.enum.includes(value);
-});
-
-export const TypeStringEnum = <T extends string[]>(values: [...T]) =>
-  Type.Unsafe<T[number]>({
-    [Kind]: "TypeStringEnum",
-    type: "string",
-    enum: values,
-  });
+export const TypeStringEnum = <T extends readonly string[]>(
+  values: [...T],
+  annotations: Record<string, unknown> = {}
+) => new TStringEnumType(values, annotations);
 
 export function areSemanticallyCompatible(
   outputSchema: TSchema,
@@ -64,7 +78,7 @@ export function forwardAnnotations(schema: TSchema, annotations: Record<string, 
     ...(schema.default ? { default: schema.default } : {}),
     ...(schema.replicate ? { replicate: schema.replicate } : {}),
     ...(schema.semantic ? { semantic: schema.semantic } : {}),
-    ...(schema.optional ? { optional: schema.optional } : {}),
+    ...(schema[OptionalKind] ? { optional: true } : {}),
     ...(schema.isArray ? { isArray: schema.isArray } : {}),
     ...(schema.isNullable ? { isNullable: schema.isNullable } : {}),
     ...annotations,

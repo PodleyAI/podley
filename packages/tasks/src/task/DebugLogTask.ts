@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { Workflow, TaskRegistry, CreateWorkflow, TaskConfig, Task } from "@podley/task-graph";
-import { TObject, Type } from "@sinclair/typebox";
+import { TObject, Type } from "typebox";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];

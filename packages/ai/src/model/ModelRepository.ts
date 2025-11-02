@@ -8,7 +8,7 @@
 import { EventEmitter, EventParameters } from "@podley/util";
 import { type TabularRepository } from "@podley/storage";
 import { Model } from "./Model";
-import { Type, TObject, Static } from "@sinclair/typebox";
+import { Type, TObject, Static } from "typebox";
 
 /**
  * Events that can be emitted by the ModelRepository

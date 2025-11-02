@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken } from "@podley/util";
-import { Static, TObject, TSchema } from "@sinclair/typebox";
+import { Static, TObject, TSchema } from "typebox";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import {

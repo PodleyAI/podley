@@ -16,7 +16,7 @@ import {
 import { uuid4 } from "@podley/util";
 import { describe } from "bun:test";
 import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
-import { Static, TObject } from "@sinclair/typebox";
+import { Static, TObject } from "typebox";
 
 const client = createSupabaseMockClient();
 

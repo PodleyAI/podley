@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken, EventEmitter, makeFingerprint } from "@podley/util";
-import { Static, TObject, Type } from "@sinclair/typebox";
+import { Static, TObject, Type } from "typebox";
 import {
   ExtractPrimaryKey,
   ExtractValue,

@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import { EventEmitter, uuid4 } from "@podley/util";
-import { Type, type TObject } from "@sinclair/typebox";
-import { TypeCheck, TypeCompiler } from "@sinclair/typebox/compiler";
+import { Type, type TObject } from "typebox";
+import { TypeCheck, TypeCompiler } from "typebox/compiler";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteContext, IExecuteReactiveContext, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
