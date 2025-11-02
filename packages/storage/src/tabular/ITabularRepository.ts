@@ -1,12 +1,12 @@
-import { EventParameters } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
-
 //    *******************************************************************************
 //    *   PODLEY.AI: Your Agentic AI library                                        *
 //    *                                                                             *
 //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
+
+import { EventParameters } from "@podley/util";
+import { Static, TObject } from "@sinclair/typebox";
 
 // Generic type for possible value types in the repository
 export type ValueOptionType = string | number | bigint | boolean | null | Uint8Array;
@@ -108,4 +108,9 @@ export interface ITabularRepository<
 
   // Convenience methods
   search(key: Partial<Entity>): Promise<Entity[] | undefined>;
+
+  // Destroy the repository and frees up resources.
+  destroy(): void;
+  [Symbol.dispose](): void;
+  [Symbol.asyncDispose](): Promise<void>;
 }

@@ -1,5 +1,11 @@
 # @podley/sqlite
 
+## 0.0.30
+
+### Patch Changes
+
+- Add CachedTabularRepository and browser only SharedInMemoryTabularRepository
+
 ## 0.0.29
 
 ### Patch Changes

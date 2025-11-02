@@ -481,4 +481,11 @@ export class IndexedDbTabularRepository<
       }
     });
   }
+
+  /**
+   * Destroys this repository and frees up resources.
+   */
+  destroy(): void {
+    this.db?.close();
+  }
 }

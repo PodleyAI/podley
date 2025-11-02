@@ -1,7 +1,7 @@
 {
   "name": "@podley/sqlite",
   "type": "module",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "description": "SQLite database providing cross-platform database support for browser, Node.js, and Bun environments.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",

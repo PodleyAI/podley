@@ -15,8 +15,8 @@ import {
   TabularEventListeners,
   TabularEventName,
   TabularEventParameters,
+  ValueOptionType,
 } from "./ITabularRepository";
-import { ValueOptionType } from "./ITabularRepository";
 
 export const TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
   "storage.tabularRepository"
@@ -353,5 +353,20 @@ export abstract class TabularRepository<
     }
 
     return bestMatch;
+  }
+
+  /**
+   * Destroys the repository and frees up resources.
+   */
+  destroy(): void {
+    // no op by default
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    this.destroy();
+  }
+
+  [Symbol.dispose](): void {
+    this.destroy();
   }
 }

@@ -1,5 +1,15 @@
 # @podley/task-graph
 
+## 0.0.30
+
+### Patch Changes
+
+- Add CachedTabularRepository and browser only SharedInMemoryTabularRepository
+- Updated dependencies
+  - @podley/job-queue@0.0.30
+  - @podley/storage@0.0.30
+  - @podley/util@0.0.30
+
 ## 0.0.29
 
 ### Patch Changes

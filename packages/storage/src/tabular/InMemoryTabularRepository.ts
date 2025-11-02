@@ -207,4 +207,11 @@ export class InMemoryTabularRepository<
       this.events.emit("delete", column);
     }
   }
+
+  /**
+   * Destroys the repository and frees up resources.
+   */
+  destroy(): void {
+    this.values.clear();
+  }
 }
