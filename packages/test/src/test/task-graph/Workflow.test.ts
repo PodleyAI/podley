@@ -11,7 +11,6 @@ import {
   Task,
   TaskConfig,
   TaskError,
-  TaskOutputRepository,
   Workflow,
   WorkflowError,
 } from "@podley/task-graph";
@@ -19,6 +18,7 @@ import { sleep } from "@podley/util";
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import {
   NumberTask,
+  NumberToStringTask,
   StringTask,
   TestInputTask,
   TestOutputTask,
@@ -29,7 +29,6 @@ const colsoleError = globalThis.console.error;
 
 describe("Workflow", () => {
   let workflow: Workflow;
-  let repository: TaskOutputRepository;
 
   beforeEach(() => {
     workflow = new Workflow();
@@ -59,10 +58,6 @@ describe("Workflow", () => {
       const addTestTask = CreateWorkflow<{ input: string }, { output: string }>(TestSimpleTask);
 
       expect(addTestTask).toBeInstanceOf(Function);
-      // @ts-ignore
-      expect(addTestTask.inputSchema).toEqual(TestSimpleTask.inputSchema);
-      // @ts-ignore
-      expect(addTestTask.outputSchema).toEqual(TestSimpleTask.outputSchema);
     });
 
     it("should add a task to the workflow when called", () => {
@@ -73,6 +68,26 @@ describe("Workflow", () => {
       workflow = addTestTask.call(workflow, { input: "test" });
       expect(workflow.graph.getTasks()).toHaveLength(1);
       expect(workflow.graph.getTasks()[0]).toBeInstanceOf(TestSimpleTask);
+    });
+
+    it("should add a task to the workflow when using the prototype method", () => {
+      workflow = workflow.TestSimpleTask({ input: "test" });
+      expect(workflow.graph.getTasks()).toHaveLength(1);
+      expect(workflow.graph.getTasks()[0]).toBeInstanceOf(TestSimpleTask);
+    });
+
+    it("should add a task and convert to GraphAsTask", () => {
+      workflow = workflow
+        .NumberTask({ input: 5 })
+        .NumberToStringTask()
+        .TestSimpleTask({ input: "test" });
+      const task = workflow.toTask();
+      expect(task.subGraph.getTasks()).toHaveLength(3);
+      expect(task.subGraph.getTasks()[0]).toBeInstanceOf(NumberTask);
+      expect(task.subGraph.getTasks()[1]).toBeInstanceOf(NumberToStringTask);
+      expect(task.subGraph.getTasks()[2]).toBeInstanceOf(TestSimpleTask);
+      expect(task.inputSchema()).toEqual(NumberTask.inputSchema());
+      expect(task.outputSchema()).toEqual(TestSimpleTask.outputSchema());
     });
   });
 

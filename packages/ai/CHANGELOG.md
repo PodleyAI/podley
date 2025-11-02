@@ -1,5 +1,30 @@
 # @podley/ai
 
+## 0.0.29
+
+### Patch Changes
+
+- Cleanup GraphAsTask input/output schemas
+- Updated dependencies
+  - @podley/task-graph@0.0.29
+  - @podley/job-queue@0.0.29
+  - @podley/storage@0.0.29
+  - @podley/util@0.0.29
+
+## 0.0.28
+
+### Patch Changes
+
+- 6915093: Calculate input and output schemas for GraphAsTask via inputSchema and outputSchema
+- inputSchema and outputSchema dynamically created for GraphAsTask
+- Updated dependencies [6915093]
+- Updated dependencies
+- Updated dependencies [6915093]
+  - @podley/task-graph@0.0.28
+  - @podley/job-queue@0.0.28
+  - @podley/storage@0.0.28
+  - @podley/util@0.0.28
+
 ## 0.0.20
 
 ### Patch Changes

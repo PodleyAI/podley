@@ -6,6 +6,9 @@
 //    *******************************************************************************
 
 import { EventEmitter, uuid4 } from "@podley/util";
+import { Type, type TObject } from "@sinclair/typebox";
+import { TypeCheck, TypeCompiler } from "@sinclair/typebox/compiler";
+import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteContext, IExecuteReactiveContext, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
 import {
@@ -24,9 +27,6 @@ import {
   type TaskOutput,
   type TaskTypeName,
 } from "./TaskTypes";
-import { Type, type TObject } from "@sinclair/typebox";
-import { TypeCheck, TypeCompiler } from "@sinclair/typebox/compiler";
-import { TaskGraph } from "../task-graph/TaskGraph";
 
 /**
  * Base class for all tasks that implements the ITask interface.
@@ -183,14 +183,14 @@ export class Task<
   /**
    * Gets input schema for this task
    */
-  get inputSchema(): TObject {
+  public inputSchema(): TObject {
     return (this.constructor as typeof Task).inputSchema();
   }
 
   /**
    * Gets output schema for this task
    */
-  get outputSchema(): TObject {
+  public outputSchema(): TObject {
     return (this.constructor as typeof Task).outputSchema();
   }
 
@@ -323,7 +323,7 @@ export class Task<
    * Gets default input values from input schema
    */
   getDefaultInputsFromStaticInputDefinitions(): Partial<Input> {
-    const schema = this.inputSchema as TObject;
+    const schema = this.inputSchema();
     return Object.entries(schema.properties || {}).reduce<Record<string, any>>(
       (acc, [id, prop]) => {
         const defaultValue = (prop as any).default;
@@ -363,7 +363,7 @@ export class Task<
    * @param input Input values to set
    */
   public setInput(input: Record<string, any>): void {
-    const schema = this.inputSchema as TObject;
+    const schema = this.inputSchema();
     const properties = schema.properties || {};
 
     for (const [inputId, prop] of Object.entries(properties)) {
@@ -458,7 +458,7 @@ export class Task<
    * Validates an input data object against the task's input schema
    */
   public async validateInput(input: Partial<Input>): Promise<boolean> {
-    const schema = this.inputSchema as TObject;
+    const schema = this.inputSchema();
 
     // validate the partial input against the schema
     const checker = (this.constructor as typeof Task).getInputSchemaTypeChecker();

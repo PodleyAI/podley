@@ -1,5 +1,24 @@
 # @podley/storage
 
+## 0.0.29
+
+### Patch Changes
+
+- Cleanup GraphAsTask input/output schemas
+- Updated dependencies
+  - @podley/sqlite@0.0.29
+  - @podley/util@0.0.29
+
+## 0.0.28
+
+### Patch Changes
+
+- inputSchema and outputSchema dynamically created for GraphAsTask
+- Updated dependencies
+- Updated dependencies [6915093]
+  - @podley/sqlite@0.0.28
+  - @podley/util@0.0.28
+
 ## 0.0.20
 
 ### Patch Changes

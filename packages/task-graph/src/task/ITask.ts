@@ -6,6 +6,7 @@
 //    *******************************************************************************
 
 import type { EventEmitter } from "@podley/util";
+import { TObject } from "@sinclair/typebox";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { ITaskGraph } from "../task-graph/ITaskGraph";
 import { IWorkflow } from "../task-graph/IWorkflow";
@@ -21,7 +22,6 @@ import type {
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
 import type { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
-import { TObject } from "@sinclair/typebox";
 
 /**
  * Context for task execution
@@ -104,8 +104,8 @@ export interface ITaskIO<Input extends TaskInput> {
   runInputData: Record<string, any>;
   runOutputData: Record<string, any>;
 
-  get inputSchema(): TObject; // gets local access for static inputSchema property
-  get outputSchema(): TObject; // gets local access for static outputSchema property
+  inputSchema(): TObject; // gets local access for static inputSchema property
+  outputSchema(): TObject; // gets local access for static outputSchema property
   get type(): string; // gets local access for static type property
   get category(): string; // gets local access for static category property
   get title(): string; // gets local access for static title property

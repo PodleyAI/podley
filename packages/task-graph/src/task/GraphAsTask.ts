@@ -5,13 +5,19 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Type, TObject } from "@sinclair/typebox";
+import { TObject, Type } from "@sinclair/typebox";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { CompoundMergeStrategy, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 import { Task } from "./Task";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
-import { type TaskConfig, type TaskInput, type TaskOutput, type TaskTypeName } from "./TaskTypes";
+import {
+  type TaskConfig,
+  type TaskIdType,
+  type TaskInput,
+  type TaskOutput,
+  type TaskTypeName,
+} from "./TaskTypes";
 
 export interface GraphAsTaskConfig extends TaskConfig {
   subGraph?: TaskGraph;
@@ -85,9 +91,10 @@ export class GraphAsTask<
 
   /**
    * Override inputSchema to compute it dynamically from the subgraph at runtime
-   * The input schema is the union of all unconnected inputs from all nodes
+   * The input schema is the union of all unconnected inputs from starting nodes
+   * (nodes with zero incoming connections)
    */
-  get inputSchema(): TObject {
+  public inputSchema(): TObject {
     // If there's no subgraph or it has no children, fall back to the static schema
     if (!this.hasChildren()) {
       return (this.constructor as typeof Task).inputSchema();
@@ -96,30 +103,29 @@ export class GraphAsTask<
     const properties: Record<string, any> = {};
     const required: string[] = [];
 
-    // For all tasks in the graph, collect their unconnected inputs
+    // Get all tasks in the graph
     const tasks = this.subGraph.getTasks();
 
-    for (const task of tasks) {
-      const taskInputSchema = task.inputSchema;
+    // Identify starting nodes: tasks with no incoming dataflows
+    const startingNodes = tasks.filter(
+      (task) => this.subGraph.getSourceDataflows(task.config.id).length === 0
+    );
+
+    // For starting nodes only, collect their unconnected inputs
+    for (const task of startingNodes) {
+      const taskInputSchema = task.inputSchema();
       const taskProperties = taskInputSchema.properties || {};
 
-      // Get all inputs that are connected via dataflows
-      const connectedInputs = new Set(
-        this.subGraph.getSourceDataflows(task.config.id).map((df) => df.targetTaskPortId)
-      );
-
-      // Add unconnected inputs to the graph's input schema
+      // Add all inputs from starting nodes to the graph's input schema
       for (const [inputName, inputProp] of Object.entries(taskProperties)) {
-        if (!connectedInputs.has(inputName)) {
-          // If the same input name exists in multiple nodes, we use the first one
-          // In a more sophisticated implementation, we might want to merge or validate compatibility
-          if (!properties[inputName]) {
-            properties[inputName] = inputProp;
+        // If the same input name exists in multiple nodes, we use the first one
+        // In a more sophisticated implementation, we might want to merge or validate compatibility
+        if (!properties[inputName]) {
+          properties[inputName] = inputProp;
 
-            // Check if this input is required
-            if (taskInputSchema.required && taskInputSchema.required.includes(inputName)) {
-              required.push(inputName);
-            }
+          // Check if this input is required
+          if (taskInputSchema.required && taskInputSchema.required.includes(inputName)) {
+            required.push(inputName);
           }
         }
       }
@@ -129,10 +135,40 @@ export class GraphAsTask<
   }
 
   /**
-   * Override outputSchema to compute it dynamically from the subgraph at runtime
-   * The output schema depends on the compoundMerge strategy and the ending nodes
+   * Calculates the depth (longest path from any starting node) for each task in the graph
+   * @returns A map of task IDs to their depths
    */
-  get outputSchema(): TObject {
+  private calculateNodeDepths(): Map<TaskIdType, number> {
+    const depths = new Map<TaskIdType, number>();
+    const tasks = this.subGraph.getTasks();
+
+    // Initialize all depths to 0
+    for (const task of tasks) {
+      depths.set(task.config.id, 0);
+    }
+
+    // Use topological sort to calculate depths in order
+    const sortedTasks = this.subGraph.topologicallySortedNodes();
+
+    for (const task of sortedTasks) {
+      const currentDepth = depths.get(task.config.id) || 0;
+      const targetTasks = this.subGraph.getTargetTasks(task.config.id);
+
+      // Update depths of all target tasks
+      for (const targetTask of targetTasks) {
+        const targetDepth = depths.get(targetTask.config.id) || 0;
+        depths.set(targetTask.config.id, Math.max(targetDepth, currentDepth + 1));
+      }
+    }
+
+    return depths;
+  }
+
+  /**
+   * Override outputSchema to compute it dynamically from the subgraph at runtime
+   * The output schema depends on the compoundMerge strategy and the nodes at the last level
+   */
+  public override outputSchema(): TObject {
     // If there's no subgraph or it has no children, fall back to the static schema
     if (!this.hasChildren()) {
       return (this.constructor as typeof Task).outputSchema();
@@ -147,13 +183,22 @@ export class GraphAsTask<
       (task) => this.subGraph.getTargetDataflows(task.config.id).length === 0
     );
 
+    // Calculate depths for all nodes
+    const depths = this.calculateNodeDepths();
+
+    // Find the maximum depth among ending nodes
+    const maxDepth = Math.max(...endingNodes.map((task) => depths.get(task.config.id) || 0));
+
+    // Filter ending nodes to only those at the maximum depth (last level)
+    const lastLevelNodes = endingNodes.filter((task) => depths.get(task.config.id) === maxDepth);
+
     // ONLY handle PROPERTY_ARRAY strategy
     // Count how many ending nodes produce each property
     const propertyCount: Record<string, number> = {};
     const propertySchema: Record<string, any> = {};
 
-    for (const task of endingNodes) {
-      const taskOutputSchema = task.outputSchema;
+    for (const task of lastLevelNodes) {
+      const taskOutputSchema = task.outputSchema();
       const taskProperties = taskOutputSchema.properties || {};
 
       for (const [outputName, outputProp] of Object.entries(taskProperties)) {
@@ -169,7 +214,7 @@ export class GraphAsTask<
     for (const [outputName, count] of Object.entries(propertyCount)) {
       const outputProp = propertySchema[outputName];
 
-      if (endingNodes.length === 1) {
+      if (lastLevelNodes.length === 1) {
         // Single ending node: use property as-is
         properties[outputName] = outputProp;
       } else {

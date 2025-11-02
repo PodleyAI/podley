@@ -136,7 +136,7 @@ export class TaskGraphRunner {
           try {
             // Only filter input for non-root tasks; root tasks get the full input
             const taskInput = isRootTask ? input : this.filterInputForTask(task, input);
-            
+
             const taskPromise = this.runTaskWithProvenance(
               task,
               taskInput,
@@ -254,9 +254,7 @@ export class TaskGraphRunner {
   protected filterInputForTask(task: ITask, input: TaskInput): TaskInput {
     // Get all inputs that are connected to this task via dataflows
     const sourceDataflows = this.graph.getSourceDataflows(task.config.id);
-    const connectedInputs = new Set(
-      sourceDataflows.map((df) => df.targetTaskPortId)
-    );
+    const connectedInputs = new Set(sourceDataflows.map((df) => df.targetTaskPortId));
 
     // If DATAFLOW_ALL_PORTS ("*") is in the set, all inputs are connected
     const allPortsConnected = connectedInputs.has(DATAFLOW_ALL_PORTS);
@@ -283,7 +281,7 @@ export class TaskGraphRunner {
     if (!overrides) return false;
 
     let changed = false;
-    const inputSchema = task.inputSchema;
+    const inputSchema = task.inputSchema();
     const properties = inputSchema.properties || {};
 
     for (const [inputId, prop] of Object.entries(properties)) {

@@ -4,7 +4,7 @@
     "": {
       "name": "podley",
       "dependencies": {
-        "caniuse-lite": "^1.0.30001751",
+        "caniuse-lite": "^1.0.30001752",
       },
       "devDependencies": {
         "@sroussey/changesets-cli": "^2.29.7",
@@ -12,20 +12,20 @@
         "@typescript-eslint/eslint-plugin": "^8.46.2",
         "@typescript-eslint/parser": "^8.46.2",
         "concurrently": "^9.2.1",
-        "eslint": "^9.38.0",
+        "eslint": "^9.39.0",
         "eslint-plugin-jsx-a11y": "^6.10.2",
         "eslint-plugin-react": "^7.37.5",
         "eslint-plugin-react-hooks": "^7.0.1",
         "eslint-plugin-regexp": "^2.10.0",
         "globals": "^16.4.0",
         "prettier": "^3.6.2",
-        "turbo": "^2.5.8",
+        "turbo": "^2.6.0",
         "typescript": "5.9.3",
       },
     },
     "examples/cli": {
       "name": "@podley/cli",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "bin": "./dist/podley.js",
       "dependencies": {
         "@mediapipe/tasks-text": "catalog:",
@@ -50,7 +50,7 @@
     },
     "examples/web": {
       "name": "@podley/web",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "dependencies": {
         "@codemirror/lang-json": "^6.0.2",
         "@mediapipe/tasks-text": "catalog:",
@@ -89,7 +89,7 @@
     },
     "packages/ai": {
       "name": "@podley/ai",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "devDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -110,7 +110,7 @@
     },
     "packages/ai-provider": {
       "name": "@podley/ai-provider",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "devDependencies": {
         "@mediapipe/tasks-text": "catalog:",
         "@podley/ai": "workspace:*",
@@ -132,7 +132,7 @@
     },
     "packages/job-queue": {
       "name": "@podley/job-queue",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "devDependencies": {
         "@podley/sqlite": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -149,7 +149,7 @@
     },
     "packages/sqlite": {
       "name": "@podley/sqlite",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
       },
@@ -160,7 +160,7 @@
     },
     "packages/storage": {
       "name": "@podley/storage",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "devDependencies": {
         "@podley/sqlite": "workspace:*",
         "@podley/util": "workspace:*",
@@ -180,7 +180,7 @@
     },
     "packages/task-graph": {
       "name": "@podley/task-graph",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "devDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -196,7 +196,7 @@
     },
     "packages/tasks": {
       "name": "@podley/tasks",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "devDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -214,7 +214,7 @@
     },
     "packages/test": {
       "name": "@podley/test",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "devDependencies": {
         "@electric-sql/pglite": "^0.3.11",
         "@podley/ai": "workspace:*",
@@ -248,7 +248,7 @@
     },
     "packages/util": {
       "name": "@podley/util",
-      "version": "0.0.27",
+      "version": "0.0.29",
       "devDependencies": {
         "@sinclair/typebox": "catalog:",
       },

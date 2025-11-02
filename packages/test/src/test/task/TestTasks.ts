@@ -527,7 +527,7 @@ export class LongRunningTask extends Task {
 }
 
 /**
- * Task that processes string input
+ * Task that copies string input
  */
 export class StringTask extends Task<{ input: string }, { output: string }, TaskConfig> {
   static type = "StringTask";
@@ -553,6 +553,36 @@ export class StringTask extends Task<{ input: string }, { output: string }, Task
    */
   async execute() {
     return { output: this.runInputData.input };
+  }
+}
+
+/**
+ * Task that copies string input
+ */
+export class NumberToStringTask extends Task<{ input: number }, { output: string }, TaskConfig> {
+  static type = "NumberToStringTask";
+
+  static inputSchema(): TObject {
+    return Type.Object({
+      input: Type.Number({
+        description: "Input number",
+      }),
+    });
+  }
+
+  static outputSchema(): TObject {
+    return Type.Object({
+      output: Type.String({
+        description: "Output string",
+      }),
+    });
+  }
+
+  /**
+   * Returns the input string as output
+   */
+  async execute() {
+    return { output: String(this.runInputData.input) };
   }
 }
 
@@ -646,6 +676,10 @@ declare module "@podley/task-graph" {
     TestInputTask: CreateWorkflow<{ customInput: string }, { output: string }, TaskConfig>;
     FailingTask: CreateWorkflow<{}, {}, TaskConfig>;
     LongRunningTask: CreateWorkflow<{}, {}, TaskConfig>;
+    StringTask: CreateWorkflow<{ input: string }, { output: string }, TaskConfig>;
+    NumberToStringTask: CreateWorkflow<{ input: number }, { output: string }, TaskConfig>;
+    NumberTask: CreateWorkflow<{ input: number }, { output: number }, TaskConfig>;
+    TestAddTask: CreateWorkflow<TestAddTaskInput, TestAddTaskOutput, TaskConfig>;
   }
 }
 
@@ -655,3 +689,7 @@ Workflow.prototype.TestOutputTask = CreateWorkflow(TestOutputTask);
 Workflow.prototype.TestInputTask = CreateWorkflow(TestInputTask);
 Workflow.prototype.FailingTask = CreateWorkflow(FailingTask);
 Workflow.prototype.LongRunningTask = CreateWorkflow(LongRunningTask);
+Workflow.prototype.StringTask = CreateWorkflow(StringTask);
+Workflow.prototype.NumberToStringTask = CreateWorkflow(NumberToStringTask);
+Workflow.prototype.NumberTask = CreateWorkflow(NumberTask);
+Workflow.prototype.TestAddTask = CreateWorkflow(TestAddTask);

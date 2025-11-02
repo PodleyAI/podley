@@ -20,7 +20,8 @@
     "**/*.tsbuildinfo": true
   },
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
   },
   "eslint.codeActionsOnSave.rules": null,
   "explorer.autoRevealExclude": {

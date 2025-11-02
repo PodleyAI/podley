@@ -87,7 +87,7 @@ export class AiTask<
    */
   async validateInput(input: Input): Promise<boolean> {
     // TODO(str): this is very inefficient, we should cache the results, including intermediate results
-    const modelTaskProperties = Object.entries<TSchema>(this.inputSchema.properties).filter(
+    const modelTaskProperties = Object.entries<TSchema>(this.inputSchema().properties).filter(
       ([key, schema]) => schemaSemantic(schema)?.startsWith("model:")
     );
     if (modelTaskProperties.length > 0) {
@@ -102,7 +102,7 @@ export class AiTask<
         }
       }
     }
-    const modelPlainProperties = Object.entries<TSchema>(this.inputSchema.properties).filter(
+    const modelPlainProperties = Object.entries<TSchema>(this.inputSchema().properties).filter(
       ([key, schema]) => schemaSemantic(schema) === "model"
     );
     if (modelPlainProperties.length > 0) {
@@ -124,7 +124,7 @@ export class AiTask<
   // if all of them are stripped, then the task will fail in validateInput
   async narrowInput(input: Input): Promise<Input> {
     // TODO(str): this is very inefficient, we should cache the results, including intermediate results
-    const modelTaskProperties = Object.entries<TSchema>(this.inputSchema.properties).filter(
+    const modelTaskProperties = Object.entries<TSchema>(this.inputSchema().properties).filter(
       ([key, schema]) => schemaSemantic(schema)?.startsWith("model:")
     );
     if (modelTaskProperties.length > 0) {

@@ -12,7 +12,7 @@
         "oven.bun-vscode",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
-        "ms-vscode.vscode-typescript-next",
+        "zardoy.ts-essential-plugins",
         "bradlc.vscode-tailwindcss"
       ]
     }
@@ -24,6 +24,7 @@
   "remoteUser": "node",
 
   "postCreateCommand": "bun --version && node --version && npm --version",
+  "postAttachCommand": "bash -c 'if [ -z \"$(git config --global user.name)\" ]; then read -p \"Enter your git name: \" git_name && git config --global user.name \"$git_name\" || true; fi; if [ -z \"$(git config --global user.email)\" ]; then read -p \"Enter your git email: \" git_email && git config --global user.email \"$git_email\" || true; fi'",
 
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},

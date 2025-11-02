@@ -1,6 +1,6 @@
-import { describe, expect, it } from "bun:test";
-import { GraphAsTask, Task, TaskGraph, Dataflow } from "@podley/task-graph";
+import { Dataflow, GraphAsTask, Task, TaskGraph } from "@podley/task-graph";
 import { Type } from "@sinclair/typebox";
+import { describe, expect, it } from "bun:test";
 
 // Test tasks with specific input/output schemas
 class TaskA extends Task {
@@ -57,7 +57,9 @@ class TaskC extends Task {
   static inputSchema() {
     return Type.Object({
       inputC1: Type.String({ description: "First input to C" }),
-      inputC2: Type.String({ description: "Second input to C" }),
+      inputC2: Type.Optional(
+        Type.String({ description: "Second input to C", default: "defaultC2" })
+      ),
     });
   }
 
@@ -97,7 +99,7 @@ describe("GraphAsTask Dynamic Schema", () => {
       graphAsTask.subGraph = graph;
 
       // The input schema should be the inputs of TaskA (the starting node)
-      const inputSchema = graphAsTask.inputSchema;
+      const inputSchema = graphAsTask.inputSchema();
       expect(inputSchema.properties).toBeDefined();
       expect(inputSchema.properties!["inputA1"]).toBeDefined();
       expect(inputSchema.properties!["inputA2"]).toBeDefined();
@@ -123,7 +125,7 @@ describe("GraphAsTask Dynamic Schema", () => {
       graphAsTask.subGraph = graph;
 
       // The input schema should combine inputs from both TaskA and TaskB
-      const inputSchema = graphAsTask.inputSchema;
+      const inputSchema = graphAsTask.inputSchema();
       expect(inputSchema.properties).toBeDefined();
       expect(inputSchema.properties!["inputA1"]).toBeDefined();
       expect(inputSchema.properties!["inputA2"]).toBeDefined();
@@ -132,8 +134,8 @@ describe("GraphAsTask Dynamic Schema", () => {
       expect(inputSchema.properties!["inputC2"]).toBeUndefined(); // Connected
     });
 
-    it("should exclude connected inputs from schema", () => {
-      // Create a graph where a starting node has some inputs connected
+    it("should only include inputs from starting nodes", () => {
+      // Create a graph where TaskC has an incoming connection from TaskA
       const taskA = new TaskA();
       const taskB = new TaskB();
       const taskC = new TaskC();
@@ -143,27 +145,34 @@ describe("GraphAsTask Dynamic Schema", () => {
       graph.addTask(taskB);
       graph.addTask(taskC);
 
-      // TaskC is a starting node, but one of its inputs is connected from TaskA
+      // TaskC has an incoming connection from TaskA, making it a non-starting node
       graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1"));
 
-      const graphAsTask = new GraphAsTask();
-      graphAsTask.subGraph = graph;
+      const graphAsTask = new GraphAsTask({}, { subGraph: graph });
 
-      // TaskA and TaskC are starting nodes (no incoming edges)
-      // But TaskC's inputC1 is connected
-      const inputSchema = graphAsTask.inputSchema;
+      // TaskA and TaskB are starting nodes (no incoming connections)
+      // TaskC is NOT a starting node (has incoming connection from TaskA)
+      // Only inputs from starting nodes (TaskA and TaskB) should be in the schema
+      const inputSchema = graphAsTask.inputSchema();
       expect(inputSchema.properties).toBeDefined();
-      expect(inputSchema.properties!["inputA1"]).toBeDefined(); // TaskA input
-      expect(inputSchema.properties!["inputA2"]).toBeDefined(); // TaskA input
-      expect(inputSchema.properties!["inputC1"]).toBeUndefined(); // Connected
-      expect(inputSchema.properties!["inputC2"]).toBeDefined(); // Not connected
+
+      // TaskC is not a starting node, so none of its inputs should be in the schema
+      expect(inputSchema.properties!["inputC1"]).toBeUndefined();
+      expect(inputSchema.properties!["inputC2"]).toBeUndefined();
+
+      // TaskA is a starting node, so its inputs should be in the schema
+      expect(inputSchema.properties!["inputA1"]).toBeDefined();
+      expect(inputSchema.properties!["inputA2"]).toBeDefined();
+
+      // TaskB is a starting node, so its inputs should be in the schema
+      expect(inputSchema.properties!["inputB"]).toBeDefined();
     });
 
     it("should return static schema when no children", () => {
       const graphAsTask = new GraphAsTask();
 
       // Should return the static empty schema
-      const inputSchema = graphAsTask.inputSchema;
+      const inputSchema = graphAsTask.inputSchema();
       expect(inputSchema).toBeDefined();
       expect(Object.keys(inputSchema.properties || {}).length).toBe(0);
     });
@@ -186,7 +195,7 @@ describe("GraphAsTask Dynamic Schema", () => {
       graphAsTask.subGraph = graph;
 
       // The output schema should be TaskB's outputs (the ending node)
-      const outputSchema = graphAsTask.outputSchema;
+      const outputSchema = graphAsTask.outputSchema();
       expect(outputSchema.properties).toBeDefined();
       expect(outputSchema.properties!["outputB"]).toBeDefined();
       expect(outputSchema.properties!["outputA"]).toBeUndefined(); // TaskA is not an ending node
@@ -211,7 +220,7 @@ describe("GraphAsTask Dynamic Schema", () => {
       graphAsTask.subGraph = graph;
 
       // The output schema should combine outputs from both TaskB and TaskC
-      const outputSchema = graphAsTask.outputSchema;
+      const outputSchema = graphAsTask.outputSchema();
       expect(outputSchema.properties).toBeDefined();
       expect(outputSchema.properties!["outputB"]).toBeDefined();
       expect(outputSchema.properties!["outputC1"]).toBeDefined();
@@ -223,7 +232,7 @@ describe("GraphAsTask Dynamic Schema", () => {
       const graphAsTask = new GraphAsTask();
 
       // Should return the static empty schema
-      const outputSchema = graphAsTask.outputSchema;
+      const outputSchema = graphAsTask.outputSchema();
       expect(outputSchema).toBeDefined();
       expect(Object.keys(outputSchema.properties || {}).length).toBe(0);
     });
@@ -244,8 +253,8 @@ describe("GraphAsTask Dynamic Schema", () => {
       graphAsTask.subGraph = graph;
 
       // Verify schemas are calculated correctly
-      const inputSchema = graphAsTask.inputSchema;
-      const outputSchema = graphAsTask.outputSchema;
+      const inputSchema = graphAsTask.inputSchema();
+      const outputSchema = graphAsTask.outputSchema();
 
       expect(inputSchema.properties!["inputA1"]).toBeDefined();
       expect(inputSchema.properties!["inputA2"]).toBeDefined();
@@ -263,13 +272,13 @@ describe("GraphAsTask Dynamic Schema", () => {
       // Create a diamond graph:
       //      TaskA
       //     /    \
-      //  TaskB  TaskC (inputC2 unconnected)
+      //  TaskB  TaskC (inputC2 unconnected but TaskC is not a starting node)
       //     \    /
       //      (outputs from both)
 
       const taskA = new TaskA({ inputA1: "start", inputA2: 1 });
       const taskB = new TaskB();
-      const taskC = new TaskC();
+      const taskC = new TaskC({ inputC2: "extra" }); // Set default since inputC2 won't be in schema
 
       const graph = new TaskGraph();
       graph.addTask(taskA);
@@ -284,24 +293,24 @@ describe("GraphAsTask Dynamic Schema", () => {
       graphAsTask.subGraph = graph;
 
       // Check schemas
-      const inputSchema = graphAsTask.inputSchema;
-      const outputSchema = graphAsTask.outputSchema;
+      const inputSchema = graphAsTask.inputSchema();
+      const outputSchema = graphAsTask.outputSchema();
 
-      // TaskA's inputs + TaskC's unconnected inputC2
+      // Only TaskA's inputs (TaskA is the only starting node)
+      // TaskC is not a starting node because it has an incoming connection from TaskA
       expect(inputSchema.properties!["inputA1"]).toBeDefined();
       expect(inputSchema.properties!["inputA2"]).toBeDefined();
-      expect(inputSchema.properties!["inputC2"]).toBeDefined();
+      expect(inputSchema.properties!["inputC2"]).toBeUndefined(); // TaskC is not a starting node
 
       // Both TaskB and TaskC outputs
       expect(outputSchema.properties!["outputB"]).toBeDefined();
       expect(outputSchema.properties!["outputC1"]).toBeDefined();
       expect(outputSchema.properties!["outputC2"]).toBeDefined();
 
-      // Execute
+      // Execute (no inputC2 needed since TaskC is not a starting node)
       const result = await graphAsTask.run({
         inputA1: "begin",
         inputA2: 5,
-        inputC2: "extra",
       });
 
       // When there are multiple ending nodes, the compoundMerge strategy
@@ -326,7 +335,7 @@ describe("GraphAsTask Dynamic Schema", () => {
       const graphAsTask = new GraphAsTask({}, { compoundMerge: "PROPERTY_ARRAY" });
       graphAsTask.subGraph = graph;
 
-      const outputSchema = graphAsTask.outputSchema;
+      const outputSchema = graphAsTask.outputSchema();
 
       // Single ending node: properties should NOT be arrays
       expect(outputSchema.properties!["outputB"]).toBeDefined();
@@ -350,9 +359,107 @@ describe("GraphAsTask Dynamic Schema", () => {
       const graphAsTask = new GraphAsTask({}, { compoundMerge: "PROPERTY_ARRAY" });
       graphAsTask.subGraph = graph;
 
-      const outputSchema = graphAsTask.outputSchema;
+      const outputSchema = graphAsTask.outputSchema();
 
       // Multiple ending nodes: all properties should be arrays (due to collectPropertyValues behavior)
+      expect((outputSchema.properties!["outputB"] as any).type).toBe("array");
+      expect((outputSchema.properties!["outputC1"] as any).type).toBe("array");
+      expect((outputSchema.properties!["outputC2"] as any).type).toBe("array");
+    });
+  });
+
+  describe("Last Level Output Schema", () => {
+    it("should only include outputs from the last level (TaskA->TaskB->TaskC)", () => {
+      // Create a linear chain: TaskA -> TaskB -> TaskC
+      // Only TaskC should be in the output schema (deepest level)
+      const taskA = new TaskA();
+      const taskB = new TaskB();
+      const taskC = new TaskC();
+
+      const graph = new TaskGraph();
+      graph.addTask(taskA);
+      graph.addTask(taskB);
+      graph.addTask(taskC);
+
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB"));
+      graph.addDataflow(new Dataflow(taskB.config.id, "outputB", taskC.config.id, "inputC1"));
+
+      const graphAsTask = new GraphAsTask();
+      graphAsTask.subGraph = graph;
+
+      const outputSchema = graphAsTask.outputSchema();
+
+      // Only TaskC's outputs should be in the schema (it's at the deepest level)
+      expect(outputSchema.properties!["outputC1"]).toBeDefined();
+      expect(outputSchema.properties!["outputC2"]).toBeDefined();
+      expect(outputSchema.properties!["outputA"]).toBeUndefined(); // TaskA is at level 0
+      expect(outputSchema.properties!["outputB"]).toBeUndefined(); // TaskB is at level 1, not the last level
+    });
+
+    it("should only include outputs from nodes at maximum depth (mixed depth ending nodes)", () => {
+      // Create a graph where:
+      // TaskA -> TaskB -> TaskC (TaskC at depth 2)
+      // TaskA -> TaskD (TaskD at depth 1)
+      // Both TaskC and TaskD have no outgoing edges, but only TaskC should be in output
+      const taskA = new TaskA();
+      const taskB = new TaskB();
+      const taskC = new TaskC();
+      const taskD = new TaskC(); // Using TaskC class but treating it as a different task
+
+      const graph = new TaskGraph();
+      graph.addTask(taskA);
+      graph.addTask(taskB);
+      graph.addTask(taskC);
+      graph.addTask(taskD);
+
+      // Create the connections
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB"));
+      graph.addDataflow(new Dataflow(taskB.config.id, "outputB", taskC.config.id, "inputC1"));
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskD.config.id, "inputC1"));
+
+      const graphAsTask = new GraphAsTask();
+      graphAsTask.subGraph = graph;
+
+      const outputSchema = graphAsTask.outputSchema();
+
+      // Only TaskC should be in the schema (it's at depth 2, the maximum)
+      // TaskD is at depth 1, so it should not be included
+      expect(outputSchema.properties!["outputC1"]).toBeDefined();
+      expect(outputSchema.properties!["outputC2"]).toBeDefined();
+
+      // The output should NOT be arrays since there's only one node at the last level
+      expect((outputSchema.properties!["outputC1"] as any).type).not.toBe("array");
+      expect((outputSchema.properties!["outputC2"] as any).type).not.toBe("array");
+    });
+
+    it("should include multiple outputs when they are all at the same maximum depth", () => {
+      // Create a graph where:
+      // TaskA -> TaskB (depth 1)
+      // TaskA -> TaskC (depth 1)
+      // Both TaskB and TaskC are at the same maximum depth
+      const taskA = new TaskA();
+      const taskB = new TaskB();
+      const taskC = new TaskC();
+
+      const graph = new TaskGraph();
+      graph.addTask(taskA);
+      graph.addTask(taskB);
+      graph.addTask(taskC);
+
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB"));
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskC.config.id, "inputC1"));
+
+      const graphAsTask = new GraphAsTask();
+      graphAsTask.subGraph = graph;
+
+      const outputSchema = graphAsTask.outputSchema();
+
+      // Both TaskB and TaskC should be in the schema (both at depth 1, the maximum)
+      expect(outputSchema.properties!["outputB"]).toBeDefined();
+      expect(outputSchema.properties!["outputC1"]).toBeDefined();
+      expect(outputSchema.properties!["outputC2"]).toBeDefined();
+
+      // The outputs should be arrays since there are multiple nodes at the last level
       expect((outputSchema.properties!["outputB"] as any).type).toBe("array");
       expect((outputSchema.properties!["outputC1"] as any).type).toBe("array");
       expect((outputSchema.properties!["outputC2"] as any).type).toBe("array");

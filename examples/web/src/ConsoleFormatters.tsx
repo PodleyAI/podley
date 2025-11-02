@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Workflow, TaskStatus, Task, TaskGraph, Dataflow } from "@podley/task-graph";
+import { Dataflow, Task, TaskGraph, TaskStatus, Workflow } from "@podley/task-graph";
 import { DirectedAcyclicGraph } from "@podley/util";
 
 type Config = Record<string, any>;
@@ -145,8 +145,8 @@ class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
     if (obj.workflowCreate) {
       const header = new JsonMLElement("div");
       const name = obj.constructor.runtype ?? obj.constructor.type ?? obj.type.replace(/Task$/, "");
-      const inputs = Object.keys(obj.inputSchema.properties).map((key) => `${key}: …`);
-      const outputs = Object.keys(obj.outputSchema.properties).map((key) => `${key}: …`);
+      const inputs = Object.keys(obj.inputSchema().properties).map((key) => `${key}: …`);
+      const outputs = Object.keys(obj.outputSchema().properties).map((key) => `${key}: …`);
 
       header.methodSignature(name);
       header.functionCall((el) => {
@@ -187,14 +187,14 @@ class TaskConsoleFormatter extends ConsoleFormatter {
       const header = new JsonMLElement("div");
       let name = task.type ?? task.constructor.name;
       if (config?.workflow) name = name.replace(/Task$/, "");
-      const inputs = Object.keys(task.inputSchema.properties)
+      const inputs = Object.keys(task.inputSchema().properties)
         .filter((key) => task.runInputData[key] !== undefined)
         .map((key) => {
           let value = task.runInputData[key];
           return { name: key, value };
         });
 
-      const outputs = Object.keys(task.outputSchema.properties)
+      const outputs = Object.keys(task.outputSchema().properties)
         .filter((key) => task.runOutputData[key] !== undefined && task.runOutputData[key] !== "")
         .filter(
           (key) => !(Array.isArray(task.runOutputData[key]) && task.runOutputData[key].length === 0)
@@ -238,7 +238,7 @@ class TaskConsoleFormatter extends ConsoleFormatter {
     const inputs = body.createStyledList("Inputs:");
     const allInboundDataflows = (config?.graph as TaskGraph)?.getSourceDataflows(task.config.id);
 
-    for (const key of Object.keys(task.inputSchema.properties)) {
+    for (const key of Object.keys(task.inputSchema().properties)) {
       const value = task.runInputData[key];
       const li = inputs.createListItem("", "padding-left: 20px;");
       li.inputText(`${key}: `);
@@ -274,7 +274,7 @@ class TaskConsoleFormatter extends ConsoleFormatter {
     }
 
     const outputs = body.createStyledList("Outputs:");
-    for (const key of Object.keys(task.outputSchema.properties)) {
+    for (const key of Object.keys(task.outputSchema().properties)) {
       const value = task.runOutputData[key];
       const li = outputs.createListItem("", "padding-left: 20px;");
       li.outputText(`${key}: `);

@@ -124,8 +124,8 @@ export class Dataflow {
     dataflow: Dataflow
   ): "static" | "runtime" | "incompatible" {
     // TODO(str): this is inefficient
-    const targetSchema = graph.getTask(dataflow.targetTaskId)!.inputSchema;
-    const sourceSchema = graph.getTask(dataflow.sourceTaskId)!.outputSchema;
+    const targetSchema = graph.getTask(dataflow.targetTaskId)!.inputSchema();
+    const sourceSchema = graph.getTask(dataflow.sourceTaskId)!.outputSchema();
 
     const targetSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.targetTaskPortId

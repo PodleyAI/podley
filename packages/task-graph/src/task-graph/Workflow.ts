@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, type EventParameters } from "@podley/util";
-import { TObject, TSchema } from "@sinclair/typebox";
+import { TSchema } from "@sinclair/typebox";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { GraphAsTask } from "../task/GraphAsTask";
 import type { ITask, ITaskConstructor } from "../task/ITask";
@@ -122,7 +122,7 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
       if (this._dataFlows.length > 0) {
         this._dataFlows.forEach((dataflow) => {
           if (
-            task.inputSchema.properties?.[dataflow.targetTaskPortId] === undefined &&
+            task.inputSchema().properties?.[dataflow.targetTaskPortId] === undefined &&
             dataflow.targetTaskPortId !== DATAFLOW_ALL_PORTS
           ) {
             this._error = `Input ${dataflow.targetTaskPortId} not found on task ${task.config.id}`;
@@ -141,8 +141,8 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
       if (parent && this.graph.getTargetDataflows(parent.config.id).length === 0) {
         // Find matches between parent outputs and task inputs based on valueType
         const matches = new Map<string, string>();
-        const sourceSchema = parent.outputSchema as TObject;
-        const targetSchema = task.inputSchema as TObject;
+        const sourceSchema = parent.outputSchema();
+        const targetSchema = task.inputSchema();
 
         const makeMatch = (
           comparator: (
@@ -458,7 +458,7 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
     }
 
     const lastNode = nodes[nodes.length + index];
-    const outputSchema = lastNode.outputSchema;
+    const outputSchema = lastNode.outputSchema();
 
     if (!outputSchema.properties?.[source] && source !== DATAFLOW_ALL_PORTS) {
       const errorMsg = `Output ${source} not found on task ${lastNode.config.id}`;
@@ -547,8 +547,8 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
       throw new WorkflowError("Source or target task not found");
     }
 
-    const sourceSchema = sourceTask.outputSchema;
-    const targetSchema = targetTask.inputSchema;
+    const sourceSchema = sourceTask.outputSchema();
+    const targetSchema = targetTask.inputSchema();
 
     if (!sourceSchema.properties?.[sourceTaskPortId]) {
       throw new WorkflowError(`Output ${sourceTaskPortId} not found on source task`);

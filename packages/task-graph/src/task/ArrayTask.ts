@@ -11,8 +11,8 @@ import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { GraphResultArray, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTask } from "./GraphAsTask";
-import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
+import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 
 /**
  * ArrayTask is a compound task that either:
@@ -38,14 +38,14 @@ export class ArrayTask<
   /**
    * Gets input schema for this task from the static inputSchema property, which is user defined (reverts GraphAsTask's override)
    */
-  get inputSchema(): TObject {
+  public inputSchema(): TObject {
     return (this.constructor as typeof ArrayTask).inputSchema();
   }
 
   /**
    * Gets output schema for this task from the static outputSchema property, which is user defined (reverts GraphAsTask's override)
    */
-  get outputSchema(): TObject {
+  public outputSchema(): TObject {
     return (this.constructor as typeof ArrayTask).outputSchema();
   }
 
@@ -56,7 +56,7 @@ export class ArrayTask<
     // Check if any inputs are arrays
     const arrayInputs = new Map<string, Array<Input[keyof Input]>>();
     let hasArrayInputs = false;
-    const inputSchema = this.inputSchema;
+    const inputSchema = this.inputSchema();
     const keys = Object.keys(inputSchema.properties);
     for (const inputId of keys) {
       const inputValue = this.runInputData[inputId];
