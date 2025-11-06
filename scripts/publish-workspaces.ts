@@ -8,6 +8,7 @@ import { findWorkspaces } from "./lib/util";
 
 interface PackageJson {
   name: string;
+  version: string;
   publishConfig?: {
     access?: string;
   };
@@ -18,6 +19,11 @@ interface PublishError {
   error: any;
   isVersionConflict: boolean;
   output?: string;
+}
+
+interface PublishSuccess {
+  packageName: string;
+  version: string;
 }
 
 async function runCommand(command: string, args: string[], cwd: string): Promise<string> {
@@ -54,21 +60,27 @@ async function runCommand(command: string, args: string[], cwd: string): Promise
   });
 }
 
-async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishError | null> {
+async function checkAndPublishWorkspace(workspacePath: string): Promise<{
+  error: PublishError | null;
+  success: PublishSuccess | null;
+}> {
   const packageJsonPath = join(workspacePath, "package.json");
   if (!existsSync(packageJsonPath)) {
     return {
-      packageName: packageJsonPath,
-      error: "Not a valid package",
-      isVersionConflict: false,
-      output: "No package.json found",
+      error: {
+        packageName: packageJsonPath,
+        error: "Not a valid package",
+        isVersionConflict: false,
+        output: "No package.json found",
+      },
+      success: null,
     };
   }
   const packageText = (await readFile(packageJsonPath, "utf-8")).toString();
   const packageJson = JSON.parse(packageText) as PackageJson;
 
   if (!packageJson.publishConfig?.access) {
-    return null;
+    return { error: null, success: null };
   }
 
   const access = packageJson.publishConfig.access;
@@ -94,23 +106,63 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<PublishE
 
   if (isVersionConflict) {
     return {
-      packageName: packageJson.name,
-      error: "Version already published",
-      isVersionConflict: true,
-      output,
+      error: {
+        packageName: packageJson.name,
+        error: "Version already published",
+        isVersionConflict: true,
+        output,
+      },
+      success: null,
     };
   }
 
   if (error) {
     return {
-      packageName: packageJson.name,
-      isVersionConflict: false,
-      output,
-      error,
+      error: {
+        packageName: packageJson.name,
+        isVersionConflict: false,
+        output,
+        error,
+      },
+      success: null,
     };
   }
 
-  return null;
+  return {
+    error: null,
+    success: {
+      packageName: packageJson.name,
+      version: packageJson.version,
+    },
+  };
+}
+
+async function createGitTag(packageName: string, version: string): Promise<void> {
+  const tag = `${packageName}@${version}`;
+  try {
+    console.log(`Creating git tag: ${tag}`);
+    await runCommand("git", ["tag", tag], process.cwd());
+    console.log(`Successfully created tag: ${tag}`);
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    // If tag already exists, log it but don't fail
+    if (errorMsg.includes("already exists")) {
+      console.log(`Tag ${tag} already exists, skipping...`);
+    } else {
+      throw err;
+    }
+  }
+}
+
+async function pushGitTags(): Promise<void> {
+  try {
+    console.log("Pushing git tags to remote...");
+    await runCommand("git", ["push", "--tags"], process.cwd());
+    console.log("Successfully pushed git tags");
+  } catch (err) {
+    console.error("Failed to push git tags:", err instanceof Error ? err.message : String(err));
+    throw err;
+  }
 }
 
 async function main(): Promise<void> {
@@ -119,11 +171,15 @@ async function main(): Promise<void> {
   console.log(`Found ${workspaces.length} workspaces`);
 
   const errors: PublishError[] = [];
+  const successes: PublishSuccess[] = [];
 
   for (const workspace of workspaces) {
-    const error = await checkAndPublishWorkspace(workspace);
-    if (error) {
-      errors.push(error);
+    const result = await checkAndPublishWorkspace(workspace);
+    if (result.error) {
+      errors.push(result.error);
+    }
+    if (result.success) {
+      successes.push(result.success);
     }
   }
 
@@ -151,6 +207,17 @@ async function main(): Promise<void> {
       }
       process.exit(1);
     }
+  }
+
+  // Create git tags for successfully published packages
+  if (successes.length > 0) {
+    console.log(`\nCreating git tags for ${successes.length} successfully published package(s)...`);
+    for (const success of successes) {
+      await createGitTag(success.packageName, success.version);
+    }
+
+    // Push all tags to remote
+    await pushGitTags();
   }
 
   console.log("\nWorkspace publishing process completed successfully");
