@@ -1,4 +1,4 @@
-import { OptionalKind, Type } from "typebox";
+import { Type } from "typebox";
 import { describe, expect, test } from "bun:test";
 import { simplifySchema } from "@podley/util";
 
@@ -87,7 +87,7 @@ describe("simplifySchema", () => {
     expect(result).toEqual(
       Type.Object({
         name: Type.String({
-          [OptionalKind]: "Optional",
+          "~optional": "Optional",
           optional: true,
           isNullable: true,
           default: "John",

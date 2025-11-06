@@ -5,10 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Kind, SchemaOptions, TSchema, Type, TypeRegistry } from "typebox";
+import { SchemaOptions, TSchema, Type } from "typebox";
 
-export const TypedArray = (annotations: Record<string, unknown> = {}) =>
-  Type.Union(
+export const TypedArray = (annotations: Record<string, unknown> = {}) => {
+  const schema = Type.Union(
     [
       Type.Unsafe<Float64Array>({ type: "Float64Array" }),
       Type.Unsafe<Float32Array>({ type: "Float32Array" }),
@@ -22,6 +22,28 @@ export const TypedArray = (annotations: Record<string, unknown> = {}) =>
     ],
     { ...annotations }
   );
+  
+  // Add custom guard for TypedArray validation
+  return {
+    ...schema,
+    "~guard": {
+      check: (value: unknown) => {
+        return (
+          typeof value === "object" &&
+          value !== null &&
+          schema.anyOf.some((x: TSchema) => x.type === (value as any)[Symbol.toStringTag])
+        );
+      },
+      errors: (value: unknown) => {
+        const isValid =
+          typeof value === "object" &&
+          value !== null &&
+          schema.anyOf.some((x: TSchema) => x.type === (value as any)[Symbol.toStringTag]);
+        return isValid ? [] : [{ message: "Expected a TypedArray" }];
+      },
+    },
+  };
+};
 
 export type TypedArray =
   | Float64Array
@@ -34,13 +56,6 @@ export type TypedArray =
   | Uint8Array
   | Uint8ClampedArray;
 
-TypeRegistry.Set("TypedArray", (schema: TSchema, value: unknown) => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    schema.anyOf.some((x: TSchema) => x.type === (value as any)[Symbol.toStringTag])
-  );
-});
 export const TypeLanguage = (annotations: Record<string, unknown> = {}) =>
   Type.String({
     title: "Language",
@@ -53,7 +68,7 @@ export const TypeLanguage = (annotations: Record<string, unknown> = {}) =>
 export type TypeModelSymantic = "model" | `model:${string}`;
 
 export interface TTypeModel extends TSchema {
-  [Kind]: "TypeModel";
+  "~kind": "TypeModel";
   static: string;
   type: "string";
   semantic: TypeModelSymantic;
@@ -63,11 +78,6 @@ export function TypeModel(semantic: TypeModelSymantic = "model", options: Schema
   if (semantic !== "model" && !semantic.startsWith("model:")) {
     throw new Error("Invalid semantic value");
   }
-  const task = semantic.startsWith("model:") ? semantic.slice(6) : null;
-  function TypeModelCheck(schema: TTypeModel, value: unknown) {
-    return typeof value === "string" && value === "gpt-5";
-  }
-  if (!TypeRegistry.Has("TypeModel")) TypeRegistry.Set("TypeModel", TypeModelCheck);
   const taskName = semantic.startsWith("model:")
     ? semantic
         .slice(6)
@@ -75,12 +85,20 @@ export function TypeModel(semantic: TypeModelSymantic = "model", options: Schema
         .replaceAll(/[A-Z]/g, (char) => " " + char.toLowerCase())
         .trim()
     : null;
+  
   return {
     title: "Model",
     description: `The model ${taskName ? `for ${taskName} ` : "to use"}`,
     ...options,
     semantic,
-    [Kind]: "TypeModel",
+    "~kind": "TypeModel",
     type: "string",
+    "~guard": {
+      check: (value: unknown) => typeof value === "string" && value === "gpt-5",
+      errors: (value: unknown) => 
+        typeof value === "string" && value === "gpt-5" 
+          ? [] 
+          : [{ message: "Expected a valid model string" }],
+    },
   } as TTypeModel;
 }

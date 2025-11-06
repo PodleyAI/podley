@@ -32,8 +32,8 @@ export const TypeOptionalArray = <T extends TSchema>(
   annotations: Record<string, unknown> = {}
 ) =>
   Type.Union([type, Type.Array(type)], {
-    title: type.title,
-    description: type.description,
+    title: (type as any).title,
+    description: (type as any).description,
     ...annotations,
   });
 
@@ -72,15 +72,16 @@ export function areSemanticallyCompatible(
 }
 
 export function forwardAnnotations(schema: TSchema, annotations: Record<string, unknown>) {
+  const s = schema as any;
   return {
-    ...(schema.title ? { title: schema.title } : {}),
-    ...(schema.description ? { description: schema.description } : {}),
-    ...(schema.default ? { default: schema.default } : {}),
-    ...(schema.replicate ? { replicate: schema.replicate } : {}),
-    ...(schema.semantic ? { semantic: schema.semantic } : {}),
-    ...(schema[OptionalKind] ? { optional: true } : {}),
-    ...(schema.isArray ? { isArray: schema.isArray } : {}),
-    ...(schema.isNullable ? { isNullable: schema.isNullable } : {}),
+    ...(s.title ? { title: s.title } : {}),
+    ...(s.description ? { description: s.description } : {}),
+    ...(s.default ? { default: s.default } : {}),
+    ...(s.replicate ? { replicate: s.replicate } : {}),
+    ...(s.semantic ? { semantic: s.semantic } : {}),
+    ...(s[OptionalKind] ? { optional: true } : {}),
+    ...(s.isArray ? { isArray: s.isArray } : {}),
+    ...(s.isNullable ? { isNullable: s.isNullable } : {}),
     ...annotations,
   };
 }
@@ -97,21 +98,22 @@ export function simplifySchema(
   if (!schema) {
     throw new Error("Schema is undefined");
   }
-  if (schema[Kind] === "Any") {
+  const s = schema as any;
+  if (s[Kind] === "Any") {
     return schema;
   }
   annotations = forwardAnnotations(schema, {
-    ...(schema[OptionalKind]
-      ? { optional: true, isNullable: true, default: schema.default ?? null }
+    ...(s[OptionalKind]
+      ? { optional: true, isNullable: true, default: s.default ?? null }
       : {}),
     ...annotations,
   });
 
   // Check for union types (represented as 'anyOf' in the JSON schema)
-  if (schema.anyOf && Array.isArray(schema.anyOf)) {
+  if (s.anyOf && Array.isArray(s.anyOf)) {
     // Separate union members into non-array and array types.
-    const nonArrayMembers = schema.anyOf.filter((member: any) => member.type !== "array");
-    const arrayMembers = schema.anyOf.filter(
+    const nonArrayMembers = s.anyOf.filter((member: any) => member.type !== "array");
+    const arrayMembers = s.anyOf.filter(
       (member: any) => member.type === "array" && member.items
     );
     if (arrayMembers.length === 1 && nonArrayMembers.length === 1) {
@@ -127,11 +129,11 @@ export function simplifySchema(
     }
   }
 
-  if (schema.anyOf) {
+  if (s.anyOf) {
     // This is for Nullable
-    const nullMember = schema.anyOf.find((member: any) => member.type === "null");
+    const nullMember = s.anyOf.find((member: any) => member.type === "null");
     if (nullMember) {
-      const result = schema.anyOf.filter((member: any) => member.type !== "null");
+      const result = s.anyOf.filter((member: any) => member.type !== "null");
       annotations = forwardAnnotations(result[0], {
         isNullable: true,
         default: null,
@@ -151,16 +153,16 @@ export function simplifySchema(
     }
   }
 
-  if (schema.properties && typeof schema.properties === "object") {
+  if (s.properties && typeof s.properties === "object") {
     const newProperties: any = {};
-    for (const key in schema.properties) {
-      newProperties[key] = simplifySchema(schema.properties[key], annotations);
+    for (const key in s.properties) {
+      newProperties[key] = simplifySchema(s.properties[key], annotations);
     }
     return { ...schema, properties: newProperties };
   }
 
-  if (schema.type === "array" && schema.items) {
-    return { ...schema, items: simplifySchema(schema.items, annotations) };
+  if (s.type === "array" && s.items) {
+    return { ...schema, items: simplifySchema(s.items, annotations) };
   }
 
   return { ...schema, ...annotations };
@@ -174,5 +176,5 @@ export function simplifySchema(
  */
 export function schemaSemantic(schema: TSchema): string | undefined {
   const simplified = simplifySchema(schema);
-  return simplified.semantic;
+  return (simplified as any).semantic;
 }

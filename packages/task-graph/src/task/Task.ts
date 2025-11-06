@@ -7,7 +7,7 @@
 
 import { EventEmitter, uuid4 } from "@podley/util";
 import { Type, type TObject } from "typebox";
-import { TypeCheck, TypeCompiler } from "typebox/compiler";
+import { Compile, Validator } from "typebox/compile";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteContext, IExecuteReactiveContext, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
@@ -442,14 +442,14 @@ export class Task<
   /**
    * The compiled input schema
    */
-  private static _inputSchemaTypeChecker: TypeCheck<TObject> | undefined;
+  private static _inputSchemaTypeChecker: Validator | undefined;
 
   /**
    * Gets the compiled input schema
    */
-  protected static getInputSchemaTypeChecker(): TypeCheck<TObject> {
+  protected static getInputSchemaTypeChecker(): Validator {
     if (!Task._inputSchemaTypeChecker) {
-      Task._inputSchemaTypeChecker = TypeCompiler.Compile(Task.inputSchema());
+      Task._inputSchemaTypeChecker = Compile(Task.inputSchema());
     }
     return Task._inputSchemaTypeChecker;
   }
