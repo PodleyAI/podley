@@ -54,7 +54,7 @@
     "@podley/util": {
       "optional": false
     },
-    "@sinclair/typebox": {
+    "zod": {
       "optional": false
     }
   },

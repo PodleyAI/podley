@@ -30,7 +30,7 @@
     "better-sqlite3": {
       "optional": false
     },
-    "@sinclair/typebox": {
+    "zod": {
       "optional": false
     }
   },

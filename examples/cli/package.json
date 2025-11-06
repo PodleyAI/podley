@@ -48,7 +48,7 @@
     "react-reconciler": "=0.31.0",
     "react-devtools-core": "=4.28.4",
     "retuink": "=1.1.5",
-    "@sinclair/typebox": "catalog:"
+    "zod": "catalog:"
   },
   "publishConfig": {
     "access": "public"

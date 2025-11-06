@@ -36,7 +36,6 @@
         "@podley/tasks": "workspace:*",
         "@podley/test": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
         "@sroussey/transformers": "catalog:",
         "@types/react": "=18.3.12",
         "chalk": "^5.6.2",
@@ -46,6 +45,7 @@
         "react-devtools-core": "=4.28.4",
         "react-reconciler": "=0.31.0",
         "retuink": "=1.1.5",
+        "zod": "catalog:",
       },
     },
     "examples/web": {
@@ -64,7 +64,6 @@
         "@podley/test": "workspace:*",
         "@podley/util": "workspace:*",
         "@radix-ui/react-icons": "^1.3.2",
-        "@sinclair/typebox": "catalog:",
         "@sroussey/transformers": "catalog:",
         "@uiw/codemirror-theme-vscode": "^4.25.2",
         "@uiw/react-codemirror": "^4.25.2",
@@ -76,6 +75,7 @@
         "react-icons": "^5.5.0",
         "react-resizable-panels": "^3.0.6",
         "tailwind-merge": "2.6.0",
+        "zod": "catalog:",
       },
       "devDependencies": {
         "@types/react": "^19.2.2",
@@ -95,17 +95,17 @@
         "@podley/storage": "workspace:*",
         "@podley/task-graph": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
         "@types/pg": "^8.15.5",
         "pg": "^8.16.3",
+        "zod": "catalog:",
       },
       "peerDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
         "@podley/task-graph": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
         "pg": "^8.16.3",
+        "zod": "catalog:",
       },
     },
     "packages/ai-provider": {
@@ -164,18 +164,18 @@
       "devDependencies": {
         "@podley/sqlite": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
         "@supabase/supabase-js": "^2.75.1",
         "@types/pg": "^8.15.5",
         "fake-indexeddb": "^6.2.4",
         "pg": "^8.16.3",
+        "zod": "catalog:",
       },
       "peerDependencies": {
         "@podley/sqlite": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
         "@supabase/supabase-js": "^2.74.0",
         "pg": "^8.16.3",
+        "zod": "catalog:",
       },
     },
     "packages/task-graph": {
@@ -185,13 +185,13 @@
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
+        "zod": "catalog:",
       },
       "peerDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
+        "zod": "catalog:",
       },
     },
     "packages/tasks": {
@@ -202,14 +202,14 @@
         "@podley/storage": "workspace:*",
         "@podley/task-graph": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
+        "zod": "catalog:",
       },
       "peerDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
         "@podley/task-graph": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
+        "zod": "catalog:",
       },
     },
     "packages/test": {
@@ -225,11 +225,11 @@
         "@podley/task-graph": "workspace:*",
         "@podley/tasks": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
         "@supabase/supabase-js": "^2.76.1",
         "@types/pg": "^8.15.5",
         "fake-indexeddb": "^6.2.4",
         "pg": "^8.16.3",
+        "zod": "catalog:",
       },
       "peerDependencies": {
         "@electric-sql/pglite": "^0.3.11",
@@ -241,19 +241,19 @@
         "@podley/task-graph": "workspace:*",
         "@podley/tasks": "workspace:*",
         "@podley/util": "workspace:*",
-        "@sinclair/typebox": "catalog:",
         "@supabase/supabase-js": "^2.76.1",
         "pg": "^8.16.3",
+        "zod": "catalog:",
       },
     },
     "packages/util": {
       "name": "@podley/util",
       "version": "0.0.30",
       "devDependencies": {
-        "@sinclair/typebox": "catalog:",
+        "zod": "catalog:",
       },
       "peerDependencies": {
-        "@sinclair/typebox": "catalog:",
+        "zod": "catalog:",
       },
     },
   },
@@ -266,8 +266,8 @@
   ],
   "catalog": {
     "@mediapipe/tasks-text": "^0.10.21",
-    "@sinclair/typebox": "^0.34.41",
     "@sroussey/transformers": "3.7.4",
+    "zod": "^4.1.12",
   },
   "packages": {
     "@alcalzone/ansi-tokenize": ["@alcalzone/ansi-tokenize@0.1.3", "", { "dependencies": { "ansi-styles": "^6.2.1", "is-fullwidth-code-point": "^4.0.0" } }, "sha512-3yWxPTq3UQ/FY9p1ErPxIyfT64elWaMvM9lIHnaqpyft63tkxodF5aUElYHrdisWve5cETkh1+KBw1yJuW0aRw=="],
@@ -621,8 +621,6 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.52.4", "", { "os": "win32", "cpu": "x64" }, "sha512-UF9KfsH9yEam0UjTwAgdK0anlQ7c8/pWPU2yVjyWcF1I1thABt6WXE47cI71pGiZ8wGvxohBoLnxM04L/wj8mQ=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.52.4", "", { "os": "win32", "cpu": "x64" }, "sha512-bf9PtUa0u8IXDVxzRToFQKsNCRz9qLYfR/MpECxl4mRoWYjAeFjgxj1XdZr2M/GNVpT05p+LgQOHopYDlUu6/w=="],
-
-    "@sinclair/typebox": ["@sinclair/typebox@0.34.41", "", {}, "sha512-6gS8pZzSXdyRHTIqoqSVknxolr1kzfy4/CeDnrzsVz8TTIWUbOBr6gnzOmTYJ3eXQNh4IYHIGi5aIL7sOZ2G/g=="],
 
     "@sqlite.org/sqlite-wasm": ["@sqlite.org/sqlite-wasm@3.50.4-build1", "", { "bin": { "sqlite-wasm": "bin/index.js" } }, "sha512-Qig2Wso7gPkU1PtXwFzndh+CTRzrIFxVGqv6eCetjU7YqxlHItj+GvQYwYTppCRgAPawtRN/4AJcEgB9xDHGug=="],
 
@@ -1668,7 +1666,7 @@
 
     "yoga-layout": ["yoga-layout@3.2.1", "", {}, "sha512-0LPOt3AxKqMdFBZA3HBAt/t/8vIKq7VaQYbuA8WxCgung+p9TVyKRYdpvCb80HcdTN2NkbIKbhNwKUfm3tQywQ=="],
 
-    "zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
+    "zod": ["zod@4.1.12", "", {}, "sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ=="],
 
     "zod-validation-error": ["zod-validation-error@4.0.2", "", { "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "sha512-Q6/nZLe6jxuU80qb/4uJ4t5v2VEZ44lzQjPDhYJNztRQ4wyWc6VF3D3Kb/fAuPetZQnhS3hnajCf9CsWesghLQ=="],
 
@@ -1749,6 +1747,8 @@
     "eslint/ignore": ["ignore@5.3.2", "", {}, "sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g=="],
 
     "eslint-plugin-react/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
+
+    "eslint-plugin-react-hooks/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
 
     "fast-glob/glob-parent": ["glob-parent@5.1.2", "", { "dependencies": { "is-glob": "^4.0.1" } }, "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow=="],
 
