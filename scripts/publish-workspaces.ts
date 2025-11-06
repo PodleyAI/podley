@@ -137,32 +137,47 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<{
   };
 }
 
-async function createGitTag(packageName: string, version: string): Promise<void> {
+async function createGitTag(packageName: string, version: string): Promise<string | null> {
   const tag = `${packageName}@${version}`;
   try {
     console.log(`Creating git tag: ${tag}`);
     await runCommand("git", ["tag", tag], process.cwd());
     console.log(`Successfully created tag: ${tag}`);
+    return tag;
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     // If tag already exists, log it but don't fail
     if (errorMsg.includes("already exists")) {
       console.log(`Tag ${tag} already exists, skipping...`);
+      return null;
     } else {
-      throw err;
+      console.error(`Failed to create tag ${tag}:`, errorMsg);
+      return null;
     }
   }
 }
 
-async function pushGitTags(): Promise<void> {
-  try {
-    console.log("Pushing git tags to remote...");
-    await runCommand("git", ["push", "--tags"], process.cwd());
-    console.log("Successfully pushed git tags");
-  } catch (err) {
-    console.error("Failed to push git tags:", err instanceof Error ? err.message : String(err));
-    throw err;
+async function pushGitTags(tags: string[]): Promise<void> {
+  if (tags.length === 0) {
+    return;
   }
+
+  console.log("Pushing git tags to remote...");
+
+  for (const tag of tags) {
+    try {
+      await runCommand("git", ["push", "origin", tag], process.cwd());
+      console.log(`Pushed tag: ${tag}`);
+    } catch (err) {
+      // Log error but don't fail - packages are already published
+      console.error(
+        `Warning: Failed to push tag ${tag}:`,
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
+
+  console.log("Finished pushing git tags");
 }
 
 async function main(): Promise<void> {
@@ -212,12 +227,19 @@ async function main(): Promise<void> {
   // Create git tags for successfully published packages
   if (successes.length > 0) {
     console.log(`\nCreating git tags for ${successes.length} successfully published package(s)...`);
+    const createdTags: string[] = [];
+
     for (const success of successes) {
-      await createGitTag(success.packageName, success.version);
+      const tag = await createGitTag(success.packageName, success.version);
+      if (tag) {
+        createdTags.push(tag);
+      }
     }
 
-    // Push all tags to remote
-    await pushGitTags();
+    // Push newly created tags to remote
+    if (createdTags.length > 0) {
+      await pushGitTags(createdTags);
+    }
   }
 
   console.log("\nWorkspace publishing process completed successfully");
