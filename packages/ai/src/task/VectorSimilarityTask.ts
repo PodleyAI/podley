@@ -24,7 +24,7 @@ export const SimilarityFn = {
 
 export type SimilarityFn = (typeof SimilarityFn)[keyof typeof SimilarityFn];
 
-const SimilarityInputSchema = Type.Object({
+export const VectorSimilarityInputSchema = Type.Object({
   query: TypedArray({
     title: "Query",
     description: "Query vector to compare against",
@@ -50,7 +50,7 @@ const SimilarityInputSchema = Type.Object({
   }),
 });
 
-const SimilarityOutputSchema = Type.Object({
+export const VectorSimilarityOutputSchema = Type.Object({
   output: Type.Array(
     TypedArray({
       title: "Output",
@@ -65,8 +65,8 @@ const SimilarityOutputSchema = Type.Object({
   ),
 });
 
-export type VectorSimilarityTaskInput = Static<typeof SimilarityInputSchema>;
-export type VectorSimilarityTaskOutput = Static<typeof SimilarityOutputSchema>;
+export type VectorSimilarityTaskInput = Static<typeof VectorSimilarityInputSchema>;
+export type VectorSimilarityTaskOutput = Static<typeof VectorSimilarityOutputSchema>;
 
 export class VectorSimilarityTask extends ArrayTask<
   VectorSimilarityTaskInput,
@@ -81,10 +81,10 @@ export class VectorSimilarityTask extends ArrayTask<
   static readonly cacheable = true;
 
   public static override inputSchema() {
-    return SimilarityInputSchema;
+    return VectorSimilarityInputSchema;
   }
   public static override outputSchema() {
-    return SimilarityOutputSchema;
+    return VectorSimilarityOutputSchema;
   }
 
   // @ts-ignore (TODO: fix this)

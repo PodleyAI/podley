@@ -147,6 +147,18 @@
         "pg": "^8.16.3",
       },
     },
+    "packages/json-schema": {
+      "name": "@podley/json-schema",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@podley/ai": "workspace:*",
+        "@sinclair/typebox": "catalog:",
+      },
+      "peerDependencies": {
+        "@podley/ai": "workspace:*",
+        "@sinclair/typebox": "catalog:",
+      },
+    },
     "packages/sqlite": {
       "name": "@podley/sqlite",
       "version": "0.0.30",
@@ -539,6 +551,8 @@
     "@podley/cli": ["@podley/cli@workspace:examples/cli"],
 
     "@podley/job-queue": ["@podley/job-queue@workspace:packages/job-queue"],
+
+    "@podley/json-schema": ["@podley/json-schema@workspace:packages/json-schema"],
 
     "@podley/sqlite": ["@podley/sqlite@workspace:packages/sqlite"],
 

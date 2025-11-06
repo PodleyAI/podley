@@ -17,11 +17,11 @@ import { TObject, Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 
-const DownloadModelInputSchema = Type.Object({
+export const DownloadModelInputSchema = Type.Object({
   model: TypeReplicateArray(TypeModel("model")),
 });
 
-const DownloadModelOutputSchema = Type.Object({
+export const DownloadModelOutputSchema = Type.Object({
   model: TypeOptionalArray(TypeModel("model")),
 });
 export type DownloadModelTaskRunInput = Static<typeof DownloadModelInputSchema>;
