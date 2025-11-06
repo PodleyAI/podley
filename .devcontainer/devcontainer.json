@@ -13,7 +13,8 @@
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "zardoy.ts-essential-plugins",
-        "bradlc.vscode-tailwindcss"
+        "bradlc.vscode-tailwindcss",
+        "vscode-icons-team.vscode-icons"
       ]
     }
   },

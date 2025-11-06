@@ -26,7 +26,7 @@ jobs:
             echo "NPM_TOKEN is available."
           fi
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v6
         with:
