@@ -229,7 +229,6 @@ export class FetchTask<
         Type.String({
           title: "Body",
           description: "The body of the request",
-          default: true,
         })
       ),
       response_type: Type.Optional(
