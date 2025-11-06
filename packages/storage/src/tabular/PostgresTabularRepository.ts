@@ -129,7 +129,7 @@ export class PostgresTabularRepository<
    */
   protected mapTypeToSQL(typeDef: TSchema): string {
     // Extract the actual non-null type using base helper
-    const actualType = this.getNonNullType(typeDef);
+    const actualType = this.getNonNullType(typeDef) as any;
 
     // Handle BLOB type
     if (actualType.contentEncoding === "blob") return "BYTEA";
@@ -289,7 +289,7 @@ export class PostgresTabularRepository<
       if (value === null && this.isNullable(typeDef)) {
         return null as any;
       }
-      const actualType = this.getNonNullType(typeDef);
+      const actualType = this.getNonNullType(typeDef) as any;
 
       // Handle numeric types - PostgreSQL can return them as strings
       if (actualType.type === "number" || actualType.type === "integer") {
@@ -311,7 +311,7 @@ export class PostgresTabularRepository<
    */
   protected shouldBeUnsigned(typeDef: TSchema): boolean {
     // Extract the non-null type using the base class helper
-    const actualType = this.getNonNullType(typeDef);
+    const actualType = this.getNonNullType(typeDef) as any;
 
     // Check if it's a number type with minimum >= 0
     if (

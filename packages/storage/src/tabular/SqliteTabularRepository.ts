@@ -131,7 +131,7 @@ export class SqliteTabularRepository<
       | TSchema
       | undefined;
     if (typeDef) {
-      const actualType = this.getNonNullType(typeDef);
+      const actualType = this.getNonNullType(typeDef) as any;
       if (actualType.type === "boolean") {
         if (value === null && this.isNullable(typeDef)) {
           return null;
@@ -156,7 +156,7 @@ export class SqliteTabularRepository<
       if (value === null && this.isNullable(typeDef)) {
         return null as any;
       }
-      const actualType = this.getNonNullType(typeDef);
+      const actualType = this.getNonNullType(typeDef) as any;
       if (actualType.type === "boolean") {
         const v: any = value as any;
         if (typeof v === "boolean") return v as any;
@@ -177,7 +177,7 @@ export class SqliteTabularRepository<
    */
   protected mapTypeToSQL(typeDef: TSchema): string {
     // Get the actual non-null type for proper mapping
-    const actualType = this.getNonNullType(typeDef);
+    const actualType = this.getNonNullType(typeDef) as any;
 
     // Handle BLOB type
     if (actualType.contentEncoding === "blob") return "BLOB";
@@ -203,7 +203,7 @@ export class SqliteTabularRepository<
         // The multipleOf property in JSON Schema specifies that a number must be a
         // multiple of a given value. When set to 1, it means the number must be a
         // whole number multiple of 1, which effectively means it must be an integer.
-        if (typeDef.multipleOf === 1 || typeDef.type === "integer") {
+        if ((typeDef as any).multipleOf === 1 || (typeDef as any).type === "integer") {
           return "INTEGER";
         }
 

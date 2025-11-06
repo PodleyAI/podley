@@ -90,18 +90,19 @@ export abstract class BaseSqlTabularRepository<
    * @returns true if the type allows null values
    */
   protected isNullable(typeDef: TSchema): boolean {
+    const t = typeDef as any;
     // Check for union types that include null
-    if (typeDef.anyOf && Array.isArray(typeDef.anyOf)) {
-      return typeDef.anyOf.some((type: any) => type.type === "null");
+    if (t.anyOf && Array.isArray(t.anyOf)) {
+      return t.anyOf.some((type: any) => type.type === "null");
     }
 
     // Check for TypeBox Optional/ReadonlyOptional types
-    if (typeDef.kind === "Optional" || typeDef.kind === "ReadonlyOptional") {
+    if (t.kind === "Optional" || t.kind === "ReadonlyOptional") {
       return true;
     }
 
     // Check for nullable keyword if it exists
-    if ("nullable" in typeDef && typeDef.nullable === true) {
+    if ("nullable" in t && t.nullable === true) {
       return true;
     }
 
@@ -131,8 +132,9 @@ export abstract class BaseSqlTabularRepository<
    * @returns The non-null type from the schema
    */
   protected getNonNullType(typeDef: TSchema): TSchema {
-    if (typeDef.anyOf && Array.isArray(typeDef.anyOf)) {
-      const nonNullType = typeDef.anyOf.find((t: any) => t.type !== "null");
+    const t = typeDef as any;
+    if (t.anyOf && Array.isArray(t.anyOf)) {
+      const nonNullType = t.anyOf.find((type: any) => type.type !== "null");
       if (nonNullType) {
         return nonNullType;
       }
@@ -195,7 +197,7 @@ export abstract class BaseSqlTabularRepository<
     }
 
     // Extract the non-null type for proper handling
-    const actualType = this.getNonNullType(typeDef);
+    const actualType = this.getNonNullType(typeDef) as any;
 
     if (actualType.contentEncoding === "blob") {
       const v: any = value;
@@ -230,7 +232,7 @@ export abstract class BaseSqlTabularRepository<
     }
 
     // Extract the non-null type for proper handling
-    const actualType = this.getNonNullType(typeDef);
+    const actualType = this.getNonNullType(typeDef) as any;
 
     if (actualType.contentEncoding === "blob") {
       const v: any = value;

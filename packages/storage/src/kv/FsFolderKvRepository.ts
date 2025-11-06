@@ -52,7 +52,7 @@ export class FsFolderKvRepository<
     let content: string;
     if (value === null) {
       content = "";
-    } else if (this.valueSchema.type === "object") {
+    } else if ((this.valueSchema as any).type === "object") {
       content = JSON.stringify(value);
     } else if (typeof value === "object") {
       // Handle 'json' type schema from tests
@@ -82,7 +82,7 @@ export class FsFolderKvRepository<
    */
   public async get(key: Key): Promise<Value | undefined> {
     const localPath = path.join(this.folderPath, this.pathWriter(key));
-    const typeDef = this.valueSchema;
+    const typeDef = this.valueSchema as any;
     try {
       const encoding = typeDef.contentEncoding === "blob" ? "binary" : "utf-8";
       const content = (await readFile(localPath, { encoding })).toString().trim();
