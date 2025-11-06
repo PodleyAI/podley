@@ -13,7 +13,7 @@ import {
   TypeReplicateArray,
 } from "@podley/task-graph";
 import { AiTask } from "./base/AiTask";
-import { TObject, Type, type Static } from "@sinclair/typebox";
+import { TObject, Type, type Static } from "@podley/util";
 import { TypeModel } from "./base/AiTaskSchemas";
 
 export const TextSummaryInputSchema = Type.Object({

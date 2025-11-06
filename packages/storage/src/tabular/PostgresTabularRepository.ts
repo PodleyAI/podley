@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken } from "@podley/util";
-import { Static, TObject, TSchema } from "@sinclair/typebox";
+import { Static, TObject, TSchema } from "@podley/util";
 import type { Pool } from "pg";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import {

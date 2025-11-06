@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Static, TObject, TSchema } from "@sinclair/typebox";
+import { Static, TObject, TSchema } from "@podley/util";
 import { ExtractPrimaryKey, ExtractValue, ValueOptionType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 

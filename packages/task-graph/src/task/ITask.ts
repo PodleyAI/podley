@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import type { EventEmitter } from "@podley/util";
-import { TObject } from "@sinclair/typebox";
+import { TObject } from "@podley/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { ITaskGraph } from "../task-graph/ITaskGraph";
 import { IWorkflow } from "../task-graph/IWorkflow";

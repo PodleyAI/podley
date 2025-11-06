@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken } from "@podley/util";
-import { TSchema, Type } from "@sinclair/typebox";
+import { TSchema, Type } from "@podley/util";
 import { FsFolderTabularRepository } from "../tabular/FsFolderTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";

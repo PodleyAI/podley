@@ -18,7 +18,7 @@ import {
   GraphAsTask,
   TaskConfigurationError,
 } from "@podley/task-graph";
-import { TObject, Type } from "@sinclair/typebox";
+import { TObject, Type } from "@podley/util";
 
 interface JsonTaskInput extends TaskInput {
   json: string;

@@ -7,7 +7,7 @@
 
 import { type TabularRepository } from "@podley/storage";
 import { compress, decompress, makeFingerprint, TypeBlob, TypeDateTime } from "@podley/util";
-import { Type } from "@sinclair/typebox";
+import { Type } from "@podley/util";
 import { TaskInput, TaskOutput } from "../task/TaskTypes";
 import { TaskOutputRepository } from "./TaskOutputRepository";
 

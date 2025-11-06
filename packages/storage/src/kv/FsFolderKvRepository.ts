@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken, TypeBlob } from "@podley/util";
-import { TSchema, Type } from "@sinclair/typebox";
+import { TSchema, Type } from "@podley/util";
 import { mkdir, readFile, rm, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { IKvRepository } from "./IKvRepository";

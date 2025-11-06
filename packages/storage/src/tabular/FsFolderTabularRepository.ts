@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken, sleep } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
+import { Static, TObject } from "@podley/util";
 import { readdir, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";

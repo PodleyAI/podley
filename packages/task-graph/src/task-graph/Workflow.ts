@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, type EventParameters } from "@podley/util";
-import { TSchema } from "@sinclair/typebox";
+import { TSchema } from "@podley/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { GraphAsTask } from "../task/GraphAsTask";
 import type { ITask, ITaskConstructor } from "../task/ITask";

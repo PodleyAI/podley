@@ -5,43 +5,190 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Kind, OptionalKind, type TSchema, Type, TypeRegistry } from "@sinclair/typebox";
+import { z, type ZodTypeAny, type ZodObject, type ZodRawShape } from "zod";
+
+// Type aliases to maintain compatibility with TypeBox
+export type TSchema = ZodTypeAny & {
+  format?: string;
+  minimum?: number;
+  maximum?: number;
+  maxLength?: number;
+  minLength?: number;
+  multipleOf?: number;
+  items?: TSchema;
+  properties?: Record<string, TSchema>;
+  semantic?: string;
+  title?: string;
+  description?: string;
+  default?: unknown;
+  replicate?: boolean;
+  optional?: boolean;
+  isArray?: boolean;
+  isNullable?: boolean;
+  type?: string;
+  contentEncoding?: string;
+  anyOf?: TSchema[];
+};
+
+export type TObject<T extends ZodRawShape = ZodRawShape> = ZodObject<T> & {
+  properties?: T;
+};
+
+export type Static<T extends ZodTypeAny> = z.infer<T>;
+export type TArray<T extends ZodTypeAny> = z.ZodArray<T> & { items?: T };
+export type TUnion<T extends readonly [ZodTypeAny, ...ZodTypeAny[]]> = z.ZodUnion<T>;
+export type SchemaOptions = Record<string, unknown>;
+export type TAny = z.ZodAny;
+export type TNumber = z.ZodNumber & { minimum?: number; maximum?: number; multipleOf?: number };
+export type TString = z.ZodString & { format?: string; maxLength?: number; minLength?: number };
+
+// Helper to attach metadata to a schema
+function withMetadata<T extends TSchema>(schema: T, metadata: Record<string, unknown>): T {
+  Object.assign(schema, metadata);
+  return schema;
+}
+
+// Zod-based Type API wrapper to maintain TypeBox compatibility
+export const Type = {
+  Object: <T extends ZodRawShape>(properties: T, options?: any): TObject<T> => {
+    const obj = z.object(properties) as TObject<T>;
+    obj.properties = properties;
+    obj.type = "object";
+    if (options) {
+      Object.assign(obj, options);
+    }
+    return obj;
+  },
+  String: (options?: any): TString => {
+    const str = z.string() as TString;
+    str.type = "string";
+    if (options) {
+      Object.assign(str, options);
+    }
+    return str;
+  },
+  Number: (options?: any): TNumber => {
+    const num = z.number() as TNumber;
+    num.type = "number";
+    if (options) {
+      Object.assign(num, options);
+    }
+    return num;
+  },
+  Boolean: (options?: any): TSchema => {
+    const bool = z.boolean() as TSchema;
+    bool.type = "boolean";
+    if (options) {
+      Object.assign(bool, options);
+    }
+    return bool;
+  },
+  Array: <T extends ZodTypeAny>(items: T, options?: any): TArray<T> => {
+    const arr = z.array(items) as TArray<T>;
+    arr.items = items;
+    arr.type = "array";
+    if (options) {
+      Object.assign(arr, options);
+    }
+    return arr;
+  },
+  Optional: <T extends ZodTypeAny>(schema: T): T => schema.optional() as T,
+  Any: (options?: any): TAny => {
+    const any = z.any() as TAny & TSchema;
+    any.type = "any";
+    if (options) {
+      Object.assign(any, options);
+    }
+    return any;
+  },
+  Union: <T extends readonly [ZodTypeAny, ...ZodTypeAny[]]>(schemas: T, options?: any): TUnion<T> => {
+    const union = z.union(schemas) as TUnion<T> & TSchema;
+    union.anyOf = schemas as any;
+    if (options) {
+      Object.assign(union, options);
+    }
+    return union;
+  },
+  Null: (): TSchema => {
+    const nullSchema = z.null() as TSchema;
+    nullSchema.type = "null";
+    return nullSchema;
+  },
+  Literal: <T extends string | number | boolean>(value: T): TSchema => {
+    const lit = z.literal(value) as TSchema;
+    lit.type = typeof value as string;
+    return lit;
+  },
+  Unknown: (options?: any): TSchema => {
+    const unknown = z.unknown() as TSchema;
+    unknown.type = "unknown";
+    if (options) {
+      Object.assign(unknown, options);
+    }
+    return unknown;
+  },
+  Unsafe: <T = any>(options?: any): TSchema => {
+    const any = z.any() as TSchema;
+    if (options) {
+      Object.assign(any, options);
+    }
+    return any;
+  },
+  Transform: (schema: ZodTypeAny): any => schema as any,
+};
+
+// Compatibility constants
+export const Kind = Symbol("Kind");
+export const OptionalKind = Symbol("Optional");
+
+// TypeRegistry for custom types (Zod doesn't have this, so we create a stub)
+export const TypeRegistry = {
+  Set: (name: string, fn: (schema: any, value: unknown) => boolean) => {
+    // Store custom validators if needed
+  },
+  Has: (name: string) => false,
+  Get: (name: string) => undefined,
+};
 
 export const TypeOptionalArray = <T extends TSchema>(
   type: T,
   annotations: Record<string, unknown> = {}
-) =>
-  Type.Union([type, Type.Array(type)], {
-    title: type.title,
-    description: type.description,
-    ...annotations,
-  });
-
-export const TypeDateTime = (annotations: Record<string, unknown> = {}) =>
-  Type.String({ format: "date-time", ...annotations });
-
-export const TypeDate = (annotations: Record<string, unknown> = {}) =>
-  Type.String({ format: "date", ...annotations });
-
-export const TypeNullable = <T extends TSchema>(T: T) => {
-  return Type.Union([T, Type.Null()], { default: null });
+): TSchema => {
+  const union = Type.Union([type, Type.Array(type)] as any) as TSchema;
+  Object.assign(union, annotations);
+  return union;
 };
 
-export const TypeBlob = (annotations: Record<string, unknown> = {}) =>
-  Type.Transform(Type.Any({ contentEncoding: "blob", ...annotations }))
-    .Decode((value: unknown) => value as Uint8Array)
-    .Encode((value: Uint8Array) => Buffer.from(value));
+export const TypeDateTime = (annotations: Record<string, unknown> = {}): TString =>
+  withMetadata(z.string().datetime() as TString, { format: "date-time", ...annotations });
+
+export const TypeDate = (annotations: Record<string, unknown> = {}): TString =>
+  withMetadata(z.string().date() as TString, { format: "date", ...annotations });
+
+export const TypeNullable = <T extends TSchema>(T: T): TSchema => {
+  const union = z.union([T, z.null()]).default(null) as TSchema;
+  union.anyOf = [T, Type.Null()];
+  union.default = null;
+  return union;
+};
+
+export const TypeBlob = (annotations: Record<string, unknown> = {}): TSchema =>
+  withMetadata(z.any().transform((value: unknown) => value as Uint8Array) as TSchema, {
+    contentEncoding: "blob",
+    ...annotations,
+  });
 
 TypeRegistry.Set("TypeStringEnum", (schema: { enum: string[] }, value: unknown) => {
   return typeof value === "string" && schema.enum.includes(value);
 });
 
-export const TypeStringEnum = <T extends string[]>(values: [...T]) =>
-  Type.Unsafe<T[number]>({
-    [Kind]: "TypeStringEnum",
-    type: "string",
-    enum: values,
-  });
+export const TypeStringEnum = <T extends readonly [string, ...string[]]>(values: T): TSchema => {
+  const enumSchema = z.enum(values) as TSchema;
+  enumSchema[Kind as any] = "TypeStringEnum";
+  enumSchema.type = "string";
+  (enumSchema as any).enum = values;
+  return enumSchema;
+};
 
 export function areSemanticallyCompatible(
   outputSchema: TSchema,
@@ -61,7 +208,7 @@ export function forwardAnnotations(schema: TSchema, annotations: Record<string, 
   return {
     ...(schema.title ? { title: schema.title } : {}),
     ...(schema.description ? { description: schema.description } : {}),
-    ...(schema.default ? { default: schema.default } : {}),
+    ...(schema.default !== undefined ? { default: schema.default } : {}),
     ...(schema.replicate ? { replicate: schema.replicate } : {}),
     ...(schema.semantic ? { semantic: schema.semantic } : {}),
     ...(schema.optional ? { optional: schema.optional } : {}),
@@ -83,17 +230,19 @@ export function simplifySchema(
   if (!schema) {
     throw new Error("Schema is undefined");
   }
-  if (schema[Kind] === "Any") {
+  
+  if (schema[Kind as any] === "Any") {
     return schema;
   }
+  
   annotations = forwardAnnotations(schema, {
-    ...(schema[OptionalKind]
+    ...(schema[OptionalKind as any]
       ? { optional: true, isNullable: true, default: schema.default ?? null }
       : {}),
     ...annotations,
   });
 
-  // Check for union types (represented as 'anyOf' in the JSON schema)
+  // Check for union types (represented as 'anyOf')
   if (schema.anyOf && Array.isArray(schema.anyOf)) {
     // Separate union members into non-array and array types.
     const nonArrayMembers = schema.anyOf.filter((member: any) => member.type !== "array");
@@ -162,3 +311,32 @@ export function schemaSemantic(schema: TSchema): string | undefined {
   const simplified = simplifySchema(schema);
   return simplified.semantic;
 }
+
+// TypeCompiler compatibility layer for Zod
+export type TypeCheck<T extends TSchema> = {
+  Check: (value: unknown) => boolean;
+  Errors: (value: unknown) => IterableIterator<{ message: string; path: string }>;
+};
+
+export const TypeCompiler = {
+  Compile: <T extends TSchema>(schema: T): TypeCheck<T> => {
+    return {
+      Check: (value: unknown) => {
+        const result = schema.safeParse(value);
+        return result.success;
+      },
+      *Errors(value: unknown) {
+        const result = schema.safeParse(value);
+        if (!result.success) {
+          const zodError = result.error;
+          for (const issue of zodError.issues) {
+            yield {
+              message: issue.message,
+              path: '/' + issue.path.join('/'),
+            };
+          }
+        }
+      },
+    };
+  },
+};

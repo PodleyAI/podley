@@ -24,7 +24,7 @@ import {
   IJobExecuteContext,
 } from "@podley/job-queue";
 import { JSONValue } from "@podley/storage";
-import { TObject, Type } from "@sinclair/typebox";
+import { TObject, Type } from "@podley/util";
 
 export type url = string;
 export interface FetchTaskInput extends DataPorts {

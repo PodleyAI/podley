@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken } from "@podley/util";
-import { TSchema, Type } from "@sinclair/typebox";
+import { TSchema, Type } from "@podley/util";
 import { InMemoryTabularRepository } from "../tabular/InMemoryTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";

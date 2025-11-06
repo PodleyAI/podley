@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import type { TabularRepository } from "@podley/storage";
-import { Type } from "@sinclair/typebox";
+import { Type } from "@podley/util";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { createGraphFromGraphJSON } from "../task/TaskJSON";
 import { TaskGraphRepository } from "./TaskGraphRepository";

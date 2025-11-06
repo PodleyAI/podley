@@ -7,7 +7,7 @@
 
 import { Sqlite } from "@podley/sqlite";
 import { createServiceToken } from "@podley/util";
-import { Static, TObject, TSchema } from "@sinclair/typebox";
+import { Static, TObject, TSchema } from "@podley/util";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import { ValueOptionType } from "./ITabularRepository";
 import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";

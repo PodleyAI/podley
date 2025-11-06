@@ -18,7 +18,7 @@ import {
   type TaskOutput,
 } from "@podley/task-graph";
 import { schemaSemantic } from "@podley/util";
-import { type TSchema } from "@sinclair/typebox";
+import { type TSchema } from "@podley/util";
 import { AiJob } from "../../job/AiJob";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
 

@@ -1,4 +1,4 @@
-import { OptionalKind, Type } from "@sinclair/typebox";
+import { OptionalKind, Type } from "@podley/util";
 import { describe, expect, test } from "bun:test";
 import { simplifySchema } from "@podley/util";
 

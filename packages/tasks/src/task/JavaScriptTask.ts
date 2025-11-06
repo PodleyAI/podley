@@ -7,7 +7,7 @@
 
 import { Interpreter } from "../util/interpreter";
 import { TaskConfig, Workflow, CreateWorkflow, TaskRegistry, Task } from "@podley/task-graph";
-import { TObject, Type } from "@sinclair/typebox";
+import { TObject, Type } from "@podley/util";
 
 export type JavaScriptTaskInput = {
   code: string;

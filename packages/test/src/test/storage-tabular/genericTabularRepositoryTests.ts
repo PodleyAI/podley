@@ -7,7 +7,7 @@
 
 import { ITabularRepository } from "@podley/storage";
 import { TypeDateTime } from "@podley/util";
-import { Type } from "@sinclair/typebox";
+import { Type } from "@podley/util";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
 export const CompoundPrimaryKeyNames = ["name", "type"] as const;

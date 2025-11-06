@@ -9,7 +9,7 @@ import { describe, expect, it } from "bun:test";
 import { Task } from "@podley/task-graph";
 import { pipe, Workflow } from "@podley/task-graph";
 import { InMemoryTaskOutputRepository } from "../../binding/InMemoryTaskOutputRepository";
-import { Type } from "@sinclair/typebox";
+import { Type } from "@podley/util";
 
 // Define input and output types for our tasks
 type NumberInput = { value: number };

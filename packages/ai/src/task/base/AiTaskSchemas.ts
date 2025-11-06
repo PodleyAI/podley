@@ -5,7 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Kind, SchemaOptions, TSchema, Type, TypeRegistry } from "@sinclair/typebox";
+import { z, type ZodTypeAny } from "zod";
+import { Kind, type TSchema, Type, TypeRegistry, type SchemaOptions } from "@podley/util";
 
 export const TypedArray = (annotations: Record<string, unknown> = {}) =>
   Type.Union(

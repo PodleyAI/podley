@@ -13,7 +13,7 @@ import {
   Task,
 } from "@podley/task-graph";
 import { Document, DocumentFragment } from "../source/Document";
-import { TObject, Type } from "@sinclair/typebox";
+import { TObject, Type } from "@podley/util";
 export type DocumentSplitterTaskInput = {
   parser: "txt" | "md";
   file: Document;

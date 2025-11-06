@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { areSemanticallyCompatible, EventEmitter } from "@podley/util";
-import { Type } from "@sinclair/typebox";
+import { Type } from "@podley/util";
 import { TaskError } from "../task/TaskError";
 import { DataflowJson } from "../task/TaskJSON";
 import { Provenance, TaskIdType, TaskOutput, TaskStatus } from "../task/TaskTypes";

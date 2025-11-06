@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { createServiceToken } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
+import { Static, TObject } from "@podley/util";
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
 import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
