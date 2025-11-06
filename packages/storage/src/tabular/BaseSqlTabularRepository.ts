@@ -55,7 +55,7 @@ export abstract class BaseSqlTabularRepository<
    * @returns SQL string containing primary key column definitions
    */
   protected constructPrimaryKeyColumns($delimiter: string = ""): string {
-    const cols = Object.entries<TSchema>(this.primaryKeySchema.properties)
+    const cols = Object.entries<TSchema>(this.primaryKeySchema.properties as any || {})
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
         return `${$delimiter}${key}${$delimiter} ${sqlType} NOT NULL`;
@@ -69,7 +69,7 @@ export abstract class BaseSqlTabularRepository<
    * @returns SQL string containing value column definitions
    */
   protected constructValueColumns($delimiter: string = ""): string {
-    const cols = Object.entries<TSchema>(this.valueSchema.properties)
+    const cols = Object.entries<TSchema>(this.valueSchema.properties as any || {})
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
         // Check if the property is nullable based on schema definition
@@ -96,12 +96,12 @@ export abstract class BaseSqlTabularRepository<
     }
 
     // Check for TypeBox Optional/ReadonlyOptional types
-    if (typeDef.kind === "Optional" || typeDef.kind === "ReadonlyOptional") {
+    if ((typeDef as any).kind === "Optional" || (typeDef as any).kind === "ReadonlyOptional") {
       return true;
     }
 
     // Check for nullable keyword if it exists
-    if ("nullable" in typeDef && typeDef.nullable === true) {
+    if ("nullable" in typeDef && typeof (typeDef as any).nullable === "boolean" && (typeDef as any).nullable === true) {
       return true;
     }
 
@@ -184,18 +184,18 @@ export abstract class BaseSqlTabularRepository<
   }
 
   protected jsToSqlValue(column: string, value: Entity[keyof Entity]): ValueOptionType {
-    const typeDef = this.schema.properties[column];
+    const typeDef = this.schema.properties?.[column];
     if (!typeDef) {
       return value as ValueOptionType;
     }
 
     // Handle null values for nullable columns
-    if (value === null && this.isNullable(typeDef)) {
+    if (value === null && this.isNullable(typeDef as TSchema)) {
       return null;
     }
 
     // Extract the non-null type for proper handling
-    const actualType = this.getNonNullType(typeDef);
+    const actualType = this.getNonNullType(typeDef as TSchema);
 
     if (actualType.contentEncoding === "blob") {
       const v: any = value;
@@ -219,18 +219,18 @@ export abstract class BaseSqlTabularRepository<
 
   protected sqlToJsValue(column: string, value: ValueOptionType): Entity[keyof Entity] {
     // Get the type definition
-    const typeDef = this.schema.properties[column];
+    const typeDef = this.schema.properties?.[column];
     if (!typeDef) {
       return value as Entity[keyof Entity];
     }
 
     // Handle null values
-    if (value === null && this.isNullable(typeDef)) {
+    if (value === null && this.isNullable(typeDef as TSchema)) {
       return null as any;
     }
 
     // Extract the non-null type for proper handling
-    const actualType = this.getNonNullType(typeDef);
+    const actualType = this.getNonNullType(typeDef as TSchema);
 
     if (actualType.contentEncoding === "blob") {
       const v: any = value;

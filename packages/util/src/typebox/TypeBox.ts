@@ -38,9 +38,9 @@ export type Static<T extends ZodTypeAny> = z.infer<T>;
 export type TArray<T extends ZodTypeAny> = z.ZodArray<T> & { items?: T };
 export type TUnion<T extends readonly [ZodTypeAny, ...ZodTypeAny[]]> = z.ZodUnion<T>;
 export type SchemaOptions = Record<string, unknown>;
-export type TAny = z.ZodAny;
-export type TNumber = z.ZodNumber & { minimum?: number; maximum?: number; multipleOf?: number };
-export type TString = z.ZodString & { format?: string; maxLength?: number; minLength?: number };
+export type TAny = TSchema;
+export type TNumber = TSchema;
+export type TString = TSchema;
 
 // Helper to attach metadata to a schema
 function withMetadata<T extends TSchema>(schema: T, metadata: Record<string, unknown>): T {
@@ -59,16 +59,16 @@ export const Type = {
     }
     return obj;
   },
-  String: (options?: any): TString => {
-    const str = z.string() as TString;
+  String: (options?: any): TSchema => {
+    const str = z.string() as any;
     str.type = "string";
     if (options) {
       Object.assign(str, options);
     }
     return str;
   },
-  Number: (options?: any): TNumber => {
-    const num = z.number() as TNumber;
+  Number: (options?: any): TSchema => {
+    const num = z.number() as any;
     num.type = "number";
     if (options) {
       Object.assign(num, options);
@@ -76,7 +76,7 @@ export const Type = {
     return num;
   },
   Boolean: (options?: any): TSchema => {
-    const bool = z.boolean() as TSchema;
+    const bool = z.boolean() as any;
     bool.type = "boolean";
     if (options) {
       Object.assign(bool, options);
@@ -92,9 +92,9 @@ export const Type = {
     }
     return arr;
   },
-  Optional: <T extends ZodTypeAny>(schema: T): T => schema.optional() as T,
-  Any: (options?: any): TAny => {
-    const any = z.any() as TAny & TSchema;
+  Optional: <T extends ZodTypeAny>(schema: T): T => schema.optional() as any,
+  Any: (options?: any): TSchema => {
+    const any = z.any() as any;
     any.type = "any";
     if (options) {
       Object.assign(any, options);
@@ -110,17 +110,17 @@ export const Type = {
     return union;
   },
   Null: (): TSchema => {
-    const nullSchema = z.null() as TSchema;
+    const nullSchema = z.null() as any;
     nullSchema.type = "null";
     return nullSchema;
   },
   Literal: <T extends string | number | boolean>(value: T): TSchema => {
-    const lit = z.literal(value) as TSchema;
+    const lit = z.literal(value) as any;
     lit.type = typeof value as string;
     return lit;
   },
   Unknown: (options?: any): TSchema => {
-    const unknown = z.unknown() as TSchema;
+    const unknown = z.unknown() as any;
     unknown.type = "unknown";
     if (options) {
       Object.assign(unknown, options);
@@ -128,11 +128,11 @@ export const Type = {
     return unknown;
   },
   Unsafe: <T = any>(options?: any): TSchema => {
-    const any = z.any() as TSchema;
+    const any_schema = z.any() as any;
     if (options) {
-      Object.assign(any, options);
+      Object.assign(any_schema, options);
     }
-    return any;
+    return any_schema;
   },
   Transform: (schema: ZodTypeAny): any => schema as any,
 };
@@ -154,26 +154,26 @@ export const TypeOptionalArray = <T extends TSchema>(
   type: T,
   annotations: Record<string, unknown> = {}
 ): TSchema => {
-  const union = Type.Union([type, Type.Array(type)] as any) as TSchema;
+  const union = Type.Union([type, Type.Array(type)] as any) as any;
   Object.assign(union, annotations);
   return union;
 };
 
-export const TypeDateTime = (annotations: Record<string, unknown> = {}): TString =>
-  withMetadata(z.string().datetime() as TString, { format: "date-time", ...annotations });
+export const TypeDateTime = (annotations: Record<string, unknown> = {}): TSchema =>
+  withMetadata(z.string().datetime() as any, { format: "date-time", ...annotations });
 
-export const TypeDate = (annotations: Record<string, unknown> = {}): TString =>
-  withMetadata(z.string().date() as TString, { format: "date", ...annotations });
+export const TypeDate = (annotations: Record<string, unknown> = {}): TSchema =>
+  withMetadata(z.string().date() as any, { format: "date", ...annotations });
 
 export const TypeNullable = <T extends TSchema>(T: T): TSchema => {
-  const union = z.union([T, z.null()]).default(null) as TSchema;
+  const union = z.union([T, z.null()]).default(null) as any;
   union.anyOf = [T, Type.Null()];
   union.default = null;
   return union;
 };
 
 export const TypeBlob = (annotations: Record<string, unknown> = {}): TSchema =>
-  withMetadata(z.any().transform((value: unknown) => value as Uint8Array) as TSchema, {
+  withMetadata(z.any().transform((value: unknown) => value as Uint8Array) as any, {
     contentEncoding: "blob",
     ...annotations,
   });
@@ -183,10 +183,10 @@ TypeRegistry.Set("TypeStringEnum", (schema: { enum: string[] }, value: unknown) 
 });
 
 export const TypeStringEnum = <T extends readonly [string, ...string[]]>(values: T): TSchema => {
-  const enumSchema = z.enum(values) as TSchema;
+  const enumSchema = z.enum(values) as any;
   enumSchema[Kind as any] = "TypeStringEnum";
   enumSchema.type = "string";
-  (enumSchema as any).enum = values;
+  enumSchema.enum = values;
   return enumSchema;
 };
 
@@ -231,12 +231,13 @@ export function simplifySchema(
     throw new Error("Schema is undefined");
   }
   
-  if (schema[Kind as any] === "Any") {
+  const schemaAny = schema as any;
+  if (schemaAny[Kind] === "Any") {
     return schema;
   }
   
   annotations = forwardAnnotations(schema, {
-    ...(schema[OptionalKind as any]
+    ...(schemaAny[OptionalKind]
       ? { optional: true, isNullable: true, default: schema.default ?? null }
       : {}),
     ...annotations,

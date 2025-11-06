@@ -105,8 +105,8 @@ export abstract class TabularRepository<
     for (const compoundIndex of this.indexes) {
       for (const column of compoundIndex) {
         if (
-          !(column in this.primaryKeySchema.properties) &&
-          !(column in this.valueSchema.properties)
+          !(column in (this.primaryKeySchema.properties || {})) &&
+          !(column in (this.valueSchema.properties || {}))
         ) {
           throw new Error(
             `Searchable column ${String(column)} is not in the primary key schema or value schema`
@@ -239,7 +239,7 @@ export abstract class TabularRepository<
 
   protected primaryKeyColumns(): Array<keyof PrimaryKey> {
     const columns: Array<keyof PrimaryKey> = [];
-    for (const key of Object.keys(this.primaryKeySchema.properties)) {
+    for (const key of Object.keys(this.primaryKeySchema.properties || {})) {
       columns.push(key as keyof PrimaryKey);
     }
     return columns;
@@ -247,7 +247,7 @@ export abstract class TabularRepository<
 
   protected valueColumns(): Array<keyof Value> {
     const columns: Array<keyof Value> = [];
-    for (const key of Object.keys(this.valueSchema.properties)) {
+    for (const key of Object.keys(this.valueSchema.properties || {})) {
       columns.push(key as keyof Value);
     }
     return columns;

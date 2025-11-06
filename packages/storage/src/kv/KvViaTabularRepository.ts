@@ -26,7 +26,7 @@ export abstract class KvViaTabularRepository<
   public abstract tabularRepository: TabularRepository<
     typeof DefaultKeyValueSchema,
     typeof DefaultKeyValueKey,
-    (typeof DefaultKeyValueSchema)["key"],
+    NonNullable<(typeof DefaultKeyValueSchema)["properties"]>["key"],
     Static<typeof DefaultKeyValueSchema>
   >;
 
