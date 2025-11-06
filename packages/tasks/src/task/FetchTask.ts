@@ -229,8 +229,8 @@ export class FetchTask<
         Type.String({
           title: "Body",
           description: "The body of the request",
-        }),
-        true
+          default: true,
+        })
       ),
       response_type: Type.Optional(
         Type.Union(

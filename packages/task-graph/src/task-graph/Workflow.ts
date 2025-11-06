@@ -170,15 +170,17 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
 
         // Try to match outputs to inputs using different strategies
         makeMatch(([parentOutputPortId, parentPortOutput], [taskInputPortId, taskPortInput]) => {
+          const pOut = parentPortOutput as any;
+          const tIn = taskPortInput as any;
           // $id matches
           const idTypeMatch =
-            parentPortOutput.$id !== undefined && parentPortOutput.$id === taskPortInput.$id;
+            pOut.$id !== undefined && pOut.$id === tIn.$id;
           // $id both blank
-          const idTypeBlank = parentPortOutput.$id === undefined && undefined === taskPortInput.$id;
+          const idTypeBlank = pOut.$id === undefined && undefined === tIn.$id;
           const typeMatch =
             idTypeBlank &&
-            (parentPortOutput.type === taskPortInput.type ||
-              taskPortInput.anyOf?.some((i: any) => i.type == parentPortOutput.type));
+            (pOut.type === tIn.type ||
+              tIn.anyOf?.some((i: any) => i.type == pOut.type));
           const outputPortIdMatch = parentOutputPortId === taskInputPortId;
           const outputPortIdOutputInput =
             parentOutputPortId === "output" && taskInputPortId === "input";

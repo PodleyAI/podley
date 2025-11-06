@@ -290,9 +290,10 @@ export class TaskGraphRunner {
         changed = true;
       } else {
         if (overrides[inputId] === undefined) continue;
+        const p = prop as any;
         const isArray =
-          prop.type === "array" ||
-          (prop.type === "any" &&
+          p.type === "array" ||
+          (p.type === "any" &&
             (Array.isArray(overrides[inputId]) || Array.isArray(task.runInputData[inputId])));
 
         if (isArray) {

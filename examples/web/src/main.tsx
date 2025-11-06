@@ -26,21 +26,23 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 
 installDevToolsFormatters();
 
-[
-  Workflow,
-  DownloadModelTask,
-  TextRewriterTask,
-  TextEmbeddingTask,
-  TextTranslationTask,
-  TextRewriterTask,
-  DebugLogTask,
-  Task,
-  TaskGraph,
-  JsonTask,
-  DelayTask,
-  FetchTask,
-  LambdaTask,
-].forEach((item) => {
+(
+  [
+    Workflow,
+    DownloadModelTask,
+    TextRewriterTask,
+    TextEmbeddingTask,
+    TextTranslationTask,
+    TextRewriterTask,
+    DebugLogTask,
+    Task,
+    TaskGraph,
+    JsonTask,
+    DelayTask,
+    FetchTask,
+    LambdaTask,
+  ] as const
+).forEach((item) => {
   window[item.name] = item;
 });
 

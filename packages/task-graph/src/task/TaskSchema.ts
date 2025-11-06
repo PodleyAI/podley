@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import {
-  type SchemaOptions,
+  type TSchemaOptions,
   type Static,
   type TArray,
   type TObject,
@@ -17,12 +17,13 @@ import {
 
 export function TypeReplicateArray<T extends TSchema>(
   type: T,
-  annotations?: SchemaOptions
+  annotations?: TSchemaOptions
 ): TUnion<[T, TArray<T>]> & { replicate: true } {
+  const t = type as any;
   return Type.Union([type, Type.Array(type)], {
-    title: type.title,
-    description: type.description,
-    ...(type.semantic ? { semantic: type.semantic } : {}),
+    title: t.title,
+    description: t.description,
+    ...(t.semantic ? { semantic: t.semantic } : {}),
     ...(annotations as object),
     replicate: true,
   }) as any;

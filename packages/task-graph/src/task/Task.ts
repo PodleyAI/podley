@@ -367,10 +367,11 @@ export class Task<
     const properties = schema.properties || {};
 
     for (const [inputId, prop] of Object.entries(properties)) {
+      const p = prop as any;
       if (input[inputId] !== undefined) {
         this.runInputData[inputId] = input[inputId];
-      } else if (this.runInputData[inputId] === undefined && prop.default !== undefined) {
-        this.runInputData[inputId] = prop.default;
+      } else if (this.runInputData[inputId] === undefined && p.default !== undefined) {
+        this.runInputData[inputId] = p.default;
       }
     }
   }
@@ -463,10 +464,10 @@ export class Task<
     // validate the partial input against the schema
     const checker = (this.constructor as typeof Task).getInputSchemaTypeChecker();
     if (!checker.Check(input)) {
-      const errors = [...checker.Errors(input)];
+      const errors = checker.Errors(input);
       throw new TaskInvalidInputError(
         `Input ${JSON.stringify(input)} does not match schema: ${errors
-          .map((e) => `${e.message} (${e.path.slice(1)})`)
+          .map((e: any) => `${e.message} (${e.instancePath?.slice(1) || ''})`)
           .join(", ")}`
       );
     }

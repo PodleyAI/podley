@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { SchemaOptions, TSchema, Type } from "typebox";
+import { TSchemaOptions, TSchema, Type } from "typebox";
 
 export const TypedArray = (annotations: Record<string, unknown> = {}) => {
   const schema = Type.Union(
@@ -31,14 +31,14 @@ export const TypedArray = (annotations: Record<string, unknown> = {}) => {
         return (
           typeof value === "object" &&
           value !== null &&
-          schema.anyOf.some((x: TSchema) => x.type === (value as any)[Symbol.toStringTag])
+          (schema as any).anyOf.some((x: any) => x.type === (value as any)[Symbol.toStringTag])
         );
       },
       errors: (value: unknown) => {
         const isValid =
           typeof value === "object" &&
           value !== null &&
-          schema.anyOf.some((x: TSchema) => x.type === (value as any)[Symbol.toStringTag]);
+          (schema as any).anyOf.some((x: any) => x.type === (value as any)[Symbol.toStringTag]);
         return isValid ? [] : [{ message: "Expected a TypedArray" }];
       },
     },
@@ -69,12 +69,11 @@ export type TypeModelSymantic = "model" | `model:${string}`;
 
 export interface TTypeModel extends TSchema {
   "~kind": "TypeModel";
-  static: string;
   type: "string";
   semantic: TypeModelSymantic;
 }
 
-export function TypeModel(semantic: TypeModelSymantic = "model", options: SchemaOptions = {}) {
+export function TypeModel(semantic: TypeModelSymantic = "model", options: TSchemaOptions = {}) {
   if (semantic !== "model" && !semantic.startsWith("model:")) {
     throw new Error("Invalid semantic value");
   }

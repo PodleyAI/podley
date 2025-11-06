@@ -25,9 +25,7 @@ export abstract class KvViaTabularRepository<
 > extends KvRepository<Key, Value, Combined> {
   public abstract tabularRepository: TabularRepository<
     typeof DefaultKeyValueSchema,
-    typeof DefaultKeyValueKey,
-    (typeof DefaultKeyValueSchema)["key"],
-    Static<typeof DefaultKeyValueSchema>
+    typeof DefaultKeyValueKey
   >;
 
   /**

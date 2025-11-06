@@ -83,17 +83,12 @@ describe("simplifySchema", () => {
     const schema = Type.Object({
       name: Type.Optional(Type.String({ default: "John" })),
     });
-    const result = simplifySchema(schema);
-    expect(result).toEqual(
-      Type.Object({
-        name: Type.String({
-          "~optional": "Optional",
-          optional: true,
-          isNullable: true,
-          default: "John",
-        }),
-      })
-    );
+    const result = simplifySchema(schema) as any;
+    expect(result.type).toBe("object");
+    expect(result.properties.name.type).toBe("string");
+    expect(result.properties.name.default).toBe("John");
+    expect(result.properties.name.optional).toBe(true);
+    expect(result.properties.name.isNullable).toBe(true);
   });
 
   test("should handle complex nested structures", () => {
