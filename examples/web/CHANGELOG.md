@@ -1,5 +1,21 @@
 # @podley/cli
 
+## 0.0.32
+
+### Patch Changes
+
+- input and output schemas are not @types/json-schema based
+- Updated dependencies
+  - @podley/task-graph@0.0.32
+  - @podley/tasks@0.0.32
+  - @podley/ai@0.0.32
+  - @podley/ai-provider@0.0.32
+  - @podley/job-queue@0.0.32
+  - @podley/sqlite@0.0.32
+  - @podley/storage@0.0.32
+  - @podley/test@0.0.32
+  - @podley/util@0.0.32
+
 ## 0.0.31
 
 ### Patch Changes

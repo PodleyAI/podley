@@ -25,7 +25,7 @@
     },
     "examples/cli": {
       "name": "@podley/cli",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "bin": "./dist/podley.js",
       "dependencies": {
         "@mediapipe/tasks-text": "catalog:",
@@ -50,7 +50,7 @@
     },
     "examples/web": {
       "name": "@podley/web",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "dependencies": {
         "@codemirror/lang-json": "^6.0.2",
         "@mediapipe/tasks-text": "catalog:",
@@ -89,14 +89,14 @@
     },
     "packages/ai": {
       "name": "@podley/ai",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "devDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
         "@podley/task-graph": "workspace:*",
         "@podley/util": "workspace:*",
         "@sinclair/typebox": "catalog:",
-        "@types/json-schema": "^7.0.15",
+        "@types/json-schema": "catalog:",
         "@types/pg": "^8.15.5",
         "pg": "^8.16.3",
       },
@@ -111,7 +111,7 @@
     },
     "packages/ai-provider": {
       "name": "@podley/ai-provider",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "devDependencies": {
         "@mediapipe/tasks-text": "catalog:",
         "@podley/ai": "workspace:*",
@@ -133,7 +133,7 @@
     },
     "packages/job-queue": {
       "name": "@podley/job-queue",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "devDependencies": {
         "@podley/sqlite": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -150,7 +150,7 @@
     },
     "packages/sqlite": {
       "name": "@podley/sqlite",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
       },
@@ -161,7 +161,7 @@
     },
     "packages/storage": {
       "name": "@podley/storage",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "devDependencies": {
         "@podley/sqlite": "workspace:*",
         "@podley/util": "workspace:*",
@@ -181,13 +181,13 @@
     },
     "packages/task-graph": {
       "name": "@podley/task-graph",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "devDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
         "@podley/util": "workspace:*",
         "@sinclair/typebox": "catalog:",
-        "@types/json-schema": "^7.0.15",
+        "@types/json-schema": "catalog:",
       },
       "peerDependencies": {
         "@podley/job-queue": "workspace:*",
@@ -198,14 +198,14 @@
     },
     "packages/tasks": {
       "name": "@podley/tasks",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "devDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
         "@podley/task-graph": "workspace:*",
         "@podley/util": "workspace:*",
         "@sinclair/typebox": "catalog:",
-        "@types/json-schema": "^7.0.15",
+        "@types/json-schema": "catalog:",
       },
       "peerDependencies": {
         "@podley/job-queue": "workspace:*",
@@ -217,7 +217,7 @@
     },
     "packages/test": {
       "name": "@podley/test",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "devDependencies": {
         "@electric-sql/pglite": "^0.3.11",
         "@podley/ai": "workspace:*",
@@ -251,7 +251,7 @@
     },
     "packages/util": {
       "name": "@podley/util",
-      "version": "0.0.31",
+      "version": "0.0.32",
       "devDependencies": {
         "@sinclair/typebox": "catalog:",
       },
@@ -271,6 +271,7 @@
     "@mediapipe/tasks-text": "^0.10.21",
     "@sinclair/typebox": "^0.34.41",
     "@sroussey/transformers": "3.7.4",
+    "@types/json-schema": "^7.0.15",
   },
   "packages": {
     "@alcalzone/ansi-tokenize": ["@alcalzone/ansi-tokenize@0.1.3", "", { "dependencies": { "ansi-styles": "^6.2.1", "is-fullwidth-code-point": "^4.0.0" } }, "sha512-3yWxPTq3UQ/FY9p1ErPxIyfT64elWaMvM9lIHnaqpyft63tkxodF5aUElYHrdisWve5cETkh1+KBw1yJuW0aRw=="],
