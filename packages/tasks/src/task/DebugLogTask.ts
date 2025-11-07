@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Workflow, TaskRegistry, CreateWorkflow, TaskConfig, Task } from "@podley/task-graph";
+import { Workflow, TaskRegistry, CreateWorkflow, TaskConfig, Task, type JSONSchema7ObjectDefinition } from "@podley/task-graph";
 import { TObject, Type } from "@sinclair/typebox";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
@@ -44,7 +44,7 @@ export class DebugLogTask<
     "Logs messages to the console with configurable log levels for debugging task graphs";
   static readonly cacheable = false;
 
-  public static inputSchema(): TObject {
+  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
     return Type.Object({
       console: Type.Optional(
         Type.String({
@@ -62,16 +62,16 @@ export class DebugLogTask<
           }
         )
       ),
-    });
+    }) as TObject & JSONSchema7ObjectDefinition;
   }
 
-  public static outputSchema(): TObject {
+  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
     return Type.Object({
       console: Type.Unknown({
         title: "Messages",
         description: "The messages logged by the task",
       }),
-    });
+    }) as TObject & JSONSchema7ObjectDefinition;
   }
 
   async executeReactive(input: Input, output: Output) {

@@ -17,6 +17,7 @@ import {
   createGraphFromDependencyJSON,
   GraphAsTask,
   TaskConfigurationError,
+  type JSONSchema7ObjectDefinition,
 } from "@podley/task-graph";
 import { TObject, Type } from "@sinclair/typebox";
 
@@ -40,22 +41,22 @@ export class JsonTask<
   public static type = "JsonTask";
   public static category = "Hidden";
 
-  public static inputSchema(): TObject {
+  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
     return Type.Object({
       json: Type.String({
         title: "JSON",
         description: "The JSON to parse",
       }),
-    });
+    }) as TObject & JSONSchema7ObjectDefinition;
   }
 
-  public static outputSchema(): TObject {
+  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
     return Type.Object({
       output: Type.Any({
         title: "Output",
         description: "Output depends on the generated task graph",
       }),
-    });
+    }) as TObject & JSONSchema7ObjectDefinition;
   }
 
   /**

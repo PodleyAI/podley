@@ -11,6 +11,7 @@ import {
   TaskRegistry,
   Workflow,
   TypeReplicateArray,
+  type JSONSchema7ObjectDefinition,
 } from "@podley/task-graph";
 import { AiTask } from "./base/AiTask";
 import { TObject, Type, type Static } from "@sinclair/typebox";
@@ -66,11 +67,11 @@ export class TextTranslationTask extends AiTask<
   public static category = "AI Text Model";
   public static title = "Text Translation";
   public static description = "Translates text from one language to another using language models";
-  public static inputSchema(): TObject {
-    return TextTranslationInputSchema;
+  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return TextTranslationInputSchema as TObject & JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject {
-    return TextTranslationOutputSchema;
+  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return TextTranslationOutputSchema as TObject & JSONSchema7ObjectDefinition;
   }
 }
 

@@ -96,6 +96,7 @@
         "@podley/task-graph": "workspace:*",
         "@podley/util": "workspace:*",
         "@sinclair/typebox": "catalog:",
+        "@types/json-schema": "^7.0.15",
         "@types/pg": "^8.15.5",
         "pg": "^8.16.3",
       },
@@ -186,6 +187,7 @@
         "@podley/storage": "workspace:*",
         "@podley/util": "workspace:*",
         "@sinclair/typebox": "catalog:",
+        "@types/json-schema": "^7.0.15",
       },
       "peerDependencies": {
         "@podley/job-queue": "workspace:*",
@@ -203,6 +205,7 @@
         "@podley/task-graph": "workspace:*",
         "@podley/util": "workspace:*",
         "@sinclair/typebox": "catalog:",
+        "@types/json-schema": "^7.0.15",
       },
       "peerDependencies": {
         "@podley/job-queue": "workspace:*",

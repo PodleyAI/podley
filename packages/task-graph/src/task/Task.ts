@@ -27,6 +27,7 @@ import {
   type TaskOutput,
   type TaskTypeName,
 } from "./TaskTypes";
+import type { JSONSchema7ObjectDefinition } from "./TaskSchema";
 
 /**
  * Base class for all tasks that implements the ITask interface.
@@ -69,16 +70,18 @@ export class Task<
 
   /**
    * Input schema for this task
+   * Returns a JSONSchema7 compatible object schema
    */
-  public static inputSchema(): TObject {
-    return Type.Object({});
+  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return Type.Object({}) as TObject & JSONSchema7ObjectDefinition;
   }
 
   /**
    * Output schema for this task
+   * Returns a JSONSchema7 compatible object schema
    */
-  public static outputSchema(): TObject {
-    return Type.Object({});
+  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return Type.Object({}) as TObject & JSONSchema7ObjectDefinition;
   }
 
   // ========================================================================
@@ -182,15 +185,17 @@ export class Task<
 
   /**
    * Gets input schema for this task
+   * Returns a JSONSchema7 compatible object schema
    */
-  public inputSchema(): TObject {
+  public inputSchema(): TObject & JSONSchema7ObjectDefinition {
     return (this.constructor as typeof Task).inputSchema();
   }
 
   /**
    * Gets output schema for this task
+   * Returns a JSONSchema7 compatible object schema
    */
-  public outputSchema(): TObject {
+  public outputSchema(): TObject & JSONSchema7ObjectDefinition {
     return (this.constructor as typeof Task).outputSchema();
   }
 

@@ -11,6 +11,7 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
+  type JSONSchema7ObjectDefinition,
 } from "@podley/task-graph";
 import { TObject, Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
@@ -50,11 +51,11 @@ export class TextRewriterTask extends AiTask<TextRewriterTaskInput, TextRewriter
   public static category = "AI Text Model";
   public static title = "Text Rewriter";
   public static description = "Rewrites text according to a given prompt using language models";
-  public static inputSchema(): TObject {
-    return TextRewriterInputSchema;
+  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return TextRewriterInputSchema as TObject & JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject {
-    return TextRewriterOutputSchema;
+  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return TextRewriterOutputSchema as TObject & JSONSchema7ObjectDefinition;
   }
 }
 

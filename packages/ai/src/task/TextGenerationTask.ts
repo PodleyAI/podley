@@ -11,6 +11,7 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
+  type JSONSchema7ObjectDefinition,
 } from "@podley/task-graph";
 import { TObject, Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
@@ -89,11 +90,11 @@ export class TextGenerationTask extends AiTask<
   public static title = "Text Generation";
   public static description =
     "Generates text from a prompt using language models with configurable parameters";
-  public static inputSchema(): TObject {
-    return TextGenerationInputSchema;
+  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return TextGenerationInputSchema as TObject & JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject {
-    return TextGenerationOutputSchema;
+  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return TextGenerationOutputSchema as TObject & JSONSchema7ObjectDefinition;
   }
 }
 

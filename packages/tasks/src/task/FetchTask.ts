@@ -15,6 +15,7 @@ import {
   TaskConfig,
   DataPorts,
   TaskConfigurationError,
+  type JSONSchema7ObjectDefinition,
 } from "@podley/task-graph";
 import {
   AbortSignalJobError,
@@ -196,7 +197,7 @@ export class FetchTask<
   public static description =
     "Fetches data from a URL with progress tracking and automatic retry handling";
 
-  public static inputSchema(): TObject {
+  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
     return Type.Object({
       url: Type.String({
         title: "URL",
@@ -253,16 +254,16 @@ export class FetchTask<
         })
       ),
       queueName: Type.Optional(Type.String()),
-    });
+    }) as TObject & JSONSchema7ObjectDefinition;
   }
 
-  public static outputSchema(): TObject {
+  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
     return Type.Object({
       text: Type.Optional(Type.String()),
       json: Type.Optional(Type.Unknown()),
       blob: Type.Optional(Type.Unsafe<Blob>({ type: "blob" })),
       arraybuffer: Type.Optional(Type.Unsafe<ArrayBuffer>({ type: "arraybuffer" })),
-    });
+    }) as TObject & JSONSchema7ObjectDefinition;
   }
 
   constructor(input: Input = {} as Input, config: Config = {} as Config) {

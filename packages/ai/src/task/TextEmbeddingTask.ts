@@ -11,6 +11,7 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
+  type JSONSchema7ObjectDefinition,
 } from "@podley/task-graph";
 import { TObject, Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
@@ -50,11 +51,11 @@ export class TextEmbeddingTask extends AiTask<TextEmbeddingTaskInput, TextEmbedd
   public static category = "AI Text Model";
   public static title = "Text Embedding";
   public static description = "Generates vector embeddings for text to capture semantic meaning";
-  public static inputSchema(): TObject {
-    return TextEmbeddingInputSchema;
+  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return TextEmbeddingInputSchema as TObject & JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject {
-    return TextEmbeddingOutputSchema;
+  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return TextEmbeddingOutputSchema as TObject & JSONSchema7ObjectDefinition;
   }
 }
 

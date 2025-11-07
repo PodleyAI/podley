@@ -11,6 +11,7 @@ import {
   TaskRegistry,
   JobQueueTaskConfig,
   TypeReplicateArray,
+  type JSONSchema7ObjectDefinition,
 } from "@podley/task-graph";
 import { AiTask } from "./base/AiTask";
 import { TObject, Type, type Static } from "@sinclair/typebox";
@@ -46,11 +47,11 @@ export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTas
   public static title = "Text Summary";
   public static description =
     "Summarizes text into a shorter form while preserving key information";
-  public static inputSchema(): TObject {
-    return TextSummaryInputSchema;
+  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return TextSummaryInputSchema as TObject & JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject {
-    return TextSummaryOutputSchema;
+  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return TextSummaryOutputSchema as TObject & JSONSchema7ObjectDefinition;
   }
 }
 

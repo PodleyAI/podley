@@ -14,6 +14,7 @@ import {
   TaskOutput,
   TaskRegistry,
   Workflow,
+  type JSONSchema7ObjectDefinition,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
 import { TObject, Type } from "@sinclair/typebox";
@@ -34,7 +35,7 @@ export class DelayTask<
   public static title = "Delay";
   public static description = "Delays execution for a specified duration with progress tracking";
 
-  static inputSchema(): TObject {
+  static inputSchema(): TObject & JSONSchema7ObjectDefinition {
     return Type.Object({
       delay: Type.Optional(
         Type.Number({
@@ -48,11 +49,11 @@ export class DelayTask<
           description: "Pass through data to the output",
         })
       ),
-    });
+    }) as TObject & JSONSchema7ObjectDefinition;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({});
+  static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return Type.Object({}) as TObject & JSONSchema7ObjectDefinition;
   }
 
   async execute(input: Input, executeContext: IExecuteContext): Promise<Output> {
