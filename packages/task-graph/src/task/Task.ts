@@ -72,16 +72,16 @@ export class Task<
    * Input schema for this task
    * Returns a JSONSchema7 compatible object schema
    */
-  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return Type.Object({}) as TObject & JSONSchema7ObjectDefinition;
+  public static inputSchema(): JSONSchema7ObjectDefinition {
+    return Type.Object({}) as JSONSchema7ObjectDefinition;
   }
 
   /**
    * Output schema for this task
    * Returns a JSONSchema7 compatible object schema
    */
-  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return Type.Object({}) as TObject & JSONSchema7ObjectDefinition;
+  public static outputSchema(): JSONSchema7ObjectDefinition {
+    return Type.Object({}) as JSONSchema7ObjectDefinition;
   }
 
   // ========================================================================
@@ -187,7 +187,7 @@ export class Task<
    * Gets input schema for this task
    * Returns a JSONSchema7 compatible object schema
    */
-  public inputSchema(): TObject & JSONSchema7ObjectDefinition {
+  public inputSchema(): JSONSchema7ObjectDefinition {
     return (this.constructor as typeof Task).inputSchema();
   }
 
@@ -195,7 +195,7 @@ export class Task<
    * Gets output schema for this task
    * Returns a JSONSchema7 compatible object schema
    */
-  public outputSchema(): TObject & JSONSchema7ObjectDefinition {
+  public outputSchema(): JSONSchema7ObjectDefinition {
     return (this.constructor as typeof Task).outputSchema();
   }
 
@@ -329,6 +329,8 @@ export class Task<
    */
   getDefaultInputsFromStaticInputDefinitions(): Partial<Input> {
     const schema = this.inputSchema();
+    // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
+    if (typeof schema === 'boolean') return {};
     return Object.entries(schema.properties || {}).reduce<Record<string, any>>(
       (acc, [id, prop]) => {
         const defaultValue = (prop as any).default;
@@ -369,13 +371,15 @@ export class Task<
    */
   public setInput(input: Record<string, any>): void {
     const schema = this.inputSchema();
+    // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
+    if (typeof schema === 'boolean') return;
     const properties = schema.properties || {};
 
     for (const [inputId, prop] of Object.entries(properties)) {
       if (input[inputId] !== undefined) {
         this.runInputData[inputId] = input[inputId];
-      } else if (this.runInputData[inputId] === undefined && prop.default !== undefined) {
-        this.runInputData[inputId] = prop.default;
+      } else if (this.runInputData[inputId] === undefined && (prop as any).default !== undefined) {
+        this.runInputData[inputId] = (prop as any).default;
       }
     }
   }
@@ -447,14 +451,14 @@ export class Task<
   /**
    * The compiled input schema
    */
-  private static _inputSchemaTypeChecker: TypeCheck<TObject> | undefined;
+  private static _inputSchemaTypeChecker: TypeCheck<any> | undefined;
 
   /**
    * Gets the compiled input schema
    */
-  protected static getInputSchemaTypeChecker(): TypeCheck<TObject> {
+  protected static getInputSchemaTypeChecker(): TypeCheck<any> {
     if (!Task._inputSchemaTypeChecker) {
-      Task._inputSchemaTypeChecker = TypeCompiler.Compile(Task.inputSchema());
+      Task._inputSchemaTypeChecker = TypeCompiler.Compile(Task.inputSchema() as any);
     }
     return Task._inputSchemaTypeChecker;
   }

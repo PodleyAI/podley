@@ -81,11 +81,11 @@ export class VectorSimilarityTask extends ArrayTask<
     "Compares vectors using similarity functions and returns top-K ranked results";
   static readonly cacheable = true;
 
-  public static override inputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return SimilarityInputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static override inputSchema(): JSONSchema7ObjectDefinition {
+    return SimilarityInputSchema as JSONSchema7ObjectDefinition;
   }
-  public static override outputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return SimilarityOutputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static override outputSchema(): JSONSchema7ObjectDefinition {
+    return SimilarityOutputSchema as JSONSchema7ObjectDefinition;
   }
 
   // @ts-ignore (TODO: fix this)

@@ -13,6 +13,7 @@ import { GraphResultArray, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner"
 import { GraphAsTask } from "./GraphAsTask";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
+import type { JSONSchema7ObjectDefinition } from "./TaskSchema";
 
 /**
  * ArrayTask is a compound task that either:
@@ -38,14 +39,14 @@ export class ArrayTask<
   /**
    * Gets input schema for this task from the static inputSchema property, which is user defined (reverts GraphAsTask's override)
    */
-  public inputSchema(): TObject {
+  public inputSchema(): JSONSchema7ObjectDefinition {
     return (this.constructor as typeof ArrayTask).inputSchema();
   }
 
   /**
    * Gets output schema for this task from the static outputSchema property, which is user defined (reverts GraphAsTask's override)
    */
-  public outputSchema(): TObject {
+  public outputSchema(): JSONSchema7ObjectDefinition {
     return (this.constructor as typeof ArrayTask).outputSchema();
   }
 
@@ -57,12 +58,17 @@ export class ArrayTask<
     const arrayInputs = new Map<string, Array<Input[keyof Input]>>();
     let hasArrayInputs = false;
     const inputSchema = this.inputSchema();
-    const keys = Object.keys(inputSchema.properties);
+    // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
+    if (typeof inputSchema === 'boolean') {
+      super.regenerateGraph();
+      return;
+    }
+    const keys = Object.keys(inputSchema.properties || {});
     for (const inputId of keys) {
       const inputValue = this.runInputData[inputId];
-      const inputDef = inputSchema.properties[inputId];
+      const inputDef = (inputSchema.properties as any)?.[inputId];
 
-      if (inputDef.replicate === true && Array.isArray(inputValue) && inputValue.length > 1) {
+      if (inputDef?.replicate === true && Array.isArray(inputValue) && inputValue.length > 1) {
         arrayInputs.set(inputId, inputValue);
         hasArrayInputs = true;
       }

@@ -44,7 +44,7 @@ export class DebugLogTask<
     "Logs messages to the console with configurable log levels for debugging task graphs";
   static readonly cacheable = false;
 
-  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+  public static inputSchema(): JSONSchema7ObjectDefinition {
     return Type.Object({
       console: Type.Optional(
         Type.String({
@@ -62,16 +62,16 @@ export class DebugLogTask<
           }
         )
       ),
-    }) as TObject & JSONSchema7ObjectDefinition;
+    }) as JSONSchema7ObjectDefinition;
   }
 
-  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+  public static outputSchema(): JSONSchema7ObjectDefinition {
     return Type.Object({
       console: Type.Unknown({
         title: "Messages",
         description: "The messages logged by the task",
       }),
-    }) as TObject & JSONSchema7ObjectDefinition;
+    }) as JSONSchema7ObjectDefinition;
   }
 
   async executeReactive(input: Input, output: Output) {

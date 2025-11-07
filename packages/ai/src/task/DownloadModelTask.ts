@@ -49,11 +49,11 @@ export class DownloadModelTask extends AiTask<
   public static category = "AI Text Model";
   public static title = "Download Model";
   public static description = "Downloads and caches AI models locally with progress tracking";
-  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return DownloadModelInputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static inputSchema(): JSONSchema7ObjectDefinition {
+    return DownloadModelInputSchema as JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return DownloadModelOutputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static outputSchema(): JSONSchema7ObjectDefinition {
+    return DownloadModelOutputSchema as JSONSchema7ObjectDefinition;
   }
   public static cacheable = false;
 

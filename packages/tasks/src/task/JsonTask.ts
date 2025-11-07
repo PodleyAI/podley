@@ -41,22 +41,22 @@ export class JsonTask<
   public static type = "JsonTask";
   public static category = "Hidden";
 
-  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+  public static inputSchema(): JSONSchema7ObjectDefinition {
     return Type.Object({
       json: Type.String({
         title: "JSON",
         description: "The JSON to parse",
       }),
-    }) as TObject & JSONSchema7ObjectDefinition;
+    }) as JSONSchema7ObjectDefinition;
   }
 
-  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+  public static outputSchema(): JSONSchema7ObjectDefinition {
     return Type.Object({
       output: Type.Any({
         title: "Output",
         description: "Output depends on the generated task graph",
       }),
-    }) as TObject & JSONSchema7ObjectDefinition;
+    }) as JSONSchema7ObjectDefinition;
   }
 
   /**

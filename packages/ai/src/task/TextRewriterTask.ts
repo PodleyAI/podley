@@ -51,11 +51,11 @@ export class TextRewriterTask extends AiTask<TextRewriterTaskInput, TextRewriter
   public static category = "AI Text Model";
   public static title = "Text Rewriter";
   public static description = "Rewrites text according to a given prompt using language models";
-  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return TextRewriterInputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static inputSchema(): JSONSchema7ObjectDefinition {
+    return TextRewriterInputSchema as JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return TextRewriterOutputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static outputSchema(): JSONSchema7ObjectDefinition {
+    return TextRewriterOutputSchema as JSONSchema7ObjectDefinition;
   }
 }
 

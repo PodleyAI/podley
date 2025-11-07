@@ -121,8 +121,10 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
       // Process any pending data flows
       if (this._dataFlows.length > 0) {
         this._dataFlows.forEach((dataflow) => {
+          const taskSchema = task.inputSchema();
           if (
-            task.inputSchema().properties?.[dataflow.targetTaskPortId] === undefined &&
+            typeof taskSchema !== 'boolean' && 
+            (taskSchema.properties as any)?.[dataflow.targetTaskPortId] === undefined &&
             dataflow.targetTaskPortId !== DATAFLOW_ALL_PORTS
           ) {
             this._error = `Input ${dataflow.targetTaskPortId} not found on task ${task.config.id}`;
@@ -150,15 +152,18 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
             [taskInputPortId, taskPortInput]: [string, TSchema]
           ) => boolean
         ): Map<string, string> => {
+          // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
+          if (typeof sourceSchema === 'boolean' || typeof targetSchema === 'boolean') return matches;
+          
           for (const [parentOutputPortId, parentPortOutput] of Object.entries(
-            sourceSchema.properties
+            sourceSchema.properties || {}
           )) {
             for (const [taskInputPortId, taskPortInput] of Object.entries(
-              targetSchema.properties
+              targetSchema.properties || {}
             )) {
               if (
                 !matches.has(taskInputPortId) &&
-                comparator([parentOutputPortId, parentPortOutput], [taskInputPortId, taskPortInput])
+                comparator([parentOutputPortId, parentPortOutput as TSchema], [taskInputPortId, taskPortInput as TSchema])
               ) {
                 matches.set(taskInputPortId, parentOutputPortId);
                 this.connect(parent.config.id, parentOutputPortId, task.config.id, taskInputPortId);
@@ -460,7 +465,8 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
     const lastNode = nodes[nodes.length + index];
     const outputSchema = lastNode.outputSchema();
 
-    if (!outputSchema.properties?.[source] && source !== DATAFLOW_ALL_PORTS) {
+    // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
+    if (typeof outputSchema !== 'boolean' && !(outputSchema.properties as any)?.[source] && source !== DATAFLOW_ALL_PORTS) {
       const errorMsg = `Output ${source} not found on task ${lastNode.config.id}`;
       this._error = errorMsg;
       console.error(this._error);
@@ -550,11 +556,12 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
     const sourceSchema = sourceTask.outputSchema();
     const targetSchema = targetTask.inputSchema();
 
-    if (!sourceSchema.properties?.[sourceTaskPortId]) {
+    // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
+    if (typeof sourceSchema !== 'boolean' && !(sourceSchema.properties as any)?.[sourceTaskPortId]) {
       throw new WorkflowError(`Output ${sourceTaskPortId} not found on source task`);
     }
 
-    if (!targetSchema.properties?.[targetTaskPortId]) {
+    if (typeof targetSchema !== 'boolean' && !(targetSchema.properties as any)?.[targetTaskPortId]) {
       throw new WorkflowError(`Input ${targetTaskPortId} not found on target task`);
     }
 

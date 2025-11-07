@@ -23,7 +23,7 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
   public static title = "JavaScript Interpreter";
   public static description = "Executes JavaScript code in a sandboxed interpreter environment";
 
-  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+  public static inputSchema(): JSONSchema7ObjectDefinition {
     return Type.Object({
       code: Type.String({
         title: "Code",
@@ -35,16 +35,16 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
           description: "Input data to pass to the JavaScript code",
         })
       ),
-    }) as TObject & JSONSchema7ObjectDefinition;
+    }) as JSONSchema7ObjectDefinition;
   }
 
-  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+  public static outputSchema(): JSONSchema7ObjectDefinition {
     return Type.Object({
       output: Type.Unknown({
         title: "Output",
         description: "The output of the JavaScript code",
       }),
-    }) as TObject & JSONSchema7ObjectDefinition;
+    }) as JSONSchema7ObjectDefinition;
   }
 
   async executeReactive(input: JavaScriptTaskInput, output: JavaScriptTaskOutput) {

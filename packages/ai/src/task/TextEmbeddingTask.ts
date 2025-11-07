@@ -51,11 +51,11 @@ export class TextEmbeddingTask extends AiTask<TextEmbeddingTaskInput, TextEmbedd
   public static category = "AI Text Model";
   public static title = "Text Embedding";
   public static description = "Generates vector embeddings for text to capture semantic meaning";
-  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return TextEmbeddingInputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static inputSchema(): JSONSchema7ObjectDefinition {
+    return TextEmbeddingInputSchema as JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return TextEmbeddingOutputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static outputSchema(): JSONSchema7ObjectDefinition {
+    return TextEmbeddingOutputSchema as JSONSchema7ObjectDefinition;
   }
 }
 

@@ -22,6 +22,7 @@ import type {
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
 import type { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
+import type { JSONSchema7ObjectDefinition } from "./TaskSchema";
 
 /**
  * Context for task execution
@@ -60,8 +61,8 @@ export interface ITaskStaticProperties {
   readonly title?: string;
   readonly description?: string;
   readonly cacheable: boolean;
-  readonly inputSchema: () => TObject;
-  readonly outputSchema: () => TObject;
+  readonly inputSchema: () => JSONSchema7ObjectDefinition;
+  readonly outputSchema: () => JSONSchema7ObjectDefinition;
 }
 
 /**
@@ -104,8 +105,8 @@ export interface ITaskIO<Input extends TaskInput> {
   runInputData: Record<string, any>;
   runOutputData: Record<string, any>;
 
-  inputSchema(): TObject; // gets local access for static inputSchema property
-  outputSchema(): TObject; // gets local access for static outputSchema property
+  inputSchema(): JSONSchema7ObjectDefinition; // gets local access for static inputSchema property
+  outputSchema(): JSONSchema7ObjectDefinition; // gets local access for static outputSchema property
   get type(): string; // gets local access for static type property
   get category(): string; // gets local access for static category property
   get title(): string; // gets local access for static title property

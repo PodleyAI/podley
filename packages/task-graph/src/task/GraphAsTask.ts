@@ -18,6 +18,7 @@ import {
   type TaskOutput,
   type TaskTypeName,
 } from "./TaskTypes";
+import type { JSONSchema7ObjectDefinition } from "./TaskSchema";
 
 export interface GraphAsTaskConfig extends TaskConfig {
   subGraph?: TaskGraph;
@@ -94,7 +95,7 @@ export class GraphAsTask<
    * The input schema is the union of all unconnected inputs from starting nodes
    * (nodes with zero incoming connections)
    */
-  public inputSchema(): TObject {
+  public inputSchema(): JSONSchema7ObjectDefinition {
     // If there's no subgraph or it has no children, fall back to the static schema
     if (!this.hasChildren()) {
       return (this.constructor as typeof Task).inputSchema();
@@ -114,6 +115,8 @@ export class GraphAsTask<
     // For starting nodes only, collect their unconnected inputs
     for (const task of startingNodes) {
       const taskInputSchema = task.inputSchema();
+      // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
+      if (typeof taskInputSchema === 'boolean') continue;
       const taskProperties = taskInputSchema.properties || {};
 
       // Add all inputs from starting nodes to the graph's input schema
@@ -131,7 +134,7 @@ export class GraphAsTask<
       }
     }
 
-    return Type.Object(properties, required.length > 0 ? { required } : {});
+    return Type.Object(properties, required.length > 0 ? { required } : {}) as JSONSchema7ObjectDefinition;
   }
 
   /**
@@ -168,7 +171,7 @@ export class GraphAsTask<
    * Override outputSchema to compute it dynamically from the subgraph at runtime
    * The output schema depends on the compoundMerge strategy and the nodes at the last level
    */
-  public override outputSchema(): TObject {
+  public override outputSchema(): JSONSchema7ObjectDefinition {
     // If there's no subgraph or it has no children, fall back to the static schema
     if (!this.hasChildren()) {
       return (this.constructor as typeof Task).outputSchema();
@@ -199,6 +202,8 @@ export class GraphAsTask<
 
     for (const task of lastLevelNodes) {
       const taskOutputSchema = task.outputSchema();
+      // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
+      if (typeof taskOutputSchema === 'boolean') continue;
       const taskProperties = taskOutputSchema.properties || {};
 
       for (const [outputName, outputProp] of Object.entries(taskProperties)) {
@@ -223,7 +228,7 @@ export class GraphAsTask<
       }
     }
 
-    return Type.Object(properties, required.length > 0 ? { required } : {});
+    return Type.Object(properties, required.length > 0 ? { required } : {}) as JSONSchema7ObjectDefinition;
   }
 
   /**

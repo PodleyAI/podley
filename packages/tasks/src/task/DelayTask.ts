@@ -35,7 +35,7 @@ export class DelayTask<
   public static title = "Delay";
   public static description = "Delays execution for a specified duration with progress tracking";
 
-  static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+  static inputSchema(): JSONSchema7ObjectDefinition {
     return Type.Object({
       delay: Type.Optional(
         Type.Number({
@@ -49,11 +49,11 @@ export class DelayTask<
           description: "Pass through data to the output",
         })
       ),
-    }) as TObject & JSONSchema7ObjectDefinition;
+    }) as JSONSchema7ObjectDefinition;
   }
 
-  static outputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return Type.Object({}) as TObject & JSONSchema7ObjectDefinition;
+  static outputSchema(): JSONSchema7ObjectDefinition {
+    return Type.Object({}) as JSONSchema7ObjectDefinition;
   }
 
   async execute(input: Input, executeContext: IExecuteContext): Promise<Output> {

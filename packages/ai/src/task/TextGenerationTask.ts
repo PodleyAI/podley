@@ -90,11 +90,11 @@ export class TextGenerationTask extends AiTask<
   public static title = "Text Generation";
   public static description =
     "Generates text from a prompt using language models with configurable parameters";
-  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return TextGenerationInputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static inputSchema(): JSONSchema7ObjectDefinition {
+    return TextGenerationInputSchema as JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return TextGenerationOutputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static outputSchema(): JSONSchema7ObjectDefinition {
+    return TextGenerationOutputSchema as JSONSchema7ObjectDefinition;
   }
 }
 

@@ -58,11 +58,11 @@ export class TextQuestionAnswerTask extends AiTask<
   public static category = "AI Text Model";
   public static title = "Text Question Answer";
   public static description = "Answers questions based on provided context using language models";
-  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return TextQuestionAnswerInputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static inputSchema(): JSONSchema7ObjectDefinition {
+    return TextQuestionAnswerInputSchema as JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
-    return TextQuestionAnswerOutputSchema as TObject & JSONSchema7ObjectDefinition;
+  public static outputSchema(): JSONSchema7ObjectDefinition {
+    return TextQuestionAnswerOutputSchema as JSONSchema7ObjectDefinition;
   }
 }
 

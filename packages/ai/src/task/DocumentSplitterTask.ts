@@ -32,22 +32,22 @@ export class DocumentSplitterTask extends Task<
   public static category = "Document";
   public static title = "Document Splitter";
   public static description = "Splits documents into text chunks for processing";
-  public static inputSchema(): TObject & JSONSchema7ObjectDefinition {
+  public static inputSchema(): JSONSchema7ObjectDefinition {
     return Type.Object({
       parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {
         name: "Document Kind",
         description: "The kind of document (txt or md)",
       }),
       // file: Type.Instance(Document),
-    }) as TObject & JSONSchema7ObjectDefinition;
+    }) as JSONSchema7ObjectDefinition;
   }
-  public static outputSchema(): TObject & JSONSchema7ObjectDefinition {
+  public static outputSchema(): JSONSchema7ObjectDefinition {
     return Type.Object({
       texts: Type.Array(Type.String(), {
         name: "Text Chunks",
         description: "The text chunks of the document",
       }),
-    }) as TObject & JSONSchema7ObjectDefinition;
+    }) as JSONSchema7ObjectDefinition;
   }
 
   flattenFragmentsToTexts(item: DocumentFragment | Document): string[] {
