@@ -5,9 +5,16 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import {
+  CreateWorkflow,
+  Task,
+  TaskConfig,
+  TaskRegistry,
+  Workflow,
+  type DataPortSchema,
+} from "@podley/task-graph";
+import { Type } from "@sinclair/typebox";
 import { Interpreter } from "../util/interpreter";
-import { TaskConfig, Workflow, CreateWorkflow, TaskRegistry, Task, type JSONSchema7ObjectDefinition } from "@podley/task-graph";
-import { TObject, Type } from "@sinclair/typebox";
 
 export type JavaScriptTaskInput = {
   code: string;
@@ -23,7 +30,7 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
   public static title = "JavaScript Interpreter";
   public static description = "Executes JavaScript code in a sandboxed interpreter environment";
 
-  public static inputSchema(): JSONSchema7ObjectDefinition {
+  public static inputSchema(): DataPortSchema {
     return Type.Object({
       code: Type.String({
         title: "Code",
@@ -35,16 +42,16 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
           description: "Input data to pass to the JavaScript code",
         })
       ),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
-  public static outputSchema(): JSONSchema7ObjectDefinition {
+  public static outputSchema(): DataPortSchema {
     return Type.Object({
       output: Type.Unknown({
         title: "Output",
         description: "The output of the JavaScript code",
       }),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
   async executeReactive(input: JavaScriptTaskInput, output: JavaScriptTaskOutput) {

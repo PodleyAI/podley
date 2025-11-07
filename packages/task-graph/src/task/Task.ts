@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, uuid4 } from "@podley/util";
-import { Type, type TObject } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 import { TypeCheck, TypeCompiler } from "@sinclair/typebox/compiler";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteContext, IExecuteReactiveContext, ITask } from "./ITask";
@@ -19,6 +19,7 @@ import {
 } from "./TaskEvents";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
+import type { DataPortSchema } from "./TaskSchema";
 import {
   TaskStatus,
   type Provenance,
@@ -27,7 +28,6 @@ import {
   type TaskOutput,
   type TaskTypeName,
 } from "./TaskTypes";
-import type { JSONSchema7ObjectDefinition } from "./TaskSchema";
 
 /**
  * Base class for all tasks that implements the ITask interface.
@@ -72,16 +72,16 @@ export class Task<
    * Input schema for this task
    * Returns a JSONSchema7 compatible object schema
    */
-  public static inputSchema(): JSONSchema7ObjectDefinition {
-    return Type.Object({}) as JSONSchema7ObjectDefinition;
+  public static inputSchema(): DataPortSchema {
+    return Type.Object({}) as DataPortSchema;
   }
 
   /**
    * Output schema for this task
    * Returns a JSONSchema7 compatible object schema
    */
-  public static outputSchema(): JSONSchema7ObjectDefinition {
-    return Type.Object({}) as JSONSchema7ObjectDefinition;
+  public static outputSchema(): DataPortSchema {
+    return Type.Object({}) as DataPortSchema;
   }
 
   // ========================================================================
@@ -187,7 +187,7 @@ export class Task<
    * Gets input schema for this task
    * Returns a JSONSchema7 compatible object schema
    */
-  public inputSchema(): JSONSchema7ObjectDefinition {
+  public inputSchema(): DataPortSchema {
     return (this.constructor as typeof Task).inputSchema();
   }
 
@@ -195,7 +195,7 @@ export class Task<
    * Gets output schema for this task
    * Returns a JSONSchema7 compatible object schema
    */
-  public outputSchema(): JSONSchema7ObjectDefinition {
+  public outputSchema(): DataPortSchema {
     return (this.constructor as typeof Task).outputSchema();
   }
 

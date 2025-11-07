@@ -6,14 +6,13 @@
 //    *******************************************************************************
 
 import { uuid4 } from "@podley/util";
-import { TObject } from "@sinclair/typebox";
 import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { GraphResultArray, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTask } from "./GraphAsTask";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
+import type { DataPortSchema } from "./TaskSchema";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
-import type { JSONSchema7ObjectDefinition } from "./TaskSchema";
 
 /**
  * ArrayTask is a compound task that either:
@@ -39,14 +38,14 @@ export class ArrayTask<
   /**
    * Gets input schema for this task from the static inputSchema property, which is user defined (reverts GraphAsTask's override)
    */
-  public inputSchema(): JSONSchema7ObjectDefinition {
+  public inputSchema(): DataPortSchema {
     return (this.constructor as typeof ArrayTask).inputSchema();
   }
 
   /**
    * Gets output schema for this task from the static outputSchema property, which is user defined (reverts GraphAsTask's override)
    */
-  public outputSchema(): JSONSchema7ObjectDefinition {
+  public outputSchema(): DataPortSchema {
     return (this.constructor as typeof ArrayTask).outputSchema();
   }
 

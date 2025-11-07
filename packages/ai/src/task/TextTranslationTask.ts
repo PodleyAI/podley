@@ -9,14 +9,14 @@ import {
   CreateWorkflow,
   JobQueueTaskConfig,
   TaskRegistry,
-  Workflow,
   TypeReplicateArray,
-  type JSONSchema7ObjectDefinition,
+  Workflow,
+  type DataPortSchema,
 } from "@podley/task-graph";
-import { AiTask } from "./base/AiTask";
-import { TObject, Type, type Static } from "@sinclair/typebox";
-import { TypeLanguage, TypeModel } from "./base/AiTaskSchemas";
 import { TypeOptionalArray } from "@podley/util";
+import { Type, type Static } from "@sinclair/typebox";
+import { AiTask } from "./base/AiTask";
+import { TypeLanguage, TypeModel } from "./base/AiTaskSchemas";
 
 export const TextTranslationInputSchema = Type.Object({
   text: TypeReplicateArray(
@@ -67,11 +67,11 @@ export class TextTranslationTask extends AiTask<
   public static category = "AI Text Model";
   public static title = "Text Translation";
   public static description = "Translates text from one language to another using language models";
-  public static inputSchema(): JSONSchema7ObjectDefinition {
-    return TextTranslationInputSchema as JSONSchema7ObjectDefinition;
+  public static inputSchema(): DataPortSchema {
+    return TextTranslationInputSchema as DataPortSchema;
   }
-  public static outputSchema(): JSONSchema7ObjectDefinition {
-    return TextTranslationOutputSchema as JSONSchema7ObjectDefinition;
+  public static outputSchema(): DataPortSchema {
+    return TextTranslationOutputSchema as DataPortSchema;
   }
 }
 

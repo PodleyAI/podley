@@ -14,10 +14,10 @@ import {
   TaskOutput,
   TaskRegistry,
   Workflow,
-  type JSONSchema7ObjectDefinition,
+  type DataPortSchema,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
-import { TObject, Type } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 
 export type DelayTaskInput = {
   delay: number;
@@ -35,7 +35,7 @@ export class DelayTask<
   public static title = "Delay";
   public static description = "Delays execution for a specified duration with progress tracking";
 
-  static inputSchema(): JSONSchema7ObjectDefinition {
+  static inputSchema(): DataPortSchema {
     return Type.Object({
       delay: Type.Optional(
         Type.Number({
@@ -49,11 +49,11 @@ export class DelayTask<
           description: "Pass through data to the output",
         })
       ),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
-  static outputSchema(): JSONSchema7ObjectDefinition {
-    return Type.Object({}) as JSONSchema7ObjectDefinition;
+  static outputSchema(): DataPortSchema {
+    return Type.Object({}) as DataPortSchema;
   }
 
   async execute(input: Input, executeContext: IExecuteContext): Promise<Output> {

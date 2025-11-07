@@ -17,9 +17,9 @@ import {
   TaskOutput,
   TaskRegistry,
   Workflow,
-  type JSONSchema7ObjectDefinition,
+  type DataPortSchema,
 } from "@podley/task-graph";
-import { TObject, Type } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 
 interface LambdaTaskConfig<
   Input extends TaskInput = TaskInput,
@@ -60,7 +60,7 @@ export class LambdaTask<
    * Input schema for LambdaTask
    * - input: Optional input data to pass to the function
    */
-  public static inputSchema(): JSONSchema7ObjectDefinition {
+  public static inputSchema(): DataPortSchema {
     return Type.Object({
       [DATAFLOW_ALL_PORTS]: Type.Optional(
         Type.Any({
@@ -68,20 +68,20 @@ export class LambdaTask<
           description: "Input data to pass to the function",
         })
       ),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
   /**
    * Output schema for LambdaTask
    * The output will be whatever the provided function returns
    */
-  public static outputSchema(): JSONSchema7ObjectDefinition {
+  public static outputSchema(): DataPortSchema {
     return Type.Object({
       [DATAFLOW_ALL_PORTS]: Type.Any({
         title: "Output",
         description: "The output from the execute function",
       }),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
   async execute(input: Input, context: IExecuteContext): Promise<Output> {

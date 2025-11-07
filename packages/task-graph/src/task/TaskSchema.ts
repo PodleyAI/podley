@@ -42,6 +42,6 @@ export type DeReplicateStatic<S extends TObject<any>> = {
  * A JSONSchema7 object schema (excludes boolean from JSONSchema7Definition).
  * This type represents a schema that must be an object, not a boolean.
  */
-export type JSONSchema7ObjectDefinition = JSONSchema7 & {
+export type DataPortSchema = JSONSchema7 & {
   type?: "object" | readonly ["object"];
 };

@@ -6,26 +6,26 @@
 //    *******************************************************************************
 
 import {
-  Workflow,
-  CreateWorkflow,
-  TaskRegistry,
-  JobQueueTask,
-  JobQueueTaskConfig,
-  TaskInvalidInputError,
-  TaskConfig,
-  DataPorts,
-  TaskConfigurationError,
-  type JSONSchema7ObjectDefinition,
-} from "@podley/task-graph";
-import {
   AbortSignalJobError,
+  IJobExecuteContext,
   Job,
   PermanentJobError,
   RetryableJobError,
-  IJobExecuteContext,
 } from "@podley/job-queue";
 import { JSONValue } from "@podley/storage";
-import { TObject, Type } from "@sinclair/typebox";
+import {
+  CreateWorkflow,
+  DataPorts,
+  JobQueueTask,
+  JobQueueTaskConfig,
+  TaskConfig,
+  TaskConfigurationError,
+  TaskInvalidInputError,
+  TaskRegistry,
+  Workflow,
+  type DataPortSchema,
+} from "@podley/task-graph";
+import { Type } from "@sinclair/typebox";
 
 export type url = string;
 export interface FetchTaskInput extends DataPorts {
@@ -197,7 +197,7 @@ export class FetchTask<
   public static description =
     "Fetches data from a URL with progress tracking and automatic retry handling";
 
-  public static inputSchema(): JSONSchema7ObjectDefinition {
+  public static inputSchema(): DataPortSchema {
     return Type.Object({
       url: Type.String({
         title: "URL",
@@ -254,16 +254,16 @@ export class FetchTask<
         })
       ),
       queueName: Type.Optional(Type.String()),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
-  public static outputSchema(): JSONSchema7ObjectDefinition {
+  public static outputSchema(): DataPortSchema {
     return Type.Object({
       text: Type.Optional(Type.String()),
       json: Type.Optional(Type.Unknown()),
       blob: Type.Optional(Type.Unsafe<Blob>({ type: "blob" })),
       arraybuffer: Type.Optional(Type.Unsafe<ArrayBuffer>({ type: "arraybuffer" })),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
   constructor(input: Input = {} as Input, config: Config = {} as Config) {

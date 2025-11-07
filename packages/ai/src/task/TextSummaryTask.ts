@@ -6,15 +6,15 @@
 //    *******************************************************************************
 
 import {
-  Workflow,
   CreateWorkflow,
-  TaskRegistry,
   JobQueueTaskConfig,
+  TaskRegistry,
   TypeReplicateArray,
-  type JSONSchema7ObjectDefinition,
+  Workflow,
+  type DataPortSchema,
 } from "@podley/task-graph";
+import { Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
-import { TObject, Type, type Static } from "@sinclair/typebox";
 import { TypeModel } from "./base/AiTaskSchemas";
 
 export const TextSummaryInputSchema = Type.Object({
@@ -47,11 +47,11 @@ export class TextSummaryTask extends AiTask<TextSummaryTaskInput, TextSummaryTas
   public static title = "Text Summary";
   public static description =
     "Summarizes text into a shorter form while preserving key information";
-  public static inputSchema(): JSONSchema7ObjectDefinition {
-    return TextSummaryInputSchema as JSONSchema7ObjectDefinition;
+  public static inputSchema(): DataPortSchema {
+    return TextSummaryInputSchema as DataPortSchema;
   }
-  public static outputSchema(): JSONSchema7ObjectDefinition {
-    return TextSummaryOutputSchema as JSONSchema7ObjectDefinition;
+  public static outputSchema(): DataPortSchema {
+    return TextSummaryOutputSchema as DataPortSchema;
   }
 }
 

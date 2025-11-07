@@ -5,12 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { TObject, Type } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { CompoundMergeStrategy, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 import { Task } from "./Task";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
+import type { DataPortSchema } from "./TaskSchema";
 import {
   type TaskConfig,
   type TaskIdType,
@@ -18,7 +19,6 @@ import {
   type TaskOutput,
   type TaskTypeName,
 } from "./TaskTypes";
-import type { JSONSchema7ObjectDefinition } from "./TaskSchema";
 
 export interface GraphAsTaskConfig extends TaskConfig {
   subGraph?: TaskGraph;
@@ -95,7 +95,7 @@ export class GraphAsTask<
    * The input schema is the union of all unconnected inputs from starting nodes
    * (nodes with zero incoming connections)
    */
-  public inputSchema(): JSONSchema7ObjectDefinition {
+  public inputSchema(): DataPortSchema {
     // If there's no subgraph or it has no children, fall back to the static schema
     if (!this.hasChildren()) {
       return (this.constructor as typeof Task).inputSchema();
@@ -132,7 +132,7 @@ export class GraphAsTask<
       }
     }
 
-    return Type.Object(properties, required.length > 0 ? { required } : {}) as JSONSchema7ObjectDefinition;
+    return Type.Object(properties, required.length > 0 ? { required } : {}) as DataPortSchema;
   }
 
   /**
@@ -169,7 +169,7 @@ export class GraphAsTask<
    * Override outputSchema to compute it dynamically from the subgraph at runtime
    * The output schema depends on the compoundMerge strategy and the nodes at the last level
    */
-  public override outputSchema(): JSONSchema7ObjectDefinition {
+  public override outputSchema(): DataPortSchema {
     // If there's no subgraph or it has no children, fall back to the static schema
     if (!this.hasChildren()) {
       return (this.constructor as typeof Task).outputSchema();
@@ -224,7 +224,7 @@ export class GraphAsTask<
       }
     }
 
-    return Type.Object(properties, required.length > 0 ? { required } : {}) as JSONSchema7ObjectDefinition;
+    return Type.Object(properties, required.length > 0 ? { required } : {}) as DataPortSchema;
   }
 
   /**

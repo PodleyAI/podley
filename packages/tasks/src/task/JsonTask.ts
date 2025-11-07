@@ -6,20 +6,20 @@
 // //    *******************************************************************************
 
 import {
-  TaskConfig,
-  JsonTaskItem,
-  Dataflow,
-  Workflow,
+  createGraphFromDependencyJSON,
   CreateWorkflow,
-  TaskRegistry,
+  Dataflow,
+  GraphAsTask,
+  JsonTaskItem,
+  TaskConfig,
+  TaskConfigurationError,
   TaskInput,
   TaskOutput,
-  createGraphFromDependencyJSON,
-  GraphAsTask,
-  TaskConfigurationError,
-  type JSONSchema7ObjectDefinition,
+  TaskRegistry,
+  Workflow,
+  type DataPortSchema,
 } from "@podley/task-graph";
-import { TObject, Type } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 
 interface JsonTaskInput extends TaskInput {
   json: string;
@@ -41,22 +41,22 @@ export class JsonTask<
   public static type = "JsonTask";
   public static category = "Hidden";
 
-  public static inputSchema(): JSONSchema7ObjectDefinition {
+  public static inputSchema(): DataPortSchema {
     return Type.Object({
       json: Type.String({
         title: "JSON",
         description: "The JSON to parse",
       }),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
-  public static outputSchema(): JSONSchema7ObjectDefinition {
+  public static outputSchema(): DataPortSchema {
     return Type.Object({
       output: Type.Any({
         title: "Output",
         description: "Output depends on the generated task graph",
       }),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
   /**

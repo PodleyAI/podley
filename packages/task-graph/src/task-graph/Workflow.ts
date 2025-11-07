@@ -159,7 +159,10 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
             )) {
               if (
                 !matches.has(taskInputPortId) &&
-                comparator([parentOutputPortId, parentPortOutput as TSchema], [taskInputPortId, taskPortInput as TSchema])
+                comparator(
+                  [parentOutputPortId, parentPortOutput as TSchema],
+                  [taskInputPortId, taskPortInput as TSchema]
+                )
               ) {
                 matches.set(taskInputPortId, parentOutputPortId);
                 this.connect(parent.config.id, parentOutputPortId, task.config.id, taskInputPortId);
@@ -551,12 +554,11 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
     const sourceSchema = sourceTask.outputSchema();
     const targetSchema = targetTask.inputSchema();
 
-    // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
-    if (!(sourceSchema.properties as any)?.[sourceTaskPortId]) {
+    if (!sourceSchema.properties?.[sourceTaskPortId]) {
       throw new WorkflowError(`Output ${sourceTaskPortId} not found on source task`);
     }
 
-    if (!(targetSchema.properties as any)?.[targetTaskPortId]) {
+    if (!targetSchema.properties?.[targetTaskPortId]) {
       throw new WorkflowError(`Input ${targetTaskPortId} not found on target task`);
     }
 

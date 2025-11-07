@@ -6,15 +6,15 @@
 //    *******************************************************************************
 
 import {
+  ArrayTask,
   CreateWorkflow,
   JobQueueTaskConfig,
-  ArrayTask,
+  TaskError,
   TaskRegistry,
   Workflow,
-  TaskError,
-  type JSONSchema7ObjectDefinition,
+  type DataPortSchema,
 } from "@podley/task-graph";
-import { Type, type Static, type TObject } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { TypedArray } from "./base/AiTaskSchemas";
 
 export const SimilarityFn = {
@@ -81,11 +81,11 @@ export class VectorSimilarityTask extends ArrayTask<
     "Compares vectors using similarity functions and returns top-K ranked results";
   static readonly cacheable = true;
 
-  public static override inputSchema(): JSONSchema7ObjectDefinition {
-    return SimilarityInputSchema as JSONSchema7ObjectDefinition;
+  public static override inputSchema(): DataPortSchema {
+    return SimilarityInputSchema as DataPortSchema;
   }
-  public static override outputSchema(): JSONSchema7ObjectDefinition {
-    return SimilarityOutputSchema as JSONSchema7ObjectDefinition;
+  public static override outputSchema(): DataPortSchema {
+    return SimilarityOutputSchema as DataPortSchema;
   }
 
   // @ts-ignore (TODO: fix this)

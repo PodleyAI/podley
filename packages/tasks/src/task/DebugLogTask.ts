@@ -5,8 +5,15 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Workflow, TaskRegistry, CreateWorkflow, TaskConfig, Task, type JSONSchema7ObjectDefinition } from "@podley/task-graph";
-import { TObject, Type } from "@sinclair/typebox";
+import {
+  CreateWorkflow,
+  Task,
+  TaskConfig,
+  TaskRegistry,
+  Workflow,
+  type DataPortSchema,
+} from "@podley/task-graph";
+import { Type } from "@sinclair/typebox";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
@@ -44,7 +51,7 @@ export class DebugLogTask<
     "Logs messages to the console with configurable log levels for debugging task graphs";
   static readonly cacheable = false;
 
-  public static inputSchema(): JSONSchema7ObjectDefinition {
+  public static inputSchema(): DataPortSchema {
     return Type.Object({
       console: Type.Optional(
         Type.String({
@@ -62,16 +69,16 @@ export class DebugLogTask<
           }
         )
       ),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
-  public static outputSchema(): JSONSchema7ObjectDefinition {
+  public static outputSchema(): DataPortSchema {
     return Type.Object({
       console: Type.Unknown({
         title: "Messages",
         description: "The messages logged by the task",
       }),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
   async executeReactive(input: Input, output: Output) {

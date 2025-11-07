@@ -11,12 +11,12 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
-  type JSONSchema7ObjectDefinition,
+  type DataPortSchema,
 } from "@podley/task-graph";
-import { TObject, Type, type Static } from "@sinclair/typebox";
+import { TypeOptionalArray } from "@podley/util";
+import { Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
-import { TypeOptionalArray } from "@podley/util";
 
 export const TextQuestionAnswerInputSchema = Type.Object({
   context: TypeReplicateArray(
@@ -58,11 +58,11 @@ export class TextQuestionAnswerTask extends AiTask<
   public static category = "AI Text Model";
   public static title = "Text Question Answer";
   public static description = "Answers questions based on provided context using language models";
-  public static inputSchema(): JSONSchema7ObjectDefinition {
-    return TextQuestionAnswerInputSchema as JSONSchema7ObjectDefinition;
+  public static inputSchema(): DataPortSchema {
+    return TextQuestionAnswerInputSchema as DataPortSchema;
   }
-  public static outputSchema(): JSONSchema7ObjectDefinition {
-    return TextQuestionAnswerOutputSchema as JSONSchema7ObjectDefinition;
+  public static outputSchema(): DataPortSchema {
+    return TextQuestionAnswerOutputSchema as DataPortSchema;
   }
 }
 

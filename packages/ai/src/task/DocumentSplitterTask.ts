@@ -6,15 +6,15 @@
 //    *******************************************************************************
 
 import {
-  Workflow,
   CreateWorkflow,
-  TaskRegistry,
   JobQueueTaskConfig,
   Task,
-  type JSONSchema7ObjectDefinition,
+  TaskRegistry,
+  Workflow,
+  type DataPortSchema,
 } from "@podley/task-graph";
+import { Type } from "@sinclair/typebox";
 import { Document, DocumentFragment } from "../source/Document";
-import { TObject, Type } from "@sinclair/typebox";
 export type DocumentSplitterTaskInput = {
   parser: "txt" | "md";
   file: Document;
@@ -32,22 +32,22 @@ export class DocumentSplitterTask extends Task<
   public static category = "Document";
   public static title = "Document Splitter";
   public static description = "Splits documents into text chunks for processing";
-  public static inputSchema(): JSONSchema7ObjectDefinition {
+  public static inputSchema(): DataPortSchema {
     return Type.Object({
       parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {
         name: "Document Kind",
         description: "The kind of document (txt or md)",
       }),
       // file: Type.Instance(Document),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
-  public static outputSchema(): JSONSchema7ObjectDefinition {
+  public static outputSchema(): DataPortSchema {
     return Type.Object({
       texts: Type.Array(Type.String(), {
         name: "Text Chunks",
         description: "The text chunks of the document",
       }),
-    }) as JSONSchema7ObjectDefinition;
+    }) as DataPortSchema;
   }
 
   flattenFragmentsToTexts(item: DocumentFragment | Document): string[] {
