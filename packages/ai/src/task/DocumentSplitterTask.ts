@@ -13,15 +13,24 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 import { Document, DocumentFragment } from "../source/Document";
-export type DocumentSplitterTaskInput = {
-  parser: "txt" | "md";
-  file: Document;
-};
-export type DocumentSplitterTaskOutput = {
-  texts: string[];
-};
+
+const inputSchema = Type.Object({
+  parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {
+    name: "Document Kind",
+    description: "The kind of document (txt or md)",
+  }),
+  // file: Type.Instance(Document),
+});
+const outputSchema = Type.Object({
+  texts: Type.Array(Type.String(), {
+    name: "Text Chunks",
+    description: "The text chunks of the document",
+  }),
+});
+export type DocumentSplitterTaskInput = Static<typeof inputSchema>;
+export type DocumentSplitterTaskOutput = Static<typeof outputSchema>;
 
 export class DocumentSplitterTask extends Task<
   DocumentSplitterTaskInput,
@@ -33,21 +42,10 @@ export class DocumentSplitterTask extends Task<
   public static title = "Document Splitter";
   public static description = "Splits documents into text chunks for processing";
   public static inputSchema(): DataPortSchema {
-    return Type.Object({
-      parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {
-        name: "Document Kind",
-        description: "The kind of document (txt or md)",
-      }),
-      // file: Type.Instance(Document),
-    }) as DataPortSchema;
+    return inputSchema as DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
-    return Type.Object({
-      texts: Type.Array(Type.String(), {
-        name: "Text Chunks",
-        description: "The text chunks of the document",
-      }),
-    }) as DataPortSchema;
+    return outputSchema as DataPortSchema;
   }
 
   flattenFragmentsToTexts(item: DocumentFragment | Document): string[] {

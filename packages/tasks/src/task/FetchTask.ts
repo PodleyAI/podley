@@ -12,10 +12,8 @@ import {
   PermanentJobError,
   RetryableJobError,
 } from "@podley/job-queue";
-import { JSONValue } from "@podley/storage";
 import {
   CreateWorkflow,
-  DataPorts,
   JobQueueTask,
   JobQueueTaskConfig,
   TaskConfig,
@@ -25,24 +23,85 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 
-export type url = string;
-export interface FetchTaskInput extends DataPorts {
-  url: url;
-  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-  headers?: Record<string, string>;
-  body?: string;
-  response_type?: "json" | "text" | "blob" | "arraybuffer";
-  queueName?: string;
-  timeout?: number;
-}
-export interface FetchTaskOutput extends DataPorts {
-  json?: JSONValue;
-  text?: string;
-  blob?: Blob;
-  arraybuffer?: ArrayBuffer;
-}
+const inputSchema = Type.Object({
+  url: Type.String({
+    title: "URL",
+    description: "The URL to fetch from",
+    format: "uri",
+  }),
+  method: Type.Optional(
+    Type.Union(
+      [
+        Type.Literal("GET"),
+        Type.Literal("POST"),
+        Type.Literal("PUT"),
+        Type.Literal("DELETE"),
+        Type.Literal("PATCH"),
+      ],
+      {
+        title: "Method",
+        description: "The HTTP method to use",
+        default: "GET",
+      }
+    )
+  ),
+  headers: Type.Optional(
+    Type.Record(Type.String(), Type.String(), {
+      title: "Headers",
+      description: "The headers to send with the request",
+    })
+  ),
+  body: Type.Optional(
+    Type.String({
+      title: "Body",
+      description: "The body of the request",
+    }),
+    true
+  ),
+  response_type: Type.Optional(
+    Type.Union(
+      [
+        Type.Literal("json"),
+        Type.Literal("text"),
+        Type.Literal("blob"),
+        Type.Literal("arraybuffer"),
+      ],
+      {
+        title: "Response Type",
+        default: "json",
+      }
+    )
+  ),
+  timeout: Type.Optional(
+    Type.Number({
+      title: "Timeout",
+      description: "Request timeout in milliseconds",
+    })
+  ),
+  queueName: Type.Optional(Type.String()),
+});
+
+const outputSchema = Type.Object({
+  json: Type.Optional(
+    Type.Any({
+      title: "JSON",
+      description: "The JSON response",
+    })
+  ),
+  text: Type.Optional(
+    Type.String({
+      title: "Text",
+      description: "The text response",
+    })
+  ),
+  blob: Type.Optional(Type.Unsafe<Blob>({ type: "blob" })),
+  arraybuffer: Type.Optional(Type.Unsafe<ArrayBuffer>({ type: "arraybuffer" })),
+});
+
+export type FetchTaskInput = Static<typeof inputSchema>;
+export type FetchTaskOutput = Static<typeof outputSchema>;
 
 export type FetchTaskConfig = TaskConfig & {
   queueName?: string;
@@ -198,72 +257,11 @@ export class FetchTask<
     "Fetches data from a URL with progress tracking and automatic retry handling";
 
   public static inputSchema(): DataPortSchema {
-    return Type.Object({
-      url: Type.String({
-        title: "URL",
-        description: "The URL to fetch from",
-        format: "uri",
-      }),
-      method: Type.Optional(
-        Type.Union(
-          [
-            Type.Literal("GET"),
-            Type.Literal("POST"),
-            Type.Literal("PUT"),
-            Type.Literal("DELETE"),
-            Type.Literal("PATCH"),
-          ],
-          {
-            title: "Method",
-            description: "The HTTP method to use",
-            default: "GET",
-          }
-        )
-      ),
-      headers: Type.Optional(
-        Type.Record(Type.String(), Type.String(), {
-          title: "Headers",
-          description: "The headers to send with the request",
-        })
-      ),
-      body: Type.Optional(
-        Type.String({
-          title: "Body",
-          description: "The body of the request",
-        }),
-        true
-      ),
-      response_type: Type.Optional(
-        Type.Union(
-          [
-            Type.Literal("json"),
-            Type.Literal("text"),
-            Type.Literal("blob"),
-            Type.Literal("arraybuffer"),
-          ],
-          {
-            title: "Response Type",
-            default: "json",
-          }
-        )
-      ),
-      timeout: Type.Optional(
-        Type.Number({
-          title: "Timeout",
-          description: "Request timeout in milliseconds",
-        })
-      ),
-      queueName: Type.Optional(Type.String()),
-    }) as DataPortSchema;
+    return inputSchema as DataPortSchema;
   }
 
   public static outputSchema(): DataPortSchema {
-    return Type.Object({
-      text: Type.Optional(Type.String()),
-      json: Type.Optional(Type.Unknown()),
-      blob: Type.Optional(Type.Unsafe<Blob>({ type: "blob" })),
-      arraybuffer: Type.Optional(Type.Unsafe<ArrayBuffer>({ type: "arraybuffer" })),
-    }) as DataPortSchema;
+    return outputSchema as DataPortSchema;
   }
 
   constructor(input: Input = {} as Input, config: Config = {} as Config) {

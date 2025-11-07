@@ -13,16 +13,29 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 import { Interpreter } from "../util/interpreter";
 
-export type JavaScriptTaskInput = {
-  code: string;
-  input: any;
-};
-export type JavaScriptTaskOutput = {
-  output: any;
-};
+const inputSchema = Type.Object({
+  code: Type.String({
+    title: "Code",
+    description: "JavaScript code to execute",
+  }),
+  input: Type.Optional(
+    Type.Any({
+      title: "Input",
+      description: "Input data to pass to the JavaScript code",
+    })
+  ),
+});
+const outputSchema = Type.Object({
+  output: Type.Any({
+    title: "Output",
+    description: "The output of the JavaScript code",
+  }),
+});
+export type JavaScriptTaskInput = Static<typeof inputSchema>;
+export type JavaScriptTaskOutput = Static<typeof outputSchema>;
 
 export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutput> {
   public static type = "JavaScriptTask";
@@ -31,27 +44,11 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
   public static description = "Executes JavaScript code in a sandboxed interpreter environment";
 
   public static inputSchema(): DataPortSchema {
-    return Type.Object({
-      code: Type.String({
-        title: "Code",
-        description: "JavaScript code to execute",
-      }),
-      input: Type.Optional(
-        Type.Any({
-          title: "Input",
-          description: "Input data to pass to the JavaScript code",
-        })
-      ),
-    }) as DataPortSchema;
+    return inputSchema as DataPortSchema;
   }
 
   public static outputSchema(): DataPortSchema {
-    return Type.Object({
-      output: Type.Unknown({
-        title: "Output",
-        description: "The output of the JavaScript code",
-      }),
-    }) as DataPortSchema;
+    return outputSchema as DataPortSchema;
   }
 
   async executeReactive(input: JavaScriptTaskInput, output: JavaScriptTaskOutput) {

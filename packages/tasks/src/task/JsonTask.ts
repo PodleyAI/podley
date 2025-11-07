@@ -13,21 +13,27 @@ import {
   JsonTaskItem,
   TaskConfig,
   TaskConfigurationError,
-  TaskInput,
-  TaskOutput,
   TaskRegistry,
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 
-interface JsonTaskInput extends TaskInput {
-  json: string;
-}
+const inputSchema = Type.Object({
+  json: Type.String({
+    title: "JSON",
+    description: "The JSON to parse",
+  }),
+});
+export type JsonTaskInput = Static<typeof inputSchema>;
 
-interface JsonTaskOutput extends TaskOutput {
-  output: any;
-}
+const outputSchema = Type.Object({
+  output: Type.Any({
+    title: "Output",
+    description: "Output depends on the generated task graph",
+  }),
+});
+export type JsonTaskOutput = Static<typeof outputSchema>;
 
 /**
  * JsonTask is a specialized task that creates and manages task graphs from JSON configurations.
@@ -42,21 +48,11 @@ export class JsonTask<
   public static category = "Hidden";
 
   public static inputSchema(): DataPortSchema {
-    return Type.Object({
-      json: Type.String({
-        title: "JSON",
-        description: "The JSON to parse",
-      }),
-    }) as DataPortSchema;
+    return inputSchema as DataPortSchema;
   }
 
   public static outputSchema(): DataPortSchema {
-    return Type.Object({
-      output: Type.Any({
-        title: "Output",
-        description: "Output depends on the generated task graph",
-      }),
-    }) as DataPortSchema;
+    return outputSchema as DataPortSchema;
   }
 
   /**

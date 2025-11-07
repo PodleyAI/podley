@@ -11,19 +11,29 @@ import {
   Task,
   TaskAbortedError,
   TaskConfig,
-  TaskOutput,
   TaskRegistry,
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
-import { Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 
-export type DelayTaskInput = {
-  delay: number;
-  pass_through?: any;
-};
-export type DelayTaskOutput = TaskOutput;
+const inputSchema = Type.Object({
+  delay: Type.Number({
+    title: "Delay (ms)",
+    default: 1,
+  }),
+  pass_through: Type.Optional(
+    Type.Any({
+      title: "Pass Through",
+      description: "Pass through data to the output",
+    })
+  ),
+});
+const outputSchema = Type.Object({});
+
+export type DelayTaskInput = Static<typeof inputSchema>;
+export type DelayTaskOutput = Static<typeof outputSchema>;
 
 export class DelayTask<
   Input extends DelayTaskInput = DelayTaskInput,
@@ -36,24 +46,11 @@ export class DelayTask<
   public static description = "Delays execution for a specified duration with progress tracking";
 
   static inputSchema(): DataPortSchema {
-    return Type.Object({
-      delay: Type.Optional(
-        Type.Number({
-          title: "Delay (ms)",
-          default: 1,
-        })
-      ),
-      pass_through: Type.Optional(
-        Type.Any({
-          title: "Pass Through",
-          description: "Pass through data to the output",
-        })
-      ),
-    }) as DataPortSchema;
+    return inputSchema as DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
-    return Type.Object({}) as DataPortSchema;
+    return outputSchema as DataPortSchema;
   }
 
   async execute(input: Input, executeContext: IExecuteContext): Promise<Output> {

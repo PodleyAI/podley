@@ -13,20 +13,40 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
-
-export type DebugLogTaskInput = {
-  console: any;
-  log_level: LogLevel;
-};
-export type DebugLogTaskOutput = {
-  console: any;
-};
-
 const DEFAULT_LOG_LEVEL: LogLevel = "log";
+
+const inputSchema = Type.Object({
+  console: Type.Optional(
+    Type.String({
+      title: "Message",
+      description: "The message to log",
+    })
+  ),
+  log_level: Type.Optional(
+    Type.Union(
+      log_levels.map((level) => Type.Literal(level)),
+      {
+        title: "Log Level",
+        description: "The log level to use",
+        default: DEFAULT_LOG_LEVEL,
+      }
+    )
+  ),
+});
+
+const outputSchema = Type.Object({
+  console: Type.Unknown({
+    title: "Messages",
+    description: "The messages logged by the task",
+  }),
+});
+
+export type DebugLogTaskInput = Static<typeof inputSchema>;
+export type DebugLogTaskOutput = Static<typeof outputSchema>;
 
 /**
  * DebugLogTask provides console logging functionality as a task within the system.
@@ -52,33 +72,11 @@ export class DebugLogTask<
   static readonly cacheable = false;
 
   public static inputSchema(): DataPortSchema {
-    return Type.Object({
-      console: Type.Optional(
-        Type.String({
-          title: "Message",
-          description: "The message to log",
-        })
-      ),
-      log_level: Type.Optional(
-        Type.Union(
-          log_levels.map((level) => Type.Literal(level)),
-          {
-            title: "Log Level",
-            description: "The log level to use",
-            default: DEFAULT_LOG_LEVEL,
-          }
-        )
-      ),
-    }) as DataPortSchema;
+    return inputSchema as DataPortSchema;
   }
 
   public static outputSchema(): DataPortSchema {
-    return Type.Object({
-      console: Type.Unknown({
-        title: "Messages",
-        description: "The messages logged by the task",
-      }),
-    }) as DataPortSchema;
+    return outputSchema as DataPortSchema;
   }
 
   async executeReactive(input: Input, output: Output) {
