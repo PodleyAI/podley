@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 
 import { spawn } from "child_process";
+import { existsSync } from "fs";
 import { readFile } from "fs/promises";
 import { join } from "path";
-import { existsSync } from "fs";
 import { findWorkspaces } from "./lib/util";
 
 interface PackageJson {
@@ -137,8 +137,7 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<{
   };
 }
 
-async function createGitTag(packageName: string, version: string): Promise<string | null> {
-  const tag = `${packageName}@${version}`;
+async function createGitTag(tag: string): Promise<string | null> {
   try {
     console.log(`Creating git tag: ${tag}`);
     await runCommand("git", ["tag", tag], process.cwd());
@@ -226,19 +225,33 @@ async function main(): Promise<void> {
 
   // Create git tags for successfully published packages
   if (successes.length > 0) {
-    console.log(`\nCreating git tags for ${successes.length} successfully published package(s)...`);
-    const createdTags: string[] = [];
+    const versions = Array.from(new Set(successes.map((success) => success.version)));
 
-    for (const success of successes) {
-      const tag = await createGitTag(success.packageName, success.version);
-      if (tag) {
-        createdTags.push(tag);
-      }
+    if (versions.length > 1) {
+      console.error(
+        `Publishing produced multiple versions, expected one. Versions: ${versions.join(", ")}`
+      );
+      process.exit(1);
     }
 
-    // Push newly created tags to remote
-    if (createdTags.length > 0) {
-      await pushGitTags(createdTags);
+    const version = versions[0];
+
+    if (!version) {
+      console.error("Unable to determine version for git tagging");
+      process.exit(1);
+    }
+
+    const rootPackageJsonText = await readFile(join(process.cwd(), "package.json"), "utf-8");
+    const rootPackageJson = JSON.parse(rootPackageJsonText) as PackageJson;
+    const repositoryName = rootPackageJson.name || "release";
+    const tagName = `${repositoryName}@${version}`;
+
+    console.log(`\nCreating git tag ${tagName} for version ${version}...`);
+
+    const createdTag = await createGitTag(tagName);
+
+    if (createdTag) {
+      await pushGitTags([createdTag]);
     }
   }
 
