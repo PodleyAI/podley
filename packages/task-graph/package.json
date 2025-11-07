@@ -60,6 +60,6 @@
     "@podley/storage": "workspace:*",
     "@podley/util": "workspace:*",
     "@sinclair/typebox": "catalog:",
-    "@types/json-schema": "^7.0.15"
+    "@types/json-schema": "catalog:"
   }
 }

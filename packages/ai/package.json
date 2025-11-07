@@ -63,7 +63,7 @@
     "@podley/task-graph": "workspace:*",
     "@podley/util": "workspace:*",
     "@sinclair/typebox": "catalog:",
-    "@types/json-schema": "^7.0.15",
+    "@types/json-schema": "catalog:",
     "@types/pg": "^8.15.5",
     "pg": "^8.16.3"
   }
