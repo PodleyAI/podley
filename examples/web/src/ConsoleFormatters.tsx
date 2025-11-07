@@ -147,8 +147,8 @@ class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
       const name = obj.constructor.runtype ?? obj.constructor.type ?? obj.type.replace(/Task$/, "");
       const inputSchema = obj.inputSchema();
       const outputSchema = obj.outputSchema();
-      const inputs = Object.keys(typeof inputSchema === 'boolean' ? {} : (inputSchema.properties || {})).map((key) => `${key}: …`);
-      const outputs = Object.keys(typeof outputSchema === 'boolean' ? {} : (outputSchema.properties || {})).map((key) => `${key}: …`);
+      const inputs = Object.keys(inputSchema.properties || {}).map((key) => `${key}: …`);
+      const outputs = Object.keys(outputSchema.properties || {}).map((key) => `${key}: …`);
 
       header.methodSignature(name);
       header.functionCall((el) => {
@@ -191,14 +191,14 @@ class TaskConsoleFormatter extends ConsoleFormatter {
       if (config?.workflow) name = name.replace(/Task$/, "");
       const inputSchema = task.inputSchema();
       const outputSchema = task.outputSchema();
-      const inputs = Object.keys(typeof inputSchema === 'boolean' ? {} : (inputSchema.properties || {}))
+      const inputs = Object.keys(inputSchema.properties || {})
         .filter((key) => task.runInputData[key] !== undefined)
         .map((key) => {
           let value = task.runInputData[key];
           return { name: key, value };
         });
 
-      const outputs = Object.keys(typeof outputSchema === 'boolean' ? {} : (outputSchema.properties || {}))
+      const outputs = Object.keys(outputSchema.properties || {})
         .filter((key) => task.runOutputData[key] !== undefined && task.runOutputData[key] !== "")
         .filter(
           (key) => !(Array.isArray(task.runOutputData[key]) && task.runOutputData[key].length === 0)
@@ -243,7 +243,7 @@ class TaskConsoleFormatter extends ConsoleFormatter {
     const allInboundDataflows = (config?.graph as TaskGraph)?.getSourceDataflows(task.config.id);
 
     const inputSchema = task.inputSchema();
-    for (const key of Object.keys(typeof inputSchema === 'boolean' ? {} : (inputSchema.properties || {}))) {
+    for (const key of Object.keys(inputSchema.properties || {})) {
       const value = task.runInputData[key];
       const li = inputs.createListItem("", "padding-left: 20px;");
       li.inputText(`${key}: `);
@@ -280,7 +280,7 @@ class TaskConsoleFormatter extends ConsoleFormatter {
 
     const outputs = body.createStyledList("Outputs:");
     const outputSchema = task.outputSchema();
-    for (const key of Object.keys(typeof outputSchema === 'boolean' ? {} : (outputSchema.properties || {}))) {
+    for (const key of Object.keys(outputSchema.properties || {})) {
       const value = task.runOutputData[key];
       const li = outputs.createListItem("", "padding-left: 20px;");
       li.outputText(`${key}: `);

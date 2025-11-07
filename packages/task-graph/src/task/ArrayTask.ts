@@ -58,11 +58,6 @@ export class ArrayTask<
     const arrayInputs = new Map<string, Array<Input[keyof Input]>>();
     let hasArrayInputs = false;
     const inputSchema = this.inputSchema();
-    // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
-    if (typeof inputSchema === 'boolean') {
-      super.regenerateGraph();
-      return;
-    }
     const keys = Object.keys(inputSchema.properties || {});
     for (const inputId of keys) {
       const inputValue = this.runInputData[inputId];

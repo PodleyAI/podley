@@ -115,8 +115,6 @@ export class GraphAsTask<
     // For starting nodes only, collect their unconnected inputs
     for (const task of startingNodes) {
       const taskInputSchema = task.inputSchema();
-      // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
-      if (typeof taskInputSchema === 'boolean') continue;
       const taskProperties = taskInputSchema.properties || {};
 
       // Add all inputs from starting nodes to the graph's input schema
@@ -202,8 +200,6 @@ export class GraphAsTask<
 
     for (const task of lastLevelNodes) {
       const taskOutputSchema = task.outputSchema();
-      // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
-      if (typeof taskOutputSchema === 'boolean') continue;
       const taskProperties = taskOutputSchema.properties || {};
 
       for (const [outputName, outputProp] of Object.entries(taskProperties)) {

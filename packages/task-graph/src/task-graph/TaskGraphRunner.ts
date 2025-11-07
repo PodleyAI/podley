@@ -282,8 +282,6 @@ export class TaskGraphRunner {
 
     let changed = false;
     const inputSchema = task.inputSchema();
-    // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
-    if (typeof inputSchema === 'boolean') return false;
     const properties = inputSchema.properties || {};
 
     for (const [inputId, prop] of Object.entries(properties)) {

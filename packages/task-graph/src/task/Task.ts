@@ -329,8 +329,6 @@ export class Task<
    */
   getDefaultInputsFromStaticInputDefinitions(): Partial<Input> {
     const schema = this.inputSchema();
-    // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
-    if (typeof schema === 'boolean') return {};
     return Object.entries(schema.properties || {}).reduce<Record<string, any>>(
       (acc, [id, prop]) => {
         const defaultValue = (prop as any).default;
@@ -371,8 +369,6 @@ export class Task<
    */
   public setInput(input: Record<string, any>): void {
     const schema = this.inputSchema();
-    // JSONSchema7ObjectDefinition can be boolean | JSONSchema7, we only handle object schemas
-    if (typeof schema === 'boolean') return;
     const properties = schema.properties || {};
 
     for (const [inputId, prop] of Object.entries(properties)) {
