@@ -187,13 +187,13 @@ export class InMemoryTabularRepository<
         case "=":
           return columnValue === value;
         case "<":
-          return value !== null && value !== undefined && columnValue < value;
+          return columnValue !== null && columnValue !== undefined && columnValue < value;
         case "<=":
-          return value !== null && value !== undefined && columnValue <= value;
+          return columnValue !== null && columnValue !== undefined && columnValue <= value;
         case ">":
-          return value !== null && value !== undefined && columnValue > value;
+          return columnValue !== null && columnValue !== undefined && columnValue > value;
         case ">=":
-          return value !== null && value !== undefined && columnValue >= value;
+          return columnValue !== null && columnValue !== undefined && columnValue >= value;
         default:
           return false;
       }

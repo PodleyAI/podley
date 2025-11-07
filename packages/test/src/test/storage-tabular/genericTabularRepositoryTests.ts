@@ -28,6 +28,16 @@ export const SearchSchema = Type.Object({
   updatedAt: TypeDateTime(),
 });
 
+export const NullableSearchPrimaryKeyNames = ["id"] as const;
+export const NullableSearchSchema = Type.Object({
+  id: Type.String(),
+  category: Type.String(),
+  subcategory: Type.String(),
+  value: Type.Union([Type.Number(), Type.Null()]),
+  createdAt: TypeDateTime(),
+  updatedAt: TypeDateTime(),
+});
+
 export function runGenericTabularRepositoryTests(
   createCompoundPkRepository: () => Promise<
     ITabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>
@@ -441,6 +451,213 @@ export function runGenericTabularRepositoryTests(
         // Verify all entries still exist
         const remaining = await repository.getAll();
         expect(remaining?.length).toBe(2);
+      });
+
+      it("should delete entries with < operator", async () => {
+        const now = new Date();
+
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "3",
+          category: "electronics",
+          subcategory: "phones",
+          value: 300,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+
+        await repository.deleteSearch("value", 200, "<");
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(2);
+        expect(remaining?.map((item) => item.id).sort()).toEqual(["2", "3"]);
+      });
+
+      it("should delete entries with <= operator", async () => {
+        const now = new Date();
+
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "3",
+          category: "electronics",
+          subcategory: "phones",
+          value: 300,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+
+        await repository.deleteSearch("value", 200, "<=");
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(1);
+        expect(remaining?.[0].id).toBe("3");
+      });
+
+      it("should delete entries with > operator", async () => {
+        const now = new Date();
+
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "3",
+          category: "electronics",
+          subcategory: "phones",
+          value: 300,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+
+        await repository.deleteSearch("value", 200, ">");
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(2);
+        expect(remaining?.map((item) => item.id).sort()).toEqual(["1", "2"]);
+      });
+
+      it("should delete entries with >= operator", async () => {
+        const now = new Date();
+
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "3",
+          category: "electronics",
+          subcategory: "phones",
+          value: 300,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+
+        await repository.deleteSearch("value", 200, ">=");
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(1);
+        expect(remaining?.[0].id).toBe("1");
+      });
+
+      it("should handle = operator for exact matches", async () => {
+        const now = new Date();
+
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "3",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+
+        await repository.deleteSearch("value", 200, "=");
+
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(1);
+        expect(remaining?.[0].id).toBe("1");
+        expect(remaining?.[0].value).toBe(100);
+      });
+
+      it("should correctly handle null/undefined column values in comparisons", async () => {
+        const now = new Date();
+
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "3",
+          category: "electronics",
+          subcategory: "phones",
+          value: 300,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+
+        await repository.deleteSearch("value", 200, "<");
+
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(2);
+        expect(remaining?.map((item) => item.id).sort()).toEqual(["2", "3"]);
       });
     });
 
