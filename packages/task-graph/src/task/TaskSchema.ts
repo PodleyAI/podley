@@ -14,7 +14,7 @@ import {
   type TUnion,
   Type,
 } from "@sinclair/typebox";
-import type { JSONSchema7Definition } from "@types/json-schema";
+import type { JSONSchema7Definition } from "json-schema";
 
 export function TypeReplicateArray<T extends TSchema>(
   type: T,

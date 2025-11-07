@@ -14,7 +14,7 @@ import {
   TaskError,
   type JSONSchema7ObjectDefinition,
 } from "@podley/task-graph";
-import { Type, type Static } from "@sinclair/typebox";
+import { Type, type Static, type TObject } from "@sinclair/typebox";
 import { TypedArray } from "./base/AiTaskSchemas";
 
 export const SimilarityFn = {
@@ -81,11 +81,11 @@ export class VectorSimilarityTask extends ArrayTask<
     "Compares vectors using similarity functions and returns top-K ranked results";
   static readonly cacheable = true;
 
-  public static override inputSchema(): typeof SimilarityInputSchema & JSONSchema7ObjectDefinition {
-    return SimilarityInputSchema as typeof SimilarityInputSchema & JSONSchema7ObjectDefinition;
+  public static override inputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return SimilarityInputSchema as TObject & JSONSchema7ObjectDefinition;
   }
-  public static override outputSchema(): typeof SimilarityOutputSchema & JSONSchema7ObjectDefinition {
-    return SimilarityOutputSchema as typeof SimilarityOutputSchema & JSONSchema7ObjectDefinition;
+  public static override outputSchema(): TObject & JSONSchema7ObjectDefinition {
+    return SimilarityOutputSchema as TObject & JSONSchema7ObjectDefinition;
   }
 
   // @ts-ignore (TODO: fix this)
