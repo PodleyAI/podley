@@ -1,5 +1,16 @@
 # @podley/tasks
 
+## 0.0.31
+
+### Patch Changes
+
+- Fix logic bug in memory storage
+- Updated dependencies
+  - @podley/job-queue@0.0.31
+  - @podley/storage@0.0.31
+  - @podley/task-graph@0.0.31
+  - @podley/util@0.0.31
+
 ## 0.0.30
 
 ### Patch Changes

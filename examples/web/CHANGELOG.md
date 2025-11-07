@@ -1,5 +1,21 @@
 # @podley/cli
 
+## 0.0.31
+
+### Patch Changes
+
+- Fix logic bug in memory storage
+- Updated dependencies
+  - @podley/ai@0.0.31
+  - @podley/ai-provider@0.0.31
+  - @podley/job-queue@0.0.31
+  - @podley/sqlite@0.0.31
+  - @podley/storage@0.0.31
+  - @podley/task-graph@0.0.31
+  - @podley/tasks@0.0.31
+  - @podley/test@0.0.31
+  - @podley/util@0.0.31
+
 ## 0.0.30
 
 ### Patch Changes
