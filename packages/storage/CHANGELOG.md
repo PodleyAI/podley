@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.32
+
+### Patch Changes
+
+- input and output schemas are not @types/json-schema based
+- Updated dependencies
+  - @podley/sqlite@0.0.32
+  - @podley/util@0.0.32
+
 ## 0.0.31
 
 ### Patch Changes
