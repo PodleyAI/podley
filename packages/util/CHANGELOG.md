@@ -1,5 +1,11 @@
 # @podley/util
 
+## 0.0.31
+
+### Patch Changes
+
+- Fix logic bug in memory storage
+
 ## 0.0.30
 
 ### Patch Changes
