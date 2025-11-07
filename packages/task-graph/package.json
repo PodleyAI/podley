@@ -59,6 +59,7 @@
     "@podley/job-queue": "workspace:*",
     "@podley/storage": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sinclair/typebox": "catalog:"
+    "@sinclair/typebox": "catalog:",
+    "@types/json-schema": "catalog:"
   }
 }

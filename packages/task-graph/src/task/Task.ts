@@ -6,7 +6,7 @@
 //    *******************************************************************************
 
 import { EventEmitter, uuid4 } from "@podley/util";
-import { Type, type TObject } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 import { TypeCheck, TypeCompiler } from "@sinclair/typebox/compiler";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteContext, IExecuteReactiveContext, ITask } from "./ITask";
@@ -19,6 +19,7 @@ import {
 } from "./TaskEvents";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
+import type { DataPortSchema } from "./TaskSchema";
 import {
   TaskStatus,
   type Provenance,
@@ -69,16 +70,18 @@ export class Task<
 
   /**
    * Input schema for this task
+   * Returns a JSONSchema7 compatible object schema
    */
-  public static inputSchema(): TObject {
-    return Type.Object({});
+  public static inputSchema(): DataPortSchema {
+    return Type.Object({}) as DataPortSchema;
   }
 
   /**
    * Output schema for this task
+   * Returns a JSONSchema7 compatible object schema
    */
-  public static outputSchema(): TObject {
-    return Type.Object({});
+  public static outputSchema(): DataPortSchema {
+    return Type.Object({}) as DataPortSchema;
   }
 
   // ========================================================================
@@ -182,15 +185,17 @@ export class Task<
 
   /**
    * Gets input schema for this task
+   * Returns a JSONSchema7 compatible object schema
    */
-  public inputSchema(): TObject {
+  public inputSchema(): DataPortSchema {
     return (this.constructor as typeof Task).inputSchema();
   }
 
   /**
    * Gets output schema for this task
+   * Returns a JSONSchema7 compatible object schema
    */
-  public outputSchema(): TObject {
+  public outputSchema(): DataPortSchema {
     return (this.constructor as typeof Task).outputSchema();
   }
 
@@ -369,8 +374,8 @@ export class Task<
     for (const [inputId, prop] of Object.entries(properties)) {
       if (input[inputId] !== undefined) {
         this.runInputData[inputId] = input[inputId];
-      } else if (this.runInputData[inputId] === undefined && prop.default !== undefined) {
-        this.runInputData[inputId] = prop.default;
+      } else if (this.runInputData[inputId] === undefined && (prop as any).default !== undefined) {
+        this.runInputData[inputId] = (prop as any).default;
       }
     }
   }
@@ -442,14 +447,14 @@ export class Task<
   /**
    * The compiled input schema
    */
-  private static _inputSchemaTypeChecker: TypeCheck<TObject> | undefined;
+  private static _inputSchemaTypeChecker: TypeCheck<any> | undefined;
 
   /**
    * Gets the compiled input schema
    */
-  protected static getInputSchemaTypeChecker(): TypeCheck<TObject> {
+  protected static getInputSchemaTypeChecker(): TypeCheck<any> {
     if (!Task._inputSchemaTypeChecker) {
-      Task._inputSchemaTypeChecker = TypeCompiler.Compile(Task.inputSchema());
+      Task._inputSchemaTypeChecker = TypeCompiler.Compile(Task.inputSchema() as any);
     }
     return Task._inputSchemaTypeChecker;
   }

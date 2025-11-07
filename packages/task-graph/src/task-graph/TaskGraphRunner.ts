@@ -291,8 +291,8 @@ export class TaskGraphRunner {
       } else {
         if (overrides[inputId] === undefined) continue;
         const isArray =
-          prop.type === "array" ||
-          (prop.type === "any" &&
+          (prop as any)?.type === "array" ||
+          ((prop as any)?.type === "any" &&
             (Array.isArray(overrides[inputId]) || Array.isArray(task.runInputData[inputId])));
 
         if (isArray) {

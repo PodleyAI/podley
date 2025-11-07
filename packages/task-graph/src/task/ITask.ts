@@ -6,7 +6,6 @@
 //    *******************************************************************************
 
 import type { EventEmitter } from "@podley/util";
-import { TObject } from "@sinclair/typebox";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { ITaskGraph } from "../task-graph/ITaskGraph";
 import { IWorkflow } from "../task-graph/IWorkflow";
@@ -21,6 +20,7 @@ import type {
 } from "./TaskEvents";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
+import type { DataPortSchema } from "./TaskSchema";
 import type { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
 
 /**
@@ -60,8 +60,8 @@ export interface ITaskStaticProperties {
   readonly title?: string;
   readonly description?: string;
   readonly cacheable: boolean;
-  readonly inputSchema: () => TObject;
-  readonly outputSchema: () => TObject;
+  readonly inputSchema: () => DataPortSchema;
+  readonly outputSchema: () => DataPortSchema;
 }
 
 /**
@@ -104,8 +104,8 @@ export interface ITaskIO<Input extends TaskInput> {
   runInputData: Record<string, any>;
   runOutputData: Record<string, any>;
 
-  inputSchema(): TObject; // gets local access for static inputSchema property
-  outputSchema(): TObject; // gets local access for static outputSchema property
+  inputSchema(): DataPortSchema; // gets local access for static inputSchema property
+  outputSchema(): DataPortSchema; // gets local access for static outputSchema property
   get type(): string; // gets local access for static type property
   get category(): string; // gets local access for static category property
   get title(): string; // gets local access for static title property

@@ -54,10 +54,11 @@
     }
   },
   "devDependencies": {
-    "@podley/task-graph": "workspace:*",
-    "@podley/util": "workspace:*",
     "@podley/job-queue": "workspace:*",
     "@podley/storage": "workspace:*",
-    "@sinclair/typebox": "catalog:"
+    "@podley/task-graph": "workspace:*",
+    "@podley/util": "workspace:*",
+    "@sinclair/typebox": "catalog:",
+    "@types/json-schema": "catalog:"
   }
 }

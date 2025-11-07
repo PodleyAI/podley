@@ -130,11 +130,11 @@ export class Dataflow {
     const targetSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.targetTaskPortId
         ? Type.Any()
-        : targetSchema.properties[dataflow.targetTaskPortId];
+        : (targetSchema.properties as any)?.[dataflow.targetTaskPortId];
     const sourceSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.sourceTaskPortId
         ? Type.Any()
-        : sourceSchema.properties[dataflow.sourceTaskPortId];
+        : (sourceSchema.properties as any)?.[dataflow.sourceTaskPortId];
 
     const semanticallyCompatible = areSemanticallyCompatible(
       sourceSchemaProperty,

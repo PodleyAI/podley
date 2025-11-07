@@ -17,8 +17,9 @@ import {
   TaskOutput,
   TaskRegistry,
   Workflow,
+  type DataPortSchema,
 } from "@podley/task-graph";
-import { TObject, Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 
 interface LambdaTaskConfig<
   Input extends TaskInput = TaskInput,
@@ -32,6 +33,22 @@ interface LambdaTaskConfig<
   ) => Promise<Output>;
 }
 
+const inputSchema = Type.Object({
+  [DATAFLOW_ALL_PORTS]: Type.Optional(
+    Type.Any({
+      title: "Input",
+      description: "Input data to pass to the function",
+    })
+  ),
+});
+const outputSchema = Type.Object({
+  [DATAFLOW_ALL_PORTS]: Type.Any({
+    title: "Output",
+    description: "The output from the execute function",
+  }),
+});
+export type LambdaTaskInput = Static<typeof inputSchema>;
+export type LambdaTaskOutput = Static<typeof outputSchema>;
 /**
  * LambdaTask provides a way to execute arbitrary functions within the task framework
  * It wraps a provided function and its input into a task that can be integrated
@@ -45,6 +62,12 @@ export class LambdaTask<
   public static type = "LambdaTask";
   public static category = "Hidden";
   public static cacheable = true;
+  public static inputSchema(): DataPortSchema {
+    return inputSchema as DataPortSchema;
+  }
+  public static outputSchema(): DataPortSchema {
+    return outputSchema as DataPortSchema;
+  }
 
   constructor(input: Partial<Input> = {}, config: Partial<Config> = {}) {
     if (!config.execute && !config.executeReactive) {
@@ -53,34 +76,6 @@ export class LambdaTask<
       );
     }
     super(input, config as Config);
-  }
-
-  /**
-   * Input schema for LambdaTask
-   * - input: Optional input data to pass to the function
-   */
-  public static inputSchema(): TObject {
-    return Type.Object({
-      [DATAFLOW_ALL_PORTS]: Type.Optional(
-        Type.Any({
-          title: "Input",
-          description: "Input data to pass to the function",
-        })
-      ),
-    });
-  }
-
-  /**
-   * Output schema for LambdaTask
-   * The output will be whatever the provided function returns
-   */
-  public static outputSchema(): TObject {
-    return Type.Object({
-      [DATAFLOW_ALL_PORTS]: Type.Any({
-        title: "Output",
-        description: "The output from the execute function",
-      }),
-    });
   }
 
   async execute(input: Input, context: IExecuteContext): Promise<Output> {

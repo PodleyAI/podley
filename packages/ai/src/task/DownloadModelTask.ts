@@ -11,9 +11,10 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
+  type DataPortSchema,
 } from "@podley/task-graph";
 import { TypeOptionalArray } from "@podley/util";
-import { TObject, Type, type Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 
@@ -48,11 +49,11 @@ export class DownloadModelTask extends AiTask<
   public static category = "AI Text Model";
   public static title = "Download Model";
   public static description = "Downloads and caches AI models locally with progress tracking";
-  public static inputSchema(): TObject {
-    return DownloadModelInputSchema;
+  public static inputSchema(): DataPortSchema {
+    return DownloadModelInputSchema as DataPortSchema;
   }
-  public static outputSchema(): TObject {
-    return DownloadModelOutputSchema;
+  public static outputSchema(): DataPortSchema {
+    return DownloadModelOutputSchema as DataPortSchema;
   }
   public static cacheable = false;
 

@@ -11,8 +11,9 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
+  type DataPortSchema,
 } from "@podley/task-graph";
-import { TObject, Type, type Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 
@@ -50,11 +51,11 @@ export class TextRewriterTask extends AiTask<TextRewriterTaskInput, TextRewriter
   public static category = "AI Text Model";
   public static title = "Text Rewriter";
   public static description = "Rewrites text according to a given prompt using language models";
-  public static inputSchema(): TObject {
-    return TextRewriterInputSchema;
+  public static inputSchema(): DataPortSchema {
+    return TextRewriterInputSchema as DataPortSchema;
   }
-  public static outputSchema(): TObject {
-    return TextRewriterOutputSchema;
+  public static outputSchema(): DataPortSchema {
+    return TextRewriterOutputSchema as DataPortSchema;
   }
 }
 

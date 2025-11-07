@@ -14,6 +14,7 @@ import {
   type TUnion,
   Type,
 } from "@sinclair/typebox";
+import type { JSONSchema7 } from "json-schema";
 
 export function TypeReplicateArray<T extends TSchema>(
   type: T,
@@ -35,4 +36,12 @@ export type DeReplicateStatic<S extends TObject<any>> = {
   [K in keyof Properties<S>]: Properties<S>[K] extends { replicate: true }
     ? UnwrapArrayUnion<Static<Properties<S>[K]>>
     : Static<Properties<S>[K]>;
+};
+
+/**
+ * A JSONSchema7 object schema (excludes boolean from JSONSchema7Definition).
+ * This type represents a schema that must be an object, not a boolean.
+ */
+export type DataPortSchema = JSONSchema7 & {
+  type?: "object" | readonly ["object"];
 };

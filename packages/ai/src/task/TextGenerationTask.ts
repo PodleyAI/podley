@@ -11,11 +11,12 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
+  type DataPortSchema,
 } from "@podley/task-graph";
-import { TObject, Type, type Static } from "@sinclair/typebox";
+import { TypeOptionalArray } from "@podley/util";
+import { Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
-import { TypeOptionalArray } from "@podley/util";
 
 export const TextGenerationInputSchema = Type.Object({
   model: TypeReplicateArray(TypeModel("model:TextGenerationTask")),
@@ -89,11 +90,11 @@ export class TextGenerationTask extends AiTask<
   public static title = "Text Generation";
   public static description =
     "Generates text from a prompt using language models with configurable parameters";
-  public static inputSchema(): TObject {
-    return TextGenerationInputSchema;
+  public static inputSchema(): DataPortSchema {
+    return TextGenerationInputSchema as DataPortSchema;
   }
-  public static outputSchema(): TObject {
-    return TextGenerationOutputSchema;
+  public static outputSchema(): DataPortSchema {
+    return TextGenerationOutputSchema as DataPortSchema;
   }
 }
 

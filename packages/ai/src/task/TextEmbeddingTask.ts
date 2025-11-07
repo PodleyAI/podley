@@ -11,8 +11,9 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
+  type DataPortSchema,
 } from "@podley/task-graph";
-import { TObject, Type, type Static } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypedArray, TypeModel } from "./base/AiTaskSchemas";
 
@@ -50,11 +51,11 @@ export class TextEmbeddingTask extends AiTask<TextEmbeddingTaskInput, TextEmbedd
   public static category = "AI Text Model";
   public static title = "Text Embedding";
   public static description = "Generates vector embeddings for text to capture semantic meaning";
-  public static inputSchema(): TObject {
-    return TextEmbeddingInputSchema;
+  public static inputSchema(): DataPortSchema {
+    return TextEmbeddingInputSchema as DataPortSchema;
   }
-  public static outputSchema(): TObject {
-    return TextEmbeddingOutputSchema;
+  public static outputSchema(): DataPortSchema {
+    return TextEmbeddingOutputSchema as DataPortSchema;
   }
 }
 

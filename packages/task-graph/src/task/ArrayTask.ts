@@ -6,12 +6,12 @@
 //    *******************************************************************************
 
 import { uuid4 } from "@podley/util";
-import { TObject } from "@sinclair/typebox";
 import { JsonTaskItem, TaskGraphItemJson } from "../node";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { GraphResultArray, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTask } from "./GraphAsTask";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
+import type { DataPortSchema } from "./TaskSchema";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 
 /**
@@ -38,14 +38,14 @@ export class ArrayTask<
   /**
    * Gets input schema for this task from the static inputSchema property, which is user defined (reverts GraphAsTask's override)
    */
-  public inputSchema(): TObject {
+  public inputSchema(): DataPortSchema {
     return (this.constructor as typeof ArrayTask).inputSchema();
   }
 
   /**
    * Gets output schema for this task from the static outputSchema property, which is user defined (reverts GraphAsTask's override)
    */
-  public outputSchema(): TObject {
+  public outputSchema(): DataPortSchema {
     return (this.constructor as typeof ArrayTask).outputSchema();
   }
 
@@ -57,12 +57,12 @@ export class ArrayTask<
     const arrayInputs = new Map<string, Array<Input[keyof Input]>>();
     let hasArrayInputs = false;
     const inputSchema = this.inputSchema();
-    const keys = Object.keys(inputSchema.properties);
+    const keys = Object.keys(inputSchema.properties || {});
     for (const inputId of keys) {
       const inputValue = this.runInputData[inputId];
-      const inputDef = inputSchema.properties[inputId];
+      const inputDef = (inputSchema.properties as any)?.[inputId];
 
-      if (inputDef.replicate === true && Array.isArray(inputValue) && inputValue.length > 1) {
+      if (inputDef?.replicate === true && Array.isArray(inputValue) && inputValue.length > 1) {
         arrayInputs.set(inputId, inputValue);
         hasArrayInputs = true;
       }

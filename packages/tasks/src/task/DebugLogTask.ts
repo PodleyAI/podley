@@ -5,21 +5,48 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Workflow, TaskRegistry, CreateWorkflow, TaskConfig, Task } from "@podley/task-graph";
-import { TObject, Type } from "@sinclair/typebox";
+import {
+  CreateWorkflow,
+  Task,
+  TaskConfig,
+  TaskRegistry,
+  Workflow,
+  type DataPortSchema,
+} from "@podley/task-graph";
+import { Static, Type } from "@sinclair/typebox";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
-
-export type DebugLogTaskInput = {
-  console: any;
-  log_level: LogLevel;
-};
-export type DebugLogTaskOutput = {
-  console: any;
-};
-
 const DEFAULT_LOG_LEVEL: LogLevel = "log";
+
+const inputSchema = Type.Object({
+  console: Type.Optional(
+    Type.String({
+      title: "Message",
+      description: "The message to log",
+    })
+  ),
+  log_level: Type.Optional(
+    Type.Union(
+      log_levels.map((level) => Type.Literal(level)),
+      {
+        title: "Log Level",
+        description: "The log level to use",
+        default: DEFAULT_LOG_LEVEL,
+      }
+    )
+  ),
+});
+
+const outputSchema = Type.Object({
+  console: Type.Unknown({
+    title: "Messages",
+    description: "The messages logged by the task",
+  }),
+});
+
+export type DebugLogTaskInput = Static<typeof inputSchema>;
+export type DebugLogTaskOutput = Static<typeof outputSchema>;
 
 /**
  * DebugLogTask provides console logging functionality as a task within the system.
@@ -44,34 +71,12 @@ export class DebugLogTask<
     "Logs messages to the console with configurable log levels for debugging task graphs";
   static readonly cacheable = false;
 
-  public static inputSchema(): TObject {
-    return Type.Object({
-      console: Type.Optional(
-        Type.String({
-          title: "Message",
-          description: "The message to log",
-        })
-      ),
-      log_level: Type.Optional(
-        Type.Union(
-          log_levels.map((level) => Type.Literal(level)),
-          {
-            title: "Log Level",
-            description: "The log level to use",
-            default: DEFAULT_LOG_LEVEL,
-          }
-        )
-      ),
-    });
+  public static inputSchema(): DataPortSchema {
+    return inputSchema as DataPortSchema;
   }
 
-  public static outputSchema(): TObject {
-    return Type.Object({
-      console: Type.Unknown({
-        title: "Messages",
-        description: "The messages logged by the task",
-      }),
-    });
+  public static outputSchema(): DataPortSchema {
+    return outputSchema as DataPortSchema;
   }
 
   async executeReactive(input: Input, output: Output) {
