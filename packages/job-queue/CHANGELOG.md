@@ -1,5 +1,25 @@
 # @podley/job-queue
 
+## 0.0.34
+
+### Patch Changes
+
+- Allow x- style annotations in json schema
+- Updated dependencies
+  - @podley/storage@0.0.34
+  - @podley/sqlite@0.0.34
+  - @podley/util@0.0.34
+
+## 0.0.33
+
+### Patch Changes
+
+- Use actual JSONSchema7 (includin boolean shortcut)
+- Updated dependencies
+  - @podley/sqlite@0.0.33
+  - @podley/storage@0.0.33
+  - @podley/util@0.0.33
+
 ## 0.0.32
 
 ### Patch Changes

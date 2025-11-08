@@ -1,6 +1,6 @@
 {
   "name": "@podley/web",
-  "version": "0.0.32",
+  "version": "0.0.34",
   "type": "module",
   "description": "Web interface example for Podley, showcasing a React-based UI for building and visualizing AI task pipelines.",
   "scripts": {

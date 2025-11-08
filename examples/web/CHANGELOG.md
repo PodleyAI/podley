@@ -1,5 +1,37 @@
 # @podley/cli
 
+## 0.0.34
+
+### Patch Changes
+
+- Allow x- style annotations in json schema
+- Updated dependencies
+  - @podley/ai-provider@0.0.34
+  - @podley/task-graph@0.0.34
+  - @podley/job-queue@0.0.34
+  - @podley/storage@0.0.34
+  - @podley/sqlite@0.0.34
+  - @podley/tasks@0.0.34
+  - @podley/test@0.0.34
+  - @podley/util@0.0.34
+  - @podley/ai@0.0.34
+
+## 0.0.33
+
+### Patch Changes
+
+- Use actual JSONSchema7 (includin boolean shortcut)
+- Updated dependencies
+  - @podley/task-graph@0.0.33
+  - @podley/ai@0.0.33
+  - @podley/ai-provider@0.0.33
+  - @podley/job-queue@0.0.33
+  - @podley/sqlite@0.0.33
+  - @podley/storage@0.0.33
+  - @podley/tasks@0.0.33
+  - @podley/test@0.0.33
+  - @podley/util@0.0.33
+
 ## 0.0.32
 
 ### Patch Changes

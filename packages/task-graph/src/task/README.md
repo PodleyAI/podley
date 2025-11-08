@@ -137,6 +137,44 @@ static outputSchema = () => {
 };
 ```
 
+### Custom Annotations
+
+`DataPortSchema` supports custom annotations starting with `x-` or `_` for vendor extensions and custom metadata. These annotations can appear anywhere `title` and `description` can appear in the schema.
+
+```typescript
+static inputSchema = () => {
+  return Type.Object({
+    apiKey: Type.String({
+      title: "API Key",
+      description: "Your API key",
+      "x-sensitive": true,
+      "x-ui-widget": "password",
+      "_internal-id": "auth-key-001",
+    }),
+    username: Type.String({
+      title: "Username",
+      description: "User identifier",
+      "x-validation-rules": {
+        minLength: 3,
+        pattern: "^[a-zA-Z0-9_]+$",
+      },
+      x_metadata: {
+        category: "auth",
+        priority: "high",
+      },
+    }),
+  }) as DataPortSchema;
+};
+```
+
+Common use cases for custom annotations:
+
+- `x-sensitive`: Mark fields containing sensitive data
+- `x-ui-*`: UI rendering hints for visual editors
+- `x-validation-*`: Custom validation rules
+- `x_metadata`: Internal metadata for processing pipelines
+- `x_docs-*`: Additional documentation attributes
+
 ## Registry & Queues
 
 The TaskRegistry is used to register tasks to there is a global registry. This is useful for a node based UI to allow tasks to be dragged and dropped onto the canvas.

@@ -1,7 +1,7 @@
 {
   "name": "@podley/storage",
   "type": "module",
-  "version": "0.0.32",
+  "version": "0.0.34",
   "description": "Storage abstraction layer for Podley, supporting IndexedDB, PostgreSQL, and Supabase with unified interfaces.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
