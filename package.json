@@ -36,6 +36,7 @@
   },
   "catalog": {
     "@sinclair/typebox": "^0.34.41",
+    "zod": "4.2.0-canary.20251106T231624",
     "@sroussey/transformers": "3.7.4",
     "@mediapipe/tasks-text": "^0.10.21",
     "@types/json-schema": "^7.0.15"

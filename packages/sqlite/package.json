@@ -29,9 +29,6 @@
     },
     "better-sqlite3": {
       "optional": false
-    },
-    "@sinclair/typebox": {
-      "optional": false
     }
   },
   "devDependencies": {

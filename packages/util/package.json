@@ -36,14 +36,14 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@sinclair/typebox": "catalog:"
+    "zod": "catalog:"
   },
   "peerDependenciesMeta": {
-    "@sinclair/typebox": {
+    "zod": {
       "optional": false
     }
   },
   "devDependencies": {
-    "@sinclair/typebox": "catalog:"
+    "zod": "catalog:"
   }
 }

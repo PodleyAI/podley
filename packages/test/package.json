@@ -42,7 +42,7 @@
     "@podley/util": "workspace:*",
     "@podley/sqlite": "workspace:*",
     "@electric-sql/pglite": "^0.3.11",
-    "@sinclair/typebox": "catalog:",
+    "zod": "catalog:",
     "pg": "^8.16.3",
     "@supabase/supabase-js": "^2.76.1"
   },
@@ -71,7 +71,7 @@
     "@podley/sqlite": {
       "optional": false
     },
-    "@sinclair/typebox": {
+    "zod": {
       "optional": false
     }
   },
@@ -85,7 +85,7 @@
     "@podley/util": "workspace:*",
     "@podley/sqlite": "workspace:*",
     "@electric-sql/pglite": "^0.3.11",
-    "@sinclair/typebox": "catalog:",
+    "zod": "catalog:",
     "fake-indexeddb": "^6.2.4",
     "pg": "^8.16.3",
     "@types/pg": "^8.15.5",

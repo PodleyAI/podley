@@ -43,9 +43,6 @@
     },
     "@podley/sqlite": {
       "optional": false
-    },
-    "@sinclair/typebox": {
-      "optional": false
     }
   },
   "devDependencies": {
