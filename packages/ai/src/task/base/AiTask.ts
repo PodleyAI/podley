@@ -18,7 +18,7 @@ import {
   type TaskOutput,
 } from "@podley/task-graph";
 import { schemaSemantic } from "@podley/util";
-import { type TSchema } from "@sinclair/typebox";
+import { type z } from "zod";
 import { AiJob } from "../../job/AiJob";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
 
@@ -89,7 +89,7 @@ export class AiTask<
     // TODO(str): this is very inefficient, we should cache the results, including intermediate results
     const inputSchema = this.inputSchema();
     
-    const modelTaskProperties = Object.entries<TSchema>((inputSchema.properties || {}) as Record<string, TSchema>).filter(
+    const modelTaskProperties = Object.entries<z.ZodTypeAny>((inputSchema.properties || {}) as Record<string, z.ZodTypeAny>).filter(
       ([key, schema]) => schemaSemantic(schema)?.startsWith("model:")
     );
     if (modelTaskProperties.length > 0) {
@@ -104,7 +104,7 @@ export class AiTask<
         }
       }
     }
-    const modelPlainProperties = Object.entries<TSchema>((inputSchema.properties || {}) as Record<string, TSchema>).filter(
+    const modelPlainProperties = Object.entries<z.ZodTypeAny>((inputSchema.properties || {}) as Record<string, z.ZodTypeAny>).filter(
       ([key, schema]) => schemaSemantic(schema) === "model"
     );
     if (modelPlainProperties.length > 0) {

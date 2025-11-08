@@ -16,24 +16,16 @@ import {
   type DataPortSchema,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
-import { Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 
-const inputSchema = Type.Object({
-  delay: Type.Number({
-    title: "Delay (ms)",
-    default: 1,
-  }),
-  pass_through: Type.Optional(
-    Type.Any({
-      title: "Pass Through",
-      description: "Pass through data to the output",
-    })
-  ),
+const inputSchema = z.object({
+  delay: z.number().default(1).describe("Delay (ms)"),
+  pass_through: z.any().optional().describe("Pass through data to the output"),
 });
-const outputSchema = Type.Object({});
+const outputSchema = z.object({});
 
-export type DelayTaskInput = Static<typeof inputSchema>;
-export type DelayTaskOutput = Static<typeof outputSchema>;
+export type DelayTaskInput = z.infer<typeof inputSchema>;
+export type DelayTaskOutput = z.infer<typeof outputSchema>;
 
 export class DelayTask<
   Input extends DelayTaskInput = DelayTaskInput,

@@ -14,71 +14,55 @@ import {
   type DataPortSchema,
 } from "@podley/task-graph";
 import { TypeOptionalArray } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { z } from "zod";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 
-export const TextGenerationInputSchema = Type.Object({
+export const TextGenerationInputSchema = z.object({
   model: TypeReplicateArray(TypeModel("model:TextGenerationTask")),
   prompt: TypeReplicateArray(
-    Type.String({
-      title: "Prompt",
-      description: "The prompt to generate text from",
-    })
+    z.string().describe("The prompt to generate text from")
   ),
-  maxTokens: Type.Optional(
-    Type.Number({
-      title: "Max Tokens",
-      description: "The maximum number of tokens to generate",
-      minimum: 1,
-      maximum: 4096,
-    })
-  ),
-  temperature: Type.Optional(
-    Type.Number({
-      title: "Temperature",
-      description: "The temperature to use for sampling",
-      minimum: 0,
-      maximum: 2,
-    })
-  ),
-  topP: Type.Optional(
-    Type.Number({
-      title: "Top-p",
-      description: "The top-p value to use for sampling",
-      minimum: 0,
-      maximum: 1,
-    })
-  ),
-  frequencyPenalty: Type.Optional(
-    Type.Number({
-      title: "Frequency Penalty",
-      description: "The frequency penalty to use",
-      minimum: -2,
-      maximum: 2,
-    })
-  ),
-  presencePenalty: Type.Optional(
-    Type.Number({
-      title: "Presence Penalty",
-      description: "The presence penalty to use",
-      minimum: -2,
-      maximum: 2,
-    })
-  ),
+  maxTokens: z
+    .number()
+    .min(1)
+    .max(4096)
+    .optional()
+    .describe("The maximum number of tokens to generate"),
+  temperature: z
+    .number()
+    .min(0)
+    .max(2)
+    .optional()
+    .describe("The temperature to use for sampling"),
+  topP: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe("The top-p value to use for sampling"),
+  frequencyPenalty: z
+    .number()
+    .min(-2)
+    .max(2)
+    .optional()
+    .describe("The frequency penalty to use"),
+  presencePenalty: z
+    .number()
+    .min(-2)
+    .max(2)
+    .optional()
+    .describe("The presence penalty to use"),
 });
 
-export const TextGenerationOutputSchema = Type.Object({
+export const TextGenerationOutputSchema = z.object({
   text: TypeOptionalArray(
-    Type.String({
-      title: "Text",
-      description: "The generated text",
-    })
+    z.string().describe("The generated text")
   ),
 });
 
-export type TextGenerationTaskInput = Static<typeof TextGenerationInputSchema>;
-export type TextGenerationTaskOutput = Static<typeof TextGenerationOutputSchema>;
+export type TextGenerationTaskInput = z.infer<typeof TextGenerationInputSchema>;
+export type TextGenerationTaskOutput = z.infer<typeof TextGenerationOutputSchema>;
 
 export class TextGenerationTask extends AiTask<
   TextGenerationTaskInput,

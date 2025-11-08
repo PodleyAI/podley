@@ -13,40 +13,27 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
 const DEFAULT_LOG_LEVEL: LogLevel = "log";
 
-const inputSchema = Type.Object({
-  console: Type.Optional(
-    Type.String({
-      title: "Message",
-      description: "The message to log",
-    })
-  ),
-  log_level: Type.Optional(
-    Type.Union(
-      log_levels.map((level) => Type.Literal(level)),
-      {
-        title: "Log Level",
-        description: "The log level to use",
-        default: DEFAULT_LOG_LEVEL,
-      }
-    )
-  ),
+const inputSchema = z.object({
+  console: z.string().optional().describe("The message to log"),
+  log_level: z
+    .enum(log_levels)
+    .optional()
+    .default(DEFAULT_LOG_LEVEL)
+    .describe("The log level to use"),
 });
 
-const outputSchema = Type.Object({
-  console: Type.Unknown({
-    title: "Messages",
-    description: "The messages logged by the task",
-  }),
+const outputSchema = z.object({
+  console: z.unknown().describe("The messages logged by the task"),
 });
 
-export type DebugLogTaskInput = Static<typeof inputSchema>;
-export type DebugLogTaskOutput = Static<typeof outputSchema>;
+export type DebugLogTaskInput = z.infer<typeof inputSchema>;
+export type DebugLogTaskOutput = z.infer<typeof outputSchema>;
 
 /**
  * DebugLogTask provides console logging functionality as a task within the system.

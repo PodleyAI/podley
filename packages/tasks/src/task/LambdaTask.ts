@@ -19,7 +19,7 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 
 interface LambdaTaskConfig<
   Input extends TaskInput = TaskInput,
@@ -33,22 +33,14 @@ interface LambdaTaskConfig<
   ) => Promise<Output>;
 }
 
-const inputSchema = Type.Object({
-  [DATAFLOW_ALL_PORTS]: Type.Optional(
-    Type.Any({
-      title: "Input",
-      description: "Input data to pass to the function",
-    })
-  ),
+const inputSchema = z.object({
+  [DATAFLOW_ALL_PORTS]: z.any().optional().describe("Input data to pass to the function"),
 });
-const outputSchema = Type.Object({
-  [DATAFLOW_ALL_PORTS]: Type.Any({
-    title: "Output",
-    description: "The output from the execute function",
-  }),
+const outputSchema = z.object({
+  [DATAFLOW_ALL_PORTS]: z.any().describe("The output from the execute function"),
 });
-export type LambdaTaskInput = Static<typeof inputSchema>;
-export type LambdaTaskOutput = Static<typeof outputSchema>;
+export type LambdaTaskInput = z.infer<typeof inputSchema>;
+export type LambdaTaskOutput = z.infer<typeof outputSchema>;
 /**
  * LambdaTask provides a way to execute arbitrary functions within the task framework
  * It wraps a provided function and its input into a task that can be integrated

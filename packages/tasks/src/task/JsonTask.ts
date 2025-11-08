@@ -17,23 +17,17 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 
-const inputSchema = Type.Object({
-  json: Type.String({
-    title: "JSON",
-    description: "The JSON to parse",
-  }),
+const inputSchema = z.object({
+  json: z.string().describe("The JSON to parse"),
 });
-export type JsonTaskInput = Static<typeof inputSchema>;
+export type JsonTaskInput = z.infer<typeof inputSchema>;
 
-const outputSchema = Type.Object({
-  output: Type.Any({
-    title: "Output",
-    description: "Output depends on the generated task graph",
-  }),
+const outputSchema = z.object({
+  output: z.any().describe("Output depends on the generated task graph"),
 });
-export type JsonTaskOutput = Static<typeof outputSchema>;
+export type JsonTaskOutput = z.infer<typeof outputSchema>;
 
 /**
  * JsonTask is a specialized task that creates and manages task graphs from JSON configurations.

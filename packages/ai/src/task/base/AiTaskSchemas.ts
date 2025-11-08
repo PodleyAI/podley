@@ -5,23 +5,20 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Kind, SchemaOptions, TSchema, Type, TypeRegistry } from "@sinclair/typebox";
+import { z } from "zod";
 
-export const TypedArray = (annotations: Record<string, unknown> = {}) =>
-  Type.Union(
-    [
-      Type.Unsafe<Float64Array>({ type: "Float64Array" }),
-      Type.Unsafe<Float32Array>({ type: "Float32Array" }),
-      Type.Unsafe<Int32Array>({ type: "Int32Array" }),
-      Type.Unsafe<Int16Array>({ type: "Int16Array" }),
-      Type.Unsafe<Int8Array>({ type: "Int8Array" }),
-      Type.Unsafe<Uint8Array>({ type: "Uint8Array" }),
-      Type.Unsafe<Uint16Array>({ type: "Uint16Array" }),
-      Type.Unsafe<Uint32Array>({ type: "Uint32Array" }),
-      Type.Unsafe<Uint8ClampedArray>({ type: "Uint8ClampedArray" }),
-    ],
-    { ...annotations }
-  );
+export const TypedArray = () =>
+  z.union([
+    z.instanceof(Float64Array),
+    z.instanceof(Float32Array),
+    z.instanceof(Int32Array),
+    z.instanceof(Int16Array),
+    z.instanceof(Int8Array),
+    z.instanceof(Uint8Array),
+    z.instanceof(Uint16Array),
+    z.instanceof(Uint32Array),
+    z.instanceof(Uint8ClampedArray),
+  ]);
 
 export type TypedArray =
   | Float64Array
@@ -34,40 +31,19 @@ export type TypedArray =
   | Uint8Array
   | Uint8ClampedArray;
 
-TypeRegistry.Set("TypedArray", (schema: TSchema, value: unknown) => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    schema.anyOf.some((x: TSchema) => x.type === (value as any)[Symbol.toStringTag])
-  );
-});
-export const TypeLanguage = (annotations: Record<string, unknown> = {}) =>
-  Type.String({
-    title: "Language",
-    description: "The language to use",
-    maxLength: 2,
-    minLength: 2,
-    ...annotations,
-  });
+export const TypeLanguage = () =>
+  z.string().length(2).describe("The language to use");
 
 export type TypeModelSymantic = "model" | `model:${string}`;
 
-export interface TTypeModel extends TSchema {
-  [Kind]: "TypeModel";
-  static: string;
-  type: "string";
+export interface ZodTypeModel extends z.ZodType<string> {
   semantic: TypeModelSymantic;
 }
 
-export function TypeModel(semantic: TypeModelSymantic = "model", options: SchemaOptions = {}) {
+export function TypeModel(semantic: TypeModelSymantic = "model", options: { description?: string } = {}) {
   if (semantic !== "model" && !semantic.startsWith("model:")) {
     throw new Error("Invalid semantic value");
   }
-  const task = semantic.startsWith("model:") ? semantic.slice(6) : null;
-  function TypeModelCheck(schema: TTypeModel, value: unknown) {
-    return typeof value === "string" && value === "gpt-5";
-  }
-  if (!TypeRegistry.Has("TypeModel")) TypeRegistry.Set("TypeModel", TypeModelCheck);
   const taskName = semantic.startsWith("model:")
     ? semantic
         .slice(6)
@@ -75,12 +51,13 @@ export function TypeModel(semantic: TypeModelSymantic = "model", options: Schema
         .replaceAll(/[A-Z]/g, (char) => " " + char.toLowerCase())
         .trim()
     : null;
-  return {
-    title: "Model",
-    description: `The model ${taskName ? `for ${taskName} ` : "to use"}`,
-    ...options,
-    semantic,
-    [Kind]: "TypeModel",
-    type: "string",
-  } as TTypeModel;
+  
+  const schema = z.string().describe(
+    options.description || `The model ${taskName ? `for ${taskName} ` : "to use"}`
+  );
+  
+  // Add semantic property to the schema
+  (schema as any).semantic = semantic;
+  
+  return schema as ZodTypeModel;
 }

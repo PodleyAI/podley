@@ -23,85 +23,35 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 
-const inputSchema = Type.Object({
-  url: Type.String({
-    title: "URL",
-    description: "The URL to fetch from",
-    format: "uri",
-  }),
-  method: Type.Optional(
-    Type.Union(
-      [
-        Type.Literal("GET"),
-        Type.Literal("POST"),
-        Type.Literal("PUT"),
-        Type.Literal("DELETE"),
-        Type.Literal("PATCH"),
-      ],
-      {
-        title: "Method",
-        description: "The HTTP method to use",
-        default: "GET",
-      }
-    )
-  ),
-  headers: Type.Optional(
-    Type.Record(Type.String(), Type.String(), {
-      title: "Headers",
-      description: "The headers to send with the request",
-    })
-  ),
-  body: Type.Optional(
-    Type.String({
-      title: "Body",
-      description: "The body of the request",
-    }),
-    true
-  ),
-  response_type: Type.Optional(
-    Type.Union(
-      [
-        Type.Literal("json"),
-        Type.Literal("text"),
-        Type.Literal("blob"),
-        Type.Literal("arraybuffer"),
-      ],
-      {
-        title: "Response Type",
-        default: "json",
-      }
-    )
-  ),
-  timeout: Type.Optional(
-    Type.Number({
-      title: "Timeout",
-      description: "Request timeout in milliseconds",
-    })
-  ),
-  queueName: Type.Optional(Type.String()),
+const inputSchema = z.object({
+  url: z.string().url().describe("The URL to fetch from"),
+  method: z
+    .enum(["GET", "POST", "PUT", "DELETE", "PATCH"])
+    .optional()
+    .default("GET")
+    .describe("The HTTP method to use"),
+  headers: z.record(z.string(), z.string()).optional().describe("The headers to send with the request"),
+  body: z.string().optional().describe("The body of the request"),
+  response_type: z
+    .enum(["json", "text", "blob", "arraybuffer"])
+    .optional()
+    .default("json")
+    .describe("Response Type"),
+  timeout: z.number().optional().describe("Request timeout in milliseconds"),
+  queueName: z.string().optional(),
 });
 
-const outputSchema = Type.Object({
-  json: Type.Optional(
-    Type.Any({
-      title: "JSON",
-      description: "The JSON response",
-    })
-  ),
-  text: Type.Optional(
-    Type.String({
-      title: "Text",
-      description: "The text response",
-    })
-  ),
-  blob: Type.Optional(Type.Unsafe<Blob>({ type: "blob" })),
-  arraybuffer: Type.Optional(Type.Unsafe<ArrayBuffer>({ type: "arraybuffer" })),
+const outputSchema = z.object({
+  json: z.any().optional().describe("The JSON response"),
+  text: z.string().optional().describe("The text response"),
+  blob: z.instanceof(Blob).optional(),
+  arraybuffer: z.instanceof(ArrayBuffer).optional(),
 });
 
-export type FetchTaskInput = Static<typeof inputSchema>;
-export type FetchTaskOutput = Static<typeof outputSchema>;
+export type FetchTaskInput = z.infer<typeof inputSchema>;
+export type FetchTaskOutput = z.infer<typeof outputSchema>;
 
 export type FetchTaskConfig = TaskConfig & {
   queueName?: string;

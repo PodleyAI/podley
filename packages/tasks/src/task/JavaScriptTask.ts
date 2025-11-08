@@ -13,29 +13,18 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 import { Interpreter } from "../util/interpreter";
 
-const inputSchema = Type.Object({
-  code: Type.String({
-    title: "Code",
-    description: "JavaScript code to execute",
-  }),
-  input: Type.Optional(
-    Type.Any({
-      title: "Input",
-      description: "Input data to pass to the JavaScript code",
-    })
-  ),
+const inputSchema = z.object({
+  code: z.string().describe("JavaScript code to execute"),
+  input: z.any().optional().describe("Input data to pass to the JavaScript code"),
 });
-const outputSchema = Type.Object({
-  output: Type.Any({
-    title: "Output",
-    description: "The output of the JavaScript code",
-  }),
+const outputSchema = z.object({
+  output: z.any().describe("The output of the JavaScript code"),
 });
-export type JavaScriptTaskInput = Static<typeof inputSchema>;
-export type JavaScriptTaskOutput = Static<typeof outputSchema>;
+export type JavaScriptTaskInput = z.infer<typeof inputSchema>;
+export type JavaScriptTaskOutput = z.infer<typeof outputSchema>;
 
 export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutput> {
   public static type = "JavaScriptTask";

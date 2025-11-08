@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { CompoundMergeStrategy, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
@@ -132,7 +132,7 @@ export class GraphAsTask<
       }
     }
 
-    return Type.Object(properties, required.length > 0 ? { required } : {}) as DataPortSchema;
+    return z.object(properties).strict() as unknown as DataPortSchema;
   }
 
   /**
@@ -220,11 +220,11 @@ export class GraphAsTask<
         properties[outputName] = outputProp;
       } else {
         // Multiple ending nodes: all properties become arrays due to collectPropertyValues
-        properties[outputName] = Type.Array(outputProp as any);
+        properties[outputName] = z.array(outputProp as any);
       }
     }
 
-    return Type.Object(properties, required.length > 0 ? { required } : {}) as DataPortSchema;
+    return z.object(properties).strict() as unknown as DataPortSchema;
   }
 
   /**

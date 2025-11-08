@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-export * from "./typebox/TypeBox";
+export * from "./zod/Zod";
 export * from "./typebox/Formatters";
 export * from "./utilities/BaseError";
 export * from "./utilities/Misc";
