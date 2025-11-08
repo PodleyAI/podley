@@ -13,29 +13,23 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Type, type Static } from "@sinclair/typebox";
+import { z } from "zod";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 
-export const TextSummaryInputSchema = Type.Object({
+export const TextSummaryInputSchema = z.object({
   text: TypeReplicateArray(
-    Type.String({
-      title: "Text",
-      description: "The text to summarize",
-    })
+    z.string().describe("The text to summarize")
   ),
   model: TypeReplicateArray(TypeModel("model:TextSummaryTask")),
 });
 
-export const TextSummaryOutputSchema = Type.Object({
-  text: Type.String({
-    title: "Text",
-    description: "The summarized text",
-  }),
+export const TextSummaryOutputSchema = z.object({
+  text: z.string().describe("The summarized text"),
 });
 
-export type TextSummaryTaskInput = Static<typeof TextSummaryInputSchema>;
-export type TextSummaryTaskOutput = Static<typeof TextSummaryOutputSchema>;
+export type TextSummaryTaskInput = z.infer<typeof TextSummaryInputSchema>;
+export type TextSummaryTaskOutput = z.infer<typeof TextSummaryOutputSchema>;
 
 /**
  * This summarizes a piece of text

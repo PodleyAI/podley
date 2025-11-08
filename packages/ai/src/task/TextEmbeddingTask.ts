@@ -13,31 +13,25 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Type, type Static } from "@sinclair/typebox";
+import { z } from "zod";
 import { AiTask } from "./base/AiTask";
 import { TypedArray, TypeModel } from "./base/AiTaskSchemas";
 
-export const TextEmbeddingInputSchema = Type.Object({
+export const TextEmbeddingInputSchema = z.object({
   text: TypeReplicateArray(
-    Type.String({
-      title: "Text",
-      description: "The text to embed",
-    })
+    z.string().describe("The text to embed")
   ),
   model: TypeReplicateArray(TypeModel("model:TextEmbeddingTask")),
 });
 
-export const TextEmbeddingOutputSchema = Type.Object({
+export const TextEmbeddingOutputSchema = z.object({
   vector: TypeReplicateArray(
-    TypedArray({
-      title: "Vector",
-      description: "The vector embedding of the text",
-    })
+    TypedArray().describe("The vector embedding of the text")
   ),
 });
 
-export type TextEmbeddingTaskInput = Static<typeof TextEmbeddingInputSchema>;
-export type TextEmbeddingTaskOutput = Static<typeof TextEmbeddingOutputSchema>;
+export type TextEmbeddingTaskInput = z.infer<typeof TextEmbeddingInputSchema>;
+export type TextEmbeddingTaskOutput = z.infer<typeof TextEmbeddingOutputSchema>;
 
 /**
  * A task that generates vector embeddings for text using a specified embedding model.

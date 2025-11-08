@@ -13,24 +13,18 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Static, Type } from "@sinclair/typebox";
+import { z } from "zod";
 import { Document, DocumentFragment } from "../source/Document";
 
-const inputSchema = Type.Object({
-  parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {
-    name: "Document Kind",
-    description: "The kind of document (txt or md)",
-  }),
-  // file: Type.Instance(Document),
+const inputSchema = z.object({
+  parser: z.enum(["txt", "md"]).describe("The kind of document (txt or md)"),
+  // file: z.instanceof(Document),
 });
-const outputSchema = Type.Object({
-  texts: Type.Array(Type.String(), {
-    name: "Text Chunks",
-    description: "The text chunks of the document",
-  }),
+const outputSchema = z.object({
+  texts: z.array(z.string()).describe("The text chunks of the document"),
 });
-export type DocumentSplitterTaskInput = Static<typeof inputSchema>;
-export type DocumentSplitterTaskOutput = Static<typeof outputSchema>;
+export type DocumentSplitterTaskInput = z.infer<typeof inputSchema>;
+export type DocumentSplitterTaskOutput = z.infer<typeof outputSchema>;
 
 export class DocumentSplitterTask extends Task<
   DocumentSplitterTaskInput,

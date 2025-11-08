@@ -13,35 +13,26 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Type, type Static } from "@sinclair/typebox";
+import { z } from "zod";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 
-export const TextRewriterInputSchema = Type.Object({
+export const TextRewriterInputSchema = z.object({
   text: TypeReplicateArray(
-    Type.String({
-      title: "Text",
-      description: "The text to rewrite",
-    })
+    z.string().describe("The text to rewrite")
   ),
   prompt: TypeReplicateArray(
-    Type.String({
-      title: "Prompt",
-      description: "The prompt to direct the rewriting",
-    })
+    z.string().describe("The prompt to direct the rewriting")
   ),
   model: TypeReplicateArray(TypeModel("model:TextRewriterTask")),
 });
 
-export const TextRewriterOutputSchema = Type.Object({
-  text: Type.String({
-    title: "Text",
-    description: "The rewritten text",
-  }),
+export const TextRewriterOutputSchema = z.object({
+  text: z.string().describe("The rewritten text"),
 });
 
-export type TextRewriterTaskInput = Static<typeof TextRewriterInputSchema>;
-export type TextRewriterTaskOutput = Static<typeof TextRewriterOutputSchema>;
+export type TextRewriterTaskInput = z.infer<typeof TextRewriterInputSchema>;
+export type TextRewriterTaskOutput = z.infer<typeof TextRewriterOutputSchema>;
 
 /**
  * This is a special case of text generation that takes a prompt and text to rewrite

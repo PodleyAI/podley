@@ -14,47 +14,32 @@ import {
   type DataPortSchema,
 } from "@podley/task-graph";
 import { TypeOptionalArray } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { z } from "zod";
 import { AiTask } from "./base/AiTask";
 import { TypeLanguage, TypeModel } from "./base/AiTaskSchemas";
 
-export const TextTranslationInputSchema = Type.Object({
+export const TextTranslationInputSchema = z.object({
   text: TypeReplicateArray(
-    Type.String({
-      title: "Text",
-      description: "The text to translate",
-    })
+    z.string().describe("The text to translate")
   ),
   source_lang: TypeReplicateArray(
-    TypeLanguage({
-      title: "Source Language",
-      description: "The source language",
-    })
+    TypeLanguage().describe("The source language")
   ),
   target_lang: TypeReplicateArray(
-    TypeLanguage({
-      title: "Target Language",
-      description: "The target language",
-    })
+    TypeLanguage().describe("The target language")
   ),
   model: TypeReplicateArray(TypeModel("model:TextTranslationTask")),
 });
 
-export const TextTranslationOutputSchema = Type.Object({
+export const TextTranslationOutputSchema = z.object({
   text: TypeOptionalArray(
-    Type.String({
-      title: "Text",
-      description: "The translated text",
-    })
+    z.string().describe("The translated text")
   ),
-  target_lang: TypeLanguage({
-    title: "Output Language",
-    description: "The output language",
-  }),
+  target_lang: TypeLanguage().describe("The output language"),
 });
 
-export type TextTranslationTaskInput = Static<typeof TextTranslationInputSchema>;
-export type TextTranslationTaskOutput = Static<typeof TextTranslationOutputSchema>;
+export type TextTranslationTaskInput = z.infer<typeof TextTranslationInputSchema>;
+export type TextTranslationTaskOutput = z.infer<typeof TextTranslationOutputSchema>;
 
 /**
  * This translates text from one language to another

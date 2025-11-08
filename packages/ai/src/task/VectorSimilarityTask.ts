@@ -14,7 +14,7 @@ import {
   Workflow,
   type DataPortSchema,
 } from "@podley/task-graph";
-import { Type, type Static } from "@sinclair/typebox";
+import { z } from "zod";
 import { TypedArray } from "./base/AiTaskSchemas";
 
 export const SimilarityFn = {
@@ -25,49 +25,34 @@ export const SimilarityFn = {
 
 export type SimilarityFn = (typeof SimilarityFn)[keyof typeof SimilarityFn];
 
-const SimilarityInputSchema = Type.Object({
-  query: TypedArray({
-    title: "Query",
-    description: "Query vector to compare against",
-  }),
-  input: Type.Array(
-    TypedArray({
-      title: "Input",
-      description: "Array of vectors to compare against the query",
-    })
+const SimilarityInputSchema = z.object({
+  query: TypedArray().describe("Query vector to compare against"),
+  input: z.array(
+    TypedArray().describe("Array of vectors to compare against the query")
   ),
-  topK: Type.Optional(
-    Type.Number({
-      title: "Top K",
-      description: "Number of top results to return",
-      minimum: 1,
-      default: 10,
-    })
-  ),
-  similarity: Type.Enum(SimilarityFn, {
-    title: "Similarity 𝑓",
-    description: "Similarity function to use for comparisons",
-    default: SimilarityFn.COSINE,
-  }),
+  topK: z
+    .number()
+    .min(1)
+    .default(10)
+    .optional()
+    .describe("Number of top results to return"),
+  similarity: z
+    .enum(["cosine", "jaccard", "hamming"])
+    .default("cosine")
+    .describe("Similarity function to use for comparisons"),
 });
 
-const SimilarityOutputSchema = Type.Object({
-  output: Type.Array(
-    TypedArray({
-      title: "Output",
-      description: "Ranked output vectors",
-    })
+const SimilarityOutputSchema = z.object({
+  output: z.array(
+    TypedArray().describe("Ranked output vectors")
   ),
-  score: Type.Array(
-    Type.Number({
-      title: "Score",
-      description: "Similarity scores for each output vector",
-    })
+  score: z.array(
+    z.number().describe("Similarity scores for each output vector")
   ),
 });
 
-export type VectorSimilarityTaskInput = Static<typeof SimilarityInputSchema>;
-export type VectorSimilarityTaskOutput = Static<typeof SimilarityOutputSchema>;
+export type VectorSimilarityTaskInput = z.infer<typeof SimilarityInputSchema>;
+export type VectorSimilarityTaskOutput = z.infer<typeof SimilarityOutputSchema>;
 
 export class VectorSimilarityTask extends ArrayTask<
   VectorSimilarityTaskInput,

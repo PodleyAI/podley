@@ -14,37 +14,28 @@ import {
   type DataPortSchema,
 } from "@podley/task-graph";
 import { TypeOptionalArray } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { z } from "zod";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 
-export const TextQuestionAnswerInputSchema = Type.Object({
+export const TextQuestionAnswerInputSchema = z.object({
   context: TypeReplicateArray(
-    Type.String({
-      title: "Context",
-      description: "The context of the question",
-    })
+    z.string().describe("The context of the question")
   ),
   question: TypeReplicateArray(
-    Type.String({
-      title: "Question",
-      description: "The question to answer",
-    })
+    z.string().describe("The question to answer")
   ),
   model: TypeReplicateArray(TypeModel("model:TextQuestionAnswerTask")),
 });
 
-export const TextQuestionAnswerOutputSchema = Type.Object({
+export const TextQuestionAnswerOutputSchema = z.object({
   text: TypeOptionalArray(
-    Type.String({
-      title: "Text",
-      description: "The generated text",
-    })
+    z.string().describe("The generated text")
   ),
 });
 
-export type TextQuestionAnswerTaskInput = Static<typeof TextQuestionAnswerInputSchema>;
-export type TextQuestionAnswerTaskOutput = Static<typeof TextQuestionAnswerOutputSchema>;
+export type TextQuestionAnswerTaskInput = z.infer<typeof TextQuestionAnswerInputSchema>;
+export type TextQuestionAnswerTaskOutput = z.infer<typeof TextQuestionAnswerOutputSchema>;
 
 /**
  * This is a special case of text generation that takes a context and a question

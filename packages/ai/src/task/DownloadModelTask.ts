@@ -14,19 +14,19 @@ import {
   type DataPortSchema,
 } from "@podley/task-graph";
 import { TypeOptionalArray } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { z } from "zod";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
 
-const DownloadModelInputSchema = Type.Object({
+const DownloadModelInputSchema = z.object({
   model: TypeReplicateArray(TypeModel("model")),
 });
 
-const DownloadModelOutputSchema = Type.Object({
+const DownloadModelOutputSchema = z.object({
   model: TypeOptionalArray(TypeModel("model")),
 });
-export type DownloadModelTaskRunInput = Static<typeof DownloadModelInputSchema>;
-export type DownloadModelTaskRunOutput = Static<typeof DownloadModelOutputSchema>;
+export type DownloadModelTaskRunInput = z.infer<typeof DownloadModelInputSchema>;
+export type DownloadModelTaskRunOutput = z.infer<typeof DownloadModelOutputSchema>;
 export type DownloadModelTaskExecuteInput = {
   model: string;
 };
