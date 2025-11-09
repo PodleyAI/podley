@@ -11,13 +11,39 @@ import { ITaskGraph } from "../task-graph/ITaskGraph";
 import { IWorkflow } from "../task-graph/IWorkflow";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { ensureTask, type Taskish } from "../task-graph/Conversions";
-import { IRunConfig, ITask } from "./ITask";
+import { IRunConfig, type IExecuteContext, ITask } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
 import { Task } from "./Task";
-import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
-import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
+import {
+  TaskAbortedError,
+  TaskConfigurationError,
+  TaskError,
+  TaskFailedError,
+  TaskInvalidInputError,
+} from "./TaskError";
+import {
+  Provenance,
+  TaskConfig,
+  TaskInput,
+  TaskOutput,
+  TaskStatus,
+  type TaskStreamPortDescriptor,
+  type TaskStream,
+} from "./TaskTypes";
 import { GraphAsTask } from "../task/GraphAsTask";
 import { Workflow } from "../task-graph/Workflow";
+import { isTaskStream, toAsyncIterable } from "./TaskStream";
+
+interface TaskStreamRuntimeState {
+  readonly portId: string;
+  readonly descriptor: TaskStreamPortDescriptor<any, any>;
+  aggregate: unknown;
+  started: boolean;
+  done: boolean;
+  contextManaged: boolean;
+  returnedStream: boolean;
+  chunkCount: number;
+}
 
 /**
  * Responsible for running tasks
@@ -29,21 +55,26 @@ export class TaskRunner<
   Config extends TaskConfig = TaskConfig,
 > implements ITaskRunner<Input, Output, Config>
 {
-  /**
-   * Whether the task is currently running
-   */
-  protected running = false;
-  protected reactiveRunning = false;
+    /**
+     * Whether the task is currently running
+     */
+    protected running = false;
+    protected reactiveRunning = false;
 
-  /**
-   * Provenance information for the task
-   */
-  protected nodeProvenance: Provenance = {};
+    /**
+     * Provenance information for the task
+     */
+    protected nodeProvenance: Provenance = {};
 
-  /**
-   * The task to run
-   */
-  public readonly task: ITask<Input, Output, Config>;
+    /**
+     * The task to run
+     */
+    public readonly task: ITask<Input, Output, Config>;
+
+    /**
+     * Streaming runtime state keyed by output port id
+     */
+    protected streamStates: Map<string, TaskStreamRuntimeState> | null = null;
 
   /**
    * AbortController for cancelling task execution
@@ -92,19 +123,19 @@ export class TaskRunner<
 
       const inputs: Input = this.task.runInputData as Input;
       let outputs: Output | undefined;
-      if (this.task.cacheable) {
-        outputs = (await this.outputCache?.getOutput(this.task.type, inputs)) as Output;
-        if (outputs) {
-          this.task.runOutputData = await this.executeTaskReactive(inputs, outputs);
+        if (this.task.cacheable) {
+          outputs = (await this.outputCache?.getOutput(this.task.type, inputs)) as Output;
+          if (outputs) {
+            this.task.runOutputData = await this.executeTaskReactive(inputs, outputs);
+          }
         }
-      }
-      if (!outputs) {
-        outputs = await this.executeTask(inputs);
-        if (this.task.cacheable && outputs !== undefined) {
-          await this.outputCache?.saveOutput(this.task.type, inputs, outputs);
+        if (!outputs) {
+          outputs = await this.executeTask(inputs, config);
+          if (this.task.cacheable && outputs !== undefined) {
+            await this.outputCache?.saveOutput(this.task.type, inputs, outputs);
+          }
+          this.task.runOutputData = outputs ?? ({} as Output);
         }
-        this.task.runOutputData = outputs ?? ({} as Output);
-      }
 
       await this.handleComplete();
 
@@ -171,15 +202,287 @@ export class TaskRunner<
 
   /**
    * Protected method to execute a task by delegating back to the task itself.
+   * Handles streaming-aware execution, collecting chunks and final output.
    */
-  protected async executeTask(input: Input): Promise<Output | undefined> {
-    const result = await this.task.execute(input, {
+  protected async executeTask(input: Input, config: IRunConfig): Promise<Output> {
+    const streamStates = this.prepareStreamStates();
+    const streamPromises: Promise<void>[] = [];
+    const context = this.createExecuteContext(streamStates, config, streamPromises);
+
+    const rawResult = await this.task.execute(input, context);
+    const normalizedResult = this.normalizeExecuteResult(rawResult);
+
+    await this.consumeStreamsFromResult(
+      normalizedResult,
+      streamStates,
+      config,
+      streamPromises
+    );
+
+    await this.finalizeContextDrivenStreams(streamStates, config);
+
+    await Promise.all(streamPromises);
+
+    this.applyFinalStreamResults(normalizedResult, streamStates);
+
+    this.streamStates = null;
+
+    return await this.executeTaskReactive(input, normalizedResult as Output);
+  }
+
+  protected prepareStreamStates(): Map<string, TaskStreamRuntimeState> {
+    const descriptor = this.task.streaming();
+    const states = new Map<string, TaskStreamRuntimeState>();
+    for (const [portId, portDescriptor] of Object.entries(descriptor.outputs)) {
+      states.set(portId, {
+        portId,
+        descriptor: portDescriptor,
+        aggregate: portDescriptor.accumulator.initial(),
+        started: false,
+        done: false,
+        contextManaged: false,
+        returnedStream: false,
+        chunkCount: 0,
+      });
+    }
+    this.streamStates = states;
+    return states;
+  }
+
+  protected createExecuteContext(
+    streamStates: Map<string, TaskStreamRuntimeState>,
+    config: IRunConfig,
+    streamPromises: Promise<void>[]
+  ): IExecuteContext {
+    const pushChunk = (portId: string, chunk: unknown) => {
+      const state = this.ensureStreamState(portId, streamStates);
+      state.contextManaged = true;
+      const pending = this.pushStreamChunk(state, chunk, config);
+      const tracked = pending.catch(async (error) => {
+        await this.handleStreamError(state, error, config);
+        throw error;
+      });
+      streamPromises.push(tracked);
+      return tracked;
+    };
+
+    const closeStream = (portId: string) => {
+      const state = this.ensureStreamState(portId, streamStates);
+      const pending = this.closeStreamState(state, config);
+      const tracked = pending.catch(async (error) => {
+        await this.handleStreamError(state, error, config);
+        throw error;
+      });
+      streamPromises.push(tracked);
+      return tracked;
+    };
+
+    const attachStreamController = <Chunk>(
+      portId: string,
+      controller: ReadableStreamDefaultController<Chunk>
+    ) => {
+      const state = this.ensureStreamState(portId, streamStates);
+      const originalEnqueue = controller.enqueue.bind(controller);
+      controller.enqueue = ((chunk: Chunk) => {
+        originalEnqueue(chunk);
+        void pushChunk(portId, chunk);
+      }) as typeof controller.enqueue;
+
+      const originalClose = controller.close.bind(controller);
+      controller.close = (() => {
+        originalClose();
+        void closeStream(portId);
+      }) as typeof controller.close;
+
+      const originalError = controller.error.bind(controller);
+      controller.error = ((reason?: unknown) => {
+        originalError(reason);
+        const trackedError = this.handleStreamError(
+          state,
+          reason ?? new Error("Stream error"),
+          config
+        ).catch((error) => {
+          throw error;
+        });
+        streamPromises.push(trackedError);
+      }) as typeof controller.error;
+
+      return controller;
+    };
+
+    return {
       signal: this.abortController!.signal,
       updateProgress: this.handleProgress.bind(this),
       nodeProvenance: this.nodeProvenance,
       own: this.own,
-    });
-    return await this.executeTaskReactive(input, result || ({} as Output));
+      pushChunk,
+      closeStream,
+      attachStreamController,
+    };
+  }
+
+  protected normalizeExecuteResult(
+    result: Output | undefined
+  ): Record<string, unknown> {
+    if (result && typeof result === "object") {
+      return { ...(result as Record<string, unknown>) };
+    }
+    return {};
+  }
+
+  protected async consumeStreamsFromResult(
+    result: Record<string, unknown>,
+    streamStates: Map<string, TaskStreamRuntimeState>,
+    config: IRunConfig,
+    streamPromises: Promise<void>[]
+  ): Promise<void> {
+    for (const [portId, state] of streamStates.entries()) {
+      if (result[portId] === undefined) {
+        continue;
+      }
+      const value = result[portId];
+      if (isTaskStream(value)) {
+        state.returnedStream = true;
+        delete result[portId];
+        const promise = this.consumeStream(state, value as TaskStream<unknown>, config);
+        streamPromises.push(promise);
+      } else {
+        state.aggregate = value;
+        state.done = true;
+        this.task.runOutputData = {
+          ...this.task.runOutputData,
+          [state.portId]: state.aggregate,
+        };
+      }
+    }
+  }
+
+  protected async finalizeContextDrivenStreams(
+    streamStates: Map<string, TaskStreamRuntimeState>,
+    config: IRunConfig
+  ): Promise<void> {
+    for (const state of streamStates.values()) {
+      if (state.contextManaged && !state.done) {
+        await this.closeStreamState(state, config);
+      }
+    }
+  }
+
+  protected applyFinalStreamResults(
+    result: Record<string, unknown>,
+    streamStates: Map<string, TaskStreamRuntimeState>
+  ): void {
+    for (const state of streamStates.values()) {
+      if (!state.done) {
+        continue;
+      }
+      result[state.portId] = state.aggregate;
+    }
+  }
+
+  protected ensureStreamState(
+    portId: string,
+    streamStates: Map<string, TaskStreamRuntimeState>
+  ): TaskStreamRuntimeState {
+    const state = streamStates.get(portId);
+    if (!state) {
+      throw new TaskConfigurationError(
+        `Task "${this.task.type}" attempted to stream on undeclared output port "${portId}".`
+      );
+    }
+    return state;
+  }
+
+  protected async startStream(
+    state: TaskStreamRuntimeState,
+    config: IRunConfig
+  ): Promise<void> {
+    if (state.started) return;
+    state.started = true;
+    if (this.task.status !== TaskStatus.STREAMING) {
+      this.task.status = TaskStatus.STREAMING;
+      this.task.emit("status", this.task.status);
+    }
+    this.task.emit("stream_start", state.portId);
+    if (config.onStreamStart) {
+      await config.onStreamStart(this.task, state.portId, state.descriptor);
+    }
+  }
+
+  protected async pushStreamChunk(
+    state: TaskStreamRuntimeState,
+    chunk: unknown,
+    config: IRunConfig
+  ): Promise<void> {
+    if (this.abortController?.signal.aborted) {
+      throw new TaskAbortedError();
+    }
+    await this.startStream(state, config);
+    state.aggregate = state.descriptor.accumulator.accumulate(state.aggregate, chunk);
+    state.chunkCount += 1;
+    this.task.runOutputData = {
+      ...this.task.runOutputData,
+      [state.portId]: state.aggregate,
+    };
+    this.task.emit("stream_chunk", state.portId, chunk, state.aggregate);
+    if (config.onStreamChunk) {
+      await config.onStreamChunk(this.task, state.portId, chunk, state.aggregate);
+    }
+  }
+
+  protected async closeStreamState(
+    state: TaskStreamRuntimeState,
+    config: IRunConfig
+  ): Promise<void> {
+    if (state.done) return;
+    state.done = true;
+    state.aggregate = state.descriptor.accumulator.complete(state.aggregate);
+    this.task.runOutputData = {
+      ...this.task.runOutputData,
+      [state.portId]: state.aggregate,
+    };
+    this.task.emit("stream_end", state.portId, state.aggregate);
+    if (config.onStreamEnd) {
+      await config.onStreamEnd(this.task, state.portId, state.aggregate);
+    }
+  }
+
+  protected async handleStreamError(
+    state: TaskStreamRuntimeState,
+    error: unknown,
+    config: IRunConfig
+  ): Promise<never> {
+    state.done = true;
+    if (error instanceof TaskAbortedError) {
+      throw error;
+    }
+    const taskError =
+      error instanceof TaskError
+        ? error
+        : new TaskFailedError(
+            error instanceof Error ? error.message : String(error ?? "Stream error")
+          );
+    if (config.onStreamError) {
+      await config.onStreamError(this.task, state.portId, taskError);
+    }
+    throw taskError;
+  }
+
+  protected consumeStream(
+    state: TaskStreamRuntimeState,
+    stream: TaskStream<unknown>,
+    config: IRunConfig
+  ): Promise<void> {
+    return (async () => {
+      try {
+        for await (const chunk of toAsyncIterable(stream)) {
+          await this.pushStreamChunk(state, chunk, config);
+        }
+        await this.closeStreamState(state, config);
+      } catch (error) {
+        await this.handleStreamError(state, error, config);
+      }
+    })();
   }
 
   /**
@@ -206,6 +509,7 @@ export class TaskRunner<
 
     this.nodeProvenance = {};
     this.running = true;
+    this.streamStates = null;
 
     this.task.startedAt = new Date();
     this.task.progress = 0;
@@ -254,6 +558,7 @@ export class TaskRunner<
     this.task.status = TaskStatus.ABORTING;
     this.task.progress = 100;
     this.task.error = new TaskAbortedError();
+    this.streamStates = null;
     this.task.emit("abort", this.task.error);
     this.task.emit("status", this.task.status);
   }
@@ -273,6 +578,7 @@ export class TaskRunner<
     this.task.status = TaskStatus.COMPLETED;
     this.abortController = undefined;
     this.nodeProvenance = {};
+    this.streamStates = null;
 
     this.task.emit("complete");
     this.task.emit("status", this.task.status);
@@ -289,6 +595,7 @@ export class TaskRunner<
     this.task.completedAt = new Date();
     this.abortController = undefined;
     this.nodeProvenance = {};
+    this.streamStates = null;
     this.task.emit("skipped");
     this.task.emit("status", this.task.status);
   }
@@ -316,6 +623,7 @@ export class TaskRunner<
       err instanceof TaskError ? err : new TaskFailedError(err?.message || "Task failed");
     this.abortController = undefined;
     this.nodeProvenance = {};
+    this.streamStates = null;
     this.task.emit("error", this.task.error);
     this.task.emit("status", this.task.status);
   }

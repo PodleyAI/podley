@@ -23,6 +23,15 @@ export type TaskEventListeners = {
   /** Fired when a task completes successfully */
   complete: () => void;
 
+  /** Fired when a task begins streaming on a specific output port */
+  stream_start: (portId: string) => void;
+
+  /** Fired when a streaming chunk is produced */
+  stream_chunk: (portId: string, chunk: unknown, aggregate: unknown) => void;
+
+  /** Fired when a task finishes streaming on a specific output port */
+  stream_end: (portId: string, aggregate: unknown) => void;
+
   /** Fired when a task is aborted */
   abort: (error: TaskAbortedError) => void;
 

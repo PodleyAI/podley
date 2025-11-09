@@ -15,6 +15,7 @@ import {
   Type,
 } from "@sinclair/typebox";
 import type { JSONSchema7 } from "json-schema";
+import type { TaskStreamReadiness } from "./TaskStream";
 
 export function TypeReplicateArray<T extends TSchema>(
   type: T,
@@ -56,5 +57,47 @@ export interface DataPortSchema
   readonly anyOf?: readonly DataPortSchema[];
   readonly oneOf?: readonly DataPortSchema[];
   readonly not?: DataPortSchema;
+  readonly ["x-stream"]?: DataPortStreamAnnotation;
   readonly [K: `x-${string}`]: unknown;
+}
+
+export const DATA_PORT_STREAM_METADATA_KEY = "x-stream" as const;
+
+export interface DataPortStreamAnnotation {
+  readonly streaming: true;
+  readonly readiness: TaskStreamReadiness;
+  readonly chunkSchema: DataPortSchema | null;
+}
+
+export function createStreamAnnotation(
+  readiness: TaskStreamReadiness,
+  chunkSchema: DataPortSchema | null = null
+): DataPortStreamAnnotation {
+  return {
+    streaming: true,
+    readiness,
+    chunkSchema,
+  };
+}
+
+export function withStreamAnnotation(
+  schema: DataPortSchema,
+  annotation: DataPortStreamAnnotation
+): DataPortSchema {
+  return {
+    ...schema,
+    [DATA_PORT_STREAM_METADATA_KEY]: annotation,
+  };
+}
+
+export function getStreamAnnotation(schema: DataPortSchema): DataPortStreamAnnotation | null {
+  const annotation = schema[DATA_PORT_STREAM_METADATA_KEY];
+  if (
+    annotation &&
+    typeof annotation === "object" &&
+    (annotation as DataPortStreamAnnotation).streaming === true
+  ) {
+    return annotation as DataPortStreamAnnotation;
+  }
+  return null;
 }

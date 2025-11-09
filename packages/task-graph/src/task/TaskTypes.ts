@@ -7,6 +7,13 @@
 
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import type { Task } from "./Task";
+export type {
+  TaskStream,
+  TaskStreamAccumulator,
+  TaskStreamPortDescriptor,
+  TaskStreamReadiness,
+  TaskStreamingDescriptor,
+} from "./TaskStream";
 
 /**
  * Enum representing the possible states of a task
@@ -24,6 +31,8 @@ export enum TaskStatus {
   SKIPPED = "SKIPPED",
   /** Task is currently running */
   PROCESSING = "PROCESSING",
+  /** Task is emitting streaming output */
+  STREAMING = "STREAMING",
   /** Task has completed successfully */
   COMPLETED = "COMPLETED",
   /** Task is in the process of being aborted */
