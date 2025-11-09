@@ -21,6 +21,7 @@ import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
 import type { DataPortSchema } from "./TaskSchema";
 import {
+  StreamingMode,
   TaskStatus,
   type Provenance,
   type TaskConfig,
@@ -67,6 +68,11 @@ export class Task<
    * Whether this task has side effects
    */
   public static cacheable: boolean = true;
+
+  /**
+   * Whether this task supports streaming
+   */
+  public static streamable?: boolean | StreamingMode;
 
   /**
    * Input schema for this task
@@ -118,6 +124,67 @@ export class Task<
     context: IExecuteReactiveContext
   ): Promise<Output | undefined> {
     return output;
+  }
+
+  /**
+   * Default implementation of executeStream that returns undefined.
+   * Subclasses should override this to provide streaming functionality.
+   *
+   * @param input The input to the task
+   * @param context The execution context
+   * @returns An async iterable iterator that yields partial outputs
+   */
+  public async *executeStream(
+    input: Input,
+    context: IExecuteContext
+  ): AsyncIterableIterator<Partial<Output>> {
+    // Default implementation does nothing
+    // Subclasses should override this to provide streaming
+    return;
+  }
+
+  /**
+   * Checks if this task is streamable
+   * @returns true if the task supports streaming
+   */
+  public isStreamable(): boolean {
+    const staticStreamable = (this.constructor as typeof Task).streamable;
+    const configStreamable = this.config?.streamable;
+
+    if (configStreamable !== undefined) {
+      return configStreamable === true || configStreamable !== StreamingMode.NONE;
+    }
+
+    return staticStreamable === true || staticStreamable !== undefined;
+  }
+
+  /**
+   * Gets the streaming mode for this task
+   * @returns The streaming mode, or StreamingMode.NONE if not streamable
+   */
+  public getStreamingMode(): StreamingMode {
+    const staticStreamable = (this.constructor as typeof Task).streamable;
+    const configStreamable = this.config?.streamable;
+
+    if (configStreamable !== undefined) {
+      if (configStreamable === true) {
+        return StreamingMode.CUSTOM;
+      }
+      if (typeof configStreamable === "string") {
+        return configStreamable;
+      }
+    }
+
+    if (staticStreamable !== undefined) {
+      if (staticStreamable === true) {
+        return StreamingMode.CUSTOM;
+      }
+      if (typeof staticStreamable === "string") {
+        return staticStreamable;
+      }
+    }
+
+    return StreamingMode.NONE;
   }
 
   // ========================================================================

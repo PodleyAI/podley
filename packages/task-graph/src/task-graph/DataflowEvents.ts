@@ -34,6 +34,9 @@ export type DataflowEventListeners = {
 
   /** Fired when a dataflow status changes */
   status: (status: TaskStatus) => void;
+
+  /** Fired when a streaming chunk arrives */
+  stream_chunk: (chunk: unknown) => void;
 };
 /** Union type of all possible dataflow event names */
 

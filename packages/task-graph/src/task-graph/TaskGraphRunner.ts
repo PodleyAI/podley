@@ -19,6 +19,7 @@ import { Provenance, TaskInput, TaskOutput, TaskStatus } from "../task/TaskTypes
 import { DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph, TaskGraphRunConfig } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
+import { ensureTask } from "./Conversions";
 
 export type GraphSingleTaskResult<T> = {
   id: unknown;
@@ -85,6 +86,8 @@ export class TaskGraphRunner {
   protected inProgressTasks: Map<unknown, Promise<TaskOutput>> = new Map();
   protected inProgressFunctions: Map<unknown, Promise<any>> = new Map();
   protected failedTaskErrors: Map<unknown, TaskError> = new Map();
+  /** Map of task IDs to their active streaming iterators */
+  protected streamingTasks: Map<unknown, AsyncIterableIterator<any>> = new Map();
 
   /**
    * Constructor for TaskGraphRunner
@@ -137,17 +140,27 @@ export class TaskGraphRunner {
             // Only filter input for non-root tasks; root tasks get the full input
             const taskInput = isRootTask ? input : this.filterInputForTask(task, input);
 
-            const taskPromise = this.runTaskWithProvenance(
-              task,
-              taskInput,
-              config?.parentProvenance || {}
-            );
-            this.inProgressTasks!.set(task.config.id, taskPromise);
-            const taskResult = await taskPromise;
+            // Check if task is streamable
+            if (task.isStreamable() && task.executeStream) {
+              await this.handleStreamingTask(
+                task,
+                taskInput,
+                config?.parentProvenance || {},
+                results as GraphResultArray<ExecuteOutput>
+              );
+            } else {
+              const taskPromise = this.runTaskWithProvenance(
+                task,
+                taskInput,
+                config?.parentProvenance || {}
+              );
+              this.inProgressTasks!.set(task.config.id, taskPromise);
+              const taskResult = await taskPromise;
 
-            if (this.graph.getTargetDataflows(task.config.id).length === 0) {
-              // we save the results of all the leaves
-              results.push(taskResult as GraphSingleTaskResult<ExecuteOutput>);
+              if (this.graph.getTargetDataflows(task.config.id).length === 0) {
+                // we save the results of all the leaves
+                results.push(taskResult as GraphSingleTaskResult<ExecuteOutput>);
+              }
             }
           } catch (error) {
             this.failedTaskErrors.set(task.config.id, error as TaskError);
@@ -155,6 +168,8 @@ export class TaskGraphRunner {
             this.processScheduler.onTaskCompleted(task.config.id);
             this.pushStatusFromNodeToEdges(this.graph, task);
             this.pushErrorFromNodeToEdges(this.graph, task);
+            // Clean up streaming iterator
+            this.streamingTasks.delete(task.config.id);
           }
         };
 
@@ -171,6 +186,18 @@ export class TaskGraphRunner {
     await Promise.allSettled(Array.from(this.inProgressTasks.values()));
     // Clean up stragglers to avoid unhandled promise rejections
     await Promise.allSettled(Array.from(this.inProgressFunctions.values()));
+    // Clean up streaming tasks
+    for (const [taskId, iterator] of this.streamingTasks.entries()) {
+      // Try to clean up the iterator if it has a return method
+      if (iterator.return) {
+        try {
+          await iterator.return();
+        } catch {
+          // Ignore errors during cleanup
+        }
+      }
+    }
+    this.streamingTasks.clear();
 
     if (this.failedTaskErrors.size > 0) {
       const latestError = this.failedTaskErrors.values().next().value!;
@@ -406,6 +433,126 @@ export class TaskGraphRunner {
   }
 
   /**
+   * Pushes streaming output chunks from a task to its target dataflows
+   * @param node The task that produced the streaming chunk
+   * @param chunk The partial output chunk
+   * @param nodeProvenance The provenance input for the task
+   */
+  protected async pushStreamingOutputFromNodeToEdges(
+    node: ITask,
+    chunk: Partial<TaskOutput>,
+    nodeProvenance?: Provenance
+  ) {
+    const dataflows = this.graph.getTargetDataflows(node.config.id);
+    for (const dataflow of dataflows) {
+      const compatibility = dataflow.semanticallyCompatible(this.graph, dataflow);
+      if (compatibility === "static" || compatibility === "runtime") {
+        dataflow.setStreamingPortData(chunk, nodeProvenance);
+      }
+    }
+  }
+
+  /**
+   * Handles execution of a streaming task
+   * @param task The task to execute
+   * @param input The input to the task
+   * @param parentProvenance The provenance input for the task
+   * @param results Array to collect results
+   */
+  protected async handleStreamingTask<T>(
+    task: ITask,
+    input: TaskInput,
+    parentProvenance: Provenance,
+    results: GraphResultArray<T>
+  ): Promise<void> {
+    // Update provenance for the current task
+    const nodeProvenance = {
+      ...parentProvenance,
+      ...this.getInputProvenance(task),
+      ...task.getProvenance(),
+    };
+    this.provenanceInput.set(task.config.id, nodeProvenance);
+    this.copyInputFromEdgesToNode(task);
+
+    // Notify scheduler that streaming has started
+    if (this.processScheduler instanceof DependencyBasedScheduler) {
+      this.processScheduler.onTaskStreamingStart(task.config.id, task);
+    }
+
+    // Create execution context
+    const context = {
+      signal: this.abortController!.signal,
+      nodeProvenance,
+      updateProgress: async (progress: number, message?: string, ...args: any[]) =>
+        await this.handleProgress(task, progress, message, ...args),
+      own: (i: any) => {
+        const task = ensureTask(i, { isOwned: true });
+        this.graph.addTask(task);
+        return i;
+      },
+      onStreamChunk: async (chunk: Partial<TaskOutput>) => {
+        await this.pushStreamingOutputFromNodeToEdges(task, chunk, nodeProvenance);
+        // Notify scheduler of chunk
+        if (this.processScheduler instanceof DependencyBasedScheduler) {
+          this.processScheduler.onTaskStreamingChunk(task.config.id);
+        }
+      },
+    };
+
+    // Execute streaming task
+    let finalOutput: TaskOutput | undefined;
+    const streamIterator = task.executeStream!(input, context);
+    this.streamingTasks.set(task.config.id, streamIterator);
+
+    try {
+      // Iterate over stream chunks
+      for await (const chunk of streamIterator) {
+        if (this.abortController?.signal.aborted) {
+          break;
+        }
+        // Push chunk to dataflows
+        await this.pushStreamingOutputFromNodeToEdges(task, chunk, nodeProvenance);
+        // Notify scheduler of chunk
+        if (this.processScheduler instanceof DependencyBasedScheduler) {
+          this.processScheduler.onTaskStreamingChunk(task.config.id);
+        }
+        // Accumulate final output
+        if (finalOutput === undefined) {
+          finalOutput = chunk as TaskOutput;
+        } else {
+          // Merge chunks
+          finalOutput = { ...finalOutput, ...chunk };
+        }
+      }
+
+      // Set final output
+      if (finalOutput !== undefined) {
+        task.runOutputData = finalOutput;
+        await this.pushOutputFromNodeToEdges(task, finalOutput, nodeProvenance);
+      }
+
+      // Add to results if leaf node
+      if (this.graph.getTargetDataflows(task.config.id).length === 0 && finalOutput !== undefined) {
+        results.push({
+          id: task.config.id,
+          type: (task.constructor as any).runtype || (task.constructor as any).type,
+          data: finalOutput as T,
+        });
+      }
+    } catch (error) {
+      // Clean up iterator on error
+      if (streamIterator.return) {
+        try {
+          await streamIterator.return();
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Pushes the status of a task to its target edges
    * @param node The task that produced the status
    */
@@ -547,6 +694,7 @@ export class TaskGraphRunner {
     this.inProgressTasks.clear();
     this.inProgressFunctions.clear();
     this.failedTaskErrors.clear();
+    this.streamingTasks.clear();
     this.graph.emit("start");
   }
 

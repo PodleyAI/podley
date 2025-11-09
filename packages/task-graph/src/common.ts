@@ -18,6 +18,8 @@ export * from "./task/TaskRegistry";
 export * from "./task/JobQueueTask";
 export * from "./task/TaskQueueRegistry";
 export * from "./task/ArrayTask";
+export * from "./task/StreamingUtils";
+export * from "./task/StreamingTypes";
 
 export * from "./task-graph/DataflowEvents";
 export * from "./task-graph/Dataflow";

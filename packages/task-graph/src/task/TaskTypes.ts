@@ -64,6 +64,35 @@ export type TaskTypeName = string;
 export type TaskConfig = Partial<IConfig>;
 
 // ========================================================================
+// Streaming Types
+// ========================================================================
+
+/**
+ * Streaming mode for tasks
+ */
+export const StreamingMode = {
+  /** Task does not support streaming */
+  NONE: "NONE",
+  /** Task streams string data */
+  STRING: "STRING",
+  /** Task streams array data */
+  ARRAY: "ARRAY",
+  /** Task streams custom data via async iterable */
+  CUSTOM: "CUSTOM",
+} as const;
+
+export type StreamingMode = (typeof StreamingMode)[keyof typeof StreamingMode];
+
+/**
+ * Type for streamable output values
+ */
+export type StreamableOutput =
+  | string
+  | Array<unknown>
+  | AsyncIterable<unknown>
+  | ReadableStream<unknown>;
+
+// ========================================================================
 // Task Configuration Types
 // ========================================================================
 
@@ -85,6 +114,9 @@ export interface IConfig {
 
   /** Optional cacheable flag to use for this task, overriding the default static property */
   cacheable?: boolean;
+
+  /** Optional streaming mode flag - true enables streaming, or specify a StreamingMode */
+  streamable?: boolean | StreamingMode;
 
   /** Optional user data to use for this task, not used by the task framework except it will be exported as part of the task JSON*/
   extras?: DataPorts;
