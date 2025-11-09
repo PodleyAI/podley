@@ -32,6 +32,7 @@ export const TextGenerationInputSchema = Type.Object({
       description: "The maximum number of tokens to generate",
       minimum: 1,
       maximum: 4096,
+      "x-group": "Configuration",
     })
   ),
   temperature: Type.Optional(
@@ -40,6 +41,7 @@ export const TextGenerationInputSchema = Type.Object({
       description: "The temperature to use for sampling",
       minimum: 0,
       maximum: 2,
+      "x-group": "Configuration",
     })
   ),
   topP: Type.Optional(
@@ -48,6 +50,7 @@ export const TextGenerationInputSchema = Type.Object({
       description: "The top-p value to use for sampling",
       minimum: 0,
       maximum: 1,
+      "x-group": "Configuration",
     })
   ),
   frequencyPenalty: Type.Optional(
@@ -56,6 +59,7 @@ export const TextGenerationInputSchema = Type.Object({
       description: "The frequency penalty to use",
       minimum: -2,
       maximum: 2,
+      "x-group": "Configuration",
     })
   ),
   presencePenalty: Type.Optional(
@@ -64,6 +68,7 @@ export const TextGenerationInputSchema = Type.Object({
       description: "The presence penalty to use",
       minimum: -2,
       maximum: 2,
+      "x-group": "Configuration",
     })
   ),
 });

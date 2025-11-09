@@ -57,5 +57,4 @@ export interface DataPortSchema
   readonly oneOf?: readonly DataPortSchema[];
   readonly not?: DataPortSchema;
   readonly [K: `x-${string}`]: unknown;
-  readonly [K: `x_${string}`]: unknown;
 }

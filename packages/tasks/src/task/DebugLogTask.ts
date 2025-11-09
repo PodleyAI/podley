@@ -21,20 +21,17 @@ const DEFAULT_LOG_LEVEL: LogLevel = "log";
 
 const inputSchema = Type.Object({
   console: Type.Optional(
-    Type.String({
+    Type.Any({
       title: "Message",
       description: "The message to log",
     })
   ),
   log_level: Type.Optional(
-    Type.Union(
-      log_levels.map((level) => Type.Literal(level)),
-      {
-        title: "Log Level",
-        description: "The log level to use",
-        default: DEFAULT_LOG_LEVEL,
-      }
-    )
+    Type.Enum(Object.fromEntries(log_levels.map((level) => [level, level])), {
+      title: "Log Level",
+      description: "The log level to use",
+      default: DEFAULT_LOG_LEVEL,
+    })
   ),
 });
 

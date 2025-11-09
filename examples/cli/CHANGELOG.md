@@ -1,5 +1,19 @@
 # @podley/cli
 
+## 0.0.35
+
+### Patch Changes
+
+- Enhance TextGenerationTask schema with configuration grouping and update DebugLogTask input schema for log level handling
+- Updated dependencies
+  - @podley/task-graph@0.0.35
+  - @podley/tasks@0.0.35
+  - @podley/ai@0.0.35
+  - @podley/ai-provider@0.0.35
+  - @podley/storage@0.0.35
+  - @podley/test@0.0.35
+  - @podley/util@0.0.35
+
 ## 0.0.34
 
 ### Patch Changes

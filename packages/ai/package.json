@@ -1,7 +1,7 @@
 {
   "name": "@podley/ai",
   "type": "module",
-  "version": "0.0.34",
+  "version": "0.0.35",
   "description": "Core AI functionality for Podley, including task execution, model management, and AI pipeline orchestration.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",

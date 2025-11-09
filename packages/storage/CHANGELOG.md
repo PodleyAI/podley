@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.35
+
+### Patch Changes
+
+- Enhance TextGenerationTask schema with configuration grouping and update DebugLogTask input schema for log level handling
+- Updated dependencies
+  - @podley/sqlite@0.0.35
+  - @podley/util@0.0.35
+
 ## 0.0.34
 
 ### Patch Changes
