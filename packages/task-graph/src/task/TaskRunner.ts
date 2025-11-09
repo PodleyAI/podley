@@ -173,6 +173,11 @@ export class TaskRunner<
    * Protected method to execute a task by delegating back to the task itself.
    */
   protected async executeTask(input: Input): Promise<Output | undefined> {
+    // Check if task supports streaming and has executeStream method
+    if (this.task.isStreamable() && this.task.executeStream) {
+      return await this.executeTaskStream(input);
+    }
+
     const result = await this.task.execute(input, {
       signal: this.abortController!.signal,
       updateProgress: this.handleProgress.bind(this),
@@ -180,6 +185,59 @@ export class TaskRunner<
       own: this.own,
     });
     return await this.executeTaskReactive(input, result || ({} as Output));
+  }
+
+  /**
+   * Executes a task in streaming mode
+   * @param input The input to the task
+   * @returns The final accumulated output
+   */
+  protected async executeTaskStream(input: Input): Promise<Output | undefined> {
+    if (!this.task.executeStream) {
+      // Fallback to regular execute if executeStream is not available
+      return await this.executeTask(input);
+    }
+
+    const context = {
+      signal: this.abortController!.signal,
+      updateProgress: this.handleProgress.bind(this),
+      nodeProvenance: this.nodeProvenance,
+      own: this.own,
+      onStreamChunk: async (chunk: Partial<Output>) => {
+        // Update progress during streaming
+        await this.handleProgress(this.task.progress, "Streaming...");
+      },
+    };
+
+    let finalOutput: Output | undefined;
+    const streamIterator = this.task.executeStream(input, context);
+
+    try {
+      // Iterate over stream chunks and accumulate
+      for await (const chunk of streamIterator) {
+        if (this.abortController?.signal.aborted) {
+          break;
+        }
+        // Merge chunks into final output
+        if (finalOutput === undefined) {
+          finalOutput = chunk as Output;
+        } else {
+          finalOutput = { ...finalOutput, ...chunk } as Output;
+        }
+      }
+    } catch (error) {
+      // Clean up iterator on error
+      if (streamIterator.return) {
+        try {
+          await streamIterator.return();
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+      throw error;
+    }
+
+    return await this.executeTaskReactive(input, finalOutput || ({} as Output));
   }
 
   /**

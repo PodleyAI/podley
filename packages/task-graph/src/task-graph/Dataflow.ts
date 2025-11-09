@@ -53,12 +53,18 @@ export class Dataflow {
   public provenance: Provenance = {};
   public status: TaskStatus = TaskStatus.PENDING;
   public error: TaskError | undefined;
+  /** Streaming value for incremental updates */
+  public streamingValue: AsyncIterable<any> | null = null;
+  /** Whether this dataflow is currently streaming */
+  public isStreaming: boolean = false;
 
   public reset() {
     this.status = TaskStatus.PENDING;
     this.error = undefined;
     this.value = undefined;
     this.provenance = {};
+    this.streamingValue = null;
+    this.isStreaming = false;
     this.emit("reset");
     this.emit("status", this.status);
   }
@@ -98,6 +104,64 @@ export class Dataflow {
       this.value = entireDataBlock[this.sourceTaskPortId];
     }
     if (nodeProvenance) this.provenance = nodeProvenance;
+    // Clear streaming state when complete data is set
+    this.isStreaming = false;
+    this.streamingValue = null;
+  }
+
+  /**
+   * Sets streaming port data for incremental updates
+   * @param chunk Partial data chunk from streaming task
+   * @param nodeProvenance Optional provenance information
+   */
+  setStreamingPortData(chunk: any, nodeProvenance?: Provenance) {
+    if (!this.isStreaming) {
+      this.isStreaming = true;
+      this.status = TaskStatus.PROCESSING;
+      this.emit("status", this.status);
+    }
+
+    if (this.sourceTaskPortId === DATAFLOW_ALL_PORTS) {
+      // Merge chunk into existing value or set as new
+      if (this.value === undefined) {
+        this.value = chunk;
+      } else if (typeof chunk === "object" && chunk !== null && !Array.isArray(chunk)) {
+        this.value = { ...this.value, ...chunk };
+      } else {
+        // For non-object chunks, replace or append based on type
+        this.value = chunk;
+      }
+    } else if (this.sourceTaskPortId === DATAFLOW_ERROR_PORT) {
+      this.error = chunk;
+    } else {
+      // Merge chunk property into existing value
+      const chunkValue = chunk[this.sourceTaskPortId];
+      if (chunkValue !== undefined) {
+        if (this.value === undefined) {
+          this.value = chunkValue;
+        } else if (typeof chunkValue === "object" && chunkValue !== null && !Array.isArray(chunkValue)) {
+          this.value = { ...this.value, ...chunkValue };
+        } else {
+          this.value = chunkValue;
+        }
+      }
+    }
+
+    if (nodeProvenance) {
+      this.provenance = { ...this.provenance, ...nodeProvenance };
+    }
+
+    this.emit("stream_chunk", chunk);
+  }
+
+  /**
+   * Gets streaming port data as an async iterable
+   * @returns AsyncIterable of streaming chunks
+   */
+  async *getStreamingPortData(): AsyncIterable<any> {
+    if (this.streamingValue) {
+      yield* this.streamingValue;
+    }
   }
 
   getPortData(): TaskOutput {

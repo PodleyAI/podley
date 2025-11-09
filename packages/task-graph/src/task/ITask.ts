@@ -21,7 +21,14 @@ import type {
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
 import type { DataPortSchema } from "./TaskSchema";
-import type { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
+import type {
+  Provenance,
+  StreamingMode,
+  TaskConfig,
+  TaskInput,
+  TaskOutput,
+  TaskStatus,
+} from "./TaskTypes";
 
 /**
  * Context for task execution
@@ -31,6 +38,8 @@ export interface IExecuteContext {
   nodeProvenance: Provenance;
   updateProgress: (progress: number, message?: string, ...args: any[]) => Promise<void>;
   own: <T extends ITask | ITaskGraph | IWorkflow>(i: T) => T;
+  /** Optional callback for streaming chunks */
+  onStreamChunk?: (chunk: Partial<TaskOutput>) => Promise<void>;
 }
 
 export type IExecuteReactiveContext = Pick<IExecuteContext, "own">;
@@ -60,6 +69,7 @@ export interface ITaskStaticProperties {
   readonly title?: string;
   readonly description?: string;
   readonly cacheable: boolean;
+  readonly streamable?: boolean | StreamingMode;
   readonly inputSchema: () => DataPortSchema;
   readonly outputSchema: () => DataPortSchema;
 }
@@ -78,6 +88,14 @@ export interface ITaskExecution<
     output: Output,
     context: IExecuteReactiveContext
   ): Promise<Output | undefined>;
+  /**
+   * Optional streaming execution method
+   * Returns an async iterable iterator that yields partial outputs
+   */
+  executeStream?(
+    input: Input,
+    context: IExecuteContext
+  ): AsyncIterableIterator<Partial<Output>>;
 }
 
 /**
