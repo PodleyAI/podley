@@ -60,9 +60,13 @@ export class ArrayTask<
     const keys = Object.keys(inputSchema.properties || {});
     for (const inputId of keys) {
       const inputValue = this.runInputData[inputId];
-      const inputDef = (inputSchema.properties as any)?.[inputId];
+      const inputDef = inputSchema.properties?.[inputId];
 
-      if (inputDef?.replicate === true && Array.isArray(inputValue) && inputValue.length > 1) {
+      if (
+        inputDef?.["x-replicate"] === true &&
+        Array.isArray(inputValue) &&
+        inputValue.length > 1
+      ) {
         arrayInputs.set(inputId, inputValue);
         hasArrayInputs = true;
       }

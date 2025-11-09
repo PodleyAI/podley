@@ -70,11 +70,11 @@ class MyTask extends Task {
 ### GraphAsTask
 
 - GraphAsTask tasks are tasks that contain other tasks. They are represented as an internal TaskGraph.
-- A ArrayTask is a compound task that can run a task as normal, or if the inputs are an array and the input definition has isArray="replicate" defined for that input, then the task will run parallel copies with a subGraph.
+- A ArrayTask is a compound task that can run a task as normal, or if the inputs are an array and the input definition has x-isArray="replicate" defined for that input, then the task will run parallel copies with a subGraph.
 
 ### ArrayTask
 
-- ArrayTask is a task that can run a task as normal, or if the inputs are an arryay and the input definition has isArray="replicate", then the task will run parallel copies with a subGraph.
+- ArrayTask is a task that can run a task as normal, or if the inputs are an arryay and the input definition has x-isArray="replicate", then the task will run parallel copies with a subGraph.
 - The subGraph is a TaskGraph that is created from the inputs of the task.
 - The results of the subGraph are combined such that the outputs are turned into arrays.
 

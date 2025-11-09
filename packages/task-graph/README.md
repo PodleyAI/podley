@@ -697,14 +697,14 @@ class ArrayProcessorTask extends ArrayTask<{ items: string[] }, { results: strin
   static inputSchema() {
     return Type.Object({
       items: Type.Array(Type.String(), {
-        isArray: "replicate", // Enable array processing
+        "x-isArray": "replicate", // Enable array processing
         description: "Items to process",
       }),
     });
   }
 
   async execute(input: { items: string[] }) {
-    // When isArray="replicate", this runs in parallel for each item
+    // When x-isArray="replicate", this runs in parallel for each item
     return { results: input.items.map((item) => item.toUpperCase()) };
   }
 }

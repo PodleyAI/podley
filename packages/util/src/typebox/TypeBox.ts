@@ -62,11 +62,11 @@ export function forwardAnnotations(schema: TSchema, annotations: Record<string, 
     ...(schema.title ? { title: schema.title } : {}),
     ...(schema.description ? { description: schema.description } : {}),
     ...(schema.default ? { default: schema.default } : {}),
-    ...(schema.replicate ? { replicate: schema.replicate } : {}),
-    ...(schema.semantic ? { semantic: schema.semantic } : {}),
-    ...(schema.optional ? { optional: schema.optional } : {}),
-    ...(schema.isArray ? { isArray: schema.isArray } : {}),
-    ...(schema.isNullable ? { isNullable: schema.isNullable } : {}),
+    ...(schema["x-replicate"] ? { ["x-replicate"]: schema["x-replicate"] } : {}),
+    ...(schema["x-semantic"] ? { ["x-semantic"]: schema["x-semantic"] } : {}),
+    ...(schema["x-optional"] ? { ["x-optional"]: schema["x-optional"] } : {}),
+    ...(schema["x-isArray"] ? { ["x-isArray"]: schema["x-isArray"] } : {}),
+    ...(schema["x-isNullable"] ? { ["x-isNullable"]: schema["x-isNullable"] } : {}),
     ...annotations,
   };
 }
@@ -104,7 +104,7 @@ export function simplifySchema(
       // This is for OptionalArray and ReplicatedArray
       annotations = forwardAnnotations(nonArrayMembers[0], {
         ...annotations,
-        isArray: true,
+        "x-isArray": true,
       });
       return {
         ...nonArrayMembers[0],
@@ -160,5 +160,5 @@ export function simplifySchema(
  */
 export function schemaSemantic(schema: TSchema): string | undefined {
   const simplified = simplifySchema(schema);
-  return simplified.semantic;
+  return simplified["x-semantic"];
 }

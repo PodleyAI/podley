@@ -1,6 +1,6 @@
+import { simplifySchema } from "@podley/util";
 import { OptionalKind, Type } from "@sinclair/typebox";
 import { describe, expect, test } from "bun:test";
-import { simplifySchema } from "@podley/util";
 
 describe("simplifySchema", () => {
   test("should throw error for undefined schema", () => {
@@ -15,7 +15,7 @@ describe("simplifySchema", () => {
   test("should simplify union of base type and array of same type", () => {
     const schema = Type.Union([Type.String(), Type.Array(Type.String())]);
     const result = simplifySchema(schema);
-    expect(result).toEqual(Type.String({ isArray: true }));
+    expect(result).toEqual(Type.String({ "x-isArray": true }));
   });
 
   test("should preserve annotations when simplifying union", () => {
@@ -28,7 +28,7 @@ describe("simplifySchema", () => {
       Type.String({
         title: "MyString",
         description: "A string or array of strings",
-        isArray: true,
+        "x-isArray": true,
       })
     );
     const schema2 = Type.Union([
@@ -43,7 +43,7 @@ describe("simplifySchema", () => {
       Type.String({
         title: "MyString",
         description: "A string or array of strings",
-        isArray: true,
+        "x-isArray": true,
       })
     );
   });
@@ -67,7 +67,7 @@ describe("simplifySchema", () => {
     const result = simplifySchema(schema);
     expect(result).toEqual(
       Type.Object({
-        name: Type.String({ isArray: true }),
+        name: Type.String({ "x-isArray": true }),
         age: Type.Number({ isNullable: true, default: null }),
       })
     );
@@ -76,7 +76,7 @@ describe("simplifySchema", () => {
   test("should recursively simplify array items", () => {
     const schema = Type.Array(Type.Union([Type.String(), Type.Array(Type.String())]));
     const result = simplifySchema(schema);
-    expect(result).toEqual(Type.Array(Type.String({ isArray: true })));
+    expect(result).toEqual(Type.Array(Type.String({ "x-isArray": true })));
   });
 
   test("should preserve optional flag and default values", () => {
@@ -107,8 +107,8 @@ describe("simplifySchema", () => {
     expect(result).toEqual(
       Type.Object({
         user: Type.Object({
-          name: Type.String({ isArray: true }),
-          addresses: Type.Array(Type.String({ isArray: true })),
+          name: Type.String({ "x-isArray": true }),
+          addresses: Type.Array(Type.String({ "x-isArray": true })),
         }),
       })
     );

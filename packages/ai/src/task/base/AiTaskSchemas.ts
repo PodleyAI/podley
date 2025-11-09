@@ -56,7 +56,7 @@ export interface TTypeModel extends TSchema {
   [Kind]: "TypeModel";
   static: string;
   type: "string";
-  semantic: TypeModelSymantic;
+  "x-semantic": TypeModelSymantic;
 }
 
 export function TypeModel(semantic: TypeModelSymantic = "model", options: SchemaOptions = {}) {
@@ -79,7 +79,7 @@ export function TypeModel(semantic: TypeModelSymantic = "model", options: Schema
     title: "Model",
     description: `The model ${taskName ? `for ${taskName} ` : "to use"}`,
     ...options,
-    semantic,
+    "x-semantic": semantic,
     [Kind]: "TypeModel",
     type: "string",
   } as TTypeModel;
