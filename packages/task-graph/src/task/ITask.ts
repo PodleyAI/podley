@@ -21,7 +21,15 @@ import type {
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
 import type { DataPortSchema } from "./TaskSchema";
-import type { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
+import type {
+  Provenance,
+  TaskConfig,
+  TaskInput,
+  TaskOutput,
+  TaskStatus,
+  TaskStreamPortDescriptor,
+  TaskStreamingDescriptor,
+} from "./TaskTypes";
 
 /**
  * Context for task execution
@@ -31,6 +39,12 @@ export interface IExecuteContext {
   nodeProvenance: Provenance;
   updateProgress: (progress: number, message?: string, ...args: any[]) => Promise<void>;
   own: <T extends ITask | ITaskGraph | IWorkflow>(i: T) => T;
+  pushChunk: (portId: string, chunk: unknown) => Promise<void>;
+  closeStream: (portId: string) => Promise<void>;
+  attachStreamController: <Chunk>(
+    portId: string,
+    controller: ReadableStreamDefaultController<Chunk>
+  ) => ReadableStreamDefaultController<Chunk>;
 }
 
 export type IExecuteReactiveContext = Pick<IExecuteContext, "own">;
@@ -47,6 +61,19 @@ export interface IRunConfig {
     message?: string,
     ...args: any[]
   ) => Promise<void>;
+  onStreamStart?: (
+    task: ITask,
+    portId: string,
+    descriptor: TaskStreamPortDescriptor<any, any>
+  ) => Promise<void> | void;
+  onStreamChunk?: (
+    task: ITask,
+    portId: string,
+    chunk: unknown,
+    aggregate: unknown
+  ) => Promise<void> | void;
+  onStreamEnd?: (task: ITask, portId: string, aggregate: unknown) => Promise<void> | void;
+  onStreamError?: (task: ITask, portId: string, error: TaskError) => Promise<void> | void;
 }
 
 /**
@@ -62,6 +89,7 @@ export interface ITaskStaticProperties {
   readonly cacheable: boolean;
   readonly inputSchema: () => DataPortSchema;
   readonly outputSchema: () => DataPortSchema;
+  readonly streaming: () => TaskStreamingDescriptor;
 }
 
 /**
@@ -109,6 +137,7 @@ export interface ITaskIO<Input extends TaskInput> {
   get type(): string; // gets local access for static type property
   get category(): string; // gets local access for static category property
   get title(): string; // gets local access for static title property
+  streaming(): TaskStreamingDescriptor;
 
   setDefaults(defaults: Record<string, any>): void;
   resetInputData(): void;

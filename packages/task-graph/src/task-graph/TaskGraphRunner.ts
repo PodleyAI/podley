@@ -15,7 +15,13 @@ import {
 import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { ITask } from "../task/ITask";
 import { TaskAbortedError, TaskConfigurationError, TaskError } from "../task/TaskError";
-import { Provenance, TaskInput, TaskOutput, TaskStatus } from "../task/TaskTypes";
+import {
+  Provenance,
+  TaskInput,
+  TaskOutput,
+  TaskStatus,
+  type TaskStreamPortDescriptor,
+} from "../task/TaskTypes";
 import { DATAFLOW_ALL_PORTS } from "./Dataflow";
 import { TaskGraph, TaskGraphRunConfig } from "./TaskGraph";
 import { DependencyBasedScheduler, TopologicalScheduler } from "./TaskGraphScheduler";
@@ -427,6 +433,61 @@ export class TaskGraphRunner {
     });
   }
 
+  private handleStreamStartForTask(
+    task: ITask,
+    portId: string,
+    descriptor: TaskStreamPortDescriptor<any, any>,
+    provenance: Provenance
+  ): void {
+    for (const dataflow of this.getOutgoingDataflowsForPort(task, portId)) {
+      dataflow.beginStream(descriptor, provenance);
+    }
+  }
+
+  private handleStreamChunkForTask(
+    task: ITask,
+    portId: string,
+    chunk: unknown,
+    aggregate: unknown,
+    provenance: Provenance
+  ): void {
+    for (const dataflow of this.getOutgoingDataflowsForPort(task, portId)) {
+      const readinessTriggered = dataflow.pushStreamChunk(chunk, aggregate, provenance);
+      if (readinessTriggered) {
+        this.processScheduler.onDataflowReady(dataflow.targetTaskId);
+      }
+    }
+  }
+
+  private handleStreamEndForTask(
+    task: ITask,
+    portId: string,
+    aggregate: unknown,
+    provenance: Provenance
+  ): void {
+    for (const dataflow of this.getOutgoingDataflowsForPort(task, portId)) {
+      const readinessTriggered = dataflow.endStream(aggregate, provenance);
+      if (readinessTriggered) {
+        this.processScheduler.onDataflowReady(dataflow.targetTaskId);
+      }
+    }
+  }
+
+  private handleStreamErrorForTask(task: ITask, portId: string, error: TaskError): void {
+    for (const dataflow of this.getOutgoingDataflowsForPort(task, portId)) {
+      dataflow.failStream(error);
+    }
+  }
+
+  private getOutgoingDataflowsForPort(task: ITask, portId: string) {
+    return this.graph
+      .getTargetDataflows(task.config.id)
+      .filter(
+        (dataflow) =>
+          dataflow.sourceTaskPortId === portId || dataflow.sourceTaskPortId === DATAFLOW_ALL_PORTS
+      );
+  }
+
   /**
    * Runs a task with provenance input
    * @param task The task to run
@@ -447,12 +508,24 @@ export class TaskGraphRunner {
     this.provenanceInput.set(task.config.id, nodeProvenance);
     this.copyInputFromEdgesToNode(task);
 
-    const results = await task.runner.run(input, {
-      nodeProvenance,
-      outputCache: this.outputCache,
-      updateProgress: async (task: ITask, progress: number, message?: string, ...args: any[]) =>
-        await this.handleProgress(task, progress, message, ...args),
-    });
+      const results = await task.runner.run(input, {
+        nodeProvenance,
+        outputCache: this.outputCache,
+        updateProgress: async (task: ITask, progress: number, message?: string, ...args: any[]) =>
+          await this.handleProgress(task, progress, message, ...args),
+        onStreamStart: async (_task, portId, descriptor) => {
+          this.handleStreamStartForTask(task, portId, descriptor, nodeProvenance);
+        },
+        onStreamChunk: async (_task, portId, chunk, aggregate) => {
+          this.handleStreamChunkForTask(task, portId, chunk, aggregate, nodeProvenance);
+        },
+        onStreamEnd: async (_task, portId, aggregate) => {
+          this.handleStreamEndForTask(task, portId, aggregate, nodeProvenance);
+        },
+        onStreamError: async (_task, portId, error) => {
+          this.handleStreamErrorForTask(task, portId, error);
+        },
+      });
 
     await this.pushOutputFromNodeToEdges(task, results, nodeProvenance);
 

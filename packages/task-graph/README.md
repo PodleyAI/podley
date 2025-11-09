@@ -688,6 +688,61 @@ try {
 
 ## Advanced Patterns
 
+### Streaming Outputs
+
+Tasks can stream partial results to downstream consumers. Declare stream-capable ports with `static streaming()` and use the execution context helpers to emit chunks.
+
+```typescript
+import {
+  Task,
+  type IExecuteContext,
+  type DataPortSchema,
+  type TaskStreamingDescriptor,
+  createStringAccumulator,
+} from "@podley/task-graph";
+import { Type } from "@sinclair/typebox";
+
+class StreamingTextTask extends Task<{ chunks: string[] }, { output: string }> {
+  static readonly type = "StreamingTextTask";
+
+  static inputSchema() {
+    return Type.Object({
+      chunks: Type.Array(Type.String({ description: "Chunk to emit" })),
+    });
+  }
+
+  static outputSchema() {
+    return Type.Object({
+      output: Type.String({ description: "Concatenated output" }),
+    });
+  }
+
+  static streaming(): TaskStreamingDescriptor {
+    return {
+      outputs: {
+        output: {
+          chunkSchema: Type.String({
+            description: "Live chunk emitted while processing",
+          }) as DataPortSchema,
+          readiness: "first-chunk",
+          accumulator: createStringAccumulator(),
+        },
+      },
+    };
+  }
+
+  async execute(input: { chunks: string[] }, context: IExecuteContext) {
+    for (const chunk of input.chunks) {
+      await context.pushChunk("output", chunk);
+    }
+    await context.closeStream("output");
+    return { output: input.chunks.join("") };
+  }
+}
+```
+
+`readiness: "first-chunk"` allows dependent tasks to begin as soon as the first chunk is available. Use `"final"` to defer dependants until the stream closes. The execution context also exposes `attachStreamController` so existing `ReadableStream` producers can be bridged into the task graph without rewriting streaming logic.
+
 ### Array Tasks (Parallel Processing)
 
 ```typescript

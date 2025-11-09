@@ -20,6 +20,15 @@ export type DataflowEventListeners = {
   /** Fired when a source task completes successfully */
   complete: () => void;
 
+  /** Fired when a dataflow begins streaming */
+  stream_start: () => void;
+
+  /** Fired when a streaming chunk traverses the dataflow */
+  stream_chunk: (chunk: unknown, aggregate: unknown) => void;
+
+  /** Fired when streaming ends */
+  stream_end: (aggregate: unknown) => void;
+
   /** Fired when a source task is skipped */
   skipped: () => void;
 

@@ -29,3 +29,10 @@ Tasks may be posted to a job queue (see `JobQueueTask`) and run by a job queue r
 ## Compound Task
 
 A compound task is `GraphAsTask` that contains a group of tasks (in DAG format) chained together to look like a single task.
+
+## Streaming Between Tasks
+
+- Tasks can stream partial results to dependants without waiting for `execute()` to finish by declaring stream-capable outputs via the static `streaming()` descriptor.
+- Ports marked with readiness `first-chunk` allow downstream tasks to begin work as soon as the first chunk is emitted. Ports with readiness `final` defer dependants until streaming completes.
+- `IExecuteContext` now exposes `pushChunk`, `closeStream`, and `attachStreamController` helpers so tasks can enqueue chunks directly or adapt custom `ReadableStream` producers.
+- Dataflows track streaming state and expose async iterables so consumers can react to chunk updates while still receiving the final aggregated output when the stream ends.

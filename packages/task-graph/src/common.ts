@@ -12,6 +12,7 @@ export * from "./task/ITask";
 export * from "./task/TaskEvents";
 export * from "./task/TaskJSON";
 export * from "./task/Task";
+export * from "./task/TaskStream";
 export * from "./task/GraphAsTask";
 export * from "./task/GraphAsTaskRunner";
 export * from "./task/TaskRegistry";

@@ -27,6 +27,7 @@ import {
   type TaskInput,
   type TaskOutput,
   type TaskTypeName,
+  type TaskStreamingDescriptor,
 } from "./TaskTypes";
 
 /**
@@ -82,6 +83,14 @@ export class Task<
    */
   public static outputSchema(): DataPortSchema {
     return Type.Object({}) as DataPortSchema;
+  }
+
+  /**
+   * Streaming metadata for this task
+   * Returns descriptors for stream-capable outputs
+   */
+  public static streaming(): TaskStreamingDescriptor {
+    return { outputs: {} };
   }
 
   // ========================================================================
@@ -197,6 +206,10 @@ export class Task<
    */
   public outputSchema(): DataPortSchema {
     return (this.constructor as typeof Task).outputSchema();
+  }
+
+  public streaming(): TaskStreamingDescriptor {
+    return (this.constructor as typeof Task).streaming();
   }
 
   public get type(): TaskTypeName {

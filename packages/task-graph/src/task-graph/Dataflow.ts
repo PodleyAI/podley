@@ -9,7 +9,13 @@ import { areSemanticallyCompatible, EventEmitter } from "@podley/util";
 import { Type } from "@sinclair/typebox";
 import { TaskError } from "../task/TaskError";
 import { DataflowJson } from "../task/TaskJSON";
-import { Provenance, TaskIdType, TaskOutput, TaskStatus } from "../task/TaskTypes";
+import {
+  Provenance,
+  TaskIdType,
+  TaskOutput,
+  TaskStatus,
+  type TaskStreamPortDescriptor,
+} from "../task/TaskTypes";
 import {
   DataflowEventListener,
   DataflowEventListeners,
@@ -22,6 +28,26 @@ export type DataflowIdType = `${string}[${string}] ==> ${string}[${string}]`;
 
 export const DATAFLOW_ALL_PORTS = "*";
 export const DATAFLOW_ERROR_PORT = "[error]";
+
+interface StreamListener {
+  index: number;
+  pending:
+    | {
+        resolve: (result: IteratorResult<unknown>) => void;
+        reject: (error: unknown) => void;
+      }
+    | null;
+  closed: boolean;
+}
+
+interface DataflowStreamState {
+  descriptor: TaskStreamPortDescriptor<any, any>;
+  history: unknown[];
+  listeners: Set<StreamListener>;
+  closed: boolean;
+  error: TaskError | null;
+  readinessReached: boolean;
+}
 
 /**
  * Represents a data flow between two tasks, indicating how one task's output is used as input for another task
@@ -53,12 +79,14 @@ export class Dataflow {
   public provenance: Provenance = {};
   public status: TaskStatus = TaskStatus.PENDING;
   public error: TaskError | undefined;
+  private streamState: DataflowStreamState | null = null;
 
   public reset() {
     this.status = TaskStatus.PENDING;
     this.error = undefined;
     this.value = undefined;
     this.provenance = {};
+    this.streamState = null;
     this.emit("reset");
     this.emit("status", this.status);
   }
@@ -69,6 +97,9 @@ export class Dataflow {
     switch (status) {
       case TaskStatus.PROCESSING:
         this.emit("start");
+        break;
+      case TaskStatus.STREAMING:
+        this.emit("stream_start");
         break;
       case TaskStatus.COMPLETED:
         this.emit("complete");
@@ -108,6 +139,184 @@ export class Dataflow {
     } else {
       return { [this.targetTaskPortId]: this.value };
     }
+  }
+
+  public beginStream(
+    descriptor: TaskStreamPortDescriptor<any, any>,
+    provenance?: Provenance
+  ): void {
+    if (!this.streamState) {
+      this.streamState = {
+        descriptor,
+        history: [],
+        listeners: new Set(),
+        closed: false,
+        error: null,
+        readinessReached: false,
+      };
+    }
+    if (provenance) {
+      this.provenance = provenance;
+    }
+    this.setStatus(TaskStatus.STREAMING);
+  }
+
+  public pushStreamChunk(
+    chunk: unknown,
+    aggregate: unknown,
+    provenance?: Provenance
+  ): boolean {
+    const state = this.ensureActiveStream();
+    state.history.push(chunk);
+    let readinessTriggered = false;
+    if (!state.readinessReached && state.descriptor.readiness === "first-chunk") {
+      state.readinessReached = true;
+      readinessTriggered = true;
+    }
+    if (provenance) {
+      this.provenance = provenance;
+    }
+    this.value = aggregate;
+    this.emit("stream_chunk", chunk, aggregate);
+    this.flushStreamListeners();
+    return readinessTriggered;
+  }
+
+  public endStream(finalValue: unknown, provenance?: Provenance): boolean {
+    const state = this.ensureActiveStream();
+    state.closed = true;
+    let readinessTriggered = false;
+    if (state.descriptor.readiness === "final") {
+      state.readinessReached = true;
+      readinessTriggered = true;
+    }
+    if (provenance) {
+      this.provenance = provenance;
+    }
+    this.value = finalValue;
+    this.emit("stream_end", finalValue);
+    this.flushStreamListeners();
+    return readinessTriggered;
+  }
+
+  public failStream(error: TaskError): void {
+    const state = this.ensureActiveStream();
+    state.error = error;
+    state.closed = true;
+    this.flushStreamListeners();
+    this.emit("error", error);
+  }
+
+  public streamIterator(): AsyncIterableIterator<unknown> {
+    const state = this.ensureActiveStream();
+    const listener: StreamListener = {
+      index: 0,
+      pending: null,
+      closed: false,
+    };
+    state.listeners.add(listener);
+    const iterator: AsyncIterableIterator<unknown> = {
+      next: () => this.resolveStreamListener(listener),
+      return: () => {
+        this.cleanupStreamListener(listener, false);
+        return Promise.resolve({ value: undefined, done: true });
+      },
+      throw: (error?: unknown) => {
+        this.cleanupStreamListener(listener, false);
+        return Promise.reject(error);
+      },
+      [Symbol.asyncIterator](): AsyncIterableIterator<unknown> {
+        return this;
+      },
+    };
+    this.flushStreamListener(listener);
+    return iterator;
+  }
+
+  public hasActiveStream(): boolean {
+    return this.streamState !== null && !this.streamState.closed;
+  }
+
+  public streamReadinessReached(): boolean {
+    return this.streamState?.readinessReached ?? false;
+  }
+
+  public getStreamDescriptor(): TaskStreamPortDescriptor<any, any> | null {
+    return this.streamState?.descriptor ?? null;
+  }
+
+  private ensureActiveStream(): DataflowStreamState {
+    if (!this.streamState) {
+      throw new TaskError("Streaming state has not been initialised for this dataflow.");
+    }
+    return this.streamState;
+  }
+
+  private resolveStreamListener(
+    listener: StreamListener
+  ): Promise<IteratorResult<unknown>> {
+    return new Promise((resolve, reject) => {
+      listener.pending = { resolve, reject };
+      this.flushStreamListener(listener);
+    });
+  }
+
+  private flushStreamListeners(): void {
+    if (!this.streamState) return;
+    for (const listener of Array.from(this.streamState.listeners)) {
+      this.flushStreamListener(listener);
+    }
+  }
+
+  private flushStreamListener(listener: StreamListener): void {
+    const state = this.streamState;
+    if (!state) return;
+    if (listener.closed) {
+      if (listener.pending) {
+        listener.pending.resolve({ value: undefined, done: true });
+        listener.pending = null;
+      }
+      state.listeners.delete(listener);
+      return;
+    }
+    if (!listener.pending) {
+      return;
+    }
+    if (listener.index < state.history.length) {
+      const value = state.history[listener.index++];
+      const { resolve } = listener.pending;
+      listener.pending = null;
+      resolve({ value, done: false });
+      return;
+    }
+    if (state.error) {
+      const { reject } = listener.pending;
+      listener.pending = null;
+      listener.closed = true;
+      reject(state.error);
+      state.listeners.delete(listener);
+      return;
+    }
+    if (state.closed) {
+      const { resolve } = listener.pending;
+      listener.pending = null;
+      listener.closed = true;
+      resolve({ value: undefined, done: true });
+      state.listeners.delete(listener);
+    }
+  }
+
+  private cleanupStreamListener(listener: StreamListener, settle: boolean): void {
+    const state = this.streamState;
+    if (!state) return;
+    if (listener.pending) {
+      if (settle) {
+        listener.pending.resolve({ value: undefined, done: true });
+      }
+      listener.pending = null;
+    }
+    listener.closed = true;
+    state.listeners.delete(listener);
   }
 
   toJSON(): DataflowJson {

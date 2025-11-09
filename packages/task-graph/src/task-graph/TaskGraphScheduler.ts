@@ -25,6 +25,12 @@ export interface ITaskGraphScheduler {
   onTaskCompleted(taskId: unknown): void;
 
   /**
+   * Notifies the scheduler that a dataflow became ready for consumption
+   * @param taskId The ID of the task that may now be ready
+   */
+  onDataflowReady(taskId: unknown): void;
+
+  /**
    * Resets the scheduler state
    */
   reset(): void;
@@ -54,6 +60,10 @@ export class TopologicalScheduler implements ITaskGraphScheduler {
     // Topological scheduler doesn't need to track individual task completion
   }
 
+  onDataflowReady(_taskId: unknown): void {
+    // Topological scheduler does not react to streaming readiness
+  }
+
   reset(): void {
     this.sortedNodes = this.dag.topologicallySortedNodes();
     this.currentIndex = 0;
@@ -76,10 +86,28 @@ export class DependencyBasedScheduler implements ITaskGraphScheduler {
   }
 
   private isTaskReady(task: ITask): boolean {
-    const dependencies = this.dag
-      .getSourceDataflows(task.config.id)
-      .map((dataflow) => dataflow.sourceTaskId);
-    return dependencies.every((dep) => this.completedTasks.has(dep));
+    const dataflows = this.dag.getSourceDataflows(task.config.id);
+    if (dataflows.length === 0) {
+      return true;
+    }
+    return dataflows.every((dataflow) => {
+      const descriptor = dataflow.getStreamDescriptor();
+      if (descriptor) {
+        if (descriptor.readiness === "first-chunk") {
+          if (dataflow.streamReadinessReached()) {
+            return true;
+          }
+          return this.completedTasks.has(dataflow.sourceTaskId);
+        }
+        if (descriptor.readiness === "final") {
+          if (dataflow.streamReadinessReached()) {
+            return true;
+          }
+          return this.completedTasks.has(dataflow.sourceTaskId);
+        }
+      }
+      return this.completedTasks.has(dataflow.sourceTaskId);
+    });
   }
 
   private async waitForNextTask(): Promise<ITask | null> {
@@ -124,6 +152,27 @@ export class DependencyBasedScheduler implements ITaskGraphScheduler {
         this.nextResolver = null;
         resolver(readyTask);
       }
+    }
+  }
+
+  onDataflowReady(taskId: unknown): void {
+    if (!this.nextResolver) return;
+    const candidate = Array.from(this.pendingTasks).find(
+      (task) => task.config.id === taskId && this.isTaskReady(task)
+    );
+    if (candidate) {
+      this.pendingTasks.delete(candidate);
+      const resolver = this.nextResolver;
+      this.nextResolver = null;
+      resolver(candidate);
+      return;
+    }
+    const readyTask = Array.from(this.pendingTasks).find((task) => this.isTaskReady(task));
+    if (readyTask) {
+      this.pendingTasks.delete(readyTask);
+      const resolver = this.nextResolver;
+      this.nextResolver = null;
+      resolver(readyTask);
     }
   }
 
