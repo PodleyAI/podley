@@ -54,7 +54,9 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
   async executeReactive(input: JavaScriptTaskInput, output: JavaScriptTaskOutput) {
     if (input.code) {
       try {
-        const myInterpreter = new Interpreter(input.code);
+        const myInterpreter = new Interpreter(
+          `var input = ${JSON.stringify(input.input)}; ${input.code}`
+        );
         myInterpreter.run();
         output.output = myInterpreter.value;
       } catch (e) {

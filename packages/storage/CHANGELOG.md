@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.36
+
+### Patch Changes
+
+- Update JavaScriptTask to use input
+- Updated dependencies
+  - @podley/sqlite@0.0.36
+  - @podley/util@0.0.36
+
 ## 0.0.35
 
 ### Patch Changes

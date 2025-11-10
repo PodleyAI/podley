@@ -1,0 +1,350 @@
+//    *******************************************************************************
+//    *   PODLEY.AI: Your Agentic AI library                                        *
+//    *                                                                             *
+//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
+//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
+//    *******************************************************************************
+
+import { TaskGraph, TaskStatus, Workflow } from "@podley/task-graph";
+import { JavaScript, JavaScriptTask } from "@podley/tasks";
+import { describe, expect, test } from "bun:test";
+
+describe("JavaScriptTask", () => {
+  test("executes simple JavaScript code", async () => {
+    const result = await JavaScript({
+      code: "1 + 1",
+    });
+    expect(result.output).toBe(2);
+  });
+
+  test("executes code with string operations", async () => {
+    const result = await JavaScript({
+      code: '"hello" + " " + "world"',
+    });
+    expect(result.output).toBe("hello world");
+  });
+
+  test("executes code with variables", async () => {
+    const result = await JavaScript({
+      code: "var x = 10; var y = 20; x + y",
+    });
+    expect(result.output).toBe(30);
+  });
+
+  test("executes code with functions", async () => {
+    const result = await JavaScript({
+      code: `
+        function add(a, b) {
+          return a + b;
+        }
+        add(5, 7)
+      `,
+    });
+    expect(result.output).toBe(12);
+  });
+
+  test("executes code with arrays", async () => {
+    const result = await JavaScript({
+      code: `
+        var arr = [1, 2, 3, 4, 5];
+        var sum = 0;
+        for (var i = 0; i < arr.length; i++) {
+          sum += arr[i];
+        }
+        sum
+      `,
+    });
+    expect(result.output).toBe(15);
+  });
+
+  test("executes code with objects", async () => {
+    const result = await JavaScript({
+      code: `
+        var obj = { name: "Alice", age: 30 };
+        obj.name + " is " + obj.age + " years old"
+      `,
+    });
+    expect(result.output).toBe("Alice is 30 years old");
+  });
+
+  test("executes code with conditional statements", async () => {
+    const result = await JavaScript({
+      code: `
+        var x = 10;
+        if (x > 5) {
+          "greater";
+        } else {
+          "lesser";
+        }
+      `,
+    });
+    expect(result.output).toBe("greater");
+  });
+
+  test("executes code with loops", async () => {
+    const result = await JavaScript({
+      code: `
+        var result = "";
+        for (var i = 0; i < 3; i++) {
+          result += i;
+        }
+        result
+      `,
+    });
+    expect(result.output).toBe("012");
+  });
+
+  test("handles empty code", async () => {
+    const result = await JavaScript({
+      code: "",
+    });
+    expect(result.output).toBeUndefined();
+  });
+
+  test("handles code with no return value", async () => {
+    const result = await JavaScript({
+      code: "var x = 10;",
+    });
+    expect(result.output).toBeUndefined();
+  });
+
+  test("executes code with input parameter - simple value", async () => {
+    const result = await JavaScript({
+      code: "input",
+      input: 42,
+    });
+    expect(result.output).toBe(42);
+  });
+
+  test("executes code with input parameter - object", async () => {
+    const result = await JavaScript({
+      code: "input.value * 2",
+      input: { value: 100 },
+    });
+    expect(result.output).toBe(200);
+  });
+
+  test("executes code with input parameter - array", async () => {
+    const result = await JavaScript({
+      code: `
+        var sum = 0;
+        for (var i = 0; i < input.length; i++) {
+          sum += input[i];
+        }
+        sum
+      `,
+      input: [1, 2, 3, 4, 5],
+    });
+    expect(result.output).toBe(15);
+  });
+
+  test("executes code with input parameter - string manipulation", async () => {
+    const result = await JavaScript({
+      code: "input.toUpperCase()",
+      input: "hello world",
+    });
+    expect(result.output).toBe("HELLO WORLD");
+  });
+
+  test("executes code with input parameter - nested object", async () => {
+    const result = await JavaScript({
+      code: "input.user.name + ' is ' + input.user.age + ' years old'",
+      input: {
+        user: {
+          name: "Alice",
+          age: 30,
+        },
+      },
+    });
+    expect(result.output).toBe("Alice is 30 years old");
+  });
+
+  test("executes code with input parameter - boolean", async () => {
+    const result = await JavaScript({
+      code: "!input",
+      input: false,
+    });
+    expect(result.output).toBe(true);
+  });
+
+  test("executes code with input parameter - null", async () => {
+    const result = await JavaScript({
+      code: "input === null",
+      input: null,
+    });
+    expect(result.output).toBe(true);
+  });
+
+  test("executes code with input parameter - undefined", async () => {
+    const result = await JavaScript({
+      code: "typeof input === 'undefined'",
+    });
+    expect(result.output).toBe(true);
+  });
+
+  test("executes code with input parameter - complex calculation", async () => {
+    const result = await JavaScript({
+      code: `
+        var total = 0;
+        for (var i = 0; i < input.items.length; i++) {
+          total += input.items[i].price * input.items[i].quantity;
+        }
+        total * (1 - input.discount)
+      `,
+      input: {
+        items: [
+          { price: 10, quantity: 2 },
+          { price: 5, quantity: 3 },
+        ],
+        discount: 0.1,
+      },
+    });
+    expect(result.output).toBe(31.5); // (10*2 + 5*3) * 0.9 = 35 * 0.9 = 31.5
+  });
+
+  test("in task mode", async () => {
+    const task = new JavaScriptTask(
+      {
+        code: "2 * 3",
+      },
+      { id: "js-task" }
+    );
+    const result = await task.run();
+    expect(result.output).toBe(6);
+    expect(task.status).toBe(TaskStatus.COMPLETED);
+  });
+
+  test("in task mode with function", async () => {
+    const task = new JavaScriptTask(
+      {
+        code: `
+          var double = function(n) {
+            return n * 2;
+          };
+          double(7)
+        `,
+      },
+      { id: "js-function" }
+    );
+    const result = await task.run();
+    expect(result.output).toBe(14);
+    expect(task.status).toBe(TaskStatus.COMPLETED);
+  });
+
+  test("in task graph mode", async () => {
+    const graph = new TaskGraph();
+    graph.addTask(
+      new JavaScriptTask(
+        {
+          code: "10 * 10",
+        },
+        { id: "js-in-graph" }
+      )
+    );
+    const results = await graph.run();
+    expect(results[0].data.output).toBe(100);
+  });
+
+  test("in workflow mode", async () => {
+    const workflow = new Workflow();
+    workflow.JavaScript({
+      code: "5 + 5",
+    });
+    const results = await workflow.run();
+    expect(results.output).toBe(10);
+  });
+
+  test("in task mode with input", async () => {
+    const task = new JavaScriptTask(
+      {
+        code: "input.x + input.y",
+        input: { x: 15, y: 25 },
+      },
+      { id: "js-with-input" }
+    );
+    const result = await task.run();
+    expect(result.output).toBe(40);
+    expect(task.status).toBe(TaskStatus.COMPLETED);
+  });
+
+  test("in workflow mode with input", async () => {
+    const workflow = new Workflow();
+    workflow.JavaScript({
+      code: "input.a + input.b + input.c",
+      input: { a: 10, b: 20, c: 30 },
+    });
+    const results = await workflow.run();
+    expect(results.output).toBe(60);
+  });
+
+  test("handles syntax errors gracefully", async () => {
+    // The task catches errors and logs them, but still returns output
+    const result = await JavaScript({
+      code: "var x = ;", // Invalid syntax
+    });
+    // Error is caught and logged, output will be undefined
+    expect(result.output).toBeUndefined();
+  });
+
+  test("executes code with nested functions", async () => {
+    const result = await JavaScript({
+      code: `
+        function outer(x) {
+          function inner(y) {
+            return y * 2;
+          }
+          return inner(x) + 1;
+        }
+        outer(5)
+      `,
+    });
+    expect(result.output).toBe(11); // (5 * 2) + 1
+  });
+
+  test("handles boolean operations", async () => {
+    const result = await JavaScript({
+      code: `
+        var a = true;
+        var b = false;
+        a && !b
+      `,
+    });
+    expect(result.output).toBe(true);
+  });
+
+  test("multiple tasks in sequence", async () => {
+    const results = await Promise.all([
+      JavaScript({ code: "1 + 1" }),
+      JavaScript({ code: "2 + 2" }),
+      JavaScript({ code: "3 + 3" }),
+    ]);
+    expect(results[0].output).toBe(2);
+    expect(results[1].output).toBe(4);
+    expect(results[2].output).toBe(6);
+  });
+
+  test("task metadata is preserved", async () => {
+    const task = new JavaScriptTask(
+      { code: "42" },
+      {
+        id: "test-metadata",
+      }
+    );
+    await task.run();
+    expect(task.id()).toBe("test-metadata");
+  });
+
+  test("static properties are correct", () => {
+    expect(JavaScriptTask.type).toBe("JavaScriptTask");
+    expect(JavaScriptTask.category).toBe("Utility");
+    expect(JavaScriptTask.title).toBe("JavaScript Interpreter");
+    expect(JavaScriptTask.description).toContain("sandboxed interpreter");
+  });
+
+  test("input and output schemas are defined", () => {
+    const inputSchema = JavaScriptTask.inputSchema();
+    const outputSchema = JavaScriptTask.outputSchema();
+    expect(inputSchema).toBeDefined();
+    expect(outputSchema).toBeDefined();
+  });
+});

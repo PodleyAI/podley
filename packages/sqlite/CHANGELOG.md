@@ -1,5 +1,11 @@
 # @podley/sqlite
 
+## 0.0.36
+
+### Patch Changes
+
+- Update JavaScriptTask to use input
+
 ## 0.0.35
 
 ### Patch Changes
