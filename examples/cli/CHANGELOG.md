@@ -1,5 +1,19 @@
 # @podley/cli
 
+## 0.0.37
+
+### Patch Changes
+
+- runReactive need not throw
+- Updated dependencies
+  - @podley/task-graph@0.0.37
+  - @podley/ai@0.0.37
+  - @podley/ai-provider@0.0.37
+  - @podley/storage@0.0.37
+  - @podley/tasks@0.0.37
+  - @podley/test@0.0.37
+  - @podley/util@0.0.37
+
 ## 0.0.36
 
 ### Patch Changes

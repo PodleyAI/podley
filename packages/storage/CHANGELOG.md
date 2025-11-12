@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.37
+
+### Patch Changes
+
+- runReactive need not throw
+- Updated dependencies
+  - @podley/sqlite@0.0.37
+  - @podley/util@0.0.37
+
 ## 0.0.36
 
 ### Patch Changes

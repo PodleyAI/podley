@@ -7,17 +7,11 @@
 
 import { globalServiceRegistry } from "@podley/util";
 import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
-import { ITaskGraph } from "../task-graph/ITaskGraph";
-import { IWorkflow } from "../task-graph/IWorkflow";
-import { TaskGraph } from "../task-graph/TaskGraph";
 import { ensureTask, type Taskish } from "../task-graph/Conversions";
 import { IRunConfig, ITask } from "./ITask";
 import { ITaskRunner } from "./ITaskRunner";
-import { Task } from "./Task";
 import { TaskAbortedError, TaskError, TaskFailedError, TaskInvalidInputError } from "./TaskError";
 import { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
-import { GraphAsTask } from "../task/GraphAsTask";
-import { Workflow } from "../task-graph/Workflow";
 
 /**
  * Responsible for running tasks
@@ -142,10 +136,10 @@ export class TaskRunner<
       this.task.runOutputData = resultReactive;
 
       await this.handleCompleteReactive();
-      return this.task.runOutputData as Output;
     } catch (err: any) {
       await this.handleErrorReactive();
-      throw err;
+    } finally {
+      return this.task.runOutputData as Output;
     }
   }
 

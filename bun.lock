@@ -26,7 +26,7 @@
     },
     "examples/cli": {
       "name": "@podley/cli",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "bin": "./dist/podley.js",
       "dependencies": {
         "@mediapipe/tasks-text": "catalog:",
@@ -51,7 +51,7 @@
     },
     "examples/web": {
       "name": "@podley/web",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "dependencies": {
         "@codemirror/lang-json": "^6.0.2",
         "@mediapipe/tasks-text": "catalog:",
@@ -90,7 +90,7 @@
     },
     "packages/ai": {
       "name": "@podley/ai",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "devDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -112,7 +112,7 @@
     },
     "packages/ai-provider": {
       "name": "@podley/ai-provider",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "devDependencies": {
         "@mediapipe/tasks-text": "catalog:",
         "@podley/ai": "workspace:*",
@@ -134,7 +134,7 @@
     },
     "packages/job-queue": {
       "name": "@podley/job-queue",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "devDependencies": {
         "@podley/sqlite": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -151,7 +151,7 @@
     },
     "packages/sqlite": {
       "name": "@podley/sqlite",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
       },
@@ -162,7 +162,7 @@
     },
     "packages/storage": {
       "name": "@podley/storage",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "devDependencies": {
         "@podley/sqlite": "workspace:*",
         "@podley/util": "workspace:*",
@@ -182,7 +182,7 @@
     },
     "packages/task-graph": {
       "name": "@podley/task-graph",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "devDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -199,7 +199,7 @@
     },
     "packages/tasks": {
       "name": "@podley/tasks",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "devDependencies": {
         "@podley/job-queue": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -218,7 +218,7 @@
     },
     "packages/test": {
       "name": "@podley/test",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "devDependencies": {
         "@electric-sql/pglite": "^0.3.11",
         "@podley/ai": "workspace:*",
@@ -252,7 +252,7 @@
     },
     "packages/util": {
       "name": "@podley/util",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "devDependencies": {
         "@sinclair/typebox": "catalog:",
       },
