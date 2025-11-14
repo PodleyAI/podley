@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "include": ["src/**/*"],
   "files": ["src/podley.ts", "src/podley_worker.ts", "src/lib.ts"],
-  "exclude": ["**/*.test.ts"],
+  "exclude": ["dist"],
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": "./src",

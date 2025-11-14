@@ -74,9 +74,11 @@ describe("FetchTask", () => {
     const results = await Promise.all(urls.map((url) => Fetch({ url })));
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results).toHaveLength(3);
-    expect(results[0].json).toEqual({ data: { id: 1, name: "Test 1" } });
-    expect(results[1].json).toEqual({ data: { id: 2, name: "Test 2" } });
-    expect(results[2].json).toEqual({ data: { id: 3, name: "Test 3" } });
+    const sorted = results
+      .map((result) => result.json?.data)
+      .filter(Boolean)
+      .sort((a, b) => (a!.id ?? 0) - (b!.id ?? 0));
+    expect(sorted).toEqual(mockResponses.map((r) => r.data));
   });
 
   test("respects rate limiting with InMemoryQueue", async () => {

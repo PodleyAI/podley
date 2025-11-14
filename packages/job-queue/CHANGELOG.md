@@ -1,5 +1,13 @@
 # @podley/job-queue
 
+## 0.0.38
+
+### Patch Changes
+
+- @podley/sqlite@0.0.38
+- @podley/storage@0.0.38
+- @podley/util@0.0.38
+
 ## 0.0.37
 
 ### Patch Changes

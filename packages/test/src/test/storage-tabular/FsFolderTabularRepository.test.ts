@@ -5,14 +5,15 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { describe, beforeEach, afterEach, expect, test } from "bun:test";
-import { rmdirSync, mkdirSync } from "fs";
 import { FsFolderTabularRepository } from "@podley/storage";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { mkdirSync, rmdirSync } from "fs";
 import {
-  runGenericTabularRepositoryTests,
   CompoundPrimaryKeyNames,
   CompoundSchema,
+  runGenericTabularRepositoryTests,
   SearchPrimaryKeyNames,
+  SearchSchema,
 } from "./genericTabularRepositoryTests";
 
 const testDir = ".cache/test/testing";
@@ -47,9 +48,9 @@ describe("FsFolderTabularRepository", () => {
     test("should throw error when attempting to search", async () => {
       try {
         const repo = new FsFolderTabularRepository<
-          typeof CompoundSchema,
+          typeof SearchSchema,
           typeof SearchPrimaryKeyNames
-        >(testDir, CompoundSchema, SearchPrimaryKeyNames, [
+        >(testDir, SearchSchema, SearchPrimaryKeyNames, [
           "category",
           ["category", "subcategory"],
           ["subcategory", "category"],

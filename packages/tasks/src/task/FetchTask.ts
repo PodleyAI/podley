@@ -16,7 +16,6 @@ import {
   CreateWorkflow,
   JobQueueTask,
   JobQueueTaskConfig,
-  TaskConfig,
   TaskConfigurationError,
   TaskInvalidInputError,
   TaskRegistry,
@@ -80,7 +79,12 @@ const inputSchema = Type.Object({
       description: "Request timeout in milliseconds",
     })
   ),
-  queueName: Type.Optional(Type.String()),
+  queue: Type.Optional(
+    Type.Union([Type.Boolean(), Type.String()], {
+      description: "Queue handling: false=run inline, true=use default, string=explicit queue name",
+      default: true,
+    })
+  ),
 });
 
 const outputSchema = Type.Object({
@@ -103,9 +107,7 @@ const outputSchema = Type.Object({
 export type FetchTaskInput = Static<typeof inputSchema>;
 export type FetchTaskOutput = Static<typeof outputSchema>;
 
-export type FetchTaskConfig = TaskConfig & {
-  queueName?: string;
-};
+export type FetchTaskConfig = JobQueueTaskConfig;
 
 async function fetchWithProgress(
   url: string,
@@ -265,10 +267,29 @@ export class FetchTask<
   }
 
   constructor(input: Input = {} as Input, config: Config = {} as Config) {
-    config.queueName = input?.queueName ?? config.queueName;
-
+    config.queue = input?.queue ?? config.queue;
+    if (config.queue === undefined) {
+      config.queue = false; // change default to false to run directly
+    }
     super(input, config);
     this.jobClass = FetchJob;
+  }
+
+  protected override async getDefaultQueueName(input: Input): Promise<string | undefined> {
+    if (!input.url) {
+      return `fetch:${this.type}`;
+    }
+    try {
+      const hostname = new URL(input.url).hostname.toLowerCase();
+      const parts = hostname.split(".").filter(Boolean);
+      if (parts.length === 0) {
+        return `fetch:${this.type}`;
+      }
+      const domain = parts.length <= 2 ? parts.join(".") : parts.slice(-2).join(".");
+      return `fetch:${domain}`;
+    } catch {
+      return `fetch:${this.type}`;
+    }
   }
 }
 
@@ -276,7 +297,7 @@ TaskRegistry.registerTask(FetchTask);
 
 export const Fetch = async (
   input: FetchTaskInput,
-  config: TaskConfig = {}
+  config: FetchTaskConfig = {}
 ): Promise<FetchTaskOutput> => {
   const result = await new FetchTask(input, config).run();
   return result as FetchTaskOutput;
@@ -284,7 +305,7 @@ export const Fetch = async (
 
 declare module "@podley/task-graph" {
   interface Workflow {
-    Fetch: CreateWorkflow<FetchTaskInput, FetchTaskOutput, TaskConfig>;
+    Fetch: CreateWorkflow<FetchTaskInput, FetchTaskOutput, FetchTaskConfig>;
   }
 }
 

@@ -84,7 +84,7 @@ Makes HTTP requests with built-in retry logic, progress tracking, and multiple r
 - `body` (string, optional): Request body for POST/PUT requests
 - `response_type` (string, optional): Response format ("json", "text", "blob", "arraybuffer"). Default: "json"
 - `timeout` (number, optional): Request timeout in milliseconds
-- `queueName` (string, optional): Job queue name for rate limiting
+- `queue` (boolean|string, optional): Queue handling (`false` runs inline when possible, `true` uses the task's default queue, strings target a specific registered queue). Default: `true`
 
 **Output Schema:**
 
@@ -561,7 +561,7 @@ const fetchTask = new FetchTask(
     url: "https://api.example.com/data",
   },
   {
-    queueName: "api-requests",
+    queue: "api-requests",
     timeout: 10000,
     retryAttempts: 3,
   }

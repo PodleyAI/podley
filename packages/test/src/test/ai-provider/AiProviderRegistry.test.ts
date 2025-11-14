@@ -7,7 +7,7 @@
 
 import {
   AiJob,
-  AiProviderInput,
+  AiJobInput,
   AiProviderRegistry,
   getAiProviderRegistry,
   getGlobalModelRepository,
@@ -27,13 +27,13 @@ import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from "b
 const TEST_PROVIDER = "test-provider";
 
 describe("AiProviderRegistry", () => {
-  let queue: JobQueue<AiProviderInput<TaskInput>, TaskOutput>;
+  let queue: JobQueue<AiJobInput<TaskInput>, TaskOutput>;
   let aiProviderRegistry: AiProviderRegistry;
 
   beforeEach(() => {
-    queue = new JobQueue(TEST_PROVIDER, AiJob<TaskInput, TaskOutput>, {
+    queue = new JobQueue(TEST_PROVIDER, AiJob<AiJobInput<TaskInput>, TaskOutput>, {
       limiter: new InMemoryRateLimiter({ maxExecutions: 4, windowSizeInSeconds: 1 }),
-      storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(TEST_PROVIDER),
+      storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(TEST_PROVIDER),
       waitDurationInMilliseconds: 1,
     });
     setTaskQueueRegistry(new TaskQueueRegistry());

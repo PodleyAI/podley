@@ -128,6 +128,8 @@ classDiagram
     class JobQueueTask{
       string queue
       string currentJobId
+      string currentQueueName
+      string currentRunnerId
     }
     <<abstract>> JobQueueTask
     Task <|-- JobQueueTask

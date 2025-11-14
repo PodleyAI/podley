@@ -7,13 +7,14 @@
 
 import {
   AiJob,
-  AiProviderInput,
+  AiJobInput,
   getGlobalModelRepository,
   InMemoryModelRepository,
   setGlobalModelRepository,
 } from "@podley/ai";
 import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@podley/ai-provider";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@podley/job-queue";
+import { Sqlite } from "@podley/sqlite";
 import { InMemoryQueueStorage, SqliteQueueStorage } from "@podley/storage";
 import {
   getTaskQueueRegistry,
@@ -23,7 +24,6 @@ import {
   Workflow,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
-import { Sqlite } from "@podley/sqlite";
 import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 
 const db = new Sqlite.Database(":memory:");
@@ -36,12 +36,12 @@ describe("HFTransformersBinding", () => {
     it("Should have an item queued", async () => {
       register_HFT_InlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
-      const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
+      const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
         HF_TRANSFORMERS_ONNX,
-        AiJob<TaskInput, TaskOutput>,
+        AiJob<AiJobInput<TaskInput>, TaskOutput>,
         {
           limiter: new ConcurrencyLimiter(1, 10),
-          storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
+          storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
             HF_TRANSFORMERS_ONNX
           ),
         }
@@ -82,11 +82,11 @@ describe("HFTransformersBinding", () => {
     it("Should have an item queued", async () => {
       register_HFT_InlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
-      const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
+      const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
         HF_TRANSFORMERS_ONNX,
-        AiJob<TaskInput, TaskOutput>,
+        AiJob<AiJobInput<TaskInput>, TaskOutput>,
         {
-          storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(db, "test"),
+          storage: new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(db, "test"),
           limiter: new SqliteRateLimiter(db, "test", { maxExecutions: 4, windowSizeInSeconds: 1 }),
           waitDurationInMilliseconds: 1,
         }

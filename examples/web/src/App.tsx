@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { AiJob, AiProviderInput } from "@podley/ai";
+import { AiJob, AiJobInput } from "@podley/ai";
 import {
   HF_TRANSFORMERS_ONNX,
   register_HFT_ClientJobFns,
@@ -29,14 +29,14 @@ import {
   registerHuggingfaceLocalModels,
   registerMediaPipeTfJsLocalModels,
 } from "@podley/test";
-import { ReactFlowProvider, useEdgesState, useNodesState } from "@xyflow/react";
+import { ReactFlowProvider } from "@xyflow/react";
 import { useCallback, useEffect, useState } from "react";
-import { GraphStoreStatus } from "./status/GraphStoreStatus";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
 import { JsonEditor } from "./editor/JsonEditor";
+import { RunGraphFlow } from "./graph/RunGraphFlow";
+import { GraphStoreStatus } from "./status/GraphStoreStatus";
 import { OutputRepositoryStatus } from "./status/OutputRepositoryStatus";
 import { QueuesStatus } from "./status/QueueStatus";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";
-import { RunGraphFlow } from "./graph/RunGraphFlow";
 
 register_TFMP_ClientJobFns(
   new Worker(new URL("./worker_tfmp.ts", import.meta.url), { type: "module" })
@@ -48,16 +48,16 @@ register_HFT_ClientJobFns(
 const queueRegistry = getTaskQueueRegistry();
 
 queueRegistry.registerQueue(
-  new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(HF_TRANSFORMERS_ONNX, AiJob, {
+  new JobQueue<AiJobInput<TaskInput>, TaskOutput>(HF_TRANSFORMERS_ONNX, AiJob, {
     limiter: new ConcurrencyLimiter(1, 100),
-    storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(HF_TRANSFORMERS_ONNX),
+    storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(HF_TRANSFORMERS_ONNX),
   })
 );
 
 queueRegistry.registerQueue(
-  new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(TENSORFLOW_MEDIAPIPE, AiJob, {
+  new JobQueue<AiJobInput<TaskInput>, TaskOutput>(TENSORFLOW_MEDIAPIPE, AiJob, {
     limiter: new ConcurrencyLimiter(1, 100),
-    storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(TENSORFLOW_MEDIAPIPE),
+    storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(TENSORFLOW_MEDIAPIPE),
   })
 );
 

@@ -6,8 +6,8 @@
 //    *******************************************************************************
 
 import { TaskInput, TaskOutput } from "@podley/task-graph";
-import { Model } from "../model/Model";
 import { globalServiceRegistry, WORKER_MANAGER } from "@podley/util";
+import { Model } from "../model/Model";
 
 /**
  * Type for the run function for the AiJob
@@ -28,7 +28,6 @@ export type AiProviderRunFn<
  * for different model providers and task types.
  */
 export class AiProviderRegistry {
-  // Relaxing the generics using `any` allows us to register specialized run functions.
   runFnRegistry: Record<string, Record<string, AiProviderRunFn<any, any>>> = {};
 
   /**
@@ -68,7 +67,7 @@ export class AiProviderRegistry {
       );
       return result;
     };
-    this.registerRunFn(modelProvider, taskType, workerFn);
+    this.registerRunFn<Input, Output>(modelProvider, taskType, workerFn);
   }
 
   /**

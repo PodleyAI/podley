@@ -7,13 +7,13 @@
 
 import {
   AiJob,
-  AiProviderInput,
+  AiJobInput,
   getGlobalModelRepository,
   InMemoryModelRepository,
   Model,
   setGlobalModelRepository,
 } from "@podley/ai";
-import { TENSORFLOW_MEDIAPIPE, register_TFMP_InlineJobFns } from "@podley/ai-provider";
+import { register_TFMP_InlineJobFns, TENSORFLOW_MEDIAPIPE } from "@podley/ai-provider";
 import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@podley/job-queue";
 import { Sqlite } from "@podley/sqlite";
 import { InMemoryQueueStorage, SqliteQueueStorage } from "@podley/storage";
@@ -37,11 +37,11 @@ describe("TfMediaPipeBinding", () => {
   describe("InMemoryJobQueue", () => {
     it("should initialize without errors", async () => {
       const queueRegistry = getTaskQueueRegistry();
-      const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
+      const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
         TENSORFLOW_MEDIAPIPE,
-        AiJob<TaskInput, TaskOutput>,
+        AiJob<AiJobInput<TaskInput>, TaskOutput>,
         {
-          storage: new InMemoryQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
+          storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
             TENSORFLOW_MEDIAPIPE
           ),
           limiter: new ConcurrencyLimiter(1, 10),
@@ -101,11 +101,11 @@ describe("TfMediaPipeBinding", () => {
         universal_sentence_encoder.name
       );
 
-      const jobQueue = new JobQueue<AiProviderInput<TaskInput>, TaskOutput>(
+      const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
         TENSORFLOW_MEDIAPIPE,
-        AiJob<TaskInput, TaskOutput>,
+        AiJob<AiJobInput<TaskInput>, TaskOutput>,
         {
-          storage: new SqliteQueueStorage<AiProviderInput<TaskInput>, TaskOutput>(
+          storage: new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
             db,
             TENSORFLOW_MEDIAPIPE
           ),

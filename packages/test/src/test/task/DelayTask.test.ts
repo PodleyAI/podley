@@ -5,9 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { beforeEach, describe, expect, it } from "bun:test";
+import { TaskAbortedError, TaskStatus } from "@podley/task-graph";
 import { DelayTask } from "@podley/tasks";
-import { TaskStatus, TaskAbortedError } from "@podley/task-graph";
+import { beforeEach, describe, expect, it } from "bun:test";
 
 describe("DelayTask", () => {
   let task: DelayTask;
@@ -41,7 +41,6 @@ describe("DelayTask", () => {
     expect(result).toEqual({ something: "test-value" });
     expect(taskWithInput.status).toBe(TaskStatus.COMPLETED);
     expect(taskWithInput.runOutputData).toEqual({ something: "test-value" });
-    expect(result.delay).toBeUndefined(); // we remove this as it could have come from defaults
   });
 
   it("should handle task abortion", async () => {

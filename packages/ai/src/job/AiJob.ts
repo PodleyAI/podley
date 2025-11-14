@@ -7,19 +7,19 @@
 
 import {
   AbortSignalJobError,
+  IJobExecuteContext,
   Job,
   JobStatus,
   PermanentJobError,
-  IJobExecuteContext,
 } from "@podley/job-queue";
 import { TaskInput, TaskOutput } from "@podley/task-graph";
-import { getAiProviderRegistry } from "../provider/AiProviderRegistry";
 import { getGlobalModelRepository } from "../model/ModelRegistry";
+import { getAiProviderRegistry } from "../provider/AiProviderRegistry";
 
 /**
  * Input data for the AiJob
  */
-export interface AiProviderInput<Input extends TaskInput = TaskInput> {
+export interface AiJobInput<Input extends TaskInput = TaskInput> {
   taskType: string;
   aiProvider: string;
   taskInput: Input & { model: string };
@@ -30,13 +30,13 @@ export interface AiProviderInput<Input extends TaskInput = TaskInput> {
  * through a provided function.
  */
 export class AiJob<
-  Input extends TaskInput = TaskInput,
+  Input extends AiJobInput<TaskInput> = AiJobInput<TaskInput>,
   Output extends TaskOutput = TaskOutput,
-> extends Job<AiProviderInput<Input>, Output> {
+> extends Job<Input, Output> {
   /**
    * Executes the job using the provided function.
    */
-  async execute(input: AiProviderInput<Input>, context: IJobExecuteContext): Promise<Output> {
+  async execute(input: Input, context: IJobExecuteContext): Promise<Output> {
     if (context.signal.aborted || this.status === JobStatus.ABORTING) {
       throw new AbortSignalJobError("Abort signal aborted before execution of job");
     }
@@ -54,7 +54,7 @@ export class AiJob<
       });
 
       const runFn = async () => {
-        const fn = getAiProviderRegistry().getDirectRunFn<Input, Output>(
+        const fn = getAiProviderRegistry().getDirectRunFn<Input["taskInput"], Output>(
           input.aiProvider,
           input.taskType
         );

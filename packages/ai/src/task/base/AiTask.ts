@@ -9,29 +9,40 @@
  * @description This file contains the implementation of the JobQueueTask class and its derived classes.
  */
 
+import { Job, JobQueue } from "@podley/job-queue";
 import {
-  getTaskQueueRegistry,
   JobQueueTask,
   JobQueueTaskConfig,
   TaskConfigurationError,
-  type TaskInput,
+  TaskInput,
   type TaskOutput,
 } from "@podley/task-graph";
 import { schemaSemantic } from "@podley/util";
 import { type TSchema } from "@sinclair/typebox";
-import { AiJob } from "../../job/AiJob";
+
+import { AiJob, AiJobInput } from "../../job/AiJob";
+import type { Model } from "../../model/Model";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
+
+export interface AiSingleTaskInput extends TaskInput {
+  model: string;
+}
+
+export interface AiArrayTaskInput extends TaskInput {
+  model: string | string[];
+}
 
 /**
  * A base class for AI related tasks that run in a job queue.
  * Extends the JobQueueTask class to provide LLM-specific functionality.
  */
 export class AiTask<
-  Input extends TaskInput = TaskInput,
+  Input extends AiArrayTaskInput = AiArrayTaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends JobQueueTaskConfig = JobQueueTaskConfig,
 > extends JobQueueTask<Input, Output, Config> {
   public static type: string = "AiTask";
+  private modelCache?: { name: string; model: Model };
 
   /**
    * Creates a new AiTask instance
@@ -42,7 +53,6 @@ export class AiTask<
       input.model ? " with model " + input.model : ""
     }`;
     super(input, config);
-    this.jobClass = AiJob<Input, Output>;
   }
 
   // ========================================================================
@@ -53,30 +63,54 @@ export class AiTask<
    * Creates a new Job instance for the task
    * @returns Promise<Job> - The created job
    */
-  async createJob(input: Input & { model: string }) {
+  override async createJob(
+    input: Input,
+    queue?: JobQueue<Input, Output>
+  ): Promise<Job<AiJobInput<Input>, Output>> {
+    if (typeof input.model !== "string") {
+      console.error("AiTask: Model is not a string", input);
+      throw new TaskConfigurationError(
+        "AiTask: Model is not a string, only create job for single model tasks"
+      );
+    }
     const runtype = (this.constructor as any).runtype ?? (this.constructor as any).type;
-    const modelname = input.model;
-    if (!modelname) throw new TaskConfigurationError("JobQueueTask: No model name found");
-    const model = await getGlobalModelRepository().findByName(modelname);
-
-    if (!model) {
-      throw new TaskConfigurationError(`JobQueueTask: No model ${modelname} found`);
+    const model = await this.getModelForInput(input as AiSingleTaskInput);
+    const queueName = queue?.queueName ?? (await this.getDefaultQueueName(input));
+    if (!queueName) {
+      throw new TaskConfigurationError("JobQueueTask: Unable to determine queue for AI provider");
     }
-    const queue = getTaskQueueRegistry().getQueue(model.provider);
-    if (!queue) {
-      throw new TaskConfigurationError(`JobQueueTask: No queue for model ${model.provider}`);
-    }
-    this.config.queueName = queue.queueName;
-    const job = new AiJob({
-      queueName: queue.queueName,
+    const job = new AiJob<AiJobInput<Input>, Output>({
+      queueName,
       jobRunId: this.config.runnerId, // could be undefined
       input: {
         taskType: runtype,
         aiProvider: model.provider,
-        taskInput: input,
+        taskInput: input as Input & { model: string },
       },
     });
     return job;
+  }
+
+  protected async getModelForInput(input: AiSingleTaskInput): Promise<Model> {
+    const modelname = input.model;
+    if (!modelname) throw new TaskConfigurationError("AiTask: No model name found");
+    if (this.modelCache && this.modelCache.name === modelname) {
+      return this.modelCache.model;
+    }
+    const model = await getGlobalModelRepository().findByName(modelname);
+    if (!model) {
+      throw new TaskConfigurationError(`JobQueueTask: No model ${modelname} found`);
+    }
+    this.modelCache = { name: modelname, model };
+    return model;
+  }
+
+  protected override async getDefaultQueueName(input: Input) {
+    if (typeof input.model === "string") {
+      const model = await this.getModelForInput(input as AiSingleTaskInput);
+      return model.provider;
+    }
+    return undefined;
   }
 
   /**
@@ -88,10 +122,10 @@ export class AiTask<
   async validateInput(input: Input): Promise<boolean> {
     // TODO(str): this is very inefficient, we should cache the results, including intermediate results
     const inputSchema = this.inputSchema();
-    
-    const modelTaskProperties = Object.entries<TSchema>((inputSchema.properties || {}) as Record<string, TSchema>).filter(
-      ([key, schema]) => schemaSemantic(schema)?.startsWith("model:")
-    );
+
+    const modelTaskProperties = Object.entries<TSchema>(
+      (inputSchema.properties || {}) as Record<string, TSchema>
+    ).filter(([key, schema]) => schemaSemantic(schema)?.startsWith("model:"));
     if (modelTaskProperties.length > 0) {
       const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
       for (const [key, propSchema] of modelTaskProperties) {
@@ -104,9 +138,9 @@ export class AiTask<
         }
       }
     }
-    const modelPlainProperties = Object.entries<TSchema>((inputSchema.properties || {}) as Record<string, TSchema>).filter(
-      ([key, schema]) => schemaSemantic(schema) === "model"
-    );
+    const modelPlainProperties = Object.entries<TSchema>(
+      (inputSchema.properties || {}) as Record<string, TSchema>
+    ).filter(([key, schema]) => schemaSemantic(schema) === "model");
     if (modelPlainProperties.length > 0) {
       for (const [key, propSchema] of modelPlainProperties) {
         let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
@@ -127,10 +161,10 @@ export class AiTask<
   async narrowInput(input: Input): Promise<Input> {
     // TODO(str): this is very inefficient, we should cache the results, including intermediate results
     const inputSchema = this.inputSchema();
-    
-    const modelTaskProperties = Object.entries<TSchema>((inputSchema.properties || {}) as Record<string, TSchema>).filter(
-      ([key, schema]) => schemaSemantic(schema)?.startsWith("model:")
-    );
+
+    const modelTaskProperties = Object.entries<TSchema>(
+      (inputSchema.properties || {}) as Record<string, TSchema>
+    ).filter(([key, schema]) => schemaSemantic(schema)?.startsWith("model:"));
     if (modelTaskProperties.length > 0) {
       const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
       for (const [key, propSchema] of modelTaskProperties) {

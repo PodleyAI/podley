@@ -1,5 +1,19 @@
 # @podley/cli
 
+## 0.0.38
+
+### Patch Changes
+
+- Refactor JobQueueTask to account for automatically creating queues
+- Updated dependencies
+  - @podley/ai-provider@0.0.38
+  - @podley/task-graph@0.0.38
+  - @podley/tasks@0.0.38
+  - @podley/test@0.0.38
+  - @podley/ai@0.0.38
+  - @podley/storage@0.0.38
+  - @podley/util@0.0.38
+
 ## 0.0.37
 
 ### Patch Changes

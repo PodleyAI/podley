@@ -5,10 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { expect, it, beforeEach, afterEach } from "bun:test";
-import { Job, JobQueue, IJobExecuteContext } from "@podley/job-queue";
+import { IJobExecuteContext, Job, JobQueue } from "@podley/job-queue";
 import { getTaskQueueRegistry, JobQueueTask, TaskInput, TaskOutput } from "@podley/task-graph";
-import { TestIOTask } from "../task/TestTasks";
+import { afterEach, beforeEach, expect, it } from "bun:test";
 
 export class TestJob extends Job<TaskInput, TaskOutput> {
   async execute(input: TaskInput, context: IJobExecuteContext): Promise<TaskOutput> {
@@ -40,7 +39,7 @@ export function runGenericTaskGraphJobQueueTests(
     const task = new TestJobTask(
       { a: 1, b: 2 },
       {
-        queueName: jobQueue.queueName,
+        queue: jobQueue.queueName,
       }
     );
     const result = await task.run();
@@ -50,7 +49,7 @@ export function runGenericTaskGraphJobQueueTests(
     const task = new TestJobTask(
       { a: 1, b: 2 },
       {
-        queueName: jobQueue.queueName,
+        queue: jobQueue.queueName,
       }
     );
     const wait = (ms: number, result: any) =>
