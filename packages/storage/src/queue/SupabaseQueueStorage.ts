@@ -5,8 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { makeFingerprint, uuid4 } from "@podley/util";
-import { createServiceToken } from "@podley/util";
+import { createServiceToken, makeFingerprint, uuid4 } from "@podley/util";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
 
@@ -44,7 +43,7 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
       fingerprint text NOT NULL,
       queue text NOT NULL,
       job_run_id text NOT NULL,
-      status text NOT NULL default 'PENDING' CHECK (status IN ('PENDING','PROCESSING','COMPLETED','FAILED','SKIPPED','ABORTING')),
+      status job_status NOT NULL default 'PENDING',
       input jsonb NOT NULL,
       output jsonb,
       run_attempts integer default 0,

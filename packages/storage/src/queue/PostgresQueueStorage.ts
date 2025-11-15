@@ -5,12 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { makeFingerprint } from "@podley/util";
-import { uuid4 } from "@podley/util";
+import { createServiceToken, makeFingerprint, uuid4 } from "@podley/util";
 import { Pool } from "pg";
-import { IQueueStorage } from "./IQueueStorage";
-import { JobStatus, JobStorageFormat } from "./IQueueStorage";
-import { createServiceToken } from "@podley/util";
+import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
 
 export const POSTGRES_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
   "jobqueue.storage.postgres"

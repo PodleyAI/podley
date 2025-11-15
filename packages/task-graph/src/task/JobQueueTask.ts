@@ -113,7 +113,7 @@ export abstract class JobQueueTask<
       cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
         executeContext.updateProgress(progress, message, details);
       });
-      const output = (await queue.waitFor(jobId)) as Output | undefined;
+      const output = await queue.waitFor(jobId);
       if (output === undefined) {
         throw new TaskConfigurationError("Job skipped, should not happen");
       }
