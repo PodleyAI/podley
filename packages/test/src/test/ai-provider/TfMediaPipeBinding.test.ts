@@ -101,18 +101,22 @@ describe("TfMediaPipeBinding", () => {
         universal_sentence_encoder.name
       );
 
+      const storage = new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
+        db,
+        TENSORFLOW_MEDIAPIPE
+      );
+      await storage.setupDatabase();
+      const limiter = new SqliteRateLimiter(db, TENSORFLOW_MEDIAPIPE, {
+        maxExecutions: 4,
+        windowSizeInSeconds: 1,
+      });
+      limiter.ensureTableExists();
       const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
         TENSORFLOW_MEDIAPIPE,
         AiJob<AiJobInput<TaskInput>, TaskOutput>,
         {
-          storage: new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
-            db,
-            TENSORFLOW_MEDIAPIPE
-          ),
-          limiter: new SqliteRateLimiter(db, TENSORFLOW_MEDIAPIPE, {
-            maxExecutions: 4,
-            windowSizeInSeconds: 1,
-          }),
+          storage: storage,
+          limiter: limiter,
           waitDurationInMilliseconds: 1,
         }
       );

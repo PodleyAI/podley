@@ -82,12 +82,16 @@ describe("HFTransformersBinding", () => {
     it("Should have an item queued", async () => {
       register_HFT_InlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
+      const storage = new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(db, "test");
+      await storage.setupDatabase();
+      const limiter = new SqliteRateLimiter(db, "test", { maxExecutions: 4, windowSizeInSeconds: 1 });
+      limiter.ensureTableExists();
       const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
         HF_TRANSFORMERS_ONNX,
         AiJob<AiJobInput<TaskInput>, TaskOutput>,
         {
-          storage: new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(db, "test"),
-          limiter: new SqliteRateLimiter(db, "test", { maxExecutions: 4, windowSizeInSeconds: 1 }),
+          storage: storage,
+          limiter: limiter,
           waitDurationInMilliseconds: 1,
         }
       );
