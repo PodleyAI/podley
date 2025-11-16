@@ -6,10 +6,8 @@
 //    *******************************************************************************
 
 import type { Sqlite } from "@podley/sqlite";
-import { uuid4 } from "@podley/util";
-import { makeFingerprint, sleep } from "@podley/util";
-import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
-import { createServiceToken } from "@podley/util";
+import { createServiceToken, makeFingerprint, sleep, uuid4 } from "@podley/util";
+import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
 
 export const SQLITE_QUEUE_STORAGE =
   createServiceToken<IQueueStorage<any, any>>("jobqueue.storage.sqlite");
@@ -28,10 +26,8 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     }
   ) {}
 
-  #setup = false;
-  public async setupDatabase(): Promise<Sqlite.Database> {
+  public async setupDatabase(): Promise<void> {
     await sleep(0);
-    if (this.#setup) return this.db;
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS job_queue (
         id INTEGER PRIMARY KEY,
@@ -59,8 +55,6 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
       CREATE INDEX IF NOT EXISTS job_queue_fingerprint_idx ON job_queue (queue, fingerprint, status);
       CREATE INDEX IF NOT EXISTS job_queue_job_run_id_idx ON job_queue (queue, job_run_id);
     `);
-    this.#setup = true;
-    return this.db;
   }
 
   /**
@@ -69,7 +63,6 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns The ID of the added job
    */
   public async add(job: JobStorageFormat<Input, Output>) {
-    const db = await this.setupDatabase();
     const now = new Date().toISOString();
     job.job_run_id = job.job_run_id ?? uuid4();
     job.queue = this.queueName;
@@ -98,7 +91,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING id`;
 
-    const stmt = db.prepare<
+    const stmt = this.db.prepare<
       { id: string },
       [
         queue: string,
@@ -139,13 +132,12 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns The job if found, undefined otherwise
    */
   public async get(id: string) {
-    const db = await this.setupDatabase();
     const JobQuery = `
       SELECT *
         FROM job_queue
         WHERE id = ? AND queue = ?
         LIMIT 1`;
-    const stmt = db.prepare<
+    const stmt = this.db.prepare<
       JobStorageFormat<Input, Output> & {
         input: string;
         output: string | null;
@@ -169,7 +161,6 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns An array of jobs
    */
   public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
-    const db = await this.setupDatabase();
     num = Number(num) || 100; // TS does not validate, so ensure it is a number since we put directly in SQL string
     const FutureJobQuery = `
       SELECT * 
@@ -178,7 +169,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         AND status = ?
         ORDER BY run_after ASC
         LIMIT ${num}`;
-    const stmt = db.prepare<
+    const stmt = this.db.prepare<
       JobStorageFormat<Input, Output> & {
         input: string;
         output: string | null;
@@ -204,12 +195,11 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * can clean up and exit.
    */
   public async abort(jobId: string) {
-    const db = await this.setupDatabase();
     const AbortQuery = `
       UPDATE job_queue
         SET status = ?  
         WHERE id = ? AND queue = ?`;
-    const stmt = db.prepare(AbortQuery);
+    const stmt = this.db.prepare(AbortQuery);
     stmt.run(JobStatus.ABORTING, jobId, this.queueName);
   }
 
@@ -219,12 +209,11 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns An array of jobs
    */
   public async getByRunId(job_run_id: string) {
-    const db = await this.setupDatabase();
     const JobsByRunIdQuery = `
       SELECT *
         FROM job_queue
         WHERE job_run_id = ? AND queue = ?`;
-    const stmt = db.prepare<
+    const stmt = this.db.prepare<
       JobStorageFormat<Input, Output> & {
         input: string;
         output: string | null;
@@ -250,11 +239,10 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns The next job or undefined if no job is available
    */
   public async next() {
-    const db = await this.setupDatabase();
     const now = new Date().toISOString();
 
     // Then, get the next job to process
-    const stmt = db.prepare<
+    const stmt = this.db.prepare<
       JobStorageFormat<Input, Output> & {
         input: string;
         output: string | null;
@@ -293,13 +281,12 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns The count of jobs with the specified status
    */
   public async size(status = JobStatus.PENDING) {
-    const db = await this.setupDatabase();
     const sizeQuery = `
       SELECT COUNT(*) as count
         FROM job_queue
         WHERE queue = ?
         AND status = ?`;
-    const stmt = db.prepare<{ count: number }, [queue: string, status: string]>(sizeQuery);
+    const stmt = this.db.prepare<{ count: number }, [queue: string, status: string]>(sizeQuery);
     const result = stmt.get(this.queueName, status) as any;
     return result.count;
   }
@@ -313,7 +300,6 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * - Marks the job as SKIPPED for skipped jobs.
    */
   public async complete(job: JobStorageFormat<Input, Output>) {
-    const db = await this.setupDatabase();
     const now = new Date().toISOString();
     let updateQuery: string;
     let params: any[];
@@ -354,16 +340,15 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         this.queueName,
       ];
     }
-    const stmt = db.prepare(updateQuery);
+    const stmt = this.db.prepare(updateQuery);
     stmt.run(...params);
   }
 
   public async deleteAll() {
-    const db = await this.setupDatabase();
     const ClearQuery = `
       DELETE FROM job_queue
         WHERE queue = ?`;
-    const stmt = db.prepare(ClearQuery);
+    const stmt = this.db.prepare(ClearQuery);
     stmt.run(this.queueName);
   }
 
@@ -373,13 +358,12 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @returns The cached output or null if not found
    */
   public async outputForInput(input: Input) {
-    const db = await this.setupDatabase();
     const fingerprint = await makeFingerprint(input);
     const OutputQuery = `
       SELECT output
         FROM job_queue
         WHERE queue = ? AND fingerprint = ? AND status = ?`;
-    const stmt = db.prepare<
+    const stmt = this.db.prepare<
       { output: string },
       [queue: string, fingerprint: string, status: string]
     >(OutputQuery);
@@ -396,7 +380,6 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     message: string,
     details: Record<string, any>
   ): Promise<void> {
-    const db = await this.setupDatabase();
     const UpdateProgressQuery = `
       UPDATE job_queue
         SET progress = ?,
@@ -404,7 +387,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
             progress_details = ?
         WHERE id = ? AND queue = ?`;
 
-    const stmt = db.prepare(UpdateProgressQuery);
+    const stmt = this.db.prepare(UpdateProgressQuery);
     stmt.run(progress, message, JSON.stringify(details), String(jobId), this.queueName);
   }
 
@@ -412,11 +395,10 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * Deletes a job by its ID
    */
   public async delete(jobId: unknown): Promise<void> {
-    const db = await this.setupDatabase();
     const DeleteQuery = `
       DELETE FROM job_queue
         WHERE id = ? AND queue = ?`;
-    const stmt = db.prepare(DeleteQuery);
+    const stmt = this.db.prepare(DeleteQuery);
     stmt.run(String(jobId), this.queueName);
   }
 
@@ -426,7 +408,6 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @param olderThanMs - Delete jobs completed more than this many milliseconds ago
    */
   public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
-    const db = await this.setupDatabase();
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
     const DeleteQuery = `
       DELETE FROM job_queue
@@ -434,7 +415,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         AND status = ?
         AND completed_at IS NOT NULL
         AND completed_at <= ?`;
-    const stmt = db.prepare(DeleteQuery);
+    const stmt = this.db.prepare(DeleteQuery);
     stmt.run(this.queueName, status, cutoffDate);
   }
 }

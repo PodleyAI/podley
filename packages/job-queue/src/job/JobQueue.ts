@@ -12,7 +12,9 @@ import {
   QUEUE_STORAGE,
 } from "@podley/storage";
 import { EventEmitter, globalServiceRegistry, sleep } from "@podley/util";
-import { IJobQueue, JobQueueOptions, QueueMode, JobStatus } from "./IJobQueue";
+import { ILimiter, JOB_LIMITER } from "../limiter/ILimiter";
+import { NullLimiter } from "../limiter/NullLimiter";
+import { IJobQueue, JobQueueOptions, JobStatus, QueueMode } from "./IJobQueue";
 import { Job, JobConstructorParam } from "./Job";
 import {
   AbortSignalJobError,
@@ -29,8 +31,6 @@ import {
   JobQueueEventParameters,
   JobQueueEvents,
 } from "./JobQueueEventListeners";
-import { ILimiter, JOB_LIMITER } from "../limiter/ILimiter";
-import { NullLimiter } from "../limiter/NullLimiter";
 
 /**
  * Statistics tracked for the job queue
@@ -217,6 +217,13 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
    */
   public async waitFor(jobId: unknown): Promise<Output | undefined> {
     if (!jobId) throw new JobNotFoundError("Cannot wait for undefined job");
+
+    const { promise, resolve, reject } = Promise.withResolvers<Output>();
+    promise.catch(() => {});
+    const promises = this.activeJobPromises.get(jobId) || [];
+    promises.push({ resolve, reject });
+    this.activeJobPromises.set(jobId, promises);
+
     const job = await this.get(jobId);
     if (!job) throw new JobNotFoundError(`Job ${jobId} not found`);
 
@@ -227,13 +234,29 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       return undefined;
     }
     if (job.status === JobStatus.FAILED) {
-      throw job.error;
+      throw this.buildErrorFromJob(job);
     }
-    const { promise, resolve, reject } = Promise.withResolvers<Output>();
-    const promises = this.activeJobPromises.get(job.id) || [];
-    promises.push({ resolve, reject });
-    this.activeJobPromises.set(job.id, promises);
     return promise as Promise<Output>;
+  }
+
+  /**
+   * Reconstructs an error instance from a stored failed job
+   */
+  protected buildErrorFromJob(job: Job<Input, Output>): JobError {
+    const errorMessage = job.error || "Job failed";
+    if (job.errorCode === "PermanentJobError") {
+      return new PermanentJobError(errorMessage);
+    }
+    if (job.errorCode === "RetryableJobError") {
+      return new RetryableJobError(errorMessage);
+    }
+    if (job.errorCode === "AbortSignalJobError") {
+      return new AbortSignalJobError(errorMessage);
+    }
+    if (job.errorCode === "JobSkippedError") {
+      return new JobSkippedError(errorMessage);
+    }
+    return new JobError(errorMessage);
   }
 
   /**

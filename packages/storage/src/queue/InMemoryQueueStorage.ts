@@ -5,10 +5,8 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { uuid4 } from "@podley/util";
-import { makeFingerprint, sleep } from "@podley/util";
-import { JobStatus, JobStorageFormat, IQueueStorage } from "./IQueueStorage";
-import { createServiceToken } from "@podley/util";
+import { createServiceToken, makeFingerprint, sleep, uuid4 } from "@podley/util";
+import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
 
 export const IN_MEMORY_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
   "jobqueue.storage.inMemory"
@@ -221,5 +219,13 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
     this.jobQueue = this.jobQueue.filter(
       (job) => job.status !== status || !job.completed_at || job.completed_at > cutoffDate
     );
+  }
+
+  /**
+   * Sets up the database schema and tables.
+   * No-op for in-memory storage as it doesn't require database setup.
+   */
+  public async setupDatabase(): Promise<void> {
+    // No-op for in-memory storage
   }
 }

@@ -139,4 +139,11 @@ export interface IQueueStorage<Input, Output> {
    * @param olderThanMs - The time in milliseconds that the jobs must be older than to be deleted
    */
   deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void>;
+
+  /**
+   * Sets up the database schema and tables.
+   * This method should be called before using the storage in tests.
+   * For production use, database setup should be done via migrations.
+   */
+  setupDatabase(): Promise<void>;
 }

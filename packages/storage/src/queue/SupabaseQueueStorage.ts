@@ -23,19 +23,18 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
     protected readonly queueName: string
   ) {}
 
-  protected isSetup = true;
-
-  public async setupDatabase(): Promise<SupabaseClient> {
-    if (this.isSetup) return this.client;
-
+  public async setupDatabase(): Promise<void> {
     // Note: For Supabase, table creation should typically be done through migrations
     // This setup assumes the table already exists or uses exec_sql RPC function
-    const createTypeSql = `CREATE TYPE IF NOT EXISTS job_status AS ENUM (${Object.values(JobStatus)
+    const createTypeSql = `CREATE TYPE job_status AS ENUM (${Object.values(JobStatus)
       .map((v) => `'${v}'`)
       .join(",")})`;
 
     const { error: typeError } = await this.client.rpc("exec_sql", { query: createTypeSql });
-    // Ignore error if type already exists
+    // Ignore error if type already exists (code 42710)
+    if (typeError && typeError.code !== "42710") {
+      throw typeError;
+    }
 
     const createTableSql = `
     CREATE TABLE IF NOT EXISTS job_queue (
@@ -61,6 +60,12 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
     )`;
 
     const { error: tableError } = await this.client.rpc("exec_sql", { query: createTableSql });
+    if (tableError) {
+      // Ignore error if table already exists (code 42P07)
+      if (tableError.code !== "42P07") {
+        throw tableError;
+      }
+    }
 
     // Create indexes
     const indexes = [
@@ -73,9 +78,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
       const { error: indexError } = await this.client.rpc("exec_sql", { query: indexSql });
       // Ignore index creation errors
     }
-
-    this.isSetup = true;
-    return this.client;
   }
 
   /**
@@ -84,7 +86,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns The ID of the added job
    */
   public async add(job: JobStorageFormat<Input, Output>): Promise<unknown> {
-    await this.setupDatabase();
     const now = new Date().toISOString();
     job.queue = this.queueName;
     job.job_run_id = job.job_run_id ?? uuid4();
@@ -127,7 +128,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns The job if found, undefined otherwise
    */
   public async get(id: number): Promise<JobStorageFormat<Input, Output> | undefined> {
-    await this.setupDatabase();
     const { data, error } = await this.client
       .from("job_queue")
       .select("*")
@@ -153,7 +153,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
     status: JobStatus = JobStatus.PENDING,
     num: number = 100
   ): Promise<JobStorageFormat<Input, Output>[]> {
-    await this.setupDatabase();
     num = Number(num) || 100;
 
     const { data, error } = await this.client
@@ -173,8 +172,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns The next job or undefined if no job is available
    */
   public async next(): Promise<JobStorageFormat<Input, Output> | undefined> {
-    await this.setupDatabase();
-
     // First, find the next job
     const { data: jobs, error: selectError } = await this.client
       .from("job_queue")
@@ -212,7 +209,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns The count of jobs with the specified status
    */
   public async size(status = JobStatus.PENDING): Promise<number> {
-    await this.setupDatabase();
     const { count, error } = await this.client
       .from("job_queue")
       .select("*", { count: "exact", head: true })
@@ -230,8 +226,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * - Marks a job as FAILED immediately for permanent or generic errors.
    */
   public async complete(jobDetails: JobStorageFormat<Input, Output>): Promise<void> {
-    await this.setupDatabase();
-
     const now = new Date().toISOString();
 
     // Handle skipped without changing attempts
@@ -324,7 +318,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * Clears all jobs from the queue.
    */
   public async deleteAll(): Promise<void> {
-    await this.setupDatabase();
     const { error } = await this.client.from("job_queue").delete().eq("queue", this.queueName);
 
     if (error) throw error;
@@ -336,7 +329,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns The cached output or null if not found
    */
   public async outputForInput(input: Input): Promise<Output | null> {
-    await this.setupDatabase();
     const fingerprint = await makeFingerprint(input);
 
     const { data, error } = await this.client
@@ -362,7 +354,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * can clean up and exit.
    */
   public async abort(jobId: unknown): Promise<void> {
-    await this.setupDatabase();
     const { error } = await this.client
       .from("job_queue")
       .update({ status: JobStatus.ABORTING })
@@ -378,7 +369,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns An array of jobs
    */
   public async getByRunId(job_run_id: string): Promise<Array<JobStorageFormat<Input, Output>>> {
-    await this.setupDatabase();
     const { data, error } = await this.client
       .from("job_queue")
       .select("*")
@@ -398,7 +388,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
     message: string,
     details: Record<string, any>
   ): Promise<void> {
-    await this.setupDatabase();
     const { error } = await this.client
       .from("job_queue")
       .update({
@@ -416,7 +405,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * Deletes a job by its ID
    */
   public async delete(jobId: unknown): Promise<void> {
-    await this.setupDatabase();
     const { error } = await this.client
       .from("job_queue")
       .delete()
@@ -432,7 +420,6 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @param olderThanMs - Delete jobs completed more than this many milliseconds ago
    */
   public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
-    await this.setupDatabase();
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
 
     const { error } = await this.client

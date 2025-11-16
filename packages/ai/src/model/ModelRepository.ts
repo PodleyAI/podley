@@ -5,10 +5,10 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter, EventParameters } from "@podley/util";
 import { type TabularRepository } from "@podley/storage";
+import { EventEmitter, EventParameters } from "@podley/util";
+import { Type } from "@sinclair/typebox";
 import { Model } from "./Model";
-import { Type, TObject, Static } from "@sinclair/typebox";
 
 /**
  * Events that can be emitted by the ModelRepository

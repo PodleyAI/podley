@@ -25,12 +25,17 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     this.tableName = `jobs_${queueName}`;
   }
 
+  private async getDb(): Promise<IDBDatabase> {
+    if (this.db) return this.db;
+    await this.setupDatabase();
+    return this.db!;
+  }
+
   /**
    * Sets up the IndexedDB database table with the required schema and indexes.
    * Must be called before using any other methods.
    */
-  protected async setupDatabase(): Promise<IDBDatabase> {
-    if (this.db) return this.db;
+  public async setupDatabase(): Promise<void> {
     const expectedIndexes: ExpectedIndexDefinition[] = [
       {
         name: "status",
@@ -56,7 +61,6 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
 
     // Now initialize the database
     this.db = await ensureIndexedDbTable(this.tableName, "id", expectedIndexes);
-    return this.db;
   }
 
   /**
@@ -65,7 +69,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * @returns A promise that resolves to the job id.
    */
   public async add(job: JobStorageFormat<Input, Output>): Promise<unknown> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const now = new Date().toISOString();
     job.id = job.id ?? uuid4();
     job.job_run_id = job.job_run_id ?? uuid4();
@@ -97,7 +101,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * @returns A promise that resolves to the job or undefined if the job is not found.
    */
   async get(id: unknown): Promise<JobStorageFormat<Input, Output> | undefined> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
     const request = store.get(id as string);
@@ -118,7 +122,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     status: JobStatus = JobStatus.PENDING,
     num: number = 100
   ): Promise<JobStorageFormat<Input, Output>[]> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
     const index = store.index("status_run_after");
@@ -151,7 +155,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * @returns A promise that resolves to the next job or undefined if the queue is empty.
    */
   public async next(): Promise<JobStorageFormat<Input, Output> | undefined> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
     const index = store.index("status_run_after");
@@ -216,7 +220,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * Returns the count of jobs in the queue.
    */
   public async size(status = JobStatus.PENDING): Promise<number> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.tableName, "readonly");
       const store = tx.objectStore(this.tableName);
@@ -233,7 +237,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * Marks a job as complete with its output or error.
    */
   public async complete(job: JobStorageFormat<Input, Output>): Promise<void> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
 
@@ -270,7 +274,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * Gets jobs by their run ID.
    */
   public async getByRunId(job_run_id: string): Promise<JobStorageFormat<Input, Output>[]> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
     const index = store.index("job_run_id");
@@ -287,7 +291,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * Deletes all jobs from the queue.
    */
   public async deleteAll(): Promise<void> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
     const request = store.clear();
@@ -304,7 +308,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    */
   public async outputForInput(input: Input): Promise<Output | null> {
     const fingerprint = await makeFingerprint(input);
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
     const index = store.index("fingerprint_status");
@@ -340,7 +344,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * Deletes a job by its ID.
    */
   public async delete(id: unknown): Promise<void> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
     const request = store.delete(id as string);
@@ -358,7 +362,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * @param olderThanMs - Delete jobs completed more than this many milliseconds ago
    */
   public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
     const index = store.index("status");

@@ -5,9 +5,6 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { IQueueStorage, IndexedDbQueueStorage } from "@podley/storage";
-import { BaseError, sleep, uuid4 } from "@podley/util";
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   AbortSignalJobError,
   IJobExecuteContext,
@@ -20,6 +17,9 @@ import {
   PermanentJobError,
   RetryableJobError,
 } from "@podley/job-queue";
+import { IQueueStorage } from "@podley/storage";
+import { BaseError, sleep, uuid4 } from "@podley/util";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
 export interface TInput {
   [key: string]: any;
@@ -94,8 +94,10 @@ export function runGenericJobQueueTests(
   console.log("running generic job queue tests for", storage.name, limiter?.name);
   beforeEach(async () => {
     const queueName = `test-queue-${uuid4()}`;
+    const storageInstance = storage(queueName);
+    await storageInstance.setupDatabase();
     jobQueue = new JobQueue<TInput, TOutput, TestJob>(queueName, TestJob as any, {
-      storage: storage(queueName),
+      storage: storageInstance,
       limiter: limiter?.(queueName, 4, 60),
       waitDurationInMilliseconds: 1,
     });
@@ -232,7 +234,7 @@ export function runGenericJobQueueTests(
     it("should retrieve the output for a given task type and input", async () => {
       const job = new TestJob({ input: { taskType: "task1", data: "input1" } });
       const id = await jobQueue.add(job);
-      jobQueue.start();
+      await jobQueue.start();
       await jobQueue.waitFor(id);
       const output = await jobQueue.outputForInput({ taskType: "task1", data: "input1" });
       expect(output).toEqual({ result: "output1" });

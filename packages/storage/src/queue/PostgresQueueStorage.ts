@@ -25,9 +25,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
     protected readonly queueName: string
   ) {}
 
-  #setup = false;
-  public async setupDatabase(): Promise<Pool> {
-    if (this.#setup) return this.db;
+  public async setupDatabase(): Promise<void> {
     let sql: string;
     try {
       sql = `CREATE TYPE job_status AS ENUM (${Object.values(JobStatus)
@@ -78,8 +76,6 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
       CREATE INDEX IF NOT EXISTS jobs_fingerprint_unique_idx 
         ON job_queue (queue, fingerprint, status)`;
     await this.db.query(sql);
-    this.#setup = true;
-    return this.db;
   }
 
   /**
@@ -88,7 +84,6 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns The ID of the added job
    */
   public async add(job: JobStorageFormat<Input, Output>) {
-    const db = await this.setupDatabase();
     const now = new Date().toISOString();
     job.queue = this.queueName;
     job.job_run_id = job.job_run_id ?? uuid4();
@@ -130,7 +125,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
       job.progress_message,
       job.progress_details ? JSON.stringify(job.progress_details) : null,
     ];
-    const result = await db.query(sql, params);
+    const result = await this.db.query(sql, params);
 
     if (!result) throw new Error("Failed to add to queue");
     job.id = result.rows[0].id;
@@ -143,8 +138,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns The job if found, undefined otherwise
    */
   public async get(id: number) {
-    const db = await this.setupDatabase();
-    const result = await db.query(
+    const result = await this.db.query(
       `SELECT *
         FROM job_queue
         WHERE id = $1 AND queue = $2
@@ -163,9 +157,11 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns An array of jobs
    */
   public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
-    const db = await this.setupDatabase();
     num = Number(num) || 100; // TS does not validate, so ensure it is a number
-    const result = await db.query<JobStorageFormat<Input, Output>, [string, JobStatus, number]>(
+    const result = await this.db.query<
+      JobStorageFormat<Input, Output>,
+      [string, JobStatus, number]
+    >(
       `
       SELECT *
         FROM job_queue
@@ -185,8 +181,10 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns The next job or undefined if no job is available
    */
   public async next() {
-    const db = await this.setupDatabase();
-    const result = await db.query<JobStorageFormat<Input, Output>, [JobStatus, string, JobStatus]>(
+    const result = await this.db.query<
+      JobStorageFormat<Input, Output>,
+      [JobStatus, string, JobStatus]
+    >(
       `
       UPDATE job_queue 
       SET status = $1, last_ran_at = NOW() AT TIME ZONE 'UTC'
@@ -213,8 +211,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns The count of jobs with the specified status
    */
   public async size(status = JobStatus.PENDING) {
-    const db = await this.setupDatabase();
-    const result = await db.query<{ count: string }, [string, JobStatus]>(
+    const result = await this.db.query<{ count: string }, [string, JobStatus]>(
       `
       SELECT COUNT(*) as count
         FROM job_queue
@@ -233,9 +230,8 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * - Marks a job as FAILED immediately for permanent or generic errors.
    */
   public async complete(jobDetails: JobStorageFormat<Input, Output>): Promise<void> {
-    const db = await this.setupDatabase();
     if (jobDetails.status === JobStatus.SKIPPED) {
-      await db.query(
+      await this.db.query(
         `UPDATE job_queue 
           SET 
             status = $1, 
@@ -247,7 +243,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
         [jobDetails.status, jobDetails.id, this.queueName]
       );
     } else if (jobDetails.status === JobStatus.PENDING) {
-      await db.query(
+      await this.db.query(
         `UPDATE job_queue 
           SET 
             error = $1, 
@@ -270,7 +266,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
         ]
       );
     } else {
-      await db.query(
+      await this.db.query(
         `
           UPDATE job_queue 
             SET 
@@ -301,8 +297,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * Clears all jobs from the queue.
    */
   public async deleteAll() {
-    const db = await this.setupDatabase();
-    await db.query(
+    await this.db.query(
       `
       DELETE FROM job_queue
         WHERE queue = $1`,
@@ -316,9 +311,8 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns The cached output or null if not found
    */
   public async outputForInput(input: Input) {
-    const db = await this.setupDatabase();
     const fingerprint = await makeFingerprint(input);
-    const result = await db.query(
+    const result = await this.db.query(
       `
       SELECT output
         FROM job_queue
@@ -336,8 +330,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * can clean up and exit.
    */
   public async abort(jobId: number) {
-    const db = await this.setupDatabase();
-    const result = await db.query(
+    const result = await this.db.query(
       `
       UPDATE job_queue 
       SET status = 'ABORTING' 
@@ -352,8 +345,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @returns An array of jobs
    */
   public async getByRunId(job_run_id: string) {
-    const db = await this.setupDatabase();
-    const result = await db.query(
+    const result = await this.db.query(
       `
       SELECT * FROM job_queue WHERE job_run_id = $1 AND queue = $2`,
       [job_run_id, this.queueName]
@@ -371,8 +363,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
     message: string,
     details: Record<string, any>
   ): Promise<void> {
-    const db = await this.setupDatabase();
-    await db.query(
+    await this.db.query(
       `
       UPDATE job_queue 
       SET progress = $1,
@@ -387,8 +378,10 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * Deletes a job by its ID
    */
   public async delete(jobId: unknown): Promise<void> {
-    const db = await this.setupDatabase();
-    await db.query("DELETE FROM job_queue WHERE id = $1 AND queue = $2", [jobId, this.queueName]);
+    await this.db.query("DELETE FROM job_queue WHERE id = $1 AND queue = $2", [
+      jobId,
+      this.queueName,
+    ]);
   }
 
   /**
@@ -397,9 +390,8 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @param olderThanMs - Delete jobs completed more than this many milliseconds ago
    */
   public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
-    const db = await this.setupDatabase();
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
-    await db.query(
+    await this.db.query(
       `DELETE FROM job_queue 
        WHERE queue = $1 
        AND status = $2 
