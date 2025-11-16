@@ -5,11 +5,9 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
+import { DataPortSchema, pipe, Task, Workflow } from "@podley/task-graph";
 import { describe, expect, it } from "bun:test";
-import { Task } from "@podley/task-graph";
-import { pipe, Workflow } from "@podley/task-graph";
 import { InMemoryTaskOutputRepository } from "../../binding/InMemoryTaskOutputRepository";
-import { Type } from "@sinclair/typebox";
 
 // Define input and output types for our tasks
 type NumberInput = { value: number };
@@ -18,15 +16,25 @@ type NumberOutput = { value: number };
 abstract class MathTask extends Task<NumberInput, NumberOutput> {
   public static category = "Math";
   public static inputSchema() {
-    return Type.Object({
-      value: Type.Number(),
-    });
+    return {
+      type: "object",
+      properties: {
+        value: {
+          type: "number",
+        },
+      },
+    } as DataPortSchema;
   }
 
   public static outputSchema() {
-    return Type.Object({
-      value: Type.Number(),
-    });
+    return {
+      type: "object",
+      properties: {
+        value: {
+          type: "number",
+        },
+      },
+    } as DataPortSchema;
   }
 }
 

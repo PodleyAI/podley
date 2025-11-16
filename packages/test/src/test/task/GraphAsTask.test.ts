@@ -1,5 +1,4 @@
-import { Dataflow, GraphAsTask, Task, TaskGraph } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { Dataflow, DataPortSchema, GraphAsTask, Task, TaskGraph } from "@podley/task-graph";
 import { describe, expect, it } from "bun:test";
 
 // Test tasks with specific input/output schemas
@@ -7,17 +6,33 @@ class TaskA extends Task {
   static type = "TaskA";
   static category = "Test";
 
-  static inputSchema() {
-    return Type.Object({
-      inputA1: Type.String({ description: "First input to A" }),
-      inputA2: Type.Number({ description: "Second input to A", default: 42 }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        inputA1: {
+          type: "string",
+          description: "First input to A",
+        },
+        inputA2: {
+          type: "number",
+          description: "Second input to A",
+          default: 42,
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema() {
-    return Type.Object({
-      outputA: Type.String({ description: "Output from A" }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        outputA: {
+          type: "string",
+          description: "Output from A",
+        },
+      },
+    } as DataPortSchema;
   }
 
   async execute(input: any): Promise<any> {
@@ -31,16 +46,28 @@ class TaskB extends Task {
   static type = "TaskB";
   static category = "Test";
 
-  static inputSchema() {
-    return Type.Object({
-      inputB: Type.String({ description: "Input to B" }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        inputB: {
+          type: "string",
+          description: "Input to B",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema() {
-    return Type.Object({
-      outputB: Type.String({ description: "Output from B" }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        outputB: {
+          type: "string",
+          description: "Output from B",
+        },
+      },
+    } as DataPortSchema;
   }
 
   async execute(input: any): Promise<any> {
@@ -54,20 +81,38 @@ class TaskC extends Task {
   static type = "TaskC";
   static category = "Test";
 
-  static inputSchema() {
-    return Type.Object({
-      inputC1: Type.String({ description: "First input to C" }),
-      inputC2: Type.Optional(
-        Type.String({ description: "Second input to C", default: "defaultC2" })
-      ),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        inputC1: {
+          type: "string",
+          description: "First input to C",
+        },
+        inputC2: {
+          type: "string",
+          description: "Second input to C",
+          default: "defaultC2",
+        },
+      },
+      required: ["inputC1"],
+    } as DataPortSchema;
   }
 
-  static outputSchema() {
-    return Type.Object({
-      outputC1: Type.String({ description: "First output from C" }),
-      outputC2: Type.Number({ description: "Second output from C" }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        outputC1: {
+          type: "string",
+          description: "First output from C",
+        },
+        outputC2: {
+          type: "number",
+          description: "Second output from C",
+        },
+      },
+    } as DataPortSchema;
   }
 
   async execute(input: any): Promise<any> {

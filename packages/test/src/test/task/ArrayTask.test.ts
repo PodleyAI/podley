@@ -7,6 +7,7 @@
 
 import {
   ArrayTask,
+  DataPortSchema,
   IExecuteContext,
   ITask,
   PROPERTY_ARRAY,
@@ -15,10 +16,8 @@ import {
   TaskInput,
   TaskOutput,
   TaskStatus,
-  TypeReplicateArray,
 } from "@podley/task-graph";
-import { ConvertAllToOptionalArray, TypeOptionalArray } from "@podley/util";
-import { TObject, Type } from "@sinclair/typebox";
+import { ConvertAllToOptionalArray } from "@podley/util";
 import { describe, expect, spyOn, test } from "bun:test";
 
 // Define our input and output types
@@ -40,16 +39,36 @@ class MultiplyRunTask extends ArrayTask<
   ConvertAllToOptionalArray<MultiplyOutput>,
   TaskConfig
 > {
-  public static inputSchema(): TObject {
-    return Type.Object({
-      a: TypeReplicateArray(Type.Number({ default: 0 })),
-      b: TypeReplicateArray(Type.Number({ default: 0 })),
-    });
+  public static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        a: {
+          oneOf: [
+            { type: "number", default: 0 },
+            { type: "array", items: { type: "number", default: 0 } },
+          ],
+          "x-replicate": true,
+        },
+        b: {
+          oneOf: [
+            { type: "number", default: 0 },
+            { type: "array", items: { type: "number", default: 0 } },
+          ],
+          "x-replicate": true,
+        },
+      },
+    } as DataPortSchema;
   }
-  public static outputSchema(): TObject {
-    return Type.Object({
-      result: TypeOptionalArray(Type.Number()),
-    });
+  public static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        result: {
+          oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
+        },
+      },
+    } as DataPortSchema;
   }
 
   public async execute(input: MultiplyInput, context: IExecuteContext): Promise<MultiplyOutput> {
@@ -67,16 +86,36 @@ class MultiplyRunReactiveTask extends ArrayTask<
   ConvertAllToOptionalArray<MultiplyInput>,
   ConvertAllToOptionalArray<MultiplyOutput>
 > {
-  public static inputSchema(): TObject {
-    return Type.Object({
-      a: TypeReplicateArray(Type.Number({ default: 0 })),
-      b: TypeReplicateArray(Type.Number({ default: 0 })),
-    });
+  public static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        a: {
+          oneOf: [
+            { type: "number", default: 0 },
+            { type: "array", items: { type: "number", default: 0 } },
+          ],
+          "x-replicate": true,
+        },
+        b: {
+          oneOf: [
+            { type: "number", default: 0 },
+            { type: "array", items: { type: "number", default: 0 } },
+          ],
+          "x-replicate": true,
+        },
+      },
+    } as DataPortSchema;
   }
-  public static outputSchema(): TObject {
-    return Type.Object({
-      result: TypeOptionalArray(Type.Number()),
-    });
+  public static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        result: {
+          oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
+        },
+      },
+    } as DataPortSchema;
   }
 
   public async executeReactive(
@@ -100,15 +139,29 @@ class SquareRunTask extends ArrayTask<
   ConvertAllToOptionalArray<SquareInput>,
   ConvertAllToOptionalArray<SquareOutput>
 > {
-  public static inputSchema(): TObject {
-    return Type.Object({
-      a: TypeReplicateArray(Type.Number({ default: 0 })),
-    });
+  public static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        a: {
+          oneOf: [
+            { type: "number", default: 0 },
+            { type: "array", items: { type: "number", default: 0 } },
+          ],
+          "x-replicate": true,
+        },
+      },
+    } as DataPortSchema;
   }
-  public static outputSchema(): TObject {
-    return Type.Object({
-      result: TypeOptionalArray(Type.Number()),
-    });
+  public static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        result: {
+          oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
+        },
+      },
+    } as DataPortSchema;
   }
 
   public async execute(input: SquareInput, context: IExecuteContext): Promise<SquareOutput> {
@@ -122,15 +175,29 @@ class SquareRunReactiveTask extends ArrayTask<
   ConvertAllToOptionalArray<SquareInput>,
   ConvertAllToOptionalArray<SquareOutput>
 > {
-  public static inputSchema(): TObject {
-    return Type.Object({
-      a: TypeReplicateArray(Type.Number({ default: 0 })),
-    });
+  public static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        a: {
+          oneOf: [
+            { type: "number", default: 0 },
+            { type: "array", items: { type: "number", default: 0 } },
+          ],
+          "x-replicate": true,
+        },
+      },
+    } as DataPortSchema;
   }
-  public static outputSchema(): TObject {
-    return Type.Object({
-      result: TypeOptionalArray(Type.Number()),
-    });
+  public static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        result: {
+          oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
+        },
+      },
+    } as DataPortSchema;
   }
 
   public async executeReactive(input: SquareInput, output: SquareOutput): Promise<SquareOutput> {

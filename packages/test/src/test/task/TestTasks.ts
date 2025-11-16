@@ -13,6 +13,7 @@
 
 import {
   CreateWorkflow,
+  DataPortSchema,
   IExecuteContext,
   Task,
   TaskAbortedError,
@@ -23,7 +24,6 @@ import {
   Workflow,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
-import { TObject, Type } from "@sinclair/typebox";
 
 /**
  * Standard input type for basic test tasks
@@ -48,22 +48,34 @@ export type TestIOTaskOutput = {
 export class TestIOTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   static readonly type = "TestIOTask";
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      key: Type.String({
-        default: "default",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        key: {
+          type: "string",
+          default: "default",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      reactiveOnly: Type.Boolean({}),
-      all: Type.Boolean({}),
-      key: Type.String({
-        default: "default",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        reactiveOnly: {
+          type: "boolean",
+        },
+        all: {
+          type: "boolean",
+        },
+        key: {
+          type: "string",
+          default: "default",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -114,25 +126,34 @@ export class SimpleProcessingTask extends Task<SimpleProcessingInput, SimpleProc
   static readonly type = "SimpleProcessingTask";
 
   // Define input schema
-  static inputSchema(): TObject {
-    return Type.Object({
-      value: Type.String({
-        description: "Input value to process",
-        default: "default",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        value: {
+          type: "string",
+          description: "Input value to process",
+          default: "default",
+        },
+      },
+    } as DataPortSchema;
   }
 
   // Define output schema
-  static outputSchema(): TObject {
-    return Type.Object({
-      processed: Type.Boolean({
-        description: "Flag indicating if the value was processed",
-      }),
-      result: Type.String({
-        description: "Processed result value",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        processed: {
+          type: "boolean",
+          description: "Flag indicating if the value was processed",
+        },
+        result: {
+          type: "string",
+          description: "Processed result value",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -172,22 +193,30 @@ export class FailingTask extends Task {
   declare runOutputData: { out: number };
 
   // Define input schema
-  static inputSchema(): TObject {
-    return Type.Object({
-      in: Type.Number({
-        description: "Input number",
-        default: 0,
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        in: {
+          type: "number",
+          description: "Input number",
+          default: 0,
+        },
+      },
+    } as DataPortSchema;
   }
 
   // Define output schema
-  static outputSchema(): TObject {
-    return Type.Object({
-      out: Type.Number({
-        description: "Output number",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        out: {
+          type: "number",
+          description: "Output number",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -216,20 +245,33 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
   progressValue = 0.5;
   delayMs = 0;
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      key: Type.String({
-        default: "default",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        key: {
+          type: "string",
+          default: "default",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      reactiveOnly: Type.Boolean({}),
-      all: Type.Boolean({}),
-      key: Type.String({}),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        reactiveOnly: {
+          type: "boolean",
+        },
+        all: {
+          type: "boolean",
+        },
+        key: {
+          type: "string",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -284,20 +326,28 @@ export type TestSquareTaskOutput = {
 export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareTask";
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      input: Type.Number({
-        description: "Number to square",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        input: {
+          type: "number",
+          description: "Number to square",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      output: Type.Number({
-        description: "Squared number",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        output: {
+          type: "number",
+          description: "Squared number",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -317,20 +367,28 @@ export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutp
 export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareNonReactiveTask";
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      input: Type.Number({
-        description: "Number to square",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        input: {
+          type: "number",
+          description: "Number to square",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      output: Type.Number({
-        description: "Squared number",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        output: {
+          type: "number",
+          description: "Squared number",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -361,20 +419,28 @@ export type TestDoubleTaskOutput = {
 export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutput> {
   static readonly type = "TestDoubleTask";
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      input: Type.Number({
-        description: "Number to double",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        input: {
+          type: "number",
+          description: "Number to double",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      output: Type.Number({
-        description: "Doubled number",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        output: {
+          type: "number",
+          description: "Doubled number",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -394,20 +460,28 @@ export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutp
 export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTaskOutput> {
   static readonly type = "TestSquareErrorTask";
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      input: Type.Number({
-        description: "Number to square (will throw error)",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        input: {
+          type: "number",
+          description: "Number to square (will throw error)",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      output: Type.Number({
-        description: "Squared number (never returned due to error)",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        output: {
+          type: "number",
+          description: "Squared number (never returned due to error)",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -424,18 +498,28 @@ export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTas
 export class TestSimpleTask extends Task<{ input: string }, { output: string }> {
   static type = "TestSimpleTask";
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      input: Type.String({
-        description: "Input string",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        input: {
+          type: "string",
+          description: "Input string",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      output: Type.String({ description: "Output string" }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        output: {
+          type: "string",
+          description: "Output string",
+        },
+      },
+    } as DataPortSchema;
   }
 
   async execute(input: { input: string }): Promise<{ output: string }> {
@@ -451,20 +535,28 @@ export class TestOutputTask extends Task<{ input: string }, { customOutput: stri
   declare runInputData: { input: string };
   declare runOutputData: { customOutput: string };
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      input: Type.String({
-        description: "Input string",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        input: {
+          type: "string",
+          description: "Input string",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      customOutput: Type.String({
-        description: "Custom output string",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        customOutput: {
+          type: "string",
+          description: "Custom output string",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -483,20 +575,28 @@ export class TestInputTask extends Task<{ customInput: string }, { output: strin
   declare runInputData: { customInput: string };
   declare runOutputData: { output: string };
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      customInput: Type.String({
-        description: "Custom input string",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        customInput: {
+          type: "string",
+          description: "Custom input string",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      output: Type.String({
-        description: "Output string",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        output: {
+          type: "string",
+          description: "Output string",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -532,20 +632,28 @@ export class LongRunningTask extends Task {
 export class StringTask extends Task<{ input: string }, { output: string }, TaskConfig> {
   static type = "StringTask";
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      input: Type.String({
-        description: "Input string",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        input: {
+          type: "string",
+          description: "Input string",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      output: Type.String({
-        description: "Output string",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        output: {
+          type: "string",
+          description: "Output string",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -562,20 +670,28 @@ export class StringTask extends Task<{ input: string }, { output: string }, Task
 export class NumberToStringTask extends Task<{ input: number }, { output: string }, TaskConfig> {
   static type = "NumberToStringTask";
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      input: Type.Number({
-        description: "Input number",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        input: {
+          type: "number",
+          description: "Input number",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      output: Type.String({
-        description: "Output string",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        output: {
+          type: "string",
+          description: "Output string",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -592,20 +708,28 @@ export class NumberToStringTask extends Task<{ input: number }, { output: string
 export class NumberTask extends Task<{ input: number }, { output: number }, TaskConfig> {
   static type = "NumberTask";
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      input: Type.Number({
-        description: "Input number",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        input: {
+          type: "number",
+          description: "Input number",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      output: Type.Number({
-        description: "Output number",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        output: {
+          type: "number",
+          description: "Output number",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
@@ -637,23 +761,32 @@ type TestAddTaskOutput = {
 export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
   static readonly type = "TestAddTask";
 
-  static inputSchema(): TObject {
-    return Type.Object({
-      a: Type.Number({
-        description: "First number",
-      }),
-      b: Type.Number({
-        description: "Second number",
-      }),
-    });
+  static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        a: {
+          type: "number",
+          description: "First number",
+        },
+        b: {
+          type: "number",
+          description: "Second number",
+        },
+      },
+    } as DataPortSchema;
   }
 
-  static outputSchema(): TObject {
-    return Type.Object({
-      output: Type.Number({
-        description: "Sum of a and b",
-      }),
-    });
+  static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        output: {
+          type: "number",
+          description: "Sum of a and b",
+        },
+      },
+    } as DataPortSchema;
   }
 
   /**
