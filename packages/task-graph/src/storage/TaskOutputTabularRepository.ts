@@ -23,7 +23,7 @@ export const TaskOutputSchema = {
     createdAt: { type: "string", format: "date-time" },
   },
   additionalProperties: false,
-} as const satisfies DataPortSchemaObject;
+} satisfies DataPortSchemaObject;
 
 export const TaskOutputPrimaryKeyNames = ["key", "taskType"] as const;
 
