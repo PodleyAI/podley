@@ -4,11 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, EventEmitter, makeFingerprint } from "@podley/util";
-import { Static, TObject, Type } from "@sinclair/typebox";
 import {
-  ExtractPrimaryKey,
-  ExtractValue,
+  createServiceToken,
+  DataPortSchemaObject,
+  EventEmitter,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+  makeFingerprint,
+} from "@podley/util";
+import {
   ITabularRepository,
   TabularEventListener,
   TabularEventListeners,
@@ -17,7 +22,7 @@ import {
   ValueOptionType,
 } from "./ITabularRepository";
 
-export const TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
+export const TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any, any, any, any, any>>(
   "storage.tabularRepository"
 );
 
@@ -27,24 +32,24 @@ export const TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
  * primary keys and values, and supports compound keys and partial key lookup.
  * Has a basic event emitter for listening to repository events.
  *
- * @template Schema - The schema definition for the entity using TypeBox
+ * @template Schema - The schema definition for the entity using JSON Schema
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export abstract class TabularRepository<
-  Schema extends TObject,
-  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
+  Schema extends DataPortSchemaObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = Static<Schema>,
-  Value = ExtractValue<Schema, PrimaryKeyNames>,
+  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
+  Entity = FromSchema<Schema>,
+  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
 > implements ITabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity>
 {
   /** Event emitter for repository events */
   protected events = new EventEmitter<TabularEventListeners<PrimaryKey, Entity>>();
 
   protected indexes: Array<keyof Entity>[];
-  protected primaryKeySchema: TObject;
-  protected valueSchema: TObject;
+  protected primaryKeySchema: DataPortSchemaObject;
+  protected valueSchema: DataPortSchemaObject;
 
   /**
    * Creates a new TabularRepository instance
@@ -64,15 +69,23 @@ export abstract class TabularRepository<
 
     // Split the schema properties into primary key and value properties
     for (const [key, typeDef] of Object.entries(schema.properties)) {
-      if (primaryKeySet.has(key as keyof Static<Schema>)) {
-        primaryKeyProps[key] = { ...typeDef };
+      if (primaryKeySet.has(key as keyof Schema["properties"])) {
+        primaryKeyProps[key] = Object.assign({}, typeDef);
       } else {
-        valueProps[key] = { ...typeDef };
+        valueProps[key] = Object.assign({}, typeDef);
       }
     }
 
-    this.primaryKeySchema = Type.Object(primaryKeyProps);
-    this.valueSchema = Type.Object(valueProps);
+    this.primaryKeySchema = {
+      type: "object",
+      properties: primaryKeyProps,
+      additionalProperties: false,
+    } as DataPortSchemaObject;
+    this.valueSchema = {
+      type: "object",
+      properties: valueProps,
+      additionalProperties: false,
+    } as DataPortSchemaObject;
 
     // validate all combined columns names are "identifier" names
     const combinedColumns = [...this.primaryKeyColumns(), ...this.valueColumns()];

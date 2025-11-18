@@ -4,29 +4,35 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, makeFingerprint } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
-import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
+import {
+  createServiceToken,
+  DataPortSchemaObject,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+  makeFingerprint,
+} from "@podley/util";
+import { ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
-export const MEMORY_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
-  "storage.tabularRepository.inMemory"
-);
+export const MEMORY_TABULAR_REPOSITORY = createServiceToken<
+  ITabularRepository<any, any, any, any, any>
+>("storage.tabularRepository.inMemory");
 
 /**
  * A generic in-memory key-value repository implementation.
  * Provides a simple, non-persistent storage solution suitable for testing and caching scenarios.
  *
- * @template Schema - The schema definition for the entity using TypeBox
+ * @template Schema - The schema definition for the entity using JSON Schema
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class InMemoryTabularRepository<
-  Schema extends TObject,
-  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
+  Schema extends DataPortSchemaObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = Static<Schema>,
-  Value = ExtractValue<Schema, PrimaryKeyNames>,
+  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
+  Entity = FromSchema<Schema>,
+  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** Internal storage using a Map with fingerprint strings as keys */
   values = new Map<string, Entity>();

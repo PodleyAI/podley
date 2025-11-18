@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
-import { TSchema, Type } from "@sinclair/typebox";
+import { createServiceToken, JsonSchema } from "@podley/util";
 import { FsFolderTabularRepository } from "../tabular/FsFolderTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";
@@ -33,8 +32,8 @@ export class FsFolderJsonKvRepository extends KvViaTabularRepository {
    */
   constructor(
     public folderPath: string,
-    keySchema: TSchema = Type.String(),
-    valueSchema: TSchema = Type.Any()
+    keySchema: JsonSchema = { type: "string" },
+    valueSchema: JsonSchema = {}
   ) {
     super(keySchema, valueSchema);
     this.tabularRepository = new FsFolderTabularRepository(

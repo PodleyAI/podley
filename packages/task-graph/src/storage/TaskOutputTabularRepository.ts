@@ -5,8 +5,7 @@
  */
 
 import { type TabularRepository } from "@podley/storage";
-import { compress, decompress, makeFingerprint, TypeBlob, TypeDateTime } from "@podley/util";
-import { Type } from "@sinclair/typebox";
+import { compress, DataPortSchemaObject, decompress, makeFingerprint } from "@podley/util";
 import { TaskInput, TaskOutput } from "../task/TaskTypes";
 import { TaskOutputRepository } from "./TaskOutputRepository";
 
@@ -15,12 +14,16 @@ export type TaskOutputPrimaryKey = {
   taskType: string;
 };
 
-export const TaskOutputSchema = Type.Object({
-  key: Type.String(),
-  taskType: Type.String(),
-  value: TypeBlob(),
-  createdAt: TypeDateTime(),
-});
+export const TaskOutputSchema = {
+  type: "object",
+  properties: {
+    key: { type: "string" },
+    taskType: { type: "string" },
+    value: { type: "string", contentEncoding: "blob" },
+    createdAt: { type: "string", format: "date-time" },
+  },
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
 
 export const TaskOutputPrimaryKeyNames = ["key", "taskType"] as const;
 
@@ -77,7 +80,8 @@ export class TaskOutputTabularRepository extends TaskOutputRepository {
       await this.tabularRepository.put({
         taskType,
         key,
-        value: compressedValue,
+        // contentEncoding: "blob" allows Uint8Array despite schema type being "string"
+        value: compressedValue as unknown as string,
         createdAt: createdAt.toISOString(),
       });
     } else {
@@ -85,7 +89,8 @@ export class TaskOutputTabularRepository extends TaskOutputRepository {
       await this.tabularRepository.put({
         taskType,
         key,
-        value: valueBuffer,
+        // contentEncoding: "blob" allows Buffer/Uint8Array despite schema type being "string"
+        value: valueBuffer as unknown as string,
         createdAt: createdAt.toISOString(),
       });
     }

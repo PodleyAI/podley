@@ -4,17 +4,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventParameters } from "@podley/util";
-import { Type } from "@sinclair/typebox";
+import { DataPortSchemaObject, EventParameters } from "@podley/util";
 import { JSONValue } from "../tabular/ITabularRepository";
 
 /**
  * Default schema types for simple string row data
  */
-export const DefaultKeyValueSchema = Type.Object({
-  key: Type.String(),
-  value: Type.Any(),
-});
+export const DefaultKeyValueSchema = {
+  type: "object",
+  properties: {
+    key: { type: "string" },
+    value: {},
+  },
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
 export const DefaultKeyValueKey = ["key"] as const;
 
 /**

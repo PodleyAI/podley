@@ -71,6 +71,7 @@ export class Task<
     return {
       type: "object",
       properties: {},
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
 
@@ -81,6 +82,7 @@ export class Task<
     return {
       type: "object",
       properties: {},
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
 
@@ -331,8 +333,7 @@ export class Task<
       return {};
     }
     try {
-      const thisStatic = this.constructor as typeof Task;
-      const compiledSchema = thisStatic.getInputSchemaNode();
+      const compiledSchema = this.getInputSchemaNode(this.type);
       const defaultData = compiledSchema.getData(undefined, {
         addOptionalProps: true,
         removeInvalidData: false,
@@ -473,49 +474,49 @@ export class Task<
   /**
    * The compiled input schema
    */
-  private static _inputSchemaNode: SchemaNode | undefined;
+  private static _inputSchemaNode: Map<string, SchemaNode> = new Map();
+
+  protected static generateInputSchemaNode(schema: DataPortSchema) {
+    if (typeof schema === "boolean") {
+      if (schema === false) {
+        return compileSchema({ not: {} });
+      }
+      return compileSchema({});
+    }
+    return compileSchema(schema);
+  }
 
   /**
    * Gets the compiled input schema
    */
-  protected static getInputSchemaNode(): SchemaNode {
-    if (!this._inputSchemaNode) {
+  protected static getInputSchemaNode(type: TaskTypeName): SchemaNode {
+    if (!this._inputSchemaNode.has(type)) {
       const dataPortSchema = this.inputSchema();
-      // Handle boolean schemas - skip validation for 'true' (accepts any), reject for 'false'
-      if (typeof dataPortSchema === "boolean") {
-        if (dataPortSchema === false) {
-          // Create a schema that rejects everything
-          this._inputSchemaNode = compileSchema(false as any);
-        } else {
-          // For 'true', accept any input - create a schema that accepts anything
-          this._inputSchemaNode = compileSchema(true as any);
-        }
-      } else {
-        // Try to compile the schema - if it fails, it means the schema structure is invalid
-        // In that case, we'll create a permissive schema that accepts the structure
-        try {
-          this._inputSchemaNode = compileSchema(dataPortSchema);
-        } catch (error) {
-          // If compilation fails, fall back to accepting any object structure
-          // This is a safety net for schemas that json-schema-library can't compile
-          console.warn(
-            `Failed to compile input schema for ${this.type}, falling back to permissive validation:`,
-            error
-          );
-          this._inputSchemaNode = compileSchema(true as any);
-        }
+      const schemaNode = this.generateInputSchemaNode(dataPortSchema);
+      try {
+        this._inputSchemaNode.set(type, schemaNode);
+      } catch (error) {
+        // If compilation fails, fall back to accepting any object structure
+        // This is a safety net for schemas that json-schema-library can't compile
+        console.warn(
+          `Failed to compile input schema for ${this.type}, falling back to permissive validation:`,
+          error
+        );
+        this._inputSchemaNode.set(type, compileSchema({}));
       }
     }
-    return this._inputSchemaNode;
+    return this._inputSchemaNode.get(type)!;
+  }
+
+  protected getInputSchemaNode(type: TaskTypeName): SchemaNode {
+    return (this.constructor as typeof Task).getInputSchemaNode(type);
   }
 
   /**
    * Validates an input data object against the task's input schema
    */
   public async validateInput(input: Partial<Input>): Promise<boolean> {
-    const thisStatic = this.constructor as typeof Task;
-    // validate the partial input against the schema
-    const schemaNode = thisStatic.getInputSchemaNode();
+    const schemaNode = this.getInputSchemaNode(this.type);
     const result = schemaNode.validate(input);
 
     if (!result.valid) {

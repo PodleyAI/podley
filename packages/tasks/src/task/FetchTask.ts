@@ -67,6 +67,7 @@ const inputSchema = {
     },
   },
   required: ["url"],
+  additionalProperties: false,
 } as const satisfies DataPortSchema;
 
 const outputSchema = {
@@ -90,6 +91,7 @@ const outputSchema = {
       description: "The arraybuffer response",
     },
   },
+  additionalProperties: false,
 } as const satisfies DataPortSchema;
 
 export type FetchTaskInput = FromSchema<typeof inputSchema>;

@@ -4,8 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Static, TObject, TSchema } from "@sinclair/typebox";
-import { ExtractPrimaryKey, ExtractValue, ValueOptionType } from "./ITabularRepository";
+import {
+  DataPortSchemaObject,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+  JsonSchema,
+} from "@podley/util";
+import { ValueOptionType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
 // BaseTabularRepository is a tabular store that uses SQLite and Postgres use as common code
@@ -14,16 +20,16 @@ import { TabularRepository } from "./TabularRepository";
  * Base class for SQL-based tabular repositories that implements common functionality
  * for both SQLite and PostgreSQL database implementations.
  *
- * @template Schema - The schema definition for the entity using TypeBox
+ * @template Schema - The schema definition for the entity using JSON Schema
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export abstract class BaseSqlTabularRepository<
-  Schema extends TObject,
-  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
+  Schema extends DataPortSchemaObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = Static<Schema>,
-  Value = ExtractValue<Schema, PrimaryKeyNames>,
+  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
+  Entity = FromSchema<Schema>,
+  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /**
    * Creates a new instance of BaseSqlTabularRepository
@@ -47,14 +53,14 @@ export abstract class BaseSqlTabularRepository<
    * Maps JavaScript/TypeScript types to their corresponding SQL type
    * Must be implemented by derived classes for specific SQL dialects
    */
-  protected abstract mapTypeToSQL(typeDef: TSchema): string;
+  protected abstract mapTypeToSQL(typeDef: JsonSchema): string;
 
   /**
    * Generates the SQL column definitions for primary key fields
    * @returns SQL string containing primary key column definitions
    */
   protected constructPrimaryKeyColumns($delimiter: string = ""): string {
-    const cols = Object.entries<TSchema>(this.primaryKeySchema.properties)
+    const cols = Object.entries<JsonSchema>(this.primaryKeySchema.properties)
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
         return `${$delimiter}${key}${$delimiter} ${sqlType} NOT NULL`;
@@ -68,7 +74,7 @@ export abstract class BaseSqlTabularRepository<
    * @returns SQL string containing value column definitions
    */
   protected constructValueColumns($delimiter: string = ""): string {
-    const cols = Object.entries<TSchema>(this.valueSchema.properties)
+    const cols = Object.entries<JsonSchema>(this.valueSchema.properties)
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
         // Check if the property is nullable based on schema definition
@@ -88,15 +94,12 @@ export abstract class BaseSqlTabularRepository<
    * @param typeDef - The schema type definition
    * @returns true if the type allows null values
    */
-  protected isNullable(typeDef: TSchema): boolean {
+  protected isNullable(typeDef: JsonSchema): boolean {
+    if (typeof typeDef === "boolean") return false;
+
     // Check for union types that include null
     if (typeDef.anyOf && Array.isArray(typeDef.anyOf)) {
       return typeDef.anyOf.some((type: any) => type.type === "null");
-    }
-
-    // Check for TypeBox Optional/ReadonlyOptional types
-    if (typeDef.kind === "Optional" || typeDef.kind === "ReadonlyOptional") {
-      return true;
     }
 
     // Check for nullable keyword if it exists
@@ -125,11 +128,13 @@ export abstract class BaseSqlTabularRepository<
 
   /**
    * Gets the real underlying type from possibly union types
-   * For example, for Type.Union([Type.String(), Type.Null()]), this extracts the String type
+   * For example, for a union with null, this extracts the non-null type
    * @param typeDef - The schema to extract from
    * @returns The non-null type from the schema
    */
-  protected getNonNullType(typeDef: TSchema): TSchema {
+  protected getNonNullType(typeDef: JsonSchema): JsonSchema {
+    if (typeof typeDef === "boolean") return typeDef;
+
     if (typeDef.anyOf && Array.isArray(typeDef.anyOf)) {
       const nonNullType = typeDef.anyOf.find((t: any) => t.type !== "null");
       if (nonNullType) {
@@ -195,6 +200,9 @@ export abstract class BaseSqlTabularRepository<
 
     // Extract the non-null type for proper handling
     const actualType = this.getNonNullType(typeDef);
+    if (typeof actualType === "boolean") {
+      return value as ValueOptionType;
+    }
 
     if (actualType.contentEncoding === "blob") {
       const v: any = value;
@@ -230,6 +238,9 @@ export abstract class BaseSqlTabularRepository<
 
     // Extract the non-null type for proper handling
     const actualType = this.getNonNullType(typeDef);
+    if (typeof actualType === "boolean") {
+      return value as Entity[keyof Entity];
+    }
 
     if (actualType.contentEncoding === "blob") {
       const v: any = value;
@@ -265,7 +276,7 @@ export abstract class BaseSqlTabularRepository<
     }
 
     // Validate schema keys
-    const validateSchemaKeys = (schema: TObject) => {
+    const validateSchemaKeys = (schema: DataPortSchemaObject) => {
       for (const key in schema.properties) {
         if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)) {
           throw new Error(

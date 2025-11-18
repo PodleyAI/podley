@@ -33,6 +33,7 @@ class TaskA extends Task {
           description: "Output from A",
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
 
@@ -56,6 +57,7 @@ class TaskB extends Task {
           description: "Input to B",
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
 
@@ -97,6 +99,7 @@ class TaskC extends Task {
         },
       },
       required: ["inputC1"],
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
 
@@ -113,6 +116,7 @@ class TaskC extends Task {
           description: "Second output from C",
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
 

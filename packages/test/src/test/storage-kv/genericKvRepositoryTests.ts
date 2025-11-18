@@ -5,20 +5,20 @@
  */
 
 import { DefaultKeyValueSchema, IKvRepository } from "@podley/storage";
-import { Static, TSchema, Type } from "@sinclair/typebox";
+import { FromSchema, JsonSchema } from "@podley/util";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
 export function runGenericKvRepositoryTests(
-  createRepository: (keyType: TSchema, valueType: TSchema) => Promise<IKvRepository<any, any>>
+  createRepository: (keyType: JsonSchema, valueType: JsonSchema) => Promise<IKvRepository<any, any>>
 ) {
   describe("with default schemas (key and value)", () => {
     let repository: IKvRepository<
-      Static<typeof DefaultKeyValueSchema.properties.key>,
-      Static<typeof DefaultKeyValueSchema.properties.value>
+      FromSchema<typeof DefaultKeyValueSchema.properties.key>,
+      FromSchema<typeof DefaultKeyValueSchema.properties.value>
     >;
 
     beforeEach(async () => {
-      repository = await createRepository(Type.String(), Type.Any());
+      repository = await createRepository({ type: "string" }, {});
     });
 
     afterEach(async () => {});
@@ -67,11 +67,15 @@ export function runGenericKvRepositoryTests(
 
     beforeEach(async () => {
       repository = (await createRepository(
-        Type.String(),
-        Type.Object({
-          option: Type.String(),
-          success: Type.Boolean(),
-        })
+        { type: "string" },
+        {
+          type: "object",
+          properties: {
+            option: { type: "string" },
+            success: { type: "boolean" },
+          },
+          additionalProperties: false,
+        }
       )) as IKvRepository<string, { option: string; success: boolean }>;
     });
 

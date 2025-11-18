@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, EventEmitter, makeFingerprint } from "@podley/util";
-import { TSchema, Type } from "@sinclair/typebox";
+import { createServiceToken, EventEmitter, JsonSchema, makeFingerprint } from "@podley/util";
 import { JSONValue } from "../tabular/ITabularRepository";
 import {
   IKvRepository,
@@ -39,8 +38,8 @@ export abstract class KvRepository<
    * Creates a new KvRepository instance
    */
   constructor(
-    public keySchema: TSchema = Type.String(),
-    public valueSchema: TSchema = Type.Any()
+    public keySchema: JsonSchema = { type: "string" },
+    public valueSchema: JsonSchema = {}
   ) {}
 
   /**

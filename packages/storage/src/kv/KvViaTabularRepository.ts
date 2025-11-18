@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Static } from "@sinclair/typebox";
 import type { TabularRepository } from "../tabular/TabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema } from "./IKvRepository";
 import { KvRepository } from "./KvRepository";
@@ -24,9 +23,7 @@ export abstract class KvViaTabularRepository<
 > extends KvRepository<Key, Value, Combined> {
   public abstract tabularRepository: TabularRepository<
     typeof DefaultKeyValueSchema,
-    typeof DefaultKeyValueKey,
-    (typeof DefaultKeyValueSchema)["key"],
-    Static<typeof DefaultKeyValueSchema>
+    typeof DefaultKeyValueKey
   >;
 
   /**
@@ -36,9 +33,13 @@ export abstract class KvViaTabularRepository<
    */
   public async put(key: Key, value: Value): Promise<void> {
     // Handle objects that need to be JSON-stringified, TODO(str): should put in the type
-    const shouldStringify = !["number", "boolean", "string", "blob"].includes(
-      this.valueSchema.type
-    );
+    const schemaType =
+      typeof this.valueSchema === "object" &&
+      this.valueSchema !== null &&
+      "type" in this.valueSchema
+        ? this.valueSchema.type
+        : undefined;
+    const shouldStringify = !["number", "boolean", "string", "blob"].includes(schemaType as string);
 
     if (shouldStringify) {
       value = JSON.stringify(value) as Value;
@@ -52,9 +53,13 @@ export abstract class KvViaTabularRepository<
    */
   public async putBulk(items: Array<{ key: Key; value: Value }>): Promise<void> {
     // Handle objects that need to be JSON-stringified, TODO(str): should put in the type
-    const shouldStringify = !["number", "boolean", "string", "blob"].includes(
-      this.valueSchema.type
-    );
+    const schemaType =
+      typeof this.valueSchema === "object" &&
+      this.valueSchema !== null &&
+      "type" in this.valueSchema
+        ? this.valueSchema.type
+        : undefined;
+    const shouldStringify = !["number", "boolean", "string", "blob"].includes(schemaType as string);
 
     const entities = items.map(({ key, value }) => {
       if (shouldStringify) {
@@ -76,7 +81,13 @@ export abstract class KvViaTabularRepository<
   public async get(key: Key): Promise<Value | undefined> {
     const result = await this.tabularRepository.get({ key });
     if (result) {
-      const shouldParse = !["number", "boolean", "string", "blob"].includes(this.valueSchema.type);
+      const schemaType =
+        typeof this.valueSchema === "object" &&
+        this.valueSchema !== null &&
+        "type" in this.valueSchema
+          ? this.valueSchema.type
+          : undefined;
+      const shouldParse = !["number", "boolean", "string", "blob"].includes(schemaType as string);
 
       if (shouldParse) {
         try {
@@ -112,7 +123,13 @@ export abstract class KvViaTabularRepository<
           ({
             key: value.key,
             value: (() => {
-              const shouldParse = !["number", "boolean", "string"].includes(this.valueSchema.type);
+              const schemaType =
+                typeof this.valueSchema === "object" &&
+                this.valueSchema !== null &&
+                "type" in this.valueSchema
+                  ? this.valueSchema.type
+                  : undefined;
+              const shouldParse = !["number", "boolean", "string"].includes(schemaType as string);
 
               if (shouldParse && typeof value.value === "string") {
                 try {

@@ -5,29 +5,40 @@
  */
 
 import { CreateWorkflow, Task, TaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
-import { Static, Type } from "@sinclair/typebox";
+import { DataPortSchema, FromSchema } from "@podley/util";
 import { Interpreter } from "../util/interpreter";
 
-const inputSchema = Type.Object({
-  code: Type.String({
-    title: "Code",
-    description: "JavaScript code to execute",
-  }),
-  input: Type.Optional(
-    Type.Any({
+const inputSchema = {
+  type: "object",
+  properties: {
+    code: {
+      type: "string",
+      title: "Code",
+      description: "JavaScript code to execute",
+    },
+    input: {
       title: "Input",
       description: "Input data to pass to the JavaScript code",
-    })
-  ),
-});
-const outputSchema = Type.Object({
-  output: Type.Any({
-    title: "Output",
-    description: "The output of the JavaScript code",
-  }),
-});
-export type JavaScriptTaskInput = Static<typeof inputSchema>;
-export type JavaScriptTaskOutput = Static<typeof outputSchema>;
+    },
+  },
+  required: ["code"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+const outputSchema = {
+  type: "object",
+  properties: {
+    output: {
+      title: "Output",
+      description: "The output of the JavaScript code",
+    },
+  },
+  required: ["output"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+export type JavaScriptTaskInput = FromSchema<typeof inputSchema>;
+export type JavaScriptTaskOutput = FromSchema<typeof outputSchema>;
 
 export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutput> {
   public static type = "JavaScriptTask";

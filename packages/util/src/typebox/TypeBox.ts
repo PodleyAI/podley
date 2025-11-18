@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Kind, OptionalKind, type TSchema, Type, TypeRegistry } from "@sinclair/typebox";
+import { Kind, OptionalKind, type TSchema, Type } from "@sinclair/typebox";
 
 export const TypeOptionalArray = <T extends TSchema>(
   type: T,
@@ -14,32 +14,6 @@ export const TypeOptionalArray = <T extends TSchema>(
     title: type.title,
     description: type.description,
     ...annotations,
-  });
-
-export const TypeDateTime = (annotations: Record<string, unknown> = {}) =>
-  Type.String({ format: "date-time", ...annotations });
-
-export const TypeDate = (annotations: Record<string, unknown> = {}) =>
-  Type.String({ format: "date", ...annotations });
-
-export const TypeNullable = <T extends TSchema>(T: T) => {
-  return Type.Union([T, Type.Null()], { default: null });
-};
-
-export const TypeBlob = (annotations: Record<string, unknown> = {}) =>
-  Type.Transform(Type.Any({ contentEncoding: "blob", ...annotations }))
-    .Decode((value: unknown) => value as Uint8Array)
-    .Encode((value: Uint8Array) => Buffer.from(value));
-
-TypeRegistry.Set("TypeStringEnum", (schema: { enum: string[] }, value: unknown) => {
-  return typeof value === "string" && schema.enum.includes(value);
-});
-
-export const TypeStringEnum = <T extends string[]>(values: [...T]) =>
-  Type.Unsafe<T[number]>({
-    [Kind]: "TypeStringEnum",
-    type: "string",
-    enum: values,
   });
 
 export function areSemanticallyCompatible(

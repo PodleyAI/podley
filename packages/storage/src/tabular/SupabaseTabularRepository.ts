@@ -4,20 +4,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
-import { Static, TObject, TSchema } from "@sinclair/typebox";
+import {
+  createServiceToken,
+  DataPortSchemaObject,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+  JsonSchema,
+} from "@podley/util";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import {
-  ExtractPrimaryKey,
-  ExtractValue,
-  ITabularRepository,
-  ValueOptionType,
-} from "./ITabularRepository";
+import { ITabularRepository, ValueOptionType } from "./ITabularRepository";
 
-export const SUPABASE_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
-  "storage.tabularRepository.supabase"
-);
+export const SUPABASE_TABULAR_REPOSITORY = createServiceToken<
+  ITabularRepository<any, any, any, any, any>
+>("storage.tabularRepository.supabase");
 
 /**
  * A Supabase-based tabular repository implementation that extends BaseSqlTabularRepository.
@@ -28,12 +29,12 @@ export const SUPABASE_TABULAR_REPOSITORY = createServiceToken<ITabularRepository
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class SupabaseTabularRepository<
-  Schema extends TObject,
-  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
+  Schema extends DataPortSchemaObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = Static<Schema>,
-  Value = ExtractValue<Schema, PrimaryKeyNames>,
+  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
+  Entity = FromSchema<Schema>,
+  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
 > extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   private client: SupabaseClient;
 
@@ -132,9 +133,12 @@ export class SupabaseTabularRepository<
    * @param typeDef - The TypeScript/JavaScript type to map
    * @returns The corresponding PostgreSQL data type
    */
-  protected mapTypeToSQL(typeDef: TSchema): string {
+  protected mapTypeToSQL(typeDef: JsonSchema): string {
     // Extract the actual non-null type using base helper
     const actualType = this.getNonNullType(typeDef);
+    if (typeof actualType === "boolean") {
+      return "TEXT /* boolean schema */";
+    }
 
     // Handle BLOB type
     if (actualType.contentEncoding === "blob") return "BYTEA";
@@ -157,6 +161,7 @@ export class SupabaseTabularRepository<
         return "TEXT";
 
       case "number":
+      case "integer":
         // Handle integer vs floating point
         if (actualType.multipleOf === 1 || actualType.type === "integer") {
           // Use PostgreSQL's numeric range types based on min/max values
@@ -194,8 +199,12 @@ export class SupabaseTabularRepository<
 
       case "array":
         // Handle array types (if items type is specified)
-        if (actualType.items && typeof actualType.items === "object") {
-          const itemType = this.mapTypeToSQL(actualType.items);
+        if (
+          actualType.items &&
+          typeof actualType.items === "object" &&
+          !Array.isArray(actualType.items)
+        ) {
+          const itemType = this.mapTypeToSQL(actualType.items as JsonSchema);
 
           // Only use native PostgreSQL arrays for simple scalar types
           // List of types that work well as native PostgreSQL arrays
@@ -241,7 +250,7 @@ export class SupabaseTabularRepository<
    * @returns SQL string containing primary key column definitions
    */
   protected constructPrimaryKeyColumns($delimiter: string = ""): string {
-    const cols = Object.entries<TSchema>(this.primaryKeySchema.properties)
+    const cols = Object.entries<JsonSchema>(this.primaryKeySchema.properties)
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
         let constraints = "NOT NULL";
@@ -263,7 +272,7 @@ export class SupabaseTabularRepository<
    */
   protected constructValueColumns($delimiter: string = ""): string {
     const delimiter = $delimiter || '"';
-    const cols = Object.entries<TSchema>(this.valueSchema.properties)
+    const cols = Object.entries<JsonSchema>(this.valueSchema.properties)
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
         const nullable = this.isNullable(typeDef);
@@ -289,7 +298,7 @@ export class SupabaseTabularRepository<
    */
   protected sqlToJsValue(column: string, value: ValueOptionType): Entity[keyof Entity] {
     const typeDef = this.schema.properties[column as keyof typeof this.schema.properties] as
-      | TSchema
+      | JsonSchema
       | undefined;
     if (typeDef) {
       if (value === null && this.isNullable(typeDef)) {
@@ -298,7 +307,10 @@ export class SupabaseTabularRepository<
       const actualType = this.getNonNullType(typeDef);
 
       // Handle numeric types - Supabase can return them as strings
-      if (actualType.type === "number" || actualType.type === "integer") {
+      if (
+        typeof actualType !== "boolean" &&
+        (actualType.type === "number" || actualType.type === "integer")
+      ) {
         const v: any = value;
         if (typeof v === "number") return v as any;
         if (typeof v === "string") {
@@ -315,9 +327,12 @@ export class SupabaseTabularRepository<
    * @param typeDef - The schema type definition
    * @returns true if the field should be treated as unsigned
    */
-  protected shouldBeUnsigned(typeDef: TSchema): boolean {
+  protected shouldBeUnsigned(typeDef: JsonSchema): boolean {
     // Extract the non-null type using the base class helper
     const actualType = this.getNonNullType(typeDef);
+    if (typeof actualType === "boolean") {
+      return false;
+    }
 
     // Check if it's a number type with minimum >= 0
     if (

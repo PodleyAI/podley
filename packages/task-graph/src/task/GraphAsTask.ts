@@ -5,6 +5,7 @@
  */
 
 import type { DataPortSchema } from "@podley/util";
+import { compileSchema, SchemaNode } from "@podley/util";
 import { DATAFLOW_ALL_PORTS } from "../task-graph/Dataflow";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { CompoundMergeStrategy, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
@@ -144,7 +145,32 @@ export class GraphAsTask<
       type: "object",
       properties,
       ...(required.length > 0 ? { required } : {}),
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
+  }
+
+  protected _inputSchemaNode: SchemaNode | undefined;
+  /**
+   * Gets the compiled input schema
+   */
+  protected override getInputSchemaNode(type: TaskTypeName): SchemaNode {
+    // every graph as task is different, so we need to compile the schema for each one
+    if (!this._inputSchemaNode) {
+      const dataPortSchema = this.inputSchema();
+      const schemaNode = Task.generateInputSchemaNode(dataPortSchema);
+      try {
+        this._inputSchemaNode = schemaNode;
+      } catch (error) {
+        // If compilation fails, fall back to accepting any object structure
+        // This is a safety net for schemas that json-schema-library can't compile
+        console.warn(
+          `Failed to compile input schema for ${type}, falling back to permissive validation:`,
+          error
+        );
+        this._inputSchemaNode = compileSchema({});
+      }
+    }
+    return this._inputSchemaNode!;
   }
 
   /**
@@ -252,6 +278,7 @@ export class GraphAsTask<
       type: "object",
       properties,
       ...(required.length > 0 ? { required } : {}),
+      additionalProperties: false,
     } as DataPortSchema;
   }
 
@@ -282,6 +309,7 @@ export class GraphAsTask<
    * emit the "regenerate" event.
    */
   public regenerateGraph(): void {
+    this._inputSchemaNode = undefined;
     this.events.emit("regenerate");
   }
 

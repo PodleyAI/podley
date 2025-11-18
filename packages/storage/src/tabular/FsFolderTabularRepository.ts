@@ -4,16 +4,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, sleep } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
+import {
+  createServiceToken,
+  DataPortSchemaObject,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+  sleep,
+} from "@podley/util";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
+import { ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
-export const FS_FOLDER_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
-  "storage.tabularRepository.fsFolder"
-);
+export const FS_FOLDER_TABULAR_REPOSITORY = createServiceToken<
+  ITabularRepository<any, any, any, any, any>
+>("storage.tabularRepository.fsFolder");
 
 /**
  * A tabular repository implementation that uses the filesystem for storage.
@@ -23,12 +29,12 @@ export const FS_FOLDER_TABULAR_REPOSITORY = createServiceToken<ITabularRepositor
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class FsFolderTabularRepository<
-  Schema extends TObject,
-  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
+  Schema extends DataPortSchemaObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = Static<Schema>,
-  Value = ExtractValue<Schema, PrimaryKeyNames>,
+  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
+  Entity = FromSchema<Schema>,
+  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   private folderPath: string;
 

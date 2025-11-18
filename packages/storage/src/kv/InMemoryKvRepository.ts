@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
-import { TSchema, Type } from "@sinclair/typebox";
+import { createServiceToken, JsonSchema } from "@podley/util";
 import { InMemoryTabularRepository } from "../tabular/InMemoryTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";
@@ -31,7 +30,7 @@ export class InMemoryKvRepository extends KvViaTabularRepository {
   /**
    * Creates a new KvRepository instance
    */
-  constructor(keySchema: TSchema = Type.String(), valueSchema: TSchema = Type.Any()) {
+  constructor(keySchema: JsonSchema = { type: "string" }, valueSchema: JsonSchema = {}) {
     super(keySchema, valueSchema);
     this.tabularRepository = new InMemoryTabularRepository(
       DefaultKeyValueSchema,

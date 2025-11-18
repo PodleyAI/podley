@@ -4,15 +4,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
+import {
+  createServiceToken,
+  DataPortSchemaObject,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+} from "@podley/util";
 import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
-import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
+import { ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
-export const IDB_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
-  "storage.tabularRepository.indexedDb"
-);
+export const IDB_TABULAR_REPOSITORY = createServiceToken<
+  ITabularRepository<any, any, any, any, any>
+>("storage.tabularRepository.indexedDb");
 
 /**
  * A tabular repository implementation using IndexedDB for browser-based storage.
@@ -21,12 +26,12 @@ export const IDB_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class IndexedDbTabularRepository<
-  Schema extends TObject,
-  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
+  Schema extends DataPortSchemaObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = Static<Schema>,
-  Value = ExtractValue<Schema, PrimaryKeyNames>,
+  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
+  Entity = FromSchema<Schema>,
+  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** Promise that resolves to the IndexedDB database instance */
   private db: IDBDatabase | undefined;

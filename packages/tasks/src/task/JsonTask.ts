@@ -27,6 +27,7 @@ const inputSchema = {
       description: "The JSON to parse",
     },
   },
+  additionalProperties: false,
 } as const satisfies DataPortSchema;
 
 export type JsonTaskInput = FromSchema<typeof inputSchema>;
@@ -39,6 +40,7 @@ const outputSchema = {
       description: "Output depends on the generated task graph",
     },
   },
+  additionalProperties: false,
 } as const satisfies DataPortSchema;
 
 export type JsonTaskOutput = FromSchema<typeof outputSchema>;

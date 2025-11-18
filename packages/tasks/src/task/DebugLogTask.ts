@@ -26,6 +26,7 @@ const inputSchema = {
       default: DEFAULT_LOG_LEVEL,
     },
   },
+  additionalProperties: false,
 } as const satisfies DataPortSchema;
 
 const outputSchema = {
@@ -36,6 +37,7 @@ const outputSchema = {
       description: "The messages logged by the task",
     },
   },
+  additionalProperties: false,
 } as const satisfies DataPortSchema;
 
 export type DebugLogTaskInput = FromSchema<typeof inputSchema>;

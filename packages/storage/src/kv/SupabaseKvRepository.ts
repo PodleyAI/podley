@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
-import { TSchema, Type } from "@sinclair/typebox";
+import { createServiceToken, JsonSchema } from "@podley/util";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SupabaseTabularRepository } from "../tabular/SupabaseTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
@@ -40,8 +39,8 @@ export class SupabaseKvRepository extends KvViaTabularRepository {
   constructor(
     public client: SupabaseClient,
     public tableName: string,
-    keySchema: TSchema = Type.String(),
-    valueSchema: TSchema = Type.Any(),
+    keySchema: JsonSchema = { type: "string" },
+    valueSchema: JsonSchema = {},
     tabularRepository?: SupabaseTabularRepository<
       typeof DefaultKeyValueSchema,
       typeof DefaultKeyValueKey

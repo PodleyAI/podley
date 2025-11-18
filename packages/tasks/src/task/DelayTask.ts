@@ -28,11 +28,13 @@ const inputSchema = {
       description: "Pass through data to the output",
     },
   },
+  additionalProperties: false,
 } as const satisfies DataPortSchema;
 
 const outputSchema = {
   type: "object",
   properties: {},
+  additionalProperties: false,
 } as const satisfies DataPortSchema;
 
 export type DelayTaskInput = FromSchema<typeof inputSchema>;

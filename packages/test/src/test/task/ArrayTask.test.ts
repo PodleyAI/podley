@@ -56,6 +56,7 @@ class MultiplyRunTask extends ArrayTask<
           "x-replicate": true,
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
@@ -66,6 +67,7 @@ class MultiplyRunTask extends ArrayTask<
           oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
 
@@ -103,6 +105,7 @@ class MultiplyRunReactiveTask extends ArrayTask<
           "x-replicate": true,
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
@@ -113,6 +116,7 @@ class MultiplyRunReactiveTask extends ArrayTask<
           oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
 
@@ -149,6 +153,7 @@ class SquareRunTask extends ArrayTask<
           "x-replicate": true,
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
@@ -159,6 +164,7 @@ class SquareRunTask extends ArrayTask<
           oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
 
@@ -185,6 +191,7 @@ class SquareRunReactiveTask extends ArrayTask<
           "x-replicate": true,
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
@@ -195,6 +202,7 @@ class SquareRunReactiveTask extends ArrayTask<
           oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
         },
       },
+      additionalProperties: false,
     } as const satisfies DataPortSchema;
   }
 

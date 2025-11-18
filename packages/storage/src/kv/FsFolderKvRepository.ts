@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, TypeBlob } from "@podley/util";
-import { TSchema, Type } from "@sinclair/typebox";
+import { createServiceToken, JsonSchema } from "@podley/util";
 import { mkdir, readFile, rm, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { IKvRepository } from "./IKvRepository";
@@ -34,8 +33,8 @@ export class FsFolderKvRepository<
   constructor(
     public folderPath: string,
     public pathWriter: (key: Key) => string,
-    keySchema: TSchema = Type.String(),
-    valueSchema: TSchema = TypeBlob()
+    keySchema: JsonSchema = { type: "string" },
+    valueSchema: JsonSchema = { contentEncoding: "blob" }
   ) {
     super(keySchema, valueSchema);
   }
@@ -49,9 +48,15 @@ export class FsFolderKvRepository<
     const localPath = path.join(this.folderPath, this.pathWriter(key).replaceAll("..", "_"));
 
     let content: string;
+    const schemaType =
+      typeof this.valueSchema === "object" &&
+      this.valueSchema !== null &&
+      "type" in this.valueSchema
+        ? this.valueSchema.type
+        : undefined;
     if (value === null) {
       content = "";
-    } else if (this.valueSchema.type === "object") {
+    } else if (schemaType === "object") {
       content = JSON.stringify(value);
     } else if (typeof value === "object") {
       // Handle 'json' type schema from tests
@@ -83,12 +88,22 @@ export class FsFolderKvRepository<
     const localPath = path.join(this.folderPath, this.pathWriter(key));
     const typeDef = this.valueSchema;
     try {
-      const encoding = typeDef.contentEncoding === "blob" ? "binary" : "utf-8";
+      const encoding =
+        typeof typeDef === "object" &&
+        typeDef !== null &&
+        "contentEncoding" in typeDef &&
+        typeDef.contentEncoding === "blob"
+          ? "binary"
+          : "utf-8";
       const content = (await readFile(localPath, { encoding })).toString().trim();
 
       if (encoding === "utf-8") {
+        const schemaType =
+          typeof typeDef === "object" && typeDef !== null && "type" in typeDef
+            ? typeDef.type
+            : undefined;
         if (
-          typeDef.type === "object" ||
+          schemaType === "object" ||
           (content.startsWith("{") && content.endsWith("}")) ||
           (content.startsWith("[") && content.endsWith("]"))
         ) {

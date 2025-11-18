@@ -5,22 +5,23 @@
  */
 
 import { Sqlite } from "@podley/sqlite";
-import { createServiceToken } from "@podley/util";
-import { Static, TObject, TSchema } from "@sinclair/typebox";
-import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import {
-  ExtractPrimaryKey,
-  ExtractValue,
-  ITabularRepository,
-  ValueOptionType,
-} from "./ITabularRepository";
+  createServiceToken,
+  DataPortSchemaObject,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+  JsonSchema,
+} from "@podley/util";
+import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
+import { ITabularRepository, ValueOptionType } from "./ITabularRepository";
 
 // Define local type for SQL operations
 type ExcludeDateKeyOptionType = Exclude<string | number | bigint, Date>;
 
-export const SQLITE_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
-  "storage.tabularRepository.sqlite"
-);
+export const SQLITE_TABULAR_REPOSITORY = createServiceToken<
+  ITabularRepository<any, any, any, any, any>
+>("storage.tabularRepository.sqlite");
 
 const Database = Sqlite.Database;
 
@@ -33,12 +34,12 @@ const Database = Sqlite.Database;
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class SqliteTabularRepository<
-  Schema extends TObject,
-  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
+  Schema extends DataPortSchemaObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = Static<Schema>,
-  Value = ExtractValue<Schema, PrimaryKeyNames>,
+  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
+  Entity = FromSchema<Schema>,
+  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
 > extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   /** The SQLite database instance */
   private db: Sqlite.Database;
@@ -131,11 +132,11 @@ export class SqliteTabularRepository<
    */
   protected jsToSqlValue(column: string, value: Entity[keyof Entity]): ValueOptionType {
     const typeDef = this.schema.properties[column as keyof typeof this.schema.properties] as
-      | TSchema
+      | JsonSchema
       | undefined;
     if (typeDef) {
       const actualType = this.getNonNullType(typeDef);
-      if (actualType.type === "boolean") {
+      if (typeof actualType !== "boolean" && actualType.type === "boolean") {
         if (value === null && this.isNullable(typeDef)) {
           return null;
         }
@@ -153,14 +154,14 @@ export class SqliteTabularRepository<
    */
   protected sqlToJsValue(column: string, value: ValueOptionType): Entity[keyof Entity] {
     const typeDef = this.schema.properties[column as keyof typeof this.schema.properties] as
-      | TSchema
+      | JsonSchema
       | undefined;
     if (typeDef) {
       if (value === null && this.isNullable(typeDef)) {
         return null as any;
       }
       const actualType = this.getNonNullType(typeDef);
-      if (actualType.type === "boolean") {
+      if (typeof actualType !== "boolean" && actualType.type === "boolean") {
         const v: any = value as any;
         if (typeof v === "boolean") return v as any;
         if (typeof v === "number") return (v !== 0) as any;
@@ -178,9 +179,12 @@ export class SqliteTabularRepository<
    * @param typeDef - The TypeScript/JavaScript type definition
    * @returns The corresponding SQLite column type
    */
-  protected mapTypeToSQL(typeDef: TSchema): string {
+  protected mapTypeToSQL(typeDef: JsonSchema): string {
     // Get the actual non-null type for proper mapping
     const actualType = this.getNonNullType(typeDef);
+    if (typeof actualType === "boolean") {
+      return "TEXT /* boolean schema */";
+    }
 
     // Handle BLOB type
     if (actualType.contentEncoding === "blob") return "BLOB";
@@ -200,13 +204,14 @@ export class SqliteTabularRepository<
         return "TEXT";
 
       case "number":
+      case "integer":
         // SQLite has limited numeric types, but we can use INTEGER for integers
         // and REAL for floating point numbers
 
         // The multipleOf property in JSON Schema specifies that a number must be a
         // multiple of a given value. When set to 1, it means the number must be a
         // whole number multiple of 1, which effectively means it must be an integer.
-        if (typeDef.multipleOf === 1 || typeDef.type === "integer") {
+        if (actualType.multipleOf === 1 || actualType.type === "integer") {
           return "INTEGER";
         }
 

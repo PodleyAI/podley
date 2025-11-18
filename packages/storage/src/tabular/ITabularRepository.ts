@@ -4,8 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventParameters } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
+import {
+  DataPortSchemaObject,
+  EventParameters,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+} from "@podley/util";
 
 // Generic type for possible value types in the repository
 export type ValueOptionType = string | number | bigint | boolean | null | Uint8Array;
@@ -44,31 +49,21 @@ export type JSONValue =
   | JSONValue[]
   | { [key: string]: JSONValue };
 
-// Extract primary key type from TypeBox schema
-export type ExtractPrimaryKey<T extends TObject, K extends ReadonlyArray<keyof Static<T>>> = {
-  [P in K[number]]: Static<T>[P];
-};
-
-// Extract value type from TypeBox schema (everything except the primary key)
-export type ExtractValue<T extends TObject, K extends ReadonlyArray<keyof Static<T>>> = Omit<
-  Static<T>,
-  K[number]
->;
-
 /**
  * Interface defining the contract for tabular storage repositories.
  * Provides a flexible interface for storing and retrieving data with typed
  * primary keys and values, and supports compound keys and partial key lookup.
  *
- * @typeParam Schema - The schema definition for the entity using TypeBox
+ * @typeParam Schema - The schema definition for the entity using JSON Schema
  * @typeParam PrimaryKeyNames - Array of property names that form the primary key
  */
 export interface ITabularRepository<
-  Schema extends TObject,
-  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>> = ReadonlyArray<keyof Static<Schema>>,
+  Schema extends DataPortSchemaObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = Static<Schema>,
+  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
+  Entity = FromSchema<Schema>,
+  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
 > {
   // Core methods
   put(value: Entity): Promise<Entity>;

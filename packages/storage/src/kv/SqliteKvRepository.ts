@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
-import { TSchema, Type } from "@sinclair/typebox";
+import { createServiceToken, JsonSchema } from "@podley/util";
 import { SqliteTabularRepository } from "../tabular/SqliteTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";
@@ -34,8 +33,8 @@ export class SqliteKvRepository extends KvViaTabularRepository {
   constructor(
     public db: any,
     public dbName: string,
-    keySchema: TSchema = Type.String(),
-    valueSchema: TSchema = Type.Any()
+    keySchema: JsonSchema = { type: "string" },
+    valueSchema: JsonSchema = {}
   ) {
     super(keySchema, valueSchema);
     this.tabularRepository = new SqliteTabularRepository(

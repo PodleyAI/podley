@@ -4,15 +4,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
-import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
+import {
+  createServiceToken,
+  DataPortSchemaObject,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+} from "@podley/util";
+import { ITabularRepository } from "./ITabularRepository";
 import { InMemoryTabularRepository } from "./InMemoryTabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
-export const SHARED_IN_MEMORY_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
-  "storage.tabularRepository.sharedInMemory"
-);
+export const SHARED_IN_MEMORY_TABULAR_REPOSITORY = createServiceToken<
+  ITabularRepository<any, any, any, any, any>
+>("storage.tabularRepository.sharedInMemory");
 
 /**
  * Message types for BroadcastChannel communication
@@ -31,16 +36,16 @@ type BroadcastMessage =
  * using BroadcastChannel API. Uses InMemoryTabularRepository internally and
  * synchronizes changes across all instances.
  *
- * @template Schema - The schema definition for the entity using TypeBox
+ * @template Schema - The schema definition for the entity using JSON Schema
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class SharedInMemoryTabularRepository<
-  Schema extends TObject,
-  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
+  Schema extends DataPortSchemaObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = Static<Schema>,
-  Value = ExtractValue<Schema, PrimaryKeyNames>,
+  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
+  Entity = FromSchema<Schema>,
+  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   private channel: BroadcastChannel | null = null;
   private channelName: string;

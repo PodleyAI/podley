@@ -5,37 +5,48 @@
  */
 
 import { ITabularRepository } from "@podley/storage";
-import { TypeDateTime } from "@podley/util";
-import { Type } from "@sinclair/typebox";
+import { DataPortSchemaObject } from "@podley/util";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
 export const CompoundPrimaryKeyNames = ["name", "type"] as const;
-export const CompoundSchema = Type.Object({
-  name: Type.String(),
-  type: Type.String(),
-  option: Type.String(),
-  success: Type.Boolean(),
-});
+export const CompoundSchema = {
+  type: "object",
+  properties: {
+    name: { type: "string" },
+    type: { type: "string" },
+    option: { type: "string" },
+    success: { type: "boolean" },
+  },
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
 
 export const SearchPrimaryKeyNames = ["id"] as const;
-export const SearchSchema = Type.Object({
-  id: Type.String(),
-  category: Type.String(),
-  subcategory: Type.String(),
-  value: Type.Number(),
-  createdAt: TypeDateTime(),
-  updatedAt: TypeDateTime(),
-});
+export const SearchSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    category: { type: "string" },
+    subcategory: { type: "string" },
+    value: { type: "number" },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
 
 export const NullableSearchPrimaryKeyNames = ["id"] as const;
-export const NullableSearchSchema = Type.Object({
-  id: Type.String(),
-  category: Type.String(),
-  subcategory: Type.String(),
-  value: Type.Union([Type.Number(), Type.Null()]),
-  createdAt: TypeDateTime(),
-  updatedAt: TypeDateTime(),
-});
+export const NullableSearchSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    category: { type: "string" },
+    subcategory: { type: "string" },
+    value: { anyOf: [{ type: "number" }, { type: "null" }] },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
 
 export function runGenericTabularRepositoryTests(
   createCompoundPkRepository: () => Promise<
@@ -822,8 +833,8 @@ export function runGenericTabularRepositoryTests(
         expect(returned.length).toEqual(retrieved!.length);
 
         // Sort both arrays by id for comparison
-        const sortedReturned = returned.sort((a, b) => a.id.localeCompare(b.id));
-        const sortedRetrieved = retrieved!.sort((a, b) => a.id.localeCompare(b.id));
+        const sortedReturned = returned.sort((a, b) => (a.id ?? "").localeCompare(b.id ?? ""));
+        const sortedRetrieved = retrieved!.sort((a, b) => (a.id ?? "").localeCompare(b.id ?? ""));
 
         for (let i = 0; i < sortedReturned.length; i++) {
           expect(sortedReturned[i].id).toEqual(sortedRetrieved[i].id);

@@ -39,6 +39,7 @@ const inputSchema = {
       description: "Input data to pass to the function",
     },
   },
+  additionalProperties: true,
 } as const satisfies DataPortSchema;
 
 const outputSchema = {
@@ -49,6 +50,7 @@ const outputSchema = {
       description: "The output from the execute function",
     },
   },
+  additionalProperties: true,
 } as const satisfies DataPortSchema;
 
 export type LambdaTaskInput = FromSchema<typeof inputSchema>;

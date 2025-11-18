@@ -6,6 +6,7 @@
 
 import { IJobExecuteContext, Job, JobQueue } from "@podley/job-queue";
 import { getTaskQueueRegistry, JobQueueTask, TaskInput, TaskOutput } from "@podley/task-graph";
+import { DataPortSchema } from "@podley/util";
 import { afterEach, beforeEach, expect, it } from "bun:test";
 
 export class TestJob extends Job<TaskInput, TaskOutput> {
@@ -14,8 +15,25 @@ export class TestJob extends Job<TaskInput, TaskOutput> {
   }
 }
 
-export class TestJobTask extends JobQueueTask {
+export class TestJobTask extends JobQueueTask<{ a: number; b: number }, { result: number }> {
   static readonly type: string = "TestJobTask";
+  static readonly inputSchema = (): DataPortSchema =>
+    ({
+      type: "object",
+      properties: {
+        a: { type: "number" },
+        b: { type: "number" },
+      },
+      additionalProperties: false,
+    }) as const satisfies DataPortSchema;
+  static readonly outputSchema = (): DataPortSchema =>
+    ({
+      type: "object",
+      properties: {
+        result: { type: "number" },
+      },
+      additionalProperties: false,
+    }) as const satisfies DataPortSchema;
 }
 
 export function runGenericTaskGraphJobQueueTests(

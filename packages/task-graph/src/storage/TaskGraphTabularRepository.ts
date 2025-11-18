@@ -5,15 +5,19 @@
  */
 
 import type { TabularRepository } from "@podley/storage";
-import { Type } from "@sinclair/typebox";
+import { DataPortSchemaObject } from "@podley/util";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { createGraphFromGraphJSON } from "../task/TaskJSON";
 import { TaskGraphRepository } from "./TaskGraphRepository";
 
-export const TaskGraphSchema = Type.Object({
-  key: Type.String(),
-  value: Type.String(),
-});
+export const TaskGraphSchema = {
+  type: "object",
+  properties: {
+    key: { type: "string" },
+    value: { type: "string" },
+  },
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
 
 export const TaskGraphPrimaryKeyNames = ["key"] as const;
 

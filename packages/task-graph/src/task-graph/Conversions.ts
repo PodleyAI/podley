@@ -70,6 +70,7 @@ function convertPipeFunctionToTask<I extends DataPorts, O extends DataPorts>(
         properties: {
           [DATAFLOW_ALL_PORTS]: {},
         },
+        additionalProperties: false,
       } as const satisfies DataPortSchema;
     };
     public static outputSchema = () => {
@@ -78,6 +79,7 @@ function convertPipeFunctionToTask<I extends DataPorts, O extends DataPorts>(
         properties: {
           [DATAFLOW_ALL_PORTS]: {},
         },
+        additionalProperties: false,
       } as const satisfies DataPortSchema;
     };
     public static cacheable = false;

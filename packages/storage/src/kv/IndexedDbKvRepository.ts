@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
-import { TSchema, Type } from "@sinclair/typebox";
+import { createServiceToken, JsonSchema } from "@podley/util";
 import { IndexedDbTabularRepository } from "../tabular/IndexedDbTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";
@@ -33,8 +32,8 @@ export class IndexedDbKvRepository extends KvViaTabularRepository {
    */
   constructor(
     public dbName: string,
-    keySchema: TSchema = Type.String(),
-    valueSchema: TSchema = Type.Any()
+    keySchema: JsonSchema = { type: "string" },
+    valueSchema: JsonSchema = {}
   ) {
     super(keySchema, valueSchema);
     this.tabularRepository = new IndexedDbTabularRepository(

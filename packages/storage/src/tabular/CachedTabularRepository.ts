@@ -4,31 +4,36 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
-import { Static, TObject } from "@sinclair/typebox";
+import {
+  createServiceToken,
+  DataPortSchemaObject,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+} from "@podley/util";
 import { InMemoryTabularRepository } from "./InMemoryTabularRepository";
-import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
+import { ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
-export const CACHED_TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any>>(
-  "storage.tabularRepository.cached"
-);
+export const CACHED_TABULAR_REPOSITORY = createServiceToken<
+  ITabularRepository<any, any, any, any, any>
+>("storage.tabularRepository.cached");
 
 /**
  * A tabular repository wrapper that adds caching layer to a durable repository.
  * Uses InMemoryTabularRepository or SharedInMemoryTabularRepository as a cache
  * for faster access to frequently used data.
  *
- * @template Schema - The schema definition for the entity using TypeBox
+ * @template Schema - The schema definition for the entity using JSON Schema
  * @template PrimaryKeyNames - Array of property names that form the primary key
  */
 export class CachedTabularRepository<
-  Schema extends TObject,
-  PrimaryKeyNames extends ReadonlyArray<keyof Static<Schema>>,
+  Schema extends DataPortSchemaObject,
+  PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = ExtractPrimaryKey<Schema, PrimaryKeyNames>,
-  Entity = Static<Schema>,
-  Value = ExtractValue<Schema, PrimaryKeyNames>,
+  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
+  Entity = FromSchema<Schema>,
+  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
 > extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
   public readonly cache: ITabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity>;
   private durable: ITabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity>;
