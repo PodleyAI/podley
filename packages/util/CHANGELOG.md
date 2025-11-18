@@ -1,5 +1,11 @@
 # @podley/util
 
+## 0.0.39
+
+### Patch Changes
+
+- Tasks use native json-schema with no Typebox
+
 ## 0.0.38
 
 ## 0.0.37

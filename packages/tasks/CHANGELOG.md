@@ -1,5 +1,16 @@
 # @podley/tasks
 
+## 0.0.39
+
+### Patch Changes
+
+- Tasks use native json-schema with no Typebox
+- Updated dependencies
+  - @podley/job-queue@0.0.39
+  - @podley/storage@0.0.39
+  - @podley/task-graph@0.0.39
+  - @podley/util@0.0.39
+
 ## 0.0.38
 
 ### Patch Changes
