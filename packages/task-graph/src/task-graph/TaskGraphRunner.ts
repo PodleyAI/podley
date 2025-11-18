@@ -277,42 +277,55 @@ export class TaskGraphRunner {
    * @param overrides The input data to override (or add to if an array)
    * @returns true if the input data was changed, false otherwise
    */
-  public addInputData(task: ITask, overrides: Partial<TaskInput> | undefined) {
-    if (!overrides) return false;
+  public addInputData(task: ITask, overrides: Partial<TaskInput> | undefined): void {
+    if (!overrides) return;
 
     let changed = false;
     const inputSchema = task.inputSchema();
-    const properties = inputSchema.properties || {};
+    if (typeof inputSchema === "boolean") {
+      if (inputSchema === false) {
+        return;
+      }
+      for (const [key, value] of Object.entries(overrides)) {
+        if (!deepEqual(task.runInputData[key], value)) {
+          task.runInputData[key] = value;
+          changed = true;
+          break;
+        }
+      }
+    } else {
+      const properties = inputSchema.properties || {};
 
-    for (const [inputId, prop] of Object.entries(properties)) {
-      if (inputId === DATAFLOW_ALL_PORTS) {
-        task.runInputData = { ...task.runInputData, ...overrides };
-        changed = true;
-      } else {
-        if (overrides[inputId] === undefined) continue;
-        const isArray =
-          (prop as any)?.type === "array" ||
-          ((prop as any)?.type === "any" &&
-            (Array.isArray(overrides[inputId]) || Array.isArray(task.runInputData[inputId])));
-
-        if (isArray) {
-          const existingItems = Array.isArray(task.runInputData[inputId])
-            ? task.runInputData[inputId]
-            : [task.runInputData[inputId]];
-          const newitems = [...existingItems];
-
-          const overrideItem = overrides[inputId];
-          if (Array.isArray(overrideItem)) {
-            newitems.push(...overrideItem);
-          } else {
-            newitems.push(overrideItem);
-          }
-          task.runInputData[inputId] = newitems;
+      for (const [inputId, prop] of Object.entries(properties)) {
+        if (inputId === DATAFLOW_ALL_PORTS) {
+          task.runInputData = { ...task.runInputData, ...overrides };
           changed = true;
         } else {
-          if (!deepEqual(task.runInputData[inputId], overrides[inputId])) {
-            task.runInputData[inputId] = overrides[inputId];
+          if (overrides[inputId] === undefined) continue;
+          const isArray =
+            (prop as any)?.type === "array" ||
+            ((prop as any)?.type === "any" &&
+              (Array.isArray(overrides[inputId]) || Array.isArray(task.runInputData[inputId])));
+
+          if (isArray) {
+            const existingItems = Array.isArray(task.runInputData[inputId])
+              ? task.runInputData[inputId]
+              : [task.runInputData[inputId]];
+            const newitems = [...existingItems];
+
+            const overrideItem = overrides[inputId];
+            if (Array.isArray(overrideItem)) {
+              newitems.push(...overrideItem);
+            } else {
+              newitems.push(overrideItem);
+            }
+            task.runInputData[inputId] = newitems;
             changed = true;
+          } else {
+            if (!deepEqual(task.runInputData[inputId], overrides[inputId])) {
+              task.runInputData[inputId] = overrides[inputId];
+              changed = true;
+            }
           }
         }
       }

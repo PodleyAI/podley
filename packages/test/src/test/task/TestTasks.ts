@@ -13,7 +13,6 @@
 
 import {
   CreateWorkflow,
-  DataPortSchema,
   IExecuteContext,
   Task,
   TaskAbortedError,
@@ -23,7 +22,7 @@ import {
   TaskInput,
   Workflow,
 } from "@podley/task-graph";
-import { sleep } from "@podley/util";
+import { DataPortSchema, sleep } from "@podley/util";
 
 /**
  * Standard input type for basic test tasks
@@ -57,7 +56,7 @@ export class TestIOTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
           default: "default",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -75,7 +74,7 @@ export class TestIOTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
           default: "default",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -136,7 +135,7 @@ export class SimpleProcessingTask extends Task<SimpleProcessingInput, SimpleProc
           default: "default",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   // Define output schema
@@ -153,7 +152,7 @@ export class SimpleProcessingTask extends Task<SimpleProcessingInput, SimpleProc
           description: "Processed result value",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -203,7 +202,7 @@ export class FailingTask extends Task {
           default: 0,
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   // Define output schema
@@ -216,7 +215,7 @@ export class FailingTask extends Task {
           description: "Output number",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -254,7 +253,7 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
           default: "default",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -271,7 +270,7 @@ export class EventTestTask extends Task<TestIOTaskInput, TestIOTaskOutput> {
           type: "string",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -335,7 +334,7 @@ export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutp
           description: "Number to square",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -347,7 +346,7 @@ export class TestSquareTask extends Task<TestSquareTaskInput, TestSquareTaskOutp
           description: "Squared number",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -376,7 +375,7 @@ export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSqu
           description: "Number to square",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -388,7 +387,7 @@ export class TestSquareNonReactiveTask extends Task<TestSquareTaskInput, TestSqu
           description: "Squared number",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -428,7 +427,7 @@ export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutp
           description: "Number to double",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -440,7 +439,7 @@ export class TestDoubleTask extends Task<TestDoubleTaskInput, TestDoubleTaskOutp
           description: "Doubled number",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -469,7 +468,7 @@ export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTas
           description: "Number to square (will throw error)",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -481,7 +480,7 @@ export class TestSquareErrorTask extends Task<TestSquareTaskInput, TestSquareTas
           description: "Squared number (never returned due to error)",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -507,7 +506,7 @@ export class TestSimpleTask extends Task<{ input: string }, { output: string }> 
           description: "Input string",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -519,7 +518,7 @@ export class TestSimpleTask extends Task<{ input: string }, { output: string }> 
           description: "Output string",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   async execute(input: { input: string }): Promise<{ output: string }> {
@@ -544,7 +543,7 @@ export class TestOutputTask extends Task<{ input: string }, { customOutput: stri
           description: "Input string",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -556,7 +555,7 @@ export class TestOutputTask extends Task<{ input: string }, { customOutput: stri
           description: "Custom output string",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -584,7 +583,7 @@ export class TestInputTask extends Task<{ customInput: string }, { output: strin
           description: "Custom input string",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -596,7 +595,7 @@ export class TestInputTask extends Task<{ customInput: string }, { output: strin
           description: "Output string",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -641,7 +640,7 @@ export class StringTask extends Task<{ input: string }, { output: string }, Task
           description: "Input string",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -653,7 +652,7 @@ export class StringTask extends Task<{ input: string }, { output: string }, Task
           description: "Output string",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -679,7 +678,7 @@ export class NumberToStringTask extends Task<{ input: number }, { output: string
           description: "Input number",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -691,7 +690,7 @@ export class NumberToStringTask extends Task<{ input: number }, { output: string
           description: "Output string",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -717,7 +716,7 @@ export class NumberTask extends Task<{ input: number }, { output: number }, Task
           description: "Input number",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -729,7 +728,7 @@ export class NumberTask extends Task<{ input: number }, { output: number }, Task
           description: "Output number",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -774,7 +773,7 @@ export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
           description: "Second number",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -786,7 +785,7 @@ export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
           description: "Sum of a and b",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   /**

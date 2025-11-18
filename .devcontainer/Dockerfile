@@ -12,6 +12,7 @@ RUN su - node -c "curl -fsSL https://bun.sh/install | bash"
 
 # Expose bun globally
 RUN ln -s /home/node/.bun/bin/bun /usr/local/bin/bun
+RUN ln -s /home/node/.bun/bin/bunx /usr/local/bin/bunx
 
 # Set zsh as default shell for the existing non-root user (node in this image)
 ARG USERNAME=node

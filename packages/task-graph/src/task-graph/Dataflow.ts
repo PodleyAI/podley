@@ -6,7 +6,6 @@
 //    *******************************************************************************
 
 import { areSemanticallyCompatible, EventEmitter } from "@podley/util";
-import { Type } from "@sinclair/typebox";
 import { TaskError } from "../task/TaskError";
 import { DataflowJson } from "../task/TaskJSON";
 import { Provenance, TaskIdType, TaskOutput, TaskStatus } from "../task/TaskTypes";
@@ -127,13 +126,26 @@ export class Dataflow {
     const targetSchema = graph.getTask(dataflow.targetTaskId)!.inputSchema();
     const sourceSchema = graph.getTask(dataflow.sourceTaskId)!.outputSchema();
 
+    if (typeof targetSchema === "boolean") {
+      if (targetSchema === false) {
+        return "incompatible";
+      }
+      return "static";
+    }
+    if (typeof sourceSchema === "boolean") {
+      if (sourceSchema === false) {
+        return "incompatible";
+      }
+      return "static";
+    }
+
     const targetSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.targetTaskPortId
-        ? Type.Any()
+        ? true // Accepts any schema (equivalent to Type.Any())
         : (targetSchema.properties as any)?.[dataflow.targetTaskPortId];
     const sourceSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.sourceTaskPortId
-        ? Type.Any()
+        ? true // Accepts any schema (equivalent to Type.Any())
         : (sourceSchema.properties as any)?.[dataflow.sourceTaskPortId];
 
     const semanticallyCompatible = areSemanticallyCompatible(

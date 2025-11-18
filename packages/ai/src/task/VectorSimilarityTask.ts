@@ -12,8 +12,8 @@ import {
   TaskError,
   TaskRegistry,
   Workflow,
-  type DataPortSchema,
 } from "@podley/task-graph";
+import { DataPortSchema } from "@podley/util";
 import { Type, type Static } from "@sinclair/typebox";
 import { TypedArray } from "./base/AiTaskSchemas";
 

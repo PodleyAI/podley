@@ -11,8 +11,8 @@ import {
   Task,
   TaskRegistry,
   Workflow,
-  type DataPortSchema,
 } from "@podley/task-graph";
+import { DataPortSchema } from "@podley/util";
 import { Static, Type } from "@sinclair/typebox";
 import { Document, DocumentFragment } from "../source/Document";
 

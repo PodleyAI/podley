@@ -17,9 +17,8 @@ import {
   TaskOutput,
   TaskRegistry,
   Workflow,
-  type DataPortSchema,
 } from "@podley/task-graph";
-import { Static, Type } from "@sinclair/typebox";
+import { DataPortSchema, FromSchema } from "@podley/util";
 
 interface LambdaTaskConfig<
   Input extends TaskInput = TaskInput,
@@ -33,22 +32,28 @@ interface LambdaTaskConfig<
   ) => Promise<Output>;
 }
 
-const inputSchema = Type.Object({
-  [DATAFLOW_ALL_PORTS]: Type.Optional(
-    Type.Any({
+const inputSchema = {
+  type: "object",
+  properties: {
+    [DATAFLOW_ALL_PORTS]: {
       title: "Input",
       description: "Input data to pass to the function",
-    })
-  ),
-});
-const outputSchema = Type.Object({
-  [DATAFLOW_ALL_PORTS]: Type.Any({
-    title: "Output",
-    description: "The output from the execute function",
-  }),
-});
-export type LambdaTaskInput = Static<typeof inputSchema>;
-export type LambdaTaskOutput = Static<typeof outputSchema>;
+    },
+  },
+} as const satisfies DataPortSchema;
+
+const outputSchema = {
+  type: "object",
+  properties: {
+    [DATAFLOW_ALL_PORTS]: {
+      title: "Output",
+      description: "The output from the execute function",
+    },
+  },
+} as const satisfies DataPortSchema;
+
+export type LambdaTaskInput = FromSchema<typeof inputSchema>;
+export type LambdaTaskOutput = FromSchema<typeof outputSchema>;
 /**
  * LambdaTask provides a way to execute arbitrary functions within the task framework
  * It wraps a provided function and its input into a task that can be integrated
@@ -62,11 +67,11 @@ export class LambdaTask<
   public static type = "LambdaTask";
   public static category = "Hidden";
   public static cacheable = true;
-  public static inputSchema(): DataPortSchema {
-    return inputSchema as DataPortSchema;
+  public static inputSchema() {
+    return inputSchema;
   }
-  public static outputSchema(): DataPortSchema {
-    return outputSchema as DataPortSchema;
+  public static outputSchema() {
+    return outputSchema;
   }
 
   constructor(input: Partial<Input> = {}, config: Partial<Config> = {}) {

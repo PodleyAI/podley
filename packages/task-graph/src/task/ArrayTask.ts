@@ -5,13 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { uuid4 } from "@podley/util";
-import { JsonTaskItem, TaskGraphItemJson } from "../node";
+import { uuid4, type DataPortSchema } from "@podley/util";
+
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { GraphResultArray, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTask } from "./GraphAsTask";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
-import type { DataPortSchema } from "./TaskSchema";
+import { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 
 /**
@@ -57,18 +57,23 @@ export class ArrayTask<
     const arrayInputs = new Map<string, Array<Input[keyof Input]>>();
     let hasArrayInputs = false;
     const inputSchema = this.inputSchema();
-    const keys = Object.keys(inputSchema.properties || {});
-    for (const inputId of keys) {
-      const inputValue = this.runInputData[inputId];
-      const inputDef = inputSchema.properties?.[inputId];
+    if (typeof inputSchema !== "boolean") {
+      const keys = Object.keys(inputSchema.properties || {});
+      for (const inputId of keys) {
+        const inputValue = this.runInputData[inputId];
+        const inputDef = inputSchema.properties?.[inputId];
 
-      if (
-        inputDef?.["x-replicate"] === true &&
-        Array.isArray(inputValue) &&
-        inputValue.length > 1
-      ) {
-        arrayInputs.set(inputId, inputValue);
-        hasArrayInputs = true;
+        if (
+          typeof inputDef === "object" &&
+          inputDef !== null &&
+          "x-replicate" in inputDef &&
+          inputDef["x-replicate"] === true &&
+          Array.isArray(inputValue) &&
+          inputValue.length > 1
+        ) {
+          arrayInputs.set(inputId, inputValue);
+          hasArrayInputs = true;
+        }
       }
     }
 
@@ -152,13 +157,13 @@ export class ArrayTask<
     return combos;
   }
 
-  toJSON(): JsonTaskItem {
-    const { subgraph, ...result } = super.toJSON() as TaskGraphItemJson;
+  toJSON(): TaskGraphItemJson {
+    const { subgraph, ...result } = super.toJSON();
     return result;
   }
 
   toDependencyJSON(): JsonTaskItem {
-    const { subtasks, ...result } = super.toDependencyJSON() as JsonTaskItem;
+    const { subtasks, ...result } = super.toDependencyJSON();
     return result;
   }
 

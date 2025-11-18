@@ -6,9 +6,23 @@
 //    *******************************************************************************
 
 import { Dataflow, Task, TaskGraph, TaskStatus, Workflow } from "@podley/task-graph";
+import type { DataPortSchema } from "@podley/util";
 import { DirectedAcyclicGraph } from "@podley/util";
 
 type Config = Record<string, any>;
+
+/**
+ * Extracts property keys from a JSON schema, handling boolean schemas.
+ * Boolean schemas: true = accepts any, false = rejects all
+ */
+function getSchemaProperties(schema: DataPortSchema): Record<string, DataPortSchema> | null {
+  if (typeof schema === "boolean") {
+    // Boolean schemas don't have properties
+    // true = accepts any value, false = rejects all values
+    return null;
+  }
+  return schema.properties as Record<string, DataPortSchema> | null;
+}
 
 type JsonMLTagName = string;
 
@@ -147,8 +161,24 @@ class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
       const name = obj.constructor.runtype ?? obj.constructor.type ?? obj.type.replace(/Task$/, "");
       const inputSchema = obj.inputSchema();
       const outputSchema = obj.outputSchema();
-      const inputs = Object.keys(inputSchema.properties || {}).map((key) => `${key}: …`);
-      const outputs = Object.keys(outputSchema.properties || {}).map((key) => `${key}: …`);
+      const inputProperties = getSchemaProperties(inputSchema);
+      const outputProperties = getSchemaProperties(outputSchema);
+
+      const inputs = inputProperties
+        ? Object.keys(inputProperties).map((key) => `${key}: …`)
+        : typeof inputSchema === "boolean"
+          ? inputSchema
+            ? ["…"] // true = accepts any
+            : ["never"] // false = rejects all
+          : [];
+
+      const outputs = outputProperties
+        ? Object.keys(outputProperties).map((key) => `${key}: …`)
+        : typeof outputSchema === "boolean"
+          ? outputSchema
+            ? ["…"] // true = accepts any
+            : ["never"] // false = rejects all
+          : [];
 
       header.methodSignature(name);
       header.functionCall((el) => {
@@ -191,21 +221,50 @@ class TaskConsoleFormatter extends ConsoleFormatter {
       if (config?.workflow) name = name.replace(/Task$/, "");
       const inputSchema = task.inputSchema();
       const outputSchema = task.outputSchema();
-      const inputs = Object.keys(inputSchema.properties || {})
-        .filter((key) => task.runInputData[key] !== undefined)
-        .map((key) => {
-          let value = task.runInputData[key];
-          return { name: key, value };
-        });
+      const inputProperties = getSchemaProperties(inputSchema);
+      const outputProperties = getSchemaProperties(outputSchema);
 
-      const outputs = Object.keys(outputSchema.properties || {})
-        .filter((key) => task.runOutputData[key] !== undefined && task.runOutputData[key] !== "")
-        .filter(
-          (key) => !(Array.isArray(task.runOutputData[key]) && task.runOutputData[key].length === 0)
-        )
-        .map((key) => {
-          return { name: key, value: task.runOutputData[key] };
-        });
+      const inputs = inputProperties
+        ? Object.keys(inputProperties)
+            .filter((key) => task.runInputData[key] !== undefined)
+            .map((key) => {
+              let value = task.runInputData[key];
+              return { name: key, value };
+            })
+        : typeof inputSchema === "boolean" && inputSchema
+          ? Object.keys(task.runInputData || {})
+              .filter((key) => task.runInputData[key] !== undefined)
+              .map((key) => {
+                let value = task.runInputData[key];
+                return { name: key, value };
+              })
+          : [];
+
+      const outputs = outputProperties
+        ? Object.keys(outputProperties)
+            .filter(
+              (key) => task.runOutputData[key] !== undefined && task.runOutputData[key] !== ""
+            )
+            .filter(
+              (key) =>
+                !(Array.isArray(task.runOutputData[key]) && task.runOutputData[key].length === 0)
+            )
+            .map((key) => {
+              return { name: key, value: task.runOutputData[key] };
+            })
+        : typeof outputSchema === "boolean" && outputSchema
+          ? Object.keys(task.runOutputData || {})
+              .filter(
+                (key) => task.runOutputData[key] !== undefined && task.runOutputData[key] !== ""
+              )
+              .filter(
+                (key) =>
+                  !(Array.isArray(task.runOutputData[key]) && task.runOutputData[key].length === 0)
+              )
+              .map((key) => {
+                return { name: key, value: task.runOutputData[key] };
+              })
+          : [];
 
       header.highlightText(name);
       header.functionCall((el) => {
@@ -243,7 +302,15 @@ class TaskConsoleFormatter extends ConsoleFormatter {
     const allInboundDataflows = (config?.graph as TaskGraph)?.getSourceDataflows(task.config.id);
 
     const inputSchema = task.inputSchema();
-    for (const key of Object.keys(inputSchema.properties || {})) {
+    const inputProperties = getSchemaProperties(inputSchema);
+    const schemaKeys =
+      typeof inputProperties === "object"
+        ? Object.keys(inputProperties)
+        : inputSchema === true
+          ? Object.keys(task.runInputData || {})
+          : [];
+
+    for (const key of schemaKeys) {
       const value = task.runInputData[key];
       const li = inputs.createListItem("", "padding-left: 20px;");
       li.inputText(`${key}: `);
@@ -280,7 +347,15 @@ class TaskConsoleFormatter extends ConsoleFormatter {
 
     const outputs = body.createStyledList("Outputs:");
     const outputSchema = task.outputSchema();
-    for (const key of Object.keys(outputSchema.properties || {})) {
+    const outputProperties = getSchemaProperties(outputSchema);
+    const outputKeys =
+      typeof outputProperties === "object"
+        ? Object.keys(outputProperties)
+        : outputSchema === true
+          ? Object.keys(task.runOutputData || {})
+          : [];
+
+    for (const key of outputKeys) {
       const value = task.runOutputData[key];
       const li = outputs.createListItem("", "padding-left: 20px;");
       li.outputText(`${key}: `);

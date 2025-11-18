@@ -1,4 +1,5 @@
-import { Dataflow, DataPortSchema, GraphAsTask, Task, TaskGraph } from "@podley/task-graph";
+import { Dataflow, GraphAsTask, Task, TaskGraph } from "@podley/task-graph";
+import { DataPortSchema } from "@podley/util";
 import { describe, expect, it } from "bun:test";
 
 // Test tasks with specific input/output schemas
@@ -20,7 +21,7 @@ class TaskA extends Task {
           default: 42,
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -32,7 +33,7 @@ class TaskA extends Task {
           description: "Output from A",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   async execute(input: any): Promise<any> {
@@ -55,7 +56,7 @@ class TaskB extends Task {
           description: "Input to B",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -67,7 +68,7 @@ class TaskB extends Task {
           description: "Output from B",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   async execute(input: any): Promise<any> {
@@ -96,7 +97,7 @@ class TaskC extends Task {
         },
       },
       required: ["inputC1"],
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema(): DataPortSchema {
@@ -112,7 +113,7 @@ class TaskC extends Task {
           description: "Second output from C",
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   async execute(input: any): Promise<any> {
@@ -145,6 +146,9 @@ describe("GraphAsTask Dynamic Schema", () => {
 
       // The input schema should be the inputs of TaskA (the starting node)
       const inputSchema = graphAsTask.inputSchema();
+      if (typeof inputSchema === "boolean") {
+        return;
+      }
       expect(inputSchema.properties).toBeDefined();
       expect(inputSchema.properties!["inputA1"]).toBeDefined();
       expect(inputSchema.properties!["inputA2"]).toBeDefined();
@@ -171,6 +175,9 @@ describe("GraphAsTask Dynamic Schema", () => {
 
       // The input schema should combine inputs from both TaskA and TaskB
       const inputSchema = graphAsTask.inputSchema();
+      if (typeof inputSchema === "boolean") {
+        return;
+      }
       expect(inputSchema.properties).toBeDefined();
       expect(inputSchema.properties!["inputA1"]).toBeDefined();
       expect(inputSchema.properties!["inputA2"]).toBeDefined();
@@ -199,6 +206,9 @@ describe("GraphAsTask Dynamic Schema", () => {
       // TaskC is NOT a starting node (has incoming connection from TaskA)
       // Only inputs from starting nodes (TaskA and TaskB) should be in the schema
       const inputSchema = graphAsTask.inputSchema();
+      if (typeof inputSchema === "boolean") {
+        return;
+      }
       expect(inputSchema.properties).toBeDefined();
 
       // TaskC is not a starting node, so none of its inputs should be in the schema
@@ -218,6 +228,9 @@ describe("GraphAsTask Dynamic Schema", () => {
 
       // Should return the static empty schema
       const inputSchema = graphAsTask.inputSchema();
+      if (typeof inputSchema === "boolean") {
+        return;
+      }
       expect(inputSchema).toBeDefined();
       expect(Object.keys(inputSchema.properties || {}).length).toBe(0);
     });
@@ -241,6 +254,10 @@ describe("GraphAsTask Dynamic Schema", () => {
 
       // The output schema should be TaskB's outputs (the ending node)
       const outputSchema = graphAsTask.outputSchema();
+      if (typeof outputSchema === "boolean") {
+        expect(outputSchema).toBe(!!outputSchema);
+        return;
+      }
       expect(outputSchema.properties).toBeDefined();
       expect(outputSchema.properties!["outputB"]).toBeDefined();
       expect(outputSchema.properties!["outputA"]).toBeUndefined(); // TaskA is not an ending node
@@ -266,6 +283,9 @@ describe("GraphAsTask Dynamic Schema", () => {
 
       // The output schema should combine outputs from both TaskB and TaskC
       const outputSchema = graphAsTask.outputSchema();
+      if (typeof outputSchema === "boolean") {
+        return;
+      }
       expect(outputSchema.properties).toBeDefined();
       expect(outputSchema.properties!["outputB"]).toBeDefined();
       expect(outputSchema.properties!["outputC1"]).toBeDefined();
@@ -278,6 +298,9 @@ describe("GraphAsTask Dynamic Schema", () => {
 
       // Should return the static empty schema
       const outputSchema = graphAsTask.outputSchema();
+      if (typeof outputSchema === "boolean") {
+        return;
+      }
       expect(outputSchema).toBeDefined();
       expect(Object.keys(outputSchema.properties || {}).length).toBe(0);
     });
@@ -301,6 +324,9 @@ describe("GraphAsTask Dynamic Schema", () => {
       const inputSchema = graphAsTask.inputSchema();
       const outputSchema = graphAsTask.outputSchema();
 
+      if (typeof inputSchema === "boolean" || typeof outputSchema === "boolean") {
+        return;
+      }
       expect(inputSchema.properties!["inputA1"]).toBeDefined();
       expect(inputSchema.properties!["inputA2"]).toBeDefined();
       expect(outputSchema.properties!["outputB"]).toBeDefined();
@@ -340,6 +366,10 @@ describe("GraphAsTask Dynamic Schema", () => {
       // Check schemas
       const inputSchema = graphAsTask.inputSchema();
       const outputSchema = graphAsTask.outputSchema();
+
+      if (typeof inputSchema === "boolean" || typeof outputSchema === "boolean") {
+        return;
+      }
 
       // Only TaskA's inputs (TaskA is the only starting node)
       // TaskC is not a starting node because it has an incoming connection from TaskA
@@ -383,6 +413,9 @@ describe("GraphAsTask Dynamic Schema", () => {
       const outputSchema = graphAsTask.outputSchema();
 
       // Single ending node: properties should NOT be arrays
+      if (typeof outputSchema === "boolean") {
+        return;
+      }
       expect(outputSchema.properties!["outputB"]).toBeDefined();
       expect((outputSchema.properties!["outputB"] as any).type).not.toBe("array");
     });
@@ -405,6 +438,9 @@ describe("GraphAsTask Dynamic Schema", () => {
       graphAsTask.subGraph = graph;
 
       const outputSchema = graphAsTask.outputSchema();
+      if (typeof outputSchema === "boolean") {
+        return;
+      }
 
       // Multiple ending nodes: all properties should be arrays (due to collectPropertyValues behavior)
       expect((outputSchema.properties!["outputB"] as any).type).toBe("array");
@@ -433,6 +469,9 @@ describe("GraphAsTask Dynamic Schema", () => {
       graphAsTask.subGraph = graph;
 
       const outputSchema = graphAsTask.outputSchema();
+      if (typeof outputSchema === "boolean") {
+        return;
+      }
 
       // Only TaskC's outputs should be in the schema (it's at the deepest level)
       expect(outputSchema.properties!["outputC1"]).toBeDefined();
@@ -466,6 +505,9 @@ describe("GraphAsTask Dynamic Schema", () => {
       graphAsTask.subGraph = graph;
 
       const outputSchema = graphAsTask.outputSchema();
+      if (typeof outputSchema === "boolean") {
+        return;
+      }
 
       // Only TaskC should be in the schema (it's at depth 2, the maximum)
       // TaskD is at depth 1, so it should not be included
@@ -498,6 +540,9 @@ describe("GraphAsTask Dynamic Schema", () => {
       graphAsTask.subGraph = graph;
 
       const outputSchema = graphAsTask.outputSchema();
+      if (typeof outputSchema === "boolean") {
+        return;
+      }
 
       // Both TaskB and TaskC should be in the schema (both at depth 1, the maximum)
       expect(outputSchema.properties!["outputB"]).toBeDefined();

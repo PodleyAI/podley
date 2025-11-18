@@ -122,7 +122,12 @@ export class AiTask<
   async validateInput(input: Input): Promise<boolean> {
     // TODO(str): this is very inefficient, we should cache the results, including intermediate results
     const inputSchema = this.inputSchema();
-
+    if (typeof inputSchema === "boolean") {
+      if (inputSchema === false) {
+        throw new TaskConfigurationError(`AiTask: Input schema is 'false' and accepts no inputs`);
+      }
+      return true;
+    }
     const modelTaskProperties = Object.entries<TSchema>(
       (inputSchema.properties || {}) as Record<string, TSchema>
     ).filter(([key, schema]) => schemaSemantic(schema)?.startsWith("model:"));
@@ -161,7 +166,12 @@ export class AiTask<
   async narrowInput(input: Input): Promise<Input> {
     // TODO(str): this is very inefficient, we should cache the results, including intermediate results
     const inputSchema = this.inputSchema();
-
+    if (typeof inputSchema === "boolean") {
+      if (inputSchema === false) {
+        throw new TaskConfigurationError(`AiTask: Input schema is 'false' and accepts no inputs`);
+      }
+      return input;
+    }
     const modelTaskProperties = Object.entries<TSchema>(
       (inputSchema.properties || {}) as Record<string, TSchema>
     ).filter(([key, schema]) => schemaSemantic(schema)?.startsWith("model:"));

@@ -5,14 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  CreateWorkflow,
-  Task,
-  TaskConfig,
-  TaskRegistry,
-  Workflow,
-  type DataPortSchema,
-} from "@podley/task-graph";
+import { CreateWorkflow, Task, TaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
 import { Static, Type } from "@sinclair/typebox";
 import { Interpreter } from "../util/interpreter";
 
@@ -43,12 +36,12 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
   public static title = "JavaScript Interpreter";
   public static description = "Executes JavaScript code in a sandboxed interpreter environment";
 
-  public static inputSchema(): DataPortSchema {
-    return inputSchema as DataPortSchema;
+  public static inputSchema() {
+    return inputSchema;
   }
 
-  public static outputSchema(): DataPortSchema {
-    return outputSchema as DataPortSchema;
+  public static outputSchema() {
+    return outputSchema;
   }
 
   async executeReactive(input: JavaScriptTaskInput, output: JavaScriptTaskOutput) {

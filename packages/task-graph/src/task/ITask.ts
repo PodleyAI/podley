@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import type { EventEmitter } from "@podley/util";
+import type { DataPortSchema, EventEmitter } from "@podley/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { ITaskGraph } from "../task-graph/ITaskGraph";
 import { IWorkflow } from "../task-graph/IWorkflow";
@@ -20,7 +20,6 @@ import type {
 } from "./TaskEvents";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
-import type { DataPortSchema } from "./TaskSchema";
 import type { Provenance, TaskConfig, TaskInput, TaskOutput, TaskStatus } from "./TaskTypes";
 
 /**

@@ -5,45 +5,42 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import {
-  CreateWorkflow,
-  Task,
-  TaskConfig,
-  TaskRegistry,
-  Workflow,
-  type DataPortSchema,
-} from "@podley/task-graph";
-import { Static, Type } from "@sinclair/typebox";
+import { CreateWorkflow, Task, TaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
+import { DataPortSchema, FromSchema } from "@podley/util";
 
 const log_levels = ["dir", "log", "debug", "info", "warn", "error"] as const;
 type LogLevel = (typeof log_levels)[number];
 const DEFAULT_LOG_LEVEL: LogLevel = "log";
 
-const inputSchema = Type.Object({
-  console: Type.Optional(
-    Type.Any({
+const inputSchema = {
+  type: "object",
+  properties: {
+    console: {
       title: "Message",
       description: "The message to log",
-    })
-  ),
-  log_level: Type.Optional(
-    Type.Enum(Object.fromEntries(log_levels.map((level) => [level, level])), {
+    },
+    log_level: {
+      type: "string",
+      enum: log_levels,
       title: "Log Level",
       description: "The log level to use",
       default: DEFAULT_LOG_LEVEL,
-    })
-  ),
-});
+    },
+  },
+} as const satisfies DataPortSchema;
 
-const outputSchema = Type.Object({
-  console: Type.Unknown({
-    title: "Messages",
-    description: "The messages logged by the task",
-  }),
-});
+const outputSchema = {
+  type: "object",
+  properties: {
+    console: {
+      title: "Messages",
+      description: "The messages logged by the task",
+    },
+  },
+} as const satisfies DataPortSchema;
 
-export type DebugLogTaskInput = Static<typeof inputSchema>;
-export type DebugLogTaskOutput = Static<typeof outputSchema>;
+export type DebugLogTaskInput = FromSchema<typeof inputSchema>;
+export type DebugLogTaskOutput = FromSchema<typeof outputSchema>;
 
 /**
  * DebugLogTask provides console logging functionality as a task within the system.
@@ -68,12 +65,12 @@ export class DebugLogTask<
     "Logs messages to the console with configurable log levels for debugging task graphs";
   static readonly cacheable = false;
 
-  public static inputSchema(): DataPortSchema {
-    return inputSchema as DataPortSchema;
+  public static inputSchema() {
+    return inputSchema;
   }
 
-  public static outputSchema(): DataPortSchema {
-    return outputSchema as DataPortSchema;
+  public static outputSchema() {
+    return outputSchema;
   }
 
   async executeReactive(input: Input, output: Output) {

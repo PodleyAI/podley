@@ -14,7 +14,6 @@ import {
   type TUnion,
   Type,
 } from "@sinclair/typebox";
-import type { JSONSchema7 } from "json-schema";
 
 export function TypeReplicateArray<T extends TSchema>(
   type: T,
@@ -37,24 +36,3 @@ export type DeReplicateStatic<S extends TObject<any>> = {
     ? UnwrapArrayUnion<Static<Properties<S>[K]>>
     : Static<Properties<S>[K]>;
 };
-
-/**
- * DataPortSchema extends JSONSchema7 to allow custom annotations
- * starting with "x-" or "_" anywhere title and description can appear
- */
-export interface DataPortSchema
-  extends Omit<
-    JSONSchema7,
-    "properties" | "items" | "additionalProperties" | "allOf" | "anyOf" | "oneOf" | "not"
-  > {
-  readonly properties?: {
-    readonly [key: string]: DataPortSchema;
-  };
-  readonly items?: DataPortSchema | readonly DataPortSchema[];
-  readonly additionalProperties?: boolean | DataPortSchema;
-  readonly allOf?: readonly DataPortSchema[];
-  readonly anyOf?: readonly DataPortSchema[];
-  readonly oneOf?: readonly DataPortSchema[];
-  readonly not?: DataPortSchema;
-  readonly [K: `x-${string}`]: unknown;
-}

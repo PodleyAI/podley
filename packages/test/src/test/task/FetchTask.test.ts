@@ -12,8 +12,7 @@ import {
   RetryableJobError,
 } from "@podley/job-queue";
 import { InMemoryQueueStorage } from "@podley/storage";
-import { JobTaskFailedError } from "@podley/task-graph";
-import { getTaskQueueRegistry, setTaskQueueRegistry } from "@podley/task-graph";
+import { getTaskQueueRegistry, JobTaskFailedError, setTaskQueueRegistry } from "@podley/task-graph";
 import { Fetch, FetchJob, FetchTaskInput, FetchTaskOutput } from "@podley/tasks";
 import { sleep } from "@podley/util";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
@@ -75,7 +74,7 @@ describe("FetchTask", () => {
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results).toHaveLength(3);
     const sorted = results
-      .map((result) => result.json?.data)
+      .map((result) => (result.json as any)?.data)
       .filter(Boolean)
       .sort((a, b) => (a!.id ?? 0) - (b!.id ?? 0));
     expect(sorted).toEqual(mockResponses.map((r) => r.data));

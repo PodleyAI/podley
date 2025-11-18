@@ -11,9 +11,8 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
-  type DataPortSchema,
 } from "@podley/task-graph";
-import { TypeOptionalArray } from "@podley/util";
+import { DataPortSchema, TypeOptionalArray } from "@podley/util";
 import { Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";
@@ -50,10 +49,10 @@ export class DownloadModelTask extends AiTask<
   public static title = "Download Model";
   public static description = "Downloads and caches AI models locally with progress tracking";
   public static inputSchema(): DataPortSchema {
-    return DownloadModelInputSchema as DataPortSchema;
+    return DownloadModelInputSchema satisfies DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
-    return DownloadModelOutputSchema as DataPortSchema;
+    return DownloadModelOutputSchema satisfies DataPortSchema;
   }
   public static cacheable = false;
 

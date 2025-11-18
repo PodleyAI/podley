@@ -5,8 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter, type EventParameters } from "@podley/util";
-import { TSchema } from "@sinclair/typebox";
+import { EventEmitter, JsonSchema, type EventParameters } from "@podley/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import { GraphAsTask } from "../task/GraphAsTask";
 import type { ITask, ITaskConstructor } from "../task/ITask";
@@ -25,7 +24,7 @@ import {
 } from "./TaskGraphRunner";
 
 // Type definitions for the workflow
-export type CreateWorkflow<I extends DataPorts, O extends DataPorts, C extends TaskConfig> = (
+export type CreateWorkflow<I extends DataPorts, _O extends DataPorts, C extends TaskConfig> = (
   input?: Partial<I>,
   config?: Partial<C>
 ) => Workflow;
@@ -123,8 +122,9 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
         this._dataFlows.forEach((dataflow) => {
           const taskSchema = task.inputSchema();
           if (
-            (taskSchema.properties as any)?.[dataflow.targetTaskPortId] === undefined &&
-            dataflow.targetTaskPortId !== DATAFLOW_ALL_PORTS
+            (typeof taskSchema !== "boolean" &&
+              taskSchema.properties?.[dataflow.targetTaskPortId] === undefined) ||
+            (taskSchema === true && dataflow.targetTaskPortId !== DATAFLOW_ALL_PORTS)
           ) {
             this._error = `Input ${dataflow.targetTaskPortId} not found on task ${task.config.id}`;
             console.error(this._error);
@@ -147,25 +147,31 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
 
         const makeMatch = (
           comparator: (
-            [parentOutputPortId, parentPortOutput]: [string, TSchema],
-            [taskInputPortId, taskPortInput]: [string, TSchema]
+            [fromOutputPortId, fromPortOutputSchema]: [string, JsonSchema],
+            [toInputPortId, toPortInputSchema]: [string, JsonSchema]
           ) => boolean
         ): Map<string, string> => {
-          for (const [parentOutputPortId, parentPortOutput] of Object.entries(
+          // If either schema is true (accepts everything), skip auto-matching
+          // as we cannot determine the appropriate connections
+          if (typeof sourceSchema === "boolean" || typeof targetSchema === "boolean") {
+            return matches;
+          }
+
+          for (const [fromOutputPortId, fromPortOutputSchema] of Object.entries(
             sourceSchema.properties || {}
           )) {
-            for (const [taskInputPortId, taskPortInput] of Object.entries(
+            for (const [toInputPortId, toPortInputSchema] of Object.entries(
               targetSchema.properties || {}
             )) {
               if (
-                !matches.has(taskInputPortId) &&
+                !matches.has(toInputPortId) &&
                 comparator(
-                  [parentOutputPortId, parentPortOutput as TSchema],
-                  [taskInputPortId, taskPortInput as TSchema]
+                  [fromOutputPortId, fromPortOutputSchema],
+                  [toInputPortId, toPortInputSchema]
                 )
               ) {
-                matches.set(taskInputPortId, parentOutputPortId);
-                this.connect(parent.config.id, parentOutputPortId, task.config.id, taskInputPortId);
+                matches.set(toInputPortId, fromOutputPortId);
+                this.connect(parent.config.id, fromOutputPortId, task.config.id, toInputPortId);
               }
             }
           }
@@ -173,22 +179,37 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
         };
 
         // Try to match outputs to inputs using different strategies
-        makeMatch(([parentOutputPortId, parentPortOutput], [taskInputPortId, taskPortInput]) => {
-          // $id matches
-          const idTypeMatch =
-            parentPortOutput.$id !== undefined && parentPortOutput.$id === taskPortInput.$id;
-          // $id both blank
-          const idTypeBlank = parentPortOutput.$id === undefined && undefined === taskPortInput.$id;
-          const typeMatch =
-            idTypeBlank &&
-            (parentPortOutput.type === taskPortInput.type ||
-              taskPortInput.anyOf?.some((i: any) => i.type == parentPortOutput.type));
-          const outputPortIdMatch = parentOutputPortId === taskInputPortId;
-          const outputPortIdOutputInput =
-            parentOutputPortId === "output" && taskInputPortId === "input";
-          const portIdsCompatible = outputPortIdMatch || outputPortIdOutputInput;
-          return (idTypeMatch || typeMatch) && portIdsCompatible;
-        });
+        makeMatch(
+          ([fromOutputPortId, fromPortOutputSchema], [toInputPortId, toPortInputSchema]) => {
+            // Skip if either schema is boolean
+            if (
+              typeof fromPortOutputSchema === "boolean" ||
+              typeof toPortInputSchema === "boolean"
+            ) {
+              if (fromPortOutputSchema === true && toPortInputSchema === true) {
+                return true;
+              }
+              return false;
+            }
+            // $id matches
+            const idTypeMatch =
+              fromPortOutputSchema.$id !== undefined &&
+              fromPortOutputSchema.$id === toPortInputSchema.$id;
+            // $id both blank
+            const idTypeBlank =
+              fromPortOutputSchema.$id === undefined && undefined === toPortInputSchema.$id;
+            const typeMatch =
+              idTypeBlank &&
+              (fromPortOutputSchema.type === toPortInputSchema.type ||
+                (toPortInputSchema.anyOf?.some((i: any) => i.type == fromPortOutputSchema.type) ??
+                  false));
+            const outputPortIdMatch = fromOutputPortId === toInputPortId;
+            const outputPortIdOutputInput =
+              fromOutputPortId === "output" && toInputPortId === "input";
+            const portIdsCompatible = outputPortIdMatch || outputPortIdOutputInput;
+            return (idTypeMatch || typeMatch) && portIdsCompatible;
+          }
+        );
 
         // If no matches were found, remove the task and report an error
         if (matches.size === 0) {
@@ -464,7 +485,16 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
     const lastNode = nodes[nodes.length + index];
     const outputSchema = lastNode.outputSchema();
 
-    if (!(outputSchema.properties as any)?.[source] && source !== DATAFLOW_ALL_PORTS) {
+    // Handle boolean schemas
+    if (typeof outputSchema === "boolean") {
+      if (outputSchema === false && source !== DATAFLOW_ALL_PORTS) {
+        const errorMsg = `Task ${lastNode.config.id} has schema 'false' and outputs nothing`;
+        this._error = errorMsg;
+        console.error(this._error);
+        throw new WorkflowError(errorMsg);
+      }
+      // If outputSchema is true, we skip validation as it outputs everything
+    } else if (!(outputSchema.properties as any)?.[source] && source !== DATAFLOW_ALL_PORTS) {
       const errorMsg = `Output ${source} not found on task ${lastNode.config.id}`;
       this._error = errorMsg;
       console.error(this._error);
@@ -554,11 +584,22 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
     const sourceSchema = sourceTask.outputSchema();
     const targetSchema = targetTask.inputSchema();
 
-    if (!sourceSchema.properties?.[sourceTaskPortId]) {
+    // Handle boolean schemas
+    if (typeof sourceSchema === "boolean") {
+      if (sourceSchema === false) {
+        throw new WorkflowError(`Source task has schema 'false' and outputs nothing`);
+      }
+      // If sourceSchema is true, we skip validation as it accepts everything
+    } else if (!sourceSchema.properties?.[sourceTaskPortId]) {
       throw new WorkflowError(`Output ${sourceTaskPortId} not found on source task`);
     }
 
-    if (!targetSchema.properties?.[targetTaskPortId]) {
+    if (typeof targetSchema === "boolean") {
+      if (targetSchema === false) {
+        throw new WorkflowError(`Target task has schema 'false' and accepts no inputs`);
+      }
+      // If targetSchema is true, we skip validation as it accepts everything
+    } else if (!targetSchema.properties?.[targetTaskPortId]) {
       throw new WorkflowError(`Input ${targetTaskPortId} not found on target task`);
     }
 

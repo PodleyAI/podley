@@ -11,8 +11,8 @@ import {
   TaskRegistry,
   TypeReplicateArray,
   Workflow,
-  type DataPortSchema,
 } from "@podley/task-graph";
+import { DataPortSchema } from "@podley/util";
 import { Type, type Static } from "@sinclair/typebox";
 import { AiTask } from "./base/AiTask";
 import { TypeModel } from "./base/AiTaskSchemas";

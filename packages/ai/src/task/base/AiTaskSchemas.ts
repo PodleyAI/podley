@@ -65,7 +65,7 @@ export function TypeModel(semantic: TypeModelSymantic = "model", options: Schema
   }
   const task = semantic.startsWith("model:") ? semantic.slice(6) : null;
   function TypeModelCheck(schema: TTypeModel, value: unknown) {
-    return typeof value === "string" && value === "gpt-5";
+    return typeof value === "string";
   }
   if (!TypeRegistry.Has("TypeModel")) TypeRegistry.Set("TypeModel", TypeModelCheck);
   const taskName = semantic.startsWith("model:")

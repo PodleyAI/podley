@@ -5,7 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Type } from "@sinclair/typebox";
+import type { DataPortSchema } from "@podley/util";
 import { GraphAsTask } from "../task/GraphAsTask";
 import type { IExecuteContext, ITask } from "../task/ITask";
 import { Task } from "../task/Task";
@@ -66,14 +66,20 @@ function convertPipeFunctionToTask<I extends DataPorts, O extends DataPorts>(
   class QuickTask extends Task<I, O> {
     public static type = fn.name ? `𝑓 ${fn.name}` : "𝑓";
     public static inputSchema = () => {
-      return Type.Object({
-        [DATAFLOW_ALL_PORTS]: Type.Any(),
-      });
+      return {
+        type: "object",
+        properties: {
+          [DATAFLOW_ALL_PORTS]: {},
+        },
+      } as const satisfies DataPortSchema;
     };
     public static outputSchema = () => {
-      return Type.Object({
-        [DATAFLOW_ALL_PORTS]: Type.Any(),
-      });
+      return {
+        type: "object",
+        properties: {
+          [DATAFLOW_ALL_PORTS]: {},
+        },
+      } as const satisfies DataPortSchema;
     };
     public static cacheable = false;
     public async execute(input: I, context: IExecuteContext) {

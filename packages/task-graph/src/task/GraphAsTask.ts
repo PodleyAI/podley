@@ -5,13 +5,13 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { Type } from "@sinclair/typebox";
+import type { DataPortSchema } from "@podley/util";
+import { DATAFLOW_ALL_PORTS } from "../task-graph/Dataflow";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { CompoundMergeStrategy, PROPERTY_ARRAY } from "../task-graph/TaskGraphRunner";
 import { GraphAsTaskRunner } from "./GraphAsTaskRunner";
 import { Task } from "./Task";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
-import type { DataPortSchema } from "./TaskSchema";
 import {
   type TaskConfig,
   type TaskIdType,
@@ -115,6 +115,15 @@ export class GraphAsTask<
     // For starting nodes only, collect their unconnected inputs
     for (const task of startingNodes) {
       const taskInputSchema = task.inputSchema();
+      if (typeof taskInputSchema === "boolean") {
+        if (taskInputSchema === false) {
+          continue;
+        }
+        if (taskInputSchema === true) {
+          properties[DATAFLOW_ALL_PORTS] = {};
+          continue;
+        }
+      }
       const taskProperties = taskInputSchema.properties || {};
 
       // Add all inputs from starting nodes to the graph's input schema
@@ -132,7 +141,11 @@ export class GraphAsTask<
       }
     }
 
-    return Type.Object(properties, required.length > 0 ? { required } : {}) as DataPortSchema;
+    return {
+      type: "object",
+      properties,
+      ...(required.length > 0 ? { required } : {}),
+    } as const satisfies DataPortSchema;
   }
 
   /**
@@ -200,6 +213,15 @@ export class GraphAsTask<
 
     for (const task of lastLevelNodes) {
       const taskOutputSchema = task.outputSchema();
+      if (typeof taskOutputSchema === "boolean") {
+        if (taskOutputSchema === false) {
+          continue;
+        }
+        if (taskOutputSchema === true) {
+          properties[DATAFLOW_ALL_PORTS] = {};
+          continue;
+        }
+      }
       const taskProperties = taskOutputSchema.properties || {};
 
       for (const [outputName, outputProp] of Object.entries(taskProperties)) {
@@ -220,11 +242,18 @@ export class GraphAsTask<
         properties[outputName] = outputProp;
       } else {
         // Multiple ending nodes: all properties become arrays due to collectPropertyValues
-        properties[outputName] = Type.Array(outputProp as any);
+        properties[outputName] = {
+          type: "array",
+          items: outputProp as any,
+        };
       }
     }
 
-    return Type.Object(properties, required.length > 0 ? { required } : {}) as DataPortSchema;
+    return {
+      type: "object",
+      properties,
+      ...(required.length > 0 ? { required } : {}),
+    } as DataPortSchema;
   }
 
   /**
@@ -265,7 +294,7 @@ export class GraphAsTask<
    * Serializes the task and its subtasks into a format that can be stored
    * @returns The serialized task and subtasks
    */
-  public toJSON(): JsonTaskItem | TaskGraphItemJson {
+  public toJSON(): TaskGraphItemJson {
     let json = super.toJSON();
     const hasChildren = this.hasChildren();
     if (hasChildren) {

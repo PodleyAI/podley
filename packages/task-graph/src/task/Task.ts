@@ -5,9 +5,7 @@
 //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
 //    *******************************************************************************
 
-import { EventEmitter, uuid4 } from "@podley/util";
-import { Type } from "@sinclair/typebox";
-import { TypeCheck, TypeCompiler } from "@sinclair/typebox/compiler";
+import { EventEmitter, SchemaNode, compileSchema, uuid4, type DataPortSchema } from "@podley/util";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteContext, IExecuteReactiveContext, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
@@ -19,7 +17,6 @@ import {
 } from "./TaskEvents";
 import type { JsonTaskItem, TaskGraphItemJson } from "./TaskJSON";
 import { TaskRunner } from "./TaskRunner";
-import type { DataPortSchema } from "./TaskSchema";
 import {
   TaskStatus,
   type Provenance,
@@ -70,18 +67,22 @@ export class Task<
 
   /**
    * Input schema for this task
-   * Returns a JSONSchema7 compatible object schema
    */
   public static inputSchema(): DataPortSchema {
-    return Type.Object({}) as DataPortSchema;
+    return {
+      type: "object",
+      properties: {},
+    } as const satisfies DataPortSchema;
   }
 
   /**
    * Output schema for this task
-   * Returns a JSONSchema7 compatible object schema
    */
   public static outputSchema(): DataPortSchema {
-    return Type.Object({}) as DataPortSchema;
+    return {
+      type: "object",
+      properties: {},
+    } as const satisfies DataPortSchema;
   }
 
   // ========================================================================
@@ -185,7 +186,6 @@ export class Task<
 
   /**
    * Gets input schema for this task
-   * Returns a JSONSchema7 compatible object schema
    */
   public inputSchema(): DataPortSchema {
     return (this.constructor as typeof Task).inputSchema();
@@ -193,7 +193,6 @@ export class Task<
 
   /**
    * Gets output schema for this task
-   * Returns a JSONSchema7 compatible object schema
    */
   public outputSchema(): DataPortSchema {
     return (this.constructor as typeof Task).outputSchema();
@@ -329,16 +328,34 @@ export class Task<
    */
   getDefaultInputsFromStaticInputDefinitions(): Partial<Input> {
     const schema = this.inputSchema();
-    return Object.entries(schema.properties || {}).reduce<Record<string, any>>(
-      (acc, [id, prop]) => {
-        const defaultValue = (prop as any).default;
-        if (defaultValue !== undefined) {
-          acc[id] = defaultValue;
-        }
-        return acc;
-      },
-      {}
-    ) as Partial<Input>;
+    if (typeof schema === "boolean") {
+      return {};
+    }
+    try {
+      const thisStatic = this.constructor as typeof Task;
+      const compiledSchema = thisStatic.getInputSchemaNode();
+      const defaultData = compiledSchema.getData(undefined, {
+        addOptionalProps: true,
+        removeInvalidData: false,
+      });
+      return (defaultData || {}) as Partial<Input>;
+    } catch (error) {
+      console.warn(
+        `Failed to compile input schema for ${this.type}, falling back to manual extraction:`,
+        error
+      );
+      // Fallback to manual extraction if compilation fails
+      return Object.entries(schema.properties || {}).reduce<Record<string, any>>(
+        (acc, [id, prop]) => {
+          const defaultValue = (prop as any).default;
+          if (defaultValue !== undefined) {
+            acc[id] = defaultValue;
+          }
+          return acc;
+        },
+        {}
+      ) as Partial<Input>;
+    }
   }
 
   /**
@@ -369,6 +386,16 @@ export class Task<
    */
   public setInput(input: Record<string, any>): void {
     const schema = this.inputSchema();
+    if (typeof schema === "boolean") {
+      if (schema === true) {
+        for (const [inputId, value] of Object.entries(input)) {
+          if (value !== undefined) {
+            this.runInputData[inputId] = value;
+          }
+        }
+      }
+      return;
+    }
     const properties = schema.properties || {};
 
     for (const [inputId, prop] of Object.entries(properties)) {
@@ -447,32 +474,58 @@ export class Task<
   /**
    * The compiled input schema
    */
-  private static _inputSchemaTypeChecker: TypeCheck<any> | undefined;
+  private static _inputSchemaNode: SchemaNode | undefined;
 
   /**
    * Gets the compiled input schema
    */
-  protected static getInputSchemaTypeChecker(): TypeCheck<any> {
-    if (!Task._inputSchemaTypeChecker) {
-      Task._inputSchemaTypeChecker = TypeCompiler.Compile(Task.inputSchema() as any);
+  protected static getInputSchemaNode(): SchemaNode {
+    if (!this._inputSchemaNode) {
+      const dataPortSchema = this.inputSchema();
+      // Handle boolean schemas - skip validation for 'true' (accepts any), reject for 'false'
+      if (typeof dataPortSchema === "boolean") {
+        if (dataPortSchema === false) {
+          // Create a schema that rejects everything
+          this._inputSchemaNode = compileSchema(false as any);
+        } else {
+          // For 'true', accept any input - create a schema that accepts anything
+          this._inputSchemaNode = compileSchema(true as any);
+        }
+      } else {
+        // Try to compile the schema - if it fails, it means the schema structure is invalid
+        // In that case, we'll create a permissive schema that accepts the structure
+        try {
+          this._inputSchemaNode = compileSchema(dataPortSchema);
+        } catch (error) {
+          // If compilation fails, fall back to accepting any object structure
+          // This is a safety net for schemas that json-schema-library can't compile
+          console.warn(
+            `Failed to compile input schema for ${this.type}, falling back to permissive validation:`,
+            error
+          );
+          this._inputSchemaNode = compileSchema(true as any);
+        }
+      }
     }
-    return Task._inputSchemaTypeChecker;
+    return this._inputSchemaNode;
   }
 
   /**
    * Validates an input data object against the task's input schema
    */
   public async validateInput(input: Partial<Input>): Promise<boolean> {
-    const schema = this.inputSchema();
-
+    const thisStatic = this.constructor as typeof Task;
     // validate the partial input against the schema
-    const checker = (this.constructor as typeof Task).getInputSchemaTypeChecker();
-    if (!checker.Check(input)) {
-      const errors = [...checker.Errors(input)];
+    const schemaNode = thisStatic.getInputSchemaNode();
+    const result = schemaNode.validate(input);
+
+    if (!result.valid) {
+      const errorMessages = result.errors.map((e) => {
+        const path = e.data.pointer || "";
+        return `${e.message}${path ? ` (${path})` : ""}`;
+      });
       throw new TaskInvalidInputError(
-        `Input ${JSON.stringify(input)} does not match schema: ${errors
-          .map((e) => `${e.message} (${e.path.slice(1)})`)
-          .join(", ")}`
+        `Input ${JSON.stringify(input)} does not match schema: ${errorMessages.join(", ")}`
       );
     }
 

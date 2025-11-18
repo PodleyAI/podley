@@ -7,7 +7,6 @@
 
 import {
   ArrayTask,
-  DataPortSchema,
   IExecuteContext,
   ITask,
   PROPERTY_ARRAY,
@@ -17,7 +16,7 @@ import {
   TaskOutput,
   TaskStatus,
 } from "@podley/task-graph";
-import { ConvertAllToOptionalArray } from "@podley/util";
+import { ConvertAllToOptionalArray, DataPortSchema } from "@podley/util";
 import { describe, expect, spyOn, test } from "bun:test";
 
 // Define our input and output types
@@ -58,7 +57,7 @@ class MultiplyRunTask extends ArrayTask<
           "x-replicate": true,
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
     return {
@@ -68,7 +67,7 @@ class MultiplyRunTask extends ArrayTask<
           oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   public async execute(input: MultiplyInput, context: IExecuteContext): Promise<MultiplyOutput> {
@@ -105,7 +104,7 @@ class MultiplyRunReactiveTask extends ArrayTask<
           "x-replicate": true,
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
     return {
@@ -115,7 +114,7 @@ class MultiplyRunReactiveTask extends ArrayTask<
           oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   public async executeReactive(
@@ -151,7 +150,7 @@ class SquareRunTask extends ArrayTask<
           "x-replicate": true,
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
     return {
@@ -161,7 +160,7 @@ class SquareRunTask extends ArrayTask<
           oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   public async execute(input: SquareInput, context: IExecuteContext): Promise<SquareOutput> {
@@ -187,7 +186,7 @@ class SquareRunReactiveTask extends ArrayTask<
           "x-replicate": true,
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
     return {
@@ -197,7 +196,7 @@ class SquareRunReactiveTask extends ArrayTask<
           oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
         },
       },
-    } as DataPortSchema;
+    } as const satisfies DataPortSchema;
   }
 
   public async executeReactive(input: SquareInput, output: SquareOutput): Promise<SquareOutput> {

@@ -20,92 +20,81 @@ import {
   TaskInvalidInputError,
   TaskRegistry,
   Workflow,
-  type DataPortSchema,
 } from "@podley/task-graph";
-import { Static, Type } from "@sinclair/typebox";
+import { DataPortSchema, FromSchema } from "@podley/util";
 
-const inputSchema = Type.Object({
-  url: Type.String({
-    title: "URL",
-    description: "The URL to fetch from",
-    format: "uri",
-  }),
-  method: Type.Optional(
-    Type.Union(
-      [
-        Type.Literal("GET"),
-        Type.Literal("POST"),
-        Type.Literal("PUT"),
-        Type.Literal("DELETE"),
-        Type.Literal("PATCH"),
-      ],
-      {
-        title: "Method",
-        description: "The HTTP method to use",
-        default: "GET",
-      }
-    )
-  ),
-  headers: Type.Optional(
-    Type.Record(Type.String(), Type.String(), {
+const inputSchema = {
+  type: "object",
+  properties: {
+    url: {
+      type: "string",
+      title: "URL",
+      description: "The URL to fetch from",
+      format: "uri",
+    },
+    method: {
+      enum: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      title: "Method",
+      description: "The HTTP method to use",
+      default: "GET",
+    },
+    headers: {
+      type: "object",
+      additionalProperties: {
+        type: "string",
+      },
       title: "Headers",
       description: "The headers to send with the request",
-    })
-  ),
-  body: Type.Optional(
-    Type.String({
+    },
+    body: {
+      type: "string",
       title: "Body",
       description: "The body of the request",
-    }),
-    true
-  ),
-  response_type: Type.Optional(
-    Type.Union(
-      [
-        Type.Literal("json"),
-        Type.Literal("text"),
-        Type.Literal("blob"),
-        Type.Literal("arraybuffer"),
-      ],
-      {
-        title: "Response Type",
-        default: "json",
-      }
-    )
-  ),
-  timeout: Type.Optional(
-    Type.Number({
+    },
+    response_type: {
+      enum: ["json", "text", "blob", "arraybuffer"],
+      title: "Response Type",
+      default: "json",
+    },
+    timeout: {
+      type: "number",
       title: "Timeout",
       description: "Request timeout in milliseconds",
-    })
-  ),
-  queue: Type.Optional(
-    Type.Union([Type.Boolean(), Type.String()], {
+    },
+    queue: {
+      oneOf: [{ type: "boolean" }, { type: "string" }],
       description: "Queue handling: false=run inline, true=use default, string=explicit queue name",
       default: true,
-    })
-  ),
-});
+    },
+  },
+  required: ["url"],
+} as const satisfies DataPortSchema;
 
-const outputSchema = Type.Object({
-  json: Type.Optional(
-    Type.Any({
+const outputSchema = {
+  type: "object",
+  properties: {
+    json: {
       title: "JSON",
       description: "The JSON response",
-    })
-  ),
-  text: Type.Optional(
-    Type.String({
+    },
+    text: {
+      type: "string",
       title: "Text",
       description: "The text response",
-    })
-  ),
-  blob: Type.Optional(Type.Unsafe<Blob>({ type: "blob" })),
-  arraybuffer: Type.Optional(Type.Unsafe<ArrayBuffer>({ type: "arraybuffer" })),
-});
+    },
+    blob: {
+      title: "Blob",
+      description: "The blob response",
+    },
+    arraybuffer: {
+      title: "ArrayBuffer",
+      description: "The arraybuffer response",
+    },
+  },
+} as const satisfies DataPortSchema;
 
-export type FetchTaskInput = Static<typeof inputSchema>;
-export type FetchTaskOutput = Static<typeof outputSchema>;
+export type FetchTaskInput = FromSchema<typeof inputSchema>;
+export type FetchTaskOutput = FromSchema<typeof outputSchema>;
 
 export type FetchTaskConfig = JobQueueTaskConfig;
 
@@ -258,12 +247,12 @@ export class FetchTask<
   public static description =
     "Fetches data from a URL with progress tracking and automatic retry handling";
 
-  public static inputSchema(): DataPortSchema {
-    return inputSchema as DataPortSchema;
+  public static inputSchema() {
+    return inputSchema;
   }
 
-  public static outputSchema(): DataPortSchema {
-    return outputSchema as DataPortSchema;
+  public static outputSchema() {
+    return outputSchema;
   }
 
   constructor(input: Input = {} as Input, config: Config = {} as Config) {
