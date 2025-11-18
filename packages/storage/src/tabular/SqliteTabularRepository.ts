@@ -1,16 +1,19 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { Sqlite } from "@podley/sqlite";
 import { createServiceToken } from "@podley/util";
 import { Static, TObject, TSchema } from "@sinclair/typebox";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import { ValueOptionType } from "./ITabularRepository";
-import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
+import {
+  ExtractPrimaryKey,
+  ExtractValue,
+  ITabularRepository,
+  ValueOptionType,
+} from "./ITabularRepository";
 
 // Define local type for SQL operations
 type ExcludeDateKeyOptionType = Exclude<string | number | bigint, Date>;

@@ -1,19 +1,17 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { ArrayTask, ITask, TaskStatus } from "@podley/task-graph";
 import { Node, NodeProps } from "@xyflow/react";
 import { useEffect, useState } from "react";
-import { NodeContainer } from "./NodeContainer";
-import { NodeHeader } from "./NodeHeader";
+import { FiCloud, FiCloudLightning } from "react-icons/fi";
 import { ProgressBar } from "../components/ProgressBar";
 import { TaskDataButtons } from "../components/TaskDataButtons";
-import { FiCloudLightning } from "react-icons/fi";
-import { FiCloud } from "react-icons/fi";
+import { NodeContainer } from "./NodeContainer";
+import { NodeHeader } from "./NodeHeader";
 
 export type TaskNodeData = {
   task: ITask;

@@ -1,11 +1,10 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { createServiceToken, globalServiceRegistry, WORKER_SERVER, parentPort } from "@podley/util";
+import { createServiceToken, globalServiceRegistry, parentPort, WORKER_SERVER } from "@podley/util";
 import { TFMP_Download, TFMP_TextEmbedding } from "../common/TFMP_JobRunFns";
 
 // Register the worker functions

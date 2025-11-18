@@ -1,16 +1,14 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { DragHandleDots2Icon } from "@radix-ui/react-icons";
 import * as ResizablePrimitive from "react-resizable-panels";
@@ -51,4 +49,4 @@ const ResizableHandle = ({
   </ResizablePrimitive.PanelResizeHandle>
 );
 
-export { ResizablePanelGroup, ResizablePanel, ResizableHandle };
+export { ResizableHandle, ResizablePanel, ResizablePanelGroup };

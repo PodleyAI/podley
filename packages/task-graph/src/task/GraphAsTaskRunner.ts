@@ -1,9 +1,8 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { GraphResultArray } from "../task-graph/TaskGraphRunner";
 import { GraphAsTask } from "./GraphAsTask";
@@ -27,20 +26,17 @@ export class GraphAsTaskRunner<
         this.task.emit("progress", progress, message, ...args);
       }
     );
-    const results = await this.task.subGraph!.run<Output>(
-      input,
-      {
-        parentProvenance: this.nodeProvenance || {},
-        parentSignal: this.abortController?.signal,
-        outputCache: this.outputCache,
-      }
-    );
+    const results = await this.task.subGraph!.run<Output>(input, {
+      parentProvenance: this.nodeProvenance || {},
+      parentSignal: this.abortController?.signal,
+      outputCache: this.outputCache,
+    });
     unsubscribe();
     return results;
   }
   /**
    * Protected method for reactive execution delegation
-   * 
+   *
    * Note: Reactive execution doesn't accept input parameters by design.
    * It works with the graph's internal state and dataflow connections.
    * Tasks in the subgraph will use their existing runInputData (from defaults

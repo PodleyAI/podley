@@ -1,15 +1,14 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { describe } from "bun:test";
 import { PGlite } from "@electric-sql/pglite";
-import { Pool } from "pg";
 import { PostgresRateLimiter } from "@podley/job-queue";
 import { PostgresQueueStorage } from "@podley/storage";
+import { describe } from "bun:test";
+import { Pool } from "pg";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";
 
 const db = new PGlite() as unknown as Pool;

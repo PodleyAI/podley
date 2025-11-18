@@ -1,15 +1,14 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
+import { uuid4 } from "@podley/util";
+import { describe } from "bun:test";
 import "fake-indexeddb/auto";
 import { IndexedDbTaskGraphRepository } from "../../binding/IndexedDbTaskGraphRepository";
 import { runGenericTaskGraphRepositoryTests } from "./genericTaskGraphRepositoryTests";
-import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
 
 describe("IndexedDbTaskGraphRepository", () => {
   runGenericTaskGraphRepositoryTests(async () => {

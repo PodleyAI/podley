@@ -1,15 +1,14 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import React, { useState } from "react";
-import { JsonValue } from "./JsonValue";
-import { JsonObject } from "./JsonObject";
+import React from "react";
 import { JsonArray } from "./JsonArray";
+import { JsonObject } from "./JsonObject";
 import "./JsonTreeStyles.css";
+import { JsonValue } from "./JsonValue";
 
 type JsonTreeProps = {
   data: unknown;

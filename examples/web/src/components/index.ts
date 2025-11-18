@@ -1,12 +1,11 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-export { JsonTree } from "./JsonTree";
-export { JsonObject } from "./JsonObject";
 export { JsonArray } from "./JsonArray";
+export { JsonObject } from "./JsonObject";
+export { JsonTree } from "./JsonTree";
 export { JsonValue } from "./JsonValue";
 export { ProgressBar } from "./ProgressBar";

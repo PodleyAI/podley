@@ -1,19 +1,18 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { createServiceToken, globalServiceRegistry, WORKER_SERVER, parentPort } from "@podley/util";
+import { createServiceToken, globalServiceRegistry, parentPort, WORKER_SERVER } from "@podley/util";
 import {
   HFT_Download,
   HFT_TextEmbedding,
   HFT_TextGeneration,
-  HFT_TextTranslation,
+  HFT_TextQuestionAnswer,
   HFT_TextRewriter,
   HFT_TextSummary,
-  HFT_TextQuestionAnswer,
+  HFT_TextTranslation,
 } from "../common/HFT_JobRunFns";
 
 export const HFT_WORKER_JOBRUN = createServiceToken("worker.ai-provider.hft");

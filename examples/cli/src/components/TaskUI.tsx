@@ -1,17 +1,15 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { ITask, ITaskGraph, TaskStatus, ArrayTask } from "@podley/task-graph";
+import { DownloadModelTask } from "@podley/ai";
+import { ArrayTask, ITask, ITaskGraph, TaskStatus } from "@podley/task-graph";
 import type { FC } from "react";
 import { memo, useEffect, useState } from "react";
-import { Box, List, Text, useList, useListItem } from "retuink";
+import { Box, Text } from "retuink";
 import { createBar, Spinner, symbols } from "./Elements";
-import TaskGraphUI from "./TaskGraphUI";
-import { DownloadModelTask } from "@podley/ai";
 
 const StatusIcon = memo(
   ({ status, dependant }: { status: TaskStatus; dependant: boolean }) => {

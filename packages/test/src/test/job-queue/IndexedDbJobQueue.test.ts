@@ -1,15 +1,14 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import "fake-indexeddb/auto";
-import { describe } from "bun:test";
-import { IndexedDbQueueStorage } from "@podley/storage";
-import { runGenericJobQueueTests } from "./genericJobQueueTests";
 import { InMemoryRateLimiter } from "@podley/job-queue";
+import { IndexedDbQueueStorage } from "@podley/storage";
+import { describe } from "bun:test";
+import "fake-indexeddb/auto";
+import { runGenericJobQueueTests } from "./genericJobQueueTests";
 
 describe("IndexedDbJobQueue", () => {
   runGenericJobQueueTests(

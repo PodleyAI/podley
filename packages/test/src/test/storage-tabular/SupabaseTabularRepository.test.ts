@@ -1,22 +1,21 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { ExtractPrimaryKey, ExtractValue, SupabaseTabularRepository } from "@podley/storage";
+import { uuid4 } from "@podley/util";
+import { Static, TObject } from "@sinclair/typebox";
+import { describe } from "bun:test";
+import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
 import {
-  runGenericTabularRepositoryTests,
   CompoundPrimaryKeyNames,
   CompoundSchema,
+  runGenericTabularRepositoryTests,
   SearchPrimaryKeyNames,
   SearchSchema,
 } from "./genericTabularRepositoryTests";
-import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
-import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
-import { Static, TObject } from "@sinclair/typebox";
 
 const client = createSupabaseMockClient();
 

@@ -1,22 +1,21 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import ReactDOM from "react-dom/client";
-import { App } from "./App";
-import { Task, TaskGraph, Workflow } from "@podley/task-graph";
-import "./main.css";
-import { isDarkMode, installDevToolsFormatters } from "./ConsoleFormatters";
 import {
   DownloadModelTask,
-  TextRewriterTask,
   TextEmbeddingTask,
+  TextRewriterTask,
   TextTranslationTask,
 } from "@podley/ai";
+import { Task, TaskGraph, Workflow } from "@podley/task-graph";
 import { DebugLogTask, DelayTask, FetchTask, JsonTask, LambdaTask } from "@podley/tasks";
+import ReactDOM from "react-dom/client";
+import { App } from "./App";
+import { installDevToolsFormatters, isDarkMode } from "./ConsoleFormatters";
+import "./main.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   // <React.StrictMode>

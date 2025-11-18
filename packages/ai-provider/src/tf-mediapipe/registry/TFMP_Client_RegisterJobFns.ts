@@ -1,13 +1,12 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { getAiProviderRegistry } from "@podley/ai";
-import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
 import { globalServiceRegistry, WORKER_MANAGER } from "@podley/util";
+import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
 
 export const register_TFMP_ClientJobFns = (worker: Worker) => {
   const workerManager = globalServiceRegistry.get(WORKER_MANAGER);

@@ -1,18 +1,17 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-export * from "./base/AiTaskSchemas";
 export * from "./base/AiTask";
+export * from "./base/AiTaskSchemas";
 export * from "./DocumentSplitterTask";
-export * from "./TextRewriterTask";
-export * from "./TextGenerationTask";
-export * from "./TextSummaryTask";
+export * from "./DownloadModelTask";
 export * from "./TextEmbeddingTask";
+export * from "./TextGenerationTask";
 export * from "./TextQuestionAnswerTask";
+export * from "./TextRewriterTask";
+export * from "./TextSummaryTask";
 export * from "./TextTranslationTask";
 export * from "./VectorSimilarityTask";
-export * from "./DownloadModelTask";

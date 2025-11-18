@@ -1,17 +1,16 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { IndexedDbTabularRepository } from "@podley/storage";
 import {
-  Task2ModelSchema,
-  Task2ModelPrimaryKeyNames,
+  ModelPrimaryKeyNames,
   ModelRepository,
   ModelSchema,
-  ModelPrimaryKeyNames,
+  Task2ModelPrimaryKeyNames,
+  Task2ModelSchema,
 } from "../ModelRepository";
 
 /**

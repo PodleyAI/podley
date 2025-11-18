@@ -1,13 +1,16 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { expect, it, beforeEach, afterEach, describe, mock } from "bun:test";
-import { TaskOutputRepository, TaskInput, TaskOutput } from "@podley/task-graph";
-import { TaskOutputTabularRepository } from "@podley/task-graph";
+import {
+  TaskInput,
+  TaskOutput,
+  TaskOutputRepository,
+  TaskOutputTabularRepository,
+} from "@podley/task-graph";
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 
 export function runGenericTaskOutputRepositoryTests(
   createRepository: () => Promise<TaskOutputRepository>

@@ -1,22 +1,22 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import {
+  DefaultKeyValueKey,
+  DefaultKeyValueSchema,
   ExtractPrimaryKey,
   ExtractValue,
   SupabaseKvRepository,
   SupabaseTabularRepository,
 } from "@podley/storage";
-import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
-import { describe } from "bun:test";
-import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
 import { uuid4 } from "@podley/util";
 import { Static, TObject } from "@sinclair/typebox";
-import { DefaultKeyValueKey, DefaultKeyValueSchema } from "@podley/storage";
+import { describe } from "bun:test";
+import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
+import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 
 class SupabaseTabularTestRepository<
   Schema extends TObject,

@@ -1,16 +1,15 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
+import { IndexedDbTabularRepository } from "@podley/storage";
 import {
   TaskGraphPrimaryKeyNames,
-  TaskGraphTabularRepository,
   TaskGraphSchema,
+  TaskGraphTabularRepository,
 } from "@podley/task-graph";
-import { IndexedDbTabularRepository } from "@podley/storage";
 import { createServiceToken } from "@podley/util";
 
 export const IDB_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphTabularRepository>(

@@ -1,9 +1,8 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import {
   AiJob,
@@ -84,7 +83,10 @@ describe("HFTransformersBinding", () => {
       const queueRegistry = getTaskQueueRegistry();
       const storage = new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(db, "test");
       await storage.setupDatabase();
-      const limiter = new SqliteRateLimiter(db, "test", { maxExecutions: 4, windowSizeInSeconds: 1 });
+      const limiter = new SqliteRateLimiter(db, "test", {
+        maxExecutions: 4,
+        windowSizeInSeconds: 1,
+      });
       limiter.ensureTableExists();
       const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
         HF_TRANSFORMERS_ONNX,

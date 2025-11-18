@@ -1,9 +1,8 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 export * from "./common";
 
@@ -11,9 +10,9 @@ export * from "./binding/FsFolderTaskGraphRepository";
 export * from "./binding/PostgresTaskGraphRepository";
 export * from "./binding/SqliteTaskGraphRepository";
 
+export * from "./binding/FsFolderTaskOutputRepository";
 export * from "./binding/PostgresTaskOutputRepository";
 export * from "./binding/SqliteTaskOutputRepository";
-export * from "./binding/FsFolderTaskOutputRepository";
 
 export * from "./binding/InMemoryJobQueue";
 export * from "./binding/PostgresJobQueue";

@@ -1,31 +1,30 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { beforeEach, describe, expect, it, spyOn } from "bun:test";
-import { sleep } from "@podley/util";
 import {
-  TaskGraphRunner,
-  TaskGraph,
-  ITask,
-  TaskStatus,
-  TaskAbortedError,
-  Dataflow,
-  TaskOutput,
   AnyGraphResult,
+  Dataflow,
+  DataflowArrow,
+  ITask,
+  TaskAbortedError,
+  TaskGraph,
+  TaskGraphRunner,
+  TaskOutput,
+  TaskStatus,
 } from "@podley/task-graph";
+import { sleep } from "@podley/util";
+import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 import {
-  TestIOTask,
-  TestSquareTask,
-  TestDoubleTask,
   FailingTask,
   LongRunningTask,
   TestAddTask,
+  TestDoubleTask,
+  TestIOTask,
+  TestSquareTask,
 } from "../task/TestTasks";
-import { DataflowArrow } from "@podley/task-graph";
 
 describe("TaskGraphRunner", () => {
   let runner: TaskGraphRunner;

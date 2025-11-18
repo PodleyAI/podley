@@ -1,14 +1,13 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { describe, expect, it, beforeEach } from "bun:test";
+import { Dataflow, TaskGraph, TaskRegistry } from "@podley/task-graph";
+import { beforeEach, describe, expect, it } from "bun:test";
 import { rmdirSync } from "fs";
 import { FsFolderTaskGraphRepository } from "../../binding/FsFolderTaskGraphRepository";
-import { TaskRegistry, Dataflow, TaskGraph } from "@podley/task-graph";
 import { TestIOTask } from "../task/TestTasks";
 
 TaskRegistry.registerTask(TestIOTask);

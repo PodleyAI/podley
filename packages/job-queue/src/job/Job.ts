@@ -1,14 +1,13 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import type { JobQueue } from "./JobQueue";
-import type { JobProgressListener } from "./JobQueueEventListeners";
 import { JobStatus } from "./IJobQueue";
 import { JobError } from "./JobError";
+import type { JobQueue } from "./JobQueue";
+import type { JobProgressListener } from "./JobQueueEventListeners";
 
 /**
  * Context for job execution

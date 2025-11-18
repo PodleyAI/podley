@@ -1,15 +1,14 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { Task, TaskGraph, IWorkflow, ITaskGraph, Taskish, Workflow } from "@podley/task-graph";
+import { ITaskGraph, IWorkflow, Task, TaskGraph, Taskish, Workflow } from "@podley/task-graph";
+import { sleep } from "@podley/util";
 import React from "react";
 import { render } from "retuink";
 import App from "./components/App";
-import { sleep } from "@podley/util";
 
 export async function runTasks(taskish: Taskish) {
   if (taskish instanceof Workflow) {

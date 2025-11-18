@@ -1,18 +1,17 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { PostgresTabularRepository } from "@podley/storage";
 import {
-  TaskOutputSchema,
   TaskOutputPrimaryKeyNames,
+  TaskOutputSchema,
   TaskOutputTabularRepository,
 } from "@podley/task-graph";
-import type { Pool } from "pg";
 import { createServiceToken } from "@podley/util";
+import type { Pool } from "pg";
 
 export const POSTGRES_TASK_OUTPUT_REPOSITORY = createServiceToken<PostgresTaskOutputRepository>(
   "taskgraph.taskOutputRepository.postgres"

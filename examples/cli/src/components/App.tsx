@@ -1,14 +1,13 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
+import { ITaskGraph } from "@podley/task-graph";
 import React from "react";
 import { Box, Text } from "retuink";
 import TaskGraphUI from "./TaskGraphUI";
-import { ITaskGraph } from "@podley/task-graph";
 
 type AppProps = {
   graph: ITaskGraph;

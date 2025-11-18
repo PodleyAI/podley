@@ -1,13 +1,12 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { createServiceToken, sleep } from "@podley/util";
 import { Static, TObject } from "@sinclair/typebox";
-import { readdir, readFile, rm, writeFile, mkdir } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ExtractPrimaryKey, ExtractValue, ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";

@@ -1,14 +1,13 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { SqliteKvRepository } from "@podley/storage";
-import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 import { uuid4 } from "@podley/util";
 import { describe } from "bun:test";
+import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 
 describe("SqliteKvRepository", () => {
   runGenericKvRepositoryTests(

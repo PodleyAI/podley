@@ -1,12 +1,11 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { Edge, Node } from "@xyflow/react";
 import { DirectedAcyclicGraph } from "@podley/util";
+import { Edge, Node } from "@xyflow/react";
 
 type PositionXY = {
   x: number;

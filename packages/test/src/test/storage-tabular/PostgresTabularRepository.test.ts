@@ -1,22 +1,21 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
+import { PGlite } from "@electric-sql/pglite";
 import { PostgresTabularRepository } from "@podley/storage";
-import {
-  runGenericTabularRepositoryTests,
-  CompoundPrimaryKeyNames,
-  CompoundSchema,
-  SearchPrimaryKeyNames,
-  SearchSchema,
-} from "./genericTabularRepositoryTests";
 import { uuid4 } from "@podley/util";
 import { describe } from "bun:test";
 import type { Pool } from "pg";
-import { PGlite } from "@electric-sql/pglite";
+import {
+  CompoundPrimaryKeyNames,
+  CompoundSchema,
+  runGenericTabularRepositoryTests,
+  SearchPrimaryKeyNames,
+  SearchSchema,
+} from "./genericTabularRepositoryTests";
 
 const db = new PGlite() as unknown as Pool;
 

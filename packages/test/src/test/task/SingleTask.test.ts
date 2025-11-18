@@ -1,13 +1,12 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { describe, expect, it, beforeEach, spyOn } from "bun:test";
+import { Task, TaskAbortedError, TaskError, TaskStatus } from "@podley/task-graph";
+import { beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { EventTestTask, SimpleProcessingTask, TestIOTask } from "./TestTasks";
-import { Task, TaskStatus, TaskAbortedError, TaskError } from "@podley/task-graph";
 
 describe("SingleTask", () => {
   describe("TestIOTask", () => {

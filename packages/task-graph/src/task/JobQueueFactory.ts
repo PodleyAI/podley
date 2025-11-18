@@ -1,9 +1,8 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import { Job, JobConstructorParam, JobQueue, JobQueueOptions } from "@podley/job-queue";
 import { InMemoryQueueStorage } from "@podley/storage";
@@ -30,11 +29,7 @@ export type JobQueueFactory = <Input extends TaskInput, Output extends TaskOutpu
 
 export const JOB_QUEUE_FACTORY = createServiceToken<JobQueueFactory>("taskgraph.jobQueueFactory");
 
-const defaultJobQueueFactory: JobQueueFactory = async ({
-  queueName,
-  jobClass,
-  options,
-}) => {
+const defaultJobQueueFactory: JobQueueFactory = async ({ queueName, jobClass, options }) => {
   const queueOptions: JobQueueOptions<any, any> = {
     ...(options ?? {}),
   };

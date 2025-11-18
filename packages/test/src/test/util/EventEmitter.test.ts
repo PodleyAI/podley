@@ -1,12 +1,11 @@
-//    *******************************************************************************
-//    *   PODLEY.AI: Your Agentic AI library                                        *
-//    *                                                                             *
-//    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-//    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-//    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { describe, expect, it, beforeEach, mock } from "bun:test";
 import { EventEmitter } from "@podley/util";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 // Define event types for testing
 interface TestEvents extends Record<string, (...args: any) => any> {
