@@ -7,7 +7,7 @@
 import { IJobExecuteContext, Job, JobQueue } from "@podley/job-queue";
 import { getTaskQueueRegistry, JobQueueTask, TaskInput, TaskOutput } from "@podley/task-graph";
 import { DataPortSchema } from "@podley/util";
-import { afterEach, beforeEach, expect, it } from "bun:test";
+import { afterEach, beforeEach, expect, it } from "vitest";
 
 export class TestJob extends Job<TaskInput, TaskOutput> {
   async execute(input: TaskInput, context: IJobExecuteContext): Promise<TaskOutput> {
@@ -25,6 +25,7 @@ export class TestJobTask extends JobQueueTask<{ a: number; b: number }, { result
         b: { type: "number" },
       },
       additionalProperties: false,
+      required: ["a", "b"],
     }) as const satisfies DataPortSchema;
   static readonly outputSchema = (): DataPortSchema =>
     ({
@@ -33,6 +34,7 @@ export class TestJobTask extends JobQueueTask<{ a: number; b: number }, { result
         result: { type: "number" },
       },
       additionalProperties: false,
+      required: ["result"],
     }) as const satisfies DataPortSchema;
 }
 

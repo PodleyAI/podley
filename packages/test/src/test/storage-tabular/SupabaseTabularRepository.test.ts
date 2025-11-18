@@ -6,7 +6,7 @@
 
 import { SupabaseTabularRepository } from "@podley/storage";
 import { DataPortSchemaObject, ExcludeProps, FromSchema, IncludeProps, uuid4 } from "@podley/util";
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
 import {
   CompoundPrimaryKeyNames,

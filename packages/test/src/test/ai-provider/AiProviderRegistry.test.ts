@@ -21,7 +21,10 @@ import {
   TaskOutput,
   TaskQueueRegistry,
 } from "@podley/task-graph";
-import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
+const mock = vi.fn;
+
 // Constants for testing
 const TEST_PROVIDER = "test-provider";
 

@@ -5,8 +5,8 @@
  */
 
 import { Dataflow, TaskGraph, TaskRegistry } from "@podley/task-graph";
-import { beforeEach, describe, expect, it } from "bun:test";
-import { rmdirSync } from "fs";
+import { rmSync } from "fs";
+import { beforeEach, describe, expect, it } from "vitest";
 import { FsFolderTaskGraphRepository } from "../../binding/FsFolderTaskGraphRepository";
 import { TestIOTask } from "../task/TestTasks";
 
@@ -17,7 +17,7 @@ describe("FsFolderTaskGraphRepository", () => {
 
   beforeEach(() => {
     try {
-      rmdirSync(".cache/test/file-task-graph", { recursive: true });
+      rmSync(".cache/test/file-task-graph", { recursive: true });
     } catch {}
     repository = new FsFolderTaskGraphRepository(".cache/test/file-task-graph");
   });

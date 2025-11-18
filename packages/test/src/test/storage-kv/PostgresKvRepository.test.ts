@@ -7,8 +7,8 @@
 import { PGlite } from "@electric-sql/pglite";
 import { PostgresKvRepository } from "@podley/storage";
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
 import type { Pool } from "pg";
+import { describe } from "vitest";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 
 const db = new PGlite() as unknown as Pool;

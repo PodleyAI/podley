@@ -5,8 +5,10 @@
  */
 
 import { Task, TaskAbortedError, TaskError, TaskStatus } from "@podley/task-graph";
-import { beforeEach, describe, expect, it, spyOn } from "bun:test";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EventTestTask, SimpleProcessingTask, TestIOTask } from "./TestTasks";
+
+const spyOn = vi.spyOn;
 
 describe("SingleTask", () => {
   describe("TestIOTask", () => {

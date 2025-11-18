@@ -5,7 +5,7 @@
  */
 
 import { getGlobalModelRepository, ModelRepository, setGlobalModelRepository } from "@podley/ai";
-import { afterEach, beforeEach, expect, it } from "bun:test";
+import { afterEach, beforeEach, expect, it } from "vitest";
 
 const HF_TRANSFORMERS_ONNX = "HF_TRANSFORMERS_ONNX";
 

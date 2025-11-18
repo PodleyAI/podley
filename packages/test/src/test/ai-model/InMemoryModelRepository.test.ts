@@ -5,8 +5,8 @@
  */
 
 import { InMemoryModelRepository } from "@podley/ai";
-import { describe } from "bun:test";
-import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests.test";
+import { describe } from "vitest";
+import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 
 describe("InMemoryModelRepository", () => {
   runGenericModelRepositoryTests(async () => new InMemoryModelRepository());

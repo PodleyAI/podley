@@ -5,7 +5,7 @@
  */
 
 import { objectOfArraysAsArrayOfObjects } from "@podley/util";
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 
 describe("Object of arrays to array of objects proxy", () => {
   it("should return the initial length and numeric index access", () => {

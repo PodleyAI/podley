@@ -1,6 +1,6 @@
 import { Dataflow, GraphAsTask, Task, TaskGraph } from "@podley/task-graph";
 import { DataPortSchema } from "@podley/util";
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 
 // Test tasks with specific input/output schemas
 class TaskA extends Task {

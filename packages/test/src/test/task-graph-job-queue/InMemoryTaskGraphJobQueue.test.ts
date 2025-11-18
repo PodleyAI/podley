@@ -7,7 +7,7 @@
 import { ConcurrencyLimiter, JobQueue } from "@podley/job-queue";
 import { InMemoryQueueStorage } from "@podley/storage";
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 
 describe("InMemoryTaskGraphJobQueue", () => {

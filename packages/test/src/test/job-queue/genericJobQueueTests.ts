@@ -18,7 +18,7 @@ import {
 } from "@podley/job-queue";
 import { IQueueStorage } from "@podley/storage";
 import { BaseError, sleep, uuid4 } from "@podley/util";
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 export interface TInput {
   [key: string]: any;
@@ -77,6 +77,7 @@ export class TestJob extends Job<TInput, TOutput> {
           reject(error);
         }
       });
+      q;
     }
     return { result: input.data.replace("input", "output") };
   }
@@ -90,7 +91,6 @@ export function runGenericJobQueueTests(
   limiter?: (queueName: string, maxExecutions: number, windowSizeInSeconds: number) => ILimiter
 ) {
   let jobQueue: JobQueue<TInput, TOutput, TestJob>;
-  console.log("running generic job queue tests for", storage.name, limiter?.name);
   beforeEach(async () => {
     const queueName = `test-queue-${uuid4()}`;
     const storageInstance = storage(queueName);
@@ -320,7 +320,7 @@ export function runGenericJobQueueTests(
       const failedcheck = await jobQueue.get(jobId);
       expect(failedcheck?.status).toBe(JobStatus.FAILED);
 
-      expect(waitPromise).rejects.toMatchObject({
+      await expect(waitPromise).rejects.toMatchObject({
         name: "AbortSignalJobError",
       });
       expect(abortEventTriggered).toBe(true);

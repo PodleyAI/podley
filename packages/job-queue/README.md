@@ -666,7 +666,7 @@ bun test
 Example test:
 
 ```typescript
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { JobQueue } from "@podley/job-queue";
 import { InMemoryQueueStorage } from "@podley/storage";
 

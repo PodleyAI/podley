@@ -890,7 +890,7 @@ bun test --grep "Sqlite"      # Native tests
 ### Writing Tests for Your Storage Usage
 
 ```typescript
-import { describe, test, expect, beforeEach } from "bun:test";
+import { describe, test, expect, beforeEach } from "vitest";
 import { InMemoryTabularRepository } from "@podley/storage";
 
 describe("UserRepository", () => {

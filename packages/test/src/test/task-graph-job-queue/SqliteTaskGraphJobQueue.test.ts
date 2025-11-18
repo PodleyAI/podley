@@ -9,7 +9,7 @@ import { Sqlite } from "@podley/sqlite";
 import { SqliteQueueStorage } from "@podley/storage";
 import { TaskInput, TaskOutput } from "@podley/task-graph";
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 
 describe("SqliteTaskGraphJobQueue", () => {

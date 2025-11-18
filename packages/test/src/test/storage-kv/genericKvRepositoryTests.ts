@@ -6,7 +6,7 @@
 
 import { DefaultKeyValueSchema, IKvRepository } from "@podley/storage";
 import { FromSchema, JsonSchema } from "@podley/util";
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 export function runGenericKvRepositoryTests(
   createRepository: (keyType: JsonSchema, valueType: JsonSchema) => Promise<IKvRepository<any, any>>

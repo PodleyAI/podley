@@ -2,16 +2,36 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "build-package": {
-      "dependsOn": ["^build-package"],
-      "outputs": ["dist/**/*.js", "dist/**/*.js.map"]
+      "dependsOn": [
+        "^build-package"
+      ],
+      "outputs": [
+        "dist/**/*.js",
+        "dist/**/*.js.map",
+        "dist/**/*.d.ts",
+        "dist/**/*.d.ts.map",
+        "tsconfig.tsbuildinfo"
+      ]
     },
     "build-types": {
-      "dependsOn": ["^build-types"],
-      "outputs": ["dist/**/*.d.ts", "dist/**/*.d.ts.map", "tsconfig.tsbuildinfo"]
+      "dependsOn": [
+        "^build-types"
+      ],
+      "outputs": [
+        "dist/**/*.d.ts",
+        "dist/**/*.d.ts.map",
+        "tsconfig.tsbuildinfo"
+      ]
     },
     "build-example": {
-      "dependsOn": ["build-package", "^build-example"],
-      "outputs": ["dist/**/*.js", "dist/**/*.js.map"]
+      "dependsOn": [
+        "build-package",
+        "^build-example"
+      ],
+      "outputs": [
+        "dist/**/*.js",
+        "dist/**/*.js.map"
+      ]
     },
     "dev": {
       "persistent": true,

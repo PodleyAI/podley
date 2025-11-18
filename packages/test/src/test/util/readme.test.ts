@@ -2,9 +2,9 @@
 // previous fork: https://github.com/sroussey/typescript-graph
 // license: MIT
 
-import { describe, expect, it } from "bun:test";
+import { DirectedAcyclicGraph, DirectedGraph, Graph } from "@podley/util";
+import { describe, expect, it } from "vitest";
 import { edgeIdentity } from "./graph.test";
-import { Graph, DirectedGraph, DirectedAcyclicGraph } from "@podley/util";
 
 describe("The Readme", () => {
   it("runs the first example correctly", () => {

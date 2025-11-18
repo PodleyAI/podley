@@ -25,15 +25,15 @@ const bunUseSource = {
   [`"bun": "./dist/bun.js"`]: `"bun": "./src/bun.ts"`,
   [`"bun": "./dist/index.js"`]: `"bun": "./src/index.ts"`,
   [`"import": "./dist/bun.js"`]: `"import": "./src/bun.ts"`,
+  [`"types": "./dist/types.d.ts"`]: `"types": "./src/types.ts"`,
   [`"types": "./dist/bun.d.ts"`]: `"types": "./src/bun.ts"`,
-  [`"types": "./dist/index.d.ts"`]: `"types": "./src/index.ts"`,
 };
 const bunUseDist = {
   [`"bun": "./src/bun.ts"`]: `"bun": "./dist/bun.js"`,
   [`"bun": "./src/index.ts"`]: `"bun": "./dist/index.js"`,
   [`"import": "./src/bun.ts"`]: `"import": "./dist/bun.js"`,
+  [`"types": "./src/types.ts"`]: `"types": "./dist/types.d.ts"`,
   [`"types": "./src/bun.ts"`]: `"types": "./dist/bun.d.ts"`,
-  [`"types": "./src/index.ts"`]: `"types": "./dist/index.d.ts"`,
 };
 
 async function main(): Promise<void> {

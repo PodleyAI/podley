@@ -3,13 +3,58 @@
 // license: MIT
 
 import { Graph, NodeAlreadyExistsError, NodeDoesntExistError, serialize } from "@podley/util";
-import { hash } from "bun";
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 
-export const nodeIdentity = (n: any) => hash(serialize(n as Record<string, any>)).toString(16);
+// Simple synchronous hash (FNV-1a 32-bit) for strings / bytes.
+// Non-cryptographic, use only for IDs / maps / cache keys etc.
+
+export type HashInput = string | Uint8Array | ArrayBuffer;
+
+export function hash(input: HashInput): string {
+  const bytes = toBytes(input);
+
+  let hash = 0x811c9dc5; // FNV offset basis (32-bit)
+
+  for (let i = 0; i < bytes.length; i++) {
+    hash ^= bytes[i];
+    hash = (hash * 0x01000193) >>> 0; // FNV prime (32-bit), keep as uint32
+  }
+
+  // Return 8-char zero-padded hex string
+  return hash.toString(16).padStart(8, "0");
+}
+
+function toBytes(input: HashInput): Uint8Array {
+  if (typeof input === "string") {
+    if (typeof TextEncoder !== "undefined") {
+      return new TextEncoder().encode(input);
+    }
+    // Fallback: naive UTF-16 -> bytes (Node < v11, some environments)
+    const bytes: number[] = [];
+    for (let i = 0; i < input.length; i++) {
+      const code = input.charCodeAt(i);
+      if (code < 0x80) {
+        bytes.push(code);
+      } else if (code < 0x800) {
+        bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+      } else {
+        bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+      }
+    }
+    return new Uint8Array(bytes);
+  }
+
+  if (input instanceof Uint8Array) {
+    return input;
+  }
+
+  // ArrayBuffer
+  return new Uint8Array(input);
+}
+
+export const nodeIdentity = (n: any) => hash(serialize(n as Record<string, any>));
 export const edgeIdentity = (edge: any, node1Identity: any, node2Identity: any) => {
-  const h1 =
-    typeof edge === "object" ? hash(serialize(edge as Record<string, any>)).toString(16) : "";
+  const h1 = typeof edge === "object" ? hash(serialize(edge as Record<string, any>)) : "";
   return `${String(node1Identity)}-${String(node2Identity)}-${h1}`;
 };
 

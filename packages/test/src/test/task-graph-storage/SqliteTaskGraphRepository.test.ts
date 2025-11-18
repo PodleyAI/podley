@@ -5,7 +5,7 @@
  */
 
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import { SqliteTaskGraphRepository } from "../../binding/SqliteTaskGraphRepository";
 import { runGenericTaskGraphRepositoryTests } from "./genericTaskGraphRepositoryTests";
 

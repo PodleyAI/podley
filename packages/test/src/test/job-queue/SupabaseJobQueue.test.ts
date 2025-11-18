@@ -6,7 +6,7 @@
 
 import { InMemoryRateLimiter } from "@podley/job-queue";
 import { SupabaseQueueStorage } from "@podley/storage";
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";
 

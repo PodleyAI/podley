@@ -5,8 +5,8 @@
  */
 
 import { FsFolderTabularRepository } from "@podley/storage";
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, rmdirSync } from "fs";
+import { mkdirSync, rmSync } from "fs";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   CompoundPrimaryKeyNames,
   CompoundSchema,
@@ -26,7 +26,7 @@ describe("FsFolderTabularRepository", () => {
 
   afterEach(async () => {
     try {
-      rmdirSync(testDir, { recursive: true });
+      rmSync(testDir, { recursive: true });
     } catch {}
   });
 

@@ -10,7 +10,9 @@ import {
   TaskOutputRepository,
   TaskOutputTabularRepository,
 } from "@podley/task-graph";
-import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const mock = vi.fn;
 
 export function runGenericTaskOutputRepositoryTests(
   createRepository: () => Promise<TaskOutputRepository>

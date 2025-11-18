@@ -6,9 +6,9 @@
 
 import { IndexedDbModelRepository } from "@podley/ai";
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
 import "fake-indexeddb/auto";
-import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests.test";
+import { describe } from "vitest";
+import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 
 describe("IndexedDbModelRepository", () => {
   runGenericModelRepositoryTests(async () => {

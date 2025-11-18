@@ -5,7 +5,7 @@
  */
 
 import { InMemoryTabularRepository } from "@podley/storage";
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import {
   CompoundPrimaryKeyNames,
   CompoundSchema,

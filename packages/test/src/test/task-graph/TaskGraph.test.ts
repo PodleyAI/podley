@@ -5,7 +5,7 @@
  */
 
 import { Dataflow, serialGraph, TaskGraph } from "@podley/task-graph";
-import { beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "vitest";
 import { TestIOTask } from "../task/TestTasks";
 
 describe("TaskGraph", () => {

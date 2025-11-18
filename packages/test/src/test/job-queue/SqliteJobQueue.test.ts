@@ -7,7 +7,7 @@
 import { SqliteRateLimiter } from "@podley/job-queue";
 import { Sqlite } from "@podley/sqlite";
 import { SqliteQueueStorage } from "@podley/storage";
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";
 
 const db = new Sqlite.Database(":memory:");

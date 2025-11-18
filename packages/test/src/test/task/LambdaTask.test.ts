@@ -6,7 +6,7 @@
 
 import { TaskGraph, Workflow } from "@podley/task-graph";
 import { Lambda, LambdaTask } from "@podley/tasks";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 
 describe("LambdaTask", () => {
   test("in command mode", async () => {

@@ -14,7 +14,7 @@ import {
   WorkflowError,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
-import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   NumberTask,
   NumberToStringTask,
@@ -23,6 +23,8 @@ import {
   TestOutputTask,
   TestSimpleTask,
 } from "../task/TestTasks";
+
+const spyOn = vi.spyOn;
 
 const colsoleError = globalThis.console.error;
 
@@ -136,7 +138,7 @@ describe("Workflow", () => {
       await sleep(1);
       workflow.abort();
 
-      expect(runPromise).rejects.toThrow();
+      await expect(runPromise).rejects.toThrow();
     });
   });
 
@@ -326,7 +328,7 @@ describe("Workflow", () => {
 
       setTimeout(() => workflow.reset(), 10);
 
-      expect(resetPromise).resolves.toEqual([]);
+      await expect(resetPromise).resolves.toEqual([]);
     });
   });
 

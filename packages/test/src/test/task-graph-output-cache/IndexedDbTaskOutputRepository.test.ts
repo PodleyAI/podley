@@ -5,8 +5,8 @@
  */
 
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
 import "fake-indexeddb/auto";
+import { describe } from "vitest";
 import { IndexedDbTaskOutputRepository } from "../../binding/IndexedDbTaskOutputRepository";
 import { runGenericTaskOutputRepositoryTests } from "./genericTaskOutputRepositoryTests";
 

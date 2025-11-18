@@ -6,7 +6,7 @@
 
 import { ITabularRepository } from "@podley/storage";
 import { DataPortSchemaObject } from "@podley/util";
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 export const CompoundPrimaryKeyNames = ["name", "type"] as const;
 export const CompoundSchema = {
@@ -17,6 +17,7 @@ export const CompoundSchema = {
     option: { type: "string" },
     success: { type: "boolean" },
   },
+  required: ["name", "type", "option", "success"],
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 
@@ -31,6 +32,7 @@ export const SearchSchema = {
     createdAt: { type: "string", format: "date-time" },
     updatedAt: { type: "string", format: "date-time" },
   },
+  required: ["id", "category", "subcategory", "value", "createdAt", "updatedAt"],
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 

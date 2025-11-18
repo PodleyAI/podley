@@ -11,7 +11,7 @@ import {
   TaskGraphTabularRepository,
   TaskRegistry,
 } from "@podley/task-graph";
-import { afterEach, beforeEach, expect, it } from "bun:test";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { TestIOTask } from "../task/TestTasks";
 
 TaskRegistry.registerTask(TestIOTask);
@@ -42,7 +42,7 @@ export function runGenericTaskGraphRepositoryTests(
     const tasks = [new TestIOTask({}, { id: "task1" })];
     graph.addTasks(tasks);
     await repository.saveTaskGraph(id, graph);
-    expect(repository.getTaskGraph(id)).rejects.toThrow();
+    await expect(repository.getTaskGraph(id)).rejects.toThrow();
   });
 
   it("should store and retrieve task graph", async () => {

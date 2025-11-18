@@ -5,8 +5,8 @@
  */
 
 import { FsFolderKvRepository } from "@podley/storage";
-import { afterEach, beforeEach, describe } from "bun:test";
-import { mkdirSync, rmdirSync } from "fs";
+import { mkdirSync, rmSync } from "fs";
+import { afterEach, beforeEach, describe } from "vitest";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 
 const testDir = ".cache/test/testing";
@@ -20,7 +20,7 @@ describe("FsFolderKvRepository", () => {
 
   afterEach(async () => {
     try {
-      rmdirSync(testDir, { recursive: true });
+      rmSync(testDir, { recursive: true });
     } catch {}
   });
 

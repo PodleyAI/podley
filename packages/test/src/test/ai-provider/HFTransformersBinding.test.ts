@@ -23,7 +23,7 @@ import {
   Workflow,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
-import { afterAll, beforeEach, describe, expect, it } from "bun:test";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 const db = new Sqlite.Database(":memory:");
 

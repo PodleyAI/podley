@@ -957,7 +957,7 @@ bun test --coverage
 ### Testing Your Tasks
 
 ```typescript
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 
 describe("MyCustomTask", () => {
   test("should process input correctly", async () => {
@@ -970,7 +970,7 @@ describe("MyCustomTask", () => {
   test("should handle errors gracefully", async () => {
     const task = new MyCustomTask({ input: "invalid" });
 
-    await expect(task.run()).rejects.toThrow(TaskError);
+    await await expect(task.run()).rejects.toThrow(TaskError);
   });
 
   test("should respect cancellation", async () => {

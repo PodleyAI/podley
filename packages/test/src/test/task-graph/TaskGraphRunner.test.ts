@@ -16,7 +16,7 @@ import {
   TaskStatus,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
-import { beforeEach, describe, expect, it, spyOn } from "bun:test";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   FailingTask,
   LongRunningTask,
@@ -25,6 +25,8 @@ import {
   TestIOTask,
   TestSquareTask,
 } from "../task/TestTasks";
+
+const spyOn = vi.spyOn;
 
 describe("TaskGraphRunner", () => {
   let runner: TaskGraphRunner;
@@ -131,7 +133,7 @@ describe("TaskGraphRunner", () => {
     });
 
     it("should propagate task error to dataflow edges", async () => {
-      expect(runner.runGraph()).rejects.toThrow();
+      await expect(runner.runGraph()).rejects.toThrow();
 
       const dataflows = graph.getTargetDataflows("error-source");
       expect(errorTask.status).toBe(TaskStatus.FAILED);

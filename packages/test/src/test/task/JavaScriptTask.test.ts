@@ -6,7 +6,7 @@
 
 import { TaskGraph, TaskStatus, Workflow } from "@podley/task-graph";
 import { JavaScript, JavaScriptTask } from "@podley/tasks";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 
 describe("JavaScriptTask", () => {
   test("executes simple JavaScript code", async () => {

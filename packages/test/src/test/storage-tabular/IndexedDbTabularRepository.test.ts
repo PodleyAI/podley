@@ -6,7 +6,7 @@
 
 import { IndexedDbTabularRepository } from "@podley/storage";
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import "fake-indexeddb/auto";
 import {
   CompoundPrimaryKeyNames,

@@ -9,7 +9,7 @@
     "watch-node": "bun build --watch --no-clear-screen --target=node --sourcemap=external --packages=external --outdir ./dist/ ./src/node.ts",
     "watch-bun": "bun build --watch --no-clear-screen --target=bun --sourcemap=external --packages=external --outdir ./dist/ ./src/bun.ts",
     "watch-types": "tsc --watch --preserveWatchOutput",
-    "build-package": "bun run build-clean && concurrently -c 'auto' -n 'browser,node,bun' 'bun run build-browser' 'bun run build-node' 'bun run build-bun'",
+    "build-package": "bun run build-clean && concurrently -c 'auto' -n 'browser,node,bun,types' 'bun run build-browser' 'bun run build-node' 'bun run build-bun' 'bun run build-types'",
     "build-clean": "rm -fr dist/*",
     "build-browser": "bun build --target=browser --sourcemap=external --packages=external --outdir ./dist/ ./src/browser.ts",
     "build-node": "bun build --target=node --sourcemap=external --packages=external --outdir ./dist/ ./src/node.ts",
@@ -24,7 +24,7 @@
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
       "bun": "./dist/bun.js",
-      "types": "./dist/bun.d.ts",
+      "types": "./dist/types.d.ts",
       "node": "./dist/node.js"
     }
   },
@@ -76,20 +76,21 @@
     }
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.3.11",
     "@podley/ai": "workspace:*",
     "@podley/ai-provider": "workspace:*",
     "@podley/job-queue": "workspace:*",
+    "@podley/sqlite": "workspace:*",
     "@podley/storage": "workspace:*",
     "@podley/task-graph": "workspace:*",
     "@podley/tasks": "workspace:*",
     "@podley/util": "workspace:*",
-    "@podley/sqlite": "workspace:*",
-    "@electric-sql/pglite": "^0.3.11",
     "@sinclair/typebox": "catalog:",
+    "@supabase/supabase-js": "^2.76.1",
+    "@types/pg": "^8.15.5",
     "fake-indexeddb": "^6.2.4",
     "pg": "^8.16.3",
-    "@types/pg": "^8.15.5",
-    "@supabase/supabase-js": "^2.76.1"
+    "vitest": "^4.0.10"
   },
   "publishConfig": {
     "access": "public"

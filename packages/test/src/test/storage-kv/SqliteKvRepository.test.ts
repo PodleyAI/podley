@@ -6,7 +6,7 @@
 
 import { SqliteKvRepository } from "@podley/storage";
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 
 describe("SqliteKvRepository", () => {

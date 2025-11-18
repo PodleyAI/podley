@@ -16,7 +16,9 @@ import {
   TaskStatus,
 } from "@podley/task-graph";
 import { ConvertAllToOptionalArray, DataPortSchema } from "@podley/util";
-import { describe, expect, spyOn, test } from "bun:test";
+import { describe, expect, test, vi } from "vitest";
+
+const spyOn = vi.spyOn;
 
 // Define our input and output types
 interface MultiplyInput extends TaskInput {
@@ -220,10 +222,11 @@ describe("ArrayTask", () => {
       b: 5,
     });
     // @ts-expect-error - we are testing the protected method
-    const executeGraphSpy = spyOn(task.runner, "executeGraph");
+    // For plain tasks (not array mode), executeTaskChildren should not be called
+    const executeTaskChildrenSpy = spyOn(task.runner, "executeTaskChildren");
     const results = await task.run();
     expect(results).toEqual({ result: 20 });
-    expect(executeGraphSpy).not.toHaveBeenCalled();
+    expect(executeTaskChildrenSpy).not.toHaveBeenCalled();
   });
 
   test("MultiplyRunTask in task mode run array", async () => {

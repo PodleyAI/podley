@@ -6,7 +6,7 @@
 
 import { pipe, Task, Workflow } from "@podley/task-graph";
 import { DataPortSchema } from "@podley/util";
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { InMemoryTaskOutputRepository } from "../../binding/InMemoryTaskOutputRepository";
 
 // Define input and output types for our tasks

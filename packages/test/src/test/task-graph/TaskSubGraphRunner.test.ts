@@ -19,7 +19,7 @@ import {
   TaskStatus,
 } from "@podley/task-graph";
 import { sleep } from "@podley/util";
-import { beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   FailingTask,
   FAILURE_MESSAGE,

@@ -7,9 +7,9 @@
 import { PGlite } from "@electric-sql/pglite";
 import { PostgresModelRepository } from "@podley/ai";
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
 import { Pool } from "pg";
-import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests.test";
+import { describe } from "vitest";
+import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 
 const db = new PGlite() as unknown as Pool;
 

@@ -5,8 +5,8 @@
  */
 
 import { TaskInput, TaskOutput } from "@podley/task-graph";
-import { beforeEach, describe, expect, it } from "bun:test";
-import { rmdirSync } from "node:fs";
+import { rmSync } from "node:fs";
+import { beforeEach, describe, expect, it } from "vitest";
 import { FsFolderTaskOutputRepository } from "../../binding/FsFolderTaskOutputRepository";
 
 describe("FsFolderTaskOutputRepository", () => {
@@ -14,7 +14,7 @@ describe("FsFolderTaskOutputRepository", () => {
 
   beforeEach(() => {
     try {
-      rmdirSync(".cache/test/file-task-output", { recursive: true });
+      rmSync(".cache/test/file-task-output", { recursive: true });
     } catch {}
     repository = new FsFolderTaskOutputRepository(".cache/test/file-task-output");
   });

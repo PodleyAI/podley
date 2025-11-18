@@ -5,7 +5,7 @@
  */
 
 import { compress, decompress } from "@podley/util";
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 
 describe("Compression", () => {
   it("should compress and decompress a JSON object", async () => {

@@ -6,7 +6,7 @@
 
 import { TaskAbortedError, TaskStatus } from "@podley/task-graph";
 import { DelayTask } from "@podley/tasks";
-import { beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "vitest";
 
 describe("DelayTask", () => {
   let task: DelayTask;

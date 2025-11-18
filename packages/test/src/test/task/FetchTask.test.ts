@@ -14,7 +14,9 @@ import { InMemoryQueueStorage } from "@podley/storage";
 import { getTaskQueueRegistry, JobTaskFailedError, setTaskQueueRegistry } from "@podley/task-graph";
 import { Fetch, FetchJob, FetchTaskInput, FetchTaskOutput } from "@podley/tasks";
 import { sleep } from "@podley/util";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+
+const mock = vi.fn;
 
 // Create base mock response
 const createMockResponse = (jsonData: any = {}): Response => {
@@ -173,8 +175,8 @@ describe("FetchTask", () => {
       url: "https://api.example.com/invalid-json",
     });
 
-    expect(fetchPromise).rejects.toThrow();
-    expect(fetchPromise).rejects.toHaveProperty("message", expect.stringContaining("JSON"));
+    await expect(fetchPromise).rejects.toThrow();
+    await expect(fetchPromise).rejects.toHaveProperty("message", expect.stringContaining("JSON"));
 
     expect(mockFetch.mock.calls.length).toBe(1);
   });

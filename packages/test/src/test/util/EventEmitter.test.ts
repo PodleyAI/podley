@@ -5,7 +5,9 @@
  */
 
 import { EventEmitter } from "@podley/util";
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mock = vi.fn;
 
 // Define event types for testing
 interface TestEvents extends Record<string, (...args: any) => any> {

@@ -2,9 +2,9 @@
 // previous fork: https://github.com/sroussey/typescript-graph
 // license: MIT
 
-import { describe, expect, it } from "bun:test";
-import { DirectedGraph, DirectedAcyclicGraph, CycleError } from "@podley/util";
-import { nodeIdentity, edgeIdentity } from "./graph.test";
+import { CycleError, DirectedAcyclicGraph, DirectedGraph } from "@podley/util";
+import { describe, expect, it } from "vitest";
+import { edgeIdentity, nodeIdentity } from "./graph.test";
 
 /***
  * Directed Acyclic Graph test

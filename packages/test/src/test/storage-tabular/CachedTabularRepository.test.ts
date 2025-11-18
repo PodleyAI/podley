@@ -5,7 +5,7 @@
  */
 
 import { CachedTabularRepository, InMemoryTabularRepository } from "@podley/storage";
-import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CompoundPrimaryKeyNames,
   CompoundSchema,
@@ -13,6 +13,8 @@ import {
   SearchPrimaryKeyNames,
   SearchSchema,
 } from "./genericTabularRepositoryTests";
+
+const spyOn = vi.spyOn;
 
 describe("CachedTabularRepository", () => {
   describe("generic repository tests", () => {

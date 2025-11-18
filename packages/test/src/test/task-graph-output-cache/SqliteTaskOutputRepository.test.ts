@@ -5,7 +5,7 @@
  */
 
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import { SqliteTaskOutputRepository } from "../../binding/SqliteTaskOutputRepository";
 import { runGenericTaskOutputRepositoryTests } from "./genericTaskOutputRepositoryTests";
 

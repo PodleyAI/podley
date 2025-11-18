@@ -6,8 +6,8 @@
 
 import { SqliteModelRepository } from "@podley/ai";
 import { uuid4 } from "@podley/util";
-import { describe } from "bun:test";
-import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests.test";
+import { describe } from "vitest";
+import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 
 describe("SqliteModelRepository", () => {
   runGenericModelRepositoryTests(async () => {
