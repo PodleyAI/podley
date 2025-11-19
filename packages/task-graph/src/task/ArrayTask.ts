@@ -66,7 +66,7 @@ export class ArrayTask<
           typeof inputDef === "object" &&
           inputDef !== null &&
           "x-replicate" in inputDef &&
-          inputDef["x-replicate"] === true &&
+          (inputDef as any)["x-replicate"] === true &&
           Array.isArray(inputValue) &&
           inputValue.length > 1
         ) {

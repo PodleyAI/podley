@@ -17,7 +17,7 @@ export const TaskGraphSchema = {
     value: { type: "string" },
   },
   additionalProperties: false,
-} as const satisfies DataPortSchemaObject;
+} satisfies DataPortSchemaObject;
 
 export const TaskGraphPrimaryKeyNames = ["key"] as const;
 

@@ -77,7 +77,6 @@ export class TestJob extends Job<TInput, TOutput> {
           reject(error);
         }
       });
-      q;
     }
     return { result: input.data.replace("input", "output") };
   }
