@@ -21,7 +21,7 @@ class SupabaseTabularTestRepository<
   PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
   Entity = FromSchema<Schema>,
   Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
-> extends SupabaseTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
+> extends SupabaseTabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   protected isSetup = false; // force setup to run, which is not the default
 }
 

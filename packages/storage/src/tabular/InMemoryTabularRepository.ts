@@ -7,9 +7,7 @@
 import {
   createServiceToken,
   DataPortSchemaObject,
-  ExcludeProps,
   FromSchema,
-  IncludeProps,
   makeFingerprint,
 } from "@podley/util";
 import { ITabularRepository } from "./ITabularRepository";
@@ -30,10 +28,10 @@ export class InMemoryTabularRepository<
   Schema extends DataPortSchemaObject,
   PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
   Entity = FromSchema<Schema>,
-  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
-> extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
+  PrimaryKey = Pick<Entity, PrimaryKeyNames[number] & keyof Entity>,
+  Value = Omit<Entity, PrimaryKeyNames[number] & keyof Entity>,
+> extends TabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   /** Internal storage using a Map with fingerprint strings as keys */
   values = new Map<string, Entity>();
 

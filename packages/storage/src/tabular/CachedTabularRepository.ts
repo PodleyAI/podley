@@ -4,13 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  createServiceToken,
-  DataPortSchemaObject,
-  ExcludeProps,
-  FromSchema,
-  IncludeProps,
-} from "@podley/util";
+import { createServiceToken, DataPortSchemaObject, FromSchema } from "@podley/util";
 import { InMemoryTabularRepository } from "./InMemoryTabularRepository";
 import { ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
@@ -31,12 +25,12 @@ export class CachedTabularRepository<
   Schema extends DataPortSchemaObject,
   PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
   Entity = FromSchema<Schema>,
-  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
-> extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
-  public readonly cache: ITabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity>;
-  private durable: ITabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity>;
+  PrimaryKey = Pick<Entity, PrimaryKeyNames[number] & keyof Entity>,
+  Value = Omit<Entity, PrimaryKeyNames[number] & keyof Entity>,
+> extends TabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
+  public readonly cache: ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value>;
+  private durable: ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value>;
   private cacheInitialized = false;
 
   /**
@@ -50,8 +44,8 @@ export class CachedTabularRepository<
    *                    while each array creates a compound index with columns in the specified order.
    */
   constructor(
-    durable: ITabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity>,
-    cache?: ITabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity>,
+    durable: ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value>,
+    cache?: ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value>,
     schema?: Schema,
     primaryKeyNames?: PrimaryKeyNames,
     indexes?: Array<keyof Entity | Array<keyof Entity>>
@@ -75,8 +69,8 @@ export class CachedTabularRepository<
       this.cache = new InMemoryTabularRepository<
         Schema,
         PrimaryKeyNames,
-        PrimaryKey,
         Entity,
+        PrimaryKey,
         Value
       >(schema, primaryKeyNames, indexes || []);
     }

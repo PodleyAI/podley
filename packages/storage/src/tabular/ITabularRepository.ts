@@ -4,13 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  DataPortSchemaObject,
-  EventParameters,
-  ExcludeProps,
-  FromSchema,
-  IncludeProps,
-} from "@podley/util";
+import { DataPortSchemaObject, EventParameters, FromSchema } from "@podley/util";
 
 // Generic type for possible value types in the repository
 export type ValueOptionType = string | number | bigint | boolean | null | Uint8Array;
@@ -61,9 +55,9 @@ export interface ITabularRepository<
   Schema extends DataPortSchemaObject,
   PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
   Entity = FromSchema<Schema>,
-  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
+  PrimaryKey = Pick<Entity, PrimaryKeyNames[number] & keyof Entity>,
+  Value = Omit<Entity, PrimaryKeyNames[number] & keyof Entity>,
 > {
   // Core methods
   put(value: Entity): Promise<Entity>;

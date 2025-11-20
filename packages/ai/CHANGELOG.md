@@ -1,5 +1,16 @@
 # @podley/ai
 
+## 0.0.41
+
+### Patch Changes
+
+- Update type helpers used to auto generate primary key and value shapes
+- Updated dependencies
+  - @podley/util@0.0.41
+  - @podley/job-queue@0.0.41
+  - @podley/storage@0.0.41
+  - @podley/task-graph@0.0.41
+
 ## 0.0.40
 
 ### Patch Changes

@@ -1,7 +1,7 @@
 {
   "name": "@podley/storage",
   "type": "module",
-  "version": "0.0.40",
+  "version": "0.0.41",
   "description": "Storage abstraction layer for Podley, supporting IndexedDB, PostgreSQL, and Supabase with unified interfaces.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -45,8 +45,8 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./dist/bun.js",
-      "types": "./dist/types.d.ts",
+      "bun": "./src/bun.ts",
+      "types": "./src/types.ts",
       "node": "./dist/node.js"
     }
   },

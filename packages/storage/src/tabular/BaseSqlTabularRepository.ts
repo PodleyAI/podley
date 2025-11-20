@@ -4,13 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  DataPortSchemaObject,
-  ExcludeProps,
-  FromSchema,
-  IncludeProps,
-  JsonSchema,
-} from "@podley/util";
+import { DataPortSchemaObject, FromSchema, JsonSchema } from "@podley/util";
 import { ValueOptionType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
@@ -27,10 +21,10 @@ export abstract class BaseSqlTabularRepository<
   Schema extends DataPortSchemaObject,
   PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
   Entity = FromSchema<Schema>,
-  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
-> extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
+  PrimaryKey = Pick<Entity, PrimaryKeyNames[number] & keyof Entity>,
+  Value = Omit<Entity, PrimaryKeyNames[number] & keyof Entity>,
+> extends TabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   /**
    * Creates a new instance of BaseSqlTabularRepository
    * @param table - The name of the database table to use for storage

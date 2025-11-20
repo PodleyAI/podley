@@ -8,9 +8,7 @@ import {
   createServiceToken,
   DataPortSchemaObject,
   EventEmitter,
-  ExcludeProps,
   FromSchema,
-  IncludeProps,
   makeFingerprint,
 } from "@podley/util";
 import {
@@ -39,10 +37,10 @@ export abstract class TabularRepository<
   Schema extends DataPortSchemaObject,
   PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
   Entity = FromSchema<Schema>,
-  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
-> implements ITabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity>
+  PrimaryKey = Pick<Entity, PrimaryKeyNames[number] & keyof Entity>,
+  Value = Omit<Entity, PrimaryKeyNames[number] & keyof Entity>,
+> implements ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value>
 {
   /** Event emitter for repository events */
   protected events = new EventEmitter<TabularEventListeners<PrimaryKey, Entity>>();

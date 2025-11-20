@@ -7,6 +7,10 @@
 import { JsonSchema } from "./JsonSchema";
 
 export type DataPortSchemaNonBoolean = Exclude<JsonSchema, Boolean>;
+
+/**
+ * Narrows to object schemas while preserving all schema properties.
+ */
 export type DataPortSchemaObject = DataPortSchemaNonBoolean & {
   readonly type: "object";
   readonly properties: Record<string, DataPortSchemaNonBoolean>;

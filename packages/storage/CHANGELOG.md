@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.41
+
+### Patch Changes
+
+- Update type helpers used to auto generate primary key and value shapes
+- Updated dependencies
+  - @podley/util@0.0.41
+  - @podley/sqlite@0.0.41
+
 ## 0.0.40
 
 ### Patch Changes

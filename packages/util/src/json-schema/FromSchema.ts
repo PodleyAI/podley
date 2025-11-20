@@ -5,7 +5,6 @@
  */
 
 import type { FromExtendedSchema, FromSchemaOptions } from "json-schema-to-ts";
-import type { DataPortSchemaObject } from "./DataPortSchema";
 import type { JsonSchema, JsonSchemaCustomProps } from "./JsonSchema";
 
 export { FromSchemaOptions };
@@ -50,21 +49,23 @@ export type FromSchema<
  *     age: { type: "number" },
  *     email: { type: "string" }
  *   },
- *   required: ["name"]
+ *   required: ["name"],
+ *   additionalProperties: false
  * } as const;
  *
  * type Filtered = FromSchema<IncludeProps<typeof schema, typeof ["name", "age"]>>;
  * // => { name: string, age?: number }
  */
 export type IncludeProps<
-  Schema extends DataPortSchemaObject,
+  Schema extends { readonly type: "object"; readonly properties: Record<string, unknown> },
   Keys extends readonly (keyof Schema["properties"])[],
-> = {
-  readonly type: "object";
+> = Omit<Schema, "properties" | "required"> & {
   readonly properties: {
     readonly [K in Extract<keyof Schema["properties"], Keys[number]>]: Schema["properties"][K];
   };
-};
+} & (Schema extends { readonly required: readonly (infer R extends string)[] }
+    ? { readonly required: readonly Extract<R, Keys[number]>[] }
+    : {});
 
 /**
  * ExcludeProps - Returns a new schema without the specified properties
@@ -83,18 +84,20 @@ export type IncludeProps<
  *     age: { type: "number" },
  *     email: { type: "string" }
  *   },
- *   required: ["name"]
+ *   required: ["name"],
+ *   additionalProperties: false
  * } as const;
  *
  * type Filtered = FromSchema<ExcludeProps<typeof schema, typeof ["email"]>>;
  * // => { name: string, age?: number }
  */
 export type ExcludeProps<
-  Schema extends DataPortSchemaObject,
+  Schema extends { readonly type: "object"; readonly properties: Record<string, unknown> },
   Keys extends readonly (keyof Schema["properties"])[],
-> = {
-  readonly type: "object";
+> = Omit<Schema, "properties" | "required"> & {
   readonly properties: {
     readonly [K in Exclude<keyof Schema["properties"], Keys[number]>]: Schema["properties"][K];
   };
-};
+} & (Schema extends { readonly required: readonly (infer R extends string)[] }
+    ? { readonly required: readonly Exclude<R, Keys[number]>[] }
+    : {});

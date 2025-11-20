@@ -1,7 +1,7 @@
 {
   "name": "@podley/tasks",
   "type": "module",
-  "version": "0.0.40",
+  "version": "0.0.41",
   "description": "Pre-built task implementations for Podley, including common AI operations and utility functions.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -17,8 +17,8 @@
   },
   "exports": {
     ".": {
-      "bun": "./dist/index.js",
-      "types": "./dist/types.d.ts",
+      "bun": "./src/index.ts",
+      "types": "./src/types.ts",
       "import": "./dist/index.js"
     }
   },

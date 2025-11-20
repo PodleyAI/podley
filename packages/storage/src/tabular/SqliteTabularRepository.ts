@@ -5,14 +5,7 @@
  */
 
 import { Sqlite } from "@podley/sqlite";
-import {
-  createServiceToken,
-  DataPortSchemaObject,
-  ExcludeProps,
-  FromSchema,
-  IncludeProps,
-  JsonSchema,
-} from "@podley/util";
+import { createServiceToken, DataPortSchemaObject, FromSchema, JsonSchema } from "@podley/util";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import { ITabularRepository, ValueOptionType } from "./ITabularRepository";
 
@@ -37,10 +30,10 @@ export class SqliteTabularRepository<
   Schema extends DataPortSchemaObject,
   PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
   Entity = FromSchema<Schema>,
-  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
-> extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
+  PrimaryKey = Pick<Entity, PrimaryKeyNames[number] & keyof Entity>,
+  Value = Omit<Entity, PrimaryKeyNames[number] & keyof Entity>,
+> extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   /** The SQLite database instance */
   private db: Sqlite.Database;
 

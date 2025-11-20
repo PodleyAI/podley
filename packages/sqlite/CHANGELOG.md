@@ -1,5 +1,11 @@
 # @podley/sqlite
 
+## 0.0.41
+
+### Patch Changes
+
+- Update type helpers used to auto generate primary key and value shapes
+
 ## 0.0.40
 
 ### Patch Changes

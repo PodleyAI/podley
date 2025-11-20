@@ -4,14 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  createServiceToken,
-  DataPortSchemaObject,
-  ExcludeProps,
-  FromSchema,
-  IncludeProps,
-  sleep,
-} from "@podley/util";
+import { createServiceToken, DataPortSchemaObject, FromSchema, sleep } from "@podley/util";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ITabularRepository } from "./ITabularRepository";
@@ -32,10 +25,10 @@ export class FsFolderTabularRepository<
   Schema extends DataPortSchemaObject,
   PrimaryKeyNames extends ReadonlyArray<keyof Schema["properties"]>,
   // computed types
-  PrimaryKey = FromSchema<IncludeProps<Schema, PrimaryKeyNames>>,
   Entity = FromSchema<Schema>,
-  Value = FromSchema<ExcludeProps<Schema, PrimaryKeyNames>>,
-> extends TabularRepository<Schema, PrimaryKeyNames, PrimaryKey, Entity, Value> {
+  PrimaryKey = Pick<Entity, PrimaryKeyNames[number] & keyof Entity>,
+  Value = Omit<Entity, PrimaryKeyNames[number] & keyof Entity>,
+> extends TabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   private folderPath: string;
 
   /**
