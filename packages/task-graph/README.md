@@ -38,7 +38,7 @@ Here's a simple example that demonstrates the core concepts:
 
 ```typescript
 import { Task, TaskGraph, Dataflow, Workflow } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { DataPortSchema } from "@podley/util";
 
 // 1. Define a custom task
 class MultiplyBy2Task extends Task<{ value: number }, { result: number }> {
@@ -48,15 +48,31 @@ class MultiplyBy2Task extends Task<{ value: number }, { result: number }> {
   static readonly description = "Multiplies a number by 2";
 
   static inputSchema() {
-    return Type.Object({
-      value: Type.Number({ description: "Input number" }),
-    });
+    return {
+      type: "object",
+      properties: {
+        value: {
+          type: "number",
+          description: "Input number",
+        },
+      },
+      required: ["value"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema() {
-    return Type.Object({
-      result: Type.Number({ description: "Multiplied result" }),
-    });
+    return {
+      type: "object",
+      properties: {
+        result: {
+          type: "number",
+          description: "Multiplied result",
+        },
+      },
+      required: ["result"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
   }
 
   async execute(input: { value: number }) {
@@ -117,7 +133,7 @@ console.log(second); // { result: 60 }
 
 Tasks are the fundamental units of work. Each task:
 
-- Defines input/output schemas using TypeBox
+- Defines input/output schemas using JSON Schema (from `@podley/util`)
 - Implements `execute()` for main logic or `executeReactive()` for UI updates
 - Has a unique type identifier and category
 - Can be cached based on inputs
@@ -158,17 +174,54 @@ Workflow is the high-level API that provides:
 
 ```typescript
 import { Task, IExecuteContext } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { DataPortSchema FromSchema } from "@podley/util";
 
-interface MyInput {
-  text: string;
-  multiplier?: number;
-}
+const MyInputSchema = {
+  type: "object",
+  properties: {
+    text: {
+      type: "string",
+      description: "Text to process",
+    },
+    multiplier: {
+      type: "number",
+      description: "Repeat multiplier",
+      default: 1,
+    },
+  },
+  required: ["text"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-interface MyOutput {
-  processed: string;
-  length: number;
-}
+type MyInput = FromSchema<typeof MyInputSchema>;
+// Equivalent to:
+// type MyInput = {
+//   text: string;
+//   multiplier?: number;
+// };
+
+const MyOutputSchema = {
+      type: "object",
+      properties: {
+        processed: {
+          type: "string",
+          description: "Processed text",
+        },
+        length: {
+          type: "number",
+          description: "Text length",
+        },
+      },
+      required: ["processed", "length"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
+
+type MyOutput = FromSchema<typeof MyOutputSchema>;
+// Equivalent to:
+// type MyOutput = {
+//   processed: string;
+//   length: number;
+// };
 
 class TextProcessorTask extends Task<MyInput, MyOutput> {
   // Required: Unique type identifier
@@ -184,23 +237,12 @@ class TextProcessorTask extends Task<MyInput, MyOutput> {
 
   // Required: Input schema definition
   static inputSchema() {
-    return Type.Object({
-      text: Type.String({ description: "Text to process" }),
-      multiplier: Type.Optional(
-        Type.Number({
-          description: "Repeat multiplier",
-          default: 1,
-        })
-      ),
-    });
+    return MyInputSchema;
   }
 
   // Required: Output schema definition
   static outputSchema() {
-    return Type.Object({
-      processed: Type.String({ description: "Processed text" }),
-      length: Type.Number({ description: "Text length" }),
-    });
+    return MyOutputSchema;
   }
 
   // Main execution logic
@@ -232,19 +274,37 @@ class TextProcessorTask extends Task<MyInput, MyOutput> {
 ### Task with Progress and Error Handling
 
 ```typescript
+import { DataPortSchema } from "@podley/util";
+
 class FileProcessorTask extends Task<{ filePath: string }, { content: string }> {
   static readonly type = "FileProcessorTask";
 
   static inputSchema() {
-    return Type.Object({
-      filePath: Type.String({ description: "Path to file" }),
-    });
+    return {
+      type: "object",
+      properties: {
+        filePath: {
+          type: "string",
+          description: "Path to file",
+        },
+      },
+      required: ["filePath"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema() {
-    return Type.Object({
-      content: Type.String({ description: "File content" }),
-    });
+    return {
+      type: "object",
+      properties: {
+        content: {
+          type: "string",
+          description: "File content",
+        },
+      },
+      required: ["content"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
   }
 
   async execute(input: { filePath: string }, { signal, updateProgress }: IExecuteContext) {
@@ -304,20 +364,32 @@ const results = await graph.run();
 ### Task Graph with Dependencies
 
 ```typescript
+import { DataPortSchema } from "@podley/util";
+
 class AddTask extends Task<{ a: number; b: number }, { sum: number }> {
   static readonly type = "AddTask";
 
   static inputSchema() {
-    return Type.Object({
-      a: Type.Number(),
-      b: Type.Number(),
-    });
+    return {
+      type: "object",
+      properties: {
+        a: { type: "number" },
+        b: { type: "number" },
+      },
+      required: ["a", "b"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema() {
-    return Type.Object({
-      sum: Type.Number(),
-    });
+    return {
+      type: "object",
+      properties: {
+        sum: { type: "number" },
+      },
+      required: ["sum"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
   }
 
   async execute(input: { a: number; b: number }) {
@@ -492,7 +564,7 @@ Output caching lets repeat executions with identical inputs return instantly wit
 
 ```typescript
 import { Task, TaskGraph, Workflow } from "@podley/task-graph";
-import { Type } from "@sinclair/typebox";
+import { DataPortSchema } from "@podley/util";
 import { InMemoryTaskOutputRepository } from "@podley/test";
 
 // A cacheable task that simulates expensive work
@@ -501,11 +573,25 @@ class ExpensiveTask extends Task<{ n: number }, { result: number }> {
   static readonly cacheable = true;
 
   static inputSchema() {
-    return Type.Object({ n: Type.Number() });
+    return {
+      type: "object",
+      properties: {
+        n: { type: "number" },
+      },
+      required: ["n"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
   }
 
   static outputSchema() {
-    return Type.Object({ result: Type.Number() });
+    return {
+      type: "object",
+      properties: {
+        result: { type: "number" },
+      },
+      required: ["result"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
   }
 
   async execute(input: { n: number }) {
@@ -695,16 +781,38 @@ class ArrayProcessorTask extends ArrayTask<{ items: string[] }, { results: strin
   static readonly type = "ArrayProcessorTask";
 
   static inputSchema() {
-    return Type.Object({
-      items: Type.Array(Type.String(), {
-        "x-isArray": "replicate", // Enable array processing
-        description: "Items to process",
-      }),
-    });
+    return {
+      type: "object",
+      properties: {
+        items: {
+          type: "array",
+          items: {
+            type: "string",
+          },
+        },
+      },
+      required: ["items"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
+  }
+
+  static outputSchema() {
+    return {
+      type: "object",
+      properties: {
+        results: {
+          type: "array",
+          items: {
+            type: "string",
+          },
+        },
+      },
+      required: ["results"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
   }
 
   async execute(input: { items: string[] }) {
-    // When x-isArray="replicate", this runs in parallel for each item
     return { results: input.items.map((item) => item.toUpperCase()) };
   }
 }

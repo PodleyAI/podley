@@ -4,37 +4,40 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  CreateWorkflow,
-  JobQueueTaskConfig,
-  TaskRegistry,
-  TypeReplicateArray,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
+import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel } from "./base/AiTaskSchemas";
+import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
-export const TextSummaryInputSchema = Type.Object({
-  text: TypeReplicateArray(
-    Type.String({
+export const TextSummaryInputSchema = {
+  type: "object",
+  properties: {
+    text: TypeReplicateArray({
+      type: "string",
       title: "Text",
       description: "The text to summarize",
-    })
-  ),
-  model: TypeReplicateArray(TypeModel("model:TextSummaryTask")),
-});
+    }),
+    model: TypeReplicateArray(TypeModel("model:TextSummaryTask")),
+  },
+  required: ["text", "model"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export const TextSummaryOutputSchema = Type.Object({
-  text: Type.String({
-    title: "Text",
-    description: "The summarized text",
-  }),
-});
+export const TextSummaryOutputSchema = {
+  type: "object",
+  properties: {
+    text: {
+      type: "string",
+      title: "Text",
+      description: "The summarized text",
+    },
+  },
+  required: ["text"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export type TextSummaryTaskInput = Static<typeof TextSummaryInputSchema>;
-export type TextSummaryTaskOutput = Static<typeof TextSummaryOutputSchema>;
+export type TextSummaryTaskInput = FromSchema<typeof TextSummaryInputSchema>;
+export type TextSummaryTaskOutput = FromSchema<typeof TextSummaryOutputSchema>;
 
 /**
  * This summarizes a piece of text

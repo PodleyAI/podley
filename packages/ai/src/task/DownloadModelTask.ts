@@ -4,27 +4,38 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  CreateWorkflow,
-  JobQueueTaskConfig,
-  TaskRegistry,
-  TypeReplicateArray,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, TypeOptionalArray } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
+import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel } from "./base/AiTaskSchemas";
+import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
-const DownloadModelInputSchema = Type.Object({
-  model: TypeReplicateArray(TypeModel("model")),
-});
+const modelSchema = TypeModel("model");
 
-const DownloadModelOutputSchema = Type.Object({
-  model: TypeOptionalArray(TypeModel("model")),
-});
-export type DownloadModelTaskRunInput = Static<typeof DownloadModelInputSchema>;
-export type DownloadModelTaskRunOutput = Static<typeof DownloadModelOutputSchema>;
+const DownloadModelInputSchema = {
+  type: "object",
+  properties: {
+    model: TypeReplicateArray(modelSchema),
+  },
+  required: ["model"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+const DownloadModelOutputSchema = {
+  type: "object",
+  properties: {
+    model: {
+      oneOf: [modelSchema, { type: "array", items: modelSchema }],
+      title: modelSchema.title,
+      description: modelSchema.description,
+      "x-semantic": modelSchema["x-semantic"],
+    },
+  },
+  required: ["model"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+export type DownloadModelTaskRunInput = FromSchema<typeof DownloadModelInputSchema>;
+export type DownloadModelTaskRunOutput = FromSchema<typeof DownloadModelOutputSchema>;
 export type DownloadModelTaskExecuteInput = {
   model: string;
 };

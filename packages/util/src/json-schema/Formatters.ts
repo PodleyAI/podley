@@ -24,8 +24,6 @@ THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
 
-import { FormatRegistry } from "@sinclair/typebox";
-
 const DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
 
@@ -137,11 +135,3 @@ export const IsUri = (value: string) => {
   return true;
 };
 
-FormatRegistry.Set("ip-address-4", IsIPv4);
-FormatRegistry.Set("ip-address-6", IsIPv6);
-FormatRegistry.Set("date", IsDate);
-FormatRegistry.Set("time", IsTime);
-FormatRegistry.Set("date-time", IsDateTime);
-FormatRegistry.Set("email", IsEmail);
-FormatRegistry.Set("uuid", IsUuid);
-FormatRegistry.Set("uri", IsUri);

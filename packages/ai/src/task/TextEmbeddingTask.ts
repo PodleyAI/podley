@@ -4,39 +4,52 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  CreateWorkflow,
-  JobQueueTaskConfig,
-  TaskRegistry,
-  TypeReplicateArray,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
+import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
-import { TypedArray, TypeModel } from "./base/AiTaskSchemas";
+import {
+  TypedArraySchema,
+  TypedArraySchemaOptions,
+  TypeModel,
+  TypeReplicateArray,
+} from "./base/AiTaskSchemas";
 
-export const TextEmbeddingInputSchema = Type.Object({
-  text: TypeReplicateArray(
-    Type.String({
+export const TextEmbeddingInputSchema = {
+  type: "object",
+  properties: {
+    text: TypeReplicateArray({
+      type: "string",
       title: "Text",
       description: "The text to embed",
-    })
-  ),
-  model: TypeReplicateArray(TypeModel("model:TextEmbeddingTask")),
-});
+    }),
+    model: TypeReplicateArray(TypeModel("model:TextEmbeddingTask")),
+  },
+  required: ["text", "model"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export const TextEmbeddingOutputSchema = Type.Object({
-  vector: TypeReplicateArray(
-    TypedArray({
-      title: "Vector",
-      description: "The vector embedding of the text",
-    })
-  ),
-});
+export const TextEmbeddingOutputSchema = {
+  type: "object",
+  properties: {
+    vector: TypeReplicateArray(
+      TypedArraySchema({
+        title: "Vector",
+        description: "The vector embedding of the text",
+      })
+    ),
+  },
+  required: ["vector"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export type TextEmbeddingTaskInput = Static<typeof TextEmbeddingInputSchema>;
-export type TextEmbeddingTaskOutput = Static<typeof TextEmbeddingOutputSchema>;
+export type TextEmbeddingTaskInput = FromSchema<
+  typeof TextEmbeddingInputSchema,
+  TypedArraySchemaOptions
+>;
+export type TextEmbeddingTaskOutput = FromSchema<
+  typeof TextEmbeddingOutputSchema,
+  TypedArraySchemaOptions
+>;
 
 /**
  * A task that generates vector embeddings for text using a specified embedding model.

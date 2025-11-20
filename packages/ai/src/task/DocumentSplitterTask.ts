@@ -11,25 +11,40 @@ import {
   TaskRegistry,
   Workflow,
 } from "@podley/task-graph";
-import { DataPortSchema } from "@podley/util";
-import { Static, Type } from "@sinclair/typebox";
+import { DataPortSchema, FromSchema } from "@podley/util";
 import { Document, DocumentFragment } from "../source/Document";
 
-const inputSchema = Type.Object({
-  parser: Type.Union([Type.Literal("txt"), Type.Literal("md")], {
-    name: "Document Kind",
-    description: "The kind of document (txt or md)",
-  }),
-  // file: Type.Instance(Document),
-});
-const outputSchema = Type.Object({
-  texts: Type.Array(Type.String(), {
-    name: "Text Chunks",
-    description: "The text chunks of the document",
-  }),
-});
-export type DocumentSplitterTaskInput = Static<typeof inputSchema>;
-export type DocumentSplitterTaskOutput = Static<typeof outputSchema>;
+const inputSchema = {
+  type: "object",
+  properties: {
+    parser: {
+      type: "string",
+      enum: ["txt", "md"],
+      title: "Document Kind",
+      description: "The kind of document (txt or md)",
+    },
+    // file: Type.Instance(Document),
+  },
+  required: ["parser"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+const outputSchema = {
+  type: "object",
+  properties: {
+    texts: {
+      type: "array",
+      items: { type: "string" },
+      title: "Text Chunks",
+      description: "The text chunks of the document",
+    },
+  },
+  required: ["texts"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+export type DocumentSplitterTaskInput = FromSchema<typeof inputSchema>;
+export type DocumentSplitterTaskOutput = FromSchema<typeof outputSchema>;
 
 export class DocumentSplitterTask extends Task<
   DocumentSplitterTaskInput,

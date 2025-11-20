@@ -6,10 +6,10 @@
 
 import type { ExtendedJSONSchema } from "json-schema-to-ts";
 
-export type JsonSchema = ExtendedJSONSchema<{
-  "x-replicate"?: boolean;
+export type JsonSchemaCustomProps = {
   "x-semantic"?: string;
-  "x-optional"?: boolean;
-  "x-isArray"?: boolean;
-  "x-isNullable"?: boolean;
-}>;
+  "x-group"?: string;
+  "x-replicate"?: boolean;
+};
+
+export type JsonSchema = ExtendedJSONSchema<JsonSchemaCustomProps>;

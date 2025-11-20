@@ -38,8 +38,7 @@
   "peerDependencies": {
     "@podley/job-queue": "workspace:*",
     "@podley/storage": "workspace:*",
-    "@podley/util": "workspace:*",
-    "@sinclair/typebox": "catalog:"
+    "@podley/util": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@podley/job-queue": {
@@ -50,16 +49,11 @@
     },
     "@podley/util": {
       "optional": false
-    },
-    "@sinclair/typebox": {
-      "optional": false
     }
   },
   "devDependencies": {
     "@podley/job-queue": "workspace:*",
     "@podley/storage": "workspace:*",
-    "@podley/util": "workspace:*",
-    "@sinclair/typebox": "catalog:",
-    "@types/json-schema": "catalog:"
+    "@podley/util": "workspace:*"
   }
 }

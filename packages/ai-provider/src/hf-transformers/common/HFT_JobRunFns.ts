@@ -6,6 +6,7 @@
 
 import {
   AiProviderRunFn,
+  type DeReplicateFromSchema,
   DownloadModelTaskExecuteInput,
   Model,
   TextEmbeddingInputSchema,
@@ -23,7 +24,6 @@ import {
   TypedArray,
 } from "@podley/ai";
 import { PermanentJobError } from "@podley/job-queue";
-import { DeReplicateStatic } from "@podley/task-graph";
 import {
   DocumentQuestionAnsweringSingle,
   type FeatureExtractionPipeline,
@@ -104,10 +104,15 @@ export const HFT_Download: AiProviderRunFn<
  * Core implementation for text embedding using Hugging Face Transformers.
  * This is shared between inline and worker implementations.
  */
-export const HFT_TextEmbedding: AiProviderRunFn<
-  DeReplicateStatic<typeof TextEmbeddingInputSchema>,
-  DeReplicateStatic<typeof TextEmbeddingOutputSchema>
-> = async (input, model, onProgress, signal) => {
+
+type TextEmbeddingInput = DeReplicateFromSchema<typeof TextEmbeddingInputSchema>;
+type TextEmbeddingOutput = DeReplicateFromSchema<typeof TextEmbeddingOutputSchema>;
+export const HFT_TextEmbedding: AiProviderRunFn<TextEmbeddingInput, TextEmbeddingOutput> = async (
+  input,
+  model,
+  onProgress,
+  signal
+) => {
   const generateEmbedding: FeatureExtractionPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
   });
@@ -139,8 +144,8 @@ export const HFT_TextEmbedding: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextGeneration: AiProviderRunFn<
-  DeReplicateStatic<typeof TextGenerationInputSchema>,
-  DeReplicateStatic<typeof TextGenerationOutputSchema>
+  DeReplicateFromSchema<typeof TextGenerationInputSchema>,
+  DeReplicateFromSchema<typeof TextGenerationOutputSchema>
 > = async (input, model, onProgress, signal) => {
   const generateText: TextGenerationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -171,8 +176,8 @@ export const HFT_TextGeneration: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextTranslation: AiProviderRunFn<
-  DeReplicateStatic<typeof TextTranslationInputSchema>,
-  DeReplicateStatic<typeof TextTranslationOutputSchema>
+  DeReplicateFromSchema<typeof TextTranslationInputSchema>,
+  DeReplicateFromSchema<typeof TextTranslationOutputSchema>
 > = async (input, model, onProgress, signal) => {
   const translate: TranslationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -204,8 +209,8 @@ export const HFT_TextTranslation: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextRewriter: AiProviderRunFn<
-  DeReplicateStatic<typeof TextRewriterInputSchema>,
-  DeReplicateStatic<typeof TextRewriterOutputSchema>
+  DeReplicateFromSchema<typeof TextRewriterInputSchema>,
+  DeReplicateFromSchema<typeof TextRewriterOutputSchema>
 > = async (input, model, onProgress, signal) => {
   const generateText: TextGenerationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -243,8 +248,8 @@ export const HFT_TextRewriter: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextSummary: AiProviderRunFn<
-  DeReplicateStatic<typeof TextSummaryInputSchema>,
-  DeReplicateStatic<typeof TextSummaryOutputSchema>
+  DeReplicateFromSchema<typeof TextSummaryInputSchema>,
+  DeReplicateFromSchema<typeof TextSummaryOutputSchema>
 > = async (input, model, onProgress, signal) => {
   const generateSummary: SummarizationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -273,8 +278,8 @@ export const HFT_TextSummary: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextQuestionAnswer: AiProviderRunFn<
-  DeReplicateStatic<typeof TextQuestionAnswerInputSchema>,
-  DeReplicateStatic<typeof TextQuestionAnswerOutputSchema>
+  DeReplicateFromSchema<typeof TextQuestionAnswerInputSchema>,
+  DeReplicateFromSchema<typeof TextQuestionAnswerOutputSchema>
 > = async (input, model, onProgress, signal) => {
   // Get the question answering pipeline
   const generateAnswer: QuestionAnsweringPipeline = await getPipeline(model!, onProgress, {

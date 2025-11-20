@@ -34,7 +34,7 @@ const inputSchema = {
 const outputSchema = {
   type: "object",
   properties: {},
-  additionalProperties: false,
+  additionalProperties: true,
 } as const satisfies DataPortSchema;
 
 export type DelayTaskInput = FromSchema<typeof inputSchema>;

@@ -70,11 +70,11 @@ class MyTask extends Task {
 ### GraphAsTask
 
 - GraphAsTask tasks are tasks that contain other tasks. They are represented as an internal TaskGraph.
-- A ArrayTask is a compound task that can run a task as normal, or if the inputs are an array and the input definition has x-isArray="replicate" defined for that input, then the task will run parallel copies with a subGraph.
+- A ArrayTask is a compound task that can run a task as normal, or if the inputs are an array and the input definition has x-replicate=true defined for that input, then the task will run parallel copies with a subGraph.
 
 ### ArrayTask
 
-- ArrayTask is a task that can run a task as normal, or if the inputs are an arryay and the input definition has x-isArray="replicate", then the task will run parallel copies with a subGraph.
+- ArrayTask is a task that can run a task as normal, or if the inputs are an arryay and the input definition has x-replicate=true, then the task will run parallel copies with a subGraph.
 - The subGraph is a TaskGraph that is created from the inputs of the task.
 - The results of the subGraph are combined such that the outputs are turned into arrays.
 
@@ -114,66 +114,41 @@ task.on("regenerate", () => console.log("Task regenerated"));
 
 ## Input/Output Schemas
 
-The input and output schemas are json schemas that are used to validate the input and output of the task, created via TypeBox.
+The input and output schemas are JSON schemas that are used to validate the input and output of the task. These are defined using plain JSON Schema objects and types from `@podley/util`.
 
 ```typescript
+import { DataPortSchema } from "@podley/util";
+
 static inputSchema = () => {
-  return Type.Object({
-    username: Type.Optional(Type.String({
-      title: "User Name",
-      description: "The name of the user",
-      default: "guest",
-    }),
-  });
+  return {
+    type: "object",
+    properties: {
+      username: {
+        type: "string",
+        title: "User Name",
+        description: "The name of the user",
+        default: "guest",
+      },
+    },
+    additionalProperties: false,
+  } as const satisfies DataPortSchema;
 };
 
 static outputSchema = () => {
-  return Type.Object({
-    result: Type.Number({
-      title: "Processing Result",
-      description: "The result of the processing",
-    }),
-  });
+  return {
+    type: "object",
+    properties: {
+      result: {
+        type: "number",
+        title: "Processing Result",
+        description: "The result of the processing",
+      },
+    },
+    required: ["result"],
+    additionalProperties: false,
+  } as const satisfies DataPortSchema;
 };
 ```
-
-### Custom Annotations
-
-`DataPortSchema` supports custom annotations starting with `x-` or `_` for vendor extensions and custom metadata. These annotations can appear anywhere `title` and `description` can appear in the schema.
-
-```typescript
-static inputSchema = () => {
-  return Type.Object({
-    apiKey: Type.String({
-      title: "API Key",
-      description: "Your API key",
-      "x-sensitive": true,
-      "x-ui-widget": "password",
-      "_internal-id": "auth-key-001",
-    }),
-    username: Type.String({
-      title: "Username",
-      description: "User identifier",
-      "x-validation-rules": {
-        minLength: 3,
-        pattern: "^[a-zA-Z0-9_]+$",
-      },
-      x_metadata: {
-        category: "auth",
-        priority: "high",
-      },
-    }),
-  }) as DataPortSchema;
-};
-```
-
-Common use cases for custom annotations:
-
-- `x-sensitive`: Mark fields containing sensitive data
-- `x-ui-*`: UI rendering hints for visual editors
-- `x-validation-*`: Custom validation rules
-- `x_metadata`: Internal metadata for processing pipelines
-- `x_docs-*`: Additional documentation attributes
 
 ## Registry & Queues
 

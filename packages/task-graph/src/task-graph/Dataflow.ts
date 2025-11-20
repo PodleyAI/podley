@@ -135,7 +135,7 @@ export class Dataflow {
       if (sourceSchema === false) {
         return "incompatible";
       }
-      return "static";
+      return "runtime";
     }
 
     const targetSchemaProperty =

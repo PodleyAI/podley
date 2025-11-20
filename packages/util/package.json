@@ -38,16 +38,5 @@
   "dependencies": {
     "json-schema-library": "^10.4.2",
     "json-schema-to-ts": "3.1.1"
-  },
-  "peerDependencies": {
-    "@sinclair/typebox": "catalog:"
-  },
-  "peerDependenciesMeta": {
-    "@sinclair/typebox": {
-      "optional": false
-    }
-  },
-  "devDependencies": {
-    "@sinclair/typebox": "catalog:"
   }
 }

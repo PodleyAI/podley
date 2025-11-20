@@ -42,7 +42,6 @@
     "@podley/util": "workspace:*",
     "@podley/sqlite": "workspace:*",
     "@electric-sql/pglite": "^0.3.11",
-    "@sinclair/typebox": "catalog:",
     "pg": "^8.16.3",
     "@supabase/supabase-js": "^2.76.1"
   },
@@ -70,9 +69,6 @@
     },
     "@podley/sqlite": {
       "optional": false
-    },
-    "@sinclair/typebox": {
-      "optional": false
     }
   },
   "devDependencies": {
@@ -85,7 +81,6 @@
     "@podley/task-graph": "workspace:*",
     "@podley/tasks": "workspace:*",
     "@podley/util": "workspace:*",
-    "@sinclair/typebox": "catalog:",
     "@supabase/supabase-js": "^2.76.1",
     "@types/pg": "^8.15.5",
     "fake-indexeddb": "^6.2.4",

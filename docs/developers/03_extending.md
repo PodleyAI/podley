@@ -30,7 +30,7 @@ We ran too far ahead to the main `run()` method. We need to define the inputs an
 
 ### Define Inputs and Outputs
 
-The first thing we need to do is define the inputs and outputs for the Task. This is done by defining the `inputSchema` and `outputSchema` static methods on the class using TypeBox schemas. Each property should include an `id` (object key), and a schema describing its type and metadata. Common types include `any`, `boolean`, `number`, `string` (text), `function`, `model`, `vector`, etc.
+The first thing we need to do is define the inputs and outputs for the Task. This is done by defining the `inputSchema` and `outputSchema` static methods on the class using json schemas. Each property should include an `id` (object key), and a schema describing its type and metadata. Common types include `any`, `boolean`, `number`, `string` (text), `function`, `model`, `vector`, etc.
 
 Here is the code for the `SimpleDebugLogTask` with the inputs defined:
 

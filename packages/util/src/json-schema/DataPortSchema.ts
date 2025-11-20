@@ -6,13 +6,10 @@
 
 import { JsonSchema } from "./JsonSchema";
 
-export type DataPortSchemaObject = JsonSchema &
-  (
-    | { type: "object"; properties: Record<string, JsonSchema> }
-    | {
-        readonly type: "object";
-        readonly properties: Record<string, JsonSchema>;
-      }
-  );
+export type DataPortSchemaNonBoolean = Exclude<JsonSchema, Boolean>;
+export type DataPortSchemaObject = DataPortSchemaNonBoolean & {
+  readonly type: "object";
+  readonly properties: Record<string, DataPortSchemaNonBoolean>;
+};
 
 export type DataPortSchema = boolean | DataPortSchemaObject;

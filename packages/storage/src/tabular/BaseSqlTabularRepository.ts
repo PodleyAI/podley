@@ -95,16 +95,26 @@ export abstract class BaseSqlTabularRepository<
    * @returns true if the type allows null values
    */
   protected isNullable(typeDef: JsonSchema): boolean {
-    if (typeof typeDef === "boolean") return false;
+    if (typeof typeDef === "boolean") return typeDef;
 
-    // Check for union types that include null
+    // Check for direct null type
+    if (typeDef.type === "null") {
+      return true;
+    }
+
+    // Check for type as an array that includes null (e.g., type: ["null", "string"])
+    if (Array.isArray(typeDef.type)) {
+      return typeDef.type.includes("null");
+    }
+
+    // Check for union types that include null (anyOf)
     if (typeDef.anyOf && Array.isArray(typeDef.anyOf)) {
       return typeDef.anyOf.some((type: any) => type.type === "null");
     }
 
-    // Check for nullable keyword if it exists
-    if ("nullable" in typeDef && typeDef.nullable === true) {
-      return true;
+    // Check for union types that include null (oneOf)
+    if (typeDef.oneOf && Array.isArray(typeDef.oneOf)) {
+      return typeDef.oneOf.some((type: any) => type.type === "null");
     }
 
     return false;
@@ -137,6 +147,12 @@ export abstract class BaseSqlTabularRepository<
 
     if (typeDef.anyOf && Array.isArray(typeDef.anyOf)) {
       const nonNullType = typeDef.anyOf.find((t: any) => t.type !== "null");
+      if (nonNullType) {
+        return nonNullType;
+      }
+    }
+    if (typeDef.oneOf && Array.isArray(typeDef.oneOf)) {
+      const nonNullType = typeDef.oneOf.find((t: any) => t.type !== "null");
       if (nonNullType) {
         return nonNullType;
       }

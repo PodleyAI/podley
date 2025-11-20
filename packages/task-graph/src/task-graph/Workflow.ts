@@ -200,7 +200,7 @@ export class Workflow<Input extends DataPorts = DataPorts, Output extends DataPo
             const typeMatch =
               idTypeBlank &&
               (fromPortOutputSchema.type === toPortInputSchema.type ||
-                (toPortInputSchema.anyOf?.some((i: any) => i.type == fromPortOutputSchema.type) ??
+                (toPortInputSchema.oneOf?.some((i: any) => i.type == fromPortOutputSchema.type) ??
                   false));
             const outputPortIdMatch = fromOutputPortId === toInputPortId;
             const outputPortIdOutputInput =

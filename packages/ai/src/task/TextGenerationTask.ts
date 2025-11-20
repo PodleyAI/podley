@@ -4,84 +4,86 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  CreateWorkflow,
-  JobQueueTaskConfig,
-  TaskRegistry,
-  TypeReplicateArray,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, TypeOptionalArray } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
+import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel } from "./base/AiTaskSchemas";
+import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
-export const TextGenerationInputSchema = Type.Object({
-  model: TypeReplicateArray(TypeModel("model:TextGenerationTask")),
-  prompt: TypeReplicateArray(
-    Type.String({
+const generatedTextSchema = {
+  type: "string",
+  title: "Text",
+  description: "The generated text",
+} as const;
+
+export const TextGenerationInputSchema = {
+  type: "object",
+  properties: {
+    model: TypeReplicateArray(TypeModel("model:TextGenerationTask")),
+    prompt: TypeReplicateArray({
+      type: "string",
       title: "Prompt",
       description: "The prompt to generate text from",
-    })
-  ),
-  maxTokens: Type.Optional(
-    Type.Number({
+    }),
+    maxTokens: {
+      type: "number",
       title: "Max Tokens",
       description: "The maximum number of tokens to generate",
       minimum: 1,
       maximum: 4096,
       "x-group": "Configuration",
-    })
-  ),
-  temperature: Type.Optional(
-    Type.Number({
+    },
+    temperature: {
+      type: "number",
       title: "Temperature",
       description: "The temperature to use for sampling",
       minimum: 0,
       maximum: 2,
       "x-group": "Configuration",
-    })
-  ),
-  topP: Type.Optional(
-    Type.Number({
+    },
+    topP: {
+      type: "number",
       title: "Top-p",
       description: "The top-p value to use for sampling",
       minimum: 0,
       maximum: 1,
       "x-group": "Configuration",
-    })
-  ),
-  frequencyPenalty: Type.Optional(
-    Type.Number({
+    },
+    frequencyPenalty: {
+      type: "number",
       title: "Frequency Penalty",
       description: "The frequency penalty to use",
       minimum: -2,
       maximum: 2,
       "x-group": "Configuration",
-    })
-  ),
-  presencePenalty: Type.Optional(
-    Type.Number({
+    },
+    presencePenalty: {
+      type: "number",
       title: "Presence Penalty",
       description: "The presence penalty to use",
       minimum: -2,
       maximum: 2,
       "x-group": "Configuration",
-    })
-  ),
-});
+    },
+  },
+  required: ["model", "prompt"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export const TextGenerationOutputSchema = Type.Object({
-  text: TypeOptionalArray(
-    Type.String({
-      title: "Text",
-      description: "The generated text",
-    })
-  ),
-});
+export const TextGenerationOutputSchema = {
+  type: "object",
+  properties: {
+    text: {
+      oneOf: [generatedTextSchema, { type: "array", items: generatedTextSchema }],
+      title: generatedTextSchema.title,
+      description: generatedTextSchema.description,
+    },
+  },
+  required: ["text"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export type TextGenerationTaskInput = Static<typeof TextGenerationInputSchema>;
-export type TextGenerationTaskOutput = Static<typeof TextGenerationOutputSchema>;
+export type TextGenerationTaskInput = FromSchema<typeof TextGenerationInputSchema>;
+export type TextGenerationTaskOutput = FromSchema<typeof TextGenerationOutputSchema>;
 
 export class TextGenerationTask extends AiTask<
   TextGenerationTaskInput,

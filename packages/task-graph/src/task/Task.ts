@@ -306,7 +306,9 @@ export class Task<
   constructor(callerDefaultInputs: Partial<Input> = {}, config: Partial<Config> = {}) {
     // Initialize input defaults
     const inputDefaults = this.getDefaultInputsFromStaticInputDefinitions();
-    this.defaults = Object.assign(inputDefaults, callerDefaultInputs);
+    const mergedDefaults = Object.assign(inputDefaults, callerDefaultInputs);
+    // Strip symbol properties (like [$JSONSchema]) before storing defaults
+    this.defaults = this.stripSymbols(mergedDefaults) as Record<string, any>;
     this.resetInputData();
 
     // Setup configuration defaults
@@ -335,7 +337,7 @@ export class Task<
     try {
       const compiledSchema = this.getInputSchemaNode(this.type);
       const defaultData = compiledSchema.getData(undefined, {
-        addOptionalProps: true,
+        addOptionalProps: false,
         removeInvalidData: false,
       });
       return (defaultData || {}) as Partial<Input>;
@@ -376,7 +378,8 @@ export class Task<
    * @param defaults The default input values to set
    */
   public setDefaults(defaults: Record<string, any>): void {
-    this.defaults = defaults;
+    // Strip symbol properties (like [$JSONSchema]) before storing defaults
+    this.defaults = this.stripSymbols(defaults) as Record<string, any>;
   }
 
   /**
@@ -551,20 +554,44 @@ export class Task<
   // ========================================================================
 
   /**
+   * Strips symbol properties from an object to make it serializable
+   * @param obj The object to strip symbols from
+   * @returns A new object without symbol properties
+   */
+  private stripSymbols(obj: any): any {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map((item) => this.stripSymbols(item));
+    }
+    if (typeof obj === "object") {
+      const result: Record<string, any> = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          result[key] = this.stripSymbols(obj[key]);
+        }
+      }
+      return result;
+    }
+    return obj;
+  }
+
+  /**
    * Serializes the task and its subtasks into a format that can be stored
    * @returns The serialized task and subtasks
    */
-  public toJSON(): JsonTaskItem | TaskGraphItemJson {
+  public toJSON(): TaskGraphItemJson {
     const provenance = this.getProvenance();
     const extras = this.config.extras;
-    let json: JsonTaskItem | TaskGraphItemJson = {
+    let json: TaskGraphItemJson = this.stripSymbols({
       id: this.config.id,
       type: this.type,
       input: this.defaults,
       ...(Object.keys(provenance).length ? { provenance } : {}),
       ...(extras && Object.keys(extras).length ? { extras } : {}),
-    };
-    return json;
+    });
+    return json as TaskGraphItemJson;
   }
 
   /**

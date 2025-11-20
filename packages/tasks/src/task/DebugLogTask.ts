@@ -89,7 +89,8 @@ export class DebugLogTask<
 TaskRegistry.registerTask(DebugLogTask);
 
 export const DebugLog = (input: DebugLogTaskInput, config: TaskConfig = {}) => {
-  return new DebugLogTask(input, config).run();
+  const task = new DebugLogTask(input, config);
+  return task.run();
 };
 
 declare module "@podley/task-graph" {

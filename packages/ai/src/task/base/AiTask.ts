@@ -16,12 +16,17 @@ import {
   TaskInput,
   type TaskOutput,
 } from "@podley/task-graph";
-import { schemaSemantic } from "@podley/util";
-import { type TSchema } from "@sinclair/typebox";
+import { type JsonSchema } from "@podley/util";
 
 import { AiJob, AiJobInput } from "../../job/AiJob";
 import type { Model } from "../../model/Model";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
+
+function schemaSemantic(schema: JsonSchema): string | undefined {
+  return typeof schema === "object" && schema !== null && "x-semantic" in schema
+    ? schema["x-semantic"]
+    : undefined;
+}
 
 export interface AiSingleTaskInput extends TaskInput {
   model: string;
@@ -127,8 +132,8 @@ export class AiTask<
       }
       return true;
     }
-    const modelTaskProperties = Object.entries<TSchema>(
-      (inputSchema.properties || {}) as Record<string, TSchema>
+    const modelTaskProperties = Object.entries<JsonSchema>(
+      (inputSchema.properties || {}) as Record<string, JsonSchema>
     ).filter(([key, schema]) => schemaSemantic(schema)?.startsWith("model:"));
     if (modelTaskProperties.length > 0) {
       const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
@@ -137,13 +142,15 @@ export class AiTask<
         for (const model of requestedModels) {
           const foundModel = taskModels?.find((m) => m.name === model);
           if (!foundModel) {
-            throw new TaskConfigurationError(`AiTask: Missing model for "${key}" named "${model}"`);
+            throw new TaskConfigurationError(
+              `AiTask: Missing model for '${key}' named '${model}' for task '${this.type}'`
+            );
           }
         }
       }
     }
-    const modelPlainProperties = Object.entries<TSchema>(
-      (inputSchema.properties || {}) as Record<string, TSchema>
+    const modelPlainProperties = Object.entries<JsonSchema>(
+      (inputSchema.properties || {}) as Record<string, JsonSchema>
     ).filter(([key, schema]) => schemaSemantic(schema) === "model");
     if (modelPlainProperties.length > 0) {
       for (const [key, propSchema] of modelPlainProperties) {
@@ -171,8 +178,8 @@ export class AiTask<
       }
       return input;
     }
-    const modelTaskProperties = Object.entries<TSchema>(
-      (inputSchema.properties || {}) as Record<string, TSchema>
+    const modelTaskProperties = Object.entries<JsonSchema>(
+      (inputSchema.properties || {}) as Record<string, JsonSchema>
     ).filter(([key, schema]) => schemaSemantic(schema)?.startsWith("model:"));
     if (modelTaskProperties.length > 0) {
       const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);

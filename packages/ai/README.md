@@ -524,8 +524,7 @@ This package depends on:
 - `@podley/job-queue` - Job queue system for task execution
 - `@podley/storage` - Storage abstractions for model and data persistence
 - `@podley/task-graph` - Task graph system for workflow management
-- `@podley/util` - Utility functions and shared components
-- `@sinclair/typebox` - Runtime type validation and schema definitions
+- `@podley/util` - Utility functions and shared components, including JSON Schema types and utilities
 
 ## License
 

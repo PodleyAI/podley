@@ -4,19 +4,34 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { FromSchema as FromSchemaOriginal } from "json-schema-to-ts";
-import { JsonSchema } from "./JsonSchema";
+import type { FromExtendedSchema, FromSchemaOptions } from "json-schema-to-ts";
+import type { DataPortSchemaObject } from "./DataPortSchema";
+import type { JsonSchema, JsonSchemaCustomProps } from "./JsonSchema";
 
-export type FromSchema<SCHEMA extends JsonSchema> = FromSchemaOriginal<
-  SCHEMA & { additionalProperties: false },
-  {
-    parseNotKeyword: false;
-    parseIfThenElseKeywords: false;
-    keepDefaultedPropertiesOptional: true;
-    references: false;
-    deserialize: false;
-  }
->;
+export { FromSchemaOptions };
+
+/**
+ * Removes the [$JSONSchema] symbol property from a type
+ * This is needed because json-schema-to-ts adds this property which cannot be serialized
+ */
+export type StripJSONSchema<T> = T extends object
+  ? {
+      [K in keyof T as K extends symbol ? never : K]: T[K];
+    }
+  : T;
+
+export const FromSchemaDefaultOptions = {
+  parseNotKeyword: true,
+  parseIfThenElseKeywords: false,
+  keepDefaultedPropertiesOptional: true,
+  references: false,
+  deserialize: false,
+} as const satisfies FromSchemaOptions;
+
+export type FromSchema<
+  SCHEMA extends JsonSchema,
+  OPTIONS extends FromSchemaOptions = typeof FromSchemaDefaultOptions,
+> = StripJSONSchema<FromExtendedSchema<JsonSchemaCustomProps, SCHEMA, OPTIONS>>;
 
 /**
  * IncludeProps - Returns a new schema with only the specified properties
@@ -42,10 +57,7 @@ export type FromSchema<SCHEMA extends JsonSchema> = FromSchemaOriginal<
  * // => { name: string, age?: number }
  */
 export type IncludeProps<
-  Schema extends {
-    readonly type: "object";
-    readonly properties: Record<string, any>;
-  },
+  Schema extends DataPortSchemaObject,
   Keys extends readonly (keyof Schema["properties"])[],
 > = {
   readonly type: "object";
@@ -78,10 +90,7 @@ export type IncludeProps<
  * // => { name: string, age?: number }
  */
 export type ExcludeProps<
-  Schema extends {
-    readonly type: "object";
-    readonly properties: Record<string, any>;
-  },
+  Schema extends DataPortSchemaObject,
   Keys extends readonly (keyof Schema["properties"])[],
 > = {
   readonly type: "object";

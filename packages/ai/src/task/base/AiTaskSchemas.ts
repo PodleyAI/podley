@@ -4,23 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Kind, SchemaOptions, TSchema, Type, TypeRegistry } from "@sinclair/typebox";
-
-export const TypedArray = (annotations: Record<string, unknown> = {}) =>
-  Type.Union(
-    [
-      Type.Unsafe<Float64Array>({ type: "Float64Array" }),
-      Type.Unsafe<Float32Array>({ type: "Float32Array" }),
-      Type.Unsafe<Int32Array>({ type: "Int32Array" }),
-      Type.Unsafe<Int16Array>({ type: "Int16Array" }),
-      Type.Unsafe<Int8Array>({ type: "Int8Array" }),
-      Type.Unsafe<Uint8Array>({ type: "Uint8Array" }),
-      Type.Unsafe<Uint16Array>({ type: "Uint16Array" }),
-      Type.Unsafe<Uint32Array>({ type: "Uint32Array" }),
-      Type.Unsafe<Uint8ClampedArray>({ type: "Uint8ClampedArray" }),
-    ],
-    { ...annotations }
-  );
+import {
+  DataPortSchemaNonBoolean,
+  FromSchema,
+  FromSchemaDefaultOptions,
+  FromSchemaOptions,
+  JsonSchema,
+} from "@podley/util";
 
 export type TypedArray =
   | Float64Array
@@ -33,40 +23,181 @@ export type TypedArray =
   | Uint8Array
   | Uint8ClampedArray;
 
-TypeRegistry.Set("TypedArray", (schema: TSchema, value: unknown) => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    schema.anyOf.some((x: TSchema) => x.type === (value as any)[Symbol.toStringTag])
-  );
-});
+// Type-only value for use in deserialize patterns
+const TypedArrayType = null as any as TypedArray;
+
+const TypedArraySchemaOptions = {
+  ...FromSchemaDefaultOptions,
+  deserialize: [
+    // {
+    //   pattern: {
+    //     type: "number";
+    //     "x-semantic": "BigInt" | "Float64";
+    //   };
+    //   output: bigint;
+    // },
+    // {
+    //   pattern: {
+    //     type: "number";
+    //     "x-semantic": "Float64Array";
+    //   };
+    //   output: Float64Array;
+    // },
+    // {
+    //   pattern: {
+    //     type: "number";
+    //     "x-semantic": "Float32Array";
+    //   };
+    //   output: Float32Array;
+    // },
+    // {
+    //   pattern: {
+    //     type: "number";
+    //     "x-semantic": "Int32Array";
+    //   };
+    //   output: Int32Array;
+    // },
+    // {
+    //   pattern: {
+    //     type: "number";
+    //     "x-semantic": "Int16Array";
+    //   };
+    //   output: Int16Array;
+    // },
+    // {
+    //   pattern: {
+    //     type: "number";
+    //     "x-semantic": "Int8Array";
+    //   };
+    //   output: Int8Array;
+    // },
+    // {
+    //   pattern: {
+    //     type: "number";
+    //     "x-semantic": "Uint8Array";
+    //   };
+    //   output: Uint8Array;
+    // },
+    // {
+    //   pattern: {
+    //     type: "number";
+    //     "x-semantic": "Uint16Array";
+    //   };
+    //   output: Uint16Array;
+    // },
+    // {
+    //   pattern: {
+    //     type: "number";
+    //     "x-semantic": "Uint32Array";
+    //   };
+    //   output: Uint32Array;
+    // },
+    // {
+    //   pattern: { type: "array"; items: { type: "number" }; "x-semantic": "Uint8ClampedArray" };
+    //   output: Uint8ClampedArray;
+    // },
+    {
+      pattern: { "x-semantic": "TypedArray" },
+      output: TypedArrayType,
+    },
+  ],
+} as const satisfies FromSchemaOptions;
+
+export type TypedArraySchemaOptions = typeof TypedArraySchemaOptions;
+
+export const TypedArraySchema = (annotations: Record<string, unknown> = {}) =>
+  ({
+    oneOf: [
+      {
+        type: "array",
+        items: { type: "number", "x-semantic": "Float64" },
+        title: "Float64Array",
+        description: "A 64-bit floating point array",
+        "x-semantic": "Float64Array",
+      },
+      {
+        type: "array",
+        items: { type: "number", "x-semantic": "Float32" },
+        title: "Float32Array",
+        description: "A 32-bit floating point array",
+        "x-semantic": "Float32Array",
+      },
+      {
+        type: "array",
+        items: { type: "number", "x-semantic": "Int32" },
+        title: "Int32Array",
+        description: "A 32-bit integer array",
+        "x-semantic": "Int32Array",
+      },
+      {
+        type: "array",
+        items: { type: "number", "x-semantic": "Int16" },
+        title: "Int16Array",
+        description: "A 16-bit integer array",
+        "x-semantic": "Int16Array",
+      },
+      {
+        type: "array",
+        items: { type: "number", "x-semantic": "Int8" },
+        title: "Int8Array",
+      },
+      {
+        type: "array",
+        items: { type: "number", "x-semantic": "Uint8" },
+        title: "Uint8Array",
+        description: "A 8-bit unsigned integer array",
+        "x-semantic": "Uint8Array",
+      },
+      {
+        type: "array",
+        items: { type: "number", "x-semantic": "Uint16" },
+        title: "Uint16Array",
+        description: "A 16-bit unsigned integer array",
+        "x-semantic": "Uint16Array",
+      },
+      {
+        type: "array",
+        items: { type: "number", "x-semantic": "Uint32" },
+        title: "Uint32Array",
+        description: "A 32-bit unsigned integer array",
+        "x-semantic": "Uint32Array",
+      },
+      {
+        type: "array",
+        items: { type: "number", "x-semantic": "Uint8Clamped" },
+        title: "Uint8ClampedArray",
+        description: "A 8-bit unsigned integer array with values clamped to 0-255",
+        "x-semantic": "Uint8ClampedArray",
+      },
+    ],
+    "x-semantic": "TypedArray",
+    ...annotations,
+  }) as const satisfies JsonSchema;
+
 export const TypeLanguage = (annotations: Record<string, unknown> = {}) =>
-  Type.String({
+  ({
+    type: "string",
     title: "Language",
     description: "The language to use",
     maxLength: 2,
     minLength: 2,
     ...annotations,
-  });
+  }) as const;
 
-export type TypeModelSymantic = "model" | `model:${string}`;
+export type TypeModelSemantic = "model" | `model:${string}`;
 
-export interface TTypeModel extends TSchema {
-  [Kind]: "TypeModel";
-  static: string;
-  type: "string";
-  "x-semantic": TypeModelSymantic;
-}
+export type TTypeModel = DataPortSchemaNonBoolean & {
+  readonly type: "string";
+  readonly "x-semantic": TypeModelSemantic;
+};
 
-export function TypeModel(semantic: TypeModelSymantic = "model", options: SchemaOptions = {}) {
+export function TypeModel(
+  semantic: TypeModelSemantic = "model",
+  options: Record<string, unknown> = {}
+) {
   if (semantic !== "model" && !semantic.startsWith("model:")) {
     throw new Error("Invalid semantic value");
   }
-  const task = semantic.startsWith("model:") ? semantic.slice(6) : null;
-  function TypeModelCheck(schema: TTypeModel, value: unknown) {
-    return typeof value === "string";
-  }
-  if (!TypeRegistry.Has("TypeModel")) TypeRegistry.Set("TypeModel", TypeModelCheck);
   const taskName = semantic.startsWith("model:")
     ? semantic
         .slice(6)
@@ -79,7 +210,53 @@ export function TypeModel(semantic: TypeModelSymantic = "model", options: Schema
     description: `The model ${taskName ? `for ${taskName} ` : "to use"}`,
     ...options,
     "x-semantic": semantic,
-    [Kind]: "TypeModel",
     type: "string",
   } as TTypeModel;
 }
+
+export const TypeReplicateArray = <T extends DataPortSchemaNonBoolean>(
+  type: T,
+  annotations: Record<string, unknown> = {}
+) =>
+  ({
+    oneOf: [type, { type: "array", items: type }],
+    title: type.title,
+    description: type.description,
+    ...(type["x-semantic"] ? { "x-semantic": type["x-semantic"] } : {}),
+    ...annotations,
+    "x-replicate": true,
+  }) as const;
+
+export type TypedArrayFromSchema<SCHEMA extends JsonSchema> = FromSchema<
+  SCHEMA,
+  TypedArraySchemaOptions
+>;
+
+/**
+ * Removes array types from a union, leaving only non-array types.
+ * For example, `string | string[]` becomes `string`.
+ * Used to extract the single-value type from schemas with x-replicate annotation.
+ * Uses distributive conditional types to filter out arrays from unions.
+ * Checks for both array types and types with numeric index signatures (FromSchema array output).
+ * Preserves TypedArray types like Float64Array which also have numeric indices.
+ */
+type UnwrapArrayUnion<T> = T extends readonly any[]
+  ? T extends TypedArray
+    ? T
+    : never
+  : number extends keyof T
+    ? "push" extends keyof T
+      ? never
+      : T
+    : T;
+
+/**
+ * Transforms a schema by removing array variants from properties marked with x-replicate.
+ * Properties with x-replicate use {@link TypeReplicateArray} which creates a union of
+ * `T | T[]`, and this type extracts just `T`.
+ */
+export type DeReplicateFromSchema<S extends { properties: Record<string, any> }> = {
+  [K in keyof S["properties"]]: S["properties"][K] extends { "x-replicate": true }
+    ? UnwrapArrayUnion<TypedArrayFromSchema<S["properties"][K]>>
+    : TypedArrayFromSchema<S["properties"][K]>;
+};

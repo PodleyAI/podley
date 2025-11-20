@@ -35,10 +35,8 @@
     "caniuse-lite": "^1.0.30001755"
   },
   "catalog": {
-    "@sinclair/typebox": "^0.34.41",
     "@sroussey/transformers": "3.7.4",
-    "@mediapipe/tasks-text": "^0.10.21",
-    "@types/json-schema": "^7.0.15"
+    "@mediapipe/tasks-text": "^0.10.21"
   },
   "devDependencies": {
     "@sroussey/changesets-cli": "^2.29.7",

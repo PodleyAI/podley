@@ -4,45 +4,55 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  CreateWorkflow,
-  JobQueueTaskConfig,
-  TaskRegistry,
-  TypeReplicateArray,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, TypeOptionalArray } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
+import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel } from "./base/AiTaskSchemas";
+import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
-export const TextQuestionAnswerInputSchema = Type.Object({
-  context: TypeReplicateArray(
-    Type.String({
-      title: "Context",
-      description: "The context of the question",
-    })
-  ),
-  question: TypeReplicateArray(
-    Type.String({
-      title: "Question",
-      description: "The question to answer",
-    })
-  ),
-  model: TypeReplicateArray(TypeModel("model:TextQuestionAnswerTask")),
-});
+const contextSchema = {
+  type: "string",
+  title: "Context",
+  description: "The context of the question",
+} as const;
 
-export const TextQuestionAnswerOutputSchema = Type.Object({
-  text: TypeOptionalArray(
-    Type.String({
-      title: "Text",
-      description: "The generated text",
-    })
-  ),
-});
+const questionSchema = {
+  type: "string",
+  title: "Question",
+  description: "The question to answer",
+} as const;
 
-export type TextQuestionAnswerTaskInput = Static<typeof TextQuestionAnswerInputSchema>;
-export type TextQuestionAnswerTaskOutput = Static<typeof TextQuestionAnswerOutputSchema>;
+const textSchema = {
+  type: "string",
+  title: "Text",
+  description: "The generated text",
+} as const;
+
+export const TextQuestionAnswerInputSchema = {
+  type: "object",
+  properties: {
+    context: TypeReplicateArray(contextSchema),
+    question: TypeReplicateArray(questionSchema),
+    model: TypeReplicateArray(TypeModel("model:TextQuestionAnswerTask")),
+  },
+  required: ["context", "question", "model"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+export const TextQuestionAnswerOutputSchema = {
+  type: "object",
+  properties: {
+    text: {
+      oneOf: [textSchema, { type: "array", items: textSchema }],
+      title: textSchema.title,
+      description: textSchema.description,
+    },
+  },
+  required: ["text"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+export type TextQuestionAnswerTaskInput = FromSchema<typeof TextQuestionAnswerInputSchema>;
+export type TextQuestionAnswerTaskOutput = FromSchema<typeof TextQuestionAnswerOutputSchema>;
 
 /**
  * This is a special case of text generation that takes a context and a question

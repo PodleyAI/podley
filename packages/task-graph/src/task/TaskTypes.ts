@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { StripJSONSchema } from "@podley/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import type { Task } from "./Task";
 
@@ -35,7 +36,7 @@ export enum TaskStatus {
 // Core Task Data Types
 // ========================================================================
 
-export interface DataPorts {
+export interface DataPorts extends StripJSONSchema<Record<string, any>> {
   [key: string]: unknown;
 }
 

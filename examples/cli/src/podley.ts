@@ -1,13 +1,8 @@
 #!/usr/bin/env bun
 
-import { register_HFT_InlineJobFns, register_TFMP_InlineJobFns } from "@podley/ai-provider";
+import { register_HFT_InlineJobFns } from "@podley/ai-provider";
 import { getTaskQueueRegistry } from "@podley/task-graph";
-import {
-  register_HFT_InMemoryQueue,
-  register_TFMP_InMemoryQueue,
-  registerHuggingfaceLocalModels,
-  registerMediaPipeTfJsLocalModels,
-} from "@podley/test";
+import { register_HFT_InMemoryQueue, registerHuggingfaceLocalModels } from "@podley/test";
 import { program } from "commander";
 import { AddBaseCommands } from "./TaskCLI";
 

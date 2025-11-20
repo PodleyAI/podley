@@ -12,9 +12,8 @@ import {
   TaskRegistry,
   Workflow,
 } from "@podley/task-graph";
-import { DataPortSchema } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
-import { TypedArray } from "./base/AiTaskSchemas";
+import { DataPortSchema, FromSchema } from "@podley/util";
+import { TypedArray, TypedArraySchema, TypedArraySchemaOptions } from "./base/AiTaskSchemas";
 
 export const SimilarityFn = {
   COSINE: "cosine",
@@ -24,49 +23,70 @@ export const SimilarityFn = {
 
 export type SimilarityFn = (typeof SimilarityFn)[keyof typeof SimilarityFn];
 
-const SimilarityInputSchema = Type.Object({
-  query: TypedArray({
-    title: "Query",
-    description: "Query vector to compare against",
-  }),
-  input: Type.Array(
-    TypedArray({
-      title: "Input",
-      description: "Array of vectors to compare against the query",
-    })
-  ),
-  topK: Type.Optional(
-    Type.Number({
+const SimilarityInputSchema = {
+  type: "object",
+  properties: {
+    query: TypedArraySchema({
+      title: "Query",
+      description: "Query vector to compare against",
+    }),
+    input: {
+      type: "array",
+      items: TypedArraySchema({
+        title: "Input",
+        description: "Array of vectors to compare against the query",
+      }),
+    },
+    topK: {
+      type: "number",
       title: "Top K",
       description: "Number of top results to return",
       minimum: 1,
       default: 10,
-    })
-  ),
-  similarity: Type.Enum(SimilarityFn, {
-    title: "Similarity 𝑓",
-    description: "Similarity function to use for comparisons",
-    default: SimilarityFn.COSINE,
-  }),
-});
+    },
+    similarity: {
+      type: "string",
+      enum: Object.values(SimilarityFn),
+      title: "Similarity 𝑓",
+      description: "Similarity function to use for comparisons",
+      default: SimilarityFn.COSINE,
+    },
+  },
+  required: ["query", "input", "similarity"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-const SimilarityOutputSchema = Type.Object({
-  output: Type.Array(
-    TypedArray({
-      title: "Output",
-      description: "Ranked output vectors",
-    })
-  ),
-  score: Type.Array(
-    Type.Number({
-      title: "Score",
-      description: "Similarity scores for each output vector",
-    })
-  ),
-});
+const SimilarityOutputSchema = {
+  type: "object",
+  properties: {
+    output: {
+      type: "array",
+      items: TypedArraySchema({
+        title: "Output",
+        description: "Ranked output vectors",
+      }),
+    },
+    score: {
+      type: "array",
+      items: {
+        type: "number",
+        title: "Score",
+        description: "Similarity scores for each output vector",
+      },
+    },
+  },
+  required: ["output", "score"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export type VectorSimilarityTaskInput = Static<typeof SimilarityInputSchema>;
-export type VectorSimilarityTaskOutput = Static<typeof SimilarityOutputSchema>;
+export type VectorSimilarityTaskInput = FromSchema<
+  typeof SimilarityInputSchema,
+  TypedArraySchemaOptions
+>;
+export type VectorSimilarityTaskOutput = FromSchema<
+  typeof SimilarityOutputSchema,
+  TypedArraySchemaOptions
+>;
 
 export class VectorSimilarityTask extends ArrayTask<
   VectorSimilarityTaskInput,
@@ -158,5 +178,14 @@ export function normalize(vector: TypedArray): TypedArray {
     throw new TaskError("Cannot normalize a zero vector.");
   }
 
-  return vector.map((val) => val / mag);
+  const normalized = vector.map((val) => Number(val) / mag);
+
+  if (vector instanceof Float64Array) {
+    return new Float64Array(normalized);
+  }
+  if (vector instanceof Float32Array) {
+    return new Float32Array(normalized);
+  }
+  // For integer arrays and bigint[], use Float32Array since normalization produces floats
+  return new Float32Array(normalized);
 }

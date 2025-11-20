@@ -4,43 +4,45 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  CreateWorkflow,
-  JobQueueTaskConfig,
-  TaskRegistry,
-  TypeReplicateArray,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
+import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel } from "./base/AiTaskSchemas";
+import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
-export const TextRewriterInputSchema = Type.Object({
-  text: TypeReplicateArray(
-    Type.String({
+export const TextRewriterInputSchema = {
+  type: "object",
+  properties: {
+    text: TypeReplicateArray({
+      type: "string",
       title: "Text",
       description: "The text to rewrite",
-    })
-  ),
-  prompt: TypeReplicateArray(
-    Type.String({
+    }),
+    prompt: TypeReplicateArray({
+      type: "string",
       title: "Prompt",
       description: "The prompt to direct the rewriting",
-    })
-  ),
-  model: TypeReplicateArray(TypeModel("model:TextRewriterTask")),
-});
+    }),
+    model: TypeReplicateArray(TypeModel("model:TextRewriterTask")),
+  },
+  required: ["text", "prompt", "model"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export const TextRewriterOutputSchema = Type.Object({
-  text: Type.String({
-    title: "Text",
-    description: "The rewritten text",
-  }),
-});
+export const TextRewriterOutputSchema = {
+  type: "object",
+  properties: {
+    text: {
+      type: "string",
+      title: "Text",
+      description: "The rewritten text",
+    },
+  },
+  required: ["text"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export type TextRewriterTaskInput = Static<typeof TextRewriterInputSchema>;
-export type TextRewriterTaskOutput = Static<typeof TextRewriterOutputSchema>;
+export type TextRewriterTaskInput = FromSchema<typeof TextRewriterInputSchema>;
+export type TextRewriterTaskOutput = FromSchema<typeof TextRewriterOutputSchema>;
 
 /**
  * This is a special case of text generation that takes a prompt and text to rewrite

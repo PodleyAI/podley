@@ -7,13 +7,13 @@
 import { FilesetResolver, TextEmbedder } from "@mediapipe/tasks-text";
 import type {
   AiProviderRunFn,
+  DeReplicateFromSchema,
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
   TextEmbeddingInputSchema,
   TextEmbeddingOutputSchema,
 } from "@podley/ai";
 import { PermanentJobError } from "@podley/job-queue";
-import { DeReplicateStatic } from "@podley/task-graph";
 
 /**
  * Core implementation for downloading and caching a MediaPipe TFJS model.
@@ -44,8 +44,8 @@ export const TFMP_Download: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const TFMP_TextEmbedding: AiProviderRunFn<
-  DeReplicateStatic<typeof TextEmbeddingInputSchema>,
-  DeReplicateStatic<typeof TextEmbeddingOutputSchema>
+  DeReplicateFromSchema<typeof TextEmbeddingInputSchema>,
+  DeReplicateFromSchema<typeof TextEmbeddingOutputSchema>
 > = async (input, model, onProgress, signal) => {
   const textFiles = await FilesetResolver.forTextTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@latest/wasm"

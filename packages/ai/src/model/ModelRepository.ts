@@ -5,8 +5,7 @@
  */
 
 import { type TabularRepository } from "@podley/storage";
-import { EventEmitter, EventParameters } from "@podley/util";
-import { Type } from "@sinclair/typebox";
+import { DataPortSchemaObject, EventEmitter, EventParameters } from "@podley/util";
 import { Model } from "./Model";
 
 /**
@@ -30,19 +29,29 @@ export type ModelEventParameters<Event extends ModelEvents> = EventParameters<
   Event
 >;
 
-export const ModelSchema = Type.Object({
-  name: Type.String(),
-  details: Type.Any(),
-});
+export const ModelSchema = {
+  type: "object",
+  properties: {
+    name: { type: "string" },
+    details: { type: "string" },
+  },
+  required: ["name", "details"],
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
 export const ModelPrimaryKeyNames = ["name"] as const;
 
 /**
  * Represents the structure for mapping tasks to models
  */
-export const Task2ModelSchema = Type.Object({
-  task: Type.String(),
-  model: Type.String(),
-});
+export const Task2ModelSchema = {
+  type: "object",
+  properties: {
+    task: { type: "string" },
+    model: { type: "string" },
+  },
+  required: ["task", "model"],
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
 export const Task2ModelPrimaryKeyNames = ["task", "model"] as const;
 
 /**

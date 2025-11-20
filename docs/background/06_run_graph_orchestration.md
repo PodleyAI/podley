@@ -20,7 +20,7 @@ We expose events for graphs, tasks, and dataflows. A suspend/resume could be add
 
 Notes about requirements for the tasks:
 
-- Must have input schema and output schema (via TypeBox)
+- Must have input schema and output schema
 - The input/output schema is a runtime JSON schema; TS types are inferred separately where helpful
 
 ### Edge / Dataflow

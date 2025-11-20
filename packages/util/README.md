@@ -14,7 +14,7 @@ The `@podley/util` package provides a comprehensive set of utility functions, he
 - **Dependency Injection**: Simple DI container for managing dependencies
 - **Event System**: Event emitter and handling utilities
 - **Worker Utilities**: Web worker and background task helpers
-- **TypeBox Extensions**: Additional TypeBox utilities for schema validation
+- **JSON Schema Utilities**: JSON Schema types and utilities for schema validation and type inference
 - **Multi-Platform Support**: Works in browser, Node.js, and Bun environments
 
 ## Installation
@@ -154,13 +154,13 @@ const result = await pool.execute({
 await pool.terminate();
 ```
 
-### TypeBox Extensions
+### JSON Schema Utilities
 
 ```typescript
-import { createSchema, validateSchema, transformSchema } from "@podley/util/typebox";
+import { JsonSchema, FromSchema, DataPortSchema, compileSchema } from "@podley/util";
 
-// Create schema with extensions
-const userSchema = createSchema({
+// Define a JSON Schema
+const userSchema = {
   type: "object",
   properties: {
     id: { type: "string", format: "uuid" },
@@ -168,17 +168,20 @@ const userSchema = createSchema({
     age: { type: "number", minimum: 0, maximum: 150 },
   },
   required: ["id", "email"],
-});
+  additionalProperties: false,
+} as const satisfies JsonSchema;
 
-// Validate data against schema
-const isValid = validateSchema(userSchema, {
+// Infer TypeScript types from schema
+type User = FromSchema<typeof userSchema>;
+// => { id: string; email: string; age?: number }
+
+// Compile schema for runtime validation
+const validator = compileSchema(userSchema);
+const isValid = validator.validate({
   id: "123e4567-e89b-12d3-a456-426614174000",
   email: "user@example.com",
   age: 25,
 });
-
-// Transform data using schema
-const transformed = transformSchema(userSchema, rawData);
 ```
 
 ## Utility Categories
@@ -227,12 +230,13 @@ const transformed = transformSchema(userSchema, rawData);
 - Worker lifecycle management
 - Error handling and recovery
 
-### TypeBox Extensions (`/typebox`)
+### JSON Schema Utilities (`/json-schema`)
 
-- Schema composition utilities
-- Custom format validators
-- Schema transformation helpers
-- Runtime type checking
+- `JsonSchema` - Extended JSON Schema type with custom extensions
+- `FromSchema` - Infer TypeScript types from JSON schemas
+- `DataPortSchema` - Schema type for task input/output ports
+- `compileSchema` - Runtime schema validation using json-schema-library
+- Schema compatibility utilities for task graph dataflows
 
 ### General Utilities (`/utilities`)
 
@@ -263,59 +267,6 @@ const transformed = transformSchema(userSchema, rawData);
 - Optimized for Bun runtime
 - Fast startup and execution
 - Built-in APIs integration
-
-## Performance Considerations
-
-```typescript
-import { memoize, debounce, throttle } from "@podley/util/utilities";
-
-// Memoize expensive functions
-const expensiveFunction = memoize((input: string) => {
-  // Expensive computation
-  return processData(input);
-});
-
-// Debounce rapid calls
-const debouncedSave = debounce(saveData, 300);
-
-// Throttle frequent events
-const throttledUpdate = throttle(updateUI, 16); // ~60fps
-```
-
-## Error Handling
-
-```typescript
-import { UtilError, CryptoError, CompressionError, GraphError } from "@podley/util";
-
-try {
-  await encrypt(data, key);
-} catch (error) {
-  if (error instanceof CryptoError) {
-    console.error("Encryption failed:", error.message);
-  }
-}
-```
-
-## Configuration
-
-```typescript
-import { configure } from "@podley/util";
-
-configure({
-  crypto: {
-    defaultAlgorithm: "AES-GCM",
-    keyLength: 256,
-  },
-  compression: {
-    defaultLevel: 6,
-    algorithm: "gzip",
-  },
-  workers: {
-    defaultPoolSize: navigator.hardwareConcurrency || 4,
-    maxQueueSize: 1000,
-  },
-});
-```
 
 ## License
 

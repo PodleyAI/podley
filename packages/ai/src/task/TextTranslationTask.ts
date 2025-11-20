@@ -4,55 +4,62 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  CreateWorkflow,
-  JobQueueTaskConfig,
-  TaskRegistry,
-  TypeReplicateArray,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, TypeOptionalArray } from "@podley/util";
-import { Type, type Static } from "@sinclair/typebox";
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
+import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
-import { TypeLanguage, TypeModel } from "./base/AiTaskSchemas";
+import { TypeLanguage, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
-export const TextTranslationInputSchema = Type.Object({
-  text: TypeReplicateArray(
-    Type.String({
+const translationTextSchema = {
+  type: "string",
+  title: "Text",
+  description: "The translated text",
+} as const;
+
+export const TextTranslationInputSchema = {
+  type: "object",
+  properties: {
+    text: TypeReplicateArray({
+      type: "string",
       title: "Text",
       description: "The text to translate",
-    })
-  ),
-  source_lang: TypeReplicateArray(
-    TypeLanguage({
-      title: "Source Language",
-      description: "The source language",
-    })
-  ),
-  target_lang: TypeReplicateArray(
-    TypeLanguage({
-      title: "Target Language",
-      description: "The target language",
-    })
-  ),
-  model: TypeReplicateArray(TypeModel("model:TextTranslationTask")),
-});
+    }),
+    source_lang: TypeReplicateArray(
+      TypeLanguage({
+        title: "Source Language",
+        description: "The source language",
+      })
+    ),
+    target_lang: TypeReplicateArray(
+      TypeLanguage({
+        title: "Target Language",
+        description: "The target language",
+      })
+    ),
+    model: TypeReplicateArray(TypeModel("model:TextTranslationTask")),
+  },
+  required: ["text", "source_lang", "target_lang", "model"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export const TextTranslationOutputSchema = Type.Object({
-  text: TypeOptionalArray(
-    Type.String({
-      title: "Text",
-      description: "The translated text",
-    })
-  ),
-  target_lang: TypeLanguage({
-    title: "Output Language",
-    description: "The output language",
-  }),
-});
+export const TextTranslationOutputSchema = {
+  type: "object",
+  properties: {
+    text: {
+      oneOf: [translationTextSchema, { type: "array", items: translationTextSchema }],
+      title: translationTextSchema.title,
+      description: translationTextSchema.description,
+    },
+    target_lang: TypeLanguage({
+      title: "Output Language",
+      description: "The output language",
+    }),
+  },
+  required: ["text", "target_lang"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
-export type TextTranslationTaskInput = Static<typeof TextTranslationInputSchema>;
-export type TextTranslationTaskOutput = Static<typeof TextTranslationOutputSchema>;
+export type TextTranslationTaskInput = FromSchema<typeof TextTranslationInputSchema>;
+export type TextTranslationTaskOutput = FromSchema<typeof TextTranslationOutputSchema>;
 
 /**
  * This translates text from one language to another

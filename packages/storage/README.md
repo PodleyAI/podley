@@ -56,14 +56,19 @@ const kvUser = await kvStore.get("user:123"); // { name: "Alice", age: 30 }
 ```typescript
 // Tabular Storage (structured data with schemas)
 import { InMemoryTabularRepository } from "@podley/storage";
-import { Type } from "@sinclair/typebox";
+import { JsonSchema } from "@podley/util";
 
-const userSchema = Type.Object({
-  id: Type.String(),
-  name: Type.String(),
-  email: Type.String(),
-  age: Type.Number(),
-});
+const userSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    name: { type: "string" },
+    email: { type: "string" },
+    age: { type: "number" },
+  },
+  required: ["id", "name", "email", "age"],
+  additionalProperties: false,
+} as const satisfies JsonSchema;
 
 const userRepo = new InMemoryTabularRepository(
   userSchema,
@@ -92,22 +97,27 @@ yarn add @podley/storage
 
 ### Type Safety
 
-All storage implementations are fully typed using TypeScript and TypeBox schemas for runtime validation:
+All storage implementations are fully typed using TypeScript and JSON Schema for runtime validation:
 
 ```typescript
-import { Type } from "@sinclair/typebox";
+import { JsonSchema, FromSchema } from "@podley/util";
 
 // Define your data structure
-const ProductSchema = Type.Object({
-  id: Type.String(),
-  name: Type.String(),
-  price: Type.Number(),
-  category: Type.String(),
-  inStock: Type.Boolean(),
-});
+const ProductSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    name: { type: "string" },
+    price: { type: "number" },
+    category: { type: "string" },
+    inStock: { type: "boolean" },
+  },
+  required: ["id", "name", "price", "category", "inStock"],
+  additionalProperties: false,
+} as const satisfies JsonSchema;
 
 // TypeScript automatically infers:
-// Entity = { id: string; name: string; price: number; category: string; inStock: boolean }
+// Entity = FromSchema<typeof ProductSchema>
 // PrimaryKey = { id: string }
 ```
 
@@ -220,18 +230,23 @@ Structured storage with schemas, primary keys, and indexing for complex data rel
 #### Schema Definition
 
 ```typescript
-import { Type } from "@sinclair/typebox";
+import { JsonSchema } from "@podley/util";
 import { InMemoryTabularRepository } from "@podley/storage";
 
 // Define your entity schema
-const UserSchema = Type.Object({
-  id: Type.String(),
-  email: Type.String(),
-  name: Type.String(),
-  age: Type.Number(),
-  department: Type.String(),
-  createdAt: Type.String(),
-});
+const UserSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    email: { type: "string" },
+    name: { type: "string" },
+    age: { type: "number" },
+    department: { type: "string" },
+    createdAt: { type: "string" },
+  },
+  required: ["id", "email", "name", "age", "department", "createdAt"],
+  additionalProperties: false,
+} as const satisfies JsonSchema;
 
 // Create repository with primary key and indexes
 const userRepo = new InMemoryTabularRepository(
@@ -503,13 +518,20 @@ const [entity] = await store.waitOn("put"); // Waits for next put operation
 ### Compound Primary Keys
 
 ```typescript
-const OrderLineSchema = Type.Object({
-  orderId: Type.String(),
-  lineNumber: Type.Number(),
-  productId: Type.String(),
-  quantity: Type.Number(),
-  price: Type.Number(),
-});
+import { JsonSchema } from "@podley/util";
+
+const OrderLineSchema = {
+  type: "object",
+  properties: {
+    orderId: { type: "string" },
+    lineNumber: { type: "number" },
+    productId: { type: "string" },
+    quantity: { type: "number" },
+    price: { type: "number" },
+  },
+  required: ["orderId", "lineNumber", "productId", "quantity", "price"],
+  additionalProperties: false,
+} as const satisfies JsonSchema;
 
 const orderLines = new InMemoryTabularRepository(
   OrderLineSchema,
@@ -532,14 +554,17 @@ const line = await orderLines.get({ orderId: "ORD-123", lineNumber: 1 });
 
 ```typescript
 import { FsFolderKvRepository } from "@podley/storage";
-import { Type } from "@sinclair/typebox";
+import { JsonSchema } from "@podley/util";
 
 // Control how keys map to file paths and value encoding via schemas
+const keySchema = { type: "string" } as const satisfies JsonSchema;
+const valueSchema = { type: "string" } as const satisfies JsonSchema;
+
 const files = new FsFolderKvRepository<string, string>(
   "./data/files",
   (key) => `${key}.txt`,
-  Type.String(),
-  Type.String()
+  keySchema,
+  valueSchema
 );
 
 await files.put("note-1", "Hello world");
@@ -630,20 +655,28 @@ interface IQueueStorage<Input, Output> {
 ### User Management System
 
 ```typescript
-import { Type } from "@sinclair/typebox";
+import { JsonSchema, FromSchema } from "@podley/util";
 import { InMemoryTabularRepository, InMemoryKvRepository } from "@podley/storage";
 
 // User profile with tabular storage
-const UserSchema = Type.Object({
-  id: Type.String(),
-  username: Type.String(),
-  email: Type.String(),
-  firstName: Type.String(),
-  lastName: Type.String(),
-  role: Type.Union([Type.Literal("admin"), Type.Literal("user"), Type.Literal("guest")]),
-  createdAt: Type.String(),
-  lastLoginAt: Type.Optional(Type.String()),
-});
+const UserSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    username: { type: "string" },
+    email: { type: "string" },
+    firstName: { type: "string" },
+    lastName: { type: "string" },
+    role: {
+      type: "string",
+      enum: ["admin", "user", "guest"],
+    },
+    createdAt: { type: "string" },
+    lastLoginAt: { type: "string" },
+  },
+  required: ["id", "username", "email", "firstName", "lastName", "role", "createdAt"],
+  additionalProperties: false,
+} as const satisfies JsonSchema;
 
 const userRepo = new InMemoryTabularRepository(UserSchema, ["id"], ["email", "username"]);
 
@@ -657,7 +690,7 @@ class UserManager {
     private sessionStore: typeof sessionStore
   ) {}
 
-  async createUser(userData: Omit<Static<typeof UserSchema>, "id" | "createdAt">) {
+  async createUser(userData: Omit<FromSchema<typeof UserSchema>, "id" | "createdAt">) {
     const user = {
       ...userData,
       id: crypto.randomUUID(),
@@ -753,7 +786,7 @@ class ConfigManager {
 
 ```typescript
 import { createClient } from "@supabase/supabase-js";
-import { Type } from "@sinclair/typebox";
+import { JsonSchema } from "@podley/util";
 import {
   SupabaseTabularRepository,
   SupabaseKvRepository,
@@ -764,28 +797,36 @@ import {
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
 
 // Define schemas
-const ProductSchema = Type.Object({
-  id: Type.String(),
-  name: Type.String(),
-  price: Type.Number(),
-  category: Type.String(),
-  stock: Type.Number({ minimum: 0 }),
-  createdAt: Type.String({ format: "date-time" }),
-});
+const ProductSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    name: { type: "string" },
+    price: { type: "number" },
+    category: { type: "string" },
+    stock: { type: "number", minimum: 0 },
+    createdAt: { type: "string", format: "date-time" },
+  },
+  required: ["id", "name", "price", "category", "stock", "createdAt"],
+  additionalProperties: false,
+} as const satisfies JsonSchema;
 
-const OrderSchema = Type.Object({
-  id: Type.String(),
-  customerId: Type.String(),
-  productId: Type.String(),
-  quantity: Type.Number({ minimum: 1 }),
-  status: Type.Union([
-    Type.Literal("pending"),
-    Type.Literal("processing"),
-    Type.Literal("completed"),
-    Type.Literal("cancelled"),
-  ]),
-  createdAt: Type.String({ format: "date-time" }),
-});
+const OrderSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    customerId: { type: "string" },
+    productId: { type: "string" },
+    quantity: { type: "number", minimum: 1 },
+    status: {
+      type: "string",
+      enum: ["pending", "processing", "completed", "cancelled"],
+    },
+    createdAt: { type: "string", format: "date-time" },
+  },
+  required: ["id", "customerId", "productId", "quantity", "status", "createdAt"],
+  additionalProperties: false,
+} as const satisfies JsonSchema;
 
 // Create repositories
 const products = new SupabaseTabularRepository(
