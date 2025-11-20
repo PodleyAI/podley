@@ -337,8 +337,9 @@ export class Task<
     try {
       const compiledSchema = this.getInputSchemaNode(this.type);
       const defaultData = compiledSchema.getData(undefined, {
-        addOptionalProps: false,
+        addOptionalProps: true,
         removeInvalidData: false,
+        useTypeDefaults: false,
       });
       return (defaultData || {}) as Partial<Input>;
     } catch (error) {
