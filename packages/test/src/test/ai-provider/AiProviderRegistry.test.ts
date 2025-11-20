@@ -60,15 +60,17 @@ describe("AiProviderRegistry", () => {
       const mockRunFn = mock(() => Promise.resolve({ success: true }));
       aiProviderRegistry.registerRunFn(TEST_PROVIDER, "text-generation", mockRunFn);
 
-      expect(aiProviderRegistry.runFnRegistry["text-generation"][TEST_PROVIDER]).toBe(mockRunFn);
+      expect(aiProviderRegistry.runFnRegistry.get("text-generation")?.get(TEST_PROVIDER)).toBe(
+        mockRunFn
+      );
     });
 
     test("should create task type object if it does not exist", () => {
       const mockRunFn = mock(() => Promise.resolve({ success: true }));
       aiProviderRegistry.registerRunFn(TEST_PROVIDER, "new-task", mockRunFn);
 
-      expect(aiProviderRegistry.runFnRegistry["new-task"]).toBeDefined();
-      expect(aiProviderRegistry.runFnRegistry["new-task"][TEST_PROVIDER]).toBe(mockRunFn);
+      expect(aiProviderRegistry.runFnRegistry.get("new-task")).toBeDefined();
+      expect(aiProviderRegistry.runFnRegistry.get("new-task")?.get(TEST_PROVIDER)).toBe(mockRunFn);
     });
   });
 

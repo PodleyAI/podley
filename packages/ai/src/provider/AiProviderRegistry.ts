@@ -27,7 +27,7 @@ export type AiProviderRunFn<
  * for different model providers and task types.
  */
 export class AiProviderRegistry {
-  runFnRegistry: Record<string, Record<string, AiProviderRunFn<any, any>>> = {};
+  runFnRegistry: Map<string, Map<string, AiProviderRunFn<any, any>>> = new Map();
 
   /**
    * Registers a task execution function for a specific task type and model provider
@@ -40,8 +40,10 @@ export class AiProviderRegistry {
     taskType: string,
     runFn: AiProviderRunFn<Input, Output>
   ) {
-    if (!this.runFnRegistry[taskType]) this.runFnRegistry[taskType] = {};
-    this.runFnRegistry[taskType][modelProvider] = runFn;
+    if (!this.runFnRegistry.has(taskType)) {
+      this.runFnRegistry.set(taskType, new Map());
+    }
+    this.runFnRegistry.get(taskType)!.set(modelProvider, runFn);
   }
 
   registerAsWorkerRunFn<
@@ -77,7 +79,8 @@ export class AiProviderRegistry {
     modelProvider: string,
     taskType: string
   ) {
-    const runFn = this.runFnRegistry[taskType]?.[modelProvider] as AiProviderRunFn<Input, Output>;
+    const taskTypeMap = this.runFnRegistry.get(taskType);
+    const runFn = taskTypeMap?.get(modelProvider) as AiProviderRunFn<Input, Output> | undefined;
     if (!runFn) {
       throw new Error(
         `No run function found for task type ${taskType} and model provider ${modelProvider}`
