@@ -1,7 +1,7 @@
 {
   "name": "@podley/job-queue",
   "type": "module",
-  "version": "0.0.39",
+  "version": "0.0.40",
   "description": "Job queue management for Podley, handling task scheduling, execution, and distributed processing.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",

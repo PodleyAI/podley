@@ -133,7 +133,7 @@ console.log(second); // { result: 60 }
 
 Tasks are the fundamental units of work. Each task:
 
-- Defines input/output schemas using JSON Schema (from `@podley/util`)
+- Defines input/output schemas using JSON Schema (from `@podley/util`), TypeBox, or Zod
 - Implements `execute()` for main logic or `executeReactive()` for UI updates
 - Has a unique type identifier and category
 - Can be cached based on inputs
@@ -172,9 +172,13 @@ Workflow is the high-level API that provides:
 
 ### Basic Task Structure
 
+You can define schemas using plain JSON Schema, TypeBox, or Zod. Here are examples of each approach:
+
+#### Using Plain JSON Schema
+
 ```typescript
 import { Task, IExecuteContext } from "@podley/task-graph";
-import { DataPortSchema FromSchema } from "@podley/util";
+import { DataPortSchema, FromSchema } from "@podley/util";
 
 const MyInputSchema = {
   type: "object",
@@ -201,64 +205,47 @@ type MyInput = FromSchema<typeof MyInputSchema>;
 // };
 
 const MyOutputSchema = {
-      type: "object",
-      properties: {
-        processed: {
-          type: "string",
-          description: "Processed text",
-        },
-        length: {
-          type: "number",
-          description: "Text length",
-        },
-      },
-      required: ["processed", "length"],
-      additionalProperties: false,
-    } as const satisfies DataPortSchema;
+  type: "object",
+  properties: {
+    processed: {
+      type: "string",
+      description: "Processed text",
+    },
+    length: {
+      type: "number",
+      description: "Text length",
+    },
+  },
+  required: ["processed", "length"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
 
 type MyOutput = FromSchema<typeof MyOutputSchema>;
-// Equivalent to:
-// type MyOutput = {
-//   processed: string;
-//   length: number;
-// };
 
 class TextProcessorTask extends Task<MyInput, MyOutput> {
-  // Required: Unique type identifier
   static readonly type = "TextProcessorTask";
-
-  // Optional: Information for a UI
   static readonly title = "Text Processor";
   static readonly description = "Processes text";
   static readonly category = "Text Processing";
-
-  // Whether outputs can be cached (default: true)
   static readonly cacheable = true;
 
-  // Required: Input schema definition
   static inputSchema() {
     return MyInputSchema;
   }
 
-  // Required: Output schema definition
   static outputSchema() {
     return MyOutputSchema;
   }
 
-  // Main execution logic
   async execute(input: MyInput, context: IExecuteContext): Promise<MyOutput> {
     const { text, multiplier = 1 } = input;
     const { signal, updateProgress } = context;
 
-    // Check for cancellation
     if (signal?.aborted) {
       throw new TaskAbortedError("Task was cancelled");
     }
 
-    // Report progress
     await updateProgress(0.5, "Processing text...");
-
-    // Simulate work
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     const processed = text.repeat(multiplier);
@@ -270,6 +257,167 @@ class TextProcessorTask extends Task<MyInput, MyOutput> {
   }
 }
 ```
+
+#### Using TypeBox
+
+TypeBox schemas are JSON Schema compatible and can be used directly:
+
+```typescript
+import { Task, IExecuteContext } from "@podley/task-graph";
+import { Type } from "@sinclair/typebox";
+import { DataPortSchema, FromSchema } from "@podley/util";
+
+const MyInputSchema = Type.Object({
+  text: Type.String({ description: "Text to process" }),
+  multiplier: Type.Optional(Type.Number({ description: "Repeat multiplier", default: 1 })),
+}) satisfies DataPortSchema;
+
+type MyInput = FromSchema<typeof MyInputSchema>;
+
+const MyOutputSchema = Type.Object({
+  processed: Type.String({ description: "Processed text" }),
+  length: Type.Number({ description: "Text length" }),
+}) satisfies DataPortSchema;
+
+type MyOutput = FromSchema<typeof MyOutputSchema>;
+
+class TextProcessorTask extends Task<MyInput, MyOutput> {
+  static readonly type = "TextProcessorTask";
+  static readonly title = "Text Processor";
+  static readonly description = "Processes text";
+  static readonly category = "Text Processing";
+  static readonly cacheable = true;
+
+  static inputSchema() {
+    return MyInputSchema;
+  }
+
+  static outputSchema() {
+    return MyOutputSchema;
+  }
+
+  async execute(input: MyInput, context: IExecuteContext): Promise<MyOutput> {
+    const { text, multiplier = 1 } = input;
+    const { signal, updateProgress } = context;
+
+    if (signal?.aborted) {
+      throw new TaskAbortedError("Task was cancelled");
+    }
+
+    await updateProgress(0.5, "Processing text...");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const processed = text.repeat(multiplier);
+
+    return {
+      processed,
+      length: processed.length,
+    };
+  }
+
+  // Override validation to use TypeBox's native validation -- only if you needed as the default will work in most cases.
+  async validateInput(input: Partial<MyInput>): Promise<boolean> {
+    // Use TypeBox's Value.Check for validation
+    if (!Value.Check(MyInputSchema, input)) {
+      const errors = [...Value.Errors(MyInputSchema, input)];
+      const errorMessages = errors.map((error) => {
+        const path = error.path || "";
+        return `${error.message}${path ? ` (${path})` : ""}`;
+      });
+      throw new TaskInvalidInputError(
+        `Input ${JSON.stringify(input)} does not match schema: ${errorMessages.join(", ")}`
+      );
+    }
+    return true;
+  }
+}
+```
+
+#### Using Zod
+
+Zod 4 has built-in JSON Schema support using the `.toJSONSchema()` method:
+
+```typescript
+import { Task, IExecuteContext } from "@podley/task-graph";
+import { z } from "zod";
+import { DataPortSchema } from "@podley/util";
+
+const MyInputSchemaZod = z.object({
+  text: z.string().describe("Text to process"),
+  multiplier: z.number().default(1).optional().describe("Repeat multiplier"),
+});
+
+const MyInputSchema = MyInputSchemaZod.toJSONSchema() as DataPortSchema;
+
+// Infer TypeScript types using Zod's built-in type inference
+type MyInput = z.infer<typeof MyInputSchemaZod>;
+
+const MyOutputSchemaZod = z.object({
+  processed: z.string().describe("Processed text"),
+  length: z.number().describe("Text length"),
+});
+
+const MyOutputSchema = MyOutputSchemaZod.toJSONSchema() as DataPortSchema;
+
+type MyOutput = z.infer<typeof MyOutputSchemaZod>;
+
+class TextProcessorTask extends Task<MyInput, MyOutput> {
+  static readonly type = "TextProcessorTask";
+  static readonly title = "Text Processor";
+  static readonly description = "Processes text";
+  static readonly category = "Text Processing";
+  static readonly cacheable = true;
+
+  static inputSchema() {
+    return MyInputSchema;
+  }
+
+  static outputSchema() {
+    return MyOutputSchema;
+  }
+
+  async execute(input: MyInput, context: IExecuteContext): Promise<MyOutput> {
+    const { text, multiplier = 1 } = input;
+    const { signal, updateProgress } = context;
+
+    if (signal?.aborted) {
+      throw new TaskAbortedError("Task was cancelled");
+    }
+
+    await updateProgress(0.5, "Processing text...");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const processed = text.repeat(multiplier);
+
+    return {
+      processed,
+      length: processed.length,
+    };
+  }
+
+  // Override validation to use Zod's native validation -- only if you needed as the default will work in most cases.
+  async validateInput(input: Partial<MyInput>): Promise<boolean> {
+    try {
+      // Use Zod's .parse() for validation (throws on error)
+      MyInputSchemaZod.parse(input);
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errorMessages = error.errors.map((err) => {
+          const path = err.path.join(".");
+          return `${err.message}${path ? ` (${path})` : ""}`;
+        });
+        throw new TaskInvalidInputError(
+          `Input ${JSON.stringify(input)} does not match schema: ${errorMessages.join(", ")}`
+        );
+      }
+      throw error;
+    }
+  }
+}
+```
+
+**Note:** When using native validation, you still need to return a JSON Schema from `inputSchema()` and `outputSchema()` for compatibility with the task graph system. The native validation only affects runtime validation, not schema compatibility checking.
 
 ### Task with Progress and Error Handling
 

@@ -1,5 +1,11 @@
 # @podley/sqlite
 
+## 0.0.40
+
+### Patch Changes
+
+- All packages use native json schema tooling from the util package
+
 ## 0.0.39
 
 ### Patch Changes

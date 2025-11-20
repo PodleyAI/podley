@@ -1,5 +1,16 @@
 # @podley/tasks
 
+## 0.0.40
+
+### Patch Changes
+
+- All packages use native json schema tooling from the util package
+- Updated dependencies
+  - @podley/task-graph@0.0.40
+  - @podley/util@0.0.40
+  - @podley/job-queue@0.0.40
+  - @podley/storage@0.0.40
+
 ## 0.0.39
 
 ### Patch Changes

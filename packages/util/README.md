@@ -156,6 +156,10 @@ await pool.terminate();
 
 ### JSON Schema Utilities
 
+You can define JSON schemas using plain JSON Schema objects, or use schema libraries like TypeBox or Zod to create them.
+
+#### Using Plain JSON Schema
+
 ```typescript
 import { JsonSchema, FromSchema, DataPortSchema, compileSchema } from "@podley/util";
 
@@ -182,6 +186,47 @@ const isValid = validator.validate({
   email: "user@example.com",
   age: 25,
 });
+```
+
+#### Using TypeBox
+
+TypeBox schemas are JSON Schema compatible and can be used directly:
+
+```typescript
+import { Type, Static } from "@sinclair/typebox";
+
+// Define a schema using TypeBox
+const userSchema = Type.Object({
+  id: Type.String({ format: "uuid" }),
+  email: Type.String({ format: "email" }),
+  age: Type.Optional(Type.Number({ minimum: 0, maximum: 150 })),
+}) satisfies DataPortSchema;
+
+// Infer TypeScript types from schema
+type User = Static<typeof userSchema>;
+// => { id: string; email: string; age?: number }
+```
+
+#### Using Zod
+
+Zod 4 has built-in JSON Schema support using the `.toJSONSchema()` method:
+
+```typescript
+import { z } from "zod";
+
+// Define a schema using Zod
+const userSchemaZod = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  age: z.number().min(0).max(150).optional(),
+});
+
+// Convert Zod schema to JSON Schema using built-in method
+const userSchema = userSchemaZod.toJSONSchema() as DataPortSchema;
+
+// Infer TypeScript types from schema using Zod's built-in type inference
+type User = z.infer<typeof userSchemaZod>;
+// => { id: string; email: string; age?: number }
 ```
 
 ## Utility Categories

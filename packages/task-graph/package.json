@@ -1,7 +1,7 @@
 {
   "name": "@podley/task-graph",
   "type": "module",
-  "version": "0.0.39",
+  "version": "0.0.40",
   "description": "Task graph management for Podley, providing DAG construction, execution planning, and workflow orchestration.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",

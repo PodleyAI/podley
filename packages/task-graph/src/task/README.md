@@ -114,7 +114,9 @@ task.on("regenerate", () => console.log("Task regenerated"));
 
 ## Input/Output Schemas
 
-The input and output schemas are JSON schemas that are used to validate the input and output of the task. These are defined using plain JSON Schema objects and types from `@podley/util`.
+The input and output schemas are JSON schemas that are used to validate the input and output of the task. These can be defined using plain JSON Schema objects, TypeBox, or Zod. All schemas must be compatible with `DataPortSchema` from `@podley/util`.
+
+### Using Plain JSON Schema
 
 ```typescript
 import { DataPortSchema } from "@podley/util";
@@ -147,6 +149,64 @@ static outputSchema = () => {
     required: ["result"],
     additionalProperties: false,
   } as const satisfies DataPortSchema;
+};
+```
+
+### Using TypeBox
+
+TypeBox schemas are JSON Schema compatible and can be used directly:
+
+```typescript
+import { Type } from "@sinclair/typebox";
+import { DataPortSchema } from "@podley/util";
+
+static inputSchema = () => {
+  return Type.Object({
+    username: Type.String({
+      title: "User Name",
+      description: "The name of the user",
+      default: "guest",
+    }),
+  }) satisfies DataPortSchema;
+};
+
+static outputSchema = () => {
+  return Type.Object({
+    result: Type.Number({
+      title: "Processing Result",
+      description: "The result of the processing",
+    }),
+  }) satisfies DataPortSchema;
+};
+```
+
+### Using Zod
+
+Zod 4 has built-in JSON Schema support using the `.toJSONSchema()` method:
+
+```typescript
+import { z } from "zod";
+import { DataPortSchema } from "@podley/util";
+
+// Define Zod schemas
+const inputSchemaZod = z.object({
+  username: z.string().default("guest").describe("The name of the user"),
+});
+
+const outputSchemaZod = z.object({
+  result: z.number().describe("The result of the processing"),
+});
+
+// Infer TypeScript types using Zod's built-in type inference
+type MyInput = z.infer<typeof inputSchemaZod>;
+type MyOutput = z.infer<typeof outputSchemaZod>;
+
+static inputSchema = () => {
+  return inputSchemaZod.toJSONSchema() as DataPortSchema;
+};
+
+static outputSchema = () => {
+  return outputSchemaZod.toJSONSchema() as DataPortSchema;
 };
 ```
 
