@@ -1,5 +1,16 @@
 # @podley/ai
 
+## 0.0.42
+
+### Patch Changes
+
+- Change order of generics for ITabularRepository et al
+- Updated dependencies
+  - @podley/job-queue@0.0.42
+  - @podley/storage@0.0.42
+  - @podley/task-graph@0.0.42
+  - @podley/util@0.0.42
+
 ## 0.0.41
 
 ### Patch Changes

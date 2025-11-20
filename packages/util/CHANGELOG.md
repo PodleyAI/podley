@@ -1,5 +1,11 @@
 # @podley/util
 
+## 0.0.42
+
+### Patch Changes
+
+- Change order of generics for ITabularRepository et al
+
 ## 0.0.41
 
 ### Patch Changes
