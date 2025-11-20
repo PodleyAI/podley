@@ -14,6 +14,8 @@ import {
   TypeReplicateArray,
 } from "./base/AiTaskSchemas";
 
+const modelSchema = TypeReplicateArray(TypeModel("model:TextEmbeddingTask"));
+
 export const TextEmbeddingInputSchema = {
   type: "object",
   properties: {
@@ -22,7 +24,7 @@ export const TextEmbeddingInputSchema = {
       title: "Text",
       description: "The text to embed",
     }),
-    model: TypeReplicateArray(TypeModel("model:TextEmbeddingTask")),
+    model: modelSchema,
   },
   required: ["text", "model"],
   additionalProperties: false,

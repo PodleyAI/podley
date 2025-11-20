@@ -9,6 +9,8 @@ import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
 import { TypeLanguage, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
+const modelSchema = TypeReplicateArray(TypeModel("model:TextTranslationTask"));
+
 const translationTextSchema = {
   type: "string",
   title: "Text",
@@ -35,7 +37,7 @@ export const TextTranslationInputSchema = {
         description: "The target language",
       })
     ),
-    model: TypeReplicateArray(TypeModel("model:TextTranslationTask")),
+    model: modelSchema,
   },
   required: ["text", "source_lang", "target_lang", "model"],
   additionalProperties: false,

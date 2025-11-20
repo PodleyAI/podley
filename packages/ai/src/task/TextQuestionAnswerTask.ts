@@ -27,12 +27,14 @@ const textSchema = {
   description: "The generated text",
 } as const;
 
+const modelSchema = TypeReplicateArray(TypeModel("model:TextQuestionAnswerTask"));
+
 export const TextQuestionAnswerInputSchema = {
   type: "object",
   properties: {
     context: TypeReplicateArray(contextSchema),
     question: TypeReplicateArray(questionSchema),
-    model: TypeReplicateArray(TypeModel("model:TextQuestionAnswerTask")),
+    model: modelSchema,
   },
   required: ["context", "question", "model"],
   additionalProperties: false,

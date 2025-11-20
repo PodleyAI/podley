@@ -191,10 +191,10 @@ export type TTypeModel = DataPortSchemaNonBoolean & {
   readonly "x-semantic": TypeModelSemantic;
 };
 
-export function TypeModel(
-  semantic: TypeModelSemantic = "model",
-  options: Record<string, unknown> = {}
-) {
+export function TypeModel<
+  S extends TypeModelSemantic = "model",
+  O extends Record<string, unknown> = {},
+>(semantic: S = "model" as S, options: O = {} as O) {
   if (semantic !== "model" && !semantic.startsWith("model:")) {
     throw new Error("Invalid semantic value");
   }
@@ -211,7 +211,7 @@ export function TypeModel(
     ...options,
     "x-semantic": semantic,
     type: "string",
-  } as TTypeModel;
+  } as const;
 }
 
 export const TypeReplicateArray = <T extends DataPortSchemaNonBoolean>(

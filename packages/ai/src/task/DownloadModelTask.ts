@@ -7,14 +7,14 @@
 import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
 import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
+import { DeReplicateFromSchema, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
-const modelSchema = TypeModel("model");
+const modelSchema = TypeReplicateArray(TypeModel("model"));
 
 const DownloadModelInputSchema = {
   type: "object",
   properties: {
-    model: TypeReplicateArray(modelSchema),
+    model: modelSchema,
   },
   required: ["model"],
   additionalProperties: false,
@@ -23,12 +23,7 @@ const DownloadModelInputSchema = {
 const DownloadModelOutputSchema = {
   type: "object",
   properties: {
-    model: {
-      oneOf: [modelSchema, { type: "array", items: modelSchema }],
-      title: modelSchema.title,
-      description: modelSchema.description,
-      "x-semantic": modelSchema["x-semantic"],
-    },
+    model: modelSchema,
   },
   required: ["model"],
   additionalProperties: false,
@@ -36,12 +31,10 @@ const DownloadModelOutputSchema = {
 
 export type DownloadModelTaskRunInput = FromSchema<typeof DownloadModelInputSchema>;
 export type DownloadModelTaskRunOutput = FromSchema<typeof DownloadModelOutputSchema>;
-export type DownloadModelTaskExecuteInput = {
-  model: string;
-};
-export type DownloadModelTaskExecuteOutput = {
-  model: string;
-};
+export type DownloadModelTaskExecuteInput = DeReplicateFromSchema<typeof DownloadModelInputSchema>;
+export type DownloadModelTaskExecuteOutput = DeReplicateFromSchema<
+  typeof DownloadModelOutputSchema
+>;
 
 /**
  * Download a model from a remote source and cache it locally.

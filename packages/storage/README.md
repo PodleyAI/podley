@@ -70,7 +70,7 @@ const userSchema = {
   additionalProperties: false,
 } as const satisfies JsonSchema;
 
-const userRepo = new InMemoryTabularRepository(
+const userRepo = new InMemoryTabularRepository<typeof userSchema, ["id"]>(
   userSchema,
   ["id"], // primary key
   ["email"] // additional indexes
@@ -249,7 +249,7 @@ const UserSchema = {
 } as const satisfies JsonSchema;
 
 // Create repository with primary key and indexes
-const userRepo = new InMemoryTabularRepository(
+const userRepo = new InMemoryTabularRepository<typeof UserSchema, ["id"]>(
   UserSchema,
   ["id"], // Primary key (can be compound: ["dept", "id"])
   ["email", "department", ["department", "age"]] // Indexes for fast lookups
@@ -338,7 +338,7 @@ await userRepo.deleteSearch("age", 65, ">="); // Delete users 65 and older
 // SQLite (Node.js/Bun)
 import { SqliteTabularRepository } from "@podley/storage";
 
-const sqliteUsers = new SqliteTabularRepository(
+const sqliteUsers = new SqliteTabularRepository<typeof UserSchema, ["id"]>(
   "./users.db",
   "users",
   UserSchema,
@@ -351,14 +351,20 @@ import { PostgresTabularRepository } from "@podley/storage";
 import { Pool } from "pg";
 
 const pool = new Pool({ connectionString: "postgresql://..." });
-const pgUsers = new PostgresTabularRepository(pool, "users", UserSchema, ["id"], ["email"]);
+const pgUsers = new PostgresTabularRepository<typeof UserSchema, ["id"]>(
+  pool,
+  "users",
+  UserSchema,
+  ["id"],
+  ["email"]
+);
 
 // Supabase (Node.js/Bun)
 import { SupabaseTabularRepository } from "@podley/storage";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient("https://your-project.supabase.co", "your-anon-key");
-const supabaseUsers = new SupabaseTabularRepository(
+const supabaseUsers = new SupabaseTabularRepository<typeof UserSchema, ["id"]>(
   supabase,
   "users",
   UserSchema,
@@ -368,11 +374,21 @@ const supabaseUsers = new SupabaseTabularRepository(
 
 // IndexedDB (Browser)
 import { IndexedDbTabularRepository } from "@podley/storage";
-const browserUsers = new IndexedDbTabularRepository("users", UserSchema, ["id"], ["email"]);
+const browserUsers = new IndexedDbTabularRepository<typeof UserSchema, ["id"]>(
+  "users",
+  UserSchema,
+  ["id"],
+  ["email"]
+);
 
 // File-based (Node.js/Bun)
 import { FsFolderTabularRepository } from "@podley/storage";
-const fileUsers = new FsFolderTabularRepository("./data/users", UserSchema, ["id"], ["email"]);
+const fileUsers = new FsFolderTabularRepository<typeof UserSchema, ["id"]>(
+  "./data/users",
+  UserSchema,
+  ["id"],
+  ["email"]
+);
 ```
 
 ### Queue Storage
@@ -533,7 +549,7 @@ const OrderLineSchema = {
   additionalProperties: false,
 } as const satisfies JsonSchema;
 
-const orderLines = new InMemoryTabularRepository(
+const orderLines = new InMemoryTabularRepository<typeof OrderLineSchema, ["orderId", "lineNumber"]>(
   OrderLineSchema,
   ["orderId", "lineNumber"], // Compound primary key
   ["productId"] // Additional index
@@ -601,7 +617,7 @@ interface IKvRepository<Key, Value> {
 Core interface for tabular storage:
 
 ```typescript
-interface ITabularRepository<Schema, PrimaryKeyNames> {
+interface ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   // Core operations
   put(entity: Entity): Promise<void>;
   putBulk(entities: Entity[]): Promise<void>;
@@ -678,7 +694,11 @@ const UserSchema = {
   additionalProperties: false,
 } as const satisfies JsonSchema;
 
-const userRepo = new InMemoryTabularRepository(UserSchema, ["id"], ["email", "username"]);
+const userRepo = new InMemoryTabularRepository<typeof UserSchema, ["id"]>(
+  UserSchema,
+  ["id"],
+  ["email", "username"]
+);
 
 // User sessions with KV storage
 const sessionStore = new InMemoryKvRepository<string, { userId: string; expiresAt: string }>();
@@ -829,7 +849,7 @@ const OrderSchema = {
 } as const satisfies JsonSchema;
 
 // Create repositories
-const products = new SupabaseTabularRepository(
+const products = new SupabaseTabularRepository<typeof ProductSchema, ["id"]>(
   supabase,
   "products",
   ProductSchema,
@@ -837,7 +857,7 @@ const products = new SupabaseTabularRepository(
   ["category", "name"] // Indexed columns for fast searching
 );
 
-const orders = new SupabaseTabularRepository(
+const orders = new SupabaseTabularRepository<typeof OrderSchema, ["id"]>(
   supabase,
   "orders",
   OrderSchema,
@@ -938,7 +958,11 @@ describe("UserRepository", () => {
   let userRepo: InMemoryTabularRepository<typeof UserSchema, ["id"]>;
 
   beforeEach(() => {
-    userRepo = new InMemoryTabularRepository(UserSchema, ["id"], ["email"]);
+    userRepo = new InMemoryTabularRepository<typeof UserSchema, ["id"]>(
+      UserSchema,
+      ["id"],
+      ["email"]
+    );
   });
 
   test("should create and retrieve user", async () => {

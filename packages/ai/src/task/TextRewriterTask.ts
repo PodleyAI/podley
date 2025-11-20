@@ -9,6 +9,8 @@ import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
 import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
+const modelSchema = TypeReplicateArray(TypeModel("model:TextRewriterTask"));
+
 export const TextRewriterInputSchema = {
   type: "object",
   properties: {
@@ -22,7 +24,7 @@ export const TextRewriterInputSchema = {
       title: "Prompt",
       description: "The prompt to direct the rewriting",
     }),
-    model: TypeReplicateArray(TypeModel("model:TextRewriterTask")),
+    model: modelSchema,
   },
   required: ["text", "prompt", "model"],
   additionalProperties: false,

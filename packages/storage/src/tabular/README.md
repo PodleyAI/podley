@@ -54,8 +54,8 @@ const schema = {
 } as const;
 
 const primaryKeys = ["id"] as const;
-
-// Create repository instance
+// Create repository instance (when using const schemas, the next three generics
+// on InMemoryTabularRepository are automatically created for you)
 const repo = new InMemoryTabularRepository<typeof schema, typeof primaryKeys>(schema, primaryKeys);
 
 // Basic operations
@@ -94,12 +94,9 @@ type User = FromSchema<typeof userSchema>;
 
 const primaryKeys = ["id"] as const;
 
-// Define computed types for the repository generics
-type UserPrimaryKey = FromSchema<IncludeProps<typeof userSchema, typeof primaryKeys>>;
 type UserEntity = FromSchema<typeof userSchema>;
-type UserValue = FromSchema<ExcludeProps<typeof userSchema, typeof primaryKeys>>;
 
-// IMPORTANT: You must explicitly provide generic type parameters
+// IMPORTANT: You must explicitly provide generic type parameters for t
 // TypeScript cannot infer them from TypeBox schemas
 const repo = new InMemoryTabularRepository<typeof userSchema, typeof primaryKeys, UserEntity>(
   userSchema,
@@ -169,7 +166,13 @@ await repo.put({
 - Fast search capabilities
 
 ```typescript
-const repo = new InMemoryTabularRepository(schema, primaryKeys, ["name", "active"]);
+const repo = new InMemoryTabularRepository<
+  typeof schema,
+  typeof primaryKeys,
+  Entity, // required if using TypeBox, Zod, etc, otherwise automatically created
+  PrimaryKeyEntity, // should be automatically created
+  ValueEntity // should be automatically created
+>(schema, primaryKeys, ["name", "active"]);
 ```
 
 ### SqliteTabularRepository
@@ -178,7 +181,13 @@ const repo = new InMemoryTabularRepository(schema, primaryKeys, ["name", "active
 - File-based or in-memory
 
 ```typescript
-const repo = new SqliteTabularRepository(
+const repo = new SqliteTabularRepository<
+  typeof schema,
+  typeof primaryKeys,
+  Entity, // required if using TypeBox, Zod, etc, otherwise automatically created
+  PrimaryKeyEntity, // should be automatically created
+  ValueEntity // should be automatically created
+>(
   ":memory:", // Database path
   "users", // Table name
   schema,
@@ -198,7 +207,13 @@ import { Pool } from "pg";
 const pool = new Pool({
   /* config */
 });
-const repo = new PostgresTabularRepository(
+const repo = new PostgresTabularRepository<
+  typeof schema,
+  typeof primaryKeys,
+  Entity, // required if using TypeBox, Zod, etc, otherwise automatically created
+  PrimaryKeyEntity, // should be automatically created
+  ValueEntity // should be automatically created
+>(
   pool, // postgres connection pool
   "users",
   schema,
@@ -213,7 +228,13 @@ const repo = new PostgresTabularRepository(
 - Automatic schema migration
 
 ```typescript
-const repo = new IndexedDbTabularRepository(
+const repo = new IndexedDbTabularRepository<
+  typeof schema,
+  typeof primaryKeys,
+  Entity, // required if using TypeBox, Zod, etc, otherwise automatically created
+  PrimaryKeyEntity, // should be automatically created
+  ValueEntity // should be automatically created
+>(
   "user_db", // Database name
   schema,
   primaryKeys,
@@ -227,7 +248,13 @@ const repo = new IndexedDbTabularRepository(
 - Simple persistence format
 
 ```typescript
-const repo = new FsFolderTabularRepository("./data/users", schema, primaryKeys);
+const repo = new FsFolderTabularRepository<
+  typeof schema,
+  typeof primaryKeys,
+  Entity, // required if using TypeBox, Zod, etc, otherwise automatically created
+  PrimaryKeyEntity, // should be automatically created
+  ValueEntity // should be automatically created
+>("./data/users", schema, primaryKeys);
 ```
 
 ## Events

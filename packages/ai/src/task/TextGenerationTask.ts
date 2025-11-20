@@ -15,10 +15,12 @@ const generatedTextSchema = {
   description: "The generated text",
 } as const;
 
+const modelSchema = TypeReplicateArray(TypeModel("model:TextGenerationTask"));
+
 export const TextGenerationInputSchema = {
   type: "object",
   properties: {
-    model: TypeReplicateArray(TypeModel("model:TextGenerationTask")),
+    model: modelSchema,
     prompt: TypeReplicateArray({
       type: "string",
       title: "Prompt",

@@ -9,6 +9,8 @@ import { DataPortSchema, FromSchema } from "@podley/util";
 import { AiTask } from "./base/AiTask";
 import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
+const modelSchema = TypeReplicateArray(TypeModel("model:TextSummaryTask"));
+
 export const TextSummaryInputSchema = {
   type: "object",
   properties: {
@@ -17,7 +19,7 @@ export const TextSummaryInputSchema = {
       title: "Text",
       description: "The text to summarize",
     }),
-    model: TypeReplicateArray(TypeModel("model:TextSummaryTask")),
+    model: modelSchema,
   },
   required: ["text", "model"],
   additionalProperties: false,
