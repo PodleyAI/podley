@@ -1,5 +1,16 @@
 # @podley/ai
 
+## 0.0.43
+
+### Patch Changes
+
+- Update license and ensure build of examples includes types
+- Updated dependencies
+  - @podley/task-graph@0.0.43
+  - @podley/job-queue@0.0.43
+  - @podley/storage@0.0.43
+  - @podley/util@0.0.43
+
 ## 0.0.42
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @podley/sqlite
 
+## 0.0.43
+
+### Patch Changes
+
+- Update license and ensure build of examples includes types
+
 ## 0.0.42
 
 ### Patch Changes

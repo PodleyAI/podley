@@ -35,7 +35,7 @@
     "caniuse-lite": "^1.0.30001755"
   },
   "catalog": {
-    "@sroussey/transformers": "3.7.4",
+    "@sroussey/transformers": "3.8.0",
     "@mediapipe/tasks-text": "^0.10.21"
   },
   "devDependencies": {

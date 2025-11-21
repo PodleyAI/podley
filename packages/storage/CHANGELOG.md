@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.43
+
+### Patch Changes
+
+- Update license and ensure build of examples includes types
+- Updated dependencies
+  - @podley/sqlite@0.0.43
+  - @podley/util@0.0.43
+
 ## 0.0.42
 
 ### Patch Changes

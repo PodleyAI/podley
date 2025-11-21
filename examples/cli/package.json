@@ -1,14 +1,14 @@
 {
   "name": "@podley/cli",
   "type": "module",
-  "version": "0.0.42",
+  "version": "0.0.43",
   "description": "Command-line interface example for Podley, demonstrating how to build and run AI task pipelines from the terminal.",
   "scripts": {
     "dev": "concurrently -c 'auto' -n 'cli:' 'bun:dev-*'",
     "dev-js": "bun build --watch --target=node --sourcemap=external --packages=external --outdir ./dist ./src/podley.ts",
     "dev-lib": "bun build --watch --target=node --sourcemap=external --packages=external --outdir ./dist ./src/lib.ts",
     "dev-types": "tsc --watch --preserveWatchOutput",
-    "build-example": "bun run build-clean && concurrently -c 'auto' -n 'js,js-worker,js-worker-hft,lib' 'bun run build-js' 'bun run build-js-worker' 'bun run build-js-worker-hft' 'bun run build-lib'",
+    "build-example": "bun run build-clean && concurrently -c 'auto' -n 'js,js-worker,js-worker-hft,lib, types' 'bun run build-js' 'bun run build-js-worker' 'bun run build-js-worker-hft' 'bun run build-lib' 'bun run build-types'",
     "build-clean": "rm -fr dist/* tsconfig.tsbuildinfo",
     "build-js": "bun build --target=bun --packages=external --outdir ./dist ./src/podley.ts",
     "build-js-worker": "bun build --target=node --outdir ./dist ./src/podley_worker.ts",
