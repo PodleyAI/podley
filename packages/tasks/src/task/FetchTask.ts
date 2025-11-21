@@ -64,6 +64,7 @@ const inputSchema = {
       oneOf: [{ type: "boolean" }, { type: "string" }],
       description: "Queue handling: false=run inline, true=use default, string=explicit queue name",
       default: true,
+      "x-ui-hidden": true,
     },
   },
   required: ["url"],

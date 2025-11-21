@@ -32,7 +32,7 @@ export const TextGenerationInputSchema = {
       description: "The maximum number of tokens to generate",
       minimum: 1,
       maximum: 4096,
-      "x-group": "Configuration",
+      "x-ui-group": "Configuration",
     },
     temperature: {
       type: "number",
@@ -40,7 +40,7 @@ export const TextGenerationInputSchema = {
       description: "The temperature to use for sampling",
       minimum: 0,
       maximum: 2,
-      "x-group": "Configuration",
+      "x-ui-group": "Configuration",
     },
     topP: {
       type: "number",
@@ -48,7 +48,7 @@ export const TextGenerationInputSchema = {
       description: "The top-p value to use for sampling",
       minimum: 0,
       maximum: 1,
-      "x-group": "Configuration",
+      "x-ui-group": "Configuration",
     },
     frequencyPenalty: {
       type: "number",
@@ -56,7 +56,7 @@ export const TextGenerationInputSchema = {
       description: "The frequency penalty to use",
       minimum: -2,
       maximum: 2,
-      "x-group": "Configuration",
+      "x-ui-group": "Configuration",
     },
     presencePenalty: {
       type: "number",
@@ -64,7 +64,7 @@ export const TextGenerationInputSchema = {
       description: "The presence penalty to use",
       minimum: -2,
       maximum: 2,
-      "x-group": "Configuration",
+      "x-ui-group": "Configuration",
     },
   },
   required: ["model", "prompt"],

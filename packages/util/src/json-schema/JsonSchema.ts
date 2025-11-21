@@ -8,8 +8,10 @@ import type { ExtendedJSONSchema } from "json-schema-to-ts";
 
 export type JsonSchemaCustomProps = {
   "x-semantic"?: string;
-  "x-group"?: string;
   "x-replicate"?: boolean;
+  "x-ui-group"?: string;
+  "x-ui-hidden"?: boolean;
+  [key: `x-ui-${string}`]: unknown;
 };
 
 export type JsonSchema = ExtendedJSONSchema<JsonSchemaCustomProps>;
