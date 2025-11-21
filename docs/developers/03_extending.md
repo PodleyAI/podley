@@ -30,19 +30,20 @@ We ran too far ahead to the main `run()` method. We need to define the inputs an
 
 ### Define Inputs and Outputs
 
-The first thing we need to do is define the inputs and outputs for the Task. This is done by defining the `inputSchema` and `outputSchema` static methods on the class using json schemas. Each property should include an `id` (object key), and a schema describing its type and metadata. Common types include `any`, `boolean`, `number`, `string` (text), `function`, `model`, `vector`, etc.
+The first thing we need to do is define the inputs and outputs for the Task. This is done by defining the `inputSchema` and `outputSchema` static methods on the class using json schemas. Common types include `boolean`, `number`, `string` (text), etc.
 
 Here is the code for the `SimpleDebugLogTask` with the inputs defined:
 
 ```ts
-type SimpleDebugLogTaskInputs = {
-  message: any;
-};
-export class SimpleDebugLogTask extends Task<SimpleDebugLogTaskInputs> {
+export class SimpleDebugLogTask extends Task<{ message: any }> {
   public static inputSchema = () => {
-    return Type.Object({
-      message: Type.Any(),
-    });
+    return {
+      type: "object",
+      properties: {
+        message: {},
+      },
+      required: ["message"],
+    };
   };
   execute() {
     console.dir(this.runInputData.message, { depth: null });
@@ -60,31 +61,38 @@ Since `defaults` can be 100% of the input data or 0%, we use a TypeScript Partia
 
 It is common practice to have an output, and in a case like this, we can add an output that is the same as the input.
 
+Below we write the schemas first so we can use `FromSchema` to make types and not need to define the input and output multiple times (you could use Typebox or Zod4 for this as well).
+
 ```ts
-type SimpleDebugLogTaskInputs = {
-  message: any;
-};
-type SimpleDebugLogTaskOutputs = {
-  output: any;
-};
+import {DataPortSchemaObject} from "@podley/util";
+const SimpleDebugLogTaskInputSchema = {
+  type: "object",
+  properties: {
+    message: {
+      title: "Message",
+      description: "The message to log",
+    },
+  },
+  required: ["message"],
+} as const satisfies DataPortSchemaObject;
+type SimpleDebugLogTaskInputs = FromSchema<SimpleDebugLogTaskInputSchema>;
+
+const SimpleDebugLogTaskOutputSchema = {
+  type: "object";
+  properties: {
+    message: {
+      title: "Message";
+      description: "The message to log";
+    };
+  };
+  required: ["message"];
+} as const satisfies DataPortSchemaObject;
+type SimpleDebugLogTaskOutputs = FromSchema<SimpleDebugLogTaskOutputSchema>;
+
 export class SimpleDebugLogTask extends Task<SimpleDebugLogTaskInputs, SimpleDebugLogTaskOutputs> {
   public static cacheable = false;
-  public static inputSchema = () => {
-    return Type.Object({
-      message: Type.Any({
-        title: "Message",
-        description: "The message to log",
-      }),
-    });
-  };
-  public static outputSchema = () => {
-    return Type.Object({
-      output: Type.Any({
-        title: "Output",
-        description: "The output of the task",
-      }),
-    });
-  };
+  public static inputSchema = () => SimpleDebugLogTaskInputSchema;
+  public static outputSchema = () => SimpleDebugLogTaskOutputSchema;
   execute() {
     console.dir(this.runInputData.message, { depth: null });
     this.runOutputData.output = this.runInputData.message;

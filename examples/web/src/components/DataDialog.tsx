@@ -1,7 +1,22 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { JsonTree } from "./JsonTree";
-import { Panel, ViewportPortal } from "@xyflow/react";
 
+function DialogPortal({ children }) {
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        pointerEvents: "auto",
+      }}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+}
 interface DataDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,9 +32,9 @@ export const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, 
   };
 
   return (
-    <ViewportPortal>
+    <DialogPortal>
       <div
-        className="fixed inset-y-[-50vh] inset-x-[-50vw] flex items-center justify-center z-[2000] bg-black/50 pointer-events-auto w-[200vw] h-[200vh]"
+        className="fixed inset-0 flex items-center justify-center z-[2000] bg-black/50 pointer-events-auto"
         onClick={onClose}
       >
         <div
@@ -41,6 +56,6 @@ export const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, 
           </div>
         </div>
       </div>
-    </ViewportPortal>
+    </DialogPortal>
   );
 };
