@@ -1,5 +1,17 @@
 # @podley/sqlite
 
+## 0.0.46
+
+### Patch Changes
+
+- Open ended custom props requires custom props when working with TypeBox so go narrower
+
+## 0.0.45
+
+### Patch Changes
+
+- Fix x-ui-xxxxx as a requirement
+
 ## 0.0.44
 
 ### Patch Changes

@@ -1,5 +1,29 @@
 # @podley/ai-provider
 
+## 0.0.46
+
+### Patch Changes
+
+- Open ended custom props requires custom props when working with TypeBox so go narrower
+- Updated dependencies
+  - @podley/task-graph@0.0.46
+  - @podley/job-queue@0.0.46
+  - @podley/storage@0.0.46
+  - @podley/util@0.0.46
+  - @podley/ai@0.0.46
+
+## 0.0.45
+
+### Patch Changes
+
+- Fix x-ui-xxxxx as a requirement
+- Updated dependencies
+  - @podley/util@0.0.45
+  - @podley/ai@0.0.45
+  - @podley/job-queue@0.0.45
+  - @podley/storage@0.0.45
+  - @podley/task-graph@0.0.45
+
 ## 0.0.44
 
 ### Patch Changes

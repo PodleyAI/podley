@@ -11,7 +11,10 @@ export type JsonSchemaCustomProps = {
   "x-replicate"?: boolean;
   "x-ui-group"?: string;
   "x-ui-hidden"?: boolean;
-  [key: `x-ui-${string}`]: unknown;
+  "x-ui-order"?: number;
+  "x-ui-viewer"?: string;
+  "x-ui-editor"?: string;
+  "x-ui"?: unknown;
 };
 
 export type JsonSchema = ExtendedJSONSchema<JsonSchemaCustomProps>;
