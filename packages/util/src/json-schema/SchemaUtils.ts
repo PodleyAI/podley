@@ -37,7 +37,7 @@
  * Only connections that pass the runtime check will pass data at runtime.
  */
 
-import { JsonSchema } from "./JsonSchema";
+import type { JsonSchema } from "./JsonSchema";
 
 /**
  * Checks if two semantic annotation strings are compatible.

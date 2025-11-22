@@ -4,16 +4,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { JsonSchema } from "./JsonSchema";
+import { JSONSchemaExtension } from "json-schema-to-ts";
+import { JsonSchema, JsonSchemaCustomProps } from "./JsonSchema";
 
-export type DataPortSchemaNonBoolean = Exclude<JsonSchema, Boolean>;
+export type DataPortSchemaNonBoolean<
+  EXTENSION extends JSONSchemaExtension = JsonSchemaCustomProps,
+> = Exclude<JsonSchema<EXTENSION>, Boolean>;
 
 /**
  * Narrows to object schemas while preserving all schema properties.
  */
-export type DataPortSchemaObject = DataPortSchemaNonBoolean & {
-  readonly type: "object";
-  readonly properties: Record<string, DataPortSchemaNonBoolean>;
-};
+export type DataPortSchemaObject<EXTENSION extends JSONSchemaExtension = JsonSchemaCustomProps> =
+  DataPortSchemaNonBoolean<EXTENSION> & {
+    readonly type: "object";
+    readonly properties: Record<string, DataPortSchemaNonBoolean<EXTENSION>>;
+  };
 
-export type DataPortSchema = boolean | DataPortSchemaObject;
+export type DataPortSchema<EXTENSION extends JSONSchemaExtension = JsonSchemaCustomProps> =
+  | boolean
+  | DataPortSchemaObject<EXTENSION>;

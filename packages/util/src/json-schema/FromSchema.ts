@@ -4,7 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { FromExtendedSchema, FromSchemaOptions } from "json-schema-to-ts";
+import type {
+  FromExtendedSchema,
+  FromExtendedSchemaOptions,
+  FromSchemaOptions,
+} from "json-schema-to-ts";
 import type { JsonSchema, JsonSchemaCustomProps } from "./JsonSchema";
 
 export { FromSchemaOptions };
@@ -28,9 +32,10 @@ export const FromSchemaDefaultOptions = {
 } as const satisfies FromSchemaOptions;
 
 export type FromSchema<
-  SCHEMA extends JsonSchema,
-  OPTIONS extends FromSchemaOptions = typeof FromSchemaDefaultOptions,
-> = StripJSONSchema<FromExtendedSchema<JsonSchemaCustomProps, SCHEMA, OPTIONS>>;
+  SCHEMA extends JsonSchema<EXTENSION>,
+  OPTIONS extends FromExtendedSchemaOptions<EXTENSION> = typeof FromSchemaDefaultOptions,
+  EXTENSION extends JsonSchemaCustomProps = JsonSchemaCustomProps,
+> = StripJSONSchema<FromExtendedSchema<EXTENSION, SCHEMA, OPTIONS>>;
 
 /**
  * IncludeProps - Returns a new schema with only the specified properties
