@@ -1,5 +1,21 @@
 # @podley/cli
 
+## 0.0.44
+
+### Patch Changes
+
+- Update JsonSchema to allow any x-ui-\* property names
+- Updated dependencies
+  - @podley/ai@0.0.44
+  - @podley/ai-provider@0.0.44
+  - @podley/job-queue@0.0.44
+  - @podley/sqlite@0.0.44
+  - @podley/storage@0.0.44
+  - @podley/task-graph@0.0.44
+  - @podley/tasks@0.0.44
+  - @podley/test@0.0.44
+  - @podley/util@0.0.44
+
 ## 0.0.43
 
 ### Patch Changes

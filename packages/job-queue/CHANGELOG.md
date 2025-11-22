@@ -1,5 +1,15 @@
 # @podley/job-queue
 
+## 0.0.44
+
+### Patch Changes
+
+- Update JsonSchema to allow any x-ui-\* property names
+- Updated dependencies
+  - @podley/sqlite@0.0.44
+  - @podley/storage@0.0.44
+  - @podley/util@0.0.44
+
 ## 0.0.43
 
 ### Patch Changes
