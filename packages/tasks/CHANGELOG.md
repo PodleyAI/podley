@@ -1,5 +1,16 @@
 # @podley/tasks
 
+## 0.0.48
+
+### Patch Changes
+
+- update how optional (non-required) properties are stored in databases
+- Updated dependencies
+  - @podley/storage@0.0.48
+  - @podley/job-queue@0.0.48
+  - @podley/task-graph@0.0.48
+  - @podley/util@0.0.48
+
 ## 0.0.47
 
 ### Patch Changes
