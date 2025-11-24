@@ -1,5 +1,15 @@
 # @podley/job-queue
 
+## 0.0.47
+
+### Patch Changes
+
+- Update json schema annotations for ui generation
+- Updated dependencies
+  - @podley/sqlite@0.0.47
+  - @podley/storage@0.0.47
+  - @podley/util@0.0.47
+
 ## 0.0.46
 
 ### Patch Changes

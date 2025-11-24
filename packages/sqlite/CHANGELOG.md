@@ -1,5 +1,11 @@
 # @podley/sqlite
 
+## 0.0.47
+
+### Patch Changes
+
+- Update json schema annotations for ui generation
+
 ## 0.0.46
 
 ### Patch Changes

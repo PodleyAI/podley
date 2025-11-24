@@ -1,5 +1,21 @@
 # @podley/cli
 
+## 0.0.47
+
+### Patch Changes
+
+- Update json schema annotations for ui generation
+- Updated dependencies
+  - @podley/ai@0.0.47
+  - @podley/ai-provider@0.0.47
+  - @podley/job-queue@0.0.47
+  - @podley/sqlite@0.0.47
+  - @podley/storage@0.0.47
+  - @podley/task-graph@0.0.47
+  - @podley/tasks@0.0.47
+  - @podley/test@0.0.47
+  - @podley/util@0.0.47
+
 ## 0.0.46
 
 ### Patch Changes
