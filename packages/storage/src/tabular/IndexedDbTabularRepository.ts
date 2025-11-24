@@ -5,7 +5,11 @@
  */
 
 import { createServiceToken, DataPortSchemaObject, FromSchema } from "@podley/util";
-import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
+import {
+  ensureIndexedDbTable,
+  ExpectedIndexDefinition,
+  MigrationOptions,
+} from "../util/IndexedDbTable";
 import { ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
@@ -29,6 +33,8 @@ export class IndexedDbTabularRepository<
 > extends TabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   /** Promise that resolves to the IndexedDB database instance */
   private db: IDBDatabase | undefined;
+  /** Migration options for database schema changes */
+  private migrationOptions: MigrationOptions;
 
   /**
    * Creates a new IndexedDB-based tabular repository.
@@ -37,14 +43,17 @@ export class IndexedDbTabularRepository<
    * @param primaryKeyNames - Array of property names that form the primary key
    * @param indexes - Array of columns or column arrays to make searchable. Each string or single column creates a single-column index,
    *                    while each array creates a compound index with columns in the specified order.
+   * @param migrationOptions - Options for handling database schema migrations
    */
   constructor(
     public table: string = "tabular_store",
     schema: Schema,
     primaryKeyNames: PrimaryKeyNames,
-    indexes: Array<keyof Entity | Array<keyof Entity>> = []
+    indexes: Array<keyof Entity | Array<keyof Entity>> = [],
+    migrationOptions: MigrationOptions = {}
   ) {
     super(schema, primaryKeyNames, indexes);
+    this.migrationOptions = migrationOptions;
   }
 
   /**
@@ -80,7 +89,12 @@ export class IndexedDbTabularRepository<
     const primaryKey = pkColumns.length === 1 ? pkColumns[0] : pkColumns;
 
     // Ensure that our table is created/upgraded only if the structure (indexes) has changed.
-    this.db = await ensureIndexedDbTable(this.table, primaryKey, expectedIndexes);
+    this.db = await ensureIndexedDbTable(
+      this.table,
+      primaryKey,
+      expectedIndexes,
+      this.migrationOptions
+    );
     return this.db;
   }
 
@@ -255,42 +269,42 @@ export class IndexedDbTabularRepository<
       if (indexValues.length > 0) {
         const index = isPrimaryKey ? store : store.index(indexName);
         const isPartialMatch = indexValues.length < bestIndex.length;
-        
+
         if (isPartialMatch) {
           // For partial matches on compound indexes, we need to handle two cases:
           // 1. If all columns in the compound index are required in the schema,
           //    we can use cursor-based prefix matching (efficient)
           // 2. If any columns are optional (could be undefined), records without those
           //    values won't be in the index, so we must do a full scan
-          
+
           // Check if all columns in the compound index are required
           const allColumnsRequired = bestIndex.every((col) => {
             const colName = String(col);
             return this.schema.required?.includes(colName);
           });
-          
+
           if (allColumnsRequired) {
             // All index columns are required, so all records will be in the index
             // We can use cursor-based prefix matching for better performance
             const results: Entity[] = [];
             const keyRange = IDBKeyRange.lowerBound(indexValues);
             const cursorRequest = index.openCursor(keyRange);
-            
+
             cursorRequest.onsuccess = () => {
               const cursor = cursorRequest.result;
               if (cursor) {
                 const item = cursor.value as Entity;
                 const cursorKey = Array.isArray(cursor.key) ? cursor.key : [cursor.key];
-                
+
                 // Check if cursor key still matches our prefix
                 const prefixMatches = indexValues.every((val, idx) => cursorKey[idx] === val);
-                
+
                 if (!prefixMatches) {
                   // Moved past our prefix range
                   resolve(results.length > 0 ? results : undefined);
                   return;
                 }
-                
+
                 // Check all search criteria (including non-indexed columns)
                 // @ts-ignore
                 const matches = Object.entries(key).every(([k, v]) => item[k] === v);
@@ -303,7 +317,7 @@ export class IndexedDbTabularRepository<
                 resolve(results.length > 0 ? results : undefined);
               }
             };
-            
+
             cursorRequest.onerror = () => {
               reject(cursorRequest.error);
             };
@@ -311,7 +325,7 @@ export class IndexedDbTabularRepository<
             // Some index columns are optional, records with undefined values won't be indexed
             // Fall back to full scan to ensure we don't miss any matching records
             const getAllRequest = store.getAll();
-            
+
             getAllRequest.onsuccess = () => {
               const allRecords: Entity[] = getAllRequest.result;
               const results = allRecords.filter((item) =>
@@ -320,7 +334,7 @@ export class IndexedDbTabularRepository<
               );
               resolve(results.length > 0 ? results : undefined);
             };
-            
+
             getAllRequest.onerror = () => {
               reject(getAllRequest.error);
             };
@@ -328,7 +342,7 @@ export class IndexedDbTabularRepository<
         } else {
           // Exact match: use getAll with the exact key
           const request = index.getAll(indexValues.length === 1 ? indexValues[0] : indexValues);
-          
+
           request.onsuccess = () => {
             // Filter results for any additional search keys
             const results = request.result.filter((item: Entity) =>

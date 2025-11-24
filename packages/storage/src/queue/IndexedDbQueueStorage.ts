@@ -5,7 +5,11 @@
  */
 
 import { createServiceToken, makeFingerprint, uuid4 } from "@podley/util";
-import { ensureIndexedDbTable, ExpectedIndexDefinition } from "../util/IndexedDbTable";
+import {
+  ensureIndexedDbTable,
+  ExpectedIndexDefinition,
+  MigrationOptions,
+} from "../util/IndexedDbTable";
 import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
 
 export const INDEXED_DB_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
@@ -19,9 +23,14 @@ export const INDEXED_DB_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, an
 export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input, Output> {
   private db: IDBDatabase | undefined;
   private tableName: string;
+  private migrationOptions: MigrationOptions;
 
-  constructor(public readonly queueName: string) {
+  constructor(
+    public readonly queueName: string,
+    migrationOptions: MigrationOptions = {}
+  ) {
     this.tableName = `jobs_${queueName}`;
+    this.migrationOptions = migrationOptions;
   }
 
   private async getDb(): Promise<IDBDatabase> {
@@ -59,7 +68,12 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     ];
 
     // Now initialize the database
-    this.db = await ensureIndexedDbTable(this.tableName, "id", expectedIndexes);
+    this.db = await ensureIndexedDbTable(
+      this.tableName,
+      "id",
+      expectedIndexes,
+      this.migrationOptions
+    );
   }
 
   /**
