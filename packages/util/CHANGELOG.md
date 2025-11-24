@@ -1,5 +1,11 @@
 # @podley/util
 
+## 0.0.49
+
+### Patch Changes
+
+- Indexeddb non-destructive migrations
+
 ## 0.0.48
 
 ### Patch Changes

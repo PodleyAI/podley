@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.49
+
+### Patch Changes
+
+- Indexeddb non-destructive migrations
+- Updated dependencies
+  - @podley/sqlite@0.0.49
+  - @podley/util@0.0.49
+
 ## 0.0.48
 
 ### Patch Changes

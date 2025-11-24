@@ -1,5 +1,19 @@
 # @podley/cli
 
+## 0.0.49
+
+### Patch Changes
+
+- Indexeddb non-destructive migrations
+- Updated dependencies
+  - @podley/ai@0.0.49
+  - @podley/ai-provider@0.0.49
+  - @podley/storage@0.0.49
+  - @podley/task-graph@0.0.49
+  - @podley/tasks@0.0.49
+  - @podley/test@0.0.49
+  - @podley/util@0.0.49
+
 ## 0.0.48
 
 ### Patch Changes
