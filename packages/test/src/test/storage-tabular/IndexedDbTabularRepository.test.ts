@@ -5,9 +5,11 @@
  */
 
 import { IndexedDbTabularRepository } from "@podley/storage";
+import type { DataPortSchemaObject, FromSchema } from "@podley/util";
 import { uuid4 } from "@podley/util";
-import { describe } from "vitest";
 import "fake-indexeddb/auto";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import {
   CompoundPrimaryKeyNames,
   CompoundSchema,
@@ -34,4 +36,277 @@ describe("IndexedDbTabularRepository", () => {
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
       )
   );
+
+  // IndexedDB-specific tests for compound index optimization
+  describe("compound index optimization", () => {
+    // Schema with all compound index columns REQUIRED (should use efficient cursor-based search)
+    const RequiredColumnsSchema = {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        category: { type: "string" },
+        subcategory: { type: "string" },
+        kind: { type: "string" },
+        value: { type: "number" },
+      },
+      required: ["id", "category", "subcategory", "kind", "value"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchemaObject;
+
+    const RequiredColumnsPK = ["id"] as const;
+    type RequiredEntity = FromSchema<typeof RequiredColumnsSchema>;
+
+    // Schema with optional column in compound index (should use full table scan)
+    const OptionalColumnsSchema = {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        category: { type: "string" },
+        subcategory: { type: "string" },
+        kind: { type: "string" },
+        value: { type: "number" },
+      },
+      required: ["id", "category", "subcategory", "value"],
+      additionalProperties: false,
+    } as const satisfies DataPortSchemaObject;
+
+    const OptionalColumnsPK = ["id"] as const;
+    type OptionalEntity = FromSchema<typeof OptionalColumnsSchema>;
+
+    describe("with all required columns (efficient cursor-based)", () => {
+      let repo: IndexedDbTabularRepository<
+        typeof RequiredColumnsSchema,
+        typeof RequiredColumnsPK,
+        RequiredEntity,
+        Pick<RequiredEntity, "id">,
+        Omit<RequiredEntity, "id">
+      >;
+
+      beforeEach(async () => {
+        repo = new IndexedDbTabularRepository(
+          `${dbName}_required`,
+          RequiredColumnsSchema,
+          RequiredColumnsPK,
+          [["category", "subcategory", "kind"]]
+        );
+        await repo.setupDatabase();
+      });
+
+      afterEach(async () => {
+        await repo.deleteAll();
+        repo.destroy();
+      });
+
+      it("should use cursor-based search for partial compound index match", async () => {
+        // Insert test data - all with kind defined
+        await repo.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          kind: "smartphone",
+          value: 100,
+        });
+        await repo.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "phones",
+          kind: "tablet",
+          value: 200,
+        });
+        await repo.put({
+          id: "3",
+          category: "electronics",
+          subcategory: "laptops",
+          kind: "gaming",
+          value: 300,
+        });
+        await repo.put({
+          id: "4",
+          category: "books",
+          subcategory: "fiction",
+          kind: "mystery",
+          value: 400,
+        });
+
+        // Partial match: category + subcategory (2 of 3 index columns)
+        const electronicsPhones = await repo.search({
+          category: "electronics",
+          subcategory: "phones",
+        });
+        expect(electronicsPhones?.length).toBe(2);
+        expect(electronicsPhones?.map((e) => e.id).sort()).toEqual(["1", "2"]);
+
+        // Partial match: just category (1 of 3 index columns)
+        const electronics = await repo.search({ category: "electronics" });
+        expect(electronics?.length).toBe(3);
+        expect(electronics?.map((e) => e.id).sort()).toEqual(["1", "2", "3"]);
+
+        // Full match on compound index
+        const specific = await repo.search({
+          category: "electronics",
+          subcategory: "phones",
+          kind: "smartphone",
+        });
+        expect(specific?.length).toBe(1);
+        expect(specific?.[0].id).toBe("1");
+      });
+
+      it("should handle empty results with cursor-based search", async () => {
+        await repo.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          kind: "smartphone",
+          value: 100,
+        });
+
+        const result = await repo.search({
+          category: "books",
+          subcategory: "fiction",
+        });
+        expect(result).toBeUndefined();
+      });
+    });
+
+    describe("with optional columns (full table scan)", () => {
+      let repo: IndexedDbTabularRepository<
+        typeof OptionalColumnsSchema,
+        typeof OptionalColumnsPK,
+        OptionalEntity,
+        Pick<OptionalEntity, "id">,
+        Omit<OptionalEntity, "id">
+      >;
+
+      beforeEach(async () => {
+        repo = new IndexedDbTabularRepository(
+          `${dbName}_optional`,
+          OptionalColumnsSchema,
+          OptionalColumnsPK,
+          [["category", "subcategory", "kind"]]
+        );
+        await repo.setupDatabase();
+      });
+
+      afterEach(async () => {
+        await repo.deleteAll();
+        repo.destroy();
+      });
+
+      it("should use full table scan when optional columns exist in compound index", async () => {
+        // Insert data with and without the optional 'kind' field
+        await repo.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          kind: "smartphone",
+          value: 100,
+        });
+        await repo.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "phones",
+          // kind is undefined - this record won't be in the compound index!
+          value: 200,
+        } as OptionalEntity);
+        await repo.put({
+          id: "3",
+          category: "electronics",
+          subcategory: "laptops",
+          kind: "gaming",
+          value: 300,
+        });
+        await repo.put({
+          id: "4",
+          category: "electronics",
+          subcategory: "laptops",
+          // kind is undefined
+          value: 400,
+        } as OptionalEntity);
+
+        // Partial match should find ALL records, including those without 'kind'
+        const electronicsPhones = await repo.search({
+          category: "electronics",
+          subcategory: "phones",
+        });
+        expect(electronicsPhones?.length).toBe(2);
+        expect(electronicsPhones?.map((e) => e.id).sort()).toEqual(["1", "2"]);
+
+        const electronicsLaptops = await repo.search({
+          category: "electronics",
+          subcategory: "laptops",
+        });
+        expect(electronicsLaptops?.length).toBe(2);
+        expect(electronicsLaptops?.map((e) => e.id).sort()).toEqual(["3", "4"]);
+
+        // Search for all electronics
+        const electronics = await repo.search({ category: "electronics" });
+        expect(electronics?.length).toBe(4);
+        expect(electronics?.map((e) => e.id).sort()).toEqual(["1", "2", "3", "4"]);
+      });
+
+      it("should find records with undefined values in optional compound index columns", async () => {
+        // All records without 'kind'
+        await repo.put({
+          id: "1",
+          category: "books",
+          subcategory: "fiction",
+          value: 100,
+        } as OptionalEntity);
+        await repo.put({
+          id: "2",
+          category: "books",
+          subcategory: "fiction",
+          value: 200,
+        } as OptionalEntity);
+        await repo.put({
+          id: "3",
+          category: "books",
+          subcategory: "nonfiction",
+          value: 300,
+        } as OptionalEntity);
+
+        // Should find all records even though none are in the compound index
+        const booksFiction = await repo.search({
+          category: "books",
+          subcategory: "fiction",
+        });
+        expect(booksFiction?.length).toBe(2);
+        expect(booksFiction?.map((e) => e.id).sort()).toEqual(["1", "2"]);
+
+        const allBooks = await repo.search({ category: "books" });
+        expect(allBooks?.length).toBe(3);
+      });
+
+      it("should handle mixed scenarios with some records in index and some not", async () => {
+        await repo.put({
+          id: "1",
+          category: "mixed",
+          subcategory: "test",
+          kind: "with-kind",
+          value: 100,
+        });
+        await repo.put({
+          id: "2",
+          category: "mixed",
+          subcategory: "test",
+          value: 200,
+        } as OptionalEntity);
+        await repo.put({
+          id: "3",
+          category: "mixed",
+          subcategory: "test",
+          kind: "another-kind",
+          value: 300,
+        });
+
+        // Should find all three records
+        const results = await repo.search({
+          category: "mixed",
+          subcategory: "test",
+        });
+        expect(results?.length).toBe(3);
+        expect(results?.map((e) => e.id).sort()).toEqual(["1", "2", "3"]);
+      });
+    });
+  });
 });

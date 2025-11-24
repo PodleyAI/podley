@@ -258,10 +258,12 @@ export class PostgresTabularRepository<
    * @returns SQL string containing value column definitions
    */
   protected constructValueColumns($delimiter: string = ""): string {
+    const requiredSet = new Set(this.valueSchema.required ?? []);
     const cols = Object.entries<JsonSchema>(this.valueSchema.properties)
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
-        const nullable = this.isNullable(typeDef);
+        const isRequired = requiredSet.has(key);
+        const nullable = !isRequired || this.isNullable(typeDef);
         let constraints = nullable ? "NULL" : "NOT NULL";
 
         // Add CHECK constraint for unsigned numbers

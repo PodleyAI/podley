@@ -265,10 +265,12 @@ export class SupabaseTabularRepository<
    */
   protected constructValueColumns($delimiter: string = ""): string {
     const delimiter = $delimiter || '"';
+    const requiredSet = new Set(this.valueSchema.required ?? []);
     const cols = Object.entries<JsonSchema>(this.valueSchema.properties)
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
-        const nullable = this.isNullable(typeDef);
+        const isRequired = requiredSet.has(key);
+        const nullable = !isRequired || this.isNullable(typeDef);
         let constraints = nullable ? "NULL" : "NOT NULL";
 
         // Add CHECK constraint for unsigned numbers
@@ -349,9 +351,19 @@ export class SupabaseTabularRepository<
    */
   async put(entity: Entity): Promise<Entity> {
     await this.setupDatabase();
+    // Normalize optional fields: convert undefined to null for optional fields
+    const normalizedEntity = { ...entity } as any;
+    const requiredSet = new Set(this.valueSchema.required ?? []);
+    for (const key in this.valueSchema.properties) {
+      if (!(key in normalizedEntity) || normalizedEntity[key] === undefined) {
+        if (!requiredSet.has(key)) {
+          normalizedEntity[key] = null;
+        }
+      }
+    }
     const { data, error } = await this.client
       .from(this.table)
-      .upsert(entity as any, { onConflict: this.primaryKeyColumnList() })
+      .upsert(normalizedEntity, { onConflict: this.primaryKeyColumnList() })
       .select()
       .single();
 
@@ -380,9 +392,22 @@ export class SupabaseTabularRepository<
     if (entities.length === 0) return [];
 
     await this.setupDatabase();
+    // Normalize optional fields: convert undefined to null for optional fields
+    const requiredSet = new Set(this.valueSchema.required ?? []);
+    const normalizedEntities = entities.map((entity) => {
+      const normalized = { ...entity } as any;
+      for (const key in this.valueSchema.properties) {
+        if (!(key in normalized) || normalized[key] === undefined) {
+          if (!requiredSet.has(key)) {
+            normalized[key] = null;
+          }
+        }
+      }
+      return normalized;
+    });
     const { data, error } = await this.client
       .from(this.table)
-      .upsert(entities as any[], { onConflict: this.primaryKeyColumnList() })
+      .upsert(normalizedEntities, { onConflict: this.primaryKeyColumnList() })
       .select();
 
     if (error) throw error;

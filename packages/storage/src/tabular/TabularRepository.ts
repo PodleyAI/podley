@@ -74,14 +74,24 @@ export abstract class TabularRepository<
       }
     }
 
+    // Filter required array to only include primary key fields
+    const primaryKeyRequired =
+      schema.required?.filter((key) => primaryKeySet.has(key as keyof Schema["properties"])) ?? [];
+    // Filter required array to only include value fields
+    const valueRequired =
+      schema.required?.filter((key) => !primaryKeySet.has(key as keyof Schema["properties"])) ??
+      [];
+
     this.primaryKeySchema = {
       type: "object",
       properties: primaryKeyProps,
+      required: primaryKeyRequired,
       additionalProperties: false,
     } as DataPortSchemaObject;
     this.valueSchema = {
       type: "object",
       properties: valueProps,
+      required: valueRequired,
       additionalProperties: false,
     } as DataPortSchemaObject;
 

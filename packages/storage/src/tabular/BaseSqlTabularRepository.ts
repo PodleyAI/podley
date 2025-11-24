@@ -68,11 +68,13 @@ export abstract class BaseSqlTabularRepository<
    * @returns SQL string containing value column definitions
    */
   protected constructValueColumns($delimiter: string = ""): string {
+    const requiredSet = new Set(this.valueSchema.required ?? []);
     const cols = Object.entries<JsonSchema>(this.valueSchema.properties)
       .map(([key, typeDef]) => {
         const sqlType = this.mapTypeToSQL(typeDef);
-        // Check if the property is nullable based on schema definition
-        const nullable = this.isNullable(typeDef);
+        // Check if the property is nullable based on schema definition or if it's not required
+        const isRequired = requiredSet.has(key);
+        const nullable = !isRequired || this.isNullable(typeDef);
         return `${$delimiter}${key}${$delimiter} ${sqlType}${nullable ? " NULL" : " NOT NULL"}`;
       })
       .join(", ");
@@ -164,11 +166,23 @@ export abstract class BaseSqlTabularRepository<
   protected getValueAsOrderedArray(value: Value): ValueOptionType[] {
     const orderedParams: ValueOptionType[] = [];
     const valueAsRecord = value as Record<string, Entity[keyof Entity]>;
+    const requiredSet = new Set(this.valueSchema.required ?? []);
     for (const key in this.valueSchema.properties) {
       if (Object.prototype.hasOwnProperty.call(valueAsRecord, key)) {
-        orderedParams.push(this.jsToSqlValue(key, valueAsRecord[key]));
+        const val = valueAsRecord[key];
+        // Convert undefined to null for optional fields
+        if (val === undefined && !requiredSet.has(key)) {
+          orderedParams.push(null);
+        } else {
+          orderedParams.push(this.jsToSqlValue(key, val));
+        }
       } else {
-        throw new Error(`Missing required value field: ${key}`);
+        // If the field is required, throw an error
+        if (requiredSet.has(key)) {
+          throw new Error(`Missing required value field: ${key}`);
+        }
+        // If the field is optional, use null
+        orderedParams.push(null);
       }
     }
     return orderedParams;

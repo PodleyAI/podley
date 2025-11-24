@@ -252,39 +252,100 @@ export class IndexedDbTabularRepository<
       }
 
       // If we have at least one valid index value, use it
-      let request: IDBRequest;
       if (indexValues.length > 0) {
-        if (isPrimaryKey && indexValues.length < bestIndex.length) {
-          // For primary key prefix search, use IDBKeyRange
-          const keyRange = IDBKeyRange.bound(
-            indexValues,
-            indexValues.concat(["\uffff"]), // Use high value for upper bound
-            true, // Include lower bound
-            true // Include upper bound
-          );
-          request = store.getAll(keyRange);
+        const index = isPrimaryKey ? store : store.index(indexName);
+        const isPartialMatch = indexValues.length < bestIndex.length;
+        
+        if (isPartialMatch) {
+          // For partial matches on compound indexes, we need to handle two cases:
+          // 1. If all columns in the compound index are required in the schema,
+          //    we can use cursor-based prefix matching (efficient)
+          // 2. If any columns are optional (could be undefined), records without those
+          //    values won't be in the index, so we must do a full scan
+          
+          // Check if all columns in the compound index are required
+          const allColumnsRequired = bestIndex.every((col) => {
+            const colName = String(col);
+            return this.schema.required?.includes(colName);
+          });
+          
+          if (allColumnsRequired) {
+            // All index columns are required, so all records will be in the index
+            // We can use cursor-based prefix matching for better performance
+            const results: Entity[] = [];
+            const keyRange = IDBKeyRange.lowerBound(indexValues);
+            const cursorRequest = index.openCursor(keyRange);
+            
+            cursorRequest.onsuccess = () => {
+              const cursor = cursorRequest.result;
+              if (cursor) {
+                const item = cursor.value as Entity;
+                const cursorKey = Array.isArray(cursor.key) ? cursor.key : [cursor.key];
+                
+                // Check if cursor key still matches our prefix
+                const prefixMatches = indexValues.every((val, idx) => cursorKey[idx] === val);
+                
+                if (!prefixMatches) {
+                  // Moved past our prefix range
+                  resolve(results.length > 0 ? results : undefined);
+                  return;
+                }
+                
+                // Check all search criteria (including non-indexed columns)
+                // @ts-ignore
+                const matches = Object.entries(key).every(([k, v]) => item[k] === v);
+                if (matches) {
+                  results.push(item);
+                }
+                cursor.continue();
+              } else {
+                // Cursor exhausted
+                resolve(results.length > 0 ? results : undefined);
+              }
+            };
+            
+            cursorRequest.onerror = () => {
+              reject(cursorRequest.error);
+            };
+          } else {
+            // Some index columns are optional, records with undefined values won't be indexed
+            // Fall back to full scan to ensure we don't miss any matching records
+            const getAllRequest = store.getAll();
+            
+            getAllRequest.onsuccess = () => {
+              const allRecords: Entity[] = getAllRequest.result;
+              const results = allRecords.filter((item) =>
+                // @ts-ignore
+                Object.entries(key).every(([k, v]) => item[k] === v)
+              );
+              resolve(results.length > 0 ? results : undefined);
+            };
+            
+            getAllRequest.onerror = () => {
+              reject(getAllRequest.error);
+            };
+          }
         } else {
-          // For regular indexes or exact primary key match
-          const index = isPrimaryKey ? store : store.index(indexName);
-          request = index.getAll(indexValues.length === 1 ? indexValues[0] : indexValues);
+          // Exact match: use getAll with the exact key
+          const request = index.getAll(indexValues.length === 1 ? indexValues[0] : indexValues);
+          
+          request.onsuccess = () => {
+            // Filter results for any additional search keys
+            const results = request.result.filter((item: Entity) =>
+              // @ts-ignore
+              Object.entries(key).every(([k, v]) => item[k] === v)
+            );
+            resolve(results.length > 0 ? results : undefined);
+          };
+
+          request.onerror = () => {
+            console.error("Search error:", request.error);
+            reject(request.error);
+          };
         }
       } else {
         throw new Error(`No valid values provided for indexed columns: ${bestIndex.join(", ")}`);
       }
-
-      request.onsuccess = () => {
-        // Filter results for any additional search keys
-        const results = request.result.filter((item: Entity) =>
-          // @ts-ignore
-          Object.entries(key).every(([k, v]) => item[k] === v)
-        );
-        resolve(results.length > 0 ? results : undefined);
-      };
-
-      request.onerror = () => {
-        console.error("Search error:", request.error);
-        reject(request.error);
-      };
     });
   }
 

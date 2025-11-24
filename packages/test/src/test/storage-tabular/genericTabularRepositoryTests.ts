@@ -28,6 +28,7 @@ export const SearchSchema = {
     id: { type: "string" },
     category: { type: "string" },
     subcategory: { type: "string" },
+    kind: { type: "string" },
     value: { type: "number" },
     createdAt: { type: "string", format: "date-time" },
     updatedAt: { type: "string", format: "date-time" },
