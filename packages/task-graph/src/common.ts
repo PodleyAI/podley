@@ -5,6 +5,7 @@
  */
 
 export * from "./task/ArrayTask";
+export * from "./task/ConditionalTask";
 export * from "./task/GraphAsTask";
 export * from "./task/GraphAsTaskRunner";
 export * from "./task/ITask";

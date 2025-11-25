@@ -1,0 +1,265 @@
+# ConditionalTask
+
+A task that implements conditional branching within a task graph, similar to if/then/else or switch/case statements.
+
+## Overview
+
+`ConditionalTask` evaluates configured conditions against its input and selectively enables output ports for active branches. Inactive branches result in `DISABLED` status for their downstream dataflows, which cascades to disable unreachable downstream tasks.
+
+## Key Features
+
+- **Condition-based routing**: Route data to different downstream tasks based on input values
+- **Exclusive mode (default)**: Act as a switch/case where only the first matching branch activates
+- **Multi-path mode**: Enable multiple branches simultaneously when conditions match
+- **Default branch**: Specify a fallback branch when no conditions match
+- **Disabled propagation**: Inactive branches result in DISABLED status for downstream tasks
+
+## Basic Usage
+
+### Simple If/Else
+
+```typescript
+import { ConditionalTask, TaskGraph, Dataflow } from "@podley/task-graph";
+
+const conditional = new ConditionalTask(
+  {},
+  {
+    branches: [
+      { id: "high", condition: (i) => i.value > 100, outputPort: "highPath" },
+      { id: "low", condition: (i) => i.value <= 100, outputPort: "lowPath" },
+    ],
+  }
+);
+
+const highHandler = new SomeTask({}, { id: "highHandler" });
+const lowHandler = new SomeTask({}, { id: "lowHandler" });
+
+const graph = new TaskGraph();
+graph.addTasks([conditional, highHandler, lowHandler]);
+graph.addDataflow(new Dataflow(conditional.config.id, "highPath", highHandler.config.id, "*"));
+graph.addDataflow(new Dataflow(conditional.config.id, "lowPath", lowHandler.config.id, "*"));
+
+// When value > 100, highHandler runs and lowHandler is DISABLED
+// When value <= 100, lowHandler runs and highHandler is DISABLED
+await graph.run({ value: 150 });
+```
+
+### Switch/Case Pattern
+
+```typescript
+const statusRouter = new ConditionalTask(
+  {},
+  {
+    branches: [
+      { id: "active", condition: (i) => i.status === "active", outputPort: "active" },
+      { id: "pending", condition: (i) => i.status === "pending", outputPort: "pending" },
+      { id: "inactive", condition: (i) => i.status === "inactive", outputPort: "inactive" },
+    ],
+    defaultBranch: "inactive", // Fallback if no match
+    exclusive: true, // Only first match activates (default)
+  }
+);
+```
+
+### Multi-Path Fan-Out
+
+```typescript
+const fanOut = new ConditionalTask(
+  {},
+  {
+    branches: [
+      { id: "log", condition: () => true, outputPort: "logger" },
+      { id: "process", condition: () => true, outputPort: "processor" },
+      { id: "archive", condition: (i) => i.shouldArchive, outputPort: "archiver" },
+    ],
+    exclusive: false, // All matching branches activate
+  }
+);
+```
+
+## Configuration
+
+### BranchConfig
+
+Each branch in the `branches` array has the following properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | `string` | Unique identifier for the branch |
+| `condition` | `(input) => boolean` | Predicate function to evaluate |
+| `outputPort` | `string` | Output port name for this branch |
+
+### ConditionalTaskConfig
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `branches` | `BranchConfig[]` | Required | Array of branch configurations |
+| `defaultBranch` | `string` | `undefined` | Branch ID to use if no conditions match |
+| `exclusive` | `boolean` | `true` | If true, only first matching branch activates |
+
+## Execution Modes
+
+### Exclusive Mode (Default)
+
+In exclusive mode (`exclusive: true`), branches are evaluated in order and only the first matching branch becomes active. This is similar to a switch/case statement or if/else-if chain.
+
+```typescript
+const router = new ConditionalTask(
+  {},
+  {
+    branches: [
+      { id: "tier1", condition: (i) => i.value > 1000, outputPort: "tier1" },
+      { id: "tier2", condition: (i) => i.value > 100, outputPort: "tier2" },
+      { id: "tier3", condition: (i) => i.value > 0, outputPort: "tier3" },
+    ],
+    exclusive: true,
+  }
+);
+
+// With value = 500:
+// - tier1 condition: 500 > 1000 = false
+// - tier2 condition: 500 > 100 = true ← ACTIVATES, stops here
+// - tier3 is NOT evaluated (exclusive mode)
+```
+
+### Multi-Path Mode
+
+In multi-path mode (`exclusive: false`), all branches whose conditions evaluate to true become active simultaneously. This enables fan-out patterns.
+
+```typescript
+const multiRouter = new ConditionalTask(
+  {},
+  {
+    branches: [
+      { id: "even", condition: (i) => i.value % 2 === 0, outputPort: "evenPath" },
+      { id: "div3", condition: (i) => i.value % 3 === 0, outputPort: "div3Path" },
+      { id: "div5", condition: (i) => i.value % 5 === 0, outputPort: "div5Path" },
+    ],
+    exclusive: false,
+  }
+);
+
+// With value = 30:
+// - even: 30 % 2 === 0 = true ← ACTIVATES
+// - div3: 30 % 3 === 0 = true ← ACTIVATES
+// - div5: 30 % 5 === 0 = true ← ACTIVATES
+// All three downstream tasks will run!
+```
+
+## Output Behavior
+
+For each active branch, the task passes through its entire input to that branch's output port:
+
+```typescript
+// Input: { value: 150, metadata: { source: "api" } }
+
+// Output when "high" branch is active:
+{
+  _activeBranches: ["high"],
+  highPath: { value: 150, metadata: { source: "api" } }
+}
+```
+
+The `_activeBranches` property is always present and contains the IDs of all active branches.
+
+## Dataflow Wiring
+
+When wiring ConditionalTask outputs to downstream tasks, use `"*"` (DATAFLOW_ALL_PORTS) as the target port to pass all properties from the branch output:
+
+```typescript
+// Pass all properties from the branch output to the downstream task
+graph.addDataflow(new Dataflow(
+  conditional.config.id, 
+  "highPath",  // Source port (branch output)
+  handler.config.id, 
+  "*"          // Target: all ports (passes { value, metadata, ... })
+));
+```
+
+## Disabled Status Propagation
+
+When a branch is inactive, its outgoing dataflow is set to `DISABLED` status. The graph runner then propagates this status:
+
+1. If ALL incoming dataflows to a task are `DISABLED`, that task becomes `DISABLED`
+2. The disabled task's outgoing dataflows are also set to `DISABLED`
+3. This cascades through the graph until no more tasks can be disabled
+
+This ensures that tasks which cannot receive data (because all paths to them are disabled) don't run unnecessarily.
+
+## Inspecting Branch Status
+
+After execution, you can inspect which branches were activated:
+
+```typescript
+await conditionalTask.run({ value: 150 });
+
+// Check individual branch
+if (conditionalTask.isBranchActive("high")) {
+  console.log("High value path was taken");
+}
+
+// Get all active branches
+const active = conditionalTask.getActiveBranches();
+console.log("Active branches:", Array.from(active));
+
+// Get port status map
+const portStatus = conditionalTask.getPortActiveStatus();
+for (const [port, isActive] of portStatus) {
+  console.log(`Port ${port}: ${isActive ? "active" : "inactive"}`);
+}
+```
+
+## Events
+
+ConditionalTask emits a custom event after branch evaluation:
+
+```typescript
+conditionalTask.on("branches_evaluated", (activeBranches: Set<string>) => {
+  console.log("Active branches:", Array.from(activeBranches));
+});
+```
+
+## Error Handling
+
+If a condition function throws an error, the branch is treated as if the condition returned `false`:
+
+```typescript
+const router = new ConditionalTask(
+  {},
+  {
+    branches: [
+      { 
+        id: "risky", 
+        condition: (i) => {
+          if (!i.data) throw new Error("No data!");
+          return i.data.value > 100;
+        }, 
+        outputPort: "risky" 
+      },
+      { id: "safe", condition: () => true, outputPort: "safe" },
+    ],
+  }
+);
+
+// If input.data is undefined:
+// - "risky" condition throws, treated as false
+// - "safe" condition returns true, becomes active
+// Console warning: Condition evaluation failed for branch "risky": Error: No data!
+```
+
+## Integration with Task Graph
+
+ConditionalTask integrates seamlessly with TaskGraph and its scheduler:
+
+1. ConditionalTask executes and determines active branches
+2. Graph runner sets dataflow status based on branch activation
+3. Scheduler respects DISABLED status when determining ready tasks
+4. Downstream tasks on disabled branches never execute
+
+This makes ConditionalTask ideal for implementing:
+- Feature flags
+- A/B testing
+- Error handling and retry logic
+- Priority-based routing
+- Validation pipelines
+- Any workflow that requires conditional execution paths

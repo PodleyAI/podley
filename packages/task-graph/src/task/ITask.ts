@@ -111,6 +111,7 @@ export interface ITaskIO<Input extends TaskInput> {
   setDefaults(defaults: Record<string, any>): void;
   resetInputData(): void;
   setInput(input: Record<string, any>): void;
+  addInput(overrides: Record<string, any> | undefined): boolean;
   validateInput(input: Record<string, any>): Promise<boolean>;
   get cacheable(): boolean;
   narrowInput(input: Record<string, any>): Promise<Record<string, any>>;

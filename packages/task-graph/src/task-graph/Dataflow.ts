@@ -138,14 +138,24 @@ export class Dataflow {
       return "runtime";
     }
 
-    const targetSchemaProperty =
+    let targetSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.targetTaskPortId
         ? true // Accepts any schema (equivalent to Type.Any())
         : (targetSchema.properties as any)?.[dataflow.targetTaskPortId];
-    const sourceSchemaProperty =
+    // If the specific property doesn't exist but additionalProperties is true,
+    // treat it as accepting any schema
+    if (targetSchemaProperty === undefined && targetSchema.additionalProperties === true) {
+      targetSchemaProperty = true;
+    }
+    let sourceSchemaProperty =
       DATAFLOW_ALL_PORTS === dataflow.sourceTaskPortId
         ? true // Accepts any schema (equivalent to Type.Any())
         : (sourceSchema.properties as any)?.[dataflow.sourceTaskPortId];
+    // If the specific property doesn't exist but additionalProperties is true,
+    // treat it as outputting any schema
+    if (sourceSchemaProperty === undefined && sourceSchema.additionalProperties === true) {
+      sourceSchemaProperty = true;
+    }
 
     const semanticallyCompatible = areSemanticallyCompatible(
       sourceSchemaProperty,

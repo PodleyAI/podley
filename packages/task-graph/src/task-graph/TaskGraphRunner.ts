@@ -7,11 +7,11 @@
 import {
   collectPropertyValues,
   ConvertAllToOptionalArray,
-  deepEqual,
   globalServiceRegistry,
   uuid4,
 } from "@podley/util";
 import { TASK_OUTPUT_REPOSITORY, TaskOutputRepository } from "../storage/TaskOutputRepository";
+import { ConditionalTask } from "../task/ConditionalTask";
 import { ITask } from "../task/ITask";
 import { TaskAbortedError, TaskConfigurationError, TaskError } from "../task/TaskError";
 import { Provenance, TaskInput, TaskOutput, TaskStatus } from "../task/TaskTypes";
@@ -151,9 +151,12 @@ export class TaskGraphRunner {
           } catch (error) {
             this.failedTaskErrors.set(task.config.id, error as TaskError);
           } finally {
-            this.processScheduler.onTaskCompleted(task.config.id);
+            // IMPORTANT: Push status to edges BEFORE notifying scheduler
+            // This ensures dataflow statuses (including DISABLED) are set
+            // before the scheduler checks which tasks are ready
             this.pushStatusFromNodeToEdges(this.graph, task);
             this.pushErrorFromNodeToEdges(this.graph, task);
+            this.processScheduler.onTaskCompleted(task.config.id);
           }
         };
 
@@ -271,64 +274,16 @@ export class TaskGraphRunner {
   }
 
   /**
-   * Adds input data to a task
+   * Adds input data to a task.
+   * Delegates to {@link Task.addInput} for the actual merging logic.
+   *
    * @param task The task to add input data to
    * @param overrides The input data to override (or add to if an array)
-   * @returns true if the input data was changed, false otherwise
    */
   public addInputData(task: ITask, overrides: Partial<TaskInput> | undefined): void {
     if (!overrides) return;
 
-    let changed = false;
-    const inputSchema = task.inputSchema();
-    if (typeof inputSchema === "boolean") {
-      if (inputSchema === false) {
-        return;
-      }
-      for (const [key, value] of Object.entries(overrides)) {
-        if (!deepEqual(task.runInputData[key], value)) {
-          task.runInputData[key] = value;
-          changed = true;
-          break;
-        }
-      }
-    } else {
-      const properties = inputSchema.properties || {};
-
-      for (const [inputId, prop] of Object.entries(properties)) {
-        if (inputId === DATAFLOW_ALL_PORTS) {
-          task.runInputData = { ...task.runInputData, ...overrides };
-          changed = true;
-        } else {
-          if (overrides[inputId] === undefined) continue;
-          const isArray =
-            (prop as any)?.type === "array" ||
-            ((prop as any)?.type === "any" &&
-              (Array.isArray(overrides[inputId]) || Array.isArray(task.runInputData[inputId])));
-
-          if (isArray) {
-            const existingItems = Array.isArray(task.runInputData[inputId])
-              ? task.runInputData[inputId]
-              : [task.runInputData[inputId]];
-            const newitems = [...existingItems];
-
-            const overrideItem = overrides[inputId];
-            if (Array.isArray(overrideItem)) {
-              newitems.push(...overrideItem);
-            } else {
-              newitems.push(overrideItem);
-            }
-            task.runInputData[inputId] = newitems;
-            changed = true;
-          } else {
-            if (!deepEqual(task.runInputData[inputId], overrides[inputId])) {
-              task.runInputData[inputId] = overrides[inputId];
-              changed = true;
-            }
-          }
-        }
-      }
-    }
+    const changed = task.addInput(overrides);
 
     // TODO(str): This is a hack.
     if (changed && "regenerateGraph" in task && typeof task.regenerateGraph === "function") {
@@ -420,11 +375,53 @@ export class TaskGraphRunner {
   /**
    * Pushes the status of a task to its target edges
    * @param node The task that produced the status
+   *
+   * For ConditionalTask, this method handles selective dataflow status:
+   * - Active branch dataflows get COMPLETED status
+   * - Inactive branch dataflows get DISABLED status
    */
-  protected pushStatusFromNodeToEdges(graph: TaskGraph, node: ITask, status?: TaskStatus) {
+  protected pushStatusFromNodeToEdges(graph: TaskGraph, node: ITask, status?: TaskStatus): void {
     if (!node?.config?.id) return;
-    graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
-      dataflow.setStatus(status ?? node.status);
+
+    const dataflows = graph.getTargetDataflows(node.config.id);
+    const effectiveStatus = status ?? node.status;
+
+    // Check if this is a ConditionalTask with selective branching
+    if (node instanceof ConditionalTask && effectiveStatus === TaskStatus.COMPLETED) {
+      // Build a map of output port -> branch ID for lookup
+      const branches = node.config.branches ?? [];
+      const portToBranch = new Map<string, string>();
+      for (const branch of branches) {
+        portToBranch.set(branch.outputPort, branch.id);
+      }
+
+      const activeBranches = node.getActiveBranches();
+
+      for (const dataflow of dataflows) {
+        const branchId = portToBranch.get(dataflow.sourceTaskPortId);
+        if (branchId !== undefined) {
+          // This dataflow is from a branch port
+          if (activeBranches.has(branchId)) {
+            // Branch is active - dataflow gets completed status
+            dataflow.setStatus(TaskStatus.COMPLETED);
+          } else {
+            // Branch is inactive - dataflow gets disabled status
+            dataflow.setStatus(TaskStatus.DISABLED);
+          }
+        } else {
+          // Not a branch port (e.g., _activeBranches metadata) - use normal status
+          dataflow.setStatus(effectiveStatus);
+        }
+      }
+
+      // Cascade disabled status to downstream tasks
+      this.propagateDisabledStatus(graph);
+      return;
+    }
+
+    // Default behavior for non-conditional tasks
+    dataflows.forEach((dataflow) => {
+      dataflow.setStatus(effectiveStatus);
     });
   }
 
@@ -432,11 +429,68 @@ export class TaskGraphRunner {
    * Pushes the error of a task to its target edges
    * @param node The task that produced the error
    */
-  protected pushErrorFromNodeToEdges(graph: TaskGraph, node: ITask) {
+  protected pushErrorFromNodeToEdges(graph: TaskGraph, node: ITask): void {
     if (!node?.config?.id) return;
     graph.getTargetDataflows(node.config.id).forEach((dataflow) => {
       dataflow.error = node.error;
     });
+  }
+
+  /**
+   * Propagates DISABLED status through the graph.
+   *
+   * When a task's ALL incoming dataflows are DISABLED, that task becomes unreachable
+   * and should also be disabled. This cascades through the graph until no more
+   * tasks can be disabled.
+   *
+   * This is used by ConditionalTask to disable downstream tasks on inactive branches.
+   *
+   * @param graph The task graph to propagate disabled status through
+   */
+  protected propagateDisabledStatus(graph: TaskGraph): void {
+    let changed = true;
+
+    // Keep iterating until no more changes (fixed-point iteration)
+    while (changed) {
+      changed = false;
+
+      for (const task of graph.getTasks()) {
+        // Only consider tasks that are still pending
+        if (task.status !== TaskStatus.PENDING) {
+          continue;
+        }
+
+        const incomingDataflows = graph.getSourceDataflows(task.config.id);
+
+        // Skip tasks with no incoming dataflows (root tasks)
+        if (incomingDataflows.length === 0) {
+          continue;
+        }
+
+        // Check if ALL incoming dataflows are DISABLED
+        const allDisabled = incomingDataflows.every((df) => df.status === TaskStatus.DISABLED);
+
+        if (allDisabled) {
+          // This task is unreachable - disable it synchronously
+          // Set status directly to avoid async issues
+          task.status = TaskStatus.DISABLED;
+          task.progress = 100;
+          task.completedAt = new Date();
+          task.emit("disabled");
+          task.emit("status", task.status);
+
+          // Propagate disabled status to its outgoing dataflows
+          graph.getTargetDataflows(task.config.id).forEach((dataflow) => {
+            dataflow.setStatus(TaskStatus.DISABLED);
+          });
+
+          // Mark as completed in scheduler so it doesn't wait for this task
+          this.processScheduler.onTaskCompleted(task.config.id);
+
+          changed = true;
+        }
+      }
+    }
   }
 
   /**

@@ -5,6 +5,7 @@
  */
 
 import { ITask } from "../task/ITask";
+import { TaskStatus } from "../task/TaskTypes";
 import { TaskGraph } from "./TaskGraph";
 
 /**
@@ -75,13 +76,43 @@ export class DependencyBasedScheduler implements ITaskGraphScheduler {
   }
 
   private isTaskReady(task: ITask): boolean {
-    const dependencies = this.dag
-      .getSourceDataflows(task.config.id)
+    // DISABLED tasks are never ready - they should be skipped
+    if (task.status === TaskStatus.DISABLED) {
+      return false;
+    }
+
+    const sourceDataflows = this.dag.getSourceDataflows(task.config.id);
+
+    // If task has incoming dataflows, check if all are DISABLED
+    // (In that case, task will be disabled by propagateDisabledStatus, not ready to run)
+    if (sourceDataflows.length > 0) {
+      const allIncomingDisabled = sourceDataflows.every(
+        (df) => df.status === TaskStatus.DISABLED
+      );
+      if (allIncomingDisabled) {
+        return false;
+      }
+    }
+
+    // A task is ready if all its non-disabled dependencies are completed
+    // DISABLED dataflows are considered "satisfied" (their branch was not taken)
+    const dependencies = sourceDataflows
+      .filter((df) => df.status !== TaskStatus.DISABLED)
       .map((dataflow) => dataflow.sourceTaskId);
+
     return dependencies.every((dep) => this.completedTasks.has(dep));
   }
 
   private async waitForNextTask(): Promise<ITask | null> {
+    if (this.pendingTasks.size === 0) return null;
+
+    // Remove any disabled tasks from pending (they were disabled by propagateDisabledStatus)
+    for (const task of Array.from(this.pendingTasks)) {
+      if (task.status === TaskStatus.DISABLED) {
+        this.pendingTasks.delete(task);
+      }
+    }
+
     if (this.pendingTasks.size === 0) return null;
 
     const readyTask = Array.from(this.pendingTasks).find((task) => this.isTaskReady(task));
@@ -114,6 +145,13 @@ export class DependencyBasedScheduler implements ITaskGraphScheduler {
   onTaskCompleted(taskId: unknown): void {
     this.completedTasks.add(taskId);
 
+    // Remove any disabled tasks from pending
+    for (const task of Array.from(this.pendingTasks)) {
+      if (task.status === TaskStatus.DISABLED) {
+        this.pendingTasks.delete(task);
+      }
+    }
+
     // Check if any pending tasks are now ready
     if (this.nextResolver) {
       const readyTask = Array.from(this.pendingTasks).find((task) => this.isTaskReady(task));
@@ -122,6 +160,11 @@ export class DependencyBasedScheduler implements ITaskGraphScheduler {
         const resolver = this.nextResolver;
         this.nextResolver = null;
         resolver(readyTask);
+      } else if (this.pendingTasks.size === 0) {
+        // No more pending tasks - resolve with null to signal completion
+        const resolver = this.nextResolver;
+        this.nextResolver = null;
+        resolver(null);
       }
     }
   }

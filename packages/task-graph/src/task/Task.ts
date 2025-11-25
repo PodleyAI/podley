@@ -4,7 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventEmitter, SchemaNode, compileSchema, uuid4, type DataPortSchema } from "@podley/util";
+import {
+  compileSchema,
+  deepEqual,
+  EventEmitter,
+  SchemaNode,
+  uuid4,
+  type DataPortSchema,
+} from "@podley/util";
+import { DATAFLOW_ALL_PORTS } from "../task-graph/Dataflow";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import type { IExecuteContext, IExecuteReactiveContext, ITask } from "./ITask";
 import { TaskAbortedError, TaskError, TaskInvalidInputError } from "./TaskError";
@@ -402,6 +410,7 @@ export class Task<
     }
     const properties = schema.properties || {};
 
+    // Copy explicitly defined properties
     for (const [inputId, prop] of Object.entries(properties)) {
       if (input[inputId] !== undefined) {
         this.runInputData[inputId] = input[inputId];
@@ -409,6 +418,97 @@ export class Task<
         this.runInputData[inputId] = (prop as any).default;
       }
     }
+
+    // If additionalProperties is true, also copy any additional input properties
+    if (schema.additionalProperties === true) {
+      for (const [inputId, value] of Object.entries(input)) {
+        if (value !== undefined && !(inputId in properties)) {
+          this.runInputData[inputId] = value;
+        }
+      }
+    }
+  }
+
+  /**
+   * Adds/merges input data during graph execution.
+   * Unlike {@link setInput}, this method:
+   * - Detects changes using deep equality
+   * - Accumulates array values (appends rather than replaces)
+   * - Handles DATAFLOW_ALL_PORTS for pass-through
+   * - Handles additionalProperties for dynamic schemas
+   *
+   * @param overrides The input data to merge
+   * @returns true if any input data was changed, false otherwise
+   */
+  public addInput(overrides: Partial<Input> | undefined): boolean {
+    if (!overrides) return false;
+
+    let changed = false;
+    const inputSchema = this.inputSchema();
+
+    if (typeof inputSchema === "boolean") {
+      if (inputSchema === false) {
+        return false;
+      }
+      // Schema is `true` - accept any input
+      for (const [key, value] of Object.entries(overrides)) {
+        if (!deepEqual(this.runInputData[key], value)) {
+          this.runInputData[key] = value;
+          changed = true;
+        }
+      }
+      return changed;
+    }
+
+    const properties = inputSchema.properties || {};
+
+    for (const [inputId, prop] of Object.entries(properties)) {
+      if (inputId === DATAFLOW_ALL_PORTS) {
+        this.runInputData = { ...this.runInputData, ...overrides };
+        changed = true;
+      } else {
+        if (overrides[inputId] === undefined) continue;
+        const isArray =
+          (prop as any)?.type === "array" ||
+          ((prop as any)?.type === "any" &&
+            (Array.isArray(overrides[inputId]) || Array.isArray(this.runInputData[inputId])));
+
+        if (isArray) {
+          const existingItems = Array.isArray(this.runInputData[inputId])
+            ? this.runInputData[inputId]
+            : [this.runInputData[inputId]];
+          const newitems = [...existingItems];
+
+          const overrideItem = overrides[inputId];
+          if (Array.isArray(overrideItem)) {
+            newitems.push(...overrideItem);
+          } else {
+            newitems.push(overrideItem);
+          }
+          this.runInputData[inputId] = newitems;
+          changed = true;
+        } else {
+          if (!deepEqual(this.runInputData[inputId], overrides[inputId])) {
+            this.runInputData[inputId] = overrides[inputId];
+            changed = true;
+          }
+        }
+      }
+    }
+
+    // If additionalProperties is true, also accept any additional input properties
+    if (inputSchema.additionalProperties === true) {
+      for (const [inputId, value] of Object.entries(overrides)) {
+        if (value !== undefined && !(inputId in properties)) {
+          if (!deepEqual(this.runInputData[inputId], value)) {
+            this.runInputData[inputId] = value;
+            changed = true;
+          }
+        }
+      }
+    }
+
+    return changed;
   }
 
   /**
