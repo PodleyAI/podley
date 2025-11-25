@@ -40,6 +40,23 @@ export class FsFolderKvRepository<
   }
 
   /**
+   * Sets up the directory for the repository (creates directory)
+   */
+  private async setupDirectory(): Promise<void> {
+    try {
+      await mkdir(this.folderPath, { recursive: true });
+    } catch (error) {
+      // CI system sometimes has issues temporarily
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      try {
+        await mkdir(this.folderPath, { recursive: true });
+      } catch {
+        // Ignore error if directory already exists
+      }
+    }
+  }
+
+  /**
    * Stores a row in the repository.
    * @param key - The primary key
    * @param value - The value to store
@@ -74,6 +91,7 @@ export class FsFolderKvRepository<
    * @param items - Array of key-value pairs to store
    */
   public async putBulk(items: Array<{ key: Key; value: Value }>): Promise<void> {
+    await this.setupDirectory();
     await Promise.all(items.map(async ({ key, value }) => this.put(key, value)));
   }
 
@@ -85,7 +103,7 @@ export class FsFolderKvRepository<
    * @returns The stored value or undefined if not found
    */
   public async get(key: Key): Promise<Value | undefined> {
-    const localPath = path.join(this.folderPath, this.pathWriter(key));
+    const localPath = path.join(this.folderPath, this.pathWriter(key).replaceAll("..", "_"));
     const typeDef = this.valueSchema;
     try {
       const encoding =
@@ -127,7 +145,7 @@ export class FsFolderKvRepository<
    * @param key - The primary key of the row to delete
    */
   public async delete(key: Key): Promise<void> {
-    const localPath = path.join(this.folderPath, this.pathWriter(key));
+    const localPath = path.join(this.folderPath, this.pathWriter(key).replaceAll("..", "_"));
     await unlink(localPath);
   }
 

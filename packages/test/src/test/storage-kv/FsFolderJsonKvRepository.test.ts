@@ -9,7 +9,7 @@ import { mkdirSync, rmSync } from "fs";
 import { afterEach, beforeEach, describe } from "vitest";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 
-const testDir = ".cache/test/testing";
+const testDir = ".cache/test/kv-fs-folder-json";
 
 describe("FsFolderJsonKvRepository", () => {
   beforeEach(() => {

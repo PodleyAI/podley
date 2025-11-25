@@ -9,7 +9,7 @@ import { mkdirSync, rmSync } from "fs";
 import { afterEach, beforeEach, describe } from "vitest";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 
-const testDir = ".cache/test/testing";
+const testDir = ".cache/test/kv-fs-folder";
 
 describe("FsFolderKvRepository", () => {
   beforeEach(() => {
@@ -25,9 +25,14 @@ describe("FsFolderKvRepository", () => {
   });
 
   runGenericKvRepositoryTests(async (keyType, valueType) => {
+    // Create a deterministic file extension from the schema type
+    const schemaType =
+      typeof valueType === "object" && valueType !== null && "type" in valueType
+        ? String(valueType.type)
+        : "data";
     return new FsFolderKvRepository(
       testDir,
-      (key) => String(key) + "." + valueType,
+      (key) => `${String(key)}.${schemaType}`,
       keyType,
       valueType
     );
