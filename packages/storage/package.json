@@ -23,7 +23,7 @@
     "@podley/sqlite": "workspace:*",
     "@podley/util": "workspace:*",
     "pg": "^8.16.3",
-    "@supabase/supabase-js": "^2.74.0"
+    "@supabase/supabase-js": "^2.84.0"
   },
   "peerDependenciesMeta": {
     "@podley/sqlite": {
@@ -38,7 +38,7 @@
     "@podley/util": "workspace:*",
     "pg": "^8.16.3",
     "@types/pg": "^8.15.5",
-    "@supabase/supabase-js": "^2.75.1",
+    "@supabase/supabase-js": "^2.84.0",
     "fake-indexeddb": "^6.2.4"
   },
   "exports": {
