@@ -1,7 +1,7 @@
 {
   "name": "@podley/ai-provider",
   "type": "module",
-  "version": "0.0.49",
+  "version": "0.0.50",
   "description": "AI provider integrations for Podley, supporting OpenAI, Hugging Face Transformers, MediaPipe, and GGML models.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",

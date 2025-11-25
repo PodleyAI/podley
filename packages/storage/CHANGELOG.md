@@ -1,5 +1,14 @@
 # @podley/storage
 
+## 0.0.50
+
+### Patch Changes
+
+- ConditionalTask and better support (static flag and event emitter) for dynamic input and output schemas
+- Updated dependencies
+  - @podley/sqlite@0.0.50
+  - @podley/util@0.0.50
+
 ## 0.0.49
 
 ### Patch Changes
