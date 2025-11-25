@@ -32,7 +32,7 @@ export interface ITaskGraph {
     compoundMerge: Merge
   ): GraphResult<ExecuteOutput, Merge>;
   abort(): void;
-  skip(): Promise<void>;
+  disable(): Promise<void>;
   getTask(id: TaskIdType): ITask | undefined;
   getTasks(): ITask[];
   topologicallySortedNodes(): ITask[];

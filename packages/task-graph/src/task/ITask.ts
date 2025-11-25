@@ -91,7 +91,7 @@ export interface ITaskLifecycle<
   runReactive(overrides?: Partial<Input>): Promise<Output>;
   get runner(): TaskRunner<Input, Output, Config>;
   abort(): void;
-  skip(): Promise<void>;
+  disable(): Promise<void>;
 }
 
 /**

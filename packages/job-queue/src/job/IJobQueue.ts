@@ -27,10 +27,10 @@ export interface JobQueueOptions<Input, Output> {
    */
   deleteAfterFailureMs?: number;
   /**
-   * Time in milliseconds after which failed jobs should be deleted
+   * Time in milliseconds after which disabled jobs should be deleted
    * Set to 0 to delete immediately, undefined to never delete
    */
-  deleteAfterSkippedMs?: number;
+  deleteAfterDisabledMs?: number;
   /**
    * How often to check for new jobs in milliseconds
    */

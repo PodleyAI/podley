@@ -229,7 +229,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * - Marks a job as FAILED immediately for permanent or generic errors.
    */
   public async complete(jobDetails: JobStorageFormat<Input, Output>): Promise<void> {
-    if (jobDetails.status === JobStatus.SKIPPED) {
+    if (jobDetails.status === JobStatus.DISABLED) {
       await this.db.query(
         `UPDATE job_queue 
           SET 

@@ -275,19 +275,19 @@ export class TaskRunner<
     this.reactiveRunning = false;
   }
 
-  protected async handleSkip(): Promise<void> {
-    if (this.task.status === TaskStatus.SKIPPED) return;
-    this.task.status = TaskStatus.SKIPPED;
+  protected async handleDisable(): Promise<void> {
+    if (this.task.status === TaskStatus.DISABLED) return;
+    this.task.status = TaskStatus.DISABLED;
     this.task.progress = 100;
     this.task.completedAt = new Date();
     this.abortController = undefined;
     this.nodeProvenance = {};
-    this.task.emit("skipped");
+    this.task.emit("disabled");
     this.task.emit("status", this.task.status);
   }
 
-  public async skip(): Promise<void> {
-    await this.handleSkip();
+  public async disable(): Promise<void> {
+    await this.handleDisable();
   }
 
   /**

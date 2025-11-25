@@ -134,7 +134,7 @@ Jobs are units of work that can be executed by a queue. Each job has:
 
 - **Input**: Data needed for execution (strongly typed)
 - **Output**: Result of execution (strongly typed)
-- **Status**: PENDING, RUNNING, COMPLETED, FAILED, ABORTING, SKIPPED
+- **Status**: PENDING, RUNNING, COMPLETED, FAILED, ABORTING, DISABLED
 - **Progress**: 0-100 with optional message and details
 - **Retry logic**: Configurable max retries and retry strategies
 
@@ -612,14 +612,14 @@ enum JobStatus {
   COMPLETED = "COMPLETED",
   FAILED = "FAILED",
   ABORTING = "ABORTING",
-  SKIPPED = "SKIPPED",
+  DISABLED = "DISABLED",
 }
 
 // Queue options
 interface JobQueueOptions<Input, Output> {
   deleteAfterCompletionMs?: number;
   deleteAfterFailureMs?: number;
-  deleteAfterSkippedMs?: number;
+  deleteAfterDisabledMs?: number;
   waitDurationInMilliseconds?: number;
   limiter?: ILimiter;
   storage?: IQueueStorage<Input, Output>;
@@ -649,7 +649,7 @@ interface JobQueueStats {
   failedJobs: number;
   abortedJobs: number;
   retriedJobs: number;
-  skippedJobs: number;
+  disabledJobs: number;
   averageProcessingTime?: number;
   lastUpdateTime: Date;
 }

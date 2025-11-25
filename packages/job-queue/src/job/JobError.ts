@@ -70,10 +70,10 @@ export class AbortSignalJobError extends PermanentJobError {
 }
 
 /**
- * A job error that is caused by a job being skipped
+ * A job error that is caused by a job being disabled
  *
- * Examples: job.skip()
+ * Examples: job.disable()
  */
-export class JobSkippedError extends PermanentJobError {
-  public static type: string = "JobSkippedError";
+export class JobDisabledError extends PermanentJobError {
+  public static type: string = "JobDisabledError";
 }

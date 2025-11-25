@@ -14,14 +14,14 @@ import type { Task } from "./Task";
  *  PENDING -> PROCESSING -> COMPLETED
  *  PENDING -> PROCESSING -> ABORTING -> FAILED
  *  PENDING -> PROCESSING -> FAILED
- *  PENDING -> SKIPPED
+ *  PENDING -> DISABLED
  *
  */
 export enum TaskStatus {
   /** Task is created but not yet started */
   PENDING = "PENDING",
-  /** Task is skipped due to conditional logic */
-  SKIPPED = "SKIPPED",
+  /** Task is disabled due to conditional logic */
+  DISABLED = "DISABLED",
   /** Task is currently running */
   PROCESSING = "PROCESSING",
   /** Task has completed successfully */

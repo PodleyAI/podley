@@ -395,12 +395,12 @@ export function runGenericJobQueueTests(
       expect(job4Status).toBe(JobStatus.PROCESSING);
     });
 
-    it("should skip a job", async () => {
+    it("should disable a job", async () => {
       const id = await jobQueue.add(new TestJob({ input: { taskType: "task1", data: "input1" } }));
-      await jobQueue.skip(id);
+      await jobQueue.disable(id);
       await jobQueue.waitFor(id);
       const jobcheck = await jobQueue.get(id);
-      expect(jobcheck?.status).toBe(JobStatus.SKIPPED);
+      expect(jobcheck?.status).toBe(JobStatus.DISABLED);
     });
 
     it("should wait for a job to complete", async () => {

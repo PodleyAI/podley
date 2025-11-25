@@ -29,7 +29,7 @@ const StatusIcon = memo(
       sym = <Text color="red">{symbols.cross}</Text>;
     }
 
-    if (status === TaskStatus.SKIPPED) {
+    if (status === TaskStatus.DISABLED) {
       sym = <Text color="gray">{symbols.info}</Text>;
     }
 

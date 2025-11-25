@@ -17,9 +17,9 @@ import { IJobQueue, JobQueueOptions, JobStatus, QueueMode } from "./IJobQueue";
 import { Job, JobConstructorParam } from "./Job";
 import {
   AbortSignalJobError,
+  JobDisabledError,
   JobError,
   JobNotFoundError,
-  JobSkippedError,
   PermanentJobError,
   RetryableJobError,
 } from "./JobError";
@@ -40,7 +40,7 @@ export interface JobQueueStats {
   failedJobs: number;
   abortedJobs: number;
   retriedJobs: number;
-  skippedJobs: number;
+  disabledJobs: number;
   averageProcessingTime?: number;
   lastUpdateTime: Date;
 }
@@ -111,7 +111,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       failedJobs: 0,
       abortedJobs: 0,
       retriedJobs: 0,
-      skippedJobs: 0,
+      disabledJobs: 0,
       lastUpdateTime: new Date(),
     };
   }
@@ -176,11 +176,11 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     await this.storage.delete(id);
   }
 
-  public async skip(id: unknown) {
-    if (!id) throw new JobNotFoundError("Cannot skip undefined job");
+  public async disable(id: unknown) {
+    if (!id) throw new JobNotFoundError("Cannot disable undefined job");
     const job = await this.get(id);
     if (!job) throw new JobNotFoundError(`Job ${id} not found`);
-    await this.skipJob(job);
+    await this.disableJob(job);
   }
 
   /**
@@ -229,7 +229,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     if (job.status === JobStatus.COMPLETED) {
       return job.output as Output;
     }
-    if (job.status === JobStatus.SKIPPED) {
+    if (job.status === JobStatus.DISABLED) {
       return undefined;
     }
     if (job.status === JobStatus.FAILED) {
@@ -252,8 +252,8 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     if (job.errorCode === "AbortSignalJobError") {
       return new AbortSignalJobError(errorMessage);
     }
-    if (job.errorCode === "JobSkippedError") {
-      return new JobSkippedError(errorMessage);
+    if (job.errorCode === "JobDisabledError") {
+      return new JobDisabledError(errorMessage);
     }
     return new JobError(errorMessage);
   }
@@ -277,7 +277,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     if (!job) throw new JobNotFoundError(`Job ${jobId} not found`);
 
     if (
-      [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.ABORTING, JobStatus.SKIPPED].includes(
+      [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.ABORTING, JobStatus.DISABLED].includes(
         job.status
       )
     ) {
@@ -390,7 +390,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
       failedJobs: 0,
       abortedJobs: 0,
       retriedJobs: 0,
-      skippedJobs: 0,
+      disabledJobs: 0,
       lastUpdateTime: new Date(),
     };
     this.emitStatsUpdate();
@@ -505,7 +505,7 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     failedJobs: 0,
     abortedJobs: 0,
     retriedJobs: 0,
-    skippedJobs: 0,
+    disabledJobs: 0,
     lastUpdateTime: new Date(),
   };
 
@@ -597,8 +597,8 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     if (job.deadlineAt && job.deadlineAt < new Date()) {
       throw new PermanentJobError(`Job ${job.id} has exceeded its deadline`);
     }
-    if (job.status === JobStatus.SKIPPED) {
-      throw new JobSkippedError(`Job ${job.id} has been skipped`);
+    if (job.status === JobStatus.DISABLED) {
+      throw new JobDisabledError(`Job ${job.id} has been disabled`);
     }
   }
 
@@ -747,24 +747,24 @@ export class JobQueue<Input, Output, QueueJob extends Job<Input, Output> = Job<I
     }
   }
 
-  protected async skipJob(job: Job<Input, Output>) {
+  protected async disableJob(job: Job<Input, Output>) {
     try {
-      job.status = JobStatus.SKIPPED;
+      job.status = JobStatus.DISABLED;
       job.progress = 100;
       job.completedAt = new Date();
       job.progressMessage = "";
       job.progressDetails = null;
       await this.storage.complete(this.classToStorage(job));
-      if (this.options.deleteAfterSkippedMs === 0) {
+      if (this.options.deleteAfterDisabledMs === 0) {
         await this.delete(job.id);
       }
-      this.stats.skippedJobs++;
-      this.events.emit("job_skipped", this.queueName, job.id);
+      this.stats.disabledJobs++;
+      this.events.emit("job_disabled", this.queueName, job.id);
       const promises = this.activeJobPromises.get(job.id) || [];
       promises.forEach(({ resolve }) => resolve(undefined));
       this.activeJobPromises.delete(job.id);
     } catch (err) {
-      console.error("skipJob", err);
+      console.error("disableJob", err);
     }
   }
 

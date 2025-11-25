@@ -28,8 +28,8 @@ export type TaskEventListeners = {
   /** Fired when a task encounters an error */
   error: (error: TaskError) => void;
 
-  /** Fired when a task is skipped */
-  skipped: () => void;
+  /** Fired when a task is disabled */
+  disabled: () => void;
 
   /** Fired when a task reports progress */
   progress: (progress: number, message?: string, ...args: any[]) => void;

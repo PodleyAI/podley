@@ -141,10 +141,10 @@ export class TaskGraph implements ITaskGraph {
   }
 
   /**
-   * Skips the task graph
+   * Disables the task graph
    */
-  public async skip() {
-    await this.runner.skip();
+  public async disable() {
+    await this.runner.disable();
   }
 
   /**

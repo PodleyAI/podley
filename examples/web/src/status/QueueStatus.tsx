@@ -15,7 +15,7 @@ export function QueueStatus({ queueType }: { queueType: string }) {
   const [completed, setCompleted] = useState<number>(0);
   const [aborting, setAborting] = useState<number>(0);
   const [errors, setErrors] = useState<number>(0);
-  const [skipped, setSkipped] = useState<number>(0);
+  const [disabled, setDisabled] = useState<number>(0);
 
   useEffect(() => {
     async function listen() {
@@ -24,14 +24,14 @@ export function QueueStatus({ queueType }: { queueType: string }) {
       setCompleted(await queue.size(JobStatus.COMPLETED));
       setAborting(await queue.size(JobStatus.ABORTING));
       setErrors(await queue.size(JobStatus.FAILED));
-      setSkipped(await queue.size(JobStatus.SKIPPED));
+      setDisabled(await queue.size(JobStatus.DISABLED));
     }
 
     queue.on("job_start", listen);
     queue.on("job_complete", listen);
     queue.on("job_error", listen);
     queue.on("job_aborting", listen);
-    queue.on("job_skipped", listen);
+    queue.on("job_disabled", listen);
     listen();
 
     return () => {
@@ -39,7 +39,7 @@ export function QueueStatus({ queueType }: { queueType: string }) {
       queue.off("job_complete", listen);
       queue.off("job_error", listen);
       queue.off("job_aborting", listen);
-      queue.off("job_skipped", listen);
+      queue.off("job_disabled", listen);
     };
   }, []);
 
@@ -50,7 +50,7 @@ export function QueueStatus({ queueType }: { queueType: string }) {
     setCompleted(0);
     setAborting(0);
     setErrors(0);
-    setSkipped(0);
+    setDisabled(0);
   }, [queue]);
 
   return (
@@ -58,7 +58,7 @@ export function QueueStatus({ queueType }: { queueType: string }) {
       <span>{queue.queueName.split("_").pop()}</span>: <span title="Pending">{pending}</span> /{" "}
       <span title="Processing">{processing}</span> / <span title="Completed">{completed}</span> /{" "}
       <span title="Aborting">{aborting}</span> / <span title="Errors">{errors}</span> /{" "}
-      <span title="Skipped">{skipped}</span>
+      <span title="Disabled">{disabled}</span>
       <button className="float-right" onClick={clear}>
         Clear
       </button>

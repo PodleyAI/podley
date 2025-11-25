@@ -46,11 +46,11 @@ export class GraphAsTaskRunner<
     return this.task.subGraph!.runReactive<Output>();
   }
 
-  protected async handleSkip(): Promise<void> {
+  protected async handleDisable(): Promise<void> {
     if (this.task.hasChildren()) {
-      await this.task.subGraph!.skip();
+      await this.task.subGraph!.disable();
     }
-    super.handleSkip();
+    super.handleDisable();
   }
 
   // ========================================================================

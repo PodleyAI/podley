@@ -114,7 +114,7 @@ export abstract class JobQueueTask<
       });
       const output = await queue.waitFor(jobId);
       if (output === undefined) {
-        throw new TaskConfigurationError("Job skipped, should not happen");
+        throw new TaskConfigurationError("Job disabled, should not happen");
       }
 
       return output!;

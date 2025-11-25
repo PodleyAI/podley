@@ -227,8 +227,8 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
   public async complete(jobDetails: JobStorageFormat<Input, Output>): Promise<void> {
     const now = new Date().toISOString();
 
-    // Handle skipped without changing attempts
-    if (jobDetails.status === JobStatus.SKIPPED) {
+    // Handle disabled without changing attempts
+    if (jobDetails.status === JobStatus.DISABLED) {
       const { error } = await this.client
         .from("job_queue")
         .update({

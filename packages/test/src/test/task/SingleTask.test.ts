@@ -147,17 +147,17 @@ describe("SingleTask", () => {
         expect(task.status).toBe(TaskStatus.ABORTING);
       });
 
-      it("should support skip event listener", async () => {
-        let skipEmitted = false;
+      it("should support disable event listener", async () => {
+        let disableEmitted = false;
 
-        task.on("skipped", () => {
-          skipEmitted = true;
+        task.on("disabled", () => {
+          disableEmitted = true;
         });
 
-        await task.skip();
+        await task.disable();
 
-        expect(skipEmitted).toBe(true);
-        expect(task.status).toBe(TaskStatus.SKIPPED);
+        expect(disableEmitted).toBe(true);
+        expect(task.status).toBe(TaskStatus.DISABLED);
       });
 
       it("should support once event listener", async () => {

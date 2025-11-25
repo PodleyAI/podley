@@ -176,7 +176,7 @@ export const RunGraphFlow: React.FC<{
       buildNodesFromTasks(graph);
 
       const unsubscribes: (() => void)[] = [];
-      const statusEvents = ["start", "complete", "error", "skipped", "abort", "reset"] as const;
+      const statusEvents = ["start", "complete", "error", "disabled", "abort", "reset"] as const;
 
       // Handle task events
       const tasks = graph.getTasks();

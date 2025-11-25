@@ -174,11 +174,11 @@ export class Task<
   }
 
   /**
-   * Skips task execution
+   * Disables task execution
    * Delegates to the task runner
    */
-  public async skip(): Promise<void> {
-    await this.runner.skip();
+  public async disable(): Promise<void> {
+    await this.runner.disable();
   }
 
   // ========================================================================

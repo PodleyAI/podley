@@ -37,7 +37,7 @@ const EDGE_STYLE_MAP = {
     strokeWidth: 2,
     transition: "stroke 0.3s",
   },
-  [TaskStatus.SKIPPED]: {
+  [TaskStatus.DISABLED]: {
     stroke: "#bbb",
     strokeWidth: 1.5,
     transition: "stroke 0.3s",

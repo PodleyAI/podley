@@ -80,8 +80,8 @@ export class Dataflow {
       case TaskStatus.FAILED:
         this.emit("error", this.error!);
         break;
-      case TaskStatus.SKIPPED:
-        this.emit("skipped");
+      case TaskStatus.DISABLED:
+        this.emit("disabled");
         break;
     }
     this.emit("status", this.status);

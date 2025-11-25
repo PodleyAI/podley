@@ -238,10 +238,10 @@ export class TaskGraphRunner {
   }
 
   /**
-   * Skips the task graph execution
+   * Disables the task graph execution
    */
-  public async skip(): Promise<void> {
-    await this.handleSkip();
+  public async disable(): Promise<void> {
+    await this.handleDisable();
   }
 
   /**
@@ -619,18 +619,18 @@ export class TaskGraphRunner {
   }
 
   /**
-   * Handles task graph skipping
+   * Handles task graph disabling
    */
-  protected async handleSkip(): Promise<void> {
+  protected async handleDisable(): Promise<void> {
     await Promise.allSettled(
       this.graph.getTasks().map(async (task: ITask) => {
         if ([TaskStatus.PENDING].includes(task.status)) {
-          return task.skip();
+          return task.disable();
         }
       })
     );
     this.running = false;
-    this.graph.emit("skip");
+    this.graph.emit("disabled");
   }
 
   /**

@@ -18,7 +18,7 @@ export type TaskGraphStatusListeners = {
   complete: () => void;
   error: (error: Error) => void;
   abort: () => void;
-  skip: () => void;
+  disabled: () => void;
 };
 export type TaskGraphStatusEvents = keyof TaskGraphStatusListeners;
 export type TaskGraphStatusListener<Event extends TaskGraphStatusEvents> =
