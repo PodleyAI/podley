@@ -57,6 +57,7 @@
         "@mediapipe/tasks-text": "catalog:",
         "@podley/ai": "workspace:*",
         "@podley/ai-provider": "workspace:*",
+        "@podley/debug": "workspace:*",
         "@podley/job-queue": "workspace:*",
         "@podley/sqlite": "workspace:*",
         "@podley/storage": "workspace:*",
@@ -126,6 +127,14 @@
         "@podley/task-graph": "workspace:*",
         "@podley/util": "workspace:*",
         "@sroussey/transformers": "catalog:",
+      },
+    },
+    "packages/debug": {
+      "name": "@podley/debug",
+      "version": "0.0.1",
+      "dependencies": {
+        "@podley/task-graph": "workspace:*",
+        "@podley/util": "workspace:*",
       },
     },
     "packages/job-queue": {
@@ -529,6 +538,8 @@
     "@podley/ai-provider": ["@podley/ai-provider@workspace:packages/ai-provider"],
 
     "@podley/cli": ["@podley/cli@workspace:examples/cli"],
+
+    "@podley/debug": ["@podley/debug@workspace:packages/debug"],
 
     "@podley/job-queue": ["@podley/job-queue@workspace:packages/job-queue"],
 

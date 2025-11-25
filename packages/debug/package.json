@@ -1,0 +1,38 @@
+{
+  "name": "@podley/debug",
+  "type": "module",
+  "version": "0.0.49",
+  "description": "Debug utilities for Podley, including Chrome DevTools custom formatters for task graphs and workflows.",
+  "scripts": {
+    "watch": "concurrently -c 'auto' 'bun:watch-*'",
+    "watch-browser": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/browser.ts",
+    "watch-types": "tsc --watch --preserveWatchOutput",
+    "build-package": "bun run build-clean && concurrently -c 'auto' -n 'browser,types' 'bun run build-browser' 'bun run build-types'",
+    "build-clean": "rm -fr dist/*",
+    "build-browser": "bun build --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/browser.ts",
+    "build-types": "rm -f tsconfig.tsbuildinfo && tsc",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "bun test",
+    "prepare": "node -e \"const pkg=require('./package.json');pkg.exports['.'].types='./dist/types.d.ts';require('fs').writeFileSync('package.json',JSON.stringify(pkg,null,2))\""
+  },
+  "exports": {
+    ".": {
+      "react-native": "./dist/browser.js",
+      "browser": "./dist/browser.js",
+      "bun": "./dist/browser.js",
+      "types": "./dist/types.d.ts",
+      "node": "./dist/browser.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src/**/*.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@podley/task-graph": "workspace:*",
+    "@podley/util": "workspace:*"
+  }
+}

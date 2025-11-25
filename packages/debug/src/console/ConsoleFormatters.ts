@@ -8,7 +8,7 @@ import { Dataflow, Task, TaskGraph, TaskStatus, Workflow } from "@podley/task-gr
 import type { DataPortSchema } from "@podley/util";
 import { DirectedAcyclicGraph } from "@podley/util";
 
-type Config = Record<string, any>;
+type Config = Record<string, unknown>;
 
 /**
  * Extracts property keys from a JSON schema, handling boolean schemas.
@@ -26,7 +26,7 @@ function getSchemaProperties(schema: DataPortSchema): Record<string, DataPortSch
 type JsonMLTagName = string;
 
 interface JsonMLAttributes {
-  [key: string]: any;
+  readonly [key: string]: unknown;
 }
 
 type JsonMLNode = JsonMLText | JsonMLElementDef;
@@ -36,17 +36,20 @@ type JsonMLText = string;
 type JsonMLElementDef = [JsonMLTagName, JsonMLAttributes?, ...JsonMLNode[]];
 
 abstract class ConsoleFormatter {
-  abstract header(value: any, config?: Config): JsonMLElementDef | null;
-  abstract hasBody(value: any, config?: Config): boolean;
-  abstract body(value: any, config?: Config): JsonMLElementDef;
+  abstract header(value: unknown, config?: Config): JsonMLElementDef | null;
+  abstract hasBody(value: unknown, config?: Config): boolean;
+  abstract body(value: unknown, config?: Config): JsonMLElementDef | null;
 }
 
-export function isDarkMode() {
+/**
+ * Returns whether the browser is in dark mode
+ */
+export function isDarkMode(): boolean {
   return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
 class WorkflowConsoleFormatter extends ConsoleFormatter {
-  header(workflow: Workflow | TaskGraph, config?: Config) {
+  header(workflow: Workflow | TaskGraph, config?: Config): JsonMLElementDef | null {
     // @ts-ignore
     if (workflow instanceof Workflow || workflow instanceof TaskGraph) {
       const graph: TaskGraph = workflow instanceof TaskGraph ? workflow : workflow.graph;
@@ -64,13 +67,14 @@ class WorkflowConsoleFormatter extends ConsoleFormatter {
     return null;
   }
 
-  hasBody(value: any, config?: Config) {
+  hasBody(value: unknown, config?: Config): boolean {
     return true;
   }
 
-  body(obj: any, config?: Config) {
+  body(obj: unknown, config?: Config): JsonMLElementDef {
     const body = new JsonMLElement("div");
-    const graph: TaskGraph = obj instanceof TaskGraph ? obj : obj.graph;
+    const graph: TaskGraph =
+      obj instanceof TaskGraph ? obj : (obj as Workflow).graph;
     const nodes = body.createStyledList();
     const tasks = graph.getTasks();
     if (tasks.length) {
@@ -117,7 +121,7 @@ class WorkflowConsoleFormatter extends ConsoleFormatter {
 
 // New formatter for Workflow API methods
 class WorkflowAPIConsoleFormatter extends ConsoleFormatter {
-  header(obj: any, config?: Config) {
+  header(obj: unknown, config?: Config): JsonMLElementDef | null {
     if (obj === Workflow.prototype || obj === Workflow) {
       const header = new JsonMLElement("div");
       header.sectionHeader("Workflow API");
@@ -126,11 +130,11 @@ class WorkflowAPIConsoleFormatter extends ConsoleFormatter {
     return null;
   }
 
-  hasBody(value: any, config?: Config) {
+  hasBody(value: unknown, config?: Config): boolean {
     return true;
   }
 
-  body() {
+  body(): JsonMLElementDef {
     const body = new JsonMLElement("div");
     const apiSection = body.createChild("div");
     const apiList = apiSection.createStyledList();
@@ -153,13 +157,25 @@ class WorkflowAPIConsoleFormatter extends ConsoleFormatter {
   }
 }
 
+interface WorkflowCreateObject {
+  readonly workflowCreate: boolean;
+  readonly constructor: { readonly runtype?: string; readonly type?: string };
+  readonly type: string;
+  inputSchema(): DataPortSchema;
+  outputSchema(): DataPortSchema;
+}
+
 class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
-  header(obj: any, config?: Config) {
-    if (obj.workflowCreate) {
+  header(obj: unknown, config?: Config): JsonMLElementDef | null {
+    const workflowObj = obj as WorkflowCreateObject;
+    if (workflowObj.workflowCreate) {
       const header = new JsonMLElement("div");
-      const name = obj.constructor.runtype ?? obj.constructor.type ?? obj.type.replace(/Task$/, "");
-      const inputSchema = obj.inputSchema();
-      const outputSchema = obj.outputSchema();
+      const name =
+        workflowObj.constructor.runtype ??
+        workflowObj.constructor.type ??
+        workflowObj.type.replace(/Task$/, "");
+      const inputSchema = workflowObj.inputSchema();
+      const outputSchema = workflowObj.outputSchema();
       const inputProperties = getSchemaProperties(inputSchema);
       const outputProperties = getSchemaProperties(outputSchema);
 
@@ -181,8 +197,8 @@ class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
 
       header.methodSignature(name);
       header.functionCall((el) => {
-        el.objectBraces((obj) => {
-          obj.inputText(`${inputs.join(", ")}`);
+        el.objectBraces((innerObj) => {
+          innerObj.inputText(`${inputs.join(", ")}`);
         });
       });
       header.greyText("): ");
@@ -195,17 +211,17 @@ class CreateWorkflowConsoleFormatter extends ConsoleFormatter {
     return null;
   }
 
-  hasBody(value: any, config?: Config) {
+  hasBody(value: unknown, config?: Config): boolean {
     return false;
   }
 
-  body(obj: any, config?: Config) {
+  body(obj: unknown, config?: Config): JsonMLElementDef | null {
     return null;
   }
 }
 
 class TaskConsoleFormatter extends ConsoleFormatter {
-  header(task: Task, config?: Config) {
+  header(task: Task, config?: Config): JsonMLElementDef | null {
     if (!task) return null;
 
     if (
@@ -217,7 +233,7 @@ class TaskConsoleFormatter extends ConsoleFormatter {
     ) {
       const header = new JsonMLElement("div");
       let name = task.type ?? task.constructor.name;
-      if (config?.workflow) name = name.replace(/Task$/, "");
+      if ((config as { workflow?: unknown })?.workflow) name = name.replace(/Task$/, "");
       const inputSchema = task.inputSchema();
       const outputSchema = task.outputSchema();
       const inputProperties = getSchemaProperties(inputSchema);
@@ -227,14 +243,14 @@ class TaskConsoleFormatter extends ConsoleFormatter {
         ? Object.keys(inputProperties)
             .filter((key) => task.runInputData[key] !== undefined)
             .map((key) => {
-              let value = task.runInputData[key];
+              const value = task.runInputData[key];
               return { name: key, value };
             })
         : typeof inputSchema === "boolean" && inputSchema
           ? Object.keys(task.runInputData || {})
               .filter((key) => task.runInputData[key] !== undefined)
               .map((key) => {
-                let value = task.runInputData[key];
+                const value = task.runInputData[key];
                 return { name: key, value };
               })
           : [];
@@ -267,12 +283,12 @@ class TaskConsoleFormatter extends ConsoleFormatter {
 
       header.highlightText(name);
       header.functionCall((el) => {
-        el.objectBraces((obj) => {
-          obj.parameterList(inputs);
+        el.objectBraces((innerObj) => {
+          innerObj.parameterList(inputs);
         });
         el.greyText(", ");
-        el.objectBraces((obj) => {
-          obj.parameterList([{ name: "id", value: task.config.id }]);
+        el.objectBraces((innerObj) => {
+          innerObj.parameterList([{ name: "id", value: task.config.id }]);
         });
       });
 
@@ -287,23 +303,25 @@ class TaskConsoleFormatter extends ConsoleFormatter {
     return null;
   }
 
-  hasBody(task: any, config?: Config) {
+  hasBody(task: unknown, config?: Config): boolean {
     return task instanceof Task;
   }
 
-  body(task: Task, config?: Config) {
+  body(task: Task, config?: Config): JsonMLElementDef | null {
     if (!task) return null;
     if (!(task instanceof Task)) return null;
 
     const body = new JsonMLElement("div").setStyle("padding-left: 10px;");
 
     const inputs = body.createStyledList("Inputs:");
-    const allInboundDataflows = (config?.graph as TaskGraph)?.getSourceDataflows(task.config.id);
+    const allInboundDataflows = ((config as { graph?: TaskGraph })?.graph)?.getSourceDataflows(
+      task.config.id
+    );
 
     const inputSchema = task.inputSchema();
     const inputProperties = getSchemaProperties(inputSchema);
     const schemaKeys =
-      typeof inputProperties === "object"
+      inputProperties !== null
         ? Object.keys(inputProperties)
         : inputSchema === true
           ? Object.keys(task.runInputData || {})
@@ -315,10 +333,10 @@ class TaskConsoleFormatter extends ConsoleFormatter {
       li.inputText(`${key}: `);
       const inputInboundDataflows = allInboundDataflows?.filter((e) => e.targetTaskPortId === key);
       if (inputInboundDataflows) {
-        let sources: string[] = [];
-        let sourceValues: any[] = [];
+        const sources: string[] = [];
+        const sourceValues: unknown[] = [];
         inputInboundDataflows.forEach((df) => {
-          const sourceTask = config?.graph?.getTask(df.sourceTaskId);
+          const sourceTask = (config as { graph?: TaskGraph })?.graph?.getTask(df.sourceTaskId);
           sources.push(`${sourceTask?.type}->Output{${df.sourceTaskPortId}}`);
           if (df.status === TaskStatus.COMPLETED) {
             sourceValues.push(df.value);
@@ -344,11 +362,11 @@ class TaskConsoleFormatter extends ConsoleFormatter {
       }
     }
 
-    const outputs = body.createStyledList("Outputs:");
+    const outputsList = body.createStyledList("Outputs:");
     const outputSchema = task.outputSchema();
     const outputProperties = getSchemaProperties(outputSchema);
     const outputKeys =
-      typeof outputProperties === "object"
+      outputProperties !== null
         ? Object.keys(outputProperties)
         : outputSchema === true
           ? Object.keys(task.runOutputData || {})
@@ -356,7 +374,7 @@ class TaskConsoleFormatter extends ConsoleFormatter {
 
     for (const key of outputKeys) {
       const value = task.runOutputData[key];
-      const li = outputs.createListItem("", "padding-left: 20px;");
+      const li = outputsList.createListItem("", "padding-left: 20px;");
       li.outputText(`${key}: `);
       li.createValueObject(value);
     }
@@ -382,7 +400,7 @@ class TaskConsoleFormatter extends ConsoleFormatter {
 }
 
 class DAGConsoleFormatter extends ConsoleFormatter {
-  header(obj: any, config?: Config) {
+  header(obj: unknown, config?: Config): JsonMLElementDef | null {
     if (obj instanceof DirectedAcyclicGraph) {
       const header = new JsonMLElement("div");
       header.createTextChild("DAG");
@@ -391,16 +409,16 @@ class DAGConsoleFormatter extends ConsoleFormatter {
     return null;
   }
 
-  hasBody(value: any, config?: Config) {
+  hasBody(value: unknown, config?: Config): boolean {
     return true;
   }
 
-  body(obj: any, config?: Config) {
+  body(obj: unknown, config?: Config): JsonMLElementDef {
     const body = new JsonMLElement("div");
-    const nodes = body.createStyledList();
-    if (obj.getNodes().length > 0) {
-      // @ts-ignore
-      const { dataURL, height } = generateGraphImage(obj);
+    body.createStyledList();
+    const dag = obj as DirectedAcyclicGraph<NodeWithConfig, unknown, string, unknown>;
+    if (dag.getNodes().length > 0) {
+      const { dataURL, height } = generateGraphImage(dag);
       if (dataURL) {
         const imageTag = body.createChild("div");
         imageTag.addAttribute(
@@ -414,7 +432,7 @@ class DAGConsoleFormatter extends ConsoleFormatter {
 }
 
 class DataflowConsoleFormatter extends ConsoleFormatter {
-  header(obj: any, config?: Config) {
+  header(obj: unknown, config?: Config): JsonMLElementDef | null {
     if (obj instanceof Dataflow) {
       const header = new JsonMLElement("div");
       header.highlightText("Dataflow ");
@@ -430,29 +448,49 @@ class DataflowConsoleFormatter extends ConsoleFormatter {
     return null;
   }
 
-  hasBody(value: any, config?: Config) {
+  hasBody(value: unknown, config?: Config): boolean {
     return true;
   }
 
-  body(obj: any, config?: Config) {
+  body(obj: unknown, config?: Config): JsonMLElementDef | null {
     return null;
   }
 }
 
+interface ReactElement {
+  readonly $$typeof?: { toString(): string };
+  readonly displayName?: string;
+  readonly type?: {
+    readonly $$typeof?: { toString(): string };
+    readonly displayName?: string;
+    readonly name?: string;
+    readonly type?: {
+      readonly displayName?: string;
+      readonly name?: string;
+    };
+  };
+  readonly key?: string;
+  readonly props?: Record<string, unknown>;
+}
+
 class ReactElementConsoleFormatter extends ConsoleFormatter {
-  header(obj: any, config?: Config) {
-    if (obj?.$$typeof?.toString() === "Symbol(react.transitional.element)" && !config?.parent) {
+  header(obj: unknown, config?: Config): JsonMLElementDef | null {
+    const reactEl = obj as ReactElement;
+    if (
+      reactEl?.$$typeof?.toString() === "Symbol(react.transitional.element)" &&
+      !(config as { parent?: unknown })?.parent
+    ) {
       const header = new JsonMLElement("div");
-      const isMemo = obj.type?.$$typeof?.toString() === "Symbol(react.memo)";
+      const isMemo = reactEl.type?.$$typeof?.toString() === "Symbol(react.memo)";
       const name = !isMemo
-        ? obj.displayName || obj.type?.displayName || obj.type?.name
-        : obj.type?.type?.displayName || obj.type?.type?.name;
+        ? reactEl.displayName || reactEl.type?.displayName || reactEl.type?.name
+        : reactEl.type?.type?.displayName || reactEl.type?.type?.name;
       header.greyText(`<`);
       header.sectionHeader(`${name}`);
       header.greyText(`/>`);
-      if (obj.key) {
+      if (reactEl.key) {
         header.createTextChild(" ");
-        header.inputText(`key={${obj.key}}`);
+        header.inputText(`key={${reactEl.key}}`);
       }
       if (isMemo) {
         header.createTextChild(" ");
@@ -464,24 +502,31 @@ class ReactElementConsoleFormatter extends ConsoleFormatter {
     return null;
   }
 
-  hasBody(value: any, config?: Config) {
+  hasBody(value: unknown, config?: Config): boolean {
     return true;
   }
 
-  body(obj: any, config?: Config) {
+  body(obj: unknown, config?: Config): JsonMLElementDef {
     const body = new JsonMLElement("div");
     const props = body.createStyledList("Props:");
-    props.propertyBlock(obj.props);
+    const reactEl = obj as ReactElement;
+    props.propertyBlock(reactEl.props ?? {});
     return body.toJsonML();
   }
 }
 
 class JsonMLElement {
-  _attributes: Record<string, any>;
+  _attributes: Record<string, unknown>;
   _jsonML: JsonMLElementDef;
 
   // Color constants
-  static getColors() {
+  static getColors(): {
+    readonly grey: string;
+    readonly inputColor: string;
+    readonly outputColor: string;
+    readonly yellow: string;
+    readonly undefined: string;
+  } {
     const dark = isDarkMode();
     return {
       grey: dark ? "#aaa" : "#333",
@@ -555,7 +600,7 @@ class JsonMLElement {
 
   // Helper for creating a parameter list with input/output coloring
   parameterList(
-    params: Array<{ name: string; value: any }>,
+    params: ReadonlyArray<{ readonly name: string; readonly value: unknown }>,
     isOutput: boolean = false
   ): JsonMLElement {
     params.forEach((param, i) => {
@@ -572,7 +617,7 @@ class JsonMLElement {
   }
 
   // Helper for creating a parameter list with coloring
-  propertyBlock(params: Record<string, any>): JsonMLElement {
+  propertyBlock(params: Record<string, unknown>): JsonMLElement {
     for (const [key, value] of Object.entries(params)) {
       const item = this.createListItem("");
       item.inputText(key);
@@ -638,13 +683,13 @@ class JsonMLElement {
     return this;
   }
 
-  createChild(tagName: JsonMLTagName) {
+  createChild(tagName: JsonMLTagName): JsonMLElement {
     const c = new JsonMLElement(tagName);
     this._jsonML.push(c.toJsonML());
     return c;
   }
 
-  createObjectTag(object: any, config?: Config) {
+  createObjectTag(object: unknown, config?: Config): JsonMLElement {
     const tag = this.createChild("object");
     tag.addAttribute("object", object);
     if (config) {
@@ -653,7 +698,7 @@ class JsonMLElement {
     return tag;
   }
 
-  createValueObject(value: any, config?: Config) {
+  createValueObject(value: unknown, config?: Config): JsonMLElement {
     if (Array.isArray(value)) return this.createArrayChild(value, config);
     if (typeof value === "undefined") {
       const colors = JsonMLElement.getColors();
@@ -665,12 +710,12 @@ class JsonMLElement {
     return this.createObjectTag(value, config);
   }
 
-  setStyle(style: string) {
+  setStyle(style: string): JsonMLElement {
     this._attributes["style"] = style;
     return this;
   }
 
-  addAttribute(key: string, value: any) {
+  addAttribute(key: string, value: unknown): JsonMLElement {
     this._attributes[key] = value;
     return this;
   }
@@ -680,7 +725,7 @@ class JsonMLElement {
     return this;
   }
 
-  createArrayChild(array: any[], config?: Config) {
+  createArrayChild(array: readonly unknown[], config?: Config): JsonMLElement {
     const j = new JsonMLElement("span");
     j.createTextChild("[");
     for (let i = 0; i < array.length; ++i) {
@@ -692,15 +737,20 @@ class JsonMLElement {
     return j;
   }
 
-  toJsonML() {
+  toJsonML(): JsonMLElementDef {
     return this._jsonML;
   }
 }
 
+interface NodeWithConfig {
+  readonly config: { readonly id: string };
+  readonly type?: string;
+}
+
 function computeLayout(
-  graph: DirectedAcyclicGraph<any, any, any, any>,
+  graph: DirectedAcyclicGraph<NodeWithConfig, unknown, string, unknown>,
   canvasWidth: number
-): { positions: { [id: string]: { x: number; y: number } }; requiredHeight: number } {
+): { readonly positions: { readonly [id: string]: { readonly x: number; readonly y: number } }; readonly requiredHeight: number } {
   const positions: { [id: string]: { x: number; y: number } } = {};
   const layers: Map<number, string[]> = new Map();
   const depths: { [id: string]: number } = {};
@@ -739,9 +789,9 @@ function computeLayout(
 }
 
 function generateGraphImage(
-  graph: DirectedAcyclicGraph<any, any, any, any>,
+  graph: DirectedAcyclicGraph<NodeWithConfig, unknown, string, unknown>,
   width = 800
-): { dataURL: string; height: number } {
+): { readonly dataURL: string; readonly height: number } {
   const ratio = window.devicePixelRatio || 1;
   const { positions, requiredHeight } = computeLayout(graph, width);
   const canvas = document.createElement("canvas");
@@ -781,7 +831,7 @@ function generateGraphImage(
     ctx.fillStyle = "black";
     ctx.font = `12px Arial`;
     ctx.textAlign = "center";
-    ctx.fillText(node.type, pos.x, pos.y - 15);
+    ctx.fillText(node.type ?? "", pos.x, pos.y - 15);
     ctx.fillStyle = "#3498db";
   }
 
@@ -790,9 +840,30 @@ function generateGraphImage(
   return { dataURL, height: requiredHeight };
 }
 
-export function installDevToolsFormatters() {
-  window["devtoolsFormatters"] = window["devtoolsFormatters"] || [];
-  window["devtoolsFormatters"].push(
+declare global {
+  interface Window {
+    devtoolsFormatters?: ConsoleFormatter[];
+  }
+}
+
+/**
+ * Installs custom DevTools formatters for Podley task graphs, workflows, and related objects.
+ * Call this function once in your application to enable rich console output for debugging.
+ *
+ * @example
+ * ```ts
+ * import { installDevToolsFormatters } from "@podley/debug";
+ *
+ * // Call early in your app initialization
+ * installDevToolsFormatters();
+ *
+ * // Now console.log will show rich output for Workflow, Task, TaskGraph, etc.
+ * console.log(myWorkflow);
+ * ```
+ */
+export function installDevToolsFormatters(): void {
+  window.devtoolsFormatters = window.devtoolsFormatters || [];
+  window.devtoolsFormatters.push(
     new WorkflowAPIConsoleFormatter(),
     new CreateWorkflowConsoleFormatter(),
     new WorkflowConsoleFormatter(),
@@ -802,3 +873,4 @@ export function installDevToolsFormatters() {
     new DAGConsoleFormatter()
   );
 }
+

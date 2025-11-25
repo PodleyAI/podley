@@ -24,6 +24,7 @@ async function updateExports(
 const bunUseSource = {
   [`"bun": "./dist/bun.js"`]: `"bun": "./src/bun.ts"`,
   [`"bun": "./dist/index.js"`]: `"bun": "./src/index.ts"`,
+  [`"bun": "./dist/browser.js"`]: `"bun": "./src/browser.ts"`,
   [`"import": "./dist/bun.js"`]: `"import": "./src/bun.ts"`,
   [`"types": "./dist/types.d.ts"`]: `"types": "./src/types.ts"`,
   [`"types": "./dist/bun.d.ts"`]: `"types": "./src/bun.ts"`,
@@ -31,6 +32,7 @@ const bunUseSource = {
 const bunUseDist = {
   [`"bun": "./src/bun.ts"`]: `"bun": "./dist/bun.js"`,
   [`"bun": "./src/index.ts"`]: `"bun": "./dist/index.js"`,
+  [`"bun": "./src/browser.ts"`]: `"bun": "./dist/browser.js"`,
   [`"import": "./src/bun.ts"`]: `"import": "./dist/bun.js"`,
   [`"types": "./src/types.ts"`]: `"types": "./dist/types.d.ts"`,
   [`"types": "./src/bun.ts"`]: `"types": "./dist/bun.d.ts"`,

@@ -101,7 +101,7 @@ The web example supports various AI task types:
 - **App.tsx**: Main application component and workflow management
 - **RunGraphFlow.tsx**: Visual graph editor using React Flow
 - **JsonEditor.tsx**: JSON editor with syntax highlighting
-- **ConsoleFormatters.tsx**: Console output formatting and display
+- **ConsoleFormatters.tsx**: Console output formatting and display (from debug)
 - **Status Components**: Real-time status monitoring for queues and storage
 
 ### AI Integration

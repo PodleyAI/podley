@@ -15,6 +15,7 @@
   "dependencies": {
     "@codemirror/lang-json": "^6.0.2",
     "@podley/ai": "workspace:*",
+    "@podley/debug": "workspace:*",
     "@podley/ai-provider": "workspace:*",
     "@podley/storage": "workspace:*",
     "@podley/job-queue": "workspace:*",

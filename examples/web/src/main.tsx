@@ -10,11 +10,11 @@ import {
   TextRewriterTask,
   TextTranslationTask,
 } from "@podley/ai";
+import { installDevToolsFormatters, isDarkMode } from "@podley/debug";
 import { Task, TaskGraph, Workflow } from "@podley/task-graph";
 import { DebugLogTask, DelayTask, FetchTask, JsonTask, LambdaTask } from "@podley/tasks";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import { installDevToolsFormatters, isDarkMode } from "./ConsoleFormatters";
 import "./main.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
