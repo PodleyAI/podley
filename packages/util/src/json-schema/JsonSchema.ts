@@ -9,6 +9,7 @@ import type { ExtendedJSONSchema, JSONSchemaExtension } from "json-schema-to-ts"
 export type JsonSchemaCustomProps = {
   "x-semantic"?: string;
   "x-replicate"?: boolean;
+  "x-ui-reactive"?: boolean | string; // hint that this field responds to reactive changes
   "x-ui-hidden"?: boolean;
   "x-ui-order"?: number;
   "x-ui-priority"?: number;
