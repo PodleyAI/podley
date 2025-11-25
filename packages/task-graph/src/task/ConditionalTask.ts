@@ -207,6 +207,9 @@ export class ConditionalTask<
   /** Human-readable title for display in UIs */
   static title = "Conditional Task";
 
+  /** This task has dynamic schemas that change based on branch configuration */
+  static hasDynamicSchemas: boolean = true;
+
   /**
    * Set of branch IDs that are currently active after execution.
    * Populated during execute() and used by the graph runner to

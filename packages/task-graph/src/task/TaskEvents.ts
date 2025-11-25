@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventParameters } from "@podley/util";
+import { EventParameters, type DataPortSchema } from "@podley/util";
 import { TaskStatus } from "../common";
 import { TaskAbortedError, TaskError } from "./TaskError";
 
@@ -42,6 +42,9 @@ export type TaskEventListeners = {
 
   /** Fired when a task status is updated */
   status: (status: TaskStatus) => void;
+
+  /** Fired when a task's input or output schema changes (for tasks with dynamic schemas) */
+  schemaChange: (inputSchema?: DataPortSchema, outputSchema?: DataPortSchema) => void;
 };
 /** Union type of all possible task event names */
 

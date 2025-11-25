@@ -234,6 +234,10 @@ describe("SingleTask", () => {
         const task = new Task();
         expect(task).toBeInstanceOf(Task);
       });
+
+      it("should have hasDynamicSchemas set to false by default", () => {
+        expect(Task.hasDynamicSchemas).toBe(false);
+      });
     });
 
     describe("Task execution flow", () => {

@@ -73,6 +73,13 @@ export class Task<
   public static cacheable: boolean = true;
 
   /**
+   * Whether this task has dynamic input/output schemas that can change at runtime.
+   * Tasks with dynamic schemas should override instance methods for inputSchema() and/or outputSchema()
+   * and emit 'schemaChange' events when their schemas change.
+   */
+  public static hasDynamicSchemas: boolean = false;
+
+  /**
    * Input schema for this task
    */
   public static inputSchema(): DataPortSchema {
@@ -569,6 +576,20 @@ export class Task<
     // this one is not like the others. Listeners will cause a lazy load of the event emitter.
     // but no need to emit if no one is listening, so we don't want to create the event emitter if not needed
     this._events?.emit(name, ...args);
+  }
+
+  /**
+   * Emits a schemaChange event when the task's input or output schema changes.
+   * This should be called by tasks with dynamic schemas when their configuration
+   * changes in a way that affects their schemas.
+   *
+   * @param inputSchema - The new input schema (optional, will use current schema if not provided)
+   * @param outputSchema - The new output schema (optional, will use current schema if not provided)
+   */
+  protected emitSchemaChange(inputSchema?: DataPortSchema, outputSchema?: DataPortSchema): void {
+    const finalInputSchema = inputSchema ?? this.inputSchema();
+    const finalOutputSchema = outputSchema ?? this.outputSchema();
+    this.emit("schemaChange", finalInputSchema, finalOutputSchema);
   }
 
   // ========================================================================

@@ -336,9 +336,7 @@ describe("ConditionalTask", () => {
       const task = new ConditionalTask(
         {},
         {
-          branches: [
-            { id: "high", condition: (i: any) => i.value > 100, outputPort: "high" },
-          ],
+          branches: [{ id: "high", condition: (i: any) => i.value > 100, outputPort: "high" }],
           defaultBranch: "nonexistent",
         }
       );
@@ -392,7 +390,11 @@ describe("ConditionalTask", () => {
         {},
         {
           branches: [
-            { id: "hasValue", condition: (i: any) => i?.value !== undefined, outputPort: "hasValue" },
+            {
+              id: "hasValue",
+              condition: (i: any) => i?.value !== undefined,
+              outputPort: "hasValue",
+            },
             { id: "noValue", condition: (i: any) => i?.value === undefined, outputPort: "noValue" },
           ],
         }
@@ -994,7 +996,11 @@ describe("ConditionalTask Complex Scenarios", () => {
         {
           id: "conditional",
           branches: [
-            { id: "process", condition: (i: any) => i.shouldProcess === true, outputPort: "toProcess" },
+            {
+              id: "process",
+              condition: (i: any) => i.shouldProcess === true,
+              outputPort: "toProcess",
+            },
             { id: "skip", condition: (i: any) => i.shouldProcess === false, outputPort: "toSkip" },
           ],
         }
@@ -1007,7 +1013,9 @@ describe("ConditionalTask Complex Scenarios", () => {
       graph.addTasks([conditional, processTask, skipTask]);
 
       // Use DATAFLOW_ALL_PORTS to pass all data through
-      graph.addDataflow(new Dataflow(conditional.config.id, "toProcess", processTask.config.id, "*"));
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "toProcess", processTask.config.id, "*")
+      );
       graph.addDataflow(new Dataflow(conditional.config.id, "toSkip", skipTask.config.id, "input"));
 
       const results = await graph.run({ shouldProcess: true, value: 42 });
@@ -1023,7 +1031,11 @@ describe("ConditionalTask Complex Scenarios", () => {
         {
           id: "conditional",
           branches: [
-            { id: "process", condition: (i: any) => i.shouldProcess === true, outputPort: "toProcess" },
+            {
+              id: "process",
+              condition: (i: any) => i.shouldProcess === true,
+              outputPort: "toProcess",
+            },
             { id: "skip", condition: (i: any) => i.shouldProcess === false, outputPort: "toSkip" },
           ],
         }
@@ -1035,7 +1047,9 @@ describe("ConditionalTask Complex Scenarios", () => {
       const graph = new TaskGraph();
       graph.addTasks([conditional, processTask, skipTask]);
 
-      graph.addDataflow(new Dataflow(conditional.config.id, "toProcess", processTask.config.id, "*"));
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "toProcess", processTask.config.id, "*")
+      );
       graph.addDataflow(new Dataflow(conditional.config.id, "toSkip", skipTask.config.id, "input"));
 
       await graph.run({ shouldProcess: false, value: 42 });
@@ -1066,7 +1080,9 @@ describe("ConditionalTask Complex Scenarios", () => {
       const graph = new TaskGraph();
       graph.addTasks([doubler, conditional, processTask, halveTask]);
 
-      graph.addDataflow(new Dataflow(doubler.config.id, "doubled", conditional.config.id, "doubled"));
+      graph.addDataflow(
+        new Dataflow(doubler.config.id, "doubled", conditional.config.id, "doubled")
+      );
       // Use DATAFLOW_ALL_PORTS for ProcessValueTask
       graph.addDataflow(new Dataflow(conditional.config.id, "big", processTask.config.id, "*"));
       graph.addDataflow(new Dataflow(conditional.config.id, "small", halveTask.config.id, "*"));
@@ -1101,7 +1117,9 @@ describe("ConditionalTask Complex Scenarios", () => {
       const graph = new TaskGraph();
       graph.addTasks([doubler, conditional, bigTask, smallTask]);
 
-      graph.addDataflow(new Dataflow(doubler.config.id, "doubled", conditional.config.id, "doubled"));
+      graph.addDataflow(
+        new Dataflow(doubler.config.id, "doubled", conditional.config.id, "doubled")
+      );
       graph.addDataflow(new Dataflow(conditional.config.id, "big", bigTask.config.id, "input"));
       graph.addDataflow(new Dataflow(conditional.config.id, "small", smallTask.config.id, "input"));
 
@@ -1122,8 +1140,16 @@ describe("ConditionalTask Complex Scenarios", () => {
         {
           id: "validator",
           branches: [
-            { id: "valid", condition: (i: any) => i.value > 0 && i.value < 1000, outputPort: "valid" },
-            { id: "invalid", condition: (i: any) => i.value <= 0 || i.value >= 1000, outputPort: "invalid" },
+            {
+              id: "valid",
+              condition: (i: any) => i.value > 0 && i.value < 1000,
+              outputPort: "valid",
+            },
+            {
+              id: "invalid",
+              condition: (i: any) => i.value <= 0 || i.value >= 1000,
+              outputPort: "invalid",
+            },
           ],
         }
       );
@@ -1135,7 +1161,9 @@ describe("ConditionalTask Complex Scenarios", () => {
       graph.addTasks([validator, processTask, errorHandler]);
 
       graph.addDataflow(new Dataflow(validator.config.id, "valid", processTask.config.id, "*"));
-      graph.addDataflow(new Dataflow(validator.config.id, "invalid", errorHandler.config.id, "input"));
+      graph.addDataflow(
+        new Dataflow(validator.config.id, "invalid", errorHandler.config.id, "input")
+      );
 
       // Valid input
       await graph.run({ value: 500 });
@@ -1155,7 +1183,11 @@ describe("ConditionalTask Complex Scenarios", () => {
         {
           id: "router",
           branches: [
-            { id: "critical", condition: (i: any) => i.priority === "critical", outputPort: "critical" },
+            {
+              id: "critical",
+              condition: (i: any) => i.priority === "critical",
+              outputPort: "critical",
+            },
             { id: "high", condition: (i: any) => i.priority === "high", outputPort: "high" },
             { id: "normal", condition: (i: any) => i.priority === "normal", outputPort: "normal" },
             { id: "low", condition: (i: any) => i.priority === "low", outputPort: "low" },
@@ -1281,8 +1313,12 @@ describe("ConditionalTask Complex Scenarios", () => {
       const graph = new TaskGraph();
       graph.addTasks([conditional, activeTask, inactiveTask]);
 
-      graph.addDataflow(new Dataflow(conditional.config.id, "active", activeTask.config.id, "input"));
-      graph.addDataflow(new Dataflow(conditional.config.id, "inactive", inactiveTask.config.id, "input"));
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "active", activeTask.config.id, "input")
+      );
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "inactive", inactiveTask.config.id, "input")
+      );
 
       await graph.run({});
 
@@ -1329,8 +1365,16 @@ describe("ConditionalTask Complex Scenarios", () => {
         {
           id: "conditional",
           branches: [
-            { id: "huge", condition: (i: any) => i.value > Number.MAX_SAFE_INTEGER / 2, outputPort: "huge" },
-            { id: "normal", condition: (i: any) => i.value <= Number.MAX_SAFE_INTEGER / 2, outputPort: "normal" },
+            {
+              id: "huge",
+              condition: (i: any) => i.value > Number.MAX_SAFE_INTEGER / 2,
+              outputPort: "huge",
+            },
+            {
+              id: "normal",
+              condition: (i: any) => i.value <= Number.MAX_SAFE_INTEGER / 2,
+              outputPort: "normal",
+            },
           ],
         }
       );
@@ -1388,8 +1432,16 @@ describe("ConditionalTask Complex Scenarios", () => {
         {
           id: "conditional",
           branches: [
-            { id: "hasItems", condition: (i: any) => Array.isArray(i.items) && i.items.length > 0, outputPort: "hasItems" },
-            { id: "empty", condition: (i: any) => !Array.isArray(i.items) || i.items.length === 0, outputPort: "empty" },
+            {
+              id: "hasItems",
+              condition: (i: any) => Array.isArray(i.items) && i.items.length > 0,
+              outputPort: "hasItems",
+            },
+            {
+              id: "empty",
+              condition: (i: any) => !Array.isArray(i.items) || i.items.length === 0,
+              outputPort: "empty",
+            },
           ],
         }
       );
@@ -1400,7 +1452,9 @@ describe("ConditionalTask Complex Scenarios", () => {
       const graph = new TaskGraph();
       graph.addTasks([conditional, hasItemsTask, emptyTask]);
 
-      graph.addDataflow(new Dataflow(conditional.config.id, "hasItems", hasItemsTask.config.id, "*"));
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "hasItems", hasItemsTask.config.id, "*")
+      );
       graph.addDataflow(new Dataflow(conditional.config.id, "empty", emptyTask.config.id, "input"));
 
       await graph.run({ items: [1, 2, 3], value: 100 });
@@ -1443,7 +1497,9 @@ describe("ConditionalTask Complex Scenarios", () => {
       graph.addTasks([conditional, deepTask, shallowTask]);
 
       graph.addDataflow(new Dataflow(conditional.config.id, "deep", deepTask.config.id, "input"));
-      graph.addDataflow(new Dataflow(conditional.config.id, "shallow", shallowTask.config.id, "input"));
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "shallow", shallowTask.config.id, "input")
+      );
 
       await graph.run({
         level1: {
@@ -1465,7 +1521,11 @@ describe("ConditionalTask Complex Scenarios", () => {
         {
           id: "errorRouter",
           branches: [
-            { id: "retry", condition: (i: any) => i.errorCode === "TIMEOUT" || i.errorCode === "RATE_LIMIT", outputPort: "retry" },
+            {
+              id: "retry",
+              condition: (i: any) => i.errorCode === "TIMEOUT" || i.errorCode === "RATE_LIMIT",
+              outputPort: "retry",
+            },
             { id: "fail", condition: (i: any) => i.errorCode === "FATAL", outputPort: "fail" },
             { id: "success", condition: (i: any) => !i.errorCode, outputPort: "success" },
           ],
@@ -1530,8 +1590,16 @@ describe("ConditionalTask Complex Scenarios", () => {
         {
           id: "cond3",
           branches: [
-            { id: "large", condition: (i: any) => i.even?.positive?.value > 100, outputPort: "large" },
-            { id: "small", condition: (i: any) => i.even?.positive?.value <= 100, outputPort: "small" },
+            {
+              id: "large",
+              condition: (i: any) => i.even?.positive?.value > 100,
+              outputPort: "large",
+            },
+            {
+              id: "small",
+              condition: (i: any) => i.even?.positive?.value <= 100,
+              outputPort: "small",
+            },
           ],
         }
       );
@@ -1546,7 +1614,9 @@ describe("ConditionalTask Complex Scenarios", () => {
 
       // Wire up the pipeline
       graph.addDataflow(new Dataflow(cond1.config.id, "positive", cond2.config.id, "positive"));
-      graph.addDataflow(new Dataflow(cond1.config.id, "nonPositive", nonPositiveTask.config.id, "input"));
+      graph.addDataflow(
+        new Dataflow(cond1.config.id, "nonPositive", nonPositiveTask.config.id, "input")
+      );
       graph.addDataflow(new Dataflow(cond2.config.id, "even", cond3.config.id, "even"));
       graph.addDataflow(new Dataflow(cond2.config.id, "odd", oddTask.config.id, "input"));
       graph.addDataflow(new Dataflow(cond3.config.id, "large", largeTask.config.id, "*"));
@@ -1572,9 +1642,17 @@ describe("ConditionalTask Complex Scenarios", () => {
         {
           id: "conditional",
           branches: [
-            { id: "multiply", condition: (i: any) => i.operation === "multiply", outputPort: "multiply" },
+            {
+              id: "multiply",
+              condition: (i: any) => i.operation === "multiply",
+              outputPort: "multiply",
+            },
             { id: "divide", condition: (i: any) => i.operation === "divide", outputPort: "divide" },
-            { id: "process", condition: (i: any) => i.operation === "process", outputPort: "process" },
+            {
+              id: "process",
+              condition: (i: any) => i.operation === "process",
+              outputPort: "process",
+            },
           ],
         }
       );
@@ -1635,8 +1713,12 @@ describe("ConditionalTask Complex Scenarios", () => {
       graph.addTasks([conditional, zeroProcessor, negativeProcessor, positiveProcessor]);
 
       graph.addDataflow(new Dataflow(conditional.config.id, "zero", zeroProcessor.config.id, "*"));
-      graph.addDataflow(new Dataflow(conditional.config.id, "negative", negativeProcessor.config.id, "*"));
-      graph.addDataflow(new Dataflow(conditional.config.id, "positive", positiveProcessor.config.id, "*"));
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "negative", negativeProcessor.config.id, "*")
+      );
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "positive", positiveProcessor.config.id, "*")
+      );
 
       // Test zero
       await graph.run({ value: 0 });
@@ -1757,9 +1839,15 @@ describe("ConditionalTask Complex Scenarios", () => {
       const graph = new TaskGraph();
       graph.addTasks([doubler, conditional, overflowProcessor, normalProcessor]);
 
-      graph.addDataflow(new Dataflow(doubler.config.id, "doubled", conditional.config.id, "doubled"));
-      graph.addDataflow(new Dataflow(conditional.config.id, "overflow", overflowProcessor.config.id, "*"));
-      graph.addDataflow(new Dataflow(conditional.config.id, "normal", normalProcessor.config.id, "*"));
+      graph.addDataflow(
+        new Dataflow(doubler.config.id, "doubled", conditional.config.id, "doubled")
+      );
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "overflow", overflowProcessor.config.id, "*")
+      );
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "normal", normalProcessor.config.id, "*")
+      );
 
       // Test overflow path (500001 * 2 = 1000002)
       await graph.run({ value: 500001 });
@@ -1783,8 +1871,16 @@ describe("ConditionalTask Complex Scenarios", () => {
         {
           id: "conditional",
           branches: [
-            { id: "integer", condition: (i: any) => Number.isInteger(i.halved), outputPort: "integer" },
-            { id: "decimal", condition: (i: any) => !Number.isInteger(i.halved), outputPort: "decimal" },
+            {
+              id: "integer",
+              condition: (i: any) => Number.isInteger(i.halved),
+              outputPort: "integer",
+            },
+            {
+              id: "decimal",
+              condition: (i: any) => !Number.isInteger(i.halved),
+              outputPort: "decimal",
+            },
           ],
         }
       );
@@ -1796,8 +1892,12 @@ describe("ConditionalTask Complex Scenarios", () => {
       graph.addTasks([halver, conditional, integerProcessor, decimalProcessor]);
 
       graph.addDataflow(new Dataflow(halver.config.id, "halved", conditional.config.id, "halved"));
-      graph.addDataflow(new Dataflow(conditional.config.id, "integer", integerProcessor.config.id, "*"));
-      graph.addDataflow(new Dataflow(conditional.config.id, "decimal", decimalProcessor.config.id, "*"));
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "integer", integerProcessor.config.id, "*")
+      );
+      graph.addDataflow(
+        new Dataflow(conditional.config.id, "decimal", decimalProcessor.config.id, "*")
+      );
 
       // Test integer result (100 / 2 = 50)
       await graph.run({ value: 100 });
@@ -1811,6 +1911,122 @@ describe("ConditionalTask Complex Scenarios", () => {
       expect(halver.runOutputData.halved).toBe(49.5);
       expect(integerProcessor.status).toBe(TaskStatus.DISABLED);
       expect(decimalProcessor.status).toBe(TaskStatus.COMPLETED);
+    });
+  });
+
+  describe("Dynamic Schemas", () => {
+    it("should have hasDynamicSchemas set to true", () => {
+      expect((ConditionalTask as any).hasDynamicSchemas).toBe(true);
+    });
+
+    it("should emit schemaChange event when emitSchemaChange is called", () => {
+      const task = new ConditionalTask(
+        {},
+        {
+          branches: [
+            { id: "branch1", condition: () => true, outputPort: "port1" },
+            { id: "branch2", condition: () => false, outputPort: "port2" },
+          ],
+        }
+      );
+
+      let schemaChangeEmitted = false;
+      let receivedInputSchema: DataPortSchema | undefined;
+      let receivedOutputSchema: DataPortSchema | undefined;
+
+      (task as any).on(
+        "schemaChange",
+        (inputSchema?: DataPortSchema, outputSchema?: DataPortSchema) => {
+          schemaChangeEmitted = true;
+          receivedInputSchema = inputSchema;
+          receivedOutputSchema = outputSchema;
+        }
+      );
+
+      // Call the protected method via type assertion
+      (task as any).emitSchemaChange();
+
+      expect(schemaChangeEmitted).toBe(true);
+      expect(receivedInputSchema).toBeDefined();
+      expect(receivedOutputSchema).toBeDefined();
+      expect(receivedOutputSchema).toHaveProperty("properties");
+      if (typeof receivedOutputSchema === "object" && receivedOutputSchema !== null) {
+        expect(receivedOutputSchema.properties).toHaveProperty("port1");
+        expect(receivedOutputSchema.properties).toHaveProperty("port2");
+      }
+    });
+
+    it("should emit schemaChange event with provided schemas", () => {
+      const task = new ConditionalTask(
+        {},
+        {
+          branches: [{ id: "branch1", condition: () => true, outputPort: "port1" }],
+        }
+      );
+
+      let receivedInputSchema: DataPortSchema | undefined;
+      let receivedOutputSchema: DataPortSchema | undefined;
+
+      (task as any).on(
+        "schemaChange",
+        (inputSchema?: DataPortSchema, outputSchema?: DataPortSchema) => {
+          receivedInputSchema = inputSchema;
+          receivedOutputSchema = outputSchema;
+        }
+      );
+
+      const customInputSchema: DataPortSchema = {
+        type: "object",
+        properties: { custom: { type: "string" } },
+      };
+      const customOutputSchema: DataPortSchema = {
+        type: "object",
+        properties: { customOut: { type: "string" } },
+      };
+
+      (task as any).emitSchemaChange(customInputSchema, customOutputSchema);
+
+      expect(receivedInputSchema).toEqual(customInputSchema);
+      expect(receivedOutputSchema).toEqual(customOutputSchema);
+    });
+
+    it("should have different output schemas for different branch configurations", () => {
+      const task1 = new ConditionalTask(
+        {},
+        {
+          branches: [
+            { id: "a", condition: () => true, outputPort: "outputA" },
+            { id: "b", condition: () => false, outputPort: "outputB" },
+          ],
+        }
+      );
+
+      const task2 = new ConditionalTask(
+        {},
+        {
+          branches: [
+            { id: "x", condition: () => true, outputPort: "outputX" },
+            { id: "y", condition: () => false, outputPort: "outputY" },
+            { id: "z", condition: () => false, outputPort: "outputZ" },
+          ],
+        }
+      );
+
+      const schema1 = task1.outputSchema();
+      const schema2 = task2.outputSchema();
+
+      expect(schema1).not.toEqual(schema2);
+      if (typeof schema1 === "object" && schema1 !== null && "properties" in schema1) {
+        expect(schema1.properties).toHaveProperty("outputA");
+        expect(schema1.properties).toHaveProperty("outputB");
+        expect(schema1.properties).not.toHaveProperty("outputX");
+      }
+      if (typeof schema2 === "object" && schema2 !== null && "properties" in schema2) {
+        expect(schema2.properties).toHaveProperty("outputX");
+        expect(schema2.properties).toHaveProperty("outputY");
+        expect(schema2.properties).toHaveProperty("outputZ");
+        expect(schema2.properties).not.toHaveProperty("outputA");
+      }
     });
   });
 });

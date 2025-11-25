@@ -41,6 +41,9 @@ export class GraphAsTask<
   public static category: string = "Hidden";
   public static compoundMerge: CompoundMergeStrategy = PROPERTY_ARRAY;
 
+  /** This task has dynamic schemas that change based on the subgraph structure */
+  public static hasDynamicSchemas: boolean = true;
+
   // ========================================================================
   // Constructor
   // ========================================================================

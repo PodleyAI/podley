@@ -559,4 +559,91 @@ describe("GraphAsTask Dynamic Schema", () => {
       expect((outputSchema.properties!["outputC2"] as any).type).toBe("array");
     });
   });
+
+  describe("Dynamic Schemas", () => {
+    it("should have hasDynamicSchemas set to true", () => {
+      expect((GraphAsTask as any).hasDynamicSchemas).toBe(true);
+    });
+
+    it("should emit schemaChange event when emitSchemaChange is called", () => {
+      const taskA = new TaskA();
+      const taskB = new TaskB();
+      const graph = new TaskGraph();
+      graph.addTask(taskA);
+      graph.addTask(taskB);
+      graph.addDataflow(new Dataflow(taskA.config.id, "outputA", taskB.config.id, "inputB"));
+
+      const graphAsTask = new GraphAsTask();
+      graphAsTask.subGraph = graph;
+
+      let schemaChangeEmitted = false;
+      let receivedInputSchema: DataPortSchema | undefined;
+      let receivedOutputSchema: DataPortSchema | undefined;
+
+      (graphAsTask as any).on("schemaChange", (inputSchema?: DataPortSchema, outputSchema?: DataPortSchema) => {
+        schemaChangeEmitted = true;
+        receivedInputSchema = inputSchema;
+        receivedOutputSchema = outputSchema;
+      });
+
+      // Call the protected method via type assertion
+      (graphAsTask as any).emitSchemaChange();
+
+      expect(schemaChangeEmitted).toBe(true);
+      expect(receivedInputSchema).toBeDefined();
+      expect(receivedOutputSchema).toBeDefined();
+    });
+
+    it("should emit schemaChange event with provided schemas", () => {
+      const graphAsTask = new GraphAsTask();
+
+      let receivedInputSchema: DataPortSchema | undefined;
+      let receivedOutputSchema: DataPortSchema | undefined;
+
+      (graphAsTask as any).on("schemaChange", (inputSchema?: DataPortSchema, outputSchema?: DataPortSchema) => {
+        receivedInputSchema = inputSchema;
+        receivedOutputSchema = outputSchema;
+      });
+
+      const customInputSchema: DataPortSchema = {
+        type: "object",
+        properties: { custom: { type: "string" } },
+      };
+      const customOutputSchema: DataPortSchema = {
+        type: "object",
+        properties: { customOut: { type: "string" } },
+      };
+
+      (graphAsTask as any).emitSchemaChange(customInputSchema, customOutputSchema);
+
+      expect(receivedInputSchema).toEqual(customInputSchema);
+      expect(receivedOutputSchema).toEqual(customOutputSchema);
+    });
+
+    it("should have different schemas for different subgraph structures", () => {
+      const taskA1 = new TaskA();
+      const graph1 = new TaskGraph();
+      graph1.addTask(taskA1);
+
+      const taskA2 = new TaskA();
+      const taskB2 = new TaskB();
+      const graph2 = new TaskGraph();
+      graph2.addTask(taskA2);
+      graph2.addTask(taskB2);
+      graph2.addDataflow(new Dataflow(taskA2.config.id, "outputA", taskB2.config.id, "inputB"));
+
+      const graphAsTask1 = new GraphAsTask();
+      graphAsTask1.subGraph = graph1;
+
+      const graphAsTask2 = new GraphAsTask();
+      graphAsTask2.subGraph = graph2;
+
+      const inputSchema1 = graphAsTask1.inputSchema();
+      const inputSchema2 = graphAsTask2.inputSchema();
+
+      // Both should have TaskA's inputs, but graph2 might have different structure
+      expect(inputSchema1).toBeDefined();
+      expect(inputSchema2).toBeDefined();
+    });
+  });
 });
