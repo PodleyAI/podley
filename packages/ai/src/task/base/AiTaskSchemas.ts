@@ -97,7 +97,7 @@ const TypedArraySchemaOptions = {
     //   output: Uint8ClampedArray;
     // },
     {
-      pattern: { "x-semantic": "TypedArray" },
+      pattern: { format: "TypedArray" },
       output: TypedArrayType,
     },
   ],
@@ -110,67 +110,67 @@ export const TypedArraySchema = (annotations: Record<string, unknown> = {}) =>
     oneOf: [
       {
         type: "array",
-        items: { type: "number", "x-semantic": "Float64" },
+        items: { type: "number", format: "Float64" },
         title: "Float64Array",
         description: "A 64-bit floating point array",
-        "x-semantic": "Float64Array",
+        format: "Float64Array",
       },
       {
         type: "array",
-        items: { type: "number", "x-semantic": "Float32" },
+        items: { type: "number", format: "Float32" },
         title: "Float32Array",
         description: "A 32-bit floating point array",
-        "x-semantic": "Float32Array",
+        format: "Float32Array",
       },
       {
         type: "array",
-        items: { type: "number", "x-semantic": "Int32" },
+        items: { type: "number", format: "Int32" },
         title: "Int32Array",
         description: "A 32-bit integer array",
-        "x-semantic": "Int32Array",
+        format: "Int32Array",
       },
       {
         type: "array",
-        items: { type: "number", "x-semantic": "Int16" },
+        items: { type: "number", format: "Int16" },
         title: "Int16Array",
         description: "A 16-bit integer array",
-        "x-semantic": "Int16Array",
+        format: "Int16Array",
       },
       {
         type: "array",
-        items: { type: "number", "x-semantic": "Int8" },
+        items: { type: "number", format: "Int8" },
         title: "Int8Array",
       },
       {
         type: "array",
-        items: { type: "number", "x-semantic": "Uint8" },
+        items: { type: "number", format: "Uint8" },
         title: "Uint8Array",
         description: "A 8-bit unsigned integer array",
-        "x-semantic": "Uint8Array",
+        format: "Uint8Array",
       },
       {
         type: "array",
-        items: { type: "number", "x-semantic": "Uint16" },
+        items: { type: "number", format: "Uint16" },
         title: "Uint16Array",
         description: "A 16-bit unsigned integer array",
-        "x-semantic": "Uint16Array",
+        format: "Uint16Array",
       },
       {
         type: "array",
-        items: { type: "number", "x-semantic": "Uint32" },
+        items: { type: "number", format: "Uint32" },
         title: "Uint32Array",
         description: "A 32-bit unsigned integer array",
-        "x-semantic": "Uint32Array",
+        format: "Uint32Array",
       },
       {
         type: "array",
-        items: { type: "number", "x-semantic": "Uint8Clamped" },
+        items: { type: "number", format: "Uint8Clamped" },
         title: "Uint8ClampedArray",
         description: "A 8-bit unsigned integer array with values clamped to 0-255",
-        "x-semantic": "Uint8ClampedArray",
+        format: "Uint8ClampedArray",
       },
     ],
-    "x-semantic": "TypedArray",
+    format: "TypedArray",
     ...annotations,
   }) as const satisfies JsonSchema;
 
@@ -188,7 +188,7 @@ export type TypeModelSemantic = "model" | `model:${string}`;
 
 export type TTypeModel = DataPortSchemaNonBoolean & {
   readonly type: "string";
-  readonly "x-semantic": TypeModelSemantic;
+  readonly format: TypeModelSemantic;
 };
 
 export function TypeModel<
@@ -209,7 +209,7 @@ export function TypeModel<
     title: "Model",
     description: `The model ${taskName ? `for ${taskName} ` : "to use"}`,
     ...options,
-    "x-semantic": semantic,
+    format: semantic,
     type: "string",
   } as const;
 }
@@ -222,7 +222,7 @@ export const TypeReplicateArray = <T extends DataPortSchemaNonBoolean>(
     oneOf: [type, { type: "array", items: type }],
     title: type.title,
     description: type.description,
-    ...(type["x-semantic"] ? { "x-semantic": type["x-semantic"] } : {}),
+    ...(type.format ? { format: type.format } : {}),
     ...annotations,
     "x-replicate": true,
   }) as const;

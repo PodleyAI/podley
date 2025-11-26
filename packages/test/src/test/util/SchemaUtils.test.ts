@@ -43,7 +43,7 @@ describe("SchemaUtils", () => {
         const source: JsonSchema = true;
         const target: JsonSchema = {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("runtime");
@@ -65,11 +65,11 @@ describe("SchemaUtils", () => {
 
       it("should return runtime if any allOf schema requires runtime check", () => {
         const source: JsonSchema = {
-          allOf: [{ type: "string", "x-semantic": "model" }, { type: "string" }],
+          allOf: [{ type: "string", format: "model" }, { type: "string" }],
         };
         const target: JsonSchema = {
           type: "string",
-          "x-semantic": "model:EmbeddingTask",
+          format: "model:EmbeddingTask",
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("runtime");
@@ -96,9 +96,9 @@ describe("SchemaUtils", () => {
       });
 
       it("should return runtime if source requires runtime check with any allOf schema", () => {
-        const source: JsonSchema = { type: "string", "x-semantic": "model" };
+        const source: JsonSchema = { type: "string", format: "model" };
         const target: JsonSchema = {
-          allOf: [{ type: "string", "x-semantic": "model:EmbeddingTask" }, { type: "string" }],
+          allOf: [{ type: "string", format: "model:EmbeddingTask" }, { type: "string" }],
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("runtime");
@@ -125,9 +125,9 @@ describe("SchemaUtils", () => {
       });
 
       it("should return runtime when source requires runtime check with oneOf", () => {
-        const source: JsonSchema = { type: "string", "x-semantic": "model" };
+        const source: JsonSchema = { type: "string", format: "model" };
         const target: JsonSchema = {
-          oneOf: [{ type: "string", "x-semantic": "model:EmbeddingTask" }, { type: "number" }],
+          oneOf: [{ type: "string", format: "model:EmbeddingTask" }, { type: "number" }],
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("runtime");
@@ -224,13 +224,13 @@ describe("SchemaUtils", () => {
         const source: JsonSchema = {
           type: "object",
           properties: {
-            model: { type: "string", "x-semantic": "model" },
+            model: { type: "string", format: "model" },
           },
         };
         const target: JsonSchema = {
           type: "object",
           properties: {
-            model: { type: "string", "x-semantic": "model:EmbeddingTask" },
+            model: { type: "string", format: "model:EmbeddingTask" },
           },
           required: ["model"],
         };
@@ -312,11 +312,11 @@ describe("SchemaUtils", () => {
       it("should return runtime when array items require runtime check", () => {
         const source: JsonSchema = {
           type: "array",
-          items: { type: "string", "x-semantic": "model" },
+          items: { type: "string", format: "model" },
         };
         const target: JsonSchema = {
           type: "array",
-          items: { type: "string", "x-semantic": "model:EmbeddingTask" },
+          items: { type: "string", format: "model:EmbeddingTask" },
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("runtime");
@@ -373,11 +373,11 @@ describe("SchemaUtils", () => {
           // Both are number arrays, just different semantic annotations
           const source: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Float64" },
+            items: { type: "number", format: "Float64" },
           };
           const target: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Float32" },
+            items: { type: "number", format: "Float32" },
           };
 
           // Note: Semantic annotations only affect compatibility for string types,
@@ -388,13 +388,13 @@ describe("SchemaUtils", () => {
         it("should return static when typed arrays match exactly", () => {
           const source: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Float64" },
-            "x-semantic": "Float64Array",
+            items: { type: "number", format: "Float64" },
+            format: "Float64Array",
           };
           const target: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Float64" },
-            "x-semantic": "Float64Array",
+            items: { type: "number", format: "Float64" },
+            format: "Float64Array",
           };
 
           expect(areSemanticallyCompatible(source, target)).toBe("static");
@@ -407,7 +407,7 @@ describe("SchemaUtils", () => {
           };
           const target: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Float64" },
+            items: { type: "number", format: "Float64" },
           };
 
           expect(areSemanticallyCompatible(source, target)).toBe("static");
@@ -416,7 +416,7 @@ describe("SchemaUtils", () => {
         it("should return static when typed array connects to generic number array", () => {
           const source: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Float64" },
+            items: { type: "number", format: "Float64" },
           };
           const target: JsonSchema = {
             type: "array",
@@ -429,20 +429,20 @@ describe("SchemaUtils", () => {
         it("should return static when typed array matches anyOf typed array schema", () => {
           const source: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Float64" },
-            "x-semantic": "Float64Array",
+            items: { type: "number", format: "Float64" },
+            format: "Float64Array",
           };
           const target: JsonSchema = {
             anyOf: [
               {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float64" },
-                "x-semantic": "Float64Array",
+                items: { type: "number", format: "Float64" },
+                format: "Float64Array",
               },
               {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float32" },
-                "x-semantic": "Float32Array",
+                items: { type: "number", format: "Float32" },
+                format: "Float32Array",
               },
             ],
           };
@@ -453,25 +453,25 @@ describe("SchemaUtils", () => {
         it("should return static when typed array matches another typed array in anyOf", () => {
           const source: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Int32" },
-            "x-semantic": "Int32Array",
+            items: { type: "number", format: "Int32" },
+            format: "Int32Array",
           };
           const target: JsonSchema = {
             anyOf: [
               {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float64" },
-                "x-semantic": "Float64Array",
+                items: { type: "number", format: "Float64" },
+                format: "Float64Array",
               },
               {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float32" },
-                "x-semantic": "Float32Array",
+                items: { type: "number", format: "Float32" },
+                format: "Float32Array",
               },
               {
                 type: "array",
-                items: { type: "number", "x-semantic": "Int32" },
-                "x-semantic": "Int32Array",
+                items: { type: "number", format: "Int32" },
+                format: "Int32Array",
               },
             ],
           };
@@ -488,13 +488,13 @@ describe("SchemaUtils", () => {
             anyOf: [
               {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float64" },
-                "x-semantic": "Float64Array",
+                items: { type: "number", format: "Float64" },
+                format: "Float64Array",
               },
               {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float32" },
-                "x-semantic": "Float32Array",
+                items: { type: "number", format: "Float32" },
+                format: "Float32Array",
               },
             ],
           };
@@ -507,20 +507,20 @@ describe("SchemaUtils", () => {
             oneOf: [
               {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float64" },
-                "x-semantic": "Float64Array",
+                items: { type: "number", format: "Float64" },
+                format: "Float64Array",
               },
               {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float32" },
-                "x-semantic": "Float32Array",
+                items: { type: "number", format: "Float32" },
+                format: "Float32Array",
               },
             ],
           };
           const target: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Float64" },
-            "x-semantic": "Float64Array",
+            items: { type: "number", format: "Float64" },
+            format: "Float64Array",
           };
 
           expect(areSemanticallyCompatible(source, target)).toBe("static");
@@ -529,13 +529,13 @@ describe("SchemaUtils", () => {
         it("should handle Uint8Array typed arrays", () => {
           const source: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Uint8" },
-            "x-semantic": "Uint8Array",
+            items: { type: "number", format: "Uint8" },
+            format: "Uint8Array",
           };
           const target: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Uint8" },
-            "x-semantic": "Uint8Array",
+            items: { type: "number", format: "Uint8" },
+            format: "Uint8Array",
           };
 
           expect(areSemanticallyCompatible(source, target)).toBe("static");
@@ -544,13 +544,13 @@ describe("SchemaUtils", () => {
         it("should handle Int16Array typed arrays", () => {
           const source: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Int16" },
-            "x-semantic": "Int16Array",
+            items: { type: "number", format: "Int16" },
+            format: "Int16Array",
           };
           const target: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Int16" },
-            "x-semantic": "Int16Array",
+            items: { type: "number", format: "Int16" },
+            format: "Int16Array",
           };
 
           expect(areSemanticallyCompatible(source, target)).toBe("static");
@@ -560,13 +560,13 @@ describe("SchemaUtils", () => {
           // Different array-level semantics but same item type
           const source: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Float64" },
-            "x-semantic": "Float64Array",
+            items: { type: "number", format: "Float64" },
+            format: "Float64Array",
           };
           const target: JsonSchema = {
             type: "array",
-            items: { type: "number", "x-semantic": "Float64" },
-            "x-semantic": "DifferentArrayType",
+            items: { type: "number", format: "Float64" },
+            format: "DifferentArrayType",
           };
 
           // Array-level semantics don't affect compatibility (only item semantics for strings)
@@ -612,15 +612,15 @@ describe("SchemaUtils", () => {
       });
     });
 
-    describe("semantic annotations (x-semantic)", () => {
+    describe("format annotations", () => {
       it("should return static when semantic annotations match exactly", () => {
         const source: JsonSchema = {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
         };
         const target: JsonSchema = {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("static");
@@ -629,11 +629,11 @@ describe("SchemaUtils", () => {
       it("should return static when source has narrowing but target doesn't", () => {
         const source: JsonSchema = {
           type: "string",
-          "x-semantic": "model:EmbeddingTask",
+          format: "model:EmbeddingTask",
         };
         const target: JsonSchema = {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("static");
@@ -642,11 +642,11 @@ describe("SchemaUtils", () => {
       it("should return runtime when target has narrowing but source doesn't", () => {
         const source: JsonSchema = {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
         };
         const target: JsonSchema = {
           type: "string",
-          "x-semantic": "model:EmbeddingTask",
+          format: "model:EmbeddingTask",
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("runtime");
@@ -655,11 +655,11 @@ describe("SchemaUtils", () => {
       it("should return static when both have same narrowing", () => {
         const source: JsonSchema = {
           type: "string",
-          "x-semantic": "model:EmbeddingTask",
+          format: "model:EmbeddingTask",
         };
         const target: JsonSchema = {
           type: "string",
-          "x-semantic": "model:EmbeddingTask",
+          format: "model:EmbeddingTask",
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("static");
@@ -668,11 +668,11 @@ describe("SchemaUtils", () => {
       it("should return incompatible when semantic names differ", () => {
         const source: JsonSchema = {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
         };
         const target: JsonSchema = {
           type: "string",
-          "x-semantic": "prompt",
+          format: "prompt",
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("incompatible");
@@ -681,34 +681,34 @@ describe("SchemaUtils", () => {
       it("should return incompatible when narrowing differs", () => {
         const source: JsonSchema = {
           type: "string",
-          "x-semantic": "model:EmbeddingTask",
+          format: "model:EmbeddingTask",
         };
         const target: JsonSchema = {
           type: "string",
-          "x-semantic": "model:TextGenerationTask",
+          format: "model:TextGenerationTask",
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("incompatible");
       });
 
-      it("should return static when semantic annotations are not on string types", () => {
+      it("should check format compatibility for all types", () => {
         const source: JsonSchema = {
           type: "number",
-          "x-semantic": "model",
+          format: "model",
         };
         const target: JsonSchema = {
           type: "number",
-          "x-semantic": "prompt",
+          format: "prompt",
         };
 
-        // Semantic annotations only matter for string types
-        expect(areSemanticallyCompatible(source, target)).toBe("static");
+        // Format annotations are checked for all types
+        expect(areSemanticallyCompatible(source, target)).toBe("incompatible");
       });
 
       it("should return static when only source has semantic annotation", () => {
         const source: JsonSchema = {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
         };
         const target: JsonSchema = { type: "string" };
 
@@ -719,7 +719,7 @@ describe("SchemaUtils", () => {
         const source: JsonSchema = { type: "string" };
         const target: JsonSchema = {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("static");
@@ -729,7 +729,7 @@ describe("SchemaUtils", () => {
         const source: JsonSchema = {};
         const target: JsonSchema = {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
         };
 
         expect(areSemanticallyCompatible(source, target)).toBe("runtime");
@@ -808,13 +808,13 @@ describe("SchemaUtils", () => {
       const source: JsonSchema = {
         type: "object",
         properties: {
-          model: { type: "string", "x-semantic": "model" },
+          model: { type: "string", format: "model" },
         },
       };
       const target: JsonSchema = {
         type: "object",
         properties: {
-          model: { type: "string", "x-semantic": "model:EmbeddingTask" },
+          model: { type: "string", format: "model:EmbeddingTask" },
         },
         required: ["model"],
       };

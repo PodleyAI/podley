@@ -1042,6 +1042,41 @@ class TaskFactory extends Task<{ count: number }, { results: any[] }> {
 }
 ```
 
+### Semantic Format
+
+### Semantic Compatibility Utilities for Task Graph Dataflows
+
+In this project, task graphs have connections between tasks called dataflows. These dataflows have different kinds of compatibility checks:
+
+#### **Static Compatibility**
+
+Static rules help decide if an edge should be connected at all. A connection is statically compatible if:
+
+- The source and target are the same exact type
+- The source connects to the equivalent of "any" (target accepts anything)
+- The source type is acceptable to the target (e.g., a string to something that accepts `oneOf[string[], string]`)
+
+#### **Runtime Compatibility**
+
+Assuming the connection is allowed at design time (passes static check), runtime rules determine if they are compatible during execution.
+
+Currently, there is one runtime compatibility check:
+
+- If both input and output schemas have `format` annotations attached,
+  - The format annotation matches the pattern `/\w+(:\w+)?/`; the first part is the "name". If alone, it matches any other with the same "name". If there is a second part, then that narrows the type.
+- Format checks apply to all types (strings, arrays, etc.), not just strings.
+- A schema with format can connect to a schema with no format (source has format, target doesn't).
+- A schema with no format cannot connect to a schema with format (source doesn't have format, target does).
+
+**Example:**  
+In the AI package, `format: 'model'` and `format: 'model:EmbeddingTask'` are used on string types.  
+An input with property `model` and `format: 'model'` connects to a target with property `model` and `format: 'model:EmbeddingTask'`—this compatibility is called "runtime".  
+It first passes the static check as compatible and then notices a difference in format at runtime.
+
+Format is also used on array types, e.g., `format: 'Float64Array'` on arrays containing Float64 numbers.
+
+> **Note:** Only connections that pass the runtime check will pass data at runtime.
+
 ## API Reference
 
 ### Core Classes

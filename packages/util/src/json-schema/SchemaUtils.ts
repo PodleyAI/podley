@@ -23,16 +23,22 @@
  * runtime rules determine if they are compatible during execution.
  *
  * Currently, there is one runtime compatibility check:
- * - If both input and output schemas have 'x-semantic' annotations attached
- *   to type string, the semantic annotation has the format /\w+(:\w+)?/ where
- *   the first part is the "name" and if alone matches any other with the same
- *   "name". If there is a second part, then that narrows the type.
+ * - If both input and output schemas have 'format' annotations attached,
+ *   the format annotation has the format /\w+(:\w+)?/ where the first part
+ *   is the "name" and if alone matches any other with the same "name".
+ *   If there is a second part, then that narrows the type.
+ * - Format checks apply to all types (strings, arrays, etc.), not just strings
+ * - A schema with format can connect to a schema with no format (source has format, target doesn't)
+ * - A schema with no format cannot connect to a schema with format (source doesn't have format, target does)
  *
- * Example: In the AI package, 'x-semantic':'model' and 'x-semantic': 'model:EmbeddingTask'
- * are used. An input with property `model` and 'x-semantic':'model' connects to a
- * target with property `model` and 'x-semantic':'model:EmbeddingTask' -- this
- * compatibility is called "runtime". It first passes the static check as compatible
- * and then notices a difference in semantic runtime.
+ * Example: In the AI package, 'format':'model' and 'format': 'model:EmbeddingTask'
+ * are used on string types. An input with property `model` and 'format':'model'
+ * connects to a target with property `model` and 'format':'model:EmbeddingTask' --
+ * this compatibility is called "runtime". It first passes the static check as
+ * compatible and then notices a difference in format runtime.
+ *
+ * Format is also used on array types, e.g., 'format':'Float64Array' on arrays
+ * containing Float64 numbers.
  *
  * Only connections that pass the runtime check will pass data at runtime.
  */
@@ -40,23 +46,23 @@
 import type { JsonSchema } from "./JsonSchema";
 
 /**
- * Checks if two semantic annotation strings are compatible.
+ * Checks if two format strings are compatible.
  * Format: /\w+(:\w+)?/ where first part is the "name" and optional second part narrows the type.
  * - Same name without narrowing: static compatible
  * - Source name matches target narrowed name: runtime compatible
  * - Different names or incompatible narrowing: incompatible
  */
-function areSemanticAnnotationsCompatible(
-  sourceSemantic: string,
-  targetSemantic: string
+function areFormatStringsCompatible(
+  sourceFormat: string,
+  targetFormat: string
 ): "static" | "runtime" | "incompatible" {
-  const semanticPattern = /^\w+(:\w+)?$/;
-  if (!semanticPattern.test(sourceSemantic) || !semanticPattern.test(targetSemantic)) {
+  const formatPattern = /^\w+(:\w+)?$/;
+  if (!formatPattern.test(sourceFormat) || !formatPattern.test(targetFormat)) {
     return "incompatible";
   }
 
-  const [sourceName, sourceNarrow] = sourceSemantic.split(":");
-  const [targetName, targetNarrow] = targetSemantic.split(":");
+  const [sourceName, sourceNarrow] = sourceFormat.split(":");
+  const [targetName, targetNarrow] = targetFormat.split(":");
 
   // Different base names are incompatible
   if (sourceName !== targetName) {
@@ -320,8 +326,34 @@ export function areSemanticallyCompatible(
     return "static";
   }
 
-  // Handle array types - check compatibility of array items
+  // Handle array types - check compatibility of array items and array format
   if (sourceType === "array" && targetType === "array") {
+    // First check format on the array schema itself (e.g., format: "Float64Array")
+    const sourceFormat = (sourceSchema as any)?.format;
+    const targetFormat = (targetSchema as any)?.format;
+
+    let formatCompatibility: "static" | "runtime" | "incompatible" | null = null;
+
+    // Both have format: check compatibility using prefix matching
+    if (sourceFormat && targetFormat) {
+      formatCompatibility = areFormatStringsCompatible(sourceFormat, targetFormat);
+      // If formats are incompatible, the arrays are incompatible
+      if (formatCompatibility === "incompatible") {
+        return "incompatible";
+      }
+    }
+
+    // Source has format, target doesn't: static compatible (source is more specific)
+    if (sourceFormat && !targetFormat) {
+      return "static";
+    }
+
+    // Source doesn't have format, target does: incompatible (target requires format)
+    if (!sourceFormat && targetFormat) {
+      return "incompatible";
+    }
+
+    // Now check array items compatibility
     const sourceItems = sourceSchema.items;
     const targetItems = targetSchema.items;
 
@@ -334,7 +366,15 @@ export function areSemanticallyCompatible(
       typeof targetItems === "object" &&
       !Array.isArray(targetItems)
     ) {
-      return areSemanticallyCompatible(sourceItems as JsonSchema, targetItems as JsonSchema);
+      const itemsCompatibility = areSemanticallyCompatible(
+        sourceItems as JsonSchema,
+        targetItems as JsonSchema
+      );
+      // If format requires runtime check, return runtime (more restrictive)
+      if (formatCompatibility === "runtime") {
+        return "runtime";
+      }
+      return itemsCompatibility;
     }
 
     // If target accepts any array items, it's statically compatible
@@ -359,38 +399,57 @@ export function areSemanticallyCompatible(
   // If source has no type constraint, it can be anything (compatible with any target)
   // But we need to check if target has constraints that might require runtime checks
   if (!sourceType) {
-    // Source accepts any type, but target might have semantic annotations requiring runtime check
-    const targetSemantic = targetSchema["x-semantic"];
-    if (targetSemantic && targetSchema.type === "string") {
+    // Source accepts any type, but target might have format requiring runtime check
+    const targetFormat = (targetSchema as any)?.format;
+    if (targetFormat) {
       return "runtime";
     }
     return "static";
   }
 
-  // If target has no type constraint, it accepts anything
+  // Check if types are statically compatible
   if (!targetType) {
+    // Target has no type constraint, it accepts anything
+    // But we still need to check format - if target requires format, source must have it
+    const targetFormat = (targetSchema as any)?.format;
+    if (targetFormat) {
+      // Target requires format, check if source has it
+      const sourceFormat = (sourceSchema as any)?.format;
+      if (!sourceFormat) {
+        return "incompatible";
+      }
+      // Both have format, check compatibility
+      return areFormatStringsCompatible(sourceFormat, targetFormat);
+    }
     return "static";
   }
 
-  // Check if types are statically compatible
   if (!isTypeStaticallyCompatible(sourceType, targetType)) {
     return "incompatible";
   }
 
-  // If types are compatible, check semantic annotations on string types
-  const sourceSemantic = sourceSchema["x-semantic"];
-  const targetSemantic = targetSchema["x-semantic"];
+  // If types are compatible, check format compatibility
+  // Format checks apply to all types, not just strings
+  // Access format field directly (it's a standard JSON Schema field)
+  const sourceFormat = (sourceSchema as any)?.format;
+  const targetFormat = (targetSchema as any)?.format;
 
-  if (sourceSemantic && targetSemantic) {
-    // Check semantic annotations on string types
-    if (sourceSchema.type === "string" && targetSchema.type === "string") {
-      return areSemanticAnnotationsCompatible(sourceSemantic, targetSemantic);
-    }
-    // Note: Semantic annotations on other types (like array items) are handled
-    // recursively when we check array items compatibility above
+  // Both have format: check compatibility using prefix matching
+  if (sourceFormat && targetFormat) {
+    return areFormatStringsCompatible(sourceFormat, targetFormat);
   }
 
-  // Types are compatible, no semantic annotations or not string types
+  // Source has format, target doesn't: static compatible (source is more specific)
+  if (sourceFormat && !targetFormat) {
+    return "static";
+  }
+
+  // Source doesn't have format, target does: incompatible (target requires format)
+  if (!sourceFormat && targetFormat) {
+    return "incompatible";
+  }
+
+  // Neither has format: static compatible
   return "static";
 }
 

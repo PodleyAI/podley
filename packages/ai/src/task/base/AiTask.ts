@@ -22,9 +22,9 @@ import { AiJob, AiJobInput } from "../../job/AiJob";
 import type { Model } from "../../model/Model";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
 
-function schemaSemantic(schema: JsonSchema): string | undefined {
-  return typeof schema === "object" && schema !== null && "x-semantic" in schema
-    ? schema["x-semantic"]
+function schemaFormat(schema: JsonSchema): string | undefined {
+  return typeof schema === "object" && schema !== null && "format" in schema
+    ? schema.format
     : undefined;
 }
 
@@ -134,7 +134,7 @@ export class AiTask<
     }
     const modelTaskProperties = Object.entries<JsonSchema>(
       (inputSchema.properties || {}) as Record<string, JsonSchema>
-    ).filter(([key, schema]) => schemaSemantic(schema)?.startsWith("model:"));
+    ).filter(([key, schema]) => schemaFormat(schema)?.startsWith("model:"));
     if (modelTaskProperties.length > 0) {
       const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
       for (const [key, propSchema] of modelTaskProperties) {
@@ -151,7 +151,7 @@ export class AiTask<
     }
     const modelPlainProperties = Object.entries<JsonSchema>(
       (inputSchema.properties || {}) as Record<string, JsonSchema>
-    ).filter(([key, schema]) => schemaSemantic(schema) === "model");
+    ).filter(([key, schema]) => schemaFormat(schema) === "model");
     if (modelPlainProperties.length > 0) {
       for (const [key, propSchema] of modelPlainProperties) {
         let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
@@ -180,7 +180,7 @@ export class AiTask<
     }
     const modelTaskProperties = Object.entries<JsonSchema>(
       (inputSchema.properties || {}) as Record<string, JsonSchema>
-    ).filter(([key, schema]) => schemaSemantic(schema)?.startsWith("model:"));
+    ).filter(([key, schema]) => schemaFormat(schema)?.startsWith("model:"));
     if (modelTaskProperties.length > 0) {
       const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
       for (const [key, propSchema] of modelTaskProperties) {

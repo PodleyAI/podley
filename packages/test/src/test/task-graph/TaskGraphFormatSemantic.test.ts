@@ -9,7 +9,7 @@ import type { DataPortSchema } from "@podley/util";
 import { beforeEach, describe, expect, it } from "vitest";
 
 /**
- * Test task with generic model output (x-semantic: "model")
+ * Test task with generic model output (format: "model")
  */
 class ModelProviderTask extends Task<{ config: string }, { model: string }> {
   static readonly type = "ModelProviderTask";
@@ -33,7 +33,7 @@ class ModelProviderTask extends Task<{ config: string }, { model: string }> {
       properties: {
         model: {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
           description: "Generic model identifier",
         },
       },
@@ -47,7 +47,7 @@ class ModelProviderTask extends Task<{ config: string }, { model: string }> {
 }
 
 /**
- * Test task with specific embedding model output (x-semantic: "model:EmbeddingTask")
+ * Test task with specific embedding model output (format: "model:EmbeddingTask")
  */
 class EmbeddingModelProviderTask extends Task<{ config: string }, { model: string }> {
   static readonly type = "EmbeddingModelProviderTask";
@@ -71,7 +71,7 @@ class EmbeddingModelProviderTask extends Task<{ config: string }, { model: strin
       properties: {
         model: {
           type: "string",
-          "x-semantic": "model:EmbeddingTask",
+          format: "model:EmbeddingTask",
           description: "Embedding model identifier",
         },
       },
@@ -85,7 +85,7 @@ class EmbeddingModelProviderTask extends Task<{ config: string }, { model: strin
 }
 
 /**
- * Test task that accepts generic model input (x-semantic: "model")
+ * Test task that accepts generic model input (format: "model")
  */
 class GenericModelConsumerTask extends Task<{ model: string }, { result: string }> {
   static readonly type = "GenericModelConsumerTask";
@@ -96,7 +96,7 @@ class GenericModelConsumerTask extends Task<{ model: string }, { result: string 
       properties: {
         model: {
           type: "string",
-          "x-semantic": "model",
+          format: "model",
           description: "Generic model identifier",
         },
       },
@@ -123,7 +123,7 @@ class GenericModelConsumerTask extends Task<{ model: string }, { result: string 
 }
 
 /**
- * Test task that requires specific embedding model input (x-semantic: "model:EmbeddingTask")
+ * Test task that requires specific embedding model input (format: "model:EmbeddingTask")
  */
 class EmbeddingConsumerTask extends Task<{ model: string }, { embeddings: number[] }> {
   static readonly type = "EmbeddingConsumerTask";
@@ -135,13 +135,13 @@ class EmbeddingConsumerTask extends Task<{ model: string }, { embeddings: number
         model: {
           oneOf: [
             {
-              "x-semantic": "model:EmbeddingTask",
+              format: "model:EmbeddingTask",
               type: "string",
             },
             {
               type: "array",
               items: {
-                "x-semantic": "model:EmbeddingTask",
+                format: "model:EmbeddingTask",
                 type: "string",
               },
             },
@@ -174,7 +174,7 @@ class EmbeddingConsumerTask extends Task<{ model: string }, { embeddings: number
 }
 
 /**
- * Test task with prompt output (x-semantic: "prompt")
+ * Test task with prompt output (format: "prompt")
  */
 class PromptProviderTask extends Task<{ text: string }, { prompt: string }> {
   static readonly type = "PromptProviderTask";
@@ -198,7 +198,7 @@ class PromptProviderTask extends Task<{ text: string }, { prompt: string }> {
       properties: {
         prompt: {
           type: "string",
-          "x-semantic": "prompt",
+          format: "prompt",
           description: "Generated prompt",
         },
       },
@@ -212,7 +212,7 @@ class PromptProviderTask extends Task<{ text: string }, { prompt: string }> {
 }
 
 /**
- * Test task with text generation model output (x-semantic: "model:TextGenerationTask")
+ * Test task with text generation model output (format: "model:TextGenerationTask")
  */
 class TextGenerationModelProviderTask extends Task<{ config: string }, { model: string }> {
   static readonly type = "TextGenerationModelProviderTask";
@@ -236,7 +236,7 @@ class TextGenerationModelProviderTask extends Task<{ config: string }, { model: 
       properties: {
         model: {
           type: "string",
-          "x-semantic": "model:TextGenerationTask",
+          format: "model:TextGenerationTask",
           description: "Text generation model identifier",
         },
       },
@@ -323,7 +323,7 @@ class PlainStringConsumerTask extends Task<{ input: string }, { result: string }
   }
 }
 
-describe("TaskGraph with x-semantic annotations", () => {
+describe("TaskGraph with format annotations", () => {
   let graph: TaskGraph;
 
   beforeEach(() => {
@@ -375,7 +375,7 @@ describe("TaskGraph with x-semantic annotations", () => {
       expect(compatibility).toBe("static");
     });
 
-    it("should be statically compatible when source has semantic annotation but target doesn't", () => {
+    it("should be statically compatible when source has format but target doesn't", () => {
       // Source: model -> Target: plain string
       const sourceTask = new ModelProviderTask({}, { id: "source" });
       const targetTask = new PlainStringConsumerTask({}, { id: "target" });
@@ -390,8 +390,8 @@ describe("TaskGraph with x-semantic annotations", () => {
       expect(compatibility).toBe("static");
     });
 
-    it("should be statically compatible when target has semantic annotation but source doesn't", () => {
-      // Source: plain string -> Target: model
+    it("should be incompatible when target has format but source doesn't", () => {
+      // Source: plain string -> Target: model (with format)
       const sourceTask = new PlainStringProviderTask({}, { id: "source" });
       const targetTask = new GenericModelConsumerTask({}, { id: "target" });
 
@@ -402,7 +402,7 @@ describe("TaskGraph with x-semantic annotations", () => {
       graph.addDataflow(dataflow);
 
       const compatibility = dataflow.semanticallyCompatible(graph, dataflow);
-      expect(compatibility).toBe("static");
+      expect(compatibility).toBe("incompatible");
     });
   });
 
@@ -438,7 +438,7 @@ describe("TaskGraph with x-semantic annotations", () => {
               model: {
                 type: ["string", "array"],
                 items: { type: "string" },
-                "x-semantic": "model:EmbeddingTask",
+                format: "model:EmbeddingTask",
                 description: "Embedding model identifier (can be single or array)",
               },
             },
@@ -504,7 +504,7 @@ describe("TaskGraph with x-semantic annotations", () => {
               model: {
                 type: ["string", "array"],
                 items: { type: "string" },
-                "x-semantic": "model:EmbeddingTask",
+                format: "model:EmbeddingTask",
                 description: "Embedding model identifier",
               },
             },
@@ -575,7 +575,7 @@ describe("TaskGraph with x-semantic annotations", () => {
                   {
                     title: "Model",
                     description: "The model to use",
-                    "x-semantic": "model",
+                    format: "model",
                     type: "string",
                   },
                   {
@@ -583,7 +583,7 @@ describe("TaskGraph with x-semantic annotations", () => {
                     items: {
                       title: "Model",
                       description: "The model to use",
-                      "x-semantic": "model",
+                      format: "model",
                       type: "string",
                     },
                   },
@@ -616,14 +616,14 @@ describe("TaskGraph with x-semantic annotations", () => {
       expect(compatibility).toBe("runtime");
 
       // At runtime, the dataflow would:
-      // 1. Get output from source: "some-model-name" (generic model with x-semantic: "model")
-      // 2. Pass to target's narrowInput() (which expects x-semantic: "model:EmbeddingTask")
+      // 1. Get output from source: "some-model-name" (generic model with format: "model")
+      // 2. Pass to target's narrowInput() (which expects format: "model:EmbeddingTask")
       // 3. narrowInput() checks if "some-model-name" is compatible with EmbeddingTask
       // 4. If compatible, task executes; if not, validation fails
       // This is why it's "runtime" compatible - we can't know at design time if the model will be valid
     });
 
-    it("should verify narrowing is part of the x-semantic contract", () => {
+    it("should verify narrowing is part of the format contract", () => {
       // The semantic annotation pattern: "name:narrowing"
       // - "model" = any model (no narrowing)
       // - "model:EmbeddingTask" = only models compatible with EmbeddingTask (narrowed)
@@ -642,7 +642,7 @@ describe("TaskGraph with x-semantic annotations", () => {
             properties: {
               model: {
                 type: "string",
-                "x-semantic": "model:TextGenerationTask",
+                format: "model:TextGenerationTask",
                 description: "Text generation model",
               },
             },
@@ -692,7 +692,7 @@ describe("TaskGraph with x-semantic annotations", () => {
             properties: {
               prompt: {
                 type: "string",
-                "x-semantic": "prompt",
+                format: "prompt",
                 description: "Prompt string",
               },
             },
@@ -750,7 +750,7 @@ describe("TaskGraph with x-semantic annotations", () => {
             properties: {
               model: {
                 type: "string",
-                "x-semantic": "model:TextGenerationTask",
+                format: "model:TextGenerationTask",
                 description: "Text generation model identifier",
               },
             },
@@ -877,7 +877,7 @@ describe("TaskGraph with x-semantic annotations", () => {
     });
   });
 
-  describe("typed arrays with x-semantic annotations", () => {
+  describe("typed arrays with format annotations", () => {
     it("should handle typed array semantic annotations", () => {
       class Float64ArrayProviderTask extends Task<{ input: string }, { data: number[] }> {
         static readonly type = "Float64ArrayProviderTask";
@@ -898,8 +898,8 @@ describe("TaskGraph with x-semantic annotations", () => {
             properties: {
               data: {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float64" },
-                "x-semantic": "Float64Array",
+                items: { type: "number", format: "Float64" },
+                format: "Float64Array",
                 description: "Float64 array data",
               },
             },
@@ -921,8 +921,8 @@ describe("TaskGraph with x-semantic annotations", () => {
             properties: {
               data: {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float64" },
-                "x-semantic": "Float64Array",
+                items: { type: "number", format: "Float64" },
+                format: "Float64Array",
                 description: "Float64 array data",
               },
             },
@@ -978,8 +978,8 @@ describe("TaskGraph with x-semantic annotations", () => {
             properties: {
               data: {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float64" },
-                "x-semantic": "Float64Array",
+                items: { type: "number", format: "Float64" },
+                format: "Float64Array",
                 description: "Float64 array data",
               },
             },
@@ -1001,8 +1001,8 @@ describe("TaskGraph with x-semantic annotations", () => {
             properties: {
               data: {
                 type: "array",
-                items: { type: "number", "x-semantic": "Float32" },
-                "x-semantic": "Float32Array",
+                items: { type: "number", format: "Float32" },
+                format: "Float32Array",
                 description: "Float32 array data",
               },
             },
