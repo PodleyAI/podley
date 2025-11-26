@@ -1,5 +1,19 @@
 # @podley/cli
 
+## 0.0.51
+
+### Patch Changes
+
+- Changed x-semantic to format
+- Updated dependencies
+  - @podley/ai@0.0.51
+  - @podley/ai-provider@0.0.51
+  - @podley/storage@0.0.51
+  - @podley/task-graph@0.0.51
+  - @podley/tasks@0.0.51
+  - @podley/test@0.0.51
+  - @podley/util@0.0.51
+
 ## 0.0.50
 
 ### Patch Changes

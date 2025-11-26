@@ -1,7 +1,7 @@
 {
   "name": "@podley/debug",
   "type": "module",
-  "version": "0.0.50",
+  "version": "0.0.51",
   "description": "Debug utilities for Podley, including Chrome DevTools custom formatters for task graphs and workflows.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
