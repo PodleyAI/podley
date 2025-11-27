@@ -116,6 +116,131 @@ function isTypeStaticallyCompatible(sourceType: unknown, targetType: unknown): b
 }
 
 /**
+ * Merges allOf schemas into a single schema representing their intersection.
+ * For example: allOf: [{ type: "string", format: "model" }, { type: "string" }]
+ * becomes: { type: "string", format: "model" }
+ */
+function mergeAllOfSchemas(schemas: JsonSchema[]): JsonSchema | null {
+  if (schemas.length === 0) return null;
+  if (schemas.length === 1) return schemas[0] as JsonSchema;
+
+  let merged: Record<string, unknown> = {};
+
+  for (const schema of schemas) {
+    if (typeof schema === "boolean") {
+      if (schema === false) return false; // false in allOf makes the whole thing false
+      // true in allOf doesn't add constraints, so we can skip it
+      continue;
+    }
+
+    // At this point, schema is an object
+    const schemaObj = schema as Record<string, unknown>;
+
+    // Merge type
+    if (schemaObj.type !== undefined) {
+      if (merged.type === undefined) {
+        merged.type = schemaObj.type;
+      } else if (merged.type !== schemaObj.type) {
+        // Types must be compatible - if they're different primitives, it's incompatible
+        const mergedTypes = Array.isArray(merged.type) ? merged.type : [merged.type];
+        const schemaTypes = Array.isArray(schemaObj.type) ? schemaObj.type : [schemaObj.type];
+        const commonTypes = mergedTypes.filter((t: unknown) => schemaTypes.includes(t));
+        if (commonTypes.length === 0) {
+          return false; // Incompatible types
+        }
+        merged.type = commonTypes.length === 1 ? commonTypes[0] : commonTypes;
+      }
+    }
+
+    // Merge format - use the most specific one (the one with narrowing if any)
+    const schemaFormat = schemaObj.format as string | undefined;
+    const mergedFormat = merged.format as string | undefined;
+    if (schemaFormat) {
+      if (!mergedFormat) {
+        merged.format = schemaFormat;
+      } else {
+        // Both have formats - check if they're compatible
+        const formatCompat = areFormatStringsCompatible(mergedFormat, schemaFormat);
+        if (formatCompat === "incompatible") {
+          return false; // Incompatible formats
+        }
+        // Use the more specific format (the one with narrowing, or either if both same)
+        const mergedHasNarrow = mergedFormat.includes(":");
+        const schemaHasNarrow = schemaFormat.includes(":");
+        if (schemaHasNarrow && !mergedHasNarrow) {
+          merged.format = schemaFormat;
+        } else if (!schemaHasNarrow && mergedHasNarrow) {
+          // Keep merged format (it's more specific)
+        } else if (mergedFormat !== schemaFormat) {
+          // Both have narrowing and they're different - should be caught by areFormatStringsCompatible
+          return false;
+        }
+      }
+    }
+
+    // Merge properties for objects
+    if (schemaObj.properties && typeof schemaObj.properties === "object") {
+      if (!merged.properties) {
+        merged.properties = {};
+      }
+      const mergedProps = merged.properties as Record<string, JsonSchema>;
+      const schemaProps = schemaObj.properties as Record<string, JsonSchema>;
+      for (const [key, value] of Object.entries(schemaProps)) {
+        if (mergedProps[key]) {
+          // Recursively merge nested schemas
+          const nestedMerged = mergeAllOfSchemas([mergedProps[key], value]);
+          if (nestedMerged === null || nestedMerged === false) {
+            return false;
+          }
+          mergedProps[key] = nestedMerged as JsonSchema;
+        } else {
+          mergedProps[key] = value;
+        }
+      }
+    }
+
+    // Merge required arrays
+    if (schemaObj.required && Array.isArray(schemaObj.required)) {
+      if (!merged.required) {
+        merged.required = [];
+      }
+      const mergedRequired = merged.required as string[];
+      const schemaRequired = schemaObj.required as string[];
+      // Intersection of required arrays
+      merged.required = mergedRequired.filter((r) => schemaRequired.includes(r));
+    }
+
+    // Merge additionalProperties - most restrictive wins
+    if (schemaObj.additionalProperties !== undefined) {
+      if (merged.additionalProperties === undefined) {
+        merged.additionalProperties = schemaObj.additionalProperties;
+      } else if (merged.additionalProperties === true && schemaObj.additionalProperties === false) {
+        merged.additionalProperties = false; // false is more restrictive
+      }
+    }
+
+    // Merge items for arrays
+    if (schemaObj.items !== undefined) {
+      if (merged.items === undefined) {
+        merged.items = schemaObj.items;
+      } else {
+        // Recursively merge item schemas
+        const mergedItems = mergeAllOfSchemas([
+          merged.items as JsonSchema,
+          schemaObj.items as JsonSchema,
+        ]);
+        if (mergedItems === null || mergedItems === false) {
+          return false;
+        }
+        merged.items = mergedItems;
+      }
+    }
+  }
+
+  return merged as JsonSchema;
+}
+
+/**
  * Checks if a source schema is compatible with a target schema in a oneOf/anyOf union.
  */
 function isCompatibleWithUnion(
@@ -168,28 +293,14 @@ export function areSemanticallyCompatible(
     if (sourceSchema === true) return "runtime";
   }
 
-  // Handle allOf in source (intersection types - all must be compatible)
+  // Handle allOf in source (intersection types - merge all schemas first)
   if (sourceSchema.allOf && Array.isArray(sourceSchema.allOf)) {
-    let hasStatic = false;
-    let hasRuntime = false;
-    let hasIncompatible = false;
-
-    for (const allOfSchema of sourceSchema.allOf) {
-      const compatibility = areSemanticallyCompatible(allOfSchema as JsonSchema, targetSchema);
-      if (compatibility === "incompatible") {
-        hasIncompatible = true;
-      } else if (compatibility === "static") {
-        hasStatic = true;
-      } else if (compatibility === "runtime") {
-        hasRuntime = true;
-      }
+    const mergedSchema = mergeAllOfSchemas(sourceSchema.allOf);
+    if (mergedSchema === null || mergedSchema === false) {
+      return "incompatible";
     }
-
-    // If any allOf schema is incompatible, the whole thing is incompatible
-    if (hasIncompatible) return "incompatible";
-    if (hasRuntime) return "runtime";
-    if (hasStatic) return "static";
-    return "incompatible";
+    // Check compatibility of the merged schema against the target
+    return areSemanticallyCompatible(mergedSchema, targetSchema);
   }
 
   // Check type compatibility first

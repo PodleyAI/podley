@@ -64,13 +64,13 @@ describe("SchemaUtils", () => {
       });
 
       it("should return runtime if any allOf schema requires runtime check", () => {
-        const source: JsonSchema = {
+        const source = {
           allOf: [{ type: "string", format: "model" }, { type: "string" }],
-        };
-        const target: JsonSchema = {
+        } as const satisfies JsonSchema;
+        const target = {
           type: "string",
           format: "model:EmbeddingTask",
-        };
+        } as const satisfies JsonSchema;
 
         expect(areSemanticallyCompatible(source, target)).toBe("runtime");
       });
@@ -369,7 +369,7 @@ describe("SchemaUtils", () => {
       });
 
       describe("typed arrays with semantic annotations", () => {
-        it("should return static when typed arrays with different item semantic annotations but same base type", () => {
+        it("should return incompatible when typed arrays with different item semantic annotations but same base type", () => {
           // Both are number arrays, just different semantic annotations
           const source: JsonSchema = {
             type: "array",
@@ -380,9 +380,7 @@ describe("SchemaUtils", () => {
             items: { type: "number", format: "Float32" },
           };
 
-          // Note: Semantic annotations only affect compatibility for string types,
-          // so number arrays with different semantic annotations are still compatible
-          expect(areSemanticallyCompatible(source, target)).toBe("static");
+          expect(areSemanticallyCompatible(source, target)).toBe("incompatible");
         });
 
         it("should return static when typed arrays match exactly", () => {
@@ -400,7 +398,7 @@ describe("SchemaUtils", () => {
           expect(areSemanticallyCompatible(source, target)).toBe("static");
         });
 
-        it("should return static when generic number array connects to typed array", () => {
+        it("should return incompatible when generic number array connects to typed array", () => {
           const source: JsonSchema = {
             type: "array",
             items: { type: "number" },
@@ -410,7 +408,7 @@ describe("SchemaUtils", () => {
             items: { type: "number", format: "Float64" },
           };
 
-          expect(areSemanticallyCompatible(source, target)).toBe("static");
+          expect(areSemanticallyCompatible(source, target)).toBe("incompatible");
         });
 
         it("should return static when typed array connects to generic number array", () => {
@@ -479,7 +477,7 @@ describe("SchemaUtils", () => {
           expect(areSemanticallyCompatible(source, target)).toBe("static");
         });
 
-        it("should return static when generic number array connects to anyOf typed array schema", () => {
+        it("should return incompatible when generic number array connects to anyOf typed array schema", () => {
           const source: JsonSchema = {
             type: "array",
             items: { type: "number" },
@@ -499,7 +497,7 @@ describe("SchemaUtils", () => {
             ],
           };
 
-          expect(areSemanticallyCompatible(source, target)).toBe("static");
+          expect(areSemanticallyCompatible(source, target)).toBe("incompatible");
         });
 
         it("should return static when oneOf typed array schema connects to typed array", () => {
@@ -556,7 +554,7 @@ describe("SchemaUtils", () => {
           expect(areSemanticallyCompatible(source, target)).toBe("static");
         });
 
-        it("should return static when different typed arrays with same item type connect", () => {
+        it("should return incompatible when different typed arrays with same item type connect", () => {
           // Different array-level semantics but same item type
           const source: JsonSchema = {
             type: "array",
@@ -570,7 +568,7 @@ describe("SchemaUtils", () => {
           };
 
           // Array-level semantics don't affect compatibility (only item semantics for strings)
-          expect(areSemanticallyCompatible(source, target)).toBe("static");
+          expect(areSemanticallyCompatible(source, target)).toBe("incompatible");
         });
       });
     });
@@ -715,14 +713,14 @@ describe("SchemaUtils", () => {
         expect(areSemanticallyCompatible(source, target)).toBe("static");
       });
 
-      it("should return static when only target has semantic annotation", () => {
+      it("should return incompatible when only target has semantic annotation", () => {
         const source: JsonSchema = { type: "string" };
         const target: JsonSchema = {
           type: "string",
           format: "model",
         };
 
-        expect(areSemanticallyCompatible(source, target)).toBe("static");
+        expect(areSemanticallyCompatible(source, target)).toBe("incompatible");
       });
 
       it("should return static when source has no type but target has semantic annotation", () => {
