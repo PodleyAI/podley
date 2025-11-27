@@ -5,13 +5,13 @@
  */
 
 import {
-  CreateWorkflow,
-  JobQueueTaskConfig,
-  Task,
-  TaskRegistry,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, FromSchema } from "@podley/util";
+    CreateWorkflow,
+    JobQueueTaskConfig,
+    Task,
+    TaskRegistry,
+    Workflow,
+} from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
 import { Document, DocumentFragment } from "../source/Document";
 
 const inputSchema = {
@@ -85,7 +85,7 @@ export const DocumentSplitter = (input: DocumentSplitterTaskInput) => {
   return new DocumentSplitterTask(input).run();
 };
 
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     DocumentSplitter: CreateWorkflow<
       DocumentSplitterTaskInput,

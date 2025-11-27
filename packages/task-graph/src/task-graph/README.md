@@ -35,7 +35,7 @@ A robust TypeScript library for creating and managing task graphs with dependenc
 
 ```bash
 # Within the monorepo
-npm install @podley/task-graph
+npm install @workglow/task-graph
 ```
 
 ## Basic Usage
@@ -43,7 +43,7 @@ npm install @podley/task-graph
 ### Creating a Task Graph
 
 ```typescript
-import { TaskGraph, Dataflow } from "@podley/task-graph";
+import { TaskGraph, Dataflow } from "@workglow/task-graph";
 
 const graph = new TaskGraph();
 const task1 = new TestTask({ input: "hello" }, { id: "task1" });

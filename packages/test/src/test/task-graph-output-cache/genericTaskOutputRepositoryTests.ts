@@ -9,7 +9,7 @@ import {
   TaskOutput,
   TaskOutputRepository,
   TaskOutputTabularRepository,
-} from "@podley/task-graph";
+} from "@workglow/task-graph";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mock = vi.fn;

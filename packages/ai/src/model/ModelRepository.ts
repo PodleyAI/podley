@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { type TabularRepository } from "@podley/storage";
-import { DataPortSchemaObject, EventEmitter, EventParameters } from "@podley/util";
+import { type TabularRepository } from "@workglow/storage";
+import { DataPortSchemaObject, EventEmitter, EventParameters } from "@workglow/util";
 import { Model } from "./Model";
 
 /**

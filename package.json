@@ -1,8 +1,8 @@
 {
-  "name": "podley",
+  "name": "workglow",
   "type": "module",
   "version": "0.0.10",
-  "description": "Podley is a tool for building and running DAG pipelines of AI tasks.",
+  "description": "Workglow is a tool for building and running DAG pipelines.",
   "workspaces": [
     "./packages/*",
     "./examples/*"

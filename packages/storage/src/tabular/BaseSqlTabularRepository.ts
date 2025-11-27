@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DataPortSchemaObject, FromSchema, JsonSchema } from "@podley/util";
+import { DataPortSchemaObject, FromSchema, JsonSchema } from "@workglow/util";
 import { ValueOptionType } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 

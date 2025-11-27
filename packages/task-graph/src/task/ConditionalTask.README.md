@@ -19,7 +19,7 @@ A task that implements conditional branching within a task graph, similar to if/
 ### Simple If/Else
 
 ```typescript
-import { ConditionalTask, TaskGraph, Dataflow } from "@podley/task-graph";
+import { ConditionalTask, TaskGraph, Dataflow } from "@workglow/task-graph";
 
 const conditional = new ConditionalTask(
   {},
@@ -83,19 +83,19 @@ const fanOut = new ConditionalTask(
 
 Each branch in the `branches` array has the following properties:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | Unique identifier for the branch |
-| `condition` | `(input) => boolean` | Predicate function to evaluate |
-| `outputPort` | `string` | Output port name for this branch |
+| Property     | Type                 | Description                      |
+| ------------ | -------------------- | -------------------------------- |
+| `id`         | `string`             | Unique identifier for the branch |
+| `condition`  | `(input) => boolean` | Predicate function to evaluate   |
+| `outputPort` | `string`             | Output port name for this branch |
 
 ### ConditionalTaskConfig
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `branches` | `BranchConfig[]` | Required | Array of branch configurations |
-| `defaultBranch` | `string` | `undefined` | Branch ID to use if no conditions match |
-| `exclusive` | `boolean` | `true` | If true, only first matching branch activates |
+| Property        | Type             | Default     | Description                                   |
+| --------------- | ---------------- | ----------- | --------------------------------------------- |
+| `branches`      | `BranchConfig[]` | Required    | Array of branch configurations                |
+| `defaultBranch` | `string`         | `undefined` | Branch ID to use if no conditions match       |
+| `exclusive`     | `boolean`        | `true`      | If true, only first matching branch activates |
 
 ## Execution Modes
 
@@ -168,12 +168,14 @@ When wiring ConditionalTask outputs to downstream tasks, use `"*"` (DATAFLOW_ALL
 
 ```typescript
 // Pass all properties from the branch output to the downstream task
-graph.addDataflow(new Dataflow(
-  conditional.config.id, 
-  "highPath",  // Source port (branch output)
-  handler.config.id, 
-  "*"          // Target: all ports (passes { value, metadata, ... })
-));
+graph.addDataflow(
+  new Dataflow(
+    conditional.config.id,
+    "highPath", // Source port (branch output)
+    handler.config.id,
+    "*" // Target: all ports (passes { value, metadata, ... })
+  )
+);
 ```
 
 ## Disabled Status Propagation
@@ -228,13 +230,13 @@ const router = new ConditionalTask(
   {},
   {
     branches: [
-      { 
-        id: "risky", 
+      {
+        id: "risky",
         condition: (i) => {
           if (!i.data) throw new Error("No data!");
           return i.data.value > 100;
-        }, 
-        outputPort: "risky" 
+        },
+        outputPort: "risky",
       },
       { id: "safe", condition: () => true, outputPort: "safe" },
     ],
@@ -257,6 +259,7 @@ ConditionalTask integrates seamlessly with TaskGraph and its scheduler:
 4. Downstream tasks on disabled branches never execute
 
 This makes ConditionalTask ideal for implementing:
+
 - Feature flags
 - A/B testing
 - Error handling and retry logic

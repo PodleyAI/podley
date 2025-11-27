@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
-import { DataPortSchema, FromSchema } from "@podley/util";
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
 import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
@@ -74,7 +74,7 @@ export const TextRewriter = (input: TextRewriterTaskInput, config?: JobQueueTask
   return new TextRewriterTask(input, config).run();
 };
 
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     TextRewriter: CreateWorkflow<TextRewriterTaskInput, TextRewriterTaskOutput, JobQueueTaskConfig>;
   }

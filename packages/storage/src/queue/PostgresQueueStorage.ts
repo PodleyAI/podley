@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, makeFingerprint, uuid4 } from "@podley/util";
+import { createServiceToken, makeFingerprint, uuid4 } from "@workglow/util";
 import { Pool } from "pg";
 import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
 

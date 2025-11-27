@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Sqlite } from "@podley/sqlite";
-import { createServiceToken, DataPortSchemaObject, FromSchema, JsonSchema } from "@podley/util";
+import { Sqlite } from "@workglow/sqlite";
+import { createServiceToken, DataPortSchemaObject, FromSchema, JsonSchema } from "@workglow/util";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import { ITabularRepository, ValueOptionType } from "./ITabularRepository";
 

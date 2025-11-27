@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DownloadModelTask, getGlobalModelRepository } from "@podley/ai";
-import { JsonTaskItem, TaskGraph, Workflow } from "@podley/task-graph";
-import { DelayTask, JsonTask } from "@podley/tasks";
+import { DownloadModelTask, getGlobalModelRepository } from "@workglow/ai";
+import { JsonTaskItem, TaskGraph, Workflow } from "@workglow/task-graph";
+import { DelayTask, JsonTask } from "@workglow/tasks";
 import type { Command } from "commander";
 import { runTasks } from "./TaskGraphToUI";
 

@@ -1,6 +1,6 @@
-# @podley/storage
+# @workglow/storage
 
-Modular storage solutions for Podley.AI platform with multiple backend implementations. Provides consistent interfaces for key-value storage, tabular data storage, and job queue persistence.
+Modular storage solutions for Workglow.AI platform with multiple backend implementations. Provides consistent interfaces for key-value storage, tabular data storage, and job queue persistence.
 
 - [Quick Start](#quick-start)
 - [Installation](#installation)
@@ -46,7 +46,7 @@ Modular storage solutions for Podley.AI platform with multiple backend implement
 
 ```typescript
 // Key-Value Storage (simple data)
-import { InMemoryKvRepository } from "@podley/storage";
+import { InMemoryKvRepository } from "@workglow/storage";
 
 const kvStore = new InMemoryKvRepository<string, { name: string; age: number }>();
 await kvStore.put("user:123", { name: "Alice", age: 30 });
@@ -55,8 +55,8 @@ const kvUser = await kvStore.get("user:123"); // { name: "Alice", age: 30 }
 
 ```typescript
 // Tabular Storage (structured data with schemas)
-import { InMemoryTabularRepository } from "@podley/storage";
-import { JsonSchema } from "@podley/util";
+import { InMemoryTabularRepository } from "@workglow/storage";
+import { JsonSchema } from "@workglow/util";
 
 const userSchema = {
   type: "object",
@@ -84,13 +84,13 @@ const user = await userRepo.get({ id: "123" });
 
 ```bash
 # Using bun (recommended)
-bun install @podley/storage
+bun install @workglow/storage
 
 # Using npm
-npm install @podley/storage
+npm install @workglow/storage
 
 # Using yarn
-yarn add @podley/storage
+yarn add @workglow/storage
 ```
 
 ## Core Concepts
@@ -100,7 +100,7 @@ yarn add @podley/storage
 All storage implementations are fully typed using TypeScript and JSON Schema for runtime validation:
 
 ```typescript
-import { JsonSchema, FromSchema } from "@podley/util";
+import { JsonSchema, FromSchema } from "@workglow/util";
 
 // Define your data structure
 const ProductSchema = {
@@ -134,11 +134,11 @@ const ProductSchema = {
 
 ### Import Patterns
 
-The package uses conditional exports, so importing from `@podley/storage` automatically selects the right build for your runtime (browser, Node.js, or Bun).
+The package uses conditional exports, so importing from `@workglow/storage` automatically selects the right build for your runtime (browser, Node.js, or Bun).
 
 ```typescript
 // Import from the top-level package; it resolves to the correct target per environment
-import { InMemoryKvRepository, SqliteTabularRepository } from "@podley/storage";
+import { InMemoryKvRepository, SqliteTabularRepository } from "@workglow/storage";
 ```
 
 ## Storage Types
@@ -150,7 +150,7 @@ Simple key-value storage for unstructured or semi-structured data.
 #### Basic Usage
 
 ```typescript
-import { InMemoryKvRepository, FsFolderJsonKvRepository } from "@podley/storage";
+import { InMemoryKvRepository, FsFolderJsonKvRepository } from "@workglow/storage";
 
 // In-memory (for testing/caching)
 const cache = new InMemoryKvRepository<string, any>();
@@ -165,22 +165,22 @@ await settings.put("user:preferences", { notifications: true });
 
 ```typescript
 // Browser (using IndexedDB)
-import { IndexedDbKvRepository } from "@podley/storage";
+import { IndexedDbKvRepository } from "@workglow/storage";
 const browserStore = new IndexedDbKvRepository("my-app-storage");
 
 // Node.js/Bun (using SQLite)
-import { SqliteKvRepository } from "@podley/storage";
-// Pass a file path or a Database instance (see @podley/sqlite)
+import { SqliteKvRepository } from "@workglow/storage";
+// Pass a file path or a Database instance (see @workglow/sqlite)
 const sqliteStore = new SqliteKvRepository("./data.db", "config_table");
 
 // PostgreSQL (Node.js/Bun)
-import { PostgresKvRepository } from "@podley/storage";
+import { PostgresKvRepository } from "@workglow/storage";
 import { Pool } from "pg";
 const pool = new Pool({ connectionString: "postgresql://..." });
 const pgStore = new PostgresKvRepository(pool, "settings");
 
 // Supabase (Node.js/Bun)
-import { SupabaseKvRepository } from "@podley/storage";
+import { SupabaseKvRepository } from "@workglow/storage";
 import { createClient } from "@supabase/supabase-js";
 const supabase = createClient("https://your-project.supabase.co", "your-anon-key");
 const supabaseStore = new SupabaseKvRepository(supabase, "settings");
@@ -230,8 +230,8 @@ Structured storage with schemas, primary keys, and indexing for complex data rel
 #### Schema Definition
 
 ```typescript
-import { JsonSchema } from "@podley/util";
-import { InMemoryTabularRepository } from "@podley/storage";
+import { JsonSchema } from "@workglow/util";
+import { InMemoryTabularRepository } from "@workglow/storage";
 
 // Define your entity schema
 const UserSchema = {
@@ -336,7 +336,7 @@ await userRepo.deleteSearch("age", 65, ">="); // Delete users 65 and older
 
 ```typescript
 // SQLite (Node.js/Bun)
-import { SqliteTabularRepository } from "@podley/storage";
+import { SqliteTabularRepository } from "@workglow/storage";
 
 const sqliteUsers = new SqliteTabularRepository<typeof UserSchema, ["id"]>(
   "./users.db",
@@ -347,7 +347,7 @@ const sqliteUsers = new SqliteTabularRepository<typeof UserSchema, ["id"]>(
 );
 
 // PostgreSQL (Node.js/Bun)
-import { PostgresTabularRepository } from "@podley/storage";
+import { PostgresTabularRepository } from "@workglow/storage";
 import { Pool } from "pg";
 
 const pool = new Pool({ connectionString: "postgresql://..." });
@@ -360,7 +360,7 @@ const pgUsers = new PostgresTabularRepository<typeof UserSchema, ["id"]>(
 );
 
 // Supabase (Node.js/Bun)
-import { SupabaseTabularRepository } from "@podley/storage";
+import { SupabaseTabularRepository } from "@workglow/storage";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient("https://your-project.supabase.co", "your-anon-key");
@@ -373,7 +373,7 @@ const supabaseUsers = new SupabaseTabularRepository<typeof UserSchema, ["id"]>(
 );
 
 // IndexedDB (Browser)
-import { IndexedDbTabularRepository } from "@podley/storage";
+import { IndexedDbTabularRepository } from "@workglow/storage";
 const browserUsers = new IndexedDbTabularRepository<typeof UserSchema, ["id"]>(
   "users",
   UserSchema,
@@ -382,7 +382,7 @@ const browserUsers = new IndexedDbTabularRepository<typeof UserSchema, ["id"]>(
 );
 
 // File-based (Node.js/Bun)
-import { FsFolderTabularRepository } from "@podley/storage";
+import { FsFolderTabularRepository } from "@workglow/storage";
 const fileUsers = new FsFolderTabularRepository<typeof UserSchema, ["id"]>(
   "./data/users",
   UserSchema,
@@ -400,7 +400,7 @@ Persistent job queue storage for background processing and task management.
 #### Basic Job Queue Operations
 
 ```typescript
-import { InMemoryQueueStorage, JobStatus } from "@podley/storage";
+import { InMemoryQueueStorage, JobStatus } from "@workglow/storage";
 
 // Define job input/output types
 type ProcessingInput = { text: string; options: any };
@@ -462,7 +462,7 @@ import {
   SupabaseKvRepository,
   SupabaseTabularRepository,
   SupabaseQueueStorage,
-} from "@podley/storage";
+} from "@workglow/storage";
 import { createClient } from "@supabase/supabase-js";
 
 // Local browser storage with IndexedDB
@@ -484,7 +484,7 @@ import {
   SqliteKvRepository,
   PostgresTabularRepository,
   FsFolderJsonKvRepository,
-} from "@podley/storage";
+} from "@workglow/storage";
 
 // Mix and match storage backends
 const cache = new FsFolderJsonKvRepository("./cache");
@@ -500,7 +500,7 @@ import {
   FsFolderJsonKvRepository,
   PostgresQueueStorage,
   SupabaseTabularRepository,
-} from "@podley/storage";
+} from "@workglow/storage";
 
 import { Database } from "bun:sqlite";
 import { createClient } from "@supabase/supabase-js";
@@ -534,7 +534,7 @@ const [entity] = await store.waitOn("put"); // Waits for next put operation
 ### Compound Primary Keys
 
 ```typescript
-import { JsonSchema } from "@podley/util";
+import { JsonSchema } from "@workglow/util";
 
 const OrderLineSchema = {
   type: "object",
@@ -569,8 +569,8 @@ const line = await orderLines.get({ orderId: "ORD-123", lineNumber: 1 });
 ### Custom File Layout (KV on filesystem)
 
 ```typescript
-import { FsFolderKvRepository } from "@podley/storage";
-import { JsonSchema } from "@podley/util";
+import { FsFolderKvRepository } from "@workglow/storage";
+import { JsonSchema } from "@workglow/util";
 
 // Control how keys map to file paths and value encoding via schemas
 const keySchema = { type: "string" } as const satisfies JsonSchema;
@@ -671,8 +671,8 @@ interface IQueueStorage<Input, Output> {
 ### User Management System
 
 ```typescript
-import { JsonSchema, FromSchema } from "@podley/util";
-import { InMemoryTabularRepository, InMemoryKvRepository } from "@podley/storage";
+import { JsonSchema, FromSchema } from "@workglow/util";
+import { InMemoryTabularRepository, InMemoryKvRepository } from "@workglow/storage";
 
 // User profile with tabular storage
 const UserSchema = {
@@ -806,12 +806,12 @@ class ConfigManager {
 
 ```typescript
 import { createClient } from "@supabase/supabase-js";
-import { JsonSchema } from "@podley/util";
+import { JsonSchema } from "@workglow/util";
 import {
   SupabaseTabularRepository,
   SupabaseKvRepository,
   SupabaseQueueStorage,
-} from "@podley/storage";
+} from "@workglow/storage";
 
 // Initialize Supabase client
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
@@ -952,7 +952,7 @@ bun test --grep "Sqlite"      # Native tests
 
 ```typescript
 import { describe, test, expect, beforeEach } from "vitest";
-import { InMemoryTabularRepository } from "@podley/storage";
+import { InMemoryTabularRepository } from "@workglow/storage";
 
 describe("UserRepository", () => {
   let userRepo: InMemoryTabularRepository<typeof UserSchema, ["id"]>;

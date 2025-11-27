@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { HFT_WORKER_JOBRUN, HFT_WORKER_JOBRUN_REGISTER } from "@podley/ai-provider";
-import { globalServiceRegistry } from "@podley/util";
 import { env } from "@sroussey/transformers";
+import { HFT_WORKER_JOBRUN, HFT_WORKER_JOBRUN_REGISTER } from "@workglow/ai-provider";
+import { globalServiceRegistry } from "@workglow/util";
 
 env.backends.onnx.wasm.proxy = true;
 globalServiceRegistry.get(HFT_WORKER_JOBRUN);

@@ -32,7 +32,7 @@ A flexible key-value storage solution with multiple backend implementations. Pro
 ## Installation
 
 ```bash
-bun install @podley/storage
+bun install @workglow/storage
 ```
 
 ## Usage
@@ -40,7 +40,7 @@ bun install @podley/storage
 ### File System Storage
 
 ```typescript
-import { FsFolderKvRepository } from "@podley/storage/kv";
+import { FsFolderKvRepository } from "@workglow/storage/kv";
 
 const fsRepo = new FsFolderKvRepository(
   "./data-storage", // Storage directory
@@ -55,7 +55,7 @@ const config = await fsRepo.get("config");
 ### Browser IndexedDB Storage
 
 ```typescript
-import { IndexedDbKvRepository } from "@podley/storage/kv";
+import { IndexedDbKvRepository } from "@workglow/storage/kv";
 
 const idbRepo = new IndexedDbKvRepository(
   "my-app-db", // Database name
@@ -70,7 +70,7 @@ await idbRepo.put("session", { userId: 123, token: "abc" });
 ### PostgreSQL Storage
 
 ```typescript
-import { PostgresKvRepository } from "@podley/storage/kv";
+import { PostgresKvRepository } from "@workglow/storage/kv";
 import { PGlite } from "@electric-sql/pglite";
 
 const pg = new PGlite(); // Requires @electric-sql/pglite
@@ -87,8 +87,8 @@ await pgRepo.put("preferences:456", { lang: "en", fontSize: 16 });
 ### SQLite Storage
 
 ```typescript
-import { SqliteKvRepository } from "@podley/storage/kv";
-import { Sqlite } from "@podley/sqlite";
+import { SqliteKvRepository } from "@workglow/storage/kv";
+import { Sqlite } from "@workglow/sqlite";
 
 const db = new Sqlite(":memory:"); // In-memory database
 const sqliteRepo = new SqliteKvRepository(
@@ -104,7 +104,7 @@ await sqliteRepo.put("temp:789", "cached_value");
 ### In-Memory Storage
 
 ```typescript
-import { InMemoryKvRepository } from "@podley/storage/kv";
+import { InMemoryKvRepository } from "@workglow/storage/kv";
 
 const memRepo = new InMemoryKvRepository(
   "string", // Key type

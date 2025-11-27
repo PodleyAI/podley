@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DataPortSchemaObject, EventParameters } from "@podley/util";
+import { DataPortSchemaObject, EventParameters } from "@workglow/util";
 import { JSONValue } from "../tabular/ITabularRepository";
 
 /**

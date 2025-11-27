@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InMemoryModelRepository } from "@podley/ai";
+import { InMemoryModelRepository } from "@workglow/ai";
 import { describe } from "vitest";
 import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 

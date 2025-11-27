@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SqliteTabularRepository } from "@podley/storage";
-import { uuid4 } from "@podley/util";
+import { SqliteTabularRepository } from "@workglow/storage";
+import { uuid4 } from "@workglow/util";
 import { describe } from "vitest";
 import {
   CompoundPrimaryKeyNames,

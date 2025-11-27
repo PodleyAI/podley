@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Job, JobConstructorParam, JobQueue, JobQueueOptions } from "@podley/job-queue";
-import { IndexedDbQueueStorage } from "@podley/storage";
-import { createServiceToken } from "@podley/util";
+import { Job, JobConstructorParam, JobQueue, JobQueueOptions } from "@workglow/job-queue";
+import { IndexedDbQueueStorage } from "@workglow/storage";
+import { createServiceToken } from "@workglow/util";
 
 export const INDEXED_DB_JOB_QUEUE =
   createServiceToken<JobQueue<any, any, any>>("jobQueue.indexedDb");

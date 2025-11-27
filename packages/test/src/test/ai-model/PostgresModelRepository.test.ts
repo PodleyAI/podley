@@ -5,8 +5,8 @@
  */
 
 import { PGlite } from "@electric-sql/pglite";
-import { PostgresModelRepository } from "@podley/ai";
-import { uuid4 } from "@podley/util";
+import { PostgresModelRepository } from "@workglow/ai";
+import { uuid4 } from "@workglow/util";
 import { Pool } from "pg";
 import { describe } from "vitest";
 import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";

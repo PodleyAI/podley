@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { pipe, Task, Workflow } from "@podley/task-graph";
-import { DataPortSchema } from "@podley/util";
+import { pipe, Task, Workflow } from "@workglow/task-graph";
+import { DataPortSchema } from "@workglow/util";
 import { describe, expect, it } from "vitest";
 import { InMemoryTaskOutputRepository } from "../../binding/InMemoryTaskOutputRepository";
 

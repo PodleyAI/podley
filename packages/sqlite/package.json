@@ -1,7 +1,7 @@
 {
-  "name": "@podley/sqlite",
+  "name": "@workglow/sqlite",
   "type": "module",
-  "version": "0.0.51",
+  "version": "0.0.52",
   "description": "SQLite database providing cross-platform database support for browser, Node.js, and Bun environments.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",

@@ -10,7 +10,7 @@ import {
   TaskGraphRepository,
   TaskGraphTabularRepository,
   TaskRegistry,
-} from "@podley/task-graph";
+} from "@workglow/task-graph";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { TestIOTask } from "../task/TestTasks";
 

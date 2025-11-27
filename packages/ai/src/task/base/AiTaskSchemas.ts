@@ -5,12 +5,12 @@
  */
 
 import {
-  DataPortSchemaNonBoolean,
-  FromSchema,
-  FromSchemaDefaultOptions,
-  FromSchemaOptions,
-  JsonSchema,
-} from "@podley/util";
+    DataPortSchemaNonBoolean,
+    FromSchema,
+    FromSchemaDefaultOptions,
+    FromSchemaOptions,
+    JsonSchema,
+} from "@workglow/util";
 
 export type TypedArray =
   | Float64Array

@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ILimiter, RateLimiterWithBackoffOptions } from "@podley/job-queue";
-import { createServiceToken } from "@podley/util";
+import { ILimiter, RateLimiterWithBackoffOptions } from "@workglow/job-queue";
+import { createServiceToken } from "@workglow/util";
 import { Pool } from "pg";
 
 export const POSTGRES_JOB_RATE_LIMITER = createServiceToken<ILimiter>(

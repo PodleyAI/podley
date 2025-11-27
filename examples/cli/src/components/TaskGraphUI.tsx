@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ITask, ITaskGraph } from "@podley/task-graph";
+import { ITask, ITaskGraph } from "@workglow/task-graph";
 import React, { useEffect, useState } from "react";
 import { Box } from "retuink";
 import { TaskUI } from "./TaskUI";

@@ -1,8 +1,8 @@
 {
-  "name": "@podley/ai-provider",
+  "name": "@workglow/ai-provider",
   "type": "module",
-  "version": "0.0.51",
-  "description": "AI provider integrations for Podley, supporting OpenAI, Hugging Face Transformers, MediaPipe, and GGML models.",
+  "version": "0.0.52",
+  "description": "AI provider integrations for Workglow, supporting OpenAI, Hugging Face Transformers, MediaPipe, and GGML models.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-code": "bun build --watch --no-clear-screen --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
@@ -30,37 +30,37 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@podley/ai": "workspace:*",
-    "@podley/job-queue": "workspace:*",
-    "@podley/storage": "workspace:*",
-    "@podley/task-graph": "workspace:*",
-    "@podley/util": "workspace:*",
+    "@workglow/ai": "workspace:*",
+    "@workglow/job-queue": "workspace:*",
+    "@workglow/storage": "workspace:*",
+    "@workglow/task-graph": "workspace:*",
+    "@workglow/util": "workspace:*",
     "@sroussey/transformers": "catalog:",
     "@mediapipe/tasks-text": "catalog:"
   },
   "peerDependenciesMeta": {
-    "@podley/ai": {
+    "@workglow/ai": {
       "optional": false
     },
-    "@podley/job-queue": {
+    "@workglow/job-queue": {
       "optional": false
     },
-    "@podley/storage": {
+    "@workglow/storage": {
       "optional": false
     },
-    "@podley/task-graph": {
+    "@workglow/task-graph": {
       "optional": false
     },
-    "@podley/util": {
+    "@workglow/util": {
       "optional": false
     }
   },
   "devDependencies": {
-    "@podley/ai": "workspace:*",
-    "@podley/job-queue": "workspace:*",
-    "@podley/storage": "workspace:*",
-    "@podley/task-graph": "workspace:*",
-    "@podley/util": "workspace:*",
+    "@workglow/ai": "workspace:*",
+    "@workglow/job-queue": "workspace:*",
+    "@workglow/storage": "workspace:*",
+    "@workglow/task-graph": "workspace:*",
+    "@workglow/util": "workspace:*",
     "@sroussey/transformers": "catalog:",
     "@mediapipe/tasks-text": "catalog:"
   }

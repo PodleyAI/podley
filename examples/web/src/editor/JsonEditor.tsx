@@ -5,9 +5,9 @@
  */
 
 import { json } from "@codemirror/lang-json";
-import { JsonTask } from "@podley/tasks";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import CodeMirror from "@uiw/react-codemirror";
+import { JsonTask } from "@workglow/tasks";
 import React, { useEffect, useState } from "react";
 
 import "./JsonEditor.css";

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ITask, TaskStatus } from "@podley/task-graph";
+import { ITask, TaskStatus } from "@workglow/task-graph";
 
 // Common utility to get status color based on task status (with bg- prefix)
 export const getStatusColorBg = (status: TaskStatus): string => {

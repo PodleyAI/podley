@@ -1,5 +1,5 @@
-import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -17,16 +17,16 @@ export default defineConfig({
         manualChunks: {
           "huggingface-transformers": ["@sroussey/transformers"],
           "tf-mediapipe": ["@mediapipe/tasks-text"],
-          podley: [
-            "@podley/ai",
-            "@podley/ai-provider",
-            "@podley/job-queue",
-            "@podley/storage",
-            "@podley/task-graph",
-            "@podley/tasks",
-            "@podley/test",
-            "@podley/util",
-            "@podley/sqlite",
+          workglow: [
+            "@workglow/ai",
+            "@workglow/ai-provider",
+            "@workglow/job-queue",
+            "@workglow/storage",
+            "@workglow/task-graph",
+            "@workglow/tasks",
+            "@workglow/test",
+            "@workglow/util",
+            "@workglow/sqlite",
           ],
           react: [
             "react",

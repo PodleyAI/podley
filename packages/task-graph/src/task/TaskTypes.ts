@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StripJSONSchema } from "@podley/util";
+import { StripJSONSchema } from "@workglow/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import type { Task } from "./Task";
 

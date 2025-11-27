@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DirectedAcyclicGraph } from "@podley/util";
+import { DirectedAcyclicGraph } from "@workglow/util";
 import { Edge, Node } from "@xyflow/react";
 
 type PositionXY = {

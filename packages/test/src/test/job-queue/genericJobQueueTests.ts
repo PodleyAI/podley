@@ -15,9 +15,9 @@ import {
   JobStatus,
   PermanentJobError,
   RetryableJobError,
-} from "@podley/job-queue";
-import { IQueueStorage } from "@podley/storage";
-import { BaseError, sleep, uuid4 } from "@podley/util";
+} from "@workglow/job-queue";
+import { IQueueStorage } from "@workglow/storage";
+import { BaseError, sleep, uuid4 } from "@workglow/util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 export interface TInput {

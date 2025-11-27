@@ -4,7 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, globalServiceRegistry, parentPort, WORKER_SERVER } from "@podley/util";
+import {
+  createServiceToken,
+  globalServiceRegistry,
+  parentPort,
+  WORKER_SERVER,
+} from "@workglow/util";
 import { TFMP_Download, TFMP_TextEmbedding } from "../common/TFMP_JobRunFns";
 
 // Register the worker functions

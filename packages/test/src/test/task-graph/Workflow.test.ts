@@ -12,8 +12,8 @@ import {
   TaskError,
   Workflow,
   WorkflowError,
-} from "@podley/task-graph";
-import { sleep } from "@podley/util";
+} from "@workglow/task-graph";
+import { sleep } from "@workglow/util";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   NumberTask,

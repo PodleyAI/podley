@@ -14,7 +14,7 @@ TaskOutputRepository is a repository for task caching. If a task has the same in
 
 ```typescript
 // Example usage
-import { SqliteTaskOutputRepository } from "@podley/test"; // pre-bound implementation for sqlite
+import { SqliteTaskOutputRepository } from "@workglow/test"; // pre-bound implementation for sqlite
 const outputRepo = new SqliteTaskOutputRepository(":memory:");
 await outputRepo.saveOutput("MyTaskType", { param: "value" }, { result: "data" });
 ```
@@ -31,7 +31,7 @@ The `TaskGraphRepository` class provides:
 
 ```typescript
 // Example usage
-import { SqliteTaskGraphRepository } from "@podley/test"; // pre-bound implementation for sqlite
+import { SqliteTaskGraphRepository } from "@workglow/test"; // pre-bound implementation for sqlite
 const fsRepo = new FsFolderTaskGraphRepository("./storage");
 const memoryRepo = new InMemoryTaskGraphRepository();
 ```

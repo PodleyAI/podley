@@ -4,7 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, globalServiceRegistry, parentPort, WORKER_SERVER } from "@podley/util";
+import {
+  createServiceToken,
+  globalServiceRegistry,
+  parentPort,
+  WORKER_SERVER,
+} from "@workglow/util";
 import {
   HFT_Download,
   HFT_TextEmbedding,

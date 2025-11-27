@@ -6,17 +6,17 @@
 // //    *******************************************************************************
 
 import {
-  createGraphFromDependencyJSON,
-  CreateWorkflow,
-  Dataflow,
-  GraphAsTask,
-  JsonTaskItem,
-  TaskConfig,
-  TaskConfigurationError,
-  TaskRegistry,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, FromSchema } from "@podley/util";
+    createGraphFromDependencyJSON,
+    CreateWorkflow,
+    Dataflow,
+    GraphAsTask,
+    JsonTaskItem,
+    TaskConfig,
+    TaskConfigurationError,
+    TaskRegistry,
+    Workflow,
+} from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
 
 const inputSchema = {
   type: "object",
@@ -108,7 +108,7 @@ export const Json = (input: JsonTaskInput, config: TaskConfig = {}) => {
 };
 
 // Add Json task workflow to Workflow interface
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     Json: CreateWorkflow<JsonTaskInput, JsonTaskOutput, TaskConfig>;
   }

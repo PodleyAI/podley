@@ -1,14 +1,14 @@
-# @podley/debug
+# @workglow/debug
 
-Debug utilities for Podley AI task pipelines.
+Debug utilities for Workglow AI task pipelines.
 
 ## Overview
 
-The `@podley/debug` package provides debugging tools for Podley, including Chrome DevTools custom formatters that enable rich console output for task graphs, workflows, tasks, and dataflows.
+The `@workglow/debug` package provides debugging tools for Workglow, including Chrome DevTools custom formatters that enable rich console output for task graphs, workflows, tasks, and dataflows.
 
 ## Features
 
-- **Chrome DevTools Custom Formatters**: Rich, colored console output for Podley objects
+- **Chrome DevTools Custom Formatters**: Rich, colored console output for Workglow objects
   - **Dark Mode Support**: Automatically adapts colors based on browser theme
   - **DAG Visualization**: Visual graph rendering for directed acyclic graphs
   - **React Element Formatting**: Pretty-print React elements in the console
@@ -16,9 +16,9 @@ The `@podley/debug` package provides debugging tools for Podley, including Chrom
 ## Installation
 
 ```bash
-npm install @podley/debug
+npm install @workglow/debug
 # or
-bun add @podley/debug
+bun add @workglow/debug
 ```
 
 ## Usage
@@ -28,7 +28,7 @@ bun add @podley/debug
 Call `installDevToolsFormatters()` early in your application to enable rich console output:
 
 ```typescript
-import { installDevToolsFormatters } from "@podley/debug";
+import { installDevToolsFormatters } from "@workglow/debug";
 
 // Call once during app initialization
 installDevToolsFormatters();
@@ -43,11 +43,11 @@ installDevToolsFormatters();
 
 ### Viewing Rich Output
 
-Once formatters are installed and enabled, simply `console.log` any Podley object:
+Once formatters are installed and enabled, simply `console.log` any Workglow object:
 
 ```typescript
-import { Workflow } from "@podley/task-graph";
-import { installDevToolsFormatters } from "@podley/debug";
+import { Workflow } from "@workglow/task-graph";
+import { installDevToolsFormatters } from "@workglow/debug";
 
 installDevToolsFormatters();
 
@@ -60,7 +60,7 @@ console.log(workflow);
 
 ## Supported Objects
 
-The following Podley objects will display with rich formatting:
+The following Workglow objects will display with rich formatting:
 
 - **Workflow**: Shows task count, error state, and expandable task list
 - **TaskGraph**: Displays all tasks and dataflows with DAG visualization
@@ -76,7 +76,7 @@ The following Podley objects will display with rich formatting:
 Registers custom formatters with Chrome DevTools. Call once during application startup.
 
 ```typescript
-import { installDevToolsFormatters } from "@podley/debug";
+import { installDevToolsFormatters } from "@workglow/debug";
 
 installDevToolsFormatters();
 ```
@@ -86,7 +86,7 @@ installDevToolsFormatters();
 Returns whether the browser is currently in dark mode.
 
 ```typescript
-import { isDarkMode } from "@podley/debug";
+import { isDarkMode } from "@workglow/debug";
 
 if (isDarkMode()) {
   console.log("Using dark theme colors");

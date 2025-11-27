@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, JsonSchema } from "@podley/util";
+import { createServiceToken, JsonSchema } from "@workglow/util";
 import { mkdir, readFile, rm, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { IKvRepository } from "./IKvRepository";

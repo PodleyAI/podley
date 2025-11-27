@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Dataflow, serialGraph, TaskGraph } from "@podley/task-graph";
+import { Dataflow, serialGraph, TaskGraph } from "@workglow/task-graph";
 import { beforeEach, describe, expect, it } from "vitest";
 import { TestIOTask } from "../task/TestTasks";
 

@@ -64,7 +64,7 @@ It is common practice to have an output, and in a case like this, we can add an 
 Below we write the schemas first so we can use `FromSchema` to make types and not need to define the input and output multiple times (you could use Typebox or Zod4 for this as well).
 
 ```ts
-import {DataPortSchemaObject} from "@podley/util";
+import {DataPortSchemaObject} from "@workglow/util";
 const SimpleDebugLogTaskInputSchema = {
   type: "object",
   properties: {
@@ -120,7 +120,7 @@ export const SimpleDebug = (input: DebugLogTaskInput) => {
   return new SimpleDebugTask(input).run();
 };
 
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     SimpleDebug: CreateWorkflow<DebugLogTaskInput, DebugLogTaskOutput, TaskConfig>;
   }

@@ -5,15 +5,15 @@
  */
 
 import {
-  CreateWorkflow,
-  IExecuteContext,
-  Task,
-  TaskAbortedError,
-  TaskConfig,
-  TaskRegistry,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, FromSchema, sleep } from "@podley/util";
+    CreateWorkflow,
+    IExecuteContext,
+    Task,
+    TaskAbortedError,
+    TaskConfig,
+    TaskRegistry,
+    Workflow,
+} from "@workglow/task-graph";
+import { DataPortSchema, FromSchema, sleep } from "@workglow/util";
 
 const inputSchema = {
   type: "object",
@@ -92,7 +92,7 @@ export const Delay = (input: DelayTaskInput, config: TaskConfig = {}) => {
   return task.run();
 };
 
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     Delay: CreateWorkflow<DelayTaskInput, DelayTaskOutput, TaskConfig>;
   }

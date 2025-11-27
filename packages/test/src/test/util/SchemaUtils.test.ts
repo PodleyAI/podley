@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { JsonSchema } from "@podley/util";
-import { areObjectSchemasSemanticallyCompatible, areSemanticallyCompatible } from "@podley/util";
+import type { JsonSchema } from "@workglow/util";
+import { areObjectSchemasSemanticallyCompatible, areSemanticallyCompatible } from "@workglow/util";
 import { describe, expect, it } from "vitest";
 
 describe("SchemaUtils", () => {

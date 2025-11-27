@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IQueueStorage, JobStatus } from "@podley/storage";
+import { IQueueStorage, JobStatus } from "@workglow/storage";
 import { ILimiter } from "../limiter/ILimiter";
 import { Job } from "./Job";
 import { JobQueueStats } from "./JobQueue";

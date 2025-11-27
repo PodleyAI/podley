@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CreateWorkflow, Task, TaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
-import { DataPortSchema, FromSchema } from "@podley/util";
+import { CreateWorkflow, Task, TaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
 import { Interpreter } from "../util/interpreter";
 
 const inputSchema = {
@@ -76,7 +76,7 @@ export const JavaScript = (input: JavaScriptTaskInput, config: TaskConfig = {}) 
   return new JavaScriptTask(input, config).run();
 };
 
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     JavaScript: CreateWorkflow<JavaScriptTaskInput, JavaScriptTaskOutput, TaskConfig>;
   }

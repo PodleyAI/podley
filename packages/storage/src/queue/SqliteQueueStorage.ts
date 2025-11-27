@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { Sqlite } from "@podley/sqlite";
-import { createServiceToken, makeFingerprint, sleep, uuid4 } from "@podley/util";
+import type { Sqlite } from "@workglow/sqlite";
+import { createServiceToken, makeFingerprint, sleep, uuid4 } from "@workglow/util";
 import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
 
 export const SQLITE_QUEUE_STORAGE =

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventEmitter } from "@podley/util";
+import { EventEmitter } from "@workglow/util";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mock = vi.fn;

@@ -1,8 +1,8 @@
 {
-  "name": "@podley/tasks",
+  "name": "@workglow/tasks",
   "type": "module",
-  "version": "0.0.51",
-  "description": "Pre-built task implementations for Podley, including common AI operations and utility functions.",
+  "version": "0.0.52",
+  "description": "Pre-built task implementations for Workglow, including common AI operations and utility functions.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-code": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/index.ts",
@@ -30,29 +30,29 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@podley/task-graph": "workspace:*",
-    "@podley/util": "workspace:*",
-    "@podley/job-queue": "workspace:*",
-    "@podley/storage": "workspace:*"
+    "@workglow/task-graph": "workspace:*",
+    "@workglow/util": "workspace:*",
+    "@workglow/job-queue": "workspace:*",
+    "@workglow/storage": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@podley/task-graph": {
+    "@workglow/task-graph": {
       "optional": false
     },
-    "@podley/util": {
+    "@workglow/util": {
       "optional": false
     },
-    "@podley/job-queue": {
+    "@workglow/job-queue": {
       "optional": false
     },
-    "@podley/storage": {
+    "@workglow/storage": {
       "optional": false
     }
   },
   "devDependencies": {
-    "@podley/job-queue": "workspace:*",
-    "@podley/storage": "workspace:*",
-    "@podley/task-graph": "workspace:*",
-    "@podley/util": "workspace:*"
+    "@workglow/job-queue": "workspace:*",
+    "@workglow/storage": "workspace:*",
+    "@workglow/task-graph": "workspace:*",
+    "@workglow/util": "workspace:*"
   }
 }

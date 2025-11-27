@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { FsFolderTabularRepository } from "@podley/storage";
+import { FsFolderTabularRepository } from "@workglow/storage";
 import {
   TaskOutputPrimaryKeyNames,
   TaskOutputSchema,
   TaskOutputTabularRepository,
-} from "@podley/task-graph";
-import { createServiceToken } from "@podley/util";
+} from "@workglow/task-graph";
+import { createServiceToken } from "@workglow/util";
 
 export const FS_FOLDER_TASK_OUTPUT_REPOSITORY = createServiceToken<FsFolderTaskOutputRepository>(
   "taskgraph.taskOutputRepository.fsFolder"

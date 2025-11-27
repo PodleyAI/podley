@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { type TabularRepository } from "@podley/storage";
-import { compress, DataPortSchemaObject, decompress, makeFingerprint } from "@podley/util";
+import { type TabularRepository } from "@workglow/storage";
+import { compress, DataPortSchemaObject, decompress, makeFingerprint } from "@workglow/util";
 import { TaskInput, TaskOutput } from "../task/TaskTypes";
 import { TaskOutputRepository } from "./TaskOutputRepository";
 

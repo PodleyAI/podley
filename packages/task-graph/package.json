@@ -1,8 +1,8 @@
 {
-  "name": "@podley/task-graph",
+  "name": "@workglow/task-graph",
   "type": "module",
-  "version": "0.0.51",
-  "description": "Task graph management for Podley, providing DAG construction, execution planning, and workflow orchestration.",
+  "version": "0.0.52",
+  "description": "Task graph management for Workglow, providing DAG construction, execution planning, and workflow orchestration.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-browser": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/browser.ts",
@@ -36,24 +36,24 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@podley/job-queue": "workspace:*",
-    "@podley/storage": "workspace:*",
-    "@podley/util": "workspace:*"
+    "@workglow/job-queue": "workspace:*",
+    "@workglow/storage": "workspace:*",
+    "@workglow/util": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@podley/job-queue": {
+    "@workglow/job-queue": {
       "optional": false
     },
-    "@podley/storage": {
+    "@workglow/storage": {
       "optional": false
     },
-    "@podley/util": {
+    "@workglow/util": {
       "optional": false
     }
   },
   "devDependencies": {
-    "@podley/job-queue": "workspace:*",
-    "@podley/storage": "workspace:*",
-    "@podley/util": "workspace:*"
+    "@workglow/job-queue": "workspace:*",
+    "@workglow/storage": "workspace:*",
+    "@workglow/util": "workspace:*"
   }
 }

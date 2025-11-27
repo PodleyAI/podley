@@ -1,6 +1,6 @@
 // /*
 //  *    *******************************************************************************
-//  *    *   Podley.AI: Embedding Large Language Model Experiential Retrieval Service    *
+//  *    *   Workglow.AI: Embedding Large Language Model Experiential Retrieval Service    *
 //  *    *   OpenAI Provider Implementation                                            *
 //  *    *                                                                             *
 //  *    *   Licensed under the Apache License, Version 2.0 (the "License");           *
@@ -12,7 +12,7 @@
 //   TextGenerationTaskInput,
 //   TextGenerationTaskOutput,
 //   AiJob,
-// } from "@podley/ai";
+// } from "@workglow/ai";
 
 // export async function OpenAI_DownloadRun(
 //   job: AiJob,

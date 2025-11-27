@@ -17,8 +17,8 @@ import {
   TaskOutput,
   TaskRegistry,
   TaskStatus,
-} from "@podley/task-graph";
-import { sleep } from "@podley/util";
+} from "@workglow/task-graph";
+import { sleep } from "@workglow/util";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   FailingTask,

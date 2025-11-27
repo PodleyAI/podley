@@ -8,15 +8,15 @@
  * @description This file contains the implementation of the JobQueueTask class and its derived classes.
  */
 
-import { Job, JobQueue } from "@podley/job-queue";
+import { Job, JobQueue } from "@workglow/job-queue";
 import {
-  JobQueueTask,
-  JobQueueTaskConfig,
-  TaskConfigurationError,
-  TaskInput,
-  type TaskOutput,
-} from "@podley/task-graph";
-import { type JsonSchema } from "@podley/util";
+    JobQueueTask,
+    JobQueueTaskConfig,
+    TaskConfigurationError,
+    TaskInput,
+    type TaskOutput,
+} from "@workglow/task-graph";
+import { type JsonSchema } from "@workglow/util";
 
 import { AiJob, AiJobInput } from "../../job/AiJob";
 import type { Model } from "../../model/Model";

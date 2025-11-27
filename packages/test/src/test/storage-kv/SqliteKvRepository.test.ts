@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SqliteKvRepository } from "@podley/storage";
-import { uuid4 } from "@podley/util";
+import { SqliteKvRepository } from "@workglow/storage";
+import { uuid4 } from "@workglow/util";
 import { describe } from "vitest";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";
 

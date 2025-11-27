@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DataPortSchemaObject, EventParameters, FromSchema } from "@podley/util";
+import { DataPortSchemaObject, EventParameters, FromSchema } from "@workglow/util";
 
 // Generic type for possible value types in the repository
 export type ValueOptionType = string | number | bigint | boolean | null | Uint8Array;

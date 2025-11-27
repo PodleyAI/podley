@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, EventEmitter, EventParameters } from "@podley/util";
+import { createServiceToken, EventEmitter, EventParameters } from "@workglow/util";
 import { TaskGraph } from "../task-graph/TaskGraph";
 
 /**

@@ -1,8 +1,8 @@
 {
-  "name": "@podley/test",
+  "name": "@workglow/test",
   "type": "module",
-  "version": "0.0.51",
-  "description": "Testing utilities and test suites for Podley packages, providing comprehensive testing infrastructure.",
+  "version": "0.0.52",
+  "description": "Testing utilities and test suites for Workglow packages, providing comprehensive testing infrastructure.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-browser": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --packages=external --outdir ./dist/ ./src/browser.ts",
@@ -33,54 +33,54 @@
     "src/**/*.md"
   ],
   "peerDependencies": {
-    "@podley/ai": "workspace:*",
-    "@podley/ai-provider": "workspace:*",
-    "@podley/job-queue": "workspace:*",
-    "@podley/storage": "workspace:*",
-    "@podley/task-graph": "workspace:*",
-    "@podley/tasks": "workspace:*",
-    "@podley/util": "workspace:*",
-    "@podley/sqlite": "workspace:*",
+    "@workglow/ai": "workspace:*",
+    "@workglow/ai-provider": "workspace:*",
+    "@workglow/job-queue": "workspace:*",
+    "@workglow/storage": "workspace:*",
+    "@workglow/task-graph": "workspace:*",
+    "@workglow/tasks": "workspace:*",
+    "@workglow/util": "workspace:*",
+    "@workglow/sqlite": "workspace:*",
     "@electric-sql/pglite": "^0.3.11",
     "pg": "^8.16.3",
     "@supabase/supabase-js": "^2.84.0"
   },
   "peerDependenciesMeta": {
-    "@podley/ai": {
+    "@workglow/ai": {
       "optional": false
     },
-    "@podley/ai-provider": {
+    "@workglow/ai-provider": {
       "optional": false
     },
-    "@podley/job-queue": {
+    "@workglow/job-queue": {
       "optional": false
     },
-    "@podley/storage": {
+    "@workglow/storage": {
       "optional": false
     },
-    "@podley/task-graph": {
+    "@workglow/task-graph": {
       "optional": false
     },
-    "@podley/tasks": {
+    "@workglow/tasks": {
       "optional": false
     },
-    "@podley/util": {
+    "@workglow/util": {
       "optional": false
     },
-    "@podley/sqlite": {
+    "@workglow/sqlite": {
       "optional": false
     }
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.11",
-    "@podley/ai": "workspace:*",
-    "@podley/ai-provider": "workspace:*",
-    "@podley/job-queue": "workspace:*",
-    "@podley/sqlite": "workspace:*",
-    "@podley/storage": "workspace:*",
-    "@podley/task-graph": "workspace:*",
-    "@podley/tasks": "workspace:*",
-    "@podley/util": "workspace:*",
+    "@workglow/ai": "workspace:*",
+    "@workglow/ai-provider": "workspace:*",
+    "@workglow/job-queue": "workspace:*",
+    "@workglow/sqlite": "workspace:*",
+    "@workglow/storage": "workspace:*",
+    "@workglow/task-graph": "workspace:*",
+    "@workglow/tasks": "workspace:*",
+    "@workglow/util": "workspace:*",
     "@supabase/supabase-js": "^2.84.0",
     "@types/pg": "^8.15.5",
     "fake-indexeddb": "^6.2.4",

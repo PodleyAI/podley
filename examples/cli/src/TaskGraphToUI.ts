@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ITaskGraph, IWorkflow, Task, TaskGraph, Taskish, Workflow } from "@podley/task-graph";
-import { sleep } from "@podley/util";
+import { ITaskGraph, IWorkflow, Task, TaskGraph, Taskish, Workflow } from "@workglow/task-graph";
+import { sleep } from "@workglow/util";
 import React from "react";
 import { render } from "retuink";
 import App from "./components/App";

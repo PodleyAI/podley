@@ -1,5 +1,5 @@
-import { TENSORFLOW_MEDIAPIPE } from "@podley/ai-provider";
-import { getGlobalModelRepository, Model } from "@podley/ai";
+import { getGlobalModelRepository, Model } from "@workglow/ai";
+import { TENSORFLOW_MEDIAPIPE } from "@workglow/ai-provider";
 
 async function addMediaPipeModel(info: Partial<Model>, tasks: string[]) {
   const name = "mediapipe:" + info.name;

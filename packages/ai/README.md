@@ -1,10 +1,10 @@
-# @podley/ai
+# @workglow/ai
 
-Core AI abstractions and functionality for Podley AI task pipelines.
+Core AI abstractions and functionality for Workglow AI task pipelines.
 
 ## Overview
 
-The `@podley/ai` package provides the core AI abstractions, job definitions, and task implementations that form the foundation of Podley's AI task execution system. It defines the interfaces and base classes that AI providers implement, along with a comprehensive set of AI tasks ready for use.
+The `@workglow/ai` package provides the core AI abstractions, job definitions, and task implementations that form the foundation of Workglow's AI task execution system. It defines the interfaces and base classes that AI providers implement, along with a comprehensive set of AI tasks ready for use.
 
 ## Features
 
@@ -17,12 +17,12 @@ The `@podley/ai` package provides the core AI abstractions, job definitions, and
 ## Installation
 
 ```bash
-bun add @podley/ai
+bun add @workglow/ai
 ```
 
 ## Quick Start
 
-Here's a complete example of setting up and using the AI package with the Hugging Face Transformers ONNX provider from `@podley/ai-provider`:
+Here's a complete example of setting up and using the AI package with the Hugging Face Transformers ONNX provider from `@workglow/ai-provider`:
 
 ```typescript
 import {
@@ -32,10 +32,10 @@ import {
   setGlobalModelRepository,
   InMemoryModelRepository,
   AiJob,
-} from "@podley/ai";
-import { Workflow, getTaskQueueRegistry } from "@podley/task-graph";
-import { JobQueue } from "@podley/job-queue";
-import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@podley/ai-provider";
+} from "@workglow/ai";
+import { Workflow, getTaskQueueRegistry } from "@workglow/task-graph";
+import { JobQueue } from "@workglow/job-queue";
+import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@workglow/ai-provider";
 
 // 1. Set up a model repository
 const modelRepo = new InMemoryModelRepository();
@@ -85,7 +85,7 @@ console.log(result.text);
 Generates text based on prompts using language models.
 
 ```typescript
-import { TextGenerationTask } from "@podley/ai";
+import { TextGenerationTask } from "@workglow/ai";
 
 const task = new TextGenerationTask({
   model: "onnx:Xenova/gpt2:q8",
@@ -101,7 +101,7 @@ const result = await task.run();
 Generates vector embeddings for text using embedding models.
 
 ```typescript
-import { TextEmbeddingTask } from "@podley/ai";
+import { TextEmbeddingTask } from "@workglow/ai";
 
 const task = new TextEmbeddingTask({
   model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
@@ -117,7 +117,7 @@ const result = await task.run();
 Translates text between different languages.
 
 ```typescript
-import { TextTranslationTask } from "@podley/ai";
+import { TextTranslationTask } from "@workglow/ai";
 
 const task = new TextTranslationTask({
   model: "translation-model",
@@ -135,7 +135,7 @@ const result = await task.run();
 Generates summaries of longer text content.
 
 ```typescript
-import { TextSummaryTask } from "@podley/ai";
+import { TextSummaryTask } from "@workglow/ai";
 
 const task = new TextSummaryTask({
   model: "onnx:Falconsai/text_summarization:fp32",
@@ -152,7 +152,7 @@ const result = await task.run();
 Rewrites text in different styles or tones.
 
 ```typescript
-import { TextRewriterTask } from "@podley/ai";
+import { TextRewriterTask } from "@workglow/ai";
 
 const task = new TextRewriterTask({
   model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
@@ -169,7 +169,7 @@ const result = await task.run();
 Answers questions based on provided context.
 
 ```typescript
-import { TextQuestionAnswerTask } from "@podley/ai";
+import { TextQuestionAnswerTask } from "@workglow/ai";
 
 const task = new TextQuestionAnswerTask({
   model: "onnx:Xenova/distilbert-base-uncased-distilled-squad:q8",
@@ -188,7 +188,7 @@ const result = await task.run();
 Computes similarity between texts or embeddings.
 
 ```typescript
-import { VectorSimilarityTask } from "@podley/ai";
+import { VectorSimilarityTask } from "@workglow/ai";
 
 const task = new VectorSimilarityTask({
   model: "onnx:Supabase/gte-small:q8",
@@ -207,7 +207,7 @@ const result = await task.run();
 Splits documents into smaller chunks for processing.
 
 ```typescript
-import { DocumentSplitterTask } from "@podley/ai";
+import { DocumentSplitterTask } from "@workglow/ai";
 
 const task = new DocumentSplitterTask({
   document: "Very long document content...",
@@ -226,9 +226,9 @@ const result = await task.run();
 Downloads and prepares AI models for use.
 
 ```typescript
-import { DownloadModelTask } from "@podley/ai";
+import { DownloadModelTask } from "@workglow/ai";
 
-import { HF_TRANSFORMERS_ONNX } from "@podley/ai-provider";
+import { HF_TRANSFORMERS_ONNX } from "@workglow/ai-provider";
 
 const task = new DownloadModelTask({
   modelName: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
@@ -249,7 +249,7 @@ Models are managed through the `ModelRepository` system. You can use different s
 #### In-Memory Repository (Development)
 
 ```typescript
-import { InMemoryModelRepository, setGlobalModelRepository } from "@podley/ai";
+import { InMemoryModelRepository, setGlobalModelRepository } from "@workglow/ai";
 
 const modelRepo = new InMemoryModelRepository();
 setGlobalModelRepository(modelRepo);
@@ -258,7 +258,7 @@ setGlobalModelRepository(modelRepo);
 #### IndexedDB Repository (Browser)
 
 ```typescript
-import { IndexedDbModelRepository, setGlobalModelRepository } from "@podley/ai";
+import { IndexedDbModelRepository, setGlobalModelRepository } from "@workglow/ai";
 
 const modelRepo = new IndexedDbModelRepository("models", "task2models");
 setGlobalModelRepository(modelRepo);
@@ -267,7 +267,7 @@ setGlobalModelRepository(modelRepo);
 #### SQLite Repository (Server)
 
 ```typescript
-import { SqliteModelRepository, setGlobalModelRepository } from "@podley/ai";
+import { SqliteModelRepository, setGlobalModelRepository } from "@workglow/ai";
 
 const modelRepo = new SqliteModelRepository("./models.db");
 setGlobalModelRepository(modelRepo);
@@ -276,7 +276,7 @@ setGlobalModelRepository(modelRepo);
 #### PostgreSQL Repository (Production)
 
 ```typescript
-import { PostgresModelRepository, setGlobalModelRepository } from "@podley/ai";
+import { PostgresModelRepository, setGlobalModelRepository } from "@workglow/ai";
 import { Pool } from "pg";
 
 const pool = new Pool({
@@ -294,8 +294,8 @@ setGlobalModelRepository(modelRepo);
 ### Adding Models
 
 ```typescript
-import { getGlobalModelRepository } from "@podley/ai";
-import { HF_TRANSFORMERS_ONNX } from "@podley/ai-provider";
+import { getGlobalModelRepository } from "@workglow/ai";
+import { HF_TRANSFORMERS_ONNX } from "@workglow/ai-provider";
 
 const modelRepo = getGlobalModelRepository();
 
@@ -323,7 +323,7 @@ AI providers handle the actual execution of AI tasks. You need to register provi
 ### Basic Provider Registration
 
 ```typescript
-import { register_HFT_InlineJobFns } from "@podley/ai-provider";
+import { register_HFT_InlineJobFns } from "@workglow/ai-provider";
 
 // Registers run functions for all supported AI tasks on the current thread
 await register_HFT_InlineJobFns();
@@ -334,7 +334,7 @@ await register_HFT_InlineJobFns();
 For compute-intensive tasks that should run in workers:
 
 ```typescript
-// See `@podley/ai-provider` exports for worker/client registration helpers
+// See `@workglow/ai-provider` exports for worker/client registration helpers
 // - register_HFT_WorkerJobFns (in worker)
 // - register_HFT_ClientJobFns (in main thread)
 ```
@@ -344,21 +344,21 @@ For compute-intensive tasks that should run in workers:
 Each provider needs a job queue for task execution:
 
 ```typescript
-import { getTaskQueueRegistry } from "@podley/task-graph";
-import { JobQueue } from "@podley/job-queue";
-import { AiJob } from "@podley/ai";
-import { HF_TRANSFORMERS_ONNX } from "@podley/ai-provider";
+import { getTaskQueueRegistry } from "@workglow/task-graph";
+import { JobQueue } from "@workglow/job-queue";
+import { AiJob } from "@workglow/ai";
+import { HF_TRANSFORMERS_ONNX } from "@workglow/ai-provider";
 
 getTaskQueueRegistry().registerQueue(new JobQueue(HF_TRANSFORMERS_ONNX, AiJob));
 ```
 
 ## Workflow Integration
 
-AI tasks integrate seamlessly with Podley workflows:
+AI tasks integrate seamlessly with Workglow workflows:
 
 ```typescript
-import { Workflow } from "@podley/task-graph";
-import { TextGenerationTask, TextEmbeddingTask, VectorSimilarityTask } from "@podley/ai";
+import { Workflow } from "@workglow/task-graph";
+import { TextGenerationTask, TextEmbeddingTask, VectorSimilarityTask } from "@workglow/ai";
 
 const workflow = new Workflow();
 
@@ -387,7 +387,7 @@ console.log("Final similarity score:", result.similarity);
 The package includes document processing capabilities:
 
 ```typescript
-import { Document, DocumentConverterMarkdown } from "@podley/ai";
+import { Document, DocumentConverterMarkdown } from "@workglow/ai";
 
 // Create a document
 const doc = new Document("# My Document\n\nThis is content...", { title: "Sample Doc" });
@@ -411,7 +411,7 @@ const chunks = await splitter.run();
 AI tasks include comprehensive error handling:
 
 ```typescript
-import { TaskConfigurationError } from "@podley/task-graph";
+import { TaskConfigurationError } from "@workglow/task-graph";
 
 try {
   const task = new TextGenerationTask({
@@ -493,7 +493,7 @@ try {
 ### Browser Usage
 
 ```typescript
-import { IndexedDbModelRepository } from "@podley/ai";
+import { IndexedDbModelRepository } from "@workglow/ai";
 
 // Use IndexedDB for persistent storage in browser
 const modelRepo = new IndexedDbModelRepository();
@@ -502,7 +502,7 @@ const modelRepo = new IndexedDbModelRepository();
 ### Node.js Usage
 
 ```typescript
-import { SqliteModelRepository } from "@podley/ai";
+import { SqliteModelRepository } from "@workglow/ai";
 
 // Use SQLite for server-side storage
 const modelRepo = new SqliteModelRepository("./models.db");
@@ -511,7 +511,7 @@ const modelRepo = new SqliteModelRepository("./models.db");
 ### Bun Usage
 
 ```typescript
-import { InMemoryModelRepository } from "@podley/ai";
+import { InMemoryModelRepository } from "@workglow/ai";
 
 // Direct imports work with Bun via conditional exports
 const modelRepo = new InMemoryModelRepository();
@@ -521,10 +521,10 @@ const modelRepo = new InMemoryModelRepository();
 
 This package depends on:
 
-- `@podley/job-queue` - Job queue system for task execution
-- `@podley/storage` - Storage abstractions for model and data persistence
-- `@podley/task-graph` - Task graph system for workflow management
-- `@podley/util` - Utility functions and shared components, including JSON Schema types and utilities
+- `@workglow/job-queue` - Job queue system for task execution
+- `@workglow/storage` - Storage abstractions for model and data persistence
+- `@workglow/task-graph` - Task graph system for workflow management
+- `@workglow/util` - Utility functions and shared components, including JSON Schema types and utilities
 
 ## License
 

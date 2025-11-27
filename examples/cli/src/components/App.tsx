@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ITaskGraph } from "@podley/task-graph";
+import { ITaskGraph } from "@workglow/task-graph";
 import React from "react";
 import { Box, Text } from "retuink";
 import TaskGraphUI from "./TaskGraphUI";
@@ -17,7 +17,7 @@ const App: React.FC<AppProps> = ({ graph }) => {
   return (
     <Box flexDirection="column" height="100%" flexGrow={1}>
       <Box height={1}>
-        <Text bold>Podley Task Graph Runner</Text>
+        <Text bold>Workglow Task Graph Runner</Text>
       </Box>
       <Box flexDirection="column" flexGrow={1} overflow="hidden">
         <TaskGraphUI graph={graph} />

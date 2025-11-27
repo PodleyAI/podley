@@ -1,10 +1,10 @@
-# @podley/ai-provider
+# @workglow/ai-provider
 
-AI provider implementations for Podley AI task pipelines.
+AI provider implementations for Workglow AI task pipelines.
 
 ## Overview
 
-The `@podley/ai-provider` package provides concrete implementations of AI providers that can be used with Podley's task execution system. It includes support for various AI services and local model execution frameworks.
+The `@workglow/ai-provider` package provides concrete implementations of AI providers that can be used with Workglow's task execution system. It includes support for various AI services and local model execution frameworks.
 
 ## Features
 
@@ -19,9 +19,9 @@ The `@podley/ai-provider` package provides concrete implementations of AI provid
 ## Installation
 
 ```bash
-npm install @podley/ai-provider
+npm install @workglow/ai-provider
 # or
-bun add @podley/ai-provider
+bun add @workglow/ai-provider
 ```
 
 ## Peer Dependencies
@@ -46,11 +46,11 @@ import {
   TENSORFLOW_MEDIAPIPE,
   register_HFT_InlineJobFns,
   register_TFMP_InlineJobFns,
-} from "@podley/ai-provider";
-import { getTaskQueueRegistry } from "@podley/task-graph";
-import { AiJob } from "@podley/ai";
-import { JobQueue, ConcurrencyLimiter } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
+} from "@workglow/ai-provider";
+import { getTaskQueueRegistry } from "@workglow/task-graph";
+import { AiJob } from "@workglow/ai";
+import { JobQueue, ConcurrencyLimiter } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
 
 // Register AI providers
 await register_HFT_InlineJobFns();
@@ -82,8 +82,8 @@ import {
   TextEmbeddingTask,
   TextTranslationTask,
   TextSummaryTask,
-} from "@podley/ai";
-import { Workflow } from "@podley/task-graph";
+} from "@workglow/ai";
+import { Workflow } from "@workglow/task-graph";
 
 const workflow = new Workflow();
 
@@ -125,7 +125,7 @@ Supports ONNX models from HuggingFace Hub with the following task types:
 Models support various quantization options:
 
 ```typescript
-import { QUANTIZATION_DATA_TYPES } from "@podley/ai-provider";
+import { QUANTIZATION_DATA_TYPES } from "@workglow/ai-provider";
 
 // Quantization options
 // "auto" - Auto-detect based on environment
@@ -144,7 +144,7 @@ import { QUANTIZATION_DATA_TYPES } from "@podley/ai-provider";
 **Text Generation:**
 
 ```typescript
-import { TextGenerationTask } from "@podley/ai";
+import { TextGenerationTask } from "@workglow/ai";
 
 const task = new TextGenerationTask({
   model: "Xenova/gpt2",
@@ -163,7 +163,7 @@ const result = await task.execute();
 **Text Embedding:**
 
 ```typescript
-import { TextEmbeddingTask } from "@podley/ai";
+import { TextEmbeddingTask } from "@workglow/ai";
 
 const task = new TextEmbeddingTask({
   model: "Xenova/all-MiniLM-L6-v2",
@@ -177,7 +177,7 @@ const result = await task.execute();
 **Text Translation:**
 
 ```typescript
-import { TextTranslationTask } from "@podley/ai";
+import { TextTranslationTask } from "@workglow/ai";
 
 const task = new TextTranslationTask({
   model: "Xenova/t5-small",
@@ -194,7 +194,7 @@ const result = await task.execute();
 **Text Summary:**
 
 ```typescript
-import { TextSummaryTask } from "@podley/ai";
+import { TextSummaryTask } from "@workglow/ai";
 
 const task = new TextSummaryTask({
   model: "Xenova/distilbart-cnn-6-6",
@@ -208,7 +208,7 @@ const result = await task.execute();
 **Text Rewriter:**
 
 ```typescript
-import { TextRewriterTask } from "@podley/ai";
+import { TextRewriterTask } from "@workglow/ai";
 
 const task = new TextRewriterTask({
   model: "Xenova/gpt2",
@@ -223,7 +223,7 @@ const result = await task.execute();
 **Question Answering:**
 
 ```typescript
-import { TextQuestionAnswerTask } from "@podley/ai";
+import { TextQuestionAnswerTask } from "@workglow/ai";
 
 const task = new TextQuestionAnswerTask({
   model: "Xenova/distilbert-base-uncased-distilled-squad",
@@ -247,7 +247,7 @@ Optimized for performance using Google's MediaPipe framework.
 #### Example
 
 ```typescript
-import { TextEmbeddingTask } from "@podley/ai";
+import { TextEmbeddingTask } from "@workglow/ai";
 
 const task = new TextEmbeddingTask({
   model: "path/to/mediapipe/model.tflite",
@@ -267,7 +267,7 @@ For better performance, especially in browser environments, run AI inference in 
 #### Main Thread Setup
 
 ```typescript
-import { register_HFT_ClientJobFns, register_TFMP_ClientJobFns } from "@podley/ai-provider";
+import { register_HFT_ClientJobFns, register_TFMP_ClientJobFns } from "@workglow/ai-provider";
 
 // Register HuggingFace Transformers with worker
 register_HFT_ClientJobFns(
@@ -285,7 +285,7 @@ register_TFMP_ClientJobFns(
 **hft-worker.ts:**
 
 ```typescript
-import { register_HFT_WorkerJobFns } from "@podley/ai-provider";
+import { register_HFT_WorkerJobFns } from "@workglow/ai-provider";
 
 // Register HuggingFace Transformers worker functions
 register_HFT_WorkerJobFns();
@@ -294,7 +294,7 @@ register_HFT_WorkerJobFns();
 **tfmp-worker.ts:**
 
 ```typescript
-import { register_TFMP_WorkerJobFns } from "@podley/ai-provider";
+import { register_TFMP_WorkerJobFns } from "@workglow/ai-provider";
 
 // Register MediaPipe worker functions
 register_TFMP_WorkerJobFns();
@@ -303,8 +303,8 @@ register_TFMP_WorkerJobFns();
 ### Model Management
 
 ```typescript
-import { getGlobalModelRepository } from "@podley/ai";
-import { DownloadModelTask } from "@podley/ai";
+import { getGlobalModelRepository } from "@workglow/ai";
+import { DownloadModelTask } from "@workglow/ai";
 
 // Pre-download models
 const downloadTask = new DownloadModelTask({
@@ -319,8 +319,8 @@ await downloadTask.execute();
 ### Custom Job Queue Configuration
 
 ```typescript
-import { JobQueue, ConcurrencyLimiter, DelayLimiter } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
+import { JobQueue, ConcurrencyLimiter, DelayLimiter } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
 
 // Configure queue with custom limits
 const customQueue = new JobQueue(HF_TRANSFORMERS_ONNX, AiJob, {
@@ -332,7 +332,7 @@ const customQueue = new JobQueue(HF_TRANSFORMERS_ONNX, AiJob, {
 ### Error Handling
 
 ```typescript
-import { PermanentJobError, AbortSignalJobError } from "@podley/job-queue";
+import { PermanentJobError, AbortSignalJobError } from "@workglow/job-queue";
 
 try {
   const task = new TextGenerationTask({
@@ -369,11 +369,11 @@ await task.execute();
 ## Complete Working Example
 
 ```typescript
-import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@podley/ai-provider";
-import { TextGenerationTask, TextEmbeddingTask, AiJob } from "@podley/ai";
-import { Workflow, getTaskQueueRegistry } from "@podley/task-graph";
-import { JobQueue, ConcurrencyLimiter } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
+import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@workglow/ai-provider";
+import { TextGenerationTask, TextEmbeddingTask, AiJob } from "@workglow/ai";
+import { Workflow, getTaskQueueRegistry } from "@workglow/task-graph";
+import { JobQueue, ConcurrencyLimiter } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
 
 async function main() {
   // 1. Register the AI provider
@@ -477,11 +477,11 @@ target_lang: string
 
 This package depends on:
 
-- `@podley/ai` - Core AI abstractions
-- `@podley/job-queue` - Job queue system
-- `@podley/storage` - Storage abstractions
-- `@podley/task-graph` - Task graph system
-- `@podley/util` - Utility functions
+- `@workglow/ai` - Core AI abstractions
+- `@workglow/job-queue` - Job queue system
+- `@workglow/storage` - Storage abstractions
+- `@workglow/task-graph` - Task graph system
+- `@workglow/util` - Utility functions
 
 ## License
 

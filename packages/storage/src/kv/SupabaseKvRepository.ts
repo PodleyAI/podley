@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, JsonSchema } from "@podley/util";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createServiceToken, JsonSchema } from "@workglow/util";
 import { SupabaseTabularRepository } from "../tabular/SupabaseTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";

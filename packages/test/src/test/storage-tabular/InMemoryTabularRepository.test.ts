@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InMemoryTabularRepository } from "@podley/storage";
+import { InMemoryTabularRepository } from "@workglow/storage";
 import { describe } from "vitest";
 import {
   CompoundPrimaryKeyNames,

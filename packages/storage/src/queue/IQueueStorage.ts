@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
+import { createServiceToken } from "@workglow/util";
 
 export const QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>("jobqueue.storage");
 

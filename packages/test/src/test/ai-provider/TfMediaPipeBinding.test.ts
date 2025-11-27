@@ -11,19 +11,19 @@ import {
   InMemoryModelRepository,
   Model,
   setGlobalModelRepository,
-} from "@podley/ai";
-import { register_TFMP_InlineJobFns, TENSORFLOW_MEDIAPIPE } from "@podley/ai-provider";
-import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@podley/job-queue";
-import { Sqlite } from "@podley/sqlite";
-import { InMemoryQueueStorage, SqliteQueueStorage } from "@podley/storage";
+} from "@workglow/ai";
+import { register_TFMP_InlineJobFns, TENSORFLOW_MEDIAPIPE } from "@workglow/ai-provider";
+import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@workglow/job-queue";
+import { Sqlite } from "@workglow/sqlite";
+import { InMemoryQueueStorage, SqliteQueueStorage } from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
   TaskInput,
   TaskOutput,
   Workflow,
-} from "@podley/task-graph";
-import { sleep } from "@podley/util";
+} from "@workglow/task-graph";
+import { sleep } from "@workglow/util";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 const db = new Sqlite.Database(":memory:");

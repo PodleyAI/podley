@@ -9,11 +9,15 @@ import {
   JobQueue,
   PermanentJobError,
   RetryableJobError,
-} from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
-import { getTaskQueueRegistry, JobTaskFailedError, setTaskQueueRegistry } from "@podley/task-graph";
-import { Fetch, FetchJob, FetchTaskInput, FetchTaskOutput } from "@podley/tasks";
-import { sleep } from "@podley/util";
+} from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
+import {
+  getTaskQueueRegistry,
+  JobTaskFailedError,
+  setTaskQueueRegistry,
+} from "@workglow/task-graph";
+import { Fetch, FetchJob, FetchTaskInput, FetchTaskOutput } from "@workglow/tasks";
+import { sleep } from "@workglow/util";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mock = vi.fn;

@@ -1,8 +1,8 @@
 {
-  "name": "@podley/job-queue",
+  "name": "@workglow/job-queue",
   "type": "module",
-  "version": "0.0.51",
-  "description": "Job queue management for Podley, handling task scheduling, execution, and distributed processing.",
+  "version": "0.0.52",
+  "description": "Job queue management for Workglow, handling task scheduling, execution, and distributed processing.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-browser": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/browser.ts",
@@ -29,26 +29,26 @@
     }
   },
   "peerDependencies": {
-    "@podley/storage": "workspace:*",
-    "@podley/util": "workspace:*",
-    "@podley/sqlite": "workspace:*",
+    "@workglow/storage": "workspace:*",
+    "@workglow/util": "workspace:*",
+    "@workglow/sqlite": "workspace:*",
     "pg": "^8.16.3"
   },
   "peerDependenciesMeta": {
-    "@podley/storage": {
+    "@workglow/storage": {
       "optional": false
     },
-    "@podley/util": {
+    "@workglow/util": {
       "optional": false
     },
-    "@podley/sqlite": {
+    "@workglow/sqlite": {
       "optional": false
     }
   },
   "devDependencies": {
-    "@podley/storage": "workspace:*",
-    "@podley/util": "workspace:*",
-    "@podley/sqlite": "workspace:*",
+    "@workglow/storage": "workspace:*",
+    "@workglow/util": "workspace:*",
+    "@workglow/sqlite": "workspace:*",
     "pg": "^8.16.3",
     "@types/pg": "^8.15.5"
   },

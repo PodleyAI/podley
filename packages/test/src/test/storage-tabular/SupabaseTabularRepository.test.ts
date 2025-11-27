@@ -4,8 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SupabaseTabularRepository } from "@podley/storage";
-import { DataPortSchemaObject, ExcludeProps, FromSchema, IncludeProps, uuid4 } from "@podley/util";
+import { SupabaseTabularRepository } from "@workglow/storage";
+import {
+  DataPortSchemaObject,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+  uuid4,
+} from "@workglow/util";
 import { describe } from "vitest";
 import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
 import {

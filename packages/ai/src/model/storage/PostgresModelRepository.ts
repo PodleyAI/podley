@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { PostgresTabularRepository } from "@podley/storage";
+import { PostgresTabularRepository } from "@workglow/storage";
 import { Pool } from "pg";
 import {
-  ModelPrimaryKeyNames,
-  ModelRepository,
-  ModelSchema,
-  Task2ModelPrimaryKeyNames,
-  Task2ModelSchema,
+    ModelPrimaryKeyNames,
+    ModelRepository,
+    ModelSchema,
+    Task2ModelPrimaryKeyNames,
+    Task2ModelSchema,
 } from "../ModelRepository";
 
 /**

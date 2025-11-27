@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { compress, decompress } from "@podley/util";
+import { compress, decompress } from "@workglow/util";
 import { describe, expect, it } from "vitest";
 
 describe("Compression", () => {

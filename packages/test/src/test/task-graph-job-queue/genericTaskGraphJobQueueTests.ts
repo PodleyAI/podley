@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IJobExecuteContext, Job, JobQueue } from "@podley/job-queue";
-import { getTaskQueueRegistry, JobQueueTask, TaskInput, TaskOutput } from "@podley/task-graph";
-import { DataPortSchema } from "@podley/util";
+import { IJobExecuteContext, Job, JobQueue } from "@workglow/job-queue";
+import { getTaskQueueRegistry, JobQueueTask, TaskInput, TaskOutput } from "@workglow/task-graph";
+import { DataPortSchema } from "@workglow/util";
 import { afterEach, beforeEach, expect, it } from "vitest";
 
 export class TestJob extends Job<TaskInput, TaskOutput> {

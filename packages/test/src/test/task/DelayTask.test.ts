@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TaskAbortedError, TaskStatus } from "@podley/task-graph";
-import { DelayTask } from "@podley/tasks";
+import { TaskAbortedError, TaskStatus } from "@workglow/task-graph";
+import { DelayTask } from "@workglow/tasks";
 import { beforeEach, describe, expect, it } from "vitest";
 
 describe("DelayTask", () => {

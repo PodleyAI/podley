@@ -6,14 +6,14 @@
 
 import { FilesetResolver, TextEmbedder } from "@mediapipe/tasks-text";
 import type {
-  AiProviderRunFn,
-  DeReplicateFromSchema,
-  DownloadModelTaskExecuteInput,
-  DownloadModelTaskExecuteOutput,
-  TextEmbeddingInputSchema,
-  TextEmbeddingOutputSchema,
-} from "@podley/ai";
-import { PermanentJobError } from "@podley/job-queue";
+    AiProviderRunFn,
+    DeReplicateFromSchema,
+    DownloadModelTaskExecuteInput,
+    DownloadModelTaskExecuteOutput,
+    TextEmbeddingInputSchema,
+    TextEmbeddingOutputSchema,
+} from "@workglow/ai";
+import { PermanentJobError } from "@workglow/job-queue";
 
 /**
  * Core implementation for downloading and caching a MediaPipe TFJS model.

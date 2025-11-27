@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, JsonSchema } from "@podley/util";
+import { createServiceToken, JsonSchema } from "@workglow/util";
 import { SqliteTabularRepository } from "../tabular/SqliteTabularRepository";
 import { DefaultKeyValueKey, DefaultKeyValueSchema, IKvRepository } from "./IKvRepository";
 import { KvViaTabularRepository } from "./KvViaTabularRepository";

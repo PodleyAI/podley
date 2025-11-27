@@ -1,4 +1,4 @@
-# @podley/tasks
+# @workglow/tasks
 
 A package of task types for common operations, workflow management, and data processing. This package provides building blocks for creating complex task graphs with support for HTTP requests, JavaScript execution, delays, logging, and dynamic task creation.
 
@@ -23,13 +23,13 @@ A package of task types for common operations, workflow management, and data pro
 ## Installation
 
 ```bash
-bun add @podley/tasks
+bun add @workglow/tasks
 ```
 
 ## Quick Start
 
 ```typescript
-import { Workflow, Fetch, DebugLog, Delay } from "@podley/tasks";
+import { Workflow, Fetch, DebugLog, Delay } from "@workglow/tasks";
 
 // Simple workflow example (fluent API)
 const workflow = new Workflow()
@@ -41,7 +41,7 @@ const results = await workflow.run();
 ```
 
 ```typescript
-import { FetchTask, DebugLogTask, DelayTask } from "@podley/tasks";
+import { FetchTask, DebugLogTask, DelayTask } from "@workglow/tasks";
 
 // Simple sequence using Task classes directly
 const fetchResult = await new FetchTask({
@@ -58,7 +58,7 @@ await new DelayTask({ delay: 1000 }).run();
 ```
 
 ```typescript
-import { Fetch, DebugLog, Delay } from "@podley/tasks";
+import { Fetch, DebugLog, Delay } from "@workglow/tasks";
 
 const data = await Fetch({
   url: "https://example.com/readme.txt",
@@ -125,10 +125,10 @@ console.log(textResponse.text);
 
 **Features:**
 
-- Automatic retry on 429/503 status codes with Retry-After header support (requires creation of a `@podley/job-queue` instance)
+- Automatic retry on 429/503 status codes with Retry-After header support (requires creation of a `@workglow/job-queue` instance)
 - Progress tracking for large downloads
 - Request timeout handling
-- Queue-based rate limiting (requires creation of a `@podley/job-queue` instance)
+- Queue-based rate limiting (requires creation of a `@workglow/job-queue` instance)
 - Comprehensive error handling
 
 ### DebugLogTask
@@ -499,7 +499,7 @@ const dynamicWorkflow = await new JsonTask({
 All tasks can be used standalone or integrated into workflows:
 
 ```typescript
-import { Workflow } from "@podley/tasks";
+import { Workflow } from "@workglow/tasks";
 
 // Fluent workflow API
 const workflow = new Workflow()

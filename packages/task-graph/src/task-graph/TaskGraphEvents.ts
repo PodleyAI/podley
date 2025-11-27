@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventParameters } from "@podley/util";
+import { EventParameters } from "@workglow/util";
 import { ITask } from "../task/ITask";
 import { Dataflow } from "./Dataflow";
 

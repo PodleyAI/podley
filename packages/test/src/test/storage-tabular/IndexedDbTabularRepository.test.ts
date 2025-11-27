@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IndexedDbTabularRepository } from "@podley/storage";
-import type { DataPortSchemaObject, FromSchema } from "@podley/util";
-import { uuid4 } from "@podley/util";
+import { IndexedDbTabularRepository } from "@workglow/storage";
+import type { DataPortSchemaObject, FromSchema } from "@workglow/util";
+import { uuid4 } from "@workglow/util";
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 

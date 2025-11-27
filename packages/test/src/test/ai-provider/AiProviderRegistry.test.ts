@@ -11,16 +11,16 @@ import {
   getAiProviderRegistry,
   getGlobalModelRepository,
   setAiProviderRegistry,
-} from "@podley/ai";
-import { InMemoryRateLimiter, JobQueue } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
+} from "@workglow/ai";
+import { InMemoryRateLimiter, JobQueue } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
   TaskInput,
   TaskOutput,
   TaskQueueRegistry,
-} from "@podley/task-graph";
+} from "@workglow/task-graph";
 import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mock = vi.fn;

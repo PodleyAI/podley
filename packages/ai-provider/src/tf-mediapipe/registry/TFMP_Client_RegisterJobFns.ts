@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getAiProviderRegistry } from "@podley/ai";
-import { globalServiceRegistry, WORKER_MANAGER } from "@podley/util";
+import { getAiProviderRegistry } from "@workglow/ai";
+import { globalServiceRegistry, WORKER_MANAGER } from "@workglow/util";
 import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
 
 export const register_TFMP_ClientJobFns = (worker: Worker) => {

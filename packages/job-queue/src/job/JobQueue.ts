@@ -9,8 +9,8 @@ import {
   IQueueStorage,
   JobStorageFormat,
   QUEUE_STORAGE,
-} from "@podley/storage";
-import { EventEmitter, globalServiceRegistry, sleep } from "@podley/util";
+} from "@workglow/storage";
+import { EventEmitter, globalServiceRegistry, sleep } from "@workglow/util";
 import { ILimiter, JOB_LIMITER } from "../limiter/ILimiter";
 import { NullLimiter } from "../limiter/NullLimiter";
 import { IJobQueue, JobQueueOptions, JobStatus, QueueMode } from "./IJobQueue";

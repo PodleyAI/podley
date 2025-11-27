@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Task, TaskAbortedError, TaskError, TaskStatus } from "@podley/task-graph";
+import { Task, TaskAbortedError, TaskError, TaskStatus } from "@workglow/task-graph";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EventTestTask, SimpleProcessingTask, TestIOTask } from "./TestTasks";
 

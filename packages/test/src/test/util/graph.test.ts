@@ -2,7 +2,7 @@
 // previous fork: https://github.com/sroussey/typescript-graph
 // license: MIT
 
-import { Graph, NodeAlreadyExistsError, NodeDoesntExistError, serialize } from "@podley/util";
+import { Graph, NodeAlreadyExistsError, NodeDoesntExistError, serialize } from "@workglow/util";
 import { describe, expect, it } from "vitest";
 
 // Simple synchronous hash (FNV-1a 32-bit) for strings / bytes.

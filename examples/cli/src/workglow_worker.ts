@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 
-import { register_HFT_ClientJobFns } from "@podley/ai-provider";
-import { getTaskQueueRegistry } from "@podley/task-graph";
-import { register_HFT_InMemoryQueue, registerHuggingfaceLocalModels } from "@podley/test";
+import { register_HFT_ClientJobFns } from "@workglow/ai-provider";
+import { getTaskQueueRegistry } from "@workglow/task-graph";
+import { register_HFT_InMemoryQueue, registerHuggingfaceLocalModels } from "@workglow/test";
 import { program } from "commander";
 import { AddBaseCommands } from "./TaskCLI";
 

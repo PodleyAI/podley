@@ -9,10 +9,10 @@ import {
   TextEmbeddingTask,
   TextRewriterTask,
   TextTranslationTask,
-} from "@podley/ai";
-import { installDevToolsFormatters, isDarkMode } from "@podley/debug";
-import { Task, TaskGraph, Workflow } from "@podley/task-graph";
-import { DebugLogTask, DelayTask, FetchTask, JsonTask, LambdaTask } from "@podley/tasks";
+} from "@workglow/ai";
+import { installDevToolsFormatters, isDarkMode } from "@workglow/debug";
+import { Task, TaskGraph, Workflow } from "@workglow/task-graph";
+import { DebugLogTask, DelayTask, FetchTask, JsonTask, LambdaTask } from "@workglow/tasks";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
 import "./main.css";
@@ -48,7 +48,7 @@ const grey = dark ? "#aaa" : "#333";
 const yellow = dark ? "#f3ce49" : "#a68307";
 const orange = dark ? "#da885e" : "#953402";
 
-console.log("%cWelcome to Podley!", "color: green; font-size: 16px;");
+console.log("%cWelcome to Workglow!", "color: green; font-size: 16px;");
 console.log(
   "%cOpen DevTools settings, and under Console, turn on 'enable custom formatters' for best experience. Then reload the page.",
   "color: red;"

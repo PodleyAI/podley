@@ -1,10 +1,10 @@
-# @podley/test
+# @workglow/test
 
-Testing utilities and sample data for Podley AI task pipelines.
+Testing utilities and sample data for Workglow AI task pipelines.
 
 ## Overview
 
-The `@podley/test` package provides testing utilities, sample data, and in-memory implementations for developing and testing Podley AI applications. It includes mock repositories, sample task configurations, and helper functions for setting up test environments.
+The `@workglow/test` package provides testing utilities, sample data, and in-memory implementations for developing and testing Workglow AI applications. It includes mock repositories, sample task configurations, and helper functions for setting up test environments.
 
 ## Features
 
@@ -16,9 +16,9 @@ The `@podley/test` package provides testing utilities, sample data, and in-memor
 ## Installation
 
 ```bash
-npm install @podley/test
+npm install @workglow/test
 # or
-bun add @podley/test
+bun add @workglow/test
 ```
 
 ## Usage
@@ -26,7 +26,7 @@ bun add @podley/test
 ### In-Memory Repositories
 
 ```typescript
-import { InMemoryTaskGraphRepository, InMemoryTaskOutputRepository } from "@podley/test";
+import { InMemoryTaskGraphRepository, InMemoryTaskOutputRepository } from "@workglow/test";
 
 // Create in-memory repositories for testing
 const taskGraphRepo = new InMemoryTaskGraphRepository();
@@ -36,7 +36,7 @@ const taskOutputRepo = new InMemoryTaskOutputRepository();
 ### Sample Data and Models
 
 ```typescript
-import { registerHuggingfaceLocalModels, registerMediaPipeTfJsLocalModels } from "@podley/test";
+import { registerHuggingfaceLocalModels, registerMediaPipeTfJsLocalModels } from "@workglow/test";
 
 // Register sample AI models for testing
 await registerHuggingfaceLocalModels();
@@ -46,7 +46,7 @@ await registerMediaPipeTfJsLocalModels();
 ### Test Queue Setup
 
 ```typescript
-import { register_HFT_InMemoryQueue, register_TFMP_InMemoryQueue } from "@podley/test";
+import { register_HFT_InMemoryQueue, register_TFMP_InMemoryQueue } from "@workglow/test";
 
 // Set up in-memory queues for testing
 await register_HFT_InMemoryQueue();
@@ -71,16 +71,16 @@ await register_TFMP_InMemoryQueue();
 
 ## Dependencies
 
-This package depends on other Podley packages:
+This package depends on other Workglow packages:
 
-- `@podley/ai`
-- `@podley/ai-provider`
-- `@podley/job-queue`
-- `@podley/storage`
-- `@podley/task-graph`
-- `@podley/tasks`
-- `@podley/util`
-- `@podley/sqlite`
+- `@workglow/ai`
+- `@workglow/ai-provider`
+- `@workglow/job-queue`
+- `@workglow/storage`
+- `@workglow/task-graph`
+- `@workglow/tasks`
+- `@workglow/util`
+- `@workglow/sqlite`
 
 ## License
 

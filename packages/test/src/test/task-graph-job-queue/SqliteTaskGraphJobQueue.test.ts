@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ConcurrencyLimiter, JobQueue } from "@podley/job-queue";
-import { Sqlite } from "@podley/sqlite";
-import { SqliteQueueStorage } from "@podley/storage";
-import { TaskInput, TaskOutput } from "@podley/task-graph";
-import { uuid4 } from "@podley/util";
+import { ConcurrencyLimiter, JobQueue } from "@workglow/job-queue";
+import { Sqlite } from "@workglow/sqlite";
+import { SqliteQueueStorage } from "@workglow/storage";
+import { TaskInput, TaskOutput } from "@workglow/task-graph";
+import { uuid4 } from "@workglow/util";
 import { describe } from "vitest";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { JobQueue } from "@podley/job-queue";
+import { JobQueue } from "@workglow/job-queue";
 
 /**
  * Global singleton instance of the TaskQueueRegistry.

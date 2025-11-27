@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getAiProviderRegistry } from "@podley/ai";
-import { globalServiceRegistry, WORKER_MANAGER } from "@podley/util";
+import { getAiProviderRegistry } from "@workglow/ai";
+import { globalServiceRegistry, WORKER_MANAGER } from "@workglow/util";
 import { HF_TRANSFORMERS_ONNX } from "../common/HFT_Constants";
 
 export async function register_HFT_ClientJobFns(worker: Worker) {

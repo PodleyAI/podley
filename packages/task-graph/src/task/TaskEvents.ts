@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventParameters, type DataPortSchema } from "@podley/util";
+import { EventParameters, type DataPortSchema } from "@workglow/util";
 import { TaskStatus } from "../common";
 import { TaskAbortedError, TaskError } from "./TaskError";
 

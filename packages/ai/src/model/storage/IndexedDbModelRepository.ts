@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IndexedDbTabularRepository } from "@podley/storage";
+import { IndexedDbTabularRepository } from "@workglow/storage";
 import {
-  ModelPrimaryKeyNames,
-  ModelRepository,
-  ModelSchema,
-  Task2ModelPrimaryKeyNames,
-  Task2ModelSchema,
+    ModelPrimaryKeyNames,
+    ModelRepository,
+    ModelSchema,
+    Task2ModelPrimaryKeyNames,
+    Task2ModelSchema,
 } from "../ModelRepository";
 
 /**

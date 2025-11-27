@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { objectOfArraysAsArrayOfObjects } from "@podley/util";
+import { objectOfArraysAsArrayOfObjects } from "@workglow/util";
 import { describe, expect, it } from "vitest";
 
 describe("Object of arrays to array of objects proxy", () => {

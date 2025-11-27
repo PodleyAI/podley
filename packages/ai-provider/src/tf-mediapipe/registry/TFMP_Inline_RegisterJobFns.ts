@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getAiProviderRegistry } from "@podley/ai";
+import { getAiProviderRegistry } from "@workglow/ai";
 import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
 import { TFMP_Download, TFMP_TextEmbedding } from "../common/TFMP_JobRunFns";
 

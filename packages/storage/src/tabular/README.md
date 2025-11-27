@@ -35,15 +35,15 @@ A collection of storage implementations for tabular data with multiple backend s
 ## Installation
 
 ```bash
-bun add @podley/storage
+bun add @workglow/storage
 # or
-npm install @podley/storage
+npm install @workglow/storage
 ```
 
 ## Basic Usage
 
 ```typescript
-import { InMemoryTabularRepository } from "@podley/storage/tabular";
+import { InMemoryTabularRepository } from "@workglow/storage/tabular";
 
 // Define schema and primary keys
 const schema = {
@@ -66,7 +66,7 @@ await repo.delete({ id: "1" });
 
 ## Schema Definitions
 
-You can define schemas using plain JSON Schema objects, or use schema libraries like TypeBox or Zod 4 to create them. All schemas must be compatible with `DataPortSchemaObject` from `@podley/util`.
+You can define schemas using plain JSON Schema objects, or use schema libraries like TypeBox or Zod 4 to create them. All schemas must be compatible with `DataPortSchemaObject` from `@workglow/util`.
 
 **Note:** When using TypeBox or Zod schemas, you **must** explicitly provide the generic type parameters to the repository constructor, as TypeScript cannot infer them from non-const schema definitions.
 
@@ -75,9 +75,9 @@ You can define schemas using plain JSON Schema objects, or use schema libraries 
 TypeBox schemas are JSON Schema compatible and can be used directly:
 
 ```typescript
-import { InMemoryTabularRepository } from "@podley/storage/tabular";
+import { InMemoryTabularRepository } from "@workglow/storage/tabular";
 import { Type, Static } from "@sinclair/typebox";
-import { DataPortSchemaObject, FromSchema, IncludeProps, ExcludeProps } from "@podley/util";
+import { DataPortSchemaObject, FromSchema, IncludeProps, ExcludeProps } from "@workglow/util";
 
 // Define schema using TypeBox
 const userSchema = Type.Object({
@@ -119,9 +119,9 @@ await repo.put({
 Zod 4 has built-in JSON Schema support using the `.toJSONSchema()` method:
 
 ```typescript
-import { InMemoryTabularRepository } from "@podley/storage/tabular";
+import { InMemoryTabularRepository } from "@workglow/storage/tabular";
 import { z } from "zod";
-import { DataPortSchemaObject } from "@podley/util";
+import { DataPortSchemaObject } from "@workglow/util";
 
 // Define schema using Zod
 const userSchemaZod = z.object({

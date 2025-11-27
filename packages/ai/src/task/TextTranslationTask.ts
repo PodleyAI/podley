@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@podley/task-graph";
-import { DataPortSchema, FromSchema } from "@podley/util";
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
 import { TypeLanguage, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
@@ -94,7 +94,7 @@ export const TextTranslation = (input: TextTranslationTaskInput, config?: JobQue
   return new TextTranslationTask(input, config).run();
 };
 
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     TextTranslation: CreateWorkflow<
       TextTranslationTaskInput,

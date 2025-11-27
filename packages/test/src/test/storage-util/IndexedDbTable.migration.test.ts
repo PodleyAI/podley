@@ -4,7 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { dropIndexedDbTable, ensureIndexedDbTable, ExpectedIndexDefinition } from "@podley/storage";
+import {
+  dropIndexedDbTable,
+  ensureIndexedDbTable,
+  ExpectedIndexDefinition,
+} from "@workglow/storage";
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
 

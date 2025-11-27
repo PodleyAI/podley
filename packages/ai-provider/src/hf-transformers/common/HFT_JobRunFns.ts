@@ -5,6 +5,22 @@
  */
 
 import {
+  DocumentQuestionAnsweringSingle,
+  type FeatureExtractionPipeline,
+  pipeline,
+  type PipelineType,
+  // @ts-ignore temporary "fix"
+  type PretrainedModelOptions,
+  QuestionAnsweringPipeline,
+  SummarizationPipeline,
+  SummarizationSingle,
+  type TextGenerationPipeline,
+  TextGenerationSingle,
+  TextStreamer,
+  TranslationPipeline,
+  TranslationSingle,
+} from "@sroussey/transformers";
+import {
   AiProviderRunFn,
   type DeReplicateFromSchema,
   DownloadModelTaskExecuteInput,
@@ -22,24 +38,8 @@ import {
   TextTranslationInputSchema,
   TextTranslationOutputSchema,
   TypedArray,
-} from "@podley/ai";
-import { PermanentJobError } from "@podley/job-queue";
-import {
-  DocumentQuestionAnsweringSingle,
-  type FeatureExtractionPipeline,
-  pipeline,
-  type PipelineType,
-  // @ts-ignore temporary "fix"
-  type PretrainedModelOptions,
-  QuestionAnsweringPipeline,
-  SummarizationPipeline,
-  SummarizationSingle,
-  type TextGenerationPipeline,
-  TextGenerationSingle,
-  TextStreamer,
-  TranslationPipeline,
-  TranslationSingle,
-} from "@sroussey/transformers";
+} from "@workglow/ai";
+import { PermanentJobError } from "@workglow/job-queue";
 import { CallbackStatus } from "./HFT_CallbackStatus";
 import { QUANTIZATION_DATA_TYPES } from "./HFT_Constants";
 

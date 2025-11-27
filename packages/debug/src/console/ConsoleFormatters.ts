@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Dataflow, Task, TaskGraph, TaskStatus, Workflow } from "@podley/task-graph";
-import type { DataPortSchema } from "@podley/util";
-import { DirectedAcyclicGraph } from "@podley/util";
+import { Dataflow, Task, TaskGraph, TaskStatus, Workflow } from "@workglow/task-graph";
+import type { DataPortSchema } from "@workglow/util";
+import { DirectedAcyclicGraph } from "@workglow/util";
 
 type Config = Record<string, unknown>;
 
@@ -847,12 +847,12 @@ declare global {
 }
 
 /**
- * Installs custom DevTools formatters for Podley task graphs, workflows, and related objects.
+ * Installs custom DevTools formatters for Workglow task graphs, workflows, and related objects.
  * Call this function once in your application to enable rich console output for debugging.
  *
  * @example
  * ```ts
- * import { installDevToolsFormatters } from "@podley/debug";
+ * import { installDevToolsFormatters } from "@workglow/debug";
  *
  * // Call early in your app initialization
  * installDevToolsFormatters();

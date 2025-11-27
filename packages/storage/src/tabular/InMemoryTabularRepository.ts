@@ -5,11 +5,11 @@
  */
 
 import {
-  createServiceToken,
-  DataPortSchemaObject,
-  FromSchema,
-  makeFingerprint,
-} from "@podley/util";
+    createServiceToken,
+    DataPortSchemaObject,
+    FromSchema,
+    makeFingerprint,
+} from "@workglow/util";
 import { ITabularRepository } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 

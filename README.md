@@ -1,10 +1,10 @@
 # PODLEY
 
-[![License](https://img.shields.io/badge/license-Apache2-blue.svg)](https://github.com/podleyai/podley/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-Apache2-blue.svg)](https://github.com/workglow-dev/workglow/blob/main/LICENSE)
 
 ## Overview
 
-Simple library to build linear and graph based workflows. It is designed to be simple to use and easy to extend, yet powerful enough to handle cross task rate limits, retries, etc.
+Simple library to build linear and graph based workflows. It is designed to be simple to use and easy to extend, yet powerful enough to handle task rate limits, retries, etc.
 
 ## Authors
 
@@ -30,7 +30,7 @@ Packages:
 
 ### Web
 
-[Demo](https://podley-web.netlify.app/)
+[Demo](https://workglow-web.netlify.app/)
 
 ![Web](docs/developers/img/web.png)
 ![Console](docs/developers/img/console.png)

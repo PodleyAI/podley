@@ -1,4 +1,4 @@
-# @podley/job-queue
+# @workglow/job-queue
 
 A TypeScript-first job queue system for managing and processing asynchronous tasks with rate limiting, progress tracking, and cross-platform persistence.
 
@@ -50,27 +50,27 @@ A TypeScript-first job queue system for managing and processing asynchronous tas
 ## Installation
 
 ```bash
-bun add @podley/job-queue
+bun add @workglow/job-queue
 ```
 
 For specific storage backends, you may need additional dependencies:
 
 ```bash
 # For SQLite support
-bun add @podley/sqlite
+bun add @workglow/sqlite
 
 # For PostgreSQL support
 bun add pg @types/pg
 
 # For comprehensive storage options
-bun add @podley/storage
+bun add @workglow/storage
 ```
 
 ## Quick Start
 
 ```typescript
-import { Job, JobQueue } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
+import { Job, JobQueue } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
 
 // 1. Define your input/output types
 interface ProcessTextInput {
@@ -170,7 +170,7 @@ Control job execution rate:
 ### Creating Custom Jobs
 
 ```typescript
-import { Job, IJobExecuteContext } from "@podley/job-queue";
+import { Job, IJobExecuteContext } from "@workglow/job-queue";
 
 interface DownloadInput {
   url: string;
@@ -215,8 +215,8 @@ class DownloadJob extends Job<DownloadInput, DownloadOutput> {
 ### Basic Queue Operations
 
 ```typescript
-import { JobQueue, ConcurrencyLimiter } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
+import { JobQueue, ConcurrencyLimiter } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
 
 // Create queue with concurrency limiting
 const queue = new JobQueue("downloads", DownloadJob, {
@@ -286,7 +286,7 @@ try {
 ### Error Handling and Retries
 
 ```typescript
-import { RetryableJobError, PermanentJobError } from "@podley/job-queue";
+import { RetryableJobError, PermanentJobError } from "@workglow/job-queue";
 
 class ApiCallJob extends Job<{ endpoint: string }, { data: any }> {
   async execute(input: { endpoint: string }, context: IJobExecuteContext) {
@@ -412,8 +412,8 @@ if (job) {
 ### In-Memory Storage
 
 ```typescript
-import { JobQueue } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
+import { JobQueue } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
 
 const queue = new JobQueue("my-queue", MyJob, {
   storage: new InMemoryQueueStorage("my-queue"),
@@ -424,8 +424,8 @@ const queue = new JobQueue("my-queue", MyJob, {
 ### IndexedDB Storage (Browser)
 
 ```typescript
-import { JobQueue } from "@podley/job-queue";
-import { IndexedDbQueueStorage } from "@podley/storage";
+import { JobQueue } from "@workglow/job-queue";
+import { IndexedDbQueueStorage } from "@workglow/storage";
 
 // For browser environments
 const queue = new JobQueue("my-queue", MyJob, {
@@ -437,8 +437,8 @@ const queue = new JobQueue("my-queue", MyJob, {
 ### SQLite Storage (Node.js/Bun)
 
 ```typescript
-import { JobQueue } from "@podley/job-queue";
-import { SqliteQueueStorage } from "@podley/storage";
+import { JobQueue } from "@workglow/job-queue";
+import { SqliteQueueStorage } from "@workglow/storage";
 
 const queue = new JobQueue("my-queue", MyJob, {
   storage: new SqliteQueueStorage("./jobs.db", "my-queue"),
@@ -449,8 +449,8 @@ const queue = new JobQueue("my-queue", MyJob, {
 ### PostgreSQL Storage (Node.js/Bun)
 
 ```typescript
-import { JobQueue } from "@podley/job-queue";
-import { PostgresQueueStorage } from "@podley/storage";
+import { JobQueue } from "@workglow/job-queue";
+import { PostgresQueueStorage } from "@workglow/storage";
 import { Pool } from "pg";
 
 const pool = new Pool({
@@ -472,7 +472,7 @@ const queue = new JobQueue("my-queue", MyJob, {
 ### Concurrency Limiter
 
 ```typescript
-import { ConcurrencyLimiter } from "@podley/job-queue";
+import { ConcurrencyLimiter } from "@workglow/job-queue";
 
 // Limit to 5 concurrent jobs with 1 second minimum between starts
 const limiter = new ConcurrencyLimiter(5, 1000);
@@ -486,7 +486,7 @@ const queue = new JobQueue("my-queue", MyJob, {
 ### Delay Limiter
 
 ```typescript
-import { DelayLimiter } from "@podley/job-queue";
+import { DelayLimiter } from "@workglow/job-queue";
 
 // Minimum 500ms delay between job starts
 const limiter = new DelayLimiter(500);
@@ -495,7 +495,7 @@ const limiter = new DelayLimiter(500);
 ### Rate Limiter
 
 ```typescript
-import { InMemoryRateLimiter } from "@podley/job-queue";
+import { InMemoryRateLimiter } from "@workglow/job-queue";
 
 // Max 10 executions per 60-second window
 const limiter = new InMemoryRateLimiter({
@@ -510,7 +510,7 @@ const limiter = new InMemoryRateLimiter({
 ### Composite Limiter
 
 ```typescript
-import { CompositeLimiter, ConcurrencyLimiter, DelayLimiter } from "@podley/job-queue";
+import { CompositeLimiter, ConcurrencyLimiter, DelayLimiter } from "@workglow/job-queue";
 
 // Combine multiple limiting strategies
 const limiter = new CompositeLimiter([
@@ -527,7 +527,7 @@ const limiter = new CompositeLimiter([
 ## Queue Modes
 
 ```typescript
-import { QueueMode } from "@podley/job-queue";
+import { QueueMode } from "@workglow/job-queue";
 
 // Client mode - can add jobs and get progress, but doesn't process them
 await queue.start(QueueMode.CLIENT);
@@ -667,8 +667,8 @@ Example test:
 
 ```typescript
 import { describe, it, expect } from "vitest";
-import { JobQueue } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
+import { JobQueue } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
 
 describe("JobQueue", () => {
   it("should process jobs successfully", async () => {

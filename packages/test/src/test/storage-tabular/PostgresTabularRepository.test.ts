@@ -5,8 +5,8 @@
  */
 
 import { PGlite } from "@electric-sql/pglite";
-import { PostgresTabularRepository } from "@podley/storage";
-import { uuid4 } from "@podley/util";
+import { PostgresTabularRepository } from "@workglow/storage";
+import { uuid4 } from "@workglow/util";
 import type { Pool } from "pg";
 import { describe } from "vitest";
 import {

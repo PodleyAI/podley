@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { DataPortSchema } from "@podley/util";
+import type { DataPortSchema } from "@workglow/util";
 import type { IExecuteContext } from "./ITask";
 import { Task } from "./Task";
 import type { TaskConfig, TaskInput, TaskOutput, TaskTypeName } from "./TaskTypes";

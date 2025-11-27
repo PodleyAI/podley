@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { TabularRepository } from "@podley/storage";
-import { DataPortSchemaObject } from "@podley/util";
+import type { TabularRepository } from "@workglow/storage";
+import { DataPortSchemaObject } from "@workglow/util";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { createGraphFromGraphJSON } from "../task/TaskJSON";
 import { TaskGraphRepository } from "./TaskGraphRepository";

@@ -1,10 +1,10 @@
-# @podley/util
+# @workglow/util
 
-Utility functions and helper classes for Podley AI task pipelines.
+Utility functions and helper classes for Workglow AI task pipelines.
 
 ## Overview
 
-The `@podley/util` package provides a comprehensive set of utility functions, helper classes, and common functionality used throughout the Podley ecosystem. It includes utilities for cryptography, compression, graph operations, dependency injection, event handling, and more.
+The `@workglow/util` package provides a comprehensive set of utility functions, helper classes, and common functionality used throughout the Workglow ecosystem. It includes utilities for cryptography, compression, graph operations, dependency injection, event handling, and more.
 
 ## Features
 
@@ -20,9 +20,9 @@ The `@podley/util` package provides a comprehensive set of utility functions, he
 ## Installation
 
 ```bash
-npm install @podley/util
+npm install @workglow/util
 # or
-bun add @podley/util
+bun add @workglow/util
 ```
 
 ## Usage
@@ -30,7 +30,7 @@ bun add @podley/util
 ### Cryptography Utilities
 
 ```typescript
-import { hash, encrypt, decrypt, generateKey } from "@podley/util/crypto";
+import { hash, encrypt, decrypt, generateKey } from "@workglow/util/crypto";
 
 // Hash data
 const hashedData = await hash("my-data", "sha256");
@@ -46,7 +46,7 @@ const decrypted = await decrypt(encrypted, key);
 ### Compression Utilities
 
 ```typescript
-import { compress, decompress } from "@podley/util/compress";
+import { compress, decompress } from "@workglow/util/compress";
 
 // Compress data
 const compressed = await compress("large text data...");
@@ -58,7 +58,7 @@ const decompressed = await decompress(compressed);
 ### Graph Operations
 
 ```typescript
-import { topologicalSort, findCycles, shortestPath, GraphNode } from "@podley/util/graph";
+import { topologicalSort, findCycles, shortestPath, GraphNode } from "@workglow/util/graph";
 
 // Create graph nodes
 const nodes: GraphNode[] = [
@@ -80,7 +80,7 @@ const path = shortestPath(nodes, "A", "C");
 ### Dependency Injection
 
 ```typescript
-import { Container, injectable, inject } from "@podley/util/di";
+import { Container, injectable, inject } from "@workglow/util/di";
 
 @injectable()
 class DatabaseService {
@@ -111,7 +111,7 @@ const userService = container.resolve<UserService>("UserService");
 ### Event System
 
 ```typescript
-import { EventEmitter, createEventBus } from "@podley/util/events";
+import { EventEmitter, createEventBus } from "@workglow/util/events";
 
 // Basic event emitter
 const emitter = new EventEmitter();
@@ -135,7 +135,7 @@ eventBus.publish("task:completed", { id: "task-123" });
 ### Worker Utilities
 
 ```typescript
-import { createWorkerPool, WorkerTask, WorkerPool } from "@podley/util/worker";
+import { createWorkerPool, WorkerTask, WorkerPool } from "@workglow/util/worker";
 
 // Create worker pool
 const pool: WorkerPool = createWorkerPool({
@@ -161,7 +161,7 @@ You can define JSON schemas using plain JSON Schema objects, or use schema libra
 #### Using Plain JSON Schema
 
 ```typescript
-import { JsonSchema, FromSchema, DataPortSchema, compileSchema } from "@podley/util";
+import { JsonSchema, FromSchema, DataPortSchema, compileSchema } from "@workglow/util";
 
 // Define a JSON Schema
 const userSchema = {

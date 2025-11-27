@@ -5,22 +5,22 @@
  */
 
 import {
-  AbortSignalJobError,
-  IJobExecuteContext,
-  Job,
-  PermanentJobError,
-  RetryableJobError,
-} from "@podley/job-queue";
+    AbortSignalJobError,
+    IJobExecuteContext,
+    Job,
+    PermanentJobError,
+    RetryableJobError,
+} from "@workglow/job-queue";
 import {
-  CreateWorkflow,
-  JobQueueTask,
-  JobQueueTaskConfig,
-  TaskConfigurationError,
-  TaskInvalidInputError,
-  TaskRegistry,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, FromSchema } from "@podley/util";
+    CreateWorkflow,
+    JobQueueTask,
+    JobQueueTaskConfig,
+    TaskConfigurationError,
+    TaskInvalidInputError,
+    TaskRegistry,
+    Workflow,
+} from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
 
 const inputSchema = {
   type: "object",
@@ -294,7 +294,7 @@ export const Fetch = async (
   return result as FetchTaskOutput;
 };
 
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     Fetch: CreateWorkflow<FetchTaskInput, FetchTaskOutput, FetchTaskConfig>;
   }

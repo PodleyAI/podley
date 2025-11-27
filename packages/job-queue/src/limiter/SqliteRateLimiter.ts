@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ILimiter, RateLimiterWithBackoffOptions } from "@podley/job-queue";
-import type { Sqlite } from "@podley/sqlite";
-import { createServiceToken, toSQLiteTimestamp } from "@podley/util";
+import { ILimiter, RateLimiterWithBackoffOptions } from "@workglow/job-queue";
+import type { Sqlite } from "@workglow/sqlite";
+import { createServiceToken, toSQLiteTimestamp } from "@workglow/util";
 
 export const SQLITE_JOB_RATE_LIMITER = createServiceToken<ILimiter>("jobqueue.limiter.rate.sqlite");
 

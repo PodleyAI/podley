@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
+import { createServiceToken } from "@workglow/util";
 import { ILimiter, RateLimiterOptions } from "./ILimiter";
 
 export const EVENLY_SPACED_JOB_RATE_LIMITER = createServiceToken<ILimiter>(

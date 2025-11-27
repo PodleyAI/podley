@@ -2,7 +2,7 @@
 // previous fork: https://github.com/sroussey/typescript-graph
 // license: MIT
 
-import { DirectedGraph, NodeDoesntExistError } from "@podley/util";
+import { DirectedGraph, NodeDoesntExistError } from "@workglow/util";
 import { describe, expect, it } from "vitest";
 import { edgeIdentity, nodeIdentity } from "./graph.test";
 

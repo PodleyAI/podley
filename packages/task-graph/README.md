@@ -1,4 +1,4 @@
-# @podley/task-graph
+# @workglow/task-graph
 
 A lightweight yet powerful TypeScript library for building and executing DAG (Directed Acyclic Graph) pipelines of tasks. Provides flexible task orchestration, persistent storage, workflow management, and error handling for complex task execution scenarios.
 
@@ -25,11 +25,11 @@ A lightweight yet powerful TypeScript library for building and executing DAG (Di
 ## Installation
 
 ```bash
-npm install @podley/task-graph
+npm install @workglow/task-graph
 # or
-bun add @podley/task-graph
+bun add @workglow/task-graph
 # or
-yarn add @podley/task-graph
+yarn add @workglow/task-graph
 ```
 
 ## Quick Start
@@ -37,8 +37,8 @@ yarn add @podley/task-graph
 Here's a simple example that demonstrates the core concepts:
 
 ```typescript
-import { Task, TaskGraph, Dataflow, Workflow } from "@podley/task-graph";
-import { DataPortSchema } from "@podley/util";
+import { Task, TaskGraph, Dataflow, Workflow } from "@workglow/task-graph";
+import { DataPortSchema } from "@workglow/util";
 
 // 1. Define a custom task
 class MultiplyBy2Task extends Task<{ value: number }, { result: number }> {
@@ -104,8 +104,8 @@ const result = await wf.run();
 console.log(result); // { result: 60 }
 
 // 2.3.1 Adding to Workflow
-import { CreateWorkflow } from "@podley/task-graph";
-declare module "@podley/task-graph" {
+import { CreateWorkflow } from "@workglow/task-graph";
+declare module "@workglow/task-graph" {
   interface Workflow {
     MultiplyBy2: CreateWorkflow<{ value: number }>;
   }
@@ -133,7 +133,7 @@ console.log(second); // { result: 60 }
 
 Tasks are the fundamental units of work. Each task:
 
-- Defines input/output schemas using JSON Schema (from `@podley/util`), TypeBox, or Zod
+- Defines input/output schemas using JSON Schema (from `@workglow/util`), TypeBox, or Zod
 - Implements `execute()` for main logic or `executeReactive()` for UI updates
 - Has a unique type identifier and category
 - Can be cached based on inputs
@@ -177,8 +177,8 @@ You can define schemas using plain JSON Schema, TypeBox, or Zod. Here are exampl
 #### Using Plain JSON Schema
 
 ```typescript
-import { Task, IExecuteContext } from "@podley/task-graph";
-import { DataPortSchema, FromSchema } from "@podley/util";
+import { Task, IExecuteContext } from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
 
 const MyInputSchema = {
   type: "object",
@@ -263,9 +263,9 @@ class TextProcessorTask extends Task<MyInput, MyOutput> {
 TypeBox schemas are JSON Schema compatible and can be used directly:
 
 ```typescript
-import { Task, IExecuteContext } from "@podley/task-graph";
+import { Task, IExecuteContext } from "@workglow/task-graph";
 import { Type } from "@sinclair/typebox";
-import { DataPortSchema, FromSchema } from "@podley/util";
+import { DataPortSchema, FromSchema } from "@workglow/util";
 
 const MyInputSchema = Type.Object({
   text: Type.String({ description: "Text to process" }),
@@ -338,9 +338,9 @@ class TextProcessorTask extends Task<MyInput, MyOutput> {
 Zod 4 has built-in JSON Schema support using the `.toJSONSchema()` method:
 
 ```typescript
-import { Task, IExecuteContext } from "@podley/task-graph";
+import { Task, IExecuteContext } from "@workglow/task-graph";
 import { z } from "zod";
-import { DataPortSchema } from "@podley/util";
+import { DataPortSchema } from "@workglow/util";
 
 const MyInputSchemaZod = z.object({
   text: z.string().describe("Text to process"),
@@ -422,7 +422,7 @@ class TextProcessorTask extends Task<MyInput, MyOutput> {
 ### Task with Progress and Error Handling
 
 ```typescript
-import { DataPortSchema } from "@podley/util";
+import { DataPortSchema } from "@workglow/util";
 
 class FileProcessorTask extends Task<{ filePath: string }, { content: string }> {
   static readonly type = "FileProcessorTask";
@@ -490,7 +490,7 @@ class FileProcessorTask extends Task<{ filePath: string }, { content: string }> 
 ### Simple Task Graph
 
 ```typescript
-import { TaskGraph, Dataflow } from "@podley/task-graph";
+import { TaskGraph, Dataflow } from "@workglow/task-graph";
 
 // Create tasks
 const task1 = new TextProcessorTask({ text: "Hello" }, { id: "processor1" });
@@ -512,7 +512,7 @@ const results = await graph.run();
 ### Task Graph with Dependencies
 
 ```typescript
-import { DataPortSchema } from "@podley/util";
+import { DataPortSchema } from "@workglow/util";
 
 class AddTask extends Task<{ a: number; b: number }, { sum: number }> {
   static readonly type = "AddTask";
@@ -606,7 +606,7 @@ try {
 ### Basic Workflow
 
 ```typescript
-import { Workflow } from "@podley/task-graph";
+import { Workflow } from "@workglow/task-graph";
 
 const workflow = new Workflow();
 
@@ -634,7 +634,7 @@ workflow.pipe(
 const result = await workflow.run();
 
 // Method 2: Using the pipe helper
-import { pipe } from "@podley/task-graph";
+import { pipe } from "@workglow/task-graph";
 
 const pipeline = pipe([
   new TextProcessorTask({ text: "Start" }),
@@ -648,7 +648,7 @@ const result2 = await pipeline.run();
 ### Parallel Workflow
 
 ```typescript
-import { parallel } from "@podley/task-graph";
+import { parallel } from "@workglow/task-graph";
 
 // Method 1: Using workflow.parallel()
 const workflow = new Workflow();
@@ -689,7 +689,7 @@ const result = await workflow.run();
 
 ```typescript
 // Register tasks with the workflow system
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     MyTextProcessor: CreateWorkflow<MyInput, MyOutput>;
   }
@@ -711,9 +711,9 @@ const result = await workflow.run();
 Output caching lets repeat executions with identical inputs return instantly without redoing work.
 
 ```typescript
-import { Task, TaskGraph, Workflow } from "@podley/task-graph";
-import { DataPortSchema } from "@podley/util";
-import { InMemoryTaskOutputRepository } from "@podley/test";
+import { Task, TaskGraph, Workflow } from "@workglow/task-graph";
+import { DataPortSchema } from "@workglow/util";
+import { InMemoryTaskOutputRepository } from "@workglow/test";
 
 // A cacheable task that simulates expensive work
 class ExpensiveTask extends Task<{ n: number }, { result: number }> {
@@ -799,7 +799,7 @@ console.log({ wfFirstMs, wfSecondMs });
 ### Task Graph Persistence
 
 ```typescript
-import { FsFolderTaskGraphRepository } from "@podley/test";
+import { FsFolderTaskGraphRepository } from "@workglow/test";
 
 // Create repository
 const repository = new FsFolderTaskGraphRepository("./task-graphs");
@@ -818,16 +818,16 @@ const results = await loadedGraph.run();
 
 ```typescript
 // In-memory (for testing)
-import { InMemoryTaskOutputRepository, InMemoryTaskGraphRepository } from "@podley/test";
+import { InMemoryTaskOutputRepository, InMemoryTaskGraphRepository } from "@workglow/test";
 
 // File system
-import { FsFolderTaskOutputRepository, FsFolderTaskGraphRepository } from "@podley/test";
+import { FsFolderTaskOutputRepository, FsFolderTaskGraphRepository } from "@workglow/test";
 
 // SQLite
-import { SqliteTaskOutputRepository, SqliteTaskGraphRepository } from "@podley/test";
+import { SqliteTaskOutputRepository, SqliteTaskGraphRepository } from "@workglow/test";
 
 // IndexedDB (browser)
-import { IndexedDbTaskOutputRepository, IndexedDbTaskGraphRepository } from "@podley/test";
+import { IndexedDbTaskOutputRepository, IndexedDbTaskGraphRepository } from "@workglow/test";
 ```
 
 ## Error Handling

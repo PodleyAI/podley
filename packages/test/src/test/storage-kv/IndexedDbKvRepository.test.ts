@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IndexedDbKvRepository } from "@podley/storage";
-import { uuid4 } from "@podley/util";
+import { IndexedDbKvRepository } from "@workglow/storage";
+import { uuid4 } from "@workglow/util";
 import "fake-indexeddb/auto";
 import { describe } from "vitest";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";

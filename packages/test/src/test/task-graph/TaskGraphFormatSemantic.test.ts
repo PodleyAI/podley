@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Dataflow, Task, TaskGraph, type TaskInput } from "@podley/task-graph";
-import type { DataPortSchema } from "@podley/util";
+import { Dataflow, Task, TaskGraph, type TaskInput } from "@workglow/task-graph";
+import type { DataPortSchema } from "@workglow/util";
 import { beforeEach, describe, expect, it } from "vitest";
 
 /**

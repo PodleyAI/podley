@@ -1,5 +1,5 @@
-import { Dataflow, GraphAsTask, Task, TaskGraph } from "@podley/task-graph";
-import { DataPortSchema } from "@podley/util";
+import { Dataflow, GraphAsTask, Task, TaskGraph } from "@workglow/task-graph";
+import { DataPortSchema } from "@workglow/util";
 import { describe, expect, it } from "vitest";
 
 // Test tasks with specific input/output schemas
@@ -580,11 +580,14 @@ describe("GraphAsTask Dynamic Schema", () => {
       let receivedInputSchema: DataPortSchema | undefined;
       let receivedOutputSchema: DataPortSchema | undefined;
 
-      (graphAsTask as any).on("schemaChange", (inputSchema?: DataPortSchema, outputSchema?: DataPortSchema) => {
-        schemaChangeEmitted = true;
-        receivedInputSchema = inputSchema;
-        receivedOutputSchema = outputSchema;
-      });
+      (graphAsTask as any).on(
+        "schemaChange",
+        (inputSchema?: DataPortSchema, outputSchema?: DataPortSchema) => {
+          schemaChangeEmitted = true;
+          receivedInputSchema = inputSchema;
+          receivedOutputSchema = outputSchema;
+        }
+      );
 
       // Call the protected method via type assertion
       (graphAsTask as any).emitSchemaChange();
@@ -600,10 +603,13 @@ describe("GraphAsTask Dynamic Schema", () => {
       let receivedInputSchema: DataPortSchema | undefined;
       let receivedOutputSchema: DataPortSchema | undefined;
 
-      (graphAsTask as any).on("schemaChange", (inputSchema?: DataPortSchema, outputSchema?: DataPortSchema) => {
-        receivedInputSchema = inputSchema;
-        receivedOutputSchema = outputSchema;
-      });
+      (graphAsTask as any).on(
+        "schemaChange",
+        (inputSchema?: DataPortSchema, outputSchema?: DataPortSchema) => {
+          receivedInputSchema = inputSchema;
+          receivedOutputSchema = outputSchema;
+        }
+      );
 
       const customInputSchema: DataPortSchema = {
         type: "object",

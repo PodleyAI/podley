@@ -1,5 +1,5 @@
-import { HF_TRANSFORMERS_ONNX, QUANTIZATION_DATA_TYPES } from "@podley/ai-provider";
-import { getGlobalModelRepository, Model } from "@podley/ai";
+import { getGlobalModelRepository, Model } from "@workglow/ai";
+import { HF_TRANSFORMERS_ONNX, QUANTIZATION_DATA_TYPES } from "@workglow/ai-provider";
 
 export async function addONNXModel(info: Partial<Model>, tasks: string[]) {
   const model = Object.assign(

@@ -1,4 +1,4 @@
-import { Task, TaskGraph, TaskInput, TaskOutput, Workflow } from "@podley/task-graph";
+import { Task, TaskGraph, TaskInput, TaskOutput, Workflow } from "@workglow/task-graph";
 import { describe, expect, it } from "vitest";
 
 // A test task that creates other tasks during execution

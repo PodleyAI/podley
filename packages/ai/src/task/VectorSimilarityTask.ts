@@ -5,14 +5,14 @@
  */
 
 import {
-  ArrayTask,
-  CreateWorkflow,
-  JobQueueTaskConfig,
-  TaskError,
-  TaskRegistry,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, FromSchema } from "@podley/util";
+    ArrayTask,
+    CreateWorkflow,
+    JobQueueTaskConfig,
+    TaskError,
+    TaskRegistry,
+    Workflow,
+} from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
 import { TypedArray, TypedArraySchema, TypedArraySchemaOptions } from "./base/AiTaskSchemas";
 
 export const SimilarityFn = {
@@ -140,7 +140,7 @@ export const Similarity = (input: VectorSimilarityTaskInput, config?: JobQueueTa
   return new VectorSimilarityTask(input, config).run();
 };
 
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     Similarity: CreateWorkflow<
       VectorSimilarityTaskInput,

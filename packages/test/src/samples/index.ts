@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AiJob, AiJobInput } from "@podley/ai";
-import { TENSORFLOW_MEDIAPIPE } from "@podley/ai-provider";
-import { ConcurrencyLimiter, JobQueue } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
-import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@podley/task-graph";
+import { AiJob, AiJobInput } from "@workglow/ai";
+import { TENSORFLOW_MEDIAPIPE } from "@workglow/ai-provider";
+import { ConcurrencyLimiter, JobQueue } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
+import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-graph";
 export * from "./MediaPipeModelSamples";
 export * from "./ONNXModelSamples";
 

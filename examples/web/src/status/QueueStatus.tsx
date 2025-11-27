@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { JobStatus } from "@podley/job-queue";
-import { getTaskQueueRegistry } from "@podley/task-graph";
+import { JobStatus } from "@workglow/job-queue";
+import { getTaskQueueRegistry } from "@workglow/task-graph";
 import { useCallback, useEffect, useState } from "react";
 
 export function QueueStatus({ queueType }: { queueType: string }) {

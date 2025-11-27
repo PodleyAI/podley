@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Dataflow, TaskGraph, TaskRegistry } from "@podley/task-graph";
+import { Dataflow, TaskGraph, TaskRegistry } from "@workglow/task-graph";
 import { rmSync } from "fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { FsFolderTaskGraphRepository } from "../../binding/FsFolderTaskGraphRepository";

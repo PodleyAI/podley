@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DefaultKeyValueSchema, IKvRepository } from "@podley/storage";
-import { FromSchema, JsonSchema } from "@podley/util";
+import { DefaultKeyValueSchema, IKvRepository } from "@workglow/storage";
+import { FromSchema, JsonSchema } from "@workglow/util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 export function runGenericKvRepositoryTests(

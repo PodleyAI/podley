@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SqliteRateLimiter } from "@podley/job-queue";
-import { Sqlite } from "@podley/sqlite";
-import { SqliteQueueStorage } from "@podley/storage";
+import { SqliteRateLimiter } from "@workglow/job-queue";
+import { Sqlite } from "@workglow/sqlite";
+import { SqliteQueueStorage } from "@workglow/storage";
 import { describe } from "vitest";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";
 

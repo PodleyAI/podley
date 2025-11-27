@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BaseError } from "@podley/util";
+import { BaseError } from "@workglow/util";
 
 export class JobError extends BaseError {
   public static type: string = "JobError";

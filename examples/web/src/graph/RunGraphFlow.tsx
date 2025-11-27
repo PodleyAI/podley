@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Dataflow, TaskGraph, TaskGraphEvents } from "@podley/task-graph";
+import { Dataflow, TaskGraph, TaskGraphEvents } from "@workglow/task-graph";
 import {
   Controls,
   Edge,

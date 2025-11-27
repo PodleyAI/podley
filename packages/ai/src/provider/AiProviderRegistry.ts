@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TaskInput, TaskOutput } from "@podley/task-graph";
-import { globalServiceRegistry, WORKER_MANAGER } from "@podley/util";
+import { TaskInput, TaskOutput } from "@workglow/task-graph";
+import { globalServiceRegistry, WORKER_MANAGER } from "@workglow/util";
 import { Model } from "../model/Model";
 
 /**

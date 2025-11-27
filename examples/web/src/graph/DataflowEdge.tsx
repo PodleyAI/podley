@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Dataflow, TaskStatus } from "@podley/task-graph";
+import { Dataflow, TaskStatus } from "@workglow/task-graph";
 import { BaseEdge, Edge, EdgeLabelRenderer, EdgeProps, getBezierPath } from "@xyflow/react";
 import { useEffect, useState } from "react";
 import { DataDialog } from "../components/DataDialog";

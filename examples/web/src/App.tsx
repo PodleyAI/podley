@@ -4,15 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AiJob, AiJobInput } from "@podley/ai";
+import { AiJob, AiJobInput } from "@workglow/ai";
 import {
   HF_TRANSFORMERS_ONNX,
   register_HFT_ClientJobFns,
   register_TFMP_ClientJobFns,
   TENSORFLOW_MEDIAPIPE,
-} from "@podley/ai-provider";
-import { ConcurrencyLimiter, JobQueue } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
+} from "@workglow/ai-provider";
+import { ConcurrencyLimiter, JobQueue } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   JsonTaskItem,
@@ -20,14 +20,14 @@ import {
   TaskInput,
   TaskOutput,
   Workflow,
-} from "@podley/task-graph";
-import { JsonTask } from "@podley/tasks";
+} from "@workglow/task-graph";
+import { JsonTask } from "@workglow/tasks";
 import {
   IndexedDbTaskGraphRepository,
   IndexedDbTaskOutputRepository,
   registerHuggingfaceLocalModels,
   registerMediaPipeTfJsLocalModels,
-} from "@podley/test";
+} from "@workglow/test";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useCallback, useEffect, useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./Resize";

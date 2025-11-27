@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { JobError } from "@podley/job-queue";
-import { BaseError } from "@podley/util";
+import { JobError } from "@workglow/job-queue";
+import { BaseError } from "@workglow/util";
 
 export class TaskError extends BaseError {
   static readonly type: string = "TaskError";

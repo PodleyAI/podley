@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, makeFingerprint, sleep, uuid4 } from "@podley/util";
+import { createServiceToken, makeFingerprint, sleep, uuid4 } from "@workglow/util";
 import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
 
 export const IN_MEMORY_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(

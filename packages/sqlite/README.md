@@ -1,10 +1,10 @@
-# @podley/sqlite
+# @workglow/sqlite
 
-SQLite storage implementations for Podley AI task pipelines.
+SQLite storage implementations for Workglow AI task pipelines.
 
 ## Overview
 
-The `@podley/sqlite` package provides SQLite-based storage implementations for Podley's task execution system. It offers cross-platform SQLite support for browser, Node.js, and Bun environments with different SQLite implementations optimized for each platform.
+The `@workglow/sqlite` package provides SQLite-based storage implementations for Workglow's task execution system. It offers cross-platform SQLite support for browser, Node.js, and Bun environments with different SQLite implementations optimized for each platform.
 
 ## Features
 
@@ -16,7 +16,7 @@ The `@podley/sqlite` package provides SQLite-based storage implementations for P
 ## Installation
 
 ```bash
-bun add @podley/sqlite
+bun add @workglow/sqlite
 ```
 
 ## Usage
@@ -24,7 +24,7 @@ bun add @podley/sqlite
 ### Browser Environment
 
 ```typescript
-import { SqliteStorage } from "@podley/sqlite/browser";
+import { SqliteStorage } from "@workglow/sqlite/browser";
 
 const storage = new SqliteStorage({
   database: ":memory:",
@@ -34,7 +34,7 @@ const storage = new SqliteStorage({
 ### Node.js Environment
 
 ```typescript
-import { SqliteStorage } from "@podley/sqlite/node";
+import { SqliteStorage } from "@workglow/sqlite/node";
 
 const storage = new SqliteStorage({
   database: "./data/my-app.db",
@@ -44,7 +44,7 @@ const storage = new SqliteStorage({
 ### Bun Environment
 
 ```typescript
-import { SqliteStorage } from "@podley/sqlite/bun";
+import { SqliteStorage } from "@workglow/sqlite/bun";
 
 const storage = new SqliteStorage({
   database: "./data/my-app.db",
@@ -54,7 +54,7 @@ const storage = new SqliteStorage({
 ### Auto-Detection
 
 ```typescript
-import { SqliteStorage } from "@podley/sqlite";
+import { SqliteStorage } from "@workglow/sqlite";
 
 // Automatically detects the environment and uses appropriate implementation
 const storage = new SqliteStorage({

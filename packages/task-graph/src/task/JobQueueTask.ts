@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Job, JobConstructorParam, JobQueue } from "@podley/job-queue";
+import { Job, JobConstructorParam, JobQueue } from "@workglow/job-queue";
 import { ArrayTask } from "./ArrayTask";
 import { IExecuteContext } from "./ITask";
 import { getJobQueueFactory } from "./JobQueueFactory";

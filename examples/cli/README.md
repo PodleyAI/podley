@@ -1,10 +1,10 @@
-# Podley CLI Example
+# Workglow CLI Example
 
-A command-line interface for running Podley AI tasks and workflows.
+A command-line interface for running Workglow AI tasks and workflows.
 
 ## Overview
 
-The Podley CLI provides a terminal-based interface for creating, managing, and executing AI task pipelines. It features an interactive task runner with real-time progress visualization, making it easy to run AI workflows from the command line.
+The Workglow CLI provides a terminal-based interface for creating, managing, and executing AI task pipelines. It features an interactive task runner with real-time progress visualization, making it easy to run AI workflows from the command line.
 
 ## Features
 
@@ -23,13 +23,13 @@ The Podley CLI provides a terminal-based interface for creating, managing, and e
 ### Installation
 
 ```bash
-bun install @podley/cli
+bun install @workglow/cli
 ```
 
 ### Running
 
 ```bash
-bun src/podley.ts
+bun src/workglow.ts
 ```
 
 ## Usage
@@ -38,13 +38,13 @@ bun src/podley.ts
 
 ```bash
 # Show help
-podley --help
+workglow --help
 
 # Run a simple text generation task
-podley generate --model "onnx:Xenova/LaMini-Flan-T5-783M:q8" "Write a story about a robot"
+workglow generate --model "onnx:Xenova/LaMini-Flan-T5-783M:q8" "Write a story about a robot"
 
 # Create an embedding from text
-podley embedding --model "onnx:Xenova/LaMini-Flan-T5-783M:q8" "Hello world"
+workglow embedding --model "onnx:Xenova/LaMini-Flan-T5-783M:q8" "Hello world"
 ```
 
 ### Example Workflows
@@ -52,7 +52,7 @@ podley embedding --model "onnx:Xenova/LaMini-Flan-T5-783M:q8" "Hello world"
 #### Text Generation
 
 ```bash
-podley generate \
+workglow generate \
   --text "The future of AI is" \
   --model "onnx:Xenova/LaMini-Flan-T5-783M:q8" \
   --max-length 100
@@ -89,7 +89,7 @@ Create a `workflow.json` file:
 Then run:
 
 ```bash
-cat workflow.json | podley json
+cat workflow.json | workglow json
 ```
 
 ## Command Reference
@@ -106,7 +106,7 @@ cat workflow.json | podley json
 Generate text using AI models.
 
 ```bash
-podley generate [options] <text>
+workglow generate [options] <text>
 ```
 
 Options:
@@ -127,12 +127,12 @@ The CLI automatically downloads and caches AI models. You can configure model se
 
 ```
 src/
-├── podley.ts              # Main CLI entry point
+├── workglow.ts              # Main CLI entry point
 ├── TaskCLI.ts             # CLI command definitions
 ├── TaskGraphToUI.ts       # Terminal UI components
 ├── components/            # Reusable CLI components
 ├── lib.ts                 # Library exports
-├── podley_worker.ts       # Background worker
+├── workglow_worker.ts       # Background worker
 └── worker_hft.ts          # HuggingFace worker
 ```
 
@@ -150,7 +150,7 @@ program
   });
 ```
 
-2. Implement the command logic using Podley workflows:
+2. Implement the command logic using Workglow workflows:
 
 ```typescript
 const workflow = new Workflow();
@@ -163,12 +163,10 @@ await workflow.run();
 ### HuggingFace Transformers (ONNX)
 
 - **Text Generation**:
-
   - `onnx:Xenova/LaMini-Flan-T5-783M:q8`
   - `onnx:Xenova/distilgpt2:q8`
 
 - **Translation**:
-
   - `onnx:Xenova/m2m100_418M:q8`
   - `onnx:Xenova/opus-mt-en-de:q8`
 
@@ -179,7 +177,6 @@ await workflow.run();
 ### TensorFlow MediaPipe
 
 - **Text Embeddings**:
-
   - `mediapipe:universal-sentence-encoder`
 
 ## Performance
@@ -202,7 +199,7 @@ await workflow.run();
 
    ```bash
    # Use smaller models or increase system memory
-   podley generate --model "onnx:Xenova/distilgpt2:q8"
+   workglow generate --model "onnx:Xenova/distilgpt2:q8"
    ```
 
 ## Examples
@@ -213,7 +210,7 @@ Process multiple files:
 
 ```bash
 for file in *.txt; do
-  podley generate "$(cat $file)" > "${file%.txt}_generated.txt"
+  workglow generate "$(cat $file)" > "${file%.txt}_generated.txt"
 done
 ```
 
@@ -223,8 +220,8 @@ Chain multiple operations:
 
 ```bash
 # Generate text, then translate it
-podley generate --text "Write about AI" | \
-podley rewrite --prompt "Rewrite this text to sound like a pirate:"
+workglow generate --text "Write about AI" | \
+workglow rewrite --prompt "Rewrite this text to sound like a pirate:"
 ```
 
 ## License

@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InMemoryRateLimiter, JobQueue } from "@podley/job-queue";
-import { IndexedDbQueueStorage } from "@podley/storage";
-import { uuid4 } from "@podley/util";
+import { InMemoryRateLimiter, JobQueue } from "@workglow/job-queue";
+import { IndexedDbQueueStorage } from "@workglow/storage";
+import { uuid4 } from "@workglow/util";
 import "fake-indexeddb/auto";
 import { describe } from "vitest";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";

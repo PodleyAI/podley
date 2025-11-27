@@ -5,8 +5,8 @@
  */
 
 import { PGlite } from "@electric-sql/pglite";
-import { PostgresRateLimiter } from "@podley/job-queue";
-import { PostgresQueueStorage } from "@podley/storage";
+import { PostgresRateLimiter } from "@workglow/job-queue";
+import { PostgresQueueStorage } from "@workglow/storage";
 import { Pool } from "pg";
 import { describe } from "vitest";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";

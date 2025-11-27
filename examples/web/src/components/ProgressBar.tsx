@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TaskStatus } from "@podley/task-graph";
+import { TaskStatus } from "@workglow/task-graph";
 import React from "react";
 import { getStatusColorBg } from "../graph/util";
 

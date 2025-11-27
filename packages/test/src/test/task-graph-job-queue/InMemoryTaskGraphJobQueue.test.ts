@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ConcurrencyLimiter, JobQueue } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
-import { uuid4 } from "@podley/util";
+import { ConcurrencyLimiter, JobQueue } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
+import { uuid4 } from "@workglow/util";
 import { describe } from "vitest";
 import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJobQueueTests";
 

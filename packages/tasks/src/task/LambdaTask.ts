@@ -5,19 +5,19 @@
  */
 
 import {
-  CreateWorkflow,
-  DATAFLOW_ALL_PORTS,
-  IExecuteContext,
-  IExecuteReactiveContext,
-  Task,
-  TaskConfig,
-  TaskConfigurationError,
-  TaskInput,
-  TaskOutput,
-  TaskRegistry,
-  Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, FromSchema } from "@podley/util";
+    CreateWorkflow,
+    DATAFLOW_ALL_PORTS,
+    IExecuteContext,
+    IExecuteReactiveContext,
+    Task,
+    TaskConfig,
+    TaskConfigurationError,
+    TaskInput,
+    TaskOutput,
+    TaskRegistry,
+    Workflow,
+} from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
 
 interface LambdaTaskConfig<
   Input extends TaskInput = TaskInput,
@@ -143,7 +143,7 @@ export function Lambda<I extends TaskInput, O extends TaskOutput>(
 }
 
 // Add Lambda task workflow to Workflow interface
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     Lambda: <I extends TaskInput, O extends TaskOutput>(
       input: Partial<I>,

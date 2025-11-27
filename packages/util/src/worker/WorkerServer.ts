@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { parentPort } from "@podley/util";
+import { parentPort } from "@workglow/util";
 import { createServiceToken, globalServiceRegistry } from "../di";
 
 /**

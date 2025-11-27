@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InMemoryTabularRepository } from "@podley/storage";
+import { InMemoryTabularRepository } from "@workglow/storage";
 import {
   TaskOutputPrimaryKeyNames,
   TaskOutputSchema,
   TaskOutputTabularRepository,
-} from "@podley/task-graph";
-import { createServiceToken } from "@podley/util";
+} from "@workglow/task-graph";
+import { createServiceToken } from "@workglow/util";
 
 export const MEMORY_TASK_OUTPUT_REPOSITORY = createServiceToken<InMemoryTaskOutputRepository>(
   "taskgraph.taskOutputRepository.inMemory"

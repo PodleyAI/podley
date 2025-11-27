@@ -20,8 +20,8 @@ import {
   TaskFailedError,
   TaskInput,
   Workflow,
-} from "@podley/task-graph";
-import { DataPortSchema, sleep } from "@podley/util";
+} from "@workglow/task-graph";
+import { DataPortSchema, sleep } from "@workglow/util";
 
 /**
  * Standard input type for basic test tasks
@@ -828,7 +828,7 @@ export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
 /**
  * Module augmentation to register test task types in the workflow system
  */
-declare module "@podley/task-graph" {
+declare module "@workglow/task-graph" {
   interface Workflow {
     TestSimpleTask: CreateWorkflow<{ input: string }, { output: string }, TaskConfig>;
     TestOutputTask: CreateWorkflow<{ input: string }, { customOutput: string }, TaskConfig>;

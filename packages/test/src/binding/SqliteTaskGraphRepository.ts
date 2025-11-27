@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SqliteTabularRepository } from "@podley/storage";
+import { SqliteTabularRepository } from "@workglow/storage";
 import {
   TaskGraphPrimaryKeyNames,
   TaskGraphSchema,
   TaskGraphTabularRepository,
-} from "@podley/task-graph";
-import { createServiceToken } from "@podley/util";
+} from "@workglow/task-graph";
+import { createServiceToken } from "@workglow/util";
 
 export const SQLITE_TASK_GRAPH_REPOSITORY = createServiceToken<TaskGraphTabularRepository>(
   "taskgraph.taskGraphRepository.sqlite"

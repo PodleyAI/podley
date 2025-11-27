@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, DataPortSchemaObject, FromSchema, sleep } from "@podley/util";
+import { createServiceToken, DataPortSchemaObject, FromSchema, sleep } from "@workglow/util";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ITabularRepository } from "./ITabularRepository";

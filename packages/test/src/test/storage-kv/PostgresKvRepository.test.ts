@@ -5,8 +5,8 @@
  */
 
 import { PGlite } from "@electric-sql/pglite";
-import { PostgresKvRepository } from "@podley/storage";
-import { uuid4 } from "@podley/util";
+import { PostgresKvRepository } from "@workglow/storage";
+import { uuid4 } from "@workglow/util";
 import type { Pool } from "pg";
 import { describe } from "vitest";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";

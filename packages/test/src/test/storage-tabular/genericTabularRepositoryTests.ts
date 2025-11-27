@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ITabularRepository } from "@podley/storage";
-import { DataPortSchemaObject } from "@podley/util";
+import { ITabularRepository } from "@workglow/storage";
+import { DataPortSchemaObject } from "@workglow/util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 export const CompoundPrimaryKeyNames = ["name", "type"] as const;

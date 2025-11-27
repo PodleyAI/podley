@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TaskGraph, Workflow } from "@podley/task-graph";
-import { Lambda, LambdaTask } from "@podley/tasks";
+import { TaskGraph, Workflow } from "@workglow/task-graph";
+import { Lambda, LambdaTask } from "@workglow/tasks";
 import { describe, expect, test } from "vitest";
 
 describe("LambdaTask", () => {

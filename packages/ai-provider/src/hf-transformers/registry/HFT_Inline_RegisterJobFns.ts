@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getAiProviderRegistry } from "@podley/ai";
 import { env } from "@sroussey/transformers";
+import { getAiProviderRegistry } from "@workglow/ai";
 import { HF_TRANSFORMERS_ONNX } from "../common/HFT_Constants";
 import {
   HFT_Download,

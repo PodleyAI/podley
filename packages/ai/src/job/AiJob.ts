@@ -5,13 +5,13 @@
  */
 
 import {
-  AbortSignalJobError,
-  IJobExecuteContext,
-  Job,
-  JobStatus,
-  PermanentJobError,
-} from "@podley/job-queue";
-import { TaskInput, TaskOutput } from "@podley/task-graph";
+    AbortSignalJobError,
+    IJobExecuteContext,
+    Job,
+    JobStatus,
+    PermanentJobError,
+} from "@workglow/job-queue";
+import { TaskInput, TaskOutput } from "@workglow/task-graph";
 import { getGlobalModelRepository } from "../model/ModelRegistry";
 import { getAiProviderRegistry } from "../provider/AiProviderRegistry";
 

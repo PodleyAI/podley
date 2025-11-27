@@ -1,10 +1,10 @@
-# Podley Web Example
+# Workglow Web Example
 
-A visual task graph editor and runner for Podley AI pipelines.
+A visual task graph editor and runner for Workglow AI pipelines.
 
 ## Overview
 
-This super simple web application provides a visual interface for creating, editing, and running Podley AI task graphs. It features real-time execution monitoring, and an integrated console for debugging and interaction.
+This super simple web application provides a visual interface for creating, editing, and running Workglow AI task graphs. It features real-time execution monitoring, and an integrated console for debugging and interaction.
 
 ## Features
 
@@ -25,7 +25,7 @@ This super simple web application provides a visual interface for creating, edit
 ### Installation
 
 ```bash
-bun install @podley/web
+bun install @workglow/web
 ```
 
 ### Development

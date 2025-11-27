@@ -28,8 +28,8 @@
 This project is not yet ready to be published on npm. So for now, use the source Luke.
 
 ```bash
-git clone https://github.com/podleyai/podley.git
-cd podley
+git clone https://github.com/workglow-dev/workglow.git
+cd workglow
 bun install
 bun run build
 cd examples/web
@@ -47,8 +47,8 @@ After this, please read [Architecture](02_architecture.md) before attempting to 
 ## Using Workflow & a config helper
 
 ```ts
-import { Workflow } from "@podley/task-graph";
-import { register_HFT_InMemoryQueue } from "@podley/test";
+import { Workflow } from "@workglow/task-graph";
+import { register_HFT_InMemoryQueue } from "@workglow/test";
 // config and start up
 register_HFT_InMemoryQueue();
 
@@ -73,10 +73,10 @@ console.log(graphJson);
 This is equivalent to creating the graph directly, with additional features like caching and reactive execution:
 
 ```ts
-import { Dataflow, TaskGraph } from "@podley/task-graph";
-import { DownloadModelTask, TextRewriterTask } from "@podley/ai";
-import { DebugLogTask } from "@podley/tasks";
-import { register_HFT_InMemoryQueue } from "@podley/test";
+import { Dataflow, TaskGraph } from "@workglow/task-graph";
+import { DownloadModelTask, TextRewriterTask } from "@workglow/ai";
+import { DebugLogTask } from "@workglow/tasks";
+import { register_HFT_InMemoryQueue } from "@workglow/test";
 
 // config and start up
 await register_HFT_InMemoryQueue();
@@ -120,18 +120,18 @@ await graph.run();
 And unrolling the helpers, we get the following equivalent code:
 
 ```ts
-import { Dataflow, TaskGraph, getTaskQueueRegistry } from "@podley/task-graph";
+import { Dataflow, TaskGraph, getTaskQueueRegistry } from "@workglow/task-graph";
 import {
   DownloadModelTask,
   TextRewriterTask,
   AiJob,
   InMemoryModelRepository,
   setGlobalModelRepository,
-} from "@podley/ai";
-import { DebugLogTask } from "@podley/tasks";
-import { ConcurrencyLimiter, JobQueue } from "@podley/job-queue";
-import { InMemoryQueueStorage } from "@podley/storage";
-import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@podley/ai-provider";
+} from "@workglow/ai";
+import { DebugLogTask } from "@workglow/tasks";
+import { ConcurrencyLimiter, JobQueue } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
+import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@workglow/ai-provider";
 
 // Provider run functions on this thread
 await register_HFT_InlineJobFns();
@@ -224,7 +224,7 @@ Tasks are the smallest unit of work, therefore they take simple inputs. GraphAsT
 An example is TextEmbeddingTask and TextEmbeddingCompoundTask. The first takes a single model input, the second accepts an array of model inputs. Since models can have different providers, the Compound version creates a single task version for each model input. The workflow is smart enough to know that the Compound version is needed when an array is passed, and as such, you don't need to differentiate between the two:
 
 ```ts
-import { Workflow } from "@podley/task-graph";
+import { Workflow } from "@workglow/task-graph";
 const workflow = new Workflow();
 workflow.TextEmbedding({
   model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
@@ -236,7 +236,7 @@ await workflow.run();
 OR
 
 ```ts
-import { Workflow } from "@podley/task-graph";
+import { Workflow } from "@workglow/task-graph";
 const workflow = new Workflow();
 workflow.TextEmbedding({
   model: ["onnx:Xenova/LaMini-Flan-T5-783M:q8", "Universal Sentence Encoder"],
@@ -248,7 +248,7 @@ await workflow.run();
 The workflow will look at outputs of one task and automatically connect it to the input of the next task, if the output and input names and types match. If they don't, you can use the `rename` method to rename the output of the first task to match the input of the second task.
 
 ```ts
-import { Workflow } from "@podley/task-graph";
+import { Workflow } from "@workglow/task-graph";
 const workflow = new Workflow();
 workflow
   .DownloadModel({
@@ -325,7 +325,7 @@ There is a JSONTask that can be used to build a graph. This is useful for saving
 The JSON above is a good example as it shows how to use a compound task with multiple inputs. Compound tasks export arrays, so use a compound task to consume the output of another compound task. The `dependencies` object is used to specify which output of which task is used as input for the current task. It is a shorthand for creating a data flow (an edge) in the graph.
 
 ```ts
-import { JsonTask } from "@podley/tasks";
+import { JsonTask } from "@workglow/tasks";
 const json = require("./example.json");
 const task = new JsonTask({ json });
 await task.run();
@@ -430,7 +430,7 @@ This is a collection of utility functions.
 
 ### `examples/cli`
 
-An example project that uses the library in a CLI settings using listr2 (`cat example.json | podley json`, for example)
+An example project that uses the library in a CLI settings using listr2 (`cat example.json | workglow json`, for example)
 
 ![cli example](img/cli.png)
 

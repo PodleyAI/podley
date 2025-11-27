@@ -2,7 +2,7 @@
 // previous fork: https://github.com/sroussey/typescript-graph
 // license: MIT
 
-import { CycleError, DirectedAcyclicGraph, DirectedGraph } from "@podley/util";
+import { CycleError, DirectedAcyclicGraph, DirectedGraph } from "@workglow/util";
 import { describe, expect, it } from "vitest";
 import { edgeIdentity, nodeIdentity } from "./graph.test";
 

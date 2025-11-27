@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, DataPortSchemaObject, FromSchema, JsonSchema } from "@podley/util";
+import { createServiceToken, DataPortSchemaObject, FromSchema, JsonSchema } from "@workglow/util";
 import type { Pool } from "pg";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import { ITabularRepository, ValueOptionType } from "./ITabularRepository";

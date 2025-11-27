@@ -14,8 +14,8 @@ import {
   TaskInput,
   TaskOutput,
   TaskStatus,
-} from "@podley/task-graph";
-import { ConvertAllToOptionalArray, DataPortSchema } from "@podley/util";
+} from "@workglow/task-graph";
+import { ConvertAllToOptionalArray, DataPortSchema } from "@workglow/util";
 import { describe, expect, test, vi } from "vitest";
 
 const spyOn = vi.spyOn;

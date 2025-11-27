@@ -1,8 +1,8 @@
 {
-  "name": "@podley/debug",
+  "name": "@workglow/debug",
   "type": "module",
-  "version": "0.0.51",
-  "description": "Debug utilities for Podley, including Chrome DevTools custom formatters for task graphs and workflows.",
+  "version": "0.0.52",
+  "description": "Debug utilities for Workglow, including Chrome DevTools custom formatters for task graphs and workflows.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-browser": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/browser.ts",
@@ -32,7 +32,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@podley/task-graph": "workspace:*",
-    "@podley/util": "workspace:*"
+    "@workglow/task-graph": "workspace:*",
+    "@workglow/util": "workspace:*"
   }
 }

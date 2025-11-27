@@ -9,8 +9,14 @@ import {
   DefaultKeyValueSchema,
   SupabaseKvRepository,
   SupabaseTabularRepository,
-} from "@podley/storage";
-import { DataPortSchemaObject, ExcludeProps, FromSchema, IncludeProps, uuid4 } from "@podley/util";
+} from "@workglow/storage";
+import {
+  DataPortSchemaObject,
+  ExcludeProps,
+  FromSchema,
+  IncludeProps,
+  uuid4,
+} from "@workglow/util";
 import { describe } from "vitest";
 import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
 import { runGenericKvRepositoryTests } from "./genericKvRepositoryTests";

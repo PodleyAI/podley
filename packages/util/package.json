@@ -1,8 +1,8 @@
 {
-  "name": "@podley/util",
+  "name": "@workglow/util",
   "type": "module",
-  "version": "0.0.51",
-  "description": "Utility functions and shared types for Podley, providing common functionality across all packages.",
+  "version": "0.0.52",
+  "description": "Utility functions and shared types for Workglow, providing common functionality across all packages.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
     "watch-browser": "bun build --watch --no-clear-screen --target=browser --sourcemap=external --packages=external --outdir ./dist ./src/browser.ts",

@@ -114,12 +114,12 @@ task.on("regenerate", () => console.log("Task regenerated"));
 
 ## Input/Output Schemas
 
-The input and output schemas are JSON schemas that are used to validate the input and output of the task. These can be defined using plain JSON Schema objects, TypeBox, or Zod. All schemas must be compatible with `DataPortSchema` from `@podley/util`.
+The input and output schemas are JSON schemas that are used to validate the input and output of the task. These can be defined using plain JSON Schema objects, TypeBox, or Zod. All schemas must be compatible with `DataPortSchema` from `@workglow/util`.
 
 ### Using Plain JSON Schema
 
 ```typescript
-import { DataPortSchema } from "@podley/util";
+import { DataPortSchema } from "@workglow/util";
 
 static inputSchema = () => {
   return {
@@ -158,7 +158,7 @@ TypeBox schemas are JSON Schema compatible and can be used directly:
 
 ```typescript
 import { Type } from "@sinclair/typebox";
-import { DataPortSchema } from "@podley/util";
+import { DataPortSchema } from "@workglow/util";
 
 static inputSchema = () => {
   return Type.Object({
@@ -186,7 +186,7 @@ Zod 4 has built-in JSON Schema support using the `.toJSONSchema()` method:
 
 ```typescript
 import { z } from "zod";
-import { DataPortSchema } from "@podley/util";
+import { DataPortSchema } from "@workglow/util";
 
 // Define Zod schemas
 const inputSchemaZod = z.object({
@@ -247,5 +247,5 @@ bun test
 ## Installation
 
 ```bash
-bun add @podley/task-system
+bun add @workglow/task-system
 ```

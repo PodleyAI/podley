@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken } from "@podley/util";
+import { createServiceToken } from "@workglow/util";
 import { ILimiter } from "./ILimiter";
 
 export const NULL_JOB_LIMITER = createServiceToken<ILimiter>("jobqueue.limiter.null");
