@@ -1,4 +1,4 @@
-# PODLEY
+# WORKGLOW
 
 [![License](https://img.shields.io/badge/license-Apache2-blue.svg)](https://github.com/workglow-dev/workglow/blob/main/LICENSE)
 

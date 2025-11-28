@@ -958,7 +958,7 @@ describe("TaskGraph with format annotations", () => {
       expect(compatibility).toBe("static");
     });
 
-    it.only("should handle different typed arrays as incompatible with different typed arrays", () => {
+    it("should handle different typed arrays as incompatible with different typed arrays", () => {
       class Float64ArrayProviderTask extends Task<{ input: string }, { data: number[] }> {
         static readonly type = "Float64ArrayProviderTask";
 

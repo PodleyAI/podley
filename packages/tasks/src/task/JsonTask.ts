@@ -1,20 +1,19 @@
-// //    *******************************************************************************
-// //    *   PODLEY.AI: Your Agentic AI library                                        *
-// //    *                                                                             *
-// //    *   Copyright Steven Roussey <sroussey@gmail.com>                             *
-// //    *   Licensed under the Apache License, Version 2.0 (the "License");           *
-// //    *******************************************************************************
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 import {
-    createGraphFromDependencyJSON,
-    CreateWorkflow,
-    Dataflow,
-    GraphAsTask,
-    JsonTaskItem,
-    TaskConfig,
-    TaskConfigurationError,
-    TaskRegistry,
-    Workflow,
+  createGraphFromDependencyJSON,
+  CreateWorkflow,
+  Dataflow,
+  GraphAsTask,
+  JsonTaskItem,
+  TaskConfig,
+  TaskConfigurationError,
+  TaskRegistry,
+  Workflow,
 } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 
