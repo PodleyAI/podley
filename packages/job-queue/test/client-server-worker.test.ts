@@ -119,20 +119,24 @@ describe("JobQueueWorker", () => {
       progress_details: null,
     });
 
-    let jobCompleted = false;
-    worker.on("job_complete", () => {
-      jobCompleted = true;
+    // Wait for job completion via event
+    const jobCompletedPromise = new Promise<void>((resolve) => {
+      worker.on("job_complete", () => {
+        resolve();
+      });
     });
 
     await worker.start();
 
-    // Wait for job to complete
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Wait for the event with a timeout
+    await Promise.race([
+      jobCompletedPromise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2000)),
+    ]);
 
     const completedJob = await storage.get(jobId);
     expect(completedJob?.status).toBe(JobStatus.COMPLETED);
     expect(completedJob?.output?.result).toBe(14);
-    expect(jobCompleted).toBe(true);
   });
 
   it("should get worker stats", async () => {
@@ -163,8 +167,10 @@ describe("JobQueueServer", () => {
   });
 
   it("should process jobs across multiple workers", async () => {
+    const jobCount = 5;
+    
     // Add multiple jobs
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < jobCount; i++) {
       await storage.add({
         id: undefined,
         job_run_id: undefined,
@@ -188,17 +194,26 @@ describe("JobQueueServer", () => {
       });
     }
 
+    // Wait for all jobs to complete via events
     let completedCount = 0;
-    server.on("job_complete", () => {
-      completedCount++;
+    const allJobsCompletedPromise = new Promise<void>((resolve) => {
+      server.on("job_complete", () => {
+        completedCount++;
+        if (completedCount === jobCount) {
+          resolve();
+        }
+      });
     });
 
     await server.start();
 
-    // Wait for jobs to complete
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Wait for completion with a timeout
+    await Promise.race([
+      allJobsCompletedPromise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000)),
+    ]);
 
-    expect(completedCount).toBe(5);
+    expect(completedCount).toBe(jobCount);
   });
 
   it("should aggregate stats from all workers", async () => {

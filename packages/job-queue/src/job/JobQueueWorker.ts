@@ -376,6 +376,7 @@ export class JobQueueWorker<
     const startTime = Date.now();
 
     try {
+      this.stats.totalJobs++;
       await this.validateJobState(job);
       await this.limiter.recordJobStart();
       this.emitStatsUpdate();
@@ -414,7 +415,11 @@ export class JobQueueWorker<
       if (canProceed) {
         const job = await this.next();
         if (job) {
-          this.processSingleJob(job);
+          // NOTE: We don't await processSingleJob here to allow concurrent processing
+          // Errors are handled within processSingleJob via try/catch
+          this.processSingleJob(job).catch((err) => {
+            console.error(`Unexpected error in processSingleJob for job ${job.id}:`, err);
+          });
         }
       }
     } finally {
