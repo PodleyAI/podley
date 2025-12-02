@@ -28,6 +28,12 @@ A TypeScript-first job queue system for managing and processing asynchronous tas
   - [Rate Limiter](#rate-limiter)
   - [Composite Limiter](#composite-limiter)
 - [Queue Modes](#queue-modes)
+- [Production Architecture](#production-architecture)
+  - [Client-Server-Worker Pattern](#client-server-worker-pattern)
+  - [JobQueueClient](#jobqueueclient)
+  - [JobQueueWorker](#jobqueueworker)
+  - [JobQueueServer](#jobqueueserver)
+  - [Production Deployment Example](#production-deployment-example)
 - [API Reference](#api-reference)
   - [JobQueue Methods](#jobqueue-methods)
   - [Job Class](#job-class)
@@ -537,6 +543,298 @@ await queue.start(QueueMode.SERVER);
 
 // Both modes - can add and process jobs (default)
 await queue.start(QueueMode.BOTH);
+```
+
+## Production Architecture
+
+For production deployments, `@workglow/job-queue` provides separate **Client**, **Worker**, and **Server** classes that enable scalable, distributed job processing architectures. This separation of concerns allows you to:
+
+- Scale workers independently from clients
+- Deploy workers across multiple machines
+- Centralize job coordination in a server
+- Use persistent storage backends (PostgreSQL, SQLite) for durability
+
+### Client-Server-Worker Pattern
+
+The production architecture consists of three distinct components:
+
+1. **JobQueueClient** - Submits jobs and monitors progress
+2. **JobQueueWorker** - Executes jobs from the queue
+3. **JobQueueServer** - Coordinates multiple workers and manages the queue
+
+All three components share the same storage backend, enabling distributed operation.
+
+### JobQueueClient
+
+The client is responsible for submitting jobs and monitoring their progress. It does not process jobs itself.
+
+```typescript
+import { JobQueueClient } from "@workglow/job-queue";
+import { PostgresQueueStorage } from "@workglow/storage";
+import { Pool } from "pg";
+
+// Create shared storage
+const pool = new Pool({
+  host: "postgres.example.com",
+  database: "jobs",
+  user: "app",
+  password: process.env.DB_PASSWORD,
+});
+
+const storage = new PostgresQueueStorage(pool, "image-processing");
+
+// Create client
+const client = new JobQueueClient("image-processing", ImageProcessingJob, storage, {
+  waitDurationInMilliseconds: 1000, // Poll for updates every second
+});
+
+await client.start();
+
+// Submit a job
+const job = new ImageProcessingJob({
+  input: { imageUrl: "https://example.com/image.jpg", format: "webp" },
+});
+
+const jobId = await client.add(job);
+
+// Monitor progress
+client.onJobProgress(jobId, (progress, message) => {
+  console.log(`Job ${jobId}: ${progress}% - ${message}`);
+});
+
+// Wait for completion
+const result = await client.waitFor(jobId);
+console.log("Processing complete:", result);
+```
+
+### JobQueueWorker
+
+The worker is responsible for executing jobs. Multiple workers can run in parallel.
+
+```typescript
+import { JobQueueWorker } from "@workglow/job-queue";
+import { PostgresQueueStorage } from "@workglow/storage";
+import { ConcurrencyLimiter } from "@workglow/job-queue";
+import { Pool } from "pg";
+
+// Create shared storage (same configuration as client)
+const pool = new Pool({
+  host: "postgres.example.com",
+  database: "jobs",
+  user: "worker",
+  password: process.env.DB_PASSWORD,
+});
+
+const storage = new PostgresQueueStorage(pool, "image-processing");
+
+// Create worker with concurrency limiting
+const worker = new JobQueueWorker("image-processing", ImageProcessingJob, storage, {
+  limiter: new ConcurrencyLimiter(5), // Process up to 5 jobs concurrently
+  waitDurationInMilliseconds: 100,
+  deleteAfterCompletionMs: 3600000, // Keep completed jobs for 1 hour
+  deleteAfterFailureMs: 86400000, // Keep failed jobs for 24 hours
+});
+
+// Listen to worker events
+worker.on("job_start", (queueName, jobId) => {
+  console.log(`Worker started job ${jobId}`);
+});
+
+worker.on("job_complete", (queueName, jobId, output) => {
+  console.log(`Worker completed job ${jobId}:`, output);
+});
+
+worker.on("job_error", (queueName, jobId, error) => {
+  console.error(`Worker failed job ${jobId}:`, error);
+});
+
+// Start processing jobs
+await worker.start();
+
+// Worker runs indefinitely until stopped
+// To gracefully shutdown:
+// await worker.stop();
+```
+
+### JobQueueServer
+
+The server coordinates multiple workers and provides centralized monitoring and control.
+
+```typescript
+import { JobQueueServer } from "@workglow/job-queue";
+import { PostgresQueueStorage } from "@workglow/storage";
+import { ConcurrencyLimiter } from "@workglow/job-queue";
+import { Pool } from "pg";
+
+// Create shared storage
+const pool = new Pool({
+  host: "postgres.example.com",
+  database: "jobs",
+  user: "server",
+  password: process.env.DB_PASSWORD,
+});
+
+const storage = new PostgresQueueStorage(pool, "image-processing");
+
+// Create server with 10 workers
+const server = new JobQueueServer("image-processing", ImageProcessingJob, storage, {
+  workerCount: 10, // Run 10 workers in this server instance
+  limiter: new ConcurrencyLimiter(50), // Max 50 concurrent jobs across all workers
+  waitDurationInMilliseconds: 100,
+  deleteAfterCompletionMs: 3600000,
+  deleteAfterFailureMs: 86400000,
+});
+
+// Monitor server-level events
+server.on("job_complete", (queueName, jobId, output) => {
+  console.log(`Job ${jobId} completed`);
+});
+
+server.on("queue_stats_update", (queueName, stats) => {
+  console.log("Queue stats:", {
+    completed: stats.completedJobs,
+    failed: stats.failedJobs,
+    avgProcessingTime: stats.averageProcessingTime,
+  });
+});
+
+// Start the server
+await server.start();
+
+console.log(`Server started with ${server.getWorkerCount()} workers`);
+
+// Get aggregated stats from all workers
+const stats = server.getStats();
+console.log("Total completed jobs:", stats.completedJobs);
+```
+
+### Production Deployment Example
+
+Here's a complete example showing how to deploy in a production environment:
+
+**1. Client Service (Web Application)**
+
+```typescript
+// client-service.ts
+import { JobQueueClient } from "@workglow/job-queue";
+import { PostgresQueueStorage } from "@workglow/storage";
+import { Pool } from "pg";
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const storage = new PostgresQueueStorage(pool, "tasks");
+
+const client = new JobQueueClient("tasks", TaskJob, storage);
+await client.start();
+
+// Express route for submitting jobs
+app.post("/api/tasks", async (req, res) => {
+  const job = new TaskJob({ input: req.body });
+  const jobId = await client.add(job);
+  res.json({ jobId });
+});
+
+// WebSocket for real-time progress
+io.on("connection", (socket) => {
+  socket.on("watch-job", (jobId) => {
+    const cleanup = client.onJobProgress(jobId, (progress, message) => {
+      socket.emit("job-progress", { jobId, progress, message });
+    });
+    socket.on("disconnect", cleanup);
+  });
+});
+```
+
+**2. Worker Service (Separate Process/Container)**
+
+```typescript
+// worker-service.ts
+import { JobQueueWorker } from "@workglow/job-queue";
+import { PostgresQueueStorage } from "@workglow/storage";
+import { ConcurrencyLimiter } from "@workglow/job-queue";
+import { Pool } from "pg";
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const storage = new PostgresQueueStorage(pool, "tasks");
+
+const worker = new JobQueueWorker("tasks", TaskJob, storage, {
+  limiter: new ConcurrencyLimiter(parseInt(process.env.CONCURRENCY || "5")),
+});
+
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  console.log("Shutting down worker...");
+  await worker.stop();
+  await pool.end();
+  process.exit(0);
+});
+
+await worker.start();
+console.log("Worker started");
+```
+
+**3. Server Coordinator (Optional - for multi-worker management)**
+
+```typescript
+// server-coordinator.ts
+import { JobQueueServer } from "@workglow/job-queue";
+import { PostgresQueueStorage } from "@workglow/storage";
+import { Pool } from "pg";
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const storage = new PostgresQueueStorage(pool, "tasks");
+
+const server = new JobQueueServer("tasks", TaskJob, storage, {
+  workerCount: parseInt(process.env.WORKER_COUNT || "10"),
+});
+
+await server.start();
+
+// Expose metrics endpoint
+app.get("/metrics", (req, res) => {
+  const stats = server.getStats();
+  res.json(stats);
+});
+```
+
+**Deployment Architecture:**
+
+```
+┌─────────────┐
+│   Clients   │──┐
+│ (Web Apps)  │  │
+└─────────────┘  │
+                 │
+┌─────────────┐  │      ┌──────────────┐
+│   Clients   │──┼─────▶│  PostgreSQL  │
+│   (APIs)    │  │      │   (Shared    │
+└─────────────┘  │      │   Storage)   │
+                 │      └──────────────┘
+┌─────────────┐  │              ▲
+│   Server    │──┘              │
+│ Coordinator │                 │
+└─────────────┘                 │
+                                │
+┌─────────────┐                 │
+│  Worker 1   │─────────────────┤
+└─────────────┘                 │
+                                │
+┌─────────────┐                 │
+│  Worker 2   │─────────────────┤
+└─────────────┘                 │
+                                │
+┌─────────────┐                 │
+│  Worker N   │─────────────────┘
+└─────────────┘
+```
+
+**Key Benefits:**
+
+- **Scalability**: Add more workers as needed
+- **Resilience**: Workers can be restarted without losing jobs
+- **Separation of Concerns**: Clients, workers, and coordinators have distinct responsibilities
+- **Flexibility**: Deploy components independently
+- **Monitoring**: Centralized stats and event tracking
+
 ```
 
 ## API Reference
