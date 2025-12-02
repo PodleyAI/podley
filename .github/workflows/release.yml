@@ -17,7 +17,17 @@ jobs:
       name: publish
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Check NPM_TOKEN presence
+        run: |
+          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "NPM_TOKEN is missing!"
+            exit 1
+          else
+            echo "NPM_TOKEN is available."
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - uses: actions/setup-node@v6
         with:
@@ -37,6 +47,10 @@ jobs:
 
       - name: Test
         run: bun run test
+
+      - name: Create .npmrc
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets

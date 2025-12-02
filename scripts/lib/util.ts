@@ -1,10 +1,16 @@
+import { Glob } from "bun";
+import { existsSync } from "fs";
 import { readFile, stat } from "fs/promises";
 import { join } from "path";
-import { existsSync } from "fs";
-import { Glob } from "bun";
 
 interface RootPackageJson {
   workspaces: string[];
+}
+
+interface PackageJson {
+  publishConfig?: {
+    access?: string;
+  };
 }
 
 export async function findWorkspaces(): Promise<string[]> {
@@ -25,12 +31,17 @@ export async function findWorkspaces(): Promise<string[]> {
           if (stats.isDirectory()) {
             const packageJsonPath = join(match, "package.json");
             if (existsSync(packageJsonPath)) {
-              workspaces.push(match);
+              const packageJson = JSON.parse(
+                (await readFile(packageJsonPath, "utf-8")).toString()
+              ) as PackageJson;
+              if (packageJson.publishConfig?.access === "public") {
+                workspaces.push(match);
+              }
             }
           }
-        } catch (e) {
-          // Ignore entries that cannot be stat'ed
-          continue;
+        } catch (error) {
+          console.error(`Error processing workspace pattern ${pattern}:`, error);
+          process.exit(1);
         }
       }
     } catch (error) {
@@ -38,6 +49,5 @@ export async function findWorkspaces(): Promise<string[]> {
       process.exit(1);
     }
   }
-
   return workspaces;
 }
