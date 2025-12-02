@@ -1,6 +1,6 @@
 {
   "name": "@workglow/web",
-  "version": "0.0.52",
+  "version": "0.0.54",
   "type": "module",
   "description": "Web interface example for Workglow, showcasing a React-based UI for building and visualizing AI task pipelines.",
   "scripts": {
@@ -48,7 +48,7 @@
     "vite": "^7.2.4"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "none"
   },
   "exports": {}
 }

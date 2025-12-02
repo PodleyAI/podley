@@ -79,7 +79,7 @@ async function checkAndPublishWorkspace(workspacePath: string): Promise<{
   const packageText = (await readFile(packageJsonPath, "utf-8")).toString();
   const packageJson = JSON.parse(packageText) as PackageJson;
 
-  if (!packageJson.publishConfig?.access) {
+  if (!packageJson.publishConfig?.access || packageJson.publishConfig.access === "none") {
     return { error: null, success: null };
   }
 

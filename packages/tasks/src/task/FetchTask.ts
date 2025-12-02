@@ -5,20 +5,20 @@
  */
 
 import {
-    AbortSignalJobError,
-    IJobExecuteContext,
-    Job,
-    PermanentJobError,
-    RetryableJobError,
+  AbortSignalJobError,
+  IJobExecuteContext,
+  Job,
+  PermanentJobError,
+  RetryableJobError,
 } from "@workglow/job-queue";
 import {
-    CreateWorkflow,
-    JobQueueTask,
-    JobQueueTaskConfig,
-    TaskConfigurationError,
-    TaskInvalidInputError,
-    TaskRegistry,
-    Workflow,
+  CreateWorkflow,
+  JobQueueTask,
+  JobQueueTaskConfig,
+  TaskConfigurationError,
+  TaskInvalidInputError,
+  TaskRegistry,
+  Workflow,
 } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 
@@ -51,9 +51,9 @@ const inputSchema = {
       description: "The body of the request",
     },
     response_type: {
-      enum: ["json", "text", "blob", "arraybuffer"],
+      anyOf: [{ type: "null" }, { enum: ["json", "text", "blob", "arraybuffer"] }],
       title: "Response Type",
-      default: "json",
+      default: null,
     },
     timeout: {
       type: "number",
@@ -189,16 +189,37 @@ export class FetchJob<
     );
 
     if (response.ok) {
-      if (input.response_type === "json") {
+      // Infer response type from response headers if not specified
+      let responseType = input.response_type;
+      if (!responseType) {
+        const contentType = response.headers.get("content-type") ?? "";
+        if (contentType.includes("application/json")) {
+          responseType = "json";
+        } else if (contentType.includes("text/")) {
+          responseType = "text";
+        } else if (contentType.includes("application/octet-stream")) {
+          responseType = "arraybuffer";
+        } else if (
+          contentType.includes("application/pdf") ||
+          contentType.includes("image/") ||
+          contentType.includes("application/zip")
+        ) {
+          responseType = "blob";
+        } else {
+          responseType = "json"; // Default fallback
+        }
+        input.response_type = responseType;
+      }
+      if (responseType === "json") {
         return { json: await response.json() } as Output;
-      } else if (input.response_type === "text") {
+      } else if (responseType === "text") {
         return { text: await response.text() } as Output;
-      } else if (input.response_type === "blob") {
+      } else if (responseType === "blob") {
         return { blob: await response.blob() } as Output;
-      } else if (input.response_type === "arraybuffer") {
+      } else if (responseType === "arraybuffer") {
         return { arraybuffer: await response.arrayBuffer() } as Output;
       }
-      throw new TaskInvalidInputError(`Invalid response type: ${input.response_type}`);
+      throw new TaskInvalidInputError(`Invalid response type: ${responseType}`);
     } else {
       if (
         response.status === 429 ||
@@ -248,6 +269,7 @@ export class FetchTask<
   public static title = "Fetch";
   public static description =
     "Fetches data from a URL with progress tracking and automatic retry handling";
+  public static hasDynamicSchemas: boolean = true;
 
   public static inputSchema() {
     return inputSchema;
@@ -257,6 +279,55 @@ export class FetchTask<
     return outputSchema;
   }
 
+  /**
+   * Override outputSchema to compute it dynamically based on the current response_type value.
+   * If response_type is null, all output types are available.
+   * If response_type is a specific value (e.g., "json"), only that output type is available.
+   */
+  public override outputSchema(): DataPortSchema {
+    // Get the current response_type value from runInputData (if set) or defaults
+    // runInputData takes precedence as it contains the most recent input values
+    const responseType = this.runInputData?.response_type ?? this.defaults?.response_type ?? null;
+
+    // If response_type is null or undefined, return all output types (static schema)
+    if (responseType === null || responseType === undefined) {
+      return (this.constructor as typeof FetchTask).outputSchema();
+    }
+
+    // If response_type is a specific value, return only that output type
+    const staticSchema = (this.constructor as typeof FetchTask).outputSchema();
+    if (typeof staticSchema === "boolean") {
+      return staticSchema;
+    }
+
+    if (!staticSchema.properties) {
+      return staticSchema;
+    }
+
+    // Build properties object with only the selected response type
+    const properties: Record<string, any> = {};
+    if (responseType === "json" && staticSchema.properties.json) {
+      properties.json = staticSchema.properties.json;
+    } else if (responseType === "text" && staticSchema.properties.text) {
+      properties.text = staticSchema.properties.text;
+    } else if (responseType === "blob" && staticSchema.properties.blob) {
+      properties.blob = staticSchema.properties.blob;
+    } else if (responseType === "arraybuffer" && staticSchema.properties.arraybuffer) {
+      properties.arraybuffer = staticSchema.properties.arraybuffer;
+    }
+
+    // If no properties were added (shouldn't happen with valid responseType), return static schema
+    if (Object.keys(properties).length === 0) {
+      return staticSchema;
+    }
+
+    return {
+      type: "object",
+      properties,
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
+  }
+
   constructor(input: Input = {} as Input, config: Config = {} as Config) {
     config.queue = input?.queue ?? config.queue;
     if (config.queue === undefined) {
@@ -264,6 +335,38 @@ export class FetchTask<
     }
     super(input, config);
     this.jobClass = FetchJob;
+  }
+
+  /**
+   * Override setInput to detect when response_type changes and emit schemaChange event.
+   * This ensures that consumers of the task are notified when the output schema changes.
+   */
+  public override setInput(input: Record<string, any>): void {
+    // Only check for changes if response_type is being set
+    if (!("response_type" in input)) {
+      super.setInput(input);
+      return;
+    }
+
+    // Get the current response_type before updating
+    // Check runInputData first (most recent), then defaults, then null
+    const getCurrentResponseType = () => {
+      return this.runInputData?.response_type ?? this.defaults?.response_type ?? null;
+    };
+    
+    const previousResponseType = getCurrentResponseType();
+    
+    // Call parent to update the input
+    super.setInput(input);
+    
+    // Get the new response_type after updating (from runInputData, which is what setInput updates)
+    const newResponseType = getCurrentResponseType();
+    
+    // If response_type changed, emit schemaChange event
+    // Compare using strict equality (handles null/undefined correctly)
+    if (previousResponseType !== newResponseType) {
+      this.emitSchemaChange();
+    }
   }
 
   protected override async getDefaultQueueName(input: Input): Promise<string | undefined> {

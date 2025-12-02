@@ -1,8 +1,7 @@
 ---
-description: Testing
-globs: 
-alwaysApply: false
+alwaysApply: true
 ---
-Use bun, not jest
+
+Use bun, not jest, not npm, not node
 
 To run tests: `bun test`. To run specific ones: `bun run <testfilename>`.
