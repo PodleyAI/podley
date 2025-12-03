@@ -87,8 +87,9 @@ export class JobQueueWorker<
 
   /**
    * Start processing jobs
+   * @param mode Optional mode parameter (unused in worker, included for interface compatibility)
    */
-  public async start() {
+  public async start(mode?: any) {
     if (this.running) {
       return this;
     }
