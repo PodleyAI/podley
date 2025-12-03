@@ -72,8 +72,9 @@ export class JobQueueClient<
 
   /**
    * Start monitoring jobs
+   * @param mode Optional mode parameter (unused in client, included for interface compatibility)
    */
-  public async start() {
+  public async start(mode?: any) {
     if (this.running) {
       return this;
     }

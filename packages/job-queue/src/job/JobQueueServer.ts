@@ -58,8 +58,9 @@ export class JobQueueServer<
 
   /**
    * Start the server and its workers
+   * @param mode Optional mode parameter (unused in server, included for interface compatibility)
    */
-  public async start() {
+  public async start(mode?: any) {
     if (this.running) {
       return this;
     }
