@@ -17,14 +17,14 @@ jobs:
       name: publish
 
     steps:
-      - name: Check NPM_TOKEN presence
-        run: |
-          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
-            echo "NPM_TOKEN is missing!"
-            exit 1
-          else
-            echo "NPM_TOKEN is available."
-          fi
+      # - name: Check NPM_TOKEN presence
+      #   run: |
+      #     if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+      #       echo "NPM_TOKEN is missing!"
+      #       exit 1
+      #     else
+      #       echo "NPM_TOKEN is available."
+      #     fi
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,16 +48,16 @@ jobs:
       - name: Test
         run: bun run test
 
-      - name: Create .npmrc
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+      # - name: Create .npmrc
+      #   run: |
+      #     echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
 
-      - name: Create Release Pull Request or Publish to npm
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          version: bun run version
-          publish: bun run publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # - name: Create Release Pull Request or Publish to npm
+      #   id: changesets
+      #   uses: changesets/action@v1
+      #   with:
+      #     version: bun run version
+      #     publish: bun run publish
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
