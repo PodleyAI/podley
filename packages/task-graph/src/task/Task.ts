@@ -28,6 +28,7 @@ import {
   TaskStatus,
   type Provenance,
   type TaskConfig,
+  type TaskIdType,
   type TaskInput,
   type TaskOutput,
   type TaskTypeName,
@@ -46,8 +47,7 @@ export class Task<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-> implements ITask<Input, Output, Config>
-{
+> implements ITask<Input, Output, Config> {
   // ========================================================================
   // Static properties - should be overridden by subclasses
   // ========================================================================
@@ -743,7 +743,7 @@ export class Task<
     );
   }
 
-  private _taskAddedListener: (task: ITask) => void = () => {
+  private _taskAddedListener: (taskId: TaskIdType) => void = () => {
     this.emit("regenerate");
   };
 

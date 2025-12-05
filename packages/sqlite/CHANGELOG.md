@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.56
+
+### Patch Changes
+
+- Update TaskGraph to add subscriptions for status changes for tasks and dataflows
+
 ## 0.0.55
 
 ### Patch Changes

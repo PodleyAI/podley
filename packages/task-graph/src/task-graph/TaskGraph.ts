@@ -402,21 +402,8 @@ export class TaskGraph implements ITaskGraph {
       unsubscribes.push(unsub);
     });
 
-    // Subscribe to task_added event to handle new tasks
-    // Note: The DAG emits the task ID, not the task object, so we need to get it from the graph
-    const handleTaskAdded = (taskIdOrTask: TaskIdType | ITask) => {
-      // The DAG emits the ID, but TaskGraph may transform it to the task object
-      // Handle both cases for robustness
-      const taskId =
-        typeof taskIdOrTask === "object" && taskIdOrTask?.config?.id
-          ? taskIdOrTask.config.id
-          : (taskIdOrTask as TaskIdType);
-
-      const task =
-        typeof taskIdOrTask === "object" && taskIdOrTask?.subscribe
-          ? (taskIdOrTask as ITask)
-          : this.getTask(taskId);
-
+    const handleTaskAdded = (taskId: TaskIdType) => {
+      const task = this.getTask(taskId);
       if (!task || typeof task.subscribe !== "function") return;
 
       const unsub = task.subscribe("status", (status) => {
@@ -455,21 +442,8 @@ export class TaskGraph implements ITaskGraph {
       unsubscribes.push(unsub);
     });
 
-    // Subscribe to dataflow_added event to handle new dataflows
-    // Note: The DAG emits the dataflow ID, not the dataflow object, so we need to get it from the graph
-    const handleDataflowAdded = (dataflowIdOrDataflow: DataflowIdType | Dataflow) => {
-      // The DAG emits the ID, but TaskGraph may transform it to the dataflow object
-      // Handle both cases for robustness
-      const dataflowId =
-        typeof dataflowIdOrDataflow === "object" && dataflowIdOrDataflow?.id
-          ? dataflowIdOrDataflow.id
-          : (dataflowIdOrDataflow as DataflowIdType);
-
-      const dataflow =
-        typeof dataflowIdOrDataflow === "object" && dataflowIdOrDataflow?.subscribe
-          ? (dataflowIdOrDataflow as Dataflow)
-          : this.getDataflow(dataflowId);
-
+    const handleDataflowAdded = (dataflowId: DataflowIdType) => {
+      const dataflow = this.getDataflow(dataflowId);
       if (!dataflow || typeof dataflow.subscribe !== "function") return;
 
       const unsub = dataflow.subscribe("status", (status) => {
@@ -495,7 +469,9 @@ export class TaskGraph implements ITaskGraph {
   on<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
     const dagEvent = EventTaskGraphToDagMapping[name as keyof typeof EventTaskGraphToDagMapping];
     if (dagEvent) {
-      return this._dag.on(dagEvent, fn);
+      // Safe cast: TaskGraph dag events (task_added, etc.) have the same signature as
+      // the underlying DAG events (node-added, etc.) - both pass IDs, not full objects
+      return this._dag.on(dagEvent, fn as Parameters<typeof this._dag.on>[1]);
     }
     return this.events.on(
       name as TaskGraphStatusEvents,
@@ -511,7 +487,9 @@ export class TaskGraph implements ITaskGraph {
   off<Event extends TaskGraphEvents>(name: Event, fn: TaskGraphEventListener<Event>) {
     const dagEvent = EventTaskGraphToDagMapping[name as keyof typeof EventTaskGraphToDagMapping];
     if (dagEvent) {
-      return this._dag.off(dagEvent, fn);
+      // Safe cast: TaskGraph dag events (task_added, etc.) have the same signature as
+      // the underlying DAG events (node-added, etc.) - both pass IDs, not full objects
+      return this._dag.off(dagEvent, fn as Parameters<typeof this._dag.off>[1]);
     }
     return this.events.off(
       name as TaskGraphStatusEvents,
@@ -559,7 +537,8 @@ export class TaskGraph implements ITaskGraph {
     ...args: GraphEventDagParameters<Event>
   ) {
     const dagEvent = EventTaskGraphToDagMapping[name as keyof typeof EventTaskGraphToDagMapping];
-    return this._dag.emit(dagEvent, ...args);
+    // Safe cast: GraphEventDagParameters matches the DAG's emit parameters (both are ID-based)
+    return this._dag.emit(dagEvent, ...(args as unknown as [unknown]));
   }
 }
 

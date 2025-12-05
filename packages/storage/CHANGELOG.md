@@ -1,5 +1,14 @@
 # @workglow/storage
 
+## 0.0.56
+
+### Patch Changes
+
+- Update TaskGraph to add subscriptions for status changes for tasks and dataflows
+- Updated dependencies
+  - @workglow/util@0.0.56
+  - @workglow/sqlite@0.0.56
+
 ## 0.0.55
 
 ### Patch Changes

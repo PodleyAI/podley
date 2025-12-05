@@ -1,5 +1,19 @@
 # @workglow/cli
 
+## 0.0.56
+
+### Patch Changes
+
+- Update TaskGraph to add subscriptions for status changes for tasks and dataflows
+- Updated dependencies
+  - @workglow/task-graph@0.0.56
+  - @workglow/util@0.0.56
+  - @workglow/ai@0.0.56
+  - @workglow/ai-provider@0.0.56
+  - @workglow/storage@0.0.56
+  - @workglow/tasks@0.0.56
+  - @workglow/test@0.0.56
+
 ## 0.0.55
 
 ### Patch Changes

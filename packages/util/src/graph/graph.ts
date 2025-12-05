@@ -2,7 +2,7 @@
 // previous fork: https://github.com/sroussey/typescript-graph
 // license: MIT
 
-import { EventEmitter, EventParameters } from "../events/EventEmitter";
+import { EventEmitter } from "../events/EventEmitter";
 import { NodeAlreadyExistsError, NodeDoesntExistError } from "./errors";
 
 /**
@@ -105,26 +105,28 @@ export type AdjacencyMatrix<Edge> = Array<Array<AdjacencyValue<Edge>>>;
 /**
  * Events that can be emitted by the TaskGraph
  */
-export type GraphEvents<Node, Edge> = keyof GraphEventListeners<Node, Edge>;
+export type GraphEvents<NodeId, EdgeId> = keyof GraphEventListeners<NodeId, EdgeId>;
 
-export type GraphEventListeners<Node, Edge> = {
-  "node-added": (node: Node) => void;
-  "node-removed": (node: Node) => void;
-  "node-replaced": (node: Node) => void;
-  "edge-added": (edge: Edge) => void;
-  "edge-removed": (edge: Edge) => void;
-  "edge-replaced": (edge: Edge) => void;
+export type GraphEventListeners<NodeId, EdgeId> = {
+  "node-added": (node: NodeId) => void;
+  "node-removed": (node: NodeId) => void;
+  "node-replaced": (node: NodeId) => void;
+  "edge-added": (edge: EdgeId) => void;
+  "edge-removed": (edge: EdgeId) => void;
+  "edge-replaced": (edge: EdgeId) => void;
 };
 
 export type GraphEventListener<
-  Node,
-  Edge,
-  Event extends GraphEvents<Node, Edge>,
-> = GraphEventListeners<Node, Edge>[Event];
+  NodeId,
+  EdgeId,
+  Event extends GraphEvents<NodeId, EdgeId>,
+> = GraphEventListeners<NodeId, EdgeId>[Event];
 
-export type GraphEventParameters<Node, Edge, Event extends GraphEvents<Node, Edge>> = Parameters<
-  GraphEventListeners<Node, Edge>[Event]
->;
+export type GraphEventParameters<
+  NodeId,
+  EdgeId,
+  Event extends GraphEvents<NodeId, EdgeId>,
+> = Parameters<GraphEventListeners<NodeId, EdgeId>[Event]>;
 
 export class Graph<Node, Edge = true, NodeId = unknown, EdgeId = unknown> {
   protected nodes: Map<NodeId, Node>;
@@ -142,15 +144,24 @@ export class Graph<Node, Edge = true, NodeId = unknown, EdgeId = unknown> {
     this.edgeIdentity = edgeIdentity;
   }
 
-  events = new EventEmitter<GraphEventListeners<Node, Edge>>();
-  on(name: GraphEvents<Node, Edge>, fn: (...args: any[]) => void) {
+  events = new EventEmitter<GraphEventListeners<NodeId, EdgeId>>();
+  on<Event extends GraphEvents<NodeId, EdgeId>>(
+    name: Event,
+    fn: GraphEventListener<NodeId, EdgeId, Event>
+  ) {
     this.events.on.call(this.events, name, fn);
   }
-  off(name: GraphEvents<Node, Edge>, fn: (...args: any[]) => void) {
+  off<Event extends GraphEvents<NodeId, EdgeId>>(
+    name: Event,
+    fn: GraphEventListener<NodeId, EdgeId, Event>
+  ) {
     this.events.off.call(this.events, name, fn);
   }
-  emit(name: GraphEvents<Node, Edge>, ...args: any[]) {
-    this.events.emit.call(this.events, name, ...args);
+  emit<Event extends GraphEvents<NodeId, EdgeId>>(
+    name: Event,
+    ...args: Parameters<GraphEventListener<NodeId, EdgeId, Event>>
+  ) {
+    this.events.emit<Event>(name, ...args);
   }
 
   /**
@@ -417,7 +428,7 @@ export class Graph<Node, Edge = true, NodeId = unknown, EdgeId = unknown> {
         }
       }
     }
-    this.emit("edge-removed", edgeIdentity);
+    this.emit("edge-removed", edgeIdentity as EdgeId);
   }
 
   /**

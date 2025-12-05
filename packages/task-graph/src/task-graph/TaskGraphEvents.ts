@@ -5,8 +5,8 @@
  */
 
 import { EventParameters } from "@workglow/util";
-import { ITask } from "../task/ITask";
-import { Dataflow } from "./Dataflow";
+import { TaskIdType } from "../task/TaskTypes";
+import { DataflowIdType } from "./Dataflow";
 
 /**
  * Events that can be emitted by the TaskGraph
@@ -29,12 +29,12 @@ export type TaskGraphEventStatusParameters<Event extends TaskGraphStatusEvents> 
 >;
 
 export type GraphEventDagListeners = {
-  task_added: (task: ITask) => void;
-  task_removed: (task: ITask) => void;
-  task_replaced: (task: ITask) => void;
-  dataflow_added: (dataflow: Dataflow) => void;
-  dataflow_removed: (dataflow: Dataflow) => void;
-  dataflow_replaced: (dataflow: Dataflow) => void;
+  task_added: (taskId: TaskIdType) => void;
+  task_removed: (taskId: TaskIdType) => void;
+  task_replaced: (taskId: TaskIdType) => void;
+  dataflow_added: (dataflowId: DataflowIdType) => void;
+  dataflow_removed: (dataflowId: DataflowIdType) => void;
+  dataflow_replaced: (dataflowId: DataflowIdType) => void;
 };
 export type GraphEventDagEvents = keyof GraphEventDagListeners;
 export type GraphEventDagListener<Event extends GraphEventDagEvents> =
