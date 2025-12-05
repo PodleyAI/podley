@@ -709,7 +709,7 @@ export class Task<
     let json: TaskGraphItemJson = this.stripSymbols({
       id: this.config.id,
       type: this.type,
-      input: this.defaults,
+      defaults: this.defaults,
       ...(Object.keys(provenance).length ? { provenance } : {}),
       ...(extras && Object.keys(extras).length ? { extras } : {}),
     });

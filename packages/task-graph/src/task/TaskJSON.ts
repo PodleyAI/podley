@@ -30,8 +30,8 @@ export type JsonTaskItem = {
   /** Optional display name for the task */
   name?: string;
 
-  /** Input configuration for the task */
-  input?: TaskInput;
+  /** Default input values for the task */
+  defaults?: TaskInput;
 
   /** Defines data flow between tasks */
   dependencies?: {
@@ -66,7 +66,7 @@ export type TaskGraphItemJson = {
   id: unknown;
   type: string;
   name?: string;
-  input?: TaskInput;
+  defaults?: TaskInput;
   provenance?: Provenance;
   extras?: DataPorts;
   subgraph?: TaskGraphJson;
@@ -88,8 +88,8 @@ export type DataflowJson = {
 const createSingleTaskFromJSON = (item: JsonTaskItem | TaskGraphItemJson) => {
   if (!item.id) throw new TaskJSONError("Task id required");
   if (!item.type) throw new TaskJSONError("Task type required");
-  if (item.input && (Array.isArray(item.input) || Array.isArray(item.provenance)))
-    throw new TaskJSONError("Task input must be an object");
+  if (item.defaults && (Array.isArray(item.defaults) || Array.isArray(item.provenance)))
+    throw new TaskJSONError("Task defaults must be an object");
   if (item.provenance && (Array.isArray(item.provenance) || typeof item.provenance !== "object"))
     throw new TaskJSONError("Task provenance must be an object");
 
@@ -103,7 +103,7 @@ const createSingleTaskFromJSON = (item: JsonTaskItem | TaskGraphItemJson) => {
     provenance: item.provenance ?? {},
     extras: item.extras,
   };
-  const task = new taskClass(item.input ?? {}, taskConfig);
+  const task = new taskClass(item.defaults ?? {}, taskConfig);
   return task;
 };
 

@@ -117,7 +117,7 @@ export function AddBaseCommands(program: Command) {
             id: "1",
             type: "DownloadModelTask",
             name: "Download Model",
-            input: {
+            defaults: {
               model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
             },
           },
@@ -125,7 +125,7 @@ export function AddBaseCommands(program: Command) {
             id: "2",
             type: "TextRewriterTask",
             name: "Rewrite Text",
-            input: {
+            defaults: {
               text: "The quick brown fox jumps over the lazy dog at the party.",
               prompt: "Rewrite the following text in reverse:",
             },
