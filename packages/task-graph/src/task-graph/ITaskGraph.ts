@@ -6,7 +6,7 @@
 
 import { ITask } from "../task/ITask";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
-import { TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
+import { TaskIdType, TaskInput, TaskOutput, TaskStatus } from "../task/TaskTypes";
 import { Dataflow, DataflowIdType } from "./Dataflow";
 import type { TaskGraphRunConfig } from "./TaskGraph";
 import type { TaskGraphEventListener, TaskGraphEvents } from "./TaskGraphEvents";
@@ -52,5 +52,9 @@ export interface ITaskGraph {
   subscribe<Event extends TaskGraphEvents>(
     event: Event,
     fn: TaskGraphEventListener<Event>
+  ): () => void;
+  subscribeToTaskStatus(callback: (taskId: TaskIdType, status: TaskStatus) => void): () => void;
+  subscribeToDataflowStatus(
+    callback: (dataflowId: DataflowIdType, status: TaskStatus) => void
   ): () => void;
 }

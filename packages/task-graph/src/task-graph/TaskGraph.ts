@@ -8,7 +8,7 @@ import { DirectedAcyclicGraph, EventEmitter, uuid4 } from "@workglow/util";
 import { TaskOutputRepository } from "../storage/TaskOutputRepository";
 import type { ITask } from "../task/ITask";
 import { JsonTaskItem, TaskGraphJson } from "../task/TaskJSON";
-import type { Provenance, TaskIdType, TaskInput, TaskOutput } from "../task/TaskTypes";
+import type { Provenance, TaskIdType, TaskInput, TaskOutput, TaskStatus } from "../task/TaskTypes";
 import { ensureTask, type PipeFunction } from "./Conversions";
 import { Dataflow, type DataflowIdType } from "./Dataflow";
 import type { ITaskGraph } from "./ITaskGraph";
@@ -379,6 +379,112 @@ export class TaskGraph implements ITaskGraph {
   ): () => void {
     this.on(name, fn);
     return () => this.off(name, fn);
+  }
+
+  /**
+   * Subscribes to status changes on all tasks (existing and future)
+   * @param callback - Function called when any task's status changes
+   * @param callback.taskId - The ID of the task whose status changed
+   * @param callback.status - The new status of the task
+   * @returns a function to unsubscribe from all task status events
+   */
+  public subscribeToTaskStatus(
+    callback: (taskId: TaskIdType, status: TaskStatus) => void
+  ): () => void {
+    const unsubscribes: (() => void)[] = [];
+
+    // Subscribe to status events on all existing tasks
+    const tasks = this.getTasks();
+    tasks.forEach((task) => {
+      const unsub = task.subscribe("status", (status) => {
+        callback(task.config.id, status);
+      });
+      unsubscribes.push(unsub);
+    });
+
+    // Subscribe to task_added event to handle new tasks
+    // Note: The DAG emits the task ID, not the task object, so we need to get it from the graph
+    const handleTaskAdded = (taskIdOrTask: TaskIdType | ITask) => {
+      // The DAG emits the ID, but TaskGraph may transform it to the task object
+      // Handle both cases for robustness
+      const taskId =
+        typeof taskIdOrTask === "object" && taskIdOrTask?.config?.id
+          ? taskIdOrTask.config.id
+          : (taskIdOrTask as TaskIdType);
+
+      const task =
+        typeof taskIdOrTask === "object" && taskIdOrTask?.subscribe
+          ? (taskIdOrTask as ITask)
+          : this.getTask(taskId);
+
+      if (!task || typeof task.subscribe !== "function") return;
+
+      const unsub = task.subscribe("status", (status) => {
+        callback(task.config.id, status);
+      });
+      unsubscribes.push(unsub);
+    };
+
+    const graphUnsub = this.subscribe("task_added", handleTaskAdded);
+    unsubscribes.push(graphUnsub);
+
+    // Return unsubscribe function
+    return () => {
+      unsubscribes.forEach((unsub) => unsub());
+    };
+  }
+
+  /**
+   * Subscribes to status changes on all dataflows (existing and future)
+   * @param callback - Function called when any dataflow's status changes
+   * @param callback.dataflowId - The ID of the dataflow whose status changed
+   * @param callback.status - The new status of the dataflow
+   * @returns a function to unsubscribe from all dataflow status events
+   */
+  public subscribeToDataflowStatus(
+    callback: (dataflowId: DataflowIdType, status: TaskStatus) => void
+  ): () => void {
+    const unsubscribes: (() => void)[] = [];
+
+    // Subscribe to status events on all existing dataflows
+    const dataflows = this.getDataflows();
+    dataflows.forEach((dataflow) => {
+      const unsub = dataflow.subscribe("status", (status) => {
+        callback(dataflow.id, status);
+      });
+      unsubscribes.push(unsub);
+    });
+
+    // Subscribe to dataflow_added event to handle new dataflows
+    // Note: The DAG emits the dataflow ID, not the dataflow object, so we need to get it from the graph
+    const handleDataflowAdded = (dataflowIdOrDataflow: DataflowIdType | Dataflow) => {
+      // The DAG emits the ID, but TaskGraph may transform it to the dataflow object
+      // Handle both cases for robustness
+      const dataflowId =
+        typeof dataflowIdOrDataflow === "object" && dataflowIdOrDataflow?.id
+          ? dataflowIdOrDataflow.id
+          : (dataflowIdOrDataflow as DataflowIdType);
+
+      const dataflow =
+        typeof dataflowIdOrDataflow === "object" && dataflowIdOrDataflow?.subscribe
+          ? (dataflowIdOrDataflow as Dataflow)
+          : this.getDataflow(dataflowId);
+
+      if (!dataflow || typeof dataflow.subscribe !== "function") return;
+
+      const unsub = dataflow.subscribe("status", (status) => {
+        callback(dataflow.id, status);
+      });
+      unsubscribes.push(unsub);
+    };
+
+    const graphUnsub = this.subscribe("dataflow_added", handleDataflowAdded);
+    unsubscribes.push(graphUnsub);
+
+    // Return unsubscribe function
+    return () => {
+      unsubscribes.forEach((unsub) => unsub());
+    };
   }
 
   /**
