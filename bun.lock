@@ -27,7 +27,7 @@
     },
     "examples/cli": {
       "name": "@workglow/cli",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "bin": "./dist/workglow.js",
       "dependencies": {
         "@mediapipe/tasks-text": "catalog:",
@@ -51,7 +51,7 @@
     },
     "examples/web": {
       "name": "@workglow/web",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "dependencies": {
         "@codemirror/lang-json": "^6.0.2",
         "@mediapipe/tasks-text": "catalog:",
@@ -90,7 +90,7 @@
     },
     "packages/ai": {
       "name": "@workglow/ai",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "devDependencies": {
         "@types/pg": "^8.15.5",
         "@workglow/job-queue": "workspace:*",
@@ -109,7 +109,7 @@
     },
     "packages/ai-provider": {
       "name": "@workglow/ai-provider",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "devDependencies": {
         "@mediapipe/tasks-text": "catalog:",
         "@sroussey/transformers": "catalog:",
@@ -131,7 +131,7 @@
     },
     "packages/debug": {
       "name": "@workglow/debug",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "dependencies": {
         "@workglow/task-graph": "workspace:*",
         "@workglow/util": "workspace:*",
@@ -139,7 +139,7 @@
     },
     "packages/job-queue": {
       "name": "@workglow/job-queue",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "devDependencies": {
         "@types/pg": "^8.15.5",
         "@workglow/sqlite": "workspace:*",
@@ -156,7 +156,7 @@
     },
     "packages/sqlite": {
       "name": "@workglow/sqlite",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
       },
@@ -167,7 +167,7 @@
     },
     "packages/storage": {
       "name": "@workglow/storage",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "devDependencies": {
         "@supabase/supabase-js": "^2.86.2",
         "@types/pg": "^8.15.5",
@@ -185,7 +185,7 @@
     },
     "packages/task-graph": {
       "name": "@workglow/task-graph",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "devDependencies": {
         "@workglow/job-queue": "workspace:*",
         "@workglow/storage": "workspace:*",
@@ -199,7 +199,7 @@
     },
     "packages/tasks": {
       "name": "@workglow/tasks",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "devDependencies": {
         "@workglow/job-queue": "workspace:*",
         "@workglow/storage": "workspace:*",
@@ -215,7 +215,7 @@
     },
     "packages/test": {
       "name": "@workglow/test",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "devDependencies": {
         "@electric-sql/pglite": "^0.3.11",
         "@supabase/supabase-js": "^2.86.2",
@@ -248,7 +248,7 @@
     },
     "packages/util": {
       "name": "@workglow/util",
-      "version": "0.0.56",
+      "version": "0.0.57",
       "dependencies": {
         "json-schema-library": "^10.5.1",
         "json-schema-to-ts": "3.1.1",

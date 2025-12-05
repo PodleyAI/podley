@@ -1,5 +1,16 @@
 # @workglow/ai
 
+## 0.0.57
+
+### Patch Changes
+
+- Change JSON formats to use property name defaults instead of input
+- Updated dependencies
+  - @workglow/job-queue@0.0.57
+  - @workglow/storage@0.0.57
+  - @workglow/task-graph@0.0.57
+  - @workglow/util@0.0.57
+
 ## 0.0.56
 
 ### Patch Changes

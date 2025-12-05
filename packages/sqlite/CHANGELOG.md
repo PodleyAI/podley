@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.57
+
+### Patch Changes
+
+- Change JSON formats to use property name defaults instead of input
+
 ## 0.0.56
 
 ### Patch Changes
