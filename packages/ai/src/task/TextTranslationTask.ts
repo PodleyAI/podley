@@ -29,12 +29,16 @@ export const TextTranslationInputSchema = {
       TypeLanguage({
         title: "Source Language",
         description: "The source language",
+        minLength: 2,
+        maxLength: 2,
       })
     ),
     target_lang: TypeReplicateArray(
       TypeLanguage({
         title: "Target Language",
         description: "The target language",
+        minLength: 2,
+        maxLength: 2,
       })
     ),
     model: modelSchema,
@@ -54,6 +58,8 @@ export const TextTranslationOutputSchema = {
     target_lang: TypeLanguage({
       title: "Output Language",
       description: "The output language",
+      minLength: 2,
+      maxLength: 2,
     }),
   },
   required: ["text", "target_lang"],

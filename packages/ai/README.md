@@ -122,8 +122,8 @@ import { TextTranslationTask } from "@workglow/ai";
 const task = new TextTranslationTask({
   model: "translation-model",
   text: "Hello, how are you?",
-  sourceLanguage: "en",
-  targetLanguage: "es",
+  source_lang: "en",
+  target_lang: "es",
 });
 
 const result = await task.run();
