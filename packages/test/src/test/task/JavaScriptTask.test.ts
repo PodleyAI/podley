@@ -11,28 +11,28 @@ import { describe, expect, test } from "vitest";
 describe("JavaScriptTask", () => {
   test("executes simple JavaScript code", async () => {
     const result = await JavaScript({
-      code: "1 + 1",
+      javascript_code: "1 + 1",
     });
     expect(result.output).toBe(2);
   });
 
   test("executes code with string operations", async () => {
     const result = await JavaScript({
-      code: '"hello" + " " + "world"',
+      javascript_code: '"hello" + " " + "world"',
     });
     expect(result.output).toBe("hello world");
   });
 
   test("executes code with variables", async () => {
     const result = await JavaScript({
-      code: "var x = 10; var y = 20; x + y",
+      javascript_code: "var x = 10; var y = 20; x + y",
     });
     expect(result.output).toBe(30);
   });
 
   test("executes code with functions", async () => {
     const result = await JavaScript({
-      code: `
+      javascript_code: `
         function add(a, b) {
           return a + b;
         }
@@ -44,7 +44,7 @@ describe("JavaScriptTask", () => {
 
   test("executes code with arrays", async () => {
     const result = await JavaScript({
-      code: `
+      javascript_code: `
         var arr = [1, 2, 3, 4, 5];
         var sum = 0;
         for (var i = 0; i < arr.length; i++) {
@@ -58,7 +58,7 @@ describe("JavaScriptTask", () => {
 
   test("executes code with objects", async () => {
     const result = await JavaScript({
-      code: `
+      javascript_code: `
         var obj = { name: "Alice", age: 30 };
         obj.name + " is " + obj.age + " years old"
       `,
@@ -68,7 +68,7 @@ describe("JavaScriptTask", () => {
 
   test("executes code with conditional statements", async () => {
     const result = await JavaScript({
-      code: `
+      javascript_code: `
         var x = 10;
         if (x > 5) {
           "greater";
@@ -82,7 +82,7 @@ describe("JavaScriptTask", () => {
 
   test("executes code with loops", async () => {
     const result = await JavaScript({
-      code: `
+      javascript_code: `
         var result = "";
         for (var i = 0; i < 3; i++) {
           result += i;
@@ -92,32 +92,38 @@ describe("JavaScriptTask", () => {
     });
     expect(result.output).toBe("012");
   });
-
-  test("handles empty code", async () => {
-    const result = await JavaScript({
-      code: "",
-    });
-    expect(result.output).toBeUndefined();
+  test("should throw an error if the code is empty", async () => {
+    const task = new JavaScriptTask({ javascript_code: "" });
+    await expect(task.run()).rejects.toThrowError();
   });
 
   test("handles code with no return value", async () => {
     const result = await JavaScript({
-      code: "var x = 10;",
+      javascript_code: "var x = 10;",
     });
     expect(result.output).toBeUndefined();
   });
 
   test("executes code with input parameter - simple value", async () => {
     const result = await JavaScript({
-      code: "input",
+      javascript_code: "input",
       input: 42,
     });
     expect(result.output).toBe(42);
   });
 
+  test("executes code with multiple input parameters - simple values", async () => {
+    const result = await JavaScript({
+      javascript_code: "a + b",
+      a: 10,
+      b: 20,
+    });
+    expect(result.output).toBe(30);
+  });
+
   test("executes code with input parameter - object", async () => {
     const result = await JavaScript({
-      code: "input.value * 2",
+      javascript_code: "input.value * 2",
       input: { value: 100 },
     });
     expect(result.output).toBe(200);
@@ -125,21 +131,21 @@ describe("JavaScriptTask", () => {
 
   test("executes code with input parameter - array", async () => {
     const result = await JavaScript({
-      code: `
+      javascript_code: `
         var sum = 0;
-        for (var i = 0; i < input.length; i++) {
-          sum += input[i];
+        for (var i = 0; i < arr.length; i++) {
+          sum += arr[i];
         }
         sum
       `,
-      input: [1, 2, 3, 4, 5],
+      arr: [1, 2, 3, 4, 5],
     });
     expect(result.output).toBe(15);
   });
 
   test("executes code with input parameter - string manipulation", async () => {
     const result = await JavaScript({
-      code: "input.toUpperCase()",
+      javascript_code: "input.toUpperCase()",
       input: "hello world",
     });
     expect(result.output).toBe("HELLO WORLD");
@@ -147,7 +153,7 @@ describe("JavaScriptTask", () => {
 
   test("executes code with input parameter - nested object", async () => {
     const result = await JavaScript({
-      code: "input.user.name + ' is ' + input.user.age + ' years old'",
+      javascript_code: "input.user.name + ' is ' + input.user.age + ' years old'",
       input: {
         user: {
           name: "Alice",
@@ -160,7 +166,7 @@ describe("JavaScriptTask", () => {
 
   test("executes code with input parameter - boolean", async () => {
     const result = await JavaScript({
-      code: "!input",
+      javascript_code: "!input",
       input: false,
     });
     expect(result.output).toBe(true);
@@ -168,7 +174,7 @@ describe("JavaScriptTask", () => {
 
   test("executes code with input parameter - null", async () => {
     const result = await JavaScript({
-      code: "input === null",
+      javascript_code: "input === null",
       input: null,
     });
     expect(result.output).toBe(true);
@@ -176,14 +182,14 @@ describe("JavaScriptTask", () => {
 
   test("executes code with input parameter - undefined", async () => {
     const result = await JavaScript({
-      code: "typeof input === 'undefined'",
+      javascript_code: "typeof input === 'undefined'",
     });
     expect(result.output).toBe(true);
   });
 
   test("executes code with input parameter - complex calculation", async () => {
     const result = await JavaScript({
-      code: `
+      javascript_code: `
         var total = 0;
         for (var i = 0; i < input.items.length; i++) {
           total += input.items[i].price * input.items[i].quantity;
@@ -204,7 +210,7 @@ describe("JavaScriptTask", () => {
   test("in task mode", async () => {
     const task = new JavaScriptTask(
       {
-        code: "2 * 3",
+        javascript_code: "2 * 3",
       },
       { id: "js-task" }
     );
@@ -216,7 +222,7 @@ describe("JavaScriptTask", () => {
   test("in task mode with function", async () => {
     const task = new JavaScriptTask(
       {
-        code: `
+        javascript_code: `
           var double = function(n) {
             return n * 2;
           };
@@ -235,7 +241,7 @@ describe("JavaScriptTask", () => {
     graph.addTask(
       new JavaScriptTask(
         {
-          code: "10 * 10",
+          javascript_code: "10 * 10",
         },
         { id: "js-in-graph" }
       )
@@ -247,7 +253,7 @@ describe("JavaScriptTask", () => {
   test("in workflow mode", async () => {
     const workflow = new Workflow();
     workflow.JavaScript({
-      code: "5 + 5",
+      javascript_code: "5 + 5",
     });
     const results = await workflow.run();
     expect(results.output).toBe(10);
@@ -256,7 +262,7 @@ describe("JavaScriptTask", () => {
   test("in task mode with input", async () => {
     const task = new JavaScriptTask(
       {
-        code: "input.x + input.y",
+        javascript_code: "input.x + input.y",
         input: { x: 15, y: 25 },
       },
       { id: "js-with-input" }
@@ -269,7 +275,7 @@ describe("JavaScriptTask", () => {
   test("in workflow mode with input", async () => {
     const workflow = new Workflow();
     workflow.JavaScript({
-      code: "input.a + input.b + input.c",
+      javascript_code: "input.a + input.b + input.c",
       input: { a: 10, b: 20, c: 30 },
     });
     const results = await workflow.run();
@@ -279,7 +285,7 @@ describe("JavaScriptTask", () => {
   test("handles syntax errors gracefully", async () => {
     // The task catches errors and logs them, but still returns output
     const result = await JavaScript({
-      code: "var x = ;", // Invalid syntax
+      javascript_code: "var x = ;", // Invalid syntax
     });
     // Error is caught and logged, output will be undefined
     expect(result.output).toBeUndefined();
@@ -287,7 +293,7 @@ describe("JavaScriptTask", () => {
 
   test("executes code with nested functions", async () => {
     const result = await JavaScript({
-      code: `
+      javascript_code: `
         function outer(x) {
           function inner(y) {
             return y * 2;
@@ -302,7 +308,7 @@ describe("JavaScriptTask", () => {
 
   test("handles boolean operations", async () => {
     const result = await JavaScript({
-      code: `
+      javascript_code: `
         var a = true;
         var b = false;
         a && !b
@@ -313,9 +319,9 @@ describe("JavaScriptTask", () => {
 
   test("multiple tasks in sequence", async () => {
     const results = await Promise.all([
-      JavaScript({ code: "1 + 1" }),
-      JavaScript({ code: "2 + 2" }),
-      JavaScript({ code: "3 + 3" }),
+      JavaScript({ javascript_code: "1 + 1" }),
+      JavaScript({ javascript_code: "2 + 2" }),
+      JavaScript({ javascript_code: "3 + 3" }),
     ]);
     expect(results[0].output).toBe(2);
     expect(results[1].output).toBe(4);
@@ -324,7 +330,7 @@ describe("JavaScriptTask", () => {
 
   test("task metadata is preserved", async () => {
     const task = new JavaScriptTask(
-      { code: "42" },
+      { javascript_code: "42" },
       {
         id: "test-metadata",
       }

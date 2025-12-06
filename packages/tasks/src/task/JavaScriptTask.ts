@@ -11,18 +11,15 @@ import { Interpreter } from "../util/interpreter";
 const inputSchema = {
   type: "object",
   properties: {
-    code: {
+    javascript_code: {
       type: "string",
       title: "Code",
+      minLength: 1,
       description: "JavaScript code to execute",
     },
-    input: {
-      title: "Input",
-      description: "Input data to pass to the JavaScript code",
-    },
   },
-  required: ["code"],
-  additionalProperties: false,
+  required: ["javascript_code"],
+  additionalProperties: true,
 } as const satisfies DataPortSchema;
 
 const outputSchema = {
@@ -55,13 +52,16 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
   }
 
   async executeReactive(input: JavaScriptTaskInput, output: JavaScriptTaskOutput) {
-    if (input.code) {
+    if (input.javascript_code) {
       try {
-        const myInterpreter = new Interpreter(
-          `var input = ${JSON.stringify(input.input)}; ${input.code}`
-        );
+        const inputVariables = Object.keys(input).filter((key) => key !== "javascript_code");
+        const inputVariablesString = inputVariables
+          .map((key) => `var ${key} = ${JSON.stringify(input[key])};`)
+          .join("\n");
+        const myInterpreter = new Interpreter(`${inputVariablesString} ${input.javascript_code}`);
         myInterpreter.run();
         output.output = myInterpreter.value;
+        console.log("output", output.output);
       } catch (e) {
         console.error("error", e);
       }
