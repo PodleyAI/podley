@@ -5,7 +5,7 @@
  */
 
 import { createServiceToken, makeFingerprint, sleep, uuid4 } from "@workglow/util";
-import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
+import { IQueueStorage, JobStatus, JobStorageFormat, QueueStorageOptions } from "./IQueueStorage";
 
 export const IN_MEMORY_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
   "jobqueue.storage.inMemory"
@@ -13,27 +13,48 @@ export const IN_MEMORY_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any
 
 /**
  * In-memory implementation of a job queue that manages asynchronous tasks.
- * Supports job scheduling, status tracking, and result caching.
+ * Supports job scheduling, status tracking, result caching, and prefix-based filtering.
  */
 export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input, Output> {
+  /** The prefix values for filtering jobs */
+  protected readonly prefixValues: Readonly<Record<string, string | number>>;
+
   /**
    * Creates a new in-memory job queue
-   * @param queue - Name of the queue
+   * @param queueName - Name of the queue
+   * @param options - Optional configuration including prefix filters
    */
-  constructor(public readonly queueName: string) {
+  constructor(
+    public readonly queueName: string,
+    options?: QueueStorageOptions
+  ) {
     this.jobQueue = [];
+    this.prefixValues = options?.prefixValues ?? {};
   }
 
   /** Internal array storing all jobs */
-  public jobQueue: JobStorageFormat<Input, Output>[];
+  public jobQueue: Array<JobStorageFormat<Input, Output> & Record<string, unknown>>;
+
+  /**
+   * Checks if a job matches the current prefix values
+   */
+  private matchesPrefixes(job: JobStorageFormat<Input, Output> & Record<string, unknown>): boolean {
+    for (const [key, value] of Object.entries(this.prefixValues)) {
+      if (job[key] !== value) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   /**
    * Returns a filtered and sorted list of pending jobs that are ready to run
    * Sorts by creation time to maintain FIFO order
    */
-  private pendingQueue() {
+  private pendingQueue(): Array<JobStorageFormat<Input, Output> & Record<string, unknown>> {
     const now = new Date().toISOString();
     return this.jobQueue
+      .filter((job) => this.matchesPrefixes(job))
       .filter((job) => job.status === JobStatus.PENDING)
       .filter((job) => !job.run_after || job.run_after <= now)
       .sort((a, b) => (a.run_after || "").localeCompare(b.run_after || ""));
@@ -43,22 +64,28 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
    * Adds a new job to the queue
    * Generates an ID and fingerprint if not provided
    */
-  public async add(job: JobStorageFormat<Input, Output>) {
+  public async add(job: JobStorageFormat<Input, Output>): Promise<unknown> {
     await sleep(0);
     const now = new Date().toISOString();
-    job.id = job.id ?? uuid4();
-    job.job_run_id = job.job_run_id ?? uuid4();
-    job.queue = this.queueName;
-    job.fingerprint = await makeFingerprint(job.input);
-    job.status = JobStatus.PENDING;
-    job.progress = 0;
-    job.progress_message = "";
-    job.progress_details = null;
-    job.created_at = now;
-    job.run_after = now;
+    const jobWithPrefixes = job as JobStorageFormat<Input, Output> & Record<string, unknown>;
+    jobWithPrefixes.id = jobWithPrefixes.id ?? uuid4();
+    jobWithPrefixes.job_run_id = jobWithPrefixes.job_run_id ?? uuid4();
+    jobWithPrefixes.queue = this.queueName;
+    jobWithPrefixes.fingerprint = await makeFingerprint(jobWithPrefixes.input);
+    jobWithPrefixes.status = JobStatus.PENDING;
+    jobWithPrefixes.progress = 0;
+    jobWithPrefixes.progress_message = "";
+    jobWithPrefixes.progress_details = null;
+    jobWithPrefixes.created_at = now;
+    jobWithPrefixes.run_after = now;
 
-    this.jobQueue.push(job);
-    return job.id;
+    // Add prefix values to the job
+    for (const [key, value] of Object.entries(this.prefixValues)) {
+      jobWithPrefixes[key] = value;
+    }
+
+    this.jobQueue.push(jobWithPrefixes);
+    return jobWithPrefixes.id;
   }
 
   /**
@@ -66,21 +93,29 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @param id - The id of the job to retrieve.
    * @returns A promise that resolves to the job or undefined if the job is not found.
    */
-  public async get(id: unknown) {
+  public async get(id: unknown): Promise<JobStorageFormat<Input, Output> | undefined> {
     await sleep(0);
-    return this.jobQueue.find((j) => j.id === id);
+    const job = this.jobQueue.find((j) => j.id === id);
+    if (job && this.matchesPrefixes(job)) {
+      return job;
+    }
+    return undefined;
   }
 
   /**
-   * Retrieves a slice of jobs from anywherethe queue.
+   * Retrieves a slice of jobs from the queue.
    * @param status - The status of the jobs to retrieve.
    * @param num - The number of jobs to retrieve.
    * @returns A promise that resolves to an array of jobs.
    */
-  public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
+  public async peek(
+    status: JobStatus = JobStatus.PENDING,
+    num: number = 100
+  ): Promise<Array<JobStorageFormat<Input, Output>>> {
     await sleep(0);
     num = Number(num) || 100;
     return this.jobQueue
+      .filter((j) => this.matchesPrefixes(j))
       .sort((a, b) => (a.run_after || "").localeCompare(b.run_after || ""))
       .filter((j) => j.status === status)
       .slice(0, num);
@@ -109,7 +144,7 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
    */
   public async size(status = JobStatus.PENDING): Promise<number> {
     await sleep(0);
-    return this.jobQueue.filter((j) => j.status === status).length;
+    return this.jobQueue.filter((j) => this.matchesPrefixes(j) && j.status === status).length;
   }
 
   /**
@@ -126,7 +161,7 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
     details: Record<string, any> | null
   ): Promise<void> {
     await sleep(0);
-    const job = this.jobQueue.find((j) => j.id === id);
+    const job = this.jobQueue.find((j) => j.id === id && this.matchesPrefixes(j));
     if (!job) {
       throw new Error(`Job ${id} not found`);
     }
@@ -158,9 +193,9 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
    * Aborts a job
    * @param id - The id of the job to abort.
    */
-  public async abort(id: unknown) {
+  public async abort(id: unknown): Promise<void> {
     await sleep(0);
-    const job = this.jobQueue.find((j) => j.id === id);
+    const job = this.jobQueue.find((j) => j.id === id && this.matchesPrefixes(j));
     if (job) {
       job.status = JobStatus.ABORTING;
     }
@@ -173,29 +208,33 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
    */
   public async getByRunId(runId: string): Promise<Array<JobStorageFormat<Input, Output>>> {
     await sleep(0);
-    return this.jobQueue.filter((job) => job.job_run_id === runId);
+    return this.jobQueue.filter((job) => this.matchesPrefixes(job) && job.job_run_id === runId);
   }
 
   /**
-   * Deletes all jobs from the queue.
+   * Deletes all jobs from the queue that match the current prefix values.
    */
-  public async deleteAll() {
+  public async deleteAll(): Promise<void> {
     await sleep(0);
-    this.jobQueue = [];
+    this.jobQueue = this.jobQueue.filter((job) => !this.matchesPrefixes(job));
   }
 
   /**
-   * Looks up cached output for a given and input
+   * Looks up cached output for a given input
    * Uses input fingerprinting for efficient matching
    * @param input - The input to look up the cached output for.
    * @returns The cached output or null if not found
    */
-  public async outputForInput(input: Input) {
+  public async outputForInput(input: Input): Promise<Output | null> {
     await sleep(0);
     const fingerprint = await makeFingerprint(input);
     return (
-      this.jobQueue.find((j) => j.fingerprint === fingerprint && j.status === JobStatus.COMPLETED)
-        ?.output ?? null
+      this.jobQueue.find(
+        (j) =>
+          this.matchesPrefixes(j) &&
+          j.fingerprint === fingerprint &&
+          j.status === JobStatus.COMPLETED
+      )?.output ?? null
     );
   }
 
@@ -204,7 +243,7 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
    */
   public async delete(id: unknown): Promise<void> {
     await sleep(0);
-    this.jobQueue = this.jobQueue.filter((job) => job.id !== id);
+    this.jobQueue = this.jobQueue.filter((job) => !(job.id === id && this.matchesPrefixes(job)));
   }
 
   /**
@@ -216,7 +255,11 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
     await sleep(0);
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
     this.jobQueue = this.jobQueue.filter(
-      (job) => job.status !== status || !job.completed_at || job.completed_at > cutoffDate
+      (job) =>
+        !this.matchesPrefixes(job) ||
+        job.status !== status ||
+        !job.completed_at ||
+        job.completed_at > cutoffDate
     );
   }
 

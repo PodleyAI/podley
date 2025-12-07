@@ -10,11 +10,22 @@ import {
   ExpectedIndexDefinition,
   MigrationOptions,
 } from "../util/IndexedDbTable";
-import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
+import {
+  IQueueStorage,
+  JobStatus,
+  JobStorageFormat,
+  PrefixColumn,
+  QueueStorageOptions,
+} from "./IQueueStorage";
 
 export const INDEXED_DB_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
   "jobqueue.storage.indexedDb"
 );
+
+/**
+ * Extended options for IndexedDB queue storage including prefix support
+ */
+export interface IndexedDbQueueStorageOptions extends QueueStorageOptions, MigrationOptions {}
 
 /**
  * IndexedDB implementation of a job queue storage.
@@ -22,14 +33,53 @@ export const INDEXED_DB_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, an
  */
 export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input, Output> {
   private db: IDBDatabase | undefined;
-  private readonly tableName = "jobs";
-  private migrationOptions: MigrationOptions;
+  private readonly tableName: string;
+  private readonly migrationOptions: MigrationOptions;
+  /** The prefix column definitions */
+  protected readonly prefixes: readonly PrefixColumn[];
+  /** The prefix values for filtering */
+  protected readonly prefixValues: Readonly<Record<string, string | number>>;
 
   constructor(
     public readonly queueName: string,
-    migrationOptions: MigrationOptions = {}
+    options: IndexedDbQueueStorageOptions = {}
   ) {
-    this.migrationOptions = migrationOptions;
+    this.migrationOptions = options;
+    this.prefixes = options.prefixes ?? [];
+    this.prefixValues = options.prefixValues ?? {};
+    // Generate table name based on prefix configuration to avoid conflicts
+    if (this.prefixes.length > 0) {
+      const prefixNames = this.prefixes.map((p) => p.name).join("_");
+      this.tableName = `jobs_${prefixNames}`;
+    } else {
+      this.tableName = "jobs";
+    }
+  }
+
+  /**
+   * Gets prefix column names for use in indexes
+   */
+  private getPrefixColumnNames(): string[] {
+    return this.prefixes.map((p) => p.name);
+  }
+
+  /**
+   * Checks if a job matches the current prefix values
+   */
+  private matchesPrefixes(job: JobStorageFormat<Input, Output> & Record<string, unknown>): boolean {
+    for (const [key, value] of Object.entries(this.prefixValues)) {
+      if (job[key] !== value) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Gets prefix values as an array in column order for index key construction
+   */
+  private getPrefixKeyValues(): Array<string | number> {
+    return this.prefixes.map((p) => this.prefixValues[p.name]);
   }
 
   private async getDb(): Promise<IDBDatabase> {
@@ -43,25 +93,32 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * Must be called before using any other methods.
    */
   public async setupDatabase(): Promise<void> {
+    const prefixColumnNames = this.getPrefixColumnNames();
+
+    // Build index key paths with prefixes prepended
+    const buildKeyPath = (basePath: string[]): string[] => {
+      return [...prefixColumnNames, ...basePath];
+    };
+
     const expectedIndexes: ExpectedIndexDefinition[] = [
       {
         name: "queue_status",
-        keyPath: ["queue", "status"],
+        keyPath: buildKeyPath(["queue", "status"]),
         options: { unique: false },
       },
       {
         name: "queue_status_run_after",
-        keyPath: ["queue", "status", "run_after"],
+        keyPath: buildKeyPath(["queue", "status", "run_after"]),
         options: { unique: false },
       },
       {
         name: "queue_job_run_id",
-        keyPath: ["queue", "job_run_id"],
+        keyPath: buildKeyPath(["queue", "job_run_id"]),
         options: { unique: false },
       },
       {
         name: "queue_fingerprint_status",
-        keyPath: ["queue", "fingerprint", "status"],
+        keyPath: buildKeyPath(["queue", "fingerprint", "status"]),
         options: { unique: false },
       },
     ];
@@ -83,25 +140,31 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   public async add(job: JobStorageFormat<Input, Output>): Promise<unknown> {
     const db = await this.getDb();
     const now = new Date().toISOString();
-    job.id = job.id ?? uuid4();
-    job.job_run_id = job.job_run_id ?? uuid4();
-    job.queue = this.queueName;
-    job.fingerprint = await makeFingerprint(job.input);
-    job.status = JobStatus.PENDING;
-    job.progress = 0;
-    job.progress_message = "";
-    job.progress_details = null;
-    job.created_at = now;
-    job.run_after = now;
+    const jobWithPrefixes = job as JobStorageFormat<Input, Output> & Record<string, unknown>;
+    jobWithPrefixes.id = jobWithPrefixes.id ?? uuid4();
+    jobWithPrefixes.job_run_id = jobWithPrefixes.job_run_id ?? uuid4();
+    jobWithPrefixes.queue = this.queueName;
+    jobWithPrefixes.fingerprint = await makeFingerprint(jobWithPrefixes.input);
+    jobWithPrefixes.status = JobStatus.PENDING;
+    jobWithPrefixes.progress = 0;
+    jobWithPrefixes.progress_message = "";
+    jobWithPrefixes.progress_details = null;
+    jobWithPrefixes.created_at = now;
+    jobWithPrefixes.run_after = now;
+
+    // Add prefix values to the job
+    for (const [key, value] of Object.entries(this.prefixValues)) {
+      jobWithPrefixes[key] = value;
+    }
 
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
 
     return new Promise((resolve, reject) => {
-      const request = store.add(job);
+      const request = store.add(jobWithPrefixes);
 
       // Don't resolve until transaction is complete
-      tx.oncomplete = () => resolve(job.id);
+      tx.oncomplete = () => resolve(jobWithPrefixes.id);
       tx.onerror = () => reject(tx.error);
       request.onerror = () => reject(request.error);
     });
@@ -119,9 +182,11 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const request = store.get(id as string);
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
-        const job = request.result;
-        // Filter by queue name to ensure job belongs to this queue
-        if (job && job.queue === this.queueName) {
+        const job = request.result as
+          | (JobStorageFormat<Input, Output> & Record<string, unknown>)
+          | undefined;
+        // Filter by queue name and prefix values to ensure job belongs to this queue
+        if (job && job.queue === this.queueName && this.matchesPrefixes(job)) {
           resolve(job);
         } else {
           resolve(undefined);
@@ -146,13 +211,14 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
     const index = store.index("queue_status_run_after");
+    const prefixKeyValues = this.getPrefixKeyValues();
 
     return new Promise((resolve, reject) => {
       const ret = new Map<unknown, JobStorageFormat<Input, Output>>();
-      // Create a key range for the compound index: from [queue, status, ""] to [queue, status, "\uffff"]
+      // Create a key range for the compound index: from [prefixes..., queue, status, ""] to [prefixes..., queue, status, "\uffff"]
       const keyRange = IDBKeyRange.bound(
-        [this.queueName, status, ""],
-        [this.queueName, status, "\uffff"]
+        [...prefixKeyValues, this.queueName, status, ""],
+        [...prefixKeyValues, this.queueName, status, "\uffff"]
       );
       const cursorRequest = index.openCursor(keyRange);
 
@@ -162,8 +228,11 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
           resolve(Array.from(ret.values()));
           return;
         }
-        // Use Map to ensure no duplicates by job ID
-        ret.set(cursor.value.id, cursor.value);
+        const job = cursor.value as JobStorageFormat<Input, Output> & Record<string, unknown>;
+        // Verify prefix match and use Map to ensure no duplicates by job ID
+        if (this.matchesPrefixes(job)) {
+          ret.set(cursor.value.id, cursor.value);
+        }
         cursor.continue();
       };
 
@@ -183,12 +252,13 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const store = tx.objectStore(this.tableName);
     const index = store.index("queue_status_run_after");
     const now = new Date().toISOString();
+    const prefixKeyValues = this.getPrefixKeyValues();
 
     return new Promise((resolve, reject) => {
       const cursorRequest = index.openCursor(
         IDBKeyRange.bound(
-          [this.queueName, JobStatus.PENDING, ""],
-          [this.queueName, JobStatus.PENDING, now],
+          [...prefixKeyValues, this.queueName, JobStatus.PENDING, ""],
+          [...prefixKeyValues, this.queueName, JobStatus.PENDING, now],
           false,
           true
         )
@@ -207,9 +277,13 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
           return;
         }
 
-        const job = cursor.value;
-        // Verify the job belongs to this queue and is still in PENDING state
-        if (job.queue !== this.queueName || job.status !== JobStatus.PENDING) {
+        const job = cursor.value as JobStorageFormat<Input, Output> & Record<string, unknown>;
+        // Verify the job belongs to this queue, matches prefixes, and is still in PENDING state
+        if (
+          job.queue !== this.queueName ||
+          job.status !== JobStatus.PENDING ||
+          !this.matchesPrefixes(job)
+        ) {
           cursor.continue();
           return;
         }
@@ -249,11 +323,12 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    */
   public async size(status = JobStatus.PENDING): Promise<number> {
     const db = await this.getDb();
+    const prefixKeyValues = this.getPrefixKeyValues();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.tableName, "readonly");
       const store = tx.objectStore(this.tableName);
       const index = store.index("queue_status");
-      const keyRange = IDBKeyRange.only([this.queueName, status]);
+      const keyRange = IDBKeyRange.only([...prefixKeyValues, this.queueName, status]);
       const request = index.count(keyRange);
 
       request.onsuccess = () => resolve(request.result);
@@ -273,9 +348,11 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     return new Promise((resolve, reject) => {
       const getReq = store.get(job.id as string);
       getReq.onsuccess = () => {
-        const existing = getReq.result as JobStorageFormat<Input, Output> | undefined;
-        // Verify job belongs to this queue
-        if (!existing || existing.queue !== this.queueName) {
+        const existing = getReq.result as
+          | (JobStorageFormat<Input, Output> & Record<string, unknown>)
+          | undefined;
+        // Verify job belongs to this queue and matches prefixes
+        if (!existing || existing.queue !== this.queueName || !this.matchesPrefixes(existing)) {
           reject(
             new Error(`Job ${job.id} not found or does not belong to queue ${this.queueName}`)
           );
@@ -285,7 +362,14 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
         job.run_attempts = currentAttempts + 1;
         // Ensure queue is set correctly
         job.queue = this.queueName;
-        const putReq = store.put(job);
+
+        // Ensure prefix values are preserved
+        const jobWithPrefixes = job as JobStorageFormat<Input, Output> & Record<string, unknown>;
+        for (const [key, value] of Object.entries(this.prefixValues)) {
+          jobWithPrefixes[key] = value;
+        }
+
+        const putReq = store.put(jobWithPrefixes);
         putReq.onsuccess = () => {};
         putReq.onerror = () => reject(putReq.error);
       };
@@ -316,11 +400,19 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
     const index = store.index("queue_job_run_id");
-    const keyRange = IDBKeyRange.only([this.queueName, job_run_id]);
+    const prefixKeyValues = this.getPrefixKeyValues();
+    const keyRange = IDBKeyRange.only([...prefixKeyValues, this.queueName, job_run_id]);
     const request = index.getAll(keyRange);
 
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        // Filter results to ensure they match prefixes
+        const results = (request.result || []).filter(
+          (job: JobStorageFormat<Input, Output> & Record<string, unknown>) =>
+            this.matchesPrefixes(job)
+        );
+        resolve(results);
+      };
       request.onerror = () => reject(request.error);
       tx.onerror = () => reject(tx.error);
     });
@@ -334,17 +426,22 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
     const index = store.index("queue_status");
+    const prefixKeyValues = this.getPrefixKeyValues();
 
     return new Promise((resolve, reject) => {
-      // Use a cursor to iterate through all jobs for this queue
-      const keyRange = IDBKeyRange.bound([this.queueName, ""], [this.queueName, "\uffff"]);
+      // Use a cursor to iterate through all jobs for this queue with prefix
+      const keyRange = IDBKeyRange.bound(
+        [...prefixKeyValues, this.queueName, ""],
+        [...prefixKeyValues, this.queueName, "\uffff"]
+      );
       const request = index.openCursor(keyRange);
 
       request.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
-          // Verify job belongs to this queue before deleting
-          if (cursor.value.queue === this.queueName) {
+          const job = cursor.value as JobStorageFormat<Input, Output> & Record<string, unknown>;
+          // Verify job belongs to this queue and matches prefixes before deleting
+          if (job.queue === this.queueName && this.matchesPrefixes(job)) {
             cursor.delete();
           }
           cursor.continue();
@@ -366,10 +463,25 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
     const index = store.index("queue_fingerprint_status");
-    const request = index.get([this.queueName, fingerprint, JobStatus.COMPLETED]);
+    const prefixKeyValues = this.getPrefixKeyValues();
+    const request = index.get([
+      ...prefixKeyValues,
+      this.queueName,
+      fingerprint,
+      JobStatus.COMPLETED,
+    ]);
 
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result?.output ?? null);
+      request.onsuccess = () => {
+        const job = request.result as
+          | (JobStorageFormat<Input, Output> & Record<string, unknown>)
+          | undefined;
+        if (job && this.matchesPrefixes(job)) {
+          resolve(job.output ?? null);
+        } else {
+          resolve(null);
+        }
+      };
       request.onerror = () => reject(request.error);
       tx.onerror = () => reject(tx.error);
     });
@@ -424,7 +536,8 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const store = tx.objectStore(this.tableName);
     const index = store.index("queue_status");
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
-    const keyRange = IDBKeyRange.only([this.queueName, status]);
+    const prefixKeyValues = this.getPrefixKeyValues();
+    const keyRange = IDBKeyRange.only([...prefixKeyValues, this.queueName, status]);
 
     return new Promise((resolve, reject) => {
       const request = index.openCursor(keyRange);
@@ -432,10 +545,11 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
       request.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
-          const job = cursor.value;
-          // Verify job belongs to this queue and matches criteria
+          const job = cursor.value as JobStorageFormat<Input, Output> & Record<string, unknown>;
+          // Verify job belongs to this queue, matches prefixes, and matches criteria
           if (
             job.queue === this.queueName &&
+            this.matchesPrefixes(job) &&
             job.status === status &&
             job.completed_at &&
             job.completed_at <= cutoffDate

@@ -6,31 +6,110 @@
 
 import type { Sqlite } from "@workglow/sqlite";
 import { createServiceToken, makeFingerprint, sleep, uuid4 } from "@workglow/util";
-import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
+import {
+  IQueueStorage,
+  JobStatus,
+  JobStorageFormat,
+  PrefixColumn,
+  QueueStorageOptions,
+} from "./IQueueStorage";
 
 export const SQLITE_QUEUE_STORAGE =
   createServiceToken<IQueueStorage<any, any>>("jobqueue.storage.sqlite");
+
+/**
+ * Extended options for SQLite queue storage including prefix support
+ */
+export interface SqliteQueueStorageOptions extends QueueStorageOptions {
+  readonly deleteAfterCompletionMs?: number;
+  readonly deleteAfterFailureMs?: number;
+}
 
 /**
  * SQLite implementation of a job queue.
  * Provides storage and retrieval for job execution states using SQLite.
  */
 export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, Output> {
+  /** The prefix column definitions */
+  protected readonly prefixes: readonly PrefixColumn[];
+  /** The prefix values for filtering */
+  protected readonly prefixValues: Readonly<Record<string, string | number>>;
+  /** The table name for the job queue */
+  protected readonly tableName: string;
+
   constructor(
     protected db: Sqlite.Database,
     protected queueName: string,
-    protected options?: {
-      deleteAfterCompletionMs?: number;
-      deleteAfterFailureMs?: number;
+    protected options?: SqliteQueueStorageOptions
+  ) {
+    this.prefixes = options?.prefixes ?? [];
+    this.prefixValues = options?.prefixValues ?? {};
+    // Generate table name based on prefix configuration to avoid column conflicts
+    if (this.prefixes.length > 0) {
+      const prefixNames = this.prefixes.map((p) => p.name).join("_");
+      this.tableName = `job_queue_${prefixNames}`;
+    } else {
+      this.tableName = "job_queue";
     }
-  ) {}
+  }
+
+  /**
+   * Gets the SQL column type for a prefix column (SQLite uses TEXT for uuid)
+   */
+  private getPrefixColumnType(type: PrefixColumn["type"]): string {
+    return type === "uuid" ? "TEXT" : "INTEGER";
+  }
+
+  /**
+   * Builds the prefix columns SQL for CREATE TABLE
+   */
+  private buildPrefixColumnsSql(): string {
+    if (this.prefixes.length === 0) return "";
+    return (
+      this.prefixes
+        .map((p) => `${p.name} ${this.getPrefixColumnType(p.type)} NOT NULL`)
+        .join(",\n        ") + ",\n        "
+    );
+  }
+
+  /**
+   * Builds prefix column names for use in queries
+   */
+  private getPrefixColumnNames(): string[] {
+    return this.prefixes.map((p) => p.name);
+  }
+
+  /**
+   * Builds WHERE clause conditions for prefix filtering
+   * @returns The conditions string with placeholders
+   */
+  private buildPrefixWhereClause(): string {
+    if (this.prefixes.length === 0) {
+      return "";
+    }
+    const conditions = this.prefixes.map((p) => `${p.name} = ?`).join(" AND ");
+    return " AND " + conditions;
+  }
+
+  /**
+   * Gets prefix values as an array in column order
+   */
+  private getPrefixParamValues(): Array<string | number> {
+    return this.prefixes.map((p) => this.prefixValues[p.name]);
+  }
 
   public async setupDatabase(): Promise<void> {
     await sleep(0);
+    const prefixColumnsSql = this.buildPrefixColumnsSql();
+    const prefixColumnNames = this.getPrefixColumnNames();
+    const prefixIndexPrefix =
+      prefixColumnNames.length > 0 ? prefixColumnNames.join(", ") + ", " : "";
+    const indexSuffix = prefixColumnNames.length > 0 ? "_" + prefixColumnNames.join("_") : "";
+
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS job_queue (
+      CREATE TABLE IF NOT EXISTS ${this.tableName} (
         id INTEGER PRIMARY KEY,
-        fingerprint text NOT NULL,
+        ${prefixColumnsSql}fingerprint text NOT NULL,
         queue text NOT NULL,
         job_run_id text NOT NULL,
         status TEXT NOT NULL default 'PENDING',
@@ -50,9 +129,9 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         progress_details TEXT NULL
       );
       
-      CREATE INDEX IF NOT EXISTS job_queue_fetcher_idx ON job_queue (queue, status, run_after);
-      CREATE INDEX IF NOT EXISTS job_queue_fingerprint_idx ON job_queue (queue, fingerprint, status);
-      CREATE INDEX IF NOT EXISTS job_queue_job_run_id_idx ON job_queue (queue, job_run_id);
+      CREATE INDEX IF NOT EXISTS job_queue_fetcher${indexSuffix}_idx ON ${this.tableName} (${prefixIndexPrefix}queue, status, run_after);
+      CREATE INDEX IF NOT EXISTS job_queue_fingerprint${indexSuffix}_idx ON ${this.tableName} (${prefixIndexPrefix}queue, fingerprint, status);
+      CREATE INDEX IF NOT EXISTS job_queue_job_run_id${indexSuffix}_idx ON ${this.tableName} (${prefixIndexPrefix}queue, job_run_id);
     `);
   }
 
@@ -61,7 +140,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @param job - The job to add
    * @returns The ID of the added job
    */
-  public async add(job: JobStorageFormat<Input, Output>) {
+  public async add(job: JobStorageFormat<Input, Output>): Promise<unknown> {
     const now = new Date().toISOString();
     job.job_run_id = job.job_run_id ?? uuid4();
     job.queue = this.queueName;
@@ -73,9 +152,16 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     job.created_at = now;
     job.run_after = now;
 
+    const prefixColumnNames = this.getPrefixColumnNames();
+    const prefixColumnsInsert =
+      prefixColumnNames.length > 0 ? prefixColumnNames.join(", ") + ", " : "";
+    const prefixPlaceholders =
+      prefixColumnNames.length > 0 ? prefixColumnNames.map(() => "?").join(", ") + ", " : "";
+    const prefixParamValues = this.getPrefixParamValues();
+
     const AddQuery = `
-      INSERT INTO job_queue(
-        queue, 
+      INSERT INTO ${this.tableName}(
+        ${prefixColumnsInsert}queue, 
         fingerprint, 
         input, 
         run_after, 
@@ -87,27 +173,13 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         progress_details,
         created_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (${prefixPlaceholders}?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING id`;
 
-    const stmt = this.db.prepare<
-      { id: string },
-      [
-        queue: string,
-        fingerprint: string,
-        input: string,
-        run_after: string | null,
-        deadline_at: string | null,
-        max_retries: number,
-        job_run_id: string,
-        progress: number,
-        progress_message: string,
-        progress_details: string | null,
-        created_at: string,
-      ]
-    >(AddQuery);
+    const stmt = this.db.prepare<{ id: string }, Array<string | number | null>>(AddQuery);
 
     const result = stmt.get(
+      ...prefixParamValues,
       job.queue,
       job.fingerprint,
       JSON.stringify(job.input),
@@ -130,11 +202,14 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @param id - The ID of the job to retrieve
    * @returns The job if found, undefined otherwise
    */
-  public async get(id: string) {
+  public async get(id: unknown): Promise<JobStorageFormat<Input, Output> | undefined> {
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     const JobQuery = `
       SELECT *
-        FROM job_queue
-        WHERE id = ? AND queue = ?
+        FROM ${this.tableName}
+        WHERE id = ? AND queue = ?${prefixConditions}
         LIMIT 1`;
     const stmt = this.db.prepare<
       JobStorageFormat<Input, Output> & {
@@ -142,9 +217,9 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         output: string | null;
         progress_details: string | null;
       },
-      [id: string, queue: string]
+      Array<string | number>
     >(JobQuery);
-    const result = stmt.get(id, this.queueName);
+    const result = stmt.get(String(id), this.queueName, ...prefixParams);
     if (!result) return undefined;
 
     // Parse JSON fields
@@ -159,13 +234,19 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @param num - Maximum number of jobs to return
    * @returns An array of jobs
    */
-  public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
+  public async peek(
+    status: JobStatus = JobStatus.PENDING,
+    num: number = 100
+  ): Promise<Array<JobStorageFormat<Input, Output>>> {
     num = Number(num) || 100; // TS does not validate, so ensure it is a number since we put directly in SQL string
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     const FutureJobQuery = `
       SELECT * 
-        FROM job_queue
+        FROM ${this.tableName}
         WHERE queue = ?
-        AND status = ?
+        AND status = ?${prefixConditions}
         ORDER BY run_after ASC
         LIMIT ${num}`;
     const stmt = this.db.prepare<
@@ -174,9 +255,9 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         output: string | null;
         progress_details: string | null;
       },
-      [queue: string, status: string]
+      Array<string | number>
     >(FutureJobQuery);
-    const result = stmt.all(this.queueName, status);
+    const result = stmt.all(this.queueName, status, ...prefixParams);
     return (result || []).map((details) => {
       // Parse JSON fields
       if (details.input) details.input = JSON.parse(details.input);
@@ -193,13 +274,16 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * the job's execute() method (if it supports an AbortSignal parameter)
    * can clean up and exit.
    */
-  public async abort(jobId: string) {
+  public async abort(jobId: unknown): Promise<void> {
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     const AbortQuery = `
-      UPDATE job_queue
+      UPDATE ${this.tableName}
         SET status = ?  
-        WHERE id = ? AND queue = ?`;
+        WHERE id = ? AND queue = ?${prefixConditions}`;
     const stmt = this.db.prepare(AbortQuery);
-    stmt.run(JobStatus.ABORTING, jobId, this.queueName);
+    stmt.run(JobStatus.ABORTING, String(jobId), this.queueName, ...prefixParams);
   }
 
   /**
@@ -207,20 +291,23 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @param job_run_id - The ID of the job run to retrieve
    * @returns An array of jobs
    */
-  public async getByRunId(job_run_id: string) {
+  public async getByRunId(job_run_id: string): Promise<Array<JobStorageFormat<Input, Output>>> {
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     const JobsByRunIdQuery = `
       SELECT *
-        FROM job_queue
-        WHERE job_run_id = ? AND queue = ?`;
+        FROM ${this.tableName}
+        WHERE job_run_id = ? AND queue = ?${prefixConditions}`;
     const stmt = this.db.prepare<
       JobStorageFormat<Input, Output> & {
         input: string;
         output: string | null;
         progress_details: string | null;
       },
-      [job_run_id: string, queue: string]
+      Array<string | number>
     >(JobsByRunIdQuery);
-    const result = stmt.all(job_run_id, this.queueName);
+    const result = stmt.all(job_run_id, this.queueName, ...prefixParams);
     return (result || []).map((details) => {
       // Parse JSON fields
       if (details.input) details.input = JSON.parse(details.input);
@@ -237,8 +324,10 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    *
    * @returns The next job or undefined if no job is available
    */
-  public async next() {
+  public async next(): Promise<JobStorageFormat<Input, Output> | undefined> {
     const now = new Date().toISOString();
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
 
     // Then, get the next job to process
     const stmt = this.db.prepare<
@@ -247,23 +336,30 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         output: string | null;
         progress_details: string | null;
       },
-      [JobStatus, string, string, JobStatus, string]
+      Array<string | number | JobStatus>
     >(
       `
-      UPDATE job_queue 
+      UPDATE ${this.tableName} 
       SET status = ?, last_ran_at = ?
       WHERE id = (
         SELECT id 
-        FROM job_queue 
+        FROM ${this.tableName} 
         WHERE queue = ? 
-        AND status = ? 
+        AND status = ?${prefixConditions}
         AND run_after <= ? 
         ORDER BY run_after ASC 
         LIMIT 1
       )
       RETURNING *`
     );
-    const result = stmt.get(JobStatus.PROCESSING, now, this.queueName, JobStatus.PENDING, now);
+    const result = stmt.get(
+      JobStatus.PROCESSING,
+      now,
+      this.queueName,
+      JobStatus.PENDING,
+      ...prefixParams,
+      now
+    );
     if (!result) return undefined;
 
     // Parse JSON fields
@@ -279,14 +375,17 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * @param status - The status of the jobs to count
    * @returns The count of jobs with the specified status
    */
-  public async size(status = JobStatus.PENDING) {
+  public async size(status = JobStatus.PENDING): Promise<number> {
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     const sizeQuery = `
       SELECT COUNT(*) as count
-        FROM job_queue
+        FROM ${this.tableName}
         WHERE queue = ?
-        AND status = ?`;
-    const stmt = this.db.prepare<{ count: number }, [queue: string, status: string]>(sizeQuery);
-    const result = stmt.get(this.queueName, status) as any;
+        AND status = ?${prefixConditions}`;
+    const stmt = this.db.prepare<{ count: number }, Array<string | number>>(sizeQuery);
+    const result = stmt.get(this.queueName, status, ...prefixParams) as any;
     return result.count;
   }
 
@@ -298,24 +397,27 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * - Marks the job as FAILED for permanent or generic errors.
    * - Marks the job as DISABLED for disabled jobs.
    */
-  public async complete(job: JobStorageFormat<Input, Output>) {
+  public async complete(job: JobStorageFormat<Input, Output>): Promise<void> {
     const now = new Date().toISOString();
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     let updateQuery: string;
-    let params: any[];
+    let params: Array<string | number | null>;
     if (job.status === JobStatus.DISABLED) {
       updateQuery = `
-          UPDATE job_queue 
+          UPDATE ${this.tableName} 
             SET 
               status = ?, 
               progress = 100, 
               progress_message = '', 
               progress_details = NULL, 
               completed_at = ?  
-            WHERE id = ? AND queue = ?`;
-      params = [job.status, now, job.id, this.queueName];
+            WHERE id = ? AND queue = ?${prefixConditions}`;
+      params = [job.status, now, job.id as string, this.queueName, ...prefixParams];
     } else {
       updateQuery = `
-          UPDATE job_queue 
+          UPDATE ${this.tableName} 
             SET 
               output = ?, 
               error = ?, 
@@ -327,46 +429,50 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
               last_ran_at = ?,
               completed_at = ?,
               run_attempts = run_attempts + 1
-            WHERE id = ? AND queue = ?`;
+            WHERE id = ? AND queue = ?${prefixConditions}`;
       params = [
         job.output ? JSON.stringify(job.output) : null,
         job.error ?? null,
         job.error_code ?? null,
-        job.status,
+        job.status!,
         now,
         now,
-        job.id,
+        job.id as string,
         this.queueName,
+        ...prefixParams,
       ];
     }
     const stmt = this.db.prepare(updateQuery);
     stmt.run(...params);
   }
 
-  public async deleteAll() {
+  public async deleteAll(): Promise<void> {
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     const ClearQuery = `
-      DELETE FROM job_queue
-        WHERE queue = ?`;
+      DELETE FROM ${this.tableName}
+        WHERE queue = ?${prefixConditions}`;
     const stmt = this.db.prepare(ClearQuery);
-    stmt.run(this.queueName);
+    stmt.run(this.queueName, ...prefixParams);
   }
 
   /**
-   * Looks up cached output for a  input
+   * Looks up cached output for a given input
    * Uses input fingerprinting for efficient matching
    * @returns The cached output or null if not found
    */
-  public async outputForInput(input: Input) {
+  public async outputForInput(input: Input): Promise<Output | null> {
     const fingerprint = await makeFingerprint(input);
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     const OutputQuery = `
       SELECT output
-        FROM job_queue
-        WHERE queue = ? AND fingerprint = ? AND status = ?`;
-    const stmt = this.db.prepare<
-      { output: string },
-      [queue: string, fingerprint: string, status: string]
-    >(OutputQuery);
-    const result = stmt.get(this.queueName, fingerprint, JobStatus.COMPLETED);
+        FROM ${this.tableName}
+        WHERE queue = ? AND fingerprint = ? AND status = ?${prefixConditions}`;
+    const stmt = this.db.prepare<{ output: string }, Array<string | number>>(OutputQuery);
+    const result = stmt.get(this.queueName, fingerprint, JobStatus.COMPLETED, ...prefixParams);
     return result?.output ? JSON.parse(result.output) : null;
   }
 
@@ -379,26 +485,39 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     message: string,
     details: Record<string, any>
   ): Promise<void> {
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     const UpdateProgressQuery = `
-      UPDATE job_queue
+      UPDATE ${this.tableName}
         SET progress = ?,
             progress_message = ?,
             progress_details = ?
-        WHERE id = ? AND queue = ?`;
+        WHERE id = ? AND queue = ?${prefixConditions}`;
 
     const stmt = this.db.prepare(UpdateProgressQuery);
-    stmt.run(progress, message, JSON.stringify(details), String(jobId), this.queueName);
+    stmt.run(
+      progress,
+      message,
+      JSON.stringify(details),
+      String(jobId),
+      this.queueName,
+      ...prefixParams
+    );
   }
 
   /**
    * Deletes a job by its ID
    */
   public async delete(jobId: unknown): Promise<void> {
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     const DeleteQuery = `
-      DELETE FROM job_queue
-        WHERE id = ? AND queue = ?`;
+      DELETE FROM ${this.tableName}
+        WHERE id = ? AND queue = ?${prefixConditions}`;
     const stmt = this.db.prepare(DeleteQuery);
-    stmt.run(String(jobId), this.queueName);
+    stmt.run(String(jobId), this.queueName, ...prefixParams);
   }
 
   /**
@@ -408,13 +527,16 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    */
   public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
     const DeleteQuery = `
-      DELETE FROM job_queue
+      DELETE FROM ${this.tableName}
         WHERE queue = ?
         AND status = ?
         AND completed_at IS NOT NULL
-        AND completed_at <= ?`;
+        AND completed_at <= ?${prefixConditions}`;
     const stmt = this.db.prepare(DeleteQuery);
-    stmt.run(this.queueName, status, cutoffDate);
+    stmt.run(this.queueName, status, cutoffDate, ...prefixParams);
   }
 }

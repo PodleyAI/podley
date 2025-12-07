@@ -8,6 +8,31 @@ import { createServiceToken } from "@workglow/util";
 
 export const QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>("jobqueue.storage");
 
+/**
+ * The type of a prefix column.
+ * - "uuid" maps to UUID in PostgreSQL/Supabase, TEXT in SQLite/IndexedDB/InMemory
+ * - "number" maps to INTEGER in PostgreSQL/Supabase/SQLite, number in IndexedDB/InMemory
+ */
+export type PrefixColumnType = "uuid" | "number";
+
+/**
+ * Defines a prefix column for queue storage filtering.
+ */
+export interface PrefixColumn {
+  readonly name: string;
+  readonly type: PrefixColumnType;
+}
+
+/**
+ * Options for configuring queue storage with prefix filters.
+ */
+export interface QueueStorageOptions {
+  /** The prefix column definitions for this storage */
+  readonly prefixes?: readonly PrefixColumn[];
+  /** The values for each prefix column */
+  readonly prefixValues?: Readonly<Record<string, string | number>>;
+}
+
 export enum JobStatus {
   PENDING = "PENDING",
   PROCESSING = "PROCESSING",
