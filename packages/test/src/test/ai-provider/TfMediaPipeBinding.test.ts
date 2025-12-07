@@ -67,9 +67,8 @@ describe("TfMediaPipeBinding", () => {
 
       client.attach(server);
 
+      await register_TFMP_InlineJobFns(client);
       queueRegistry.registerQueue({ server, client, storage });
-
-      register_TFMP_InlineJobFns();
       setGlobalModelRepository(new InMemoryModelRepository());
 
       const universal_sentence_encoder: Model = {
@@ -104,7 +103,6 @@ describe("TfMediaPipeBinding", () => {
 
   describe("SqliteJobQueue", () => {
     it("should not fail", async () => {
-      register_TFMP_InlineJobFns();
       setGlobalModelRepository(new InMemoryModelRepository());
       const universal_sentence_encoder: Model = {
         name: "media-pipe:Universal Sentence Encoder",
@@ -149,6 +147,7 @@ describe("TfMediaPipeBinding", () => {
 
       client.attach(server);
 
+      await register_TFMP_InlineJobFns(client);
       getTaskQueueRegistry().registerQueue({ server, client, storage });
       const registeredQueue = getTaskQueueRegistry().getQueue(TENSORFLOW_MEDIAPIPE);
       expect(registeredQueue).toBeDefined();

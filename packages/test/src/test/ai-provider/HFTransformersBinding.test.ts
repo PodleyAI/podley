@@ -43,7 +43,6 @@ describe("HFTransformersBinding", () => {
 
   describe("InMemoryJobQueue", () => {
     it("Should have an item queued", async () => {
-      register_HFT_InlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
 
       const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
@@ -68,6 +67,7 @@ describe("HFTransformersBinding", () => {
 
       client.attach(server);
 
+      await register_HFT_InlineJobFns(client);
       queueRegistry.registerQueue({ server, client, storage });
 
       const model = {
@@ -102,7 +102,6 @@ describe("HFTransformersBinding", () => {
 
   describe("SqliteJobQueue", () => {
     it("Should have an item queued", async () => {
-      register_HFT_InlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
       const storage = new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(db, "test");
       await storage.setupDatabase();
@@ -130,6 +129,7 @@ describe("HFTransformersBinding", () => {
 
       client.attach(server);
 
+      await register_HFT_InlineJobFns(client);
       queueRegistry.registerQueue({ server, client, storage });
 
       setGlobalModelRepository(new InMemoryModelRepository());
