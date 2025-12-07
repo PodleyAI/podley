@@ -5,7 +5,7 @@
  */
 
 import type { DataPortSchema } from "@workglow/util";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Dataflow } from "../task-graph/Dataflow";
 import { TaskGraph } from "../task-graph/TaskGraph";
 import { GraphAsTask } from "./GraphAsTask";
