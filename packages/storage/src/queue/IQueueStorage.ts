@@ -43,6 +43,28 @@ export enum JobStatus {
 }
 
 /**
+ * Type of change that occurred in the queue
+ */
+export type QueueChangeType = "INSERT" | "UPDATE" | "DELETE";
+
+/**
+ * Payload describing a change to a job
+ */
+export interface QueueChangePayload<Input, Output> {
+  readonly type: QueueChangeType;
+  readonly old?: JobStorageFormat<Input, Output>;
+  readonly new?: JobStorageFormat<Input, Output>;
+}
+
+/**
+ * Options for subscribing to queue changes
+ */
+export interface QueueSubscribeOptions {
+  /** Polling interval in milliseconds (used by implementations that rely on polling) */
+  readonly pollingIntervalMs?: number;
+}
+
+/**
  * Details about a job that reflect the structure in the database.
  */
 export type JobStorageFormat<Input, Output> = {
@@ -170,4 +192,15 @@ export interface IQueueStorage<Input, Output> {
    * For production use, database setup should be done via migrations.
    */
   setupDatabase(): Promise<void>;
+
+  /**
+   * Subscribes to changes in the queue (including remote changes).
+   * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options (e.g., polling interval)
+   * @returns Unsubscribe function
+   */
+  subscribeToChanges(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    options?: QueueSubscribeOptions
+  ): () => void;
 }

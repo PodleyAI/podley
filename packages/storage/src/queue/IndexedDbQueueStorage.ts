@@ -15,7 +15,9 @@ import {
   JobStatus,
   JobStorageFormat,
   PrefixColumn,
+  QueueChangePayload,
   QueueStorageOptions,
+  QueueSubscribeOptions,
 } from "./IQueueStorage";
 
 export const INDEXED_DB_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
@@ -39,6 +41,10 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   protected readonly prefixes: readonly PrefixColumn[];
   /** The prefix values for filtering */
   protected readonly prefixValues: Readonly<Record<string, string | number>>;
+  /** Polling interval for subscriptions */
+  private pollingInterval: ReturnType<typeof setInterval> | null = null;
+  /** Last known jobs for change detection */
+  private lastKnownJobs = new Map<unknown, JobStorageFormat<Input, Output>>();
 
   constructor(
     public readonly queueName: string,
@@ -564,5 +570,108 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
       tx.onerror = () => reject(tx.error);
       request.onerror = () => reject(request.error);
     });
+  }
+
+  /**
+   * Gets all jobs from the queue that match the current prefix values.
+   * Used internally for polling-based subscriptions.
+   *
+   * @returns A promise that resolves to an array of jobs
+   */
+  private async getAllJobs(): Promise<Array<JobStorageFormat<Input, Output>>> {
+    const db = await this.getDb();
+    const tx = db.transaction(this.tableName, "readonly");
+    const store = tx.objectStore(this.tableName);
+    const index = store.index("queue_status");
+    const prefixKeyValues = this.getPrefixKeyValues();
+
+    return new Promise((resolve, reject) => {
+      const jobs: Array<JobStorageFormat<Input, Output>> = [];
+      // Use a key range that covers all statuses for this queue
+      const keyRange = IDBKeyRange.bound(
+        [...prefixKeyValues, this.queueName, ""],
+        [...prefixKeyValues, this.queueName, "\uffff"]
+      );
+      const request = index.openCursor(keyRange);
+
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          const job = cursor.value as JobStorageFormat<Input, Output> & Record<string, unknown>;
+          if (job.queue === this.queueName && this.matchesPrefixes(job)) {
+            jobs.push(job);
+          }
+          cursor.continue();
+        }
+      };
+
+      tx.oncomplete = () => resolve(jobs);
+      tx.onerror = () => reject(tx.error);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Subscribes to changes in the queue.
+   * Uses polling since IndexedDB has no native cross-tab change notifications.
+   *
+   * @param callback - Function called when a change occurs
+   * @param options - Subscription options including polling interval
+   * @returns Unsubscribe function
+   */
+  public subscribeToChanges(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    options?: QueueSubscribeOptions
+  ): () => void {
+    return this.subscribeToChangesWithPolling(callback, options?.pollingIntervalMs ?? 1000);
+  }
+
+  /**
+   * Subscribe using polling (protected).
+   *
+   * @param callback - Function called when a change occurs
+   * @param intervalMs - Polling interval in milliseconds
+   * @returns Unsubscribe function
+   */
+  protected subscribeToChangesWithPolling(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    intervalMs: number = 1000
+  ): () => void {
+    const poll = async () => {
+      try {
+        const currentJobs = await this.getAllJobs();
+        const currentMap = new Map(currentJobs.map((j) => [j.id, j]));
+
+        // Detect changes
+        for (const [id, job] of currentMap) {
+          const old = this.lastKnownJobs.get(id);
+          if (!old) {
+            callback({ type: "INSERT", new: job });
+          } else if (JSON.stringify(old) !== JSON.stringify(job)) {
+            callback({ type: "UPDATE", old, new: job });
+          }
+        }
+
+        for (const [id, job] of this.lastKnownJobs) {
+          if (!currentMap.has(id)) {
+            callback({ type: "DELETE", old: job });
+          }
+        }
+
+        this.lastKnownJobs = currentMap;
+      } catch {
+        // Ignore polling errors
+      }
+    };
+
+    this.pollingInterval = setInterval(poll, intervalMs);
+    poll(); // Initial poll
+
+    return () => {
+      if (this.pollingInterval) {
+        clearInterval(this.pollingInterval);
+        this.pollingInterval = null;
+      }
+    };
   }
 }

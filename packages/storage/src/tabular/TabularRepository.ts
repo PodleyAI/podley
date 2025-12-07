@@ -5,19 +5,20 @@
  */
 
 import {
-    createServiceToken,
-    DataPortSchemaObject,
-    EventEmitter,
-    FromSchema,
-    makeFingerprint,
+  createServiceToken,
+  DataPortSchemaObject,
+  EventEmitter,
+  FromSchema,
+  makeFingerprint,
 } from "@workglow/util";
 import {
-    ITabularRepository,
-    TabularEventListener,
-    TabularEventListeners,
-    TabularEventName,
-    TabularEventParameters,
-    ValueOptionType,
+  ITabularRepository,
+  TabularChangePayload,
+  TabularEventListener,
+  TabularEventListeners,
+  TabularEventName,
+  TabularEventParameters,
+  ValueOptionType,
 } from "./ITabularRepository";
 
 export const TABULAR_REPOSITORY = createServiceToken<ITabularRepository<any, any, any, any, any>>(
@@ -40,8 +41,7 @@ export abstract class TabularRepository<
   Entity = FromSchema<Schema>,
   PrimaryKey = Pick<Entity, PrimaryKeyNames[number] & keyof Entity>,
   Value = Omit<Entity, PrimaryKeyNames[number] & keyof Entity>,
-> implements ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value>
-{
+> implements ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   /** Event emitter for repository events */
   protected events = new EventEmitter<TabularEventListeners<PrimaryKey, Entity>>();
 
@@ -79,8 +79,7 @@ export abstract class TabularRepository<
       schema.required?.filter((key) => primaryKeySet.has(key as keyof Schema["properties"])) ?? [];
     // Filter required array to only include value fields
     const valueRequired =
-      schema.required?.filter((key) => !primaryKeySet.has(key as keyof Schema["properties"])) ??
-      [];
+      schema.required?.filter((key) => !primaryKeySet.has(key as keyof Schema["properties"])) ?? [];
 
     this.primaryKeySchema = {
       type: "object",
@@ -256,6 +255,21 @@ export abstract class TabularRepository<
    * @returns Promise resolving to an array of combined row objects or undefined if not found
    */
   public abstract search(key: Partial<Entity>): Promise<Entity[] | undefined>;
+
+  /**
+   * Subscribes to changes in the repository (including remote changes).
+   * Default implementation throws an error - override in subclasses that support subscriptions.
+   *
+   * @param callback - Function called when a change occurs
+   * @returns Unsubscribe function
+   * @throws Error if not implemented by the concrete repository
+   */
+  public subscribeToChanges(_callback: (change: TabularChangePayload<Entity>) => void): () => void {
+    throw new Error(
+      `subscribeToChanges is not implemented for ${this.constructor.name}. ` +
+        `Use InMemoryTabularRepository or SupabaseTabularRepository for subscription support.`
+    );
+  }
 
   protected primaryKeyColumns(): Array<keyof PrimaryKey> {
     const columns: Array<keyof PrimaryKey> = [];

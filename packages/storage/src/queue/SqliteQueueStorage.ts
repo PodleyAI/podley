@@ -11,7 +11,9 @@ import {
   JobStatus,
   JobStorageFormat,
   PrefixColumn,
+  QueueChangePayload,
   QueueStorageOptions,
+  QueueSubscribeOptions,
 } from "./IQueueStorage";
 
 export const SQLITE_QUEUE_STORAGE =
@@ -36,6 +38,10 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
   protected readonly prefixValues: Readonly<Record<string, string | number>>;
   /** The table name for the job queue */
   protected readonly tableName: string;
+  /** Polling interval for subscriptions */
+  private pollingInterval: ReturnType<typeof setInterval> | null = null;
+  /** Last known jobs for change detection */
+  private lastKnownJobs = new Map<unknown, JobStorageFormat<Input, Output>>();
 
   constructor(
     protected db: Sqlite.Database,
@@ -538,5 +544,101 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         AND completed_at <= ?${prefixConditions}`;
     const stmt = this.db.prepare(DeleteQuery);
     stmt.run(this.queueName, status, cutoffDate, ...prefixParams);
+  }
+
+  /**
+   * Gets all jobs from the queue that match the current prefix values.
+   * Used internally for polling-based subscriptions.
+   *
+   * @returns An array of jobs
+   */
+  private getAllJobs(): Array<JobStorageFormat<Input, Output>> {
+    const prefixConditions = this.buildPrefixWhereClause();
+    const prefixParams = this.getPrefixParamValues();
+
+    const AllJobsQuery = `
+      SELECT *
+        FROM ${this.tableName}
+        WHERE queue = ?${prefixConditions}`;
+    const stmt = this.db.prepare<
+      JobStorageFormat<Input, Output> & {
+        input: string;
+        output: string | null;
+        progress_details: string | null;
+      },
+      Array<string | number>
+    >(AllJobsQuery);
+    const result = stmt.all(this.queueName, ...prefixParams);
+    return (result || []).map((details) => {
+      // Parse JSON fields
+      if (details.input) details.input = JSON.parse(details.input);
+      if (details.output) details.output = JSON.parse(details.output);
+      if (details.progress_details) details.progress_details = JSON.parse(details.progress_details);
+      return details;
+    });
+  }
+
+  /**
+   * Subscribes to changes in the queue.
+   * Uses polling since SQLite has no native change notification support.
+   *
+   * @param callback - Function called when a change occurs
+   * @param options - Subscription options including polling interval
+   * @returns Unsubscribe function
+   */
+  public subscribeToChanges(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    options?: QueueSubscribeOptions
+  ): () => void {
+    return this.subscribeToChangesWithPolling(callback, options?.pollingIntervalMs ?? 1000);
+  }
+
+  /**
+   * Subscribe using polling (protected).
+   *
+   * @param callback - Function called when a change occurs
+   * @param intervalMs - Polling interval in milliseconds
+   * @returns Unsubscribe function
+   */
+  protected subscribeToChangesWithPolling(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    intervalMs: number = 1000
+  ): () => void {
+    const poll = () => {
+      try {
+        const currentJobs = this.getAllJobs();
+        const currentMap = new Map(currentJobs.map((j) => [j.id, j]));
+
+        // Detect changes
+        for (const [id, job] of currentMap) {
+          const old = this.lastKnownJobs.get(id);
+          if (!old) {
+            callback({ type: "INSERT", new: job });
+          } else if (JSON.stringify(old) !== JSON.stringify(job)) {
+            callback({ type: "UPDATE", old, new: job });
+          }
+        }
+
+        for (const [id, job] of this.lastKnownJobs) {
+          if (!currentMap.has(id)) {
+            callback({ type: "DELETE", old: job });
+          }
+        }
+
+        this.lastKnownJobs = currentMap;
+      } catch {
+        // Ignore polling errors
+      }
+    };
+
+    this.pollingInterval = setInterval(poll, intervalMs);
+    poll(); // Initial poll
+
+    return () => {
+      if (this.pollingInterval) {
+        clearInterval(this.pollingInterval);
+        this.pollingInterval = null;
+      }
+    };
   }
 }

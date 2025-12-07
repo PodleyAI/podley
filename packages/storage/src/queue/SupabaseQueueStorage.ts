@@ -4,14 +4,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { createServiceToken, makeFingerprint, uuid4 } from "@workglow/util";
 import {
   IQueueStorage,
   JobStatus,
   JobStorageFormat,
   PrefixColumn,
+  QueueChangePayload,
+  QueueChangeType,
   QueueStorageOptions,
+  QueueSubscribeOptions,
 } from "./IQueueStorage";
 
 export const SUPABASE_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
@@ -29,6 +32,12 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
   protected readonly prefixValues: Readonly<Record<string, string | number>>;
   /** The table name for the job queue */
   protected readonly tableName: string;
+  /** Realtime channel for subscriptions */
+  private realtimeChannel: RealtimeChannel | null = null;
+  /** Polling interval for subscriptions */
+  private pollingInterval: ReturnType<typeof setInterval> | null = null;
+  /** Last poll timestamp for detecting changes */
+  private lastPollTimestamp: string | null = null;
 
   constructor(
     protected readonly client: SupabaseClient,
@@ -555,5 +564,140 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
     const { error } = await query;
 
     if (error) throw error;
+  }
+
+  /**
+   * Checks if a job from a realtime payload matches the current prefix values
+   */
+  private matchesPrefixesFromPayload(job: Record<string, unknown> | undefined): boolean {
+    if (!job) return false;
+    for (const [key, value] of Object.entries(this.prefixValues)) {
+      if (job[key] !== value) {
+        return false;
+      }
+    }
+    // Also check queue name
+    if (job.queue !== this.queueName) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Subscribes to changes in the queue.
+   * Uses Supabase realtime by default.
+   *
+   * @param callback - Function called when a change occurs
+   * @param _options - Subscription options (polling interval not used for realtime)
+   * @returns Unsubscribe function
+   */
+  public subscribeToChanges(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    _options?: QueueSubscribeOptions
+  ): () => void {
+    return this.subscribeToChangesWithRealtime(callback);
+  }
+
+  /**
+   * Subscribe using Supabase realtime (protected).
+   *
+   * @param callback - Function called when a change occurs
+   * @returns Unsubscribe function
+   */
+  protected subscribeToChangesWithRealtime(
+    callback: (change: QueueChangePayload<Input, Output>) => void
+  ): () => void {
+    const channelName = `queue-${this.tableName}-${this.queueName}-${Date.now()}`;
+
+    this.realtimeChannel = this.client
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: this.tableName,
+          filter: `queue=eq.${this.queueName}`,
+        },
+        (payload) => {
+          // Filter by prefix values
+          const newJob = payload.new as Record<string, unknown> | undefined;
+          const oldJob = payload.old as Record<string, unknown> | undefined;
+
+          if (
+            !this.matchesPrefixesFromPayload(newJob) &&
+            !this.matchesPrefixesFromPayload(oldJob)
+          ) {
+            return;
+          }
+
+          callback({
+            type: payload.eventType.toUpperCase() as QueueChangeType,
+            old:
+              oldJob && Object.keys(oldJob).length > 0
+                ? (oldJob as JobStorageFormat<Input, Output>)
+                : undefined,
+            new:
+              newJob && Object.keys(newJob).length > 0
+                ? (newJob as JobStorageFormat<Input, Output>)
+                : undefined,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (this.realtimeChannel) {
+        this.client.removeChannel(this.realtimeChannel);
+        this.realtimeChannel = null;
+      }
+    };
+  }
+
+  /**
+   * Subscribe using polling (protected, available as fallback).
+   *
+   * @param callback - Function called when a change occurs
+   * @param intervalMs - Polling interval in milliseconds
+   * @returns Unsubscribe function
+   */
+  protected subscribeToChangesWithPolling(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    intervalMs: number = 1000
+  ): () => void {
+    this.lastPollTimestamp = new Date().toISOString();
+
+    const poll = async () => {
+      try {
+        // Query for jobs modified since last poll
+        let query = this.client
+          .from(this.tableName)
+          .select("*")
+          .eq("queue", this.queueName)
+          .gte("last_ran_at", this.lastPollTimestamp!);
+
+        query = this.applyPrefixFilters(query);
+
+        const { data } = await query;
+
+        if (data) {
+          for (const job of data) {
+            callback({ type: "UPDATE", new: job as JobStorageFormat<Input, Output> });
+          }
+        }
+        this.lastPollTimestamp = new Date().toISOString();
+      } catch {
+        // Ignore polling errors
+      }
+    };
+
+    this.pollingInterval = setInterval(poll, intervalMs);
+
+    return () => {
+      if (this.pollingInterval) {
+        clearInterval(this.pollingInterval);
+        this.pollingInterval = null;
+      }
+    };
   }
 }

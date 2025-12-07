@@ -4,8 +4,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, makeFingerprint, sleep, uuid4 } from "@workglow/util";
-import { IQueueStorage, JobStatus, JobStorageFormat, QueueStorageOptions } from "./IQueueStorage";
+import { createServiceToken, EventEmitter, makeFingerprint, sleep, uuid4 } from "@workglow/util";
+import {
+  IQueueStorage,
+  JobStatus,
+  JobStorageFormat,
+  QueueChangePayload,
+  QueueStorageOptions,
+  QueueSubscribeOptions,
+} from "./IQueueStorage";
+
+/**
+ * Event listeners for queue storage events
+ */
+type QueueEventListeners<Input, Output> = {
+  change: (payload: QueueChangePayload<Input, Output>) => void;
+};
 
 export const IN_MEMORY_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
   "jobqueue.storage.inMemory"
@@ -18,6 +32,8 @@ export const IN_MEMORY_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any
 export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input, Output> {
   /** The prefix values for filtering jobs */
   protected readonly prefixValues: Readonly<Record<string, string | number>>;
+  /** Event emitter for change notifications */
+  protected readonly events = new EventEmitter<QueueEventListeners<Input, Output>>();
 
   /**
    * Creates a new in-memory job queue
@@ -85,6 +101,7 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
     }
 
     this.jobQueue.push(jobWithPrefixes);
+    this.events.emit("change", { type: "INSERT", new: jobWithPrefixes });
     return jobWithPrefixes.id;
   }
 
@@ -131,8 +148,10 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
 
     const job = top[0];
     if (job) {
+      const oldJob = { ...job };
       job.status = JobStatus.PROCESSING;
       job.last_ran_at = new Date().toISOString();
+      this.events.emit("change", { type: "UPDATE", old: oldJob, new: job });
       return job;
     }
   }
@@ -166,9 +185,11 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
       throw new Error(`Job ${id} not found`);
     }
 
+    const oldJob = { ...job };
     job.progress = progress;
     job.progress_message = message;
     job.progress_details = details;
+    this.events.emit("change", { type: "UPDATE", old: oldJob, new: job });
   }
 
   /**
@@ -186,6 +207,7 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
       const currentAttempts = existing?.run_attempts ?? 0;
       job.run_attempts = currentAttempts + 1;
       this.jobQueue[index] = job;
+      this.events.emit("change", { type: "UPDATE", old: existing, new: job });
     }
   }
 
@@ -197,7 +219,9 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
     await sleep(0);
     const job = this.jobQueue.find((j) => j.id === id && this.matchesPrefixes(j));
     if (job) {
+      const oldJob = { ...job };
       job.status = JobStatus.ABORTING;
+      this.events.emit("change", { type: "UPDATE", old: oldJob, new: job });
     }
   }
 
@@ -216,7 +240,11 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
    */
   public async deleteAll(): Promise<void> {
     await sleep(0);
+    const deletedJobs = this.jobQueue.filter((job) => this.matchesPrefixes(job));
     this.jobQueue = this.jobQueue.filter((job) => !this.matchesPrefixes(job));
+    for (const job of deletedJobs) {
+      this.events.emit("change", { type: "DELETE", old: job });
+    }
   }
 
   /**
@@ -243,7 +271,11 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
    */
   public async delete(id: unknown): Promise<void> {
     await sleep(0);
+    const deletedJob = this.jobQueue.find((job) => job.id === id && this.matchesPrefixes(job));
     this.jobQueue = this.jobQueue.filter((job) => !(job.id === id && this.matchesPrefixes(job)));
+    if (deletedJob) {
+      this.events.emit("change", { type: "DELETE", old: deletedJob });
+    }
   }
 
   /**
@@ -254,6 +286,13 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
   public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
     await sleep(0);
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
+    const deletedJobs = this.jobQueue.filter(
+      (job) =>
+        this.matchesPrefixes(job) &&
+        job.status === status &&
+        job.completed_at &&
+        job.completed_at <= cutoffDate
+    );
     this.jobQueue = this.jobQueue.filter(
       (job) =>
         !this.matchesPrefixes(job) ||
@@ -261,6 +300,9 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
         !job.completed_at ||
         job.completed_at > cutoffDate
     );
+    for (const job of deletedJobs) {
+      this.events.emit("change", { type: "DELETE", old: job });
+    }
   }
 
   /**
@@ -269,5 +311,69 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
    */
   public async setupDatabase(): Promise<void> {
     // No-op for in-memory storage
+  }
+
+  /**
+   * Subscribes to changes in the queue.
+   * Since InMemory is both client and server, changes are detected via local events.
+   *
+   * @param callback - Function called when a change occurs
+   * @param _options - Subscription options (ignored for in-memory, polling not needed)
+   * @returns Unsubscribe function
+   */
+  public subscribeToChanges(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    _options?: QueueSubscribeOptions
+  ): () => void {
+    return this.events.subscribe("change", callback);
+  }
+
+  /**
+   * Subscribe using polling (protected, available for subclasses).
+   * For InMemory, this is not typically needed but provided for consistency.
+   *
+   * @param callback - Function called when a change occurs
+   * @param intervalMs - Polling interval in milliseconds
+   * @returns Unsubscribe function
+   */
+  protected subscribeToChangesWithPolling(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    intervalMs: number = 1000
+  ): () => void {
+    let lastKnownJobs = new Map<unknown, JobStorageFormat<Input, Output>>();
+    let pollingInterval: ReturnType<typeof setInterval> | null = null;
+
+    const poll = () => {
+      const currentJobs = this.jobQueue.filter((job) => this.matchesPrefixes(job));
+      const currentMap = new Map(currentJobs.map((j) => [j.id, j]));
+
+      // Detect changes
+      for (const [id, job] of currentMap) {
+        const old = lastKnownJobs.get(id);
+        if (!old) {
+          callback({ type: "INSERT", new: job });
+        } else if (JSON.stringify(old) !== JSON.stringify(job)) {
+          callback({ type: "UPDATE", old, new: job });
+        }
+      }
+
+      for (const [id, job] of lastKnownJobs) {
+        if (!currentMap.has(id)) {
+          callback({ type: "DELETE", old: job });
+        }
+      }
+
+      lastKnownJobs = currentMap;
+    };
+
+    pollingInterval = setInterval(poll, intervalMs);
+    poll(); // Initial poll
+
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+      }
+    };
   }
 }

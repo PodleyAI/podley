@@ -4,10 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { createServiceToken, DataPortSchemaObject, FromSchema, JsonSchema } from "@workglow/util";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import { ITabularRepository, ValueOptionType } from "./ITabularRepository";
+import {
+  ITabularRepository,
+  TabularChangePayload,
+  TabularChangeType,
+  ValueOptionType,
+} from "./ITabularRepository";
 
 export const SUPABASE_TABULAR_REPOSITORY = createServiceToken<
   ITabularRepository<any, any, any, any, any>
@@ -30,6 +35,7 @@ export class SupabaseTabularRepository<
   Value = Omit<Entity, PrimaryKeyNames[number] & keyof Entity>,
 > extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   private client: SupabaseClient;
+  private realtimeChannel: RealtimeChannel | null = null;
 
   /**
    * Creates a new SupabaseTabularRepository instance.
@@ -648,5 +654,75 @@ export class SupabaseTabularRepository<
 
     if (error) throw error;
     this.events.emit("delete", column as keyof Entity);
+  }
+
+  /**
+   * Converts a row from Supabase realtime payload to an Entity with proper type conversions.
+   *
+   * @param row - The raw row data from Supabase realtime
+   * @returns The converted entity
+   */
+  private convertRealtimeRow(row: Record<string, unknown>): Entity {
+    const entity = { ...row } as Entity;
+    for (const key in this.schema.properties) {
+      // @ts-ignore
+      entity[key] = this.sqlToJsValue(key, row[key] as ValueOptionType);
+    }
+    return entity;
+  }
+
+  /**
+   * Subscribes to changes in the repository using Supabase realtime.
+   * Receives notifications for INSERT, UPDATE, and DELETE operations from any source.
+   *
+   * @param callback - Function called when a change occurs
+   * @returns Unsubscribe function
+   */
+  subscribeToChanges(callback: (change: TabularChangePayload<Entity>) => void): () => void {
+    // Create a unique channel name
+    const channelName = `tabular-${this.table}-${Date.now()}`;
+
+    this.realtimeChannel = this.client
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: this.table,
+        },
+        (payload) => {
+          const change: TabularChangePayload<Entity> = {
+            type: payload.eventType.toUpperCase() as TabularChangeType,
+            old:
+              payload.old && Object.keys(payload.old).length > 0
+                ? this.convertRealtimeRow(payload.old)
+                : undefined,
+            new:
+              payload.new && Object.keys(payload.new).length > 0
+                ? this.convertRealtimeRow(payload.new)
+                : undefined,
+          };
+          callback(change);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (this.realtimeChannel) {
+        this.client.removeChannel(this.realtimeChannel);
+        this.realtimeChannel = null;
+      }
+    };
+  }
+
+  /**
+   * Destroys the repository and frees up resources.
+   */
+  destroy(): void {
+    if (this.realtimeChannel) {
+      this.client.removeChannel(this.realtimeChannel);
+      this.realtimeChannel = null;
+    }
   }
 }
