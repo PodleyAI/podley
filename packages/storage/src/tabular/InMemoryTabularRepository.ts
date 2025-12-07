@@ -201,13 +201,11 @@ export class InMemoryTabularRepository<
           return false;
       }
     });
-    // Delete the filtered entries
-    for (const [id, _] of entriesToDelete) {
+    // Delete the filtered entries and emit events for each
+    for (const [id, entity] of entriesToDelete) {
       this.values.delete(id);
-    }
-
-    if (Array.from(entriesToDelete).length > 0) {
-      this.events.emit("delete", column);
+      const { key } = this.separateKeyValueFromCombined(entity);
+      this.events.emit("delete", key as keyof Entity);
     }
   }
 

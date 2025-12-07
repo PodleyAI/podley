@@ -6,6 +6,7 @@
 
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { createServiceToken, makeFingerprint, uuid4 } from "@workglow/util";
+import { PollingSubscriptionManager } from "../util/PollingSubscriptionManager";
 import {
   IQueueStorage,
   JobStatus,
@@ -34,10 +35,12 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
   protected readonly tableName: string;
   /** Realtime channel for subscriptions */
   private realtimeChannel: RealtimeChannel | null = null;
-  /** Polling interval for subscriptions */
-  private pollingInterval: ReturnType<typeof setInterval> | null = null;
-  /** Last poll timestamp for detecting changes */
-  private lastPollTimestamp: string | null = null;
+  /** Shared polling subscription manager (fallback) */
+  private pollingManager: PollingSubscriptionManager<
+    JobStorageFormat<Input, Output>,
+    unknown,
+    QueueChangePayload<Input, Output>
+  > | null = null;
 
   constructor(
     protected readonly client: SupabaseClient,
@@ -324,6 +327,23 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
   }
 
   /**
+   * Gets all jobs from the queue that match the current prefix values.
+   * Used internally for polling-based subscriptions.
+   *
+   * @returns An array of jobs
+   */
+  private async getAllJobs(): Promise<Array<JobStorageFormat<Input, Output>>> {
+    let query = this.client.from(this.tableName).select("*").eq("queue", this.queueName);
+
+    query = this.applyPrefixFilters(query);
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return (data ?? []) as Array<JobStorageFormat<Input, Output>>;
+  }
+
+  /**
    * Marks a job as complete with its output or error.
    * Enhanced error handling:
    * - For a retryable error, increments run_attempts and updates run_after.
@@ -567,20 +587,90 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
   }
 
   /**
-   * Checks if a job from a realtime payload matches the current prefix values
+   * Checks if a job from a realtime payload matches the specified prefix filter
+   * @param job - The job record from the realtime payload
+   * @param prefixFilter - The prefix filter to match against (undefined = use instance prefixes, {} = no filter)
    */
-  private matchesPrefixesFromPayload(job: Record<string, unknown> | undefined): boolean {
+  private matchesPrefixFilter(
+    job: Record<string, unknown> | undefined,
+    prefixFilter?: Readonly<Record<string, string | number>>
+  ): boolean {
     if (!job) return false;
-    for (const [key, value] of Object.entries(this.prefixValues)) {
+
+    // Check queue name first
+    if (job.queue !== this.queueName) {
+      return false;
+    }
+
+    // If prefixFilter is explicitly an empty object, no prefix filtering
+    if (prefixFilter && Object.keys(prefixFilter).length === 0) {
+      return true;
+    }
+
+    // Use provided prefixFilter or fall back to instance's prefixValues
+    const filterValues = prefixFilter ?? this.prefixValues;
+
+    // If no filter values, match all
+    if (Object.keys(filterValues).length === 0) {
+      return true;
+    }
+
+    // Check each filter value
+    for (const [key, value] of Object.entries(filterValues)) {
       if (job[key] !== value) {
         return false;
       }
     }
-    // Also check queue name
-    if (job.queue !== this.queueName) {
+    return true;
+  }
+
+  /**
+   * Checks if a prefix filter is custom (different from instance's prefixes).
+   */
+  private isCustomPrefixFilter(prefixFilter?: Readonly<Record<string, string | number>>): boolean {
+    // No filter specified - use instance prefixes (not custom)
+    if (prefixFilter === undefined) {
       return false;
     }
-    return true;
+    // Empty filter - receive all (custom)
+    if (Object.keys(prefixFilter).length === 0) {
+      return true;
+    }
+    // Check if filter matches instance prefixes exactly
+    const instanceKeys = Object.keys(this.prefixValues);
+    const filterKeys = Object.keys(prefixFilter);
+    if (instanceKeys.length !== filterKeys.length) {
+      return true; // Different number of keys = custom
+    }
+    for (const key of instanceKeys) {
+      if (this.prefixValues[key] !== prefixFilter[key]) {
+        return true; // Different value = custom
+      }
+    }
+    return false; // Matches instance prefixes exactly
+  }
+
+  /**
+   * Gets all jobs from the queue with a custom prefix filter.
+   * Used for subscriptions with custom prefix filters (filters at DB level).
+   *
+   * @param prefixFilter - The prefix values to filter by (empty object = all jobs)
+   * @returns A promise that resolves to an array of jobs
+   */
+  private async getAllJobsWithFilter(
+    prefixFilter: Readonly<Record<string, string | number>>
+  ): Promise<Array<JobStorageFormat<Input, Output>>> {
+    let query = this.client.from(this.tableName).select("*").eq("queue", this.queueName);
+
+    // Apply the custom prefix filter
+    for (const [key, value] of Object.entries(prefixFilter)) {
+      query = query.eq(key, value);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return (data ?? []) as Array<JobStorageFormat<Input, Output>>;
   }
 
   /**
@@ -588,24 +678,26 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
    * Uses Supabase realtime by default.
    *
    * @param callback - Function called when a change occurs
-   * @param _options - Subscription options (polling interval not used for realtime)
+   * @param options - Subscription options including prefix filter
    * @returns Unsubscribe function
    */
   public subscribeToChanges(
     callback: (change: QueueChangePayload<Input, Output>) => void,
-    _options?: QueueSubscribeOptions
+    options?: QueueSubscribeOptions
   ): () => void {
-    return this.subscribeToChangesWithRealtime(callback);
+    return this.subscribeToChangesWithRealtime(callback, options?.prefixFilter);
   }
 
   /**
    * Subscribe using Supabase realtime (protected).
    *
    * @param callback - Function called when a change occurs
+   * @param prefixFilter - Optional prefix filter (undefined = use instance prefixes, {} = no filter)
    * @returns Unsubscribe function
    */
   protected subscribeToChangesWithRealtime(
-    callback: (change: QueueChangePayload<Input, Output>) => void
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    prefixFilter?: Readonly<Record<string, string | number>>
   ): () => void {
     const channelName = `queue-${this.tableName}-${this.queueName}-${Date.now()}`;
 
@@ -624,10 +716,11 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
           const newJob = payload.new as Record<string, unknown> | undefined;
           const oldJob = payload.old as Record<string, unknown> | undefined;
 
-          if (
-            !this.matchesPrefixesFromPayload(newJob) &&
-            !this.matchesPrefixesFromPayload(oldJob)
-          ) {
+          // Check if either old or new job matches the filter
+          const newMatches = this.matchesPrefixFilter(newJob, prefixFilter);
+          const oldMatches = this.matchesPrefixFilter(oldJob, prefixFilter);
+
+          if (!newMatches && !oldMatches) {
             return;
           }
 
@@ -655,49 +748,114 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
   }
 
   /**
-   * Subscribe using polling (protected, available as fallback).
-   *
-   * @param callback - Function called when a change occurs
-   * @param intervalMs - Polling interval in milliseconds
-   * @returns Unsubscribe function
+   * Gets or creates the shared polling subscription manager for normal subscriptions (fallback).
+   * This ensures all normal subscriptions share a single polling loop per interval.
    */
-  protected subscribeToChangesWithPolling(
+  private getPollingManager(): PollingSubscriptionManager<
+    JobStorageFormat<Input, Output>,
+    unknown,
+    QueueChangePayload<Input, Output>
+  > {
+    if (!this.pollingManager) {
+      this.pollingManager = new PollingSubscriptionManager<
+        JobStorageFormat<Input, Output>,
+        unknown,
+        QueueChangePayload<Input, Output>
+      >(
+        async () => {
+          // Fetch jobs with instance's prefix filter (efficient DB-level filtering)
+          const jobs = await this.getAllJobs();
+          return new Map(jobs.map((j) => [j.id, j]));
+        },
+        (a, b) => JSON.stringify(a) === JSON.stringify(b),
+        {
+          insert: (item) => ({ type: "INSERT" as const, new: item }),
+          update: (oldItem, newItem) => ({ type: "UPDATE" as const, old: oldItem, new: newItem }),
+          delete: (item) => ({ type: "DELETE" as const, old: item }),
+        }
+      );
+    }
+    return this.pollingManager;
+  }
+
+  /**
+   * Creates a dedicated polling subscription for custom prefix filters (fallback).
+   * This runs separately from the normal polling manager with DB-level filtering.
+   */
+  private subscribeWithCustomPrefixFilterPolling(
     callback: (change: QueueChangePayload<Input, Output>) => void,
-    intervalMs: number = 1000
+    prefixFilter: Readonly<Record<string, string | number>>,
+    intervalMs: number
   ): () => void {
-    this.lastPollTimestamp = new Date().toISOString();
+    let lastKnownJobs = new Map<unknown, JobStorageFormat<Input, Output>>();
+    let cancelled = false;
 
     const poll = async () => {
+      if (cancelled) return;
       try {
-        // Query for jobs modified since last poll
-        let query = this.client
-          .from(this.tableName)
-          .select("*")
-          .eq("queue", this.queueName)
-          .gte("last_ran_at", this.lastPollTimestamp!);
+        const currentJobs = await this.getAllJobsWithFilter(prefixFilter);
+        if (cancelled) return;
+        const currentMap = new Map(currentJobs.map((j) => [j.id, j]));
 
-        query = this.applyPrefixFilters(query);
-
-        const { data } = await query;
-
-        if (data) {
-          for (const job of data) {
-            callback({ type: "UPDATE", new: job as JobStorageFormat<Input, Output> });
+        // Detect changes
+        for (const [id, job] of currentMap) {
+          const old = lastKnownJobs.get(id);
+          if (!old) {
+            callback({ type: "INSERT", new: job });
+          } else if (JSON.stringify(old) !== JSON.stringify(job)) {
+            callback({ type: "UPDATE", old, new: job });
           }
         }
-        this.lastPollTimestamp = new Date().toISOString();
+
+        for (const [id, job] of lastKnownJobs) {
+          if (!currentMap.has(id)) {
+            callback({ type: "DELETE", old: job });
+          }
+        }
+
+        lastKnownJobs = currentMap;
       } catch {
         // Ignore polling errors
       }
     };
 
-    this.pollingInterval = setInterval(poll, intervalMs);
+    const intervalId = setInterval(poll, intervalMs);
+    poll(); // Initial poll
 
     return () => {
-      if (this.pollingInterval) {
-        clearInterval(this.pollingInterval);
-        this.pollingInterval = null;
-      }
+      cancelled = true;
+      clearInterval(intervalId);
     };
+  }
+
+  /**
+   * Subscribe using polling (protected, available as fallback).
+   *
+   * Normal subscriptions (no custom prefix filter) share a single polling loop for efficiency.
+   * Custom prefix filter subscriptions get their own dedicated polling loop with DB-level filtering.
+   *
+   * @param callback - Function called when a change occurs
+   * @param options - Subscription options including interval and prefix filter
+   * @returns Unsubscribe function
+   */
+  protected subscribeToChangesWithPolling(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    options?: QueueSubscribeOptions
+  ): () => void {
+    const intervalMs = options?.pollingIntervalMs ?? 1000;
+
+    // Check if this is a custom prefix filter subscription
+    if (this.isCustomPrefixFilter(options?.prefixFilter)) {
+      // Custom prefix filter - use dedicated polling with DB-level filtering
+      return this.subscribeWithCustomPrefixFilterPolling(
+        callback,
+        options!.prefixFilter!,
+        intervalMs
+      );
+    }
+
+    // Normal subscription - use shared polling manager (efficient)
+    const manager = this.getPollingManager();
+    return manager.subscribe(callback, { intervalMs });
   }
 }

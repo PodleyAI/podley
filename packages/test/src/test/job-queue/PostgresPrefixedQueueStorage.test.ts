@@ -9,11 +9,17 @@ import { PostgresQueueStorage } from "@workglow/storage";
 import { Pool } from "pg";
 import { describe } from "vitest";
 import { runGenericPrefixedQueueStorageTests } from "./genericPrefixedQueueStorageTests";
+import { runGenericQueueStorageSubscriptionTests } from "./genericQueueStorageSubscriptionTests";
 
 const db = new PGlite() as unknown as Pool;
 
 describe("PostgresPrefixedQueueStorage", () => {
   runGenericPrefixedQueueStorageTests(
     (queueName: string, options) => new PostgresQueueStorage(db, queueName, options)
+  );
+
+  runGenericQueueStorageSubscriptionTests(
+    (queueName: string, options) => new PostgresQueueStorage(db, queueName, options),
+    { usesPolling: true, pollingIntervalMs: 1, sharesStateAcrossInstances: true }
   );
 });

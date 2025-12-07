@@ -10,6 +10,7 @@ import {
   ExpectedIndexDefinition,
   MigrationOptions,
 } from "../util/IndexedDbTable";
+import { PollingSubscriptionManager } from "../util/PollingSubscriptionManager";
 import {
   IQueueStorage,
   JobStatus,
@@ -41,10 +42,12 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   protected readonly prefixes: readonly PrefixColumn[];
   /** The prefix values for filtering */
   protected readonly prefixValues: Readonly<Record<string, string | number>>;
-  /** Polling interval for subscriptions */
-  private pollingInterval: ReturnType<typeof setInterval> | null = null;
-  /** Last known jobs for change detection */
-  private lastKnownJobs = new Map<unknown, JobStorageFormat<Input, Output>>();
+  /** Shared polling subscription manager */
+  private pollingManager: PollingSubscriptionManager<
+    JobStorageFormat<Input, Output>,
+    unknown,
+    QueueChangePayload<Input, Output>
+  > | null = null;
 
   constructor(
     public readonly queueName: string,
@@ -448,9 +451,17 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
           const job = cursor.value as JobStorageFormat<Input, Output> & Record<string, unknown>;
           // Verify job belongs to this queue and matches prefixes before deleting
           if (job.queue === this.queueName && this.matchesPrefixes(job)) {
-            cursor.delete();
+            const deleteRequest = cursor.delete();
+            deleteRequest.onsuccess = () => {
+              cursor.continue();
+            };
+            deleteRequest.onerror = () => {
+              // Continue even if delete fails
+              cursor.continue();
+            };
+          } else {
+            cursor.continue();
           }
-          cursor.continue();
         }
       };
 
@@ -574,7 +585,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
 
   /**
    * Gets all jobs from the queue that match the current prefix values.
-   * Used internally for polling-based subscriptions.
+   * Used internally for normal polling-based subscriptions (efficient - filters at DB level).
    *
    * @returns A promise that resolves to an array of jobs
    */
@@ -587,7 +598,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
 
     return new Promise((resolve, reject) => {
       const jobs: Array<JobStorageFormat<Input, Output>> = [];
-      // Use a key range that covers all statuses for this queue
+      // Use a key range that covers all statuses for this queue with prefixes
       const keyRange = IDBKeyRange.bound(
         [...prefixKeyValues, this.queueName, ""],
         [...prefixKeyValues, this.queueName, "\uffff"]
@@ -612,39 +623,137 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   }
 
   /**
-   * Subscribes to changes in the queue.
-   * Uses polling since IndexedDB has no native cross-tab change notifications.
+   * Gets all jobs from the queue with a custom prefix filter.
+   * Used for subscriptions with custom prefix filters (filters at DB level where possible).
    *
-   * @param callback - Function called when a change occurs
-   * @param options - Subscription options including polling interval
-   * @returns Unsubscribe function
+   * @param prefixFilter - The prefix values to filter by (empty object = all jobs)
+   * @returns A promise that resolves to an array of jobs
    */
-  public subscribeToChanges(
-    callback: (change: QueueChangePayload<Input, Output>) => void,
-    options?: QueueSubscribeOptions
-  ): () => void {
-    return this.subscribeToChangesWithPolling(callback, options?.pollingIntervalMs ?? 1000);
+  private async getAllJobsWithFilter(
+    prefixFilter: Readonly<Record<string, string | number>>
+  ): Promise<Array<JobStorageFormat<Input, Output>>> {
+    const db = await this.getDb();
+    const tx = db.transaction(this.tableName, "readonly");
+    const store = tx.objectStore(this.tableName);
+
+    return new Promise((resolve, reject) => {
+      const jobs: Array<JobStorageFormat<Input, Output>> = [];
+      const request = store.openCursor();
+
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          const job = cursor.value as JobStorageFormat<Input, Output> & Record<string, unknown>;
+          // Filter by queue name
+          if (job.queue !== this.queueName) {
+            cursor.continue();
+            return;
+          }
+          // If empty filter, include all jobs for this queue
+          if (Object.keys(prefixFilter).length === 0) {
+            jobs.push(job);
+          } else {
+            // Check each filter value
+            let matches = true;
+            for (const [key, value] of Object.entries(prefixFilter)) {
+              if (job[key] !== value) {
+                matches = false;
+                break;
+              }
+            }
+            if (matches) {
+              jobs.push(job);
+            }
+          }
+          cursor.continue();
+        }
+      };
+
+      tx.oncomplete = () => resolve(jobs);
+      tx.onerror = () => reject(tx.error);
+      request.onerror = () => reject(request.error);
+    });
   }
 
   /**
-   * Subscribe using polling (protected).
-   *
-   * @param callback - Function called when a change occurs
-   * @param intervalMs - Polling interval in milliseconds
-   * @returns Unsubscribe function
+   * Checks if a prefix filter is custom (different from instance's prefixes).
    */
-  protected subscribeToChangesWithPolling(
+  private isCustomPrefixFilter(prefixFilter?: Readonly<Record<string, string | number>>): boolean {
+    // No filter specified - use instance prefixes (not custom)
+    if (prefixFilter === undefined) {
+      return false;
+    }
+    // Empty filter - receive all (custom)
+    if (Object.keys(prefixFilter).length === 0) {
+      return true;
+    }
+    // Check if filter matches instance prefixes exactly
+    const instanceKeys = Object.keys(this.prefixValues);
+    const filterKeys = Object.keys(prefixFilter);
+    if (instanceKeys.length !== filterKeys.length) {
+      return true; // Different number of keys = custom
+    }
+    for (const key of instanceKeys) {
+      if (this.prefixValues[key] !== prefixFilter[key]) {
+        return true; // Different value = custom
+      }
+    }
+    return false; // Matches instance prefixes exactly
+  }
+
+  /**
+   * Gets or creates the shared polling subscription manager for normal subscriptions.
+   * This ensures all normal subscriptions share a single polling loop per interval.
+   */
+  private getPollingManager(): PollingSubscriptionManager<
+    JobStorageFormat<Input, Output>,
+    unknown,
+    QueueChangePayload<Input, Output>
+  > {
+    if (!this.pollingManager) {
+      this.pollingManager = new PollingSubscriptionManager<
+        JobStorageFormat<Input, Output>,
+        unknown,
+        QueueChangePayload<Input, Output>
+      >(
+        async () => {
+          // Fetch jobs with instance's prefix filter (efficient DB-level filtering)
+          const jobs = await this.getAllJobs();
+          return new Map(jobs.map((j) => [j.id, j]));
+        },
+        (a, b) => JSON.stringify(a) === JSON.stringify(b),
+        {
+          insert: (item) => ({ type: "INSERT" as const, new: item }),
+          update: (oldItem, newItem) => ({ type: "UPDATE" as const, old: oldItem, new: newItem }),
+          delete: (item) => ({ type: "DELETE" as const, old: item }),
+        }
+      );
+    }
+    return this.pollingManager;
+  }
+
+  /**
+   * Creates a dedicated polling subscription for custom prefix filters.
+   * This runs separately from the normal polling manager.
+   */
+  private subscribeWithCustomPrefixFilter(
     callback: (change: QueueChangePayload<Input, Output>) => void,
-    intervalMs: number = 1000
+    prefixFilter: Readonly<Record<string, string | number>>,
+    intervalMs: number
   ): () => void {
+    let lastKnownJobs = new Map<unknown, JobStorageFormat<Input, Output>>();
+    let cancelled = false;
+
     const poll = async () => {
+      if (cancelled) return;
       try {
-        const currentJobs = await this.getAllJobs();
+        const currentJobs = await this.getAllJobsWithFilter(prefixFilter);
+        if (cancelled) return;
         const currentMap = new Map(currentJobs.map((j) => [j.id, j]));
 
         // Detect changes
         for (const [id, job] of currentMap) {
-          const old = this.lastKnownJobs.get(id);
+          const old = lastKnownJobs.get(id);
           if (!old) {
             callback({ type: "INSERT", new: job });
           } else if (JSON.stringify(old) !== JSON.stringify(job)) {
@@ -652,26 +761,52 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
           }
         }
 
-        for (const [id, job] of this.lastKnownJobs) {
+        for (const [id, job] of lastKnownJobs) {
           if (!currentMap.has(id)) {
             callback({ type: "DELETE", old: job });
           }
         }
 
-        this.lastKnownJobs = currentMap;
+        lastKnownJobs = currentMap;
       } catch {
         // Ignore polling errors
       }
     };
 
-    this.pollingInterval = setInterval(poll, intervalMs);
+    const intervalId = setInterval(poll, intervalMs);
     poll(); // Initial poll
 
     return () => {
-      if (this.pollingInterval) {
-        clearInterval(this.pollingInterval);
-        this.pollingInterval = null;
-      }
+      cancelled = true;
+      clearInterval(intervalId);
     };
+  }
+
+  /**
+   * Subscribes to changes in the queue.
+   * Uses polling since IndexedDB has no native cross-tab change notifications.
+   *
+   * Normal subscriptions (no custom prefix filter) share a single polling loop for efficiency.
+   * Custom prefix filter subscriptions get their own dedicated polling loop with DB-level filtering.
+   *
+   * @param callback - Function called when a change occurs
+   * @param options - Subscription options including polling interval and prefix filter
+   * @returns Unsubscribe function
+   */
+  public subscribeToChanges(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    options?: QueueSubscribeOptions
+  ): () => void {
+    const intervalMs = options?.pollingIntervalMs ?? 1000;
+
+    // Check if this is a custom prefix filter subscription
+    if (this.isCustomPrefixFilter(options?.prefixFilter)) {
+      // Custom prefix filter - use dedicated polling with DB-level filtering
+      return this.subscribeWithCustomPrefixFilter(callback, options!.prefixFilter!, intervalMs);
+    }
+
+    // Normal subscription - use shared polling manager (efficient)
+    const manager = this.getPollingManager();
+    return manager.subscribe(callback, { intervalMs });
   }
 }

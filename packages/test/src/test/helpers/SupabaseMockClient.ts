@@ -16,6 +16,42 @@ export function createSupabaseMockClient(): SupabaseClient {
 
   // Create a minimal SupabaseClient-compatible object
   const mockClient = {
+    // Realtime channel method for subscriptions
+    channel: (name: string) => {
+      return {
+        on: (event: string, filter: any, callback: any) => {
+          // Mock realtime subscription - do nothing, just return self for chaining
+          return {
+            on: (event: string, filter: any, callback: any) => {
+              return {
+                subscribe: (callback?: any) => {
+                  // Mock subscribe - call callback immediately with "SUBSCRIBED" status
+                  if (callback) {
+                    callback("SUBSCRIBED");
+                  }
+                  return { unsubscribe: () => {} };
+                },
+              };
+            },
+            subscribe: (callback?: any) => {
+              // Mock subscribe - call callback immediately with "SUBSCRIBED" status
+              if (callback) {
+                callback("SUBSCRIBED");
+              }
+              return { unsubscribe: () => {} };
+            },
+          };
+        },
+        subscribe: (callback?: any) => {
+          // Mock subscribe - call callback immediately with "SUBSCRIBED" status
+          if (callback) {
+            callback("SUBSCRIBED");
+          }
+          return { unsubscribe: () => {} };
+        },
+      };
+    },
+
     // RPC method for executing raw SQL (used in setup)
     rpc: async (functionName: string, params?: { query?: string }) => {
       if (functionName === "exec_sql" && params?.query) {

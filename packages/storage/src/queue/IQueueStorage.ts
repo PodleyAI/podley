@@ -62,6 +62,27 @@ export interface QueueChangePayload<Input, Output> {
 export interface QueueSubscribeOptions {
   /** Polling interval in milliseconds (used by implementations that rely on polling) */
   readonly pollingIntervalMs?: number;
+  /**
+   * Custom prefix filter for this subscription.
+   *
+   * - If not provided (undefined): Uses the storage instance's configured prefixValues
+   * - If empty object ({}): Receives ALL changes across all prefix combinations
+   * - If partial object: Receives changes matching the specified subset of prefixes
+   *
+   * @example
+   * // Storage configured with prefixes: [{name: "user_id"}, {name: "project_id"}]
+   * // and prefixValues: {user_id: "abc", project_id: "123"}
+   *
+   * // Subscribe to only this user+project (default behavior)
+   * storage.subscribeToChanges(callback);
+   *
+   * // Subscribe to all projects for this user
+   * storage.subscribeToChanges(callback, { prefixFilter: { user_id: "abc" } });
+   *
+   * // Subscribe to ALL jobs in this queue (admin/supervisor view)
+   * storage.subscribeToChanges(callback, { prefixFilter: {} });
+   */
+  readonly prefixFilter?: Readonly<Record<string, string | number>>;
 }
 
 /**

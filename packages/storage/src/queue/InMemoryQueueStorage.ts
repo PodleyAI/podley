@@ -314,66 +314,64 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
   }
 
   /**
+   * Checks if a job matches the specified prefix filter
+   * @param job - The job to check
+   * @param prefixFilter - The prefix filter (undefined = use instance prefixes, {} = no filter)
+   */
+  private matchesPrefixFilter(
+    job: JobStorageFormat<Input, Output>,
+    prefixFilter?: Readonly<Record<string, string | number>>
+  ): boolean {
+    // If prefixFilter is explicitly an empty object, no prefix filtering
+    if (prefixFilter && Object.keys(prefixFilter).length === 0) {
+      return true;
+    }
+
+    // Use provided prefixFilter or fall back to instance's prefixValues
+    const filterValues = prefixFilter ?? this.prefixValues;
+
+    // If no filter values, match all
+    if (Object.keys(filterValues).length === 0) {
+      return true;
+    }
+
+    // Check each filter value
+    const jobWithPrefixes = job as JobStorageFormat<Input, Output> & Record<string, unknown>;
+    for (const [key, value] of Object.entries(filterValues)) {
+      if (jobWithPrefixes[key] !== value) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
    * Subscribes to changes in the queue.
    * Since InMemory is both client and server, changes are detected via local events.
    *
    * @param callback - Function called when a change occurs
-   * @param _options - Subscription options (ignored for in-memory, polling not needed)
+   * @param options - Subscription options including prefix filter
    * @returns Unsubscribe function
    */
   public subscribeToChanges(
     callback: (change: QueueChangePayload<Input, Output>) => void,
-    _options?: QueueSubscribeOptions
+    options?: QueueSubscribeOptions
   ): () => void {
-    return this.events.subscribe("change", callback);
-  }
+    const prefixFilter = options?.prefixFilter;
 
-  /**
-   * Subscribe using polling (protected, available for subclasses).
-   * For InMemory, this is not typically needed but provided for consistency.
-   *
-   * @param callback - Function called when a change occurs
-   * @param intervalMs - Polling interval in milliseconds
-   * @returns Unsubscribe function
-   */
-  protected subscribeToChangesWithPolling(
-    callback: (change: QueueChangePayload<Input, Output>) => void,
-    intervalMs: number = 1000
-  ): () => void {
-    let lastKnownJobs = new Map<unknown, JobStorageFormat<Input, Output>>();
-    let pollingInterval: ReturnType<typeof setInterval> | null = null;
+    // Create a filtered callback wrapper
+    const filteredCallback = (change: QueueChangePayload<Input, Output>) => {
+      // Check if either old or new job matches the filter
+      const newMatches = change.new ? this.matchesPrefixFilter(change.new, prefixFilter) : false;
+      const oldMatches = change.old ? this.matchesPrefixFilter(change.old, prefixFilter) : false;
 
-    const poll = () => {
-      const currentJobs = this.jobQueue.filter((job) => this.matchesPrefixes(job));
-      const currentMap = new Map(currentJobs.map((j) => [j.id, j]));
-
-      // Detect changes
-      for (const [id, job] of currentMap) {
-        const old = lastKnownJobs.get(id);
-        if (!old) {
-          callback({ type: "INSERT", new: job });
-        } else if (JSON.stringify(old) !== JSON.stringify(job)) {
-          callback({ type: "UPDATE", old, new: job });
-        }
+      if (!newMatches && !oldMatches) {
+        return;
       }
 
-      for (const [id, job] of lastKnownJobs) {
-        if (!currentMap.has(id)) {
-          callback({ type: "DELETE", old: job });
-        }
-      }
-
-      lastKnownJobs = currentMap;
+      callback(change);
     };
 
-    pollingInterval = setInterval(poll, intervalMs);
-    poll(); // Initial poll
-
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-        pollingInterval = null;
-      }
-    };
+    return this.events.subscribe("change", filteredCallback);
   }
 }
