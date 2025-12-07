@@ -835,8 +835,6 @@ app.get("/metrics", (req, res) => {
 - **Flexibility**: Deploy components independently
 - **Monitoring**: Centralized stats and event tracking
 
-```
-
 ## API Reference
 
 ### JobQueue Methods

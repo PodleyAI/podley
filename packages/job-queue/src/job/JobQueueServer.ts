@@ -7,12 +7,11 @@
 import { IQueueStorage } from "@workglow/storage";
 import { EventEmitter } from "@workglow/util";
 import { Job, JobConstructorParam } from "./Job";
-import { JobQueueOptions, JobStatus, QueueMode } from "./IJobQueue";
+import { JobQueueOptions, QueueMode } from "./IJobQueue";
 import {
   JobQueueEventListener,
   JobQueueEventListeners,
   JobQueueEvents,
-  JobProgressListener,
 } from "./JobQueueEventListeners";
 import { JobQueueStats } from "./JobQueue";
 import { JobQueueWorker } from "./JobQueueWorker";

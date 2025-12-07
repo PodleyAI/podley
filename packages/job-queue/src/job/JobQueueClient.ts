@@ -74,7 +74,7 @@ export class JobQueueClient<
    * Start monitoring jobs
    * @param mode Optional mode parameter (unused in client, included for interface compatibility)
    */
-  public async start(mode?: QueueMode): Promise<IJobQueue<Input, Output>> {
+  public async start(mode?: QueueMode): Promise<this> {
     if (this.running) {
       return this;
     }
@@ -87,7 +87,7 @@ export class JobQueueClient<
   /**
    * Stop monitoring jobs
    */
-  public async stop(): Promise<IJobQueue<Input, Output>> {
+  public async stop(): Promise<this> {
     if (!this.running) return this;
     this.running = false;
 
@@ -104,7 +104,7 @@ export class JobQueueClient<
   /**
    * Clear local state (does not affect storage)
    */
-  public async clear(): Promise<IJobQueue<Input, Output>> {
+  public async clear(): Promise<this> {
     this.activeJobPromises.clear();
     this.lastKnownProgress.clear();
     this.jobProgressListeners.clear();
@@ -114,7 +114,7 @@ export class JobQueueClient<
   /**
    * Restart the client
    */
-  public async restart(): Promise<IJobQueue<Input, Output>> {
+  public async restart(): Promise<this> {
     await this.stop();
     await this.clear();
     await this.start();

@@ -96,7 +96,6 @@ describe("JobQueueWorker", () => {
   });
 
   it("should process a job", async () => {
-    const job = new TestJob({ input: { value: 7 } });
     const jobId = await storage.add({
       id: undefined,
       job_run_id: undefined,

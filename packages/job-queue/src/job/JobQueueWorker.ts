@@ -17,7 +17,7 @@ import {
   PermanentJobError,
   RetryableJobError,
 } from "./JobError";
-import { JobQueueOptions, JobStatus as IJobQueueJobStatus, QueueMode } from "./IJobQueue";
+import { JobQueueOptions, QueueMode } from "./IJobQueue";
 import {
   JobQueueEventListener,
   JobQueueEventListeners,

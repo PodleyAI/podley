@@ -6,7 +6,7 @@
  * Example demonstrating the production-grade client-server-worker architecture
  */
 
-import { Job, JobQueueClient, JobQueueWorker, JobQueueServer } from "@workglow/job-queue";
+import { Job, JobQueueClient, JobQueueServer } from "@workglow/job-queue";
 import { InMemoryQueueStorage } from "@workglow/storage";
 import { IJobExecuteContext } from "@workglow/job-queue";
 
