@@ -15,7 +15,7 @@ import {
   JobQueueEventParameters,
   JobQueueEvents,
 } from "./JobQueueEventListeners";
-import { IJobQueue, JobQueueOptions } from "./IJobQueue";
+import { IJobQueue, JobQueueOptions, QueueMode } from "./IJobQueue";
 import { JobQueueStats } from "./JobQueue";
 
 type JobClass<Input, Output> = new (
@@ -74,7 +74,7 @@ export class JobQueueClient<
    * Start monitoring jobs
    * @param mode Optional mode parameter (unused in client, included for interface compatibility)
    */
-  public async start(mode?: any) {
+  public async start(mode?: QueueMode): Promise<IJobQueue<Input, Output>> {
     if (this.running) {
       return this;
     }
@@ -87,7 +87,7 @@ export class JobQueueClient<
   /**
    * Stop monitoring jobs
    */
-  public async stop() {
+  public async stop(): Promise<IJobQueue<Input, Output>> {
     if (!this.running) return this;
     this.running = false;
 
@@ -104,7 +104,7 @@ export class JobQueueClient<
   /**
    * Clear local state (does not affect storage)
    */
-  public async clear() {
+  public async clear(): Promise<IJobQueue<Input, Output>> {
     this.activeJobPromises.clear();
     this.lastKnownProgress.clear();
     this.jobProgressListeners.clear();
@@ -114,7 +114,7 @@ export class JobQueueClient<
   /**
    * Restart the client
    */
-  public async restart() {
+  public async restart(): Promise<IJobQueue<Input, Output>> {
     await this.stop();
     await this.clear();
     await this.start();

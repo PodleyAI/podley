@@ -7,7 +7,7 @@
 import { IQueueStorage } from "@workglow/storage";
 import { EventEmitter } from "@workglow/util";
 import { Job, JobConstructorParam } from "./Job";
-import { JobQueueOptions, JobStatus } from "./IJobQueue";
+import { JobQueueOptions, JobStatus, QueueMode } from "./IJobQueue";
 import {
   JobQueueEventListener,
   JobQueueEventListeners,
@@ -60,7 +60,7 @@ export class JobQueueServer<
    * Start the server and its workers
    * @param mode Optional mode parameter (unused in server, included for interface compatibility)
    */
-  public async start(mode?: any) {
+  public async start(mode?: QueueMode) {
     if (this.running) {
       return this;
     }

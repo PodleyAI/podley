@@ -17,7 +17,7 @@ import {
   PermanentJobError,
   RetryableJobError,
 } from "./JobError";
-import { JobQueueOptions, JobStatus as IJobQueueJobStatus } from "./IJobQueue";
+import { JobQueueOptions, JobStatus as IJobQueueJobStatus, QueueMode } from "./IJobQueue";
 import {
   JobQueueEventListener,
   JobQueueEventListeners,
@@ -89,7 +89,7 @@ export class JobQueueWorker<
    * Start processing jobs
    * @param mode Optional mode parameter (unused in worker, included for interface compatibility)
    */
-  public async start(mode?: any) {
+  public async start(mode?: QueueMode) {
     if (this.running) {
       return this;
     }
