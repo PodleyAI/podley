@@ -6,9 +6,9 @@
 
 import { createServiceToken, makeFingerprint, uuid4 } from "@workglow/util";
 import {
-    ensureIndexedDbTable,
-    ExpectedIndexDefinition,
-    MigrationOptions,
+  ensureIndexedDbTable,
+  ExpectedIndexDefinition,
+  MigrationOptions,
 } from "../util/IndexedDbTable";
 import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
 
@@ -22,14 +22,13 @@ export const INDEXED_DB_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, an
  */
 export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input, Output> {
   private db: IDBDatabase | undefined;
-  private tableName: string;
+  private readonly tableName = "jobs";
   private migrationOptions: MigrationOptions;
 
   constructor(
     public readonly queueName: string,
     migrationOptions: MigrationOptions = {}
   ) {
-    this.tableName = `jobs_${queueName}`;
     this.migrationOptions = migrationOptions;
   }
 
@@ -46,23 +45,23 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   public async setupDatabase(): Promise<void> {
     const expectedIndexes: ExpectedIndexDefinition[] = [
       {
-        name: "status",
-        keyPath: `status`,
+        name: "queue_status",
+        keyPath: ["queue", "status"],
         options: { unique: false },
       },
       {
-        name: "status_run_after",
-        keyPath: ["status", "run_after"],
+        name: "queue_status_run_after",
+        keyPath: ["queue", "status", "run_after"],
         options: { unique: false },
       },
       {
-        name: "job_run_id",
-        keyPath: `job_run_id`,
+        name: "queue_job_run_id",
+        keyPath: ["queue", "job_run_id"],
         options: { unique: false },
       },
       {
-        name: "fingerprint_status",
-        keyPath: ["fingerprint", "status"],
+        name: "queue_fingerprint_status",
+        keyPath: ["queue", "fingerprint", "status"],
         options: { unique: false },
       },
     ];
@@ -119,7 +118,15 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const store = tx.objectStore(this.tableName);
     const request = store.get(id as string);
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        const job = request.result;
+        // Filter by queue name to ensure job belongs to this queue
+        if (job && job.queue === this.queueName) {
+          resolve(job);
+        } else {
+          resolve(undefined);
+        }
+      };
       request.onerror = () => reject(request.error);
       tx.onerror = () => reject(tx.error);
     });
@@ -138,12 +145,15 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
-    const index = store.index("status_run_after");
+    const index = store.index("queue_status_run_after");
 
     return new Promise((resolve, reject) => {
       const ret = new Map<unknown, JobStorageFormat<Input, Output>>();
-      // Create a key range for the compound index: from [status, ""] to [status, "\uffff"]
-      const keyRange = IDBKeyRange.bound([status, ""], [status, "\uffff"]);
+      // Create a key range for the compound index: from [queue, status, ""] to [queue, status, "\uffff"]
+      const keyRange = IDBKeyRange.bound(
+        [this.queueName, status, ""],
+        [this.queueName, status, "\uffff"]
+      );
       const cursorRequest = index.openCursor(keyRange);
 
       const handleCursor = (e: Event) => {
@@ -171,12 +181,17 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
-    const index = store.index("status_run_after");
+    const index = store.index("queue_status_run_after");
     const now = new Date().toISOString();
 
     return new Promise((resolve, reject) => {
       const cursorRequest = index.openCursor(
-        IDBKeyRange.bound([JobStatus.PENDING, ""], [JobStatus.PENDING, now], false, true)
+        IDBKeyRange.bound(
+          [this.queueName, JobStatus.PENDING, ""],
+          [this.queueName, JobStatus.PENDING, now],
+          false,
+          true
+        )
       );
 
       let jobToReturn: JobStorageFormat<Input, Output> | undefined;
@@ -193,8 +208,8 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
         }
 
         const job = cursor.value;
-        // Verify the job is still in PENDING state
-        if (job.status !== JobStatus.PENDING) {
+        // Verify the job belongs to this queue and is still in PENDING state
+        if (job.queue !== this.queueName || job.status !== JobStatus.PENDING) {
           cursor.continue();
           return;
         }
@@ -237,8 +252,9 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.tableName, "readonly");
       const store = tx.objectStore(this.tableName);
-      const index = store.index("status");
-      const request = index.count(status);
+      const index = store.index("queue_status");
+      const keyRange = IDBKeyRange.only([this.queueName, status]);
+      const request = index.count(keyRange);
 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
@@ -258,8 +274,17 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
       const getReq = store.get(job.id as string);
       getReq.onsuccess = () => {
         const existing = getReq.result as JobStorageFormat<Input, Output> | undefined;
-        const currentAttempts = existing?.run_attempts ?? 0;
+        // Verify job belongs to this queue
+        if (!existing || existing.queue !== this.queueName) {
+          reject(
+            new Error(`Job ${job.id} not found or does not belong to queue ${this.queueName}`)
+          );
+          return;
+        }
+        const currentAttempts = existing.run_attempts ?? 0;
         job.run_attempts = currentAttempts + 1;
+        // Ensure queue is set correctly
+        job.queue = this.queueName;
         const putReq = store.put(job);
         putReq.onsuccess = () => {};
         putReq.onerror = () => reject(putReq.error);
@@ -290,8 +315,9 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
-    const index = store.index("job_run_id");
-    const request = index.getAll(job_run_id);
+    const index = store.index("queue_job_run_id");
+    const keyRange = IDBKeyRange.only([this.queueName, job_run_id]);
+    const request = index.getAll(keyRange);
 
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve(request.result);
@@ -307,12 +333,27 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
-    const request = store.clear();
+    const index = store.index("queue_status");
 
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+      // Use a cursor to iterate through all jobs for this queue
+      const keyRange = IDBKeyRange.bound([this.queueName, ""], [this.queueName, "\uffff"]);
+      const request = index.openCursor(keyRange);
+
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          // Verify job belongs to this queue before deleting
+          if (cursor.value.queue === this.queueName) {
+            cursor.delete();
+          }
+          cursor.continue();
+        }
+      };
+
+      tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
+      request.onerror = () => reject(request.error);
     });
   }
 
@@ -324,8 +365,8 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readonly");
     const store = tx.objectStore(this.tableName);
-    const index = store.index("fingerprint_status");
-    const request = index.get([fingerprint, JobStatus.COMPLETED]);
+    const index = store.index("queue_fingerprint_status");
+    const request = index.get([this.queueName, fingerprint, JobStatus.COMPLETED]);
 
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve(request.result?.output ?? null);
@@ -357,6 +398,9 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
    * Deletes a job by its ID.
    */
   public async delete(id: unknown): Promise<void> {
+    const job = await this.get(id);
+    if (!job) return;
+
     const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
@@ -378,17 +422,24 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
-    const index = store.index("status");
+    const index = store.index("queue_status");
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
+    const keyRange = IDBKeyRange.only([this.queueName, status]);
 
     return new Promise((resolve, reject) => {
-      const request = index.openCursor();
+      const request = index.openCursor(keyRange);
 
       request.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
           const job = cursor.value;
-          if (job.status === status && job.completed_at && job.completed_at <= cutoffDate) {
+          // Verify job belongs to this queue and matches criteria
+          if (
+            job.queue === this.queueName &&
+            job.status === status &&
+            job.completed_at &&
+            job.completed_at <= cutoffDate
+          ) {
             cursor.delete();
           }
           cursor.continue();

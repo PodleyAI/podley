@@ -412,6 +412,104 @@ export function runGenericJobQueueTests(
       expect(job?.status).toBe(JobStatus.COMPLETED);
       expect(job?.output).toEqual({ result: "output1" });
     });
+
+    it("should isolate data between multiple queues", async () => {
+      // Create two separate queues
+      const queueName1 = `test-queue-1-${uuid4()}`;
+      const queueName2 = `test-queue-2-${uuid4()}`;
+      const storage1 = storage(queueName1);
+      const storage2 = storage(queueName2);
+      await storage1.setupDatabase();
+      await storage2.setupDatabase();
+
+      const jobQueue1 = new JobQueue<TInput, TOutput, TestJob>(queueName1, TestJob as any, {
+        storage: storage1,
+        limiter: limiter?.(queueName1, 4, 60),
+        waitDurationInMilliseconds: 1,
+      });
+
+      const jobQueue2 = new JobQueue<TInput, TOutput, TestJob>(queueName2, TestJob as any, {
+        storage: storage2,
+        limiter: limiter?.(queueName2, 4, 60),
+        waitDurationInMilliseconds: 1,
+      });
+
+      try {
+        // Add jobs to both queues
+        const job1Id = await jobQueue1.add(
+          new TestJob({ input: { taskType: "task1", data: "queue1-job1" } })
+        );
+        const job2Id = await jobQueue1.add(
+          new TestJob({ input: { taskType: "task1", data: "queue1-job2" } })
+        );
+        const job3Id = await jobQueue2.add(
+          new TestJob({ input: { taskType: "task1", data: "queue2-job1" } })
+        );
+        const job4Id = await jobQueue2.add(
+          new TestJob({ input: { taskType: "task1", data: "queue2-job2" } })
+        );
+
+        // Verify each queue only sees its own jobs
+        expect(await jobQueue1.size()).toBe(2);
+        expect(await jobQueue2.size()).toBe(2);
+
+        // Verify jobs from queue1 are not visible in queue2
+        const job1InQueue2 = await jobQueue2.get(job1Id);
+        expect(job1InQueue2).toBeUndefined();
+
+        // Verify jobs from queue2 are not visible in queue1
+        const job3InQueue1 = await jobQueue1.get(job3Id);
+        expect(job3InQueue1).toBeUndefined();
+
+        // Verify peek operations only return jobs from the correct queue
+        const queue1Jobs = await jobQueue1.peek();
+        expect(queue1Jobs.length).toBe(2);
+        expect(queue1Jobs.every((job) => job.input.data.startsWith("queue1-"))).toBe(true);
+
+        const queue2Jobs = await jobQueue2.peek();
+        expect(queue2Jobs.length).toBe(2);
+        expect(queue2Jobs.every((job) => job.input.data.startsWith("queue2-"))).toBe(true);
+
+        // Process jobs in queue1 and verify queue2 is unaffected
+        await jobQueue1.start();
+        await jobQueue1.waitFor(job1Id);
+        await jobQueue1.waitFor(job2Id);
+        await jobQueue1.stop();
+
+        // Queue1 should have completed jobs
+        const completedJob1 = await jobQueue1.get(job1Id);
+        expect(completedJob1?.status).toBe(JobStatus.COMPLETED);
+
+        // Queue2 should still have pending jobs
+        expect(await jobQueue2.size()).toBe(2);
+        const pendingJob3 = await jobQueue2.get(job3Id);
+        expect(pendingJob3?.status).toBe(JobStatus.PENDING);
+
+        // Clear queue1 and verify queue2 is unaffected
+        await jobQueue1.clear();
+        expect(await jobQueue1.size()).toBe(0);
+        expect(await jobQueue2.size()).toBe(2);
+
+        // Process jobs in queue2
+        await jobQueue2.start();
+        await jobQueue2.waitFor(job3Id);
+        await jobQueue2.waitFor(job4Id);
+        await jobQueue2.stop();
+
+        // Verify queue2 jobs completed
+        const completedJob3 = await jobQueue2.get(job3Id);
+        expect(completedJob3?.status).toBe(JobStatus.COMPLETED);
+
+        // Verify queue1 is still empty
+        expect(await jobQueue1.size()).toBe(0);
+      } finally {
+        // Cleanup
+        await jobQueue1.stop();
+        await jobQueue2.stop();
+        await jobQueue1.clear();
+        await jobQueue2.clear();
+      }
+    });
   });
 
   describe("Progress Monitoring", () => {
