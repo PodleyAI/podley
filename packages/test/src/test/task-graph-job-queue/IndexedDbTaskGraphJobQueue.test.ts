@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InMemoryRateLimiter, JobQueue } from "@workglow/job-queue";
+import { InMemoryRateLimiter, JobQueueClient, JobQueueServer } from "@workglow/job-queue";
 import { IndexedDbQueueStorage } from "@workglow/storage";
+import { TaskInput, TaskOutput } from "@workglow/task-graph";
 import { uuid4 } from "@workglow/util";
 import "fake-indexeddb/auto";
 import { describe } from "vitest";
@@ -14,10 +15,23 @@ import { runGenericTaskGraphJobQueueTests, TestJob } from "./genericTaskGraphJob
 describe("IndexedDbTaskGraphJobQueue", () => {
   runGenericTaskGraphJobQueueTests(async () => {
     const queueName = `idx_test_queue_${uuid4()}`;
-    return new JobQueue(queueName, TestJob, {
-      storage: new IndexedDbQueueStorage(queueName),
+    const storage = new IndexedDbQueueStorage<TaskInput, TaskOutput>(queueName);
+    await storage.setupDatabase();
+
+    const server = new JobQueueServer<TaskInput, TaskOutput>(TestJob, {
+      storage,
+      queueName,
       limiter: new InMemoryRateLimiter({ maxExecutions: 1, windowSizeInSeconds: 10 }),
-      waitDurationInMilliseconds: 1,
+      pollIntervalMs: 1,
     });
+
+    const client = new JobQueueClient<TaskInput, TaskOutput>({
+      storage,
+      queueName,
+    });
+
+    client.attach(server);
+
+    return { server, client, storage };
   });
 });

@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { JobStatus } from "./IJobQueue";
+import { JobStatus } from "@workglow/storage";
 import { JobError } from "./JobError";
-import type { JobQueue } from "./JobQueue";
 import type { JobProgressListener } from "./JobQueueEventListeners";
+
+export { JobStatus };
 
 /**
  * Context for job execution
@@ -72,7 +73,6 @@ export class Job<Input, Output> {
   public progress: number = 0;
   public progressMessage: string = "";
   public progressDetails: Record<string, any> | null = null;
-  public queue: JobQueue<Input, Output> | undefined;
 
   constructor({
     queueName,
@@ -124,7 +124,7 @@ export class Job<Input, Output> {
   private progressListeners: Set<JobProgressListener> = new Set();
 
   /**
-   * Update the job's progress
+   * Update the job's progress (for direct execution without a worker)
    * @param progress - Progress value between 0 and 100
    * @param message - Optional progress message
    * @param details - Optional progress details
@@ -133,7 +133,7 @@ export class Job<Input, Output> {
     progress: number,
     message: string = "",
     details: Record<string, any> | null = null
-  ) {
+  ): Promise<void> {
     this.progress = progress;
     this.progressMessage = message;
     this.progressDetails = details;
@@ -142,8 +142,6 @@ export class Job<Input, Output> {
     for (const listener of this.progressListeners) {
       listener(progress, message, details);
     }
-
-    await this.queue?.updateProgress(this.id, progress, message, details);
   }
 
   /**

@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export * from "./job/IJobQueue";
 export * from "./job/Job";
 export * from "./job/JobError";
-export * from "./job/JobQueue";
+export * from "./job/JobQueueClient";
 export * from "./job/JobQueueEventListeners";
+export * from "./job/JobQueueServer";
+export * from "./job/JobQueueWorker";
 export * from "./limiter/CompositeLimiter";
 export * from "./limiter/ConcurrencyLimiter";
 export * from "./limiter/DelayLimiter";

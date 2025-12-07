@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Job, JobConstructorParam, JobQueue } from "@workglow/job-queue";
+import { Job, JobConstructorParam } from "@workglow/job-queue";
 import { ArrayTask } from "./ArrayTask";
 import { IExecuteContext } from "./ITask";
 import { getJobQueueFactory } from "./JobQueueFactory";
 import { JobTaskFailedError, TaskConfigurationError } from "./TaskError";
 import { TaskEventListeners } from "./TaskEvents";
-import { getTaskQueueRegistry } from "./TaskQueueRegistry";
+import { getTaskQueueRegistry, RegisteredQueue } from "./TaskQueueRegistry";
 import { TaskConfig, TaskInput, TaskOutput } from "./TaskTypes";
 
 /**
@@ -79,10 +79,10 @@ export abstract class JobQueueTask<
         throw new TaskConfigurationError(`${this.type} cannot run directly without a queue`);
       }
 
-      const queue = await this.resolveQueue(input);
-      const job = await this.createJob(input, queue);
+      const registeredQueue = await this.resolveQueue(input);
 
-      if (!queue) {
+      if (!registeredQueue) {
+        // Direct execution without a queue
         if (!(this.constructor as typeof JobQueueTask).canRunDirectly) {
           const queueLabel =
             typeof this.config.queue === "string"
@@ -93,6 +93,9 @@ export abstract class JobQueueTask<
           );
         }
         this.currentJobId = undefined;
+
+        // Create job for direct execution
+        const job = await this.createJob(input, this.currentQueueName);
         cleanup = job.onJobProgress(
           (progress: number, message: string, details: Record<string, any> | null) => {
             executeContext.updateProgress(progress, message, details);
@@ -105,19 +108,27 @@ export abstract class JobQueueTask<
         return output;
       }
 
-      const jobId = await queue.add(job);
-      this.currentJobId = jobId;
-      this.currentQueueName = queue?.queueName;
-      this.currentRunnerId = job.jobRunId;
-      cleanup = queue.onJobProgress(jobId, (progress, message, details) => {
+      // Execute via queue
+      const { client } = registeredQueue;
+      const jobInput = await this.getJobInput(input);
+      const handle = await client.submit(jobInput as Input, {
+        jobRunId: this.currentRunnerId,
+        maxRetries: 10,
+      });
+
+      this.currentJobId = handle.id;
+      this.currentQueueName = client.queueName;
+
+      cleanup = handle.onProgress((progress, message, details) => {
         executeContext.updateProgress(progress, message, details);
       });
-      const output = await queue.waitFor(jobId);
+
+      const output = await handle.waitFor();
       if (output === undefined) {
         throw new TaskConfigurationError("Job disabled, should not happen");
       }
 
-      return output!;
+      return output as Output;
     } catch (err: any) {
       throw new JobTaskFailedError(err);
     } finally {
@@ -126,19 +137,31 @@ export abstract class JobQueueTask<
   }
 
   /**
-   * Override this method to create the right job class for the queue for this task
+   * Get the input to submit to the job queue.
+   * Override this method to transform task input to job input.
+   * @param input - The task input
+   * @returns The input to submit to the job queue
+   */
+  protected async getJobInput(input: Input): Promise<unknown> {
+    return input;
+  }
+
+  /**
+   * Override this method to create the right job class for direct execution (without a queue).
+   * This is used when running the task directly without queueing.
+   * @param input - The task input
+   * @param queueName - The queue name (if any)
    * @returns Promise<Job> - The created job
    */
-  async createJob(input: Input, queue?: JobQueue<any, any>): Promise<Job<any, any>> {
-    const jobCtor = queue?.jobClass ?? this.jobClass;
-    return new jobCtor({
-      queueName: queue?.queueName ?? this.currentQueueName,
+  async createJob(input: Input, queueName?: string): Promise<Job<any, Output>> {
+    return new this.jobClass({
+      queueName: queueName ?? this.currentQueueName,
       jobRunId: this.currentRunnerId, // could be undefined
       input: input,
     });
   }
 
-  protected async resolveQueue(input: Input): Promise<JobQueue<Input, Output> | undefined> {
+  protected async resolveQueue(input: Input): Promise<RegisteredQueue<Input, Output> | undefined> {
     const preference = this.config.queue ?? true;
 
     if (preference === false) {
@@ -147,10 +170,10 @@ export abstract class JobQueueTask<
     }
 
     if (typeof preference === "string") {
-      const queue = getTaskQueueRegistry().getQueue<Input, Output>(preference);
-      if (queue) {
-        this.currentQueueName = queue.queueName;
-        return queue;
+      const registeredQueue = getTaskQueueRegistry().getQueue<Input, Output>(preference);
+      if (registeredQueue) {
+        this.currentQueueName = registeredQueue.server.queueName;
+        return registeredQueue;
       }
       this.currentQueueName = preference;
       return undefined;
@@ -164,13 +187,13 @@ export abstract class JobQueueTask<
 
     this.currentQueueName = queueName;
 
-    let queue = getTaskQueueRegistry().getQueue<Input, Output>(queueName);
-    if (!queue) {
-      queue = await this.createAndRegisterQueue(queueName, input);
-      await queue.start();
+    let registeredQueue = getTaskQueueRegistry().getQueue<Input, Output>(queueName);
+    if (!registeredQueue) {
+      registeredQueue = await this.createAndRegisterQueue(queueName, input);
+      await registeredQueue.server.start();
     }
 
-    return queue;
+    return registeredQueue;
   }
 
   protected async getDefaultQueueName(_input: Input): Promise<string | undefined> {
@@ -180,9 +203,9 @@ export abstract class JobQueueTask<
   protected async createAndRegisterQueue(
     queueName: string,
     input: Input
-  ): Promise<JobQueue<Input, Output>> {
+  ): Promise<RegisteredQueue<Input, Output>> {
     const factory = getJobQueueFactory();
-    let queue = await factory({
+    let registeredQueue = await factory({
       queueName,
       jobClass: this.jobClass,
       input,
@@ -193,19 +216,19 @@ export abstract class JobQueueTask<
     const registry = getTaskQueueRegistry();
 
     try {
-      registry.registerQueue(queue);
+      registry.registerQueue(registeredQueue);
     } catch (err) {
       if (err instanceof Error && err.message.includes("already exists")) {
         const existing = registry.getQueue<Input, Output>(queueName);
         if (existing) {
-          queue = existing;
+          registeredQueue = existing;
         }
       } else {
         throw err;
       }
     }
 
-    return queue;
+    return registeredQueue;
   }
 
   /**
@@ -213,10 +236,10 @@ export abstract class JobQueueTask<
    * @returns A promise that resolves when the task is aborted
    */
   async abort(): Promise<void> {
-    if (this.currentQueueName) {
-      const queue = getTaskQueueRegistry().getQueue(this.currentQueueName);
-      if (queue) {
-        await queue.abort(this.currentJobId);
+    if (this.currentQueueName && this.currentJobId) {
+      const registeredQueue = getTaskQueueRegistry().getQueue(this.currentQueueName);
+      if (registeredQueue) {
+        await registeredQueue.client.abort(this.currentJobId);
       }
     }
     // Always call the parent abort to ensure the task is properly marked as aborted

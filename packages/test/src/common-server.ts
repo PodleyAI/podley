@@ -15,8 +15,3 @@ export * from "./binding/FsFolderTaskOutputRepository";
 export * from "./binding/IndexedDbTaskOutputRepository";
 export * from "./binding/PostgresTaskOutputRepository";
 export * from "./binding/SqliteTaskOutputRepository";
-
-export * from "./binding/IndexedDbJobQueue";
-export * from "./binding/InMemoryJobQueue";
-export * from "./binding/PostgresJobQueue";
-export * from "./binding/SqliteJobQueue";

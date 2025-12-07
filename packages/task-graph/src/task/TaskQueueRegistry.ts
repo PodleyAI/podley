@@ -4,7 +4,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { JobQueue } from "@workglow/job-queue";
+import { JobQueueClient, JobQueueServer } from "@workglow/job-queue";
+import { IQueueStorage } from "@workglow/storage";
+
+/**
+ * Combined structure for a registered job queue containing server, client, and storage
+ */
+export interface RegisteredQueue<Input = unknown, Output = unknown> {
+  readonly server: JobQueueServer<Input, Output>;
+  readonly client: JobQueueClient<Input, Output>;
+  readonly storage: IQueueStorage<Input, Output>;
+}
 
 /**
  * Global singleton instance of the TaskQueueRegistry.
@@ -21,68 +31,69 @@ let taskQueueRegistry: TaskQueueRegistry | null = null;
  */
 export class TaskQueueRegistry {
   /**
-   * Map of queue names to their corresponding JobQueue instances
+   * Map of queue names to their corresponding registered queue instances
    */
-  public queues: Map<string, JobQueue<any, any>> = new Map();
+  public readonly queues: Map<string, RegisteredQueue<unknown, unknown>> = new Map();
 
   /**
    * Registers a new job queue with the registry
    *
-   * @param jobQueue - The job queue to register
+   * @param queue - The registered queue containing server, client, and storage
    * @throws Error if a queue with the same name already exists
    */
-  registerQueue(jobQueue: JobQueue<any, any>): void {
-    if (this.queues.has(jobQueue.queueName)) {
-      throw new Error(`Queue with name ${jobQueue.queueName} already exists`);
+  registerQueue<Input, Output>(queue: RegisteredQueue<Input, Output>): void {
+    const queueName = queue.server.queueName;
+    if (this.queues.has(queueName)) {
+      throw new Error(`Queue with name ${queueName} already exists`);
     }
-    this.queues.set(jobQueue.queueName, jobQueue);
+    this.queues.set(queueName, queue as RegisteredQueue<unknown, unknown>);
   }
 
   /**
-   * Retrieves a job queue by its name
+   * Retrieves a registered queue by its name
    *
-   * @param queue - The name of the queue to retrieve
-   * @returns The job queue instance or undefined if not found
+   * @param queueName - The name of the queue to retrieve
+   * @returns The registered queue or undefined if not found
    */
-  getQueue<I, O>(queue: string): JobQueue<I, O> | undefined {
-    return this.queues.get(queue) as JobQueue<I, O> | undefined;
+  getQueue<Input, Output>(queueName: string): RegisteredQueue<Input, Output> | undefined {
+    return this.queues.get(queueName) as RegisteredQueue<Input, Output> | undefined;
   }
 
   /**
-   * Starts all registered job queues
+   * Starts all registered job queue servers
    * This allows queues to begin processing their jobs
    *
    * @returns The registry instance for chaining
    */
-  startQueues() {
+  startQueues(): this {
     for (const queue of this.queues.values()) {
-      queue.start();
+      queue.server.start();
     }
     return this;
   }
 
   /**
-   * Stops all registered job queues
+   * Stops all registered job queue servers
    * This pauses job processing but maintains the queued jobs
    *
    * @returns The registry instance for chaining
    */
-  stopQueues() {
+  stopQueues(): this {
     for (const queue of this.queues.values()) {
-      queue.stop();
+      queue.server.stop();
     }
     return this;
   }
 
   /**
    * Clears all registered job queues
-   * This removes all queued jobs from the queues
+   * This removes all queued jobs from the storage
    *
    * @returns The registry instance for chaining
    */
-  clearQueues() {
+  clearQueues(): this {
     for (const queue of this.queues.values()) {
-      queue.clear();
+      queue.storage.deleteAll();
     }
     return this;
   }
