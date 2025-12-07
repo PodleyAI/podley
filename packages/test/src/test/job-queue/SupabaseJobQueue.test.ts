@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InMemoryRateLimiter } from "@workglow/job-queue";
-import { SupabaseQueueStorage } from "@workglow/storage";
+import { RateLimiter } from "@workglow/job-queue";
+import { SupabaseRateLimiterStorage, SupabaseQueueStorage } from "@workglow/storage";
 import { describe } from "vitest";
 import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";
@@ -15,7 +15,13 @@ const client = createSupabaseMockClient();
 describe("SupabaseJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new SupabaseQueueStorage(client, queueName),
-    (queueName: string, maxExecutions: number, windowSizeInSeconds: number) =>
-      new InMemoryRateLimiter({ maxExecutions, windowSizeInSeconds })
+    async (queueName: string, maxExecutions: number, windowSizeInSeconds: number) => {
+      const storage = new SupabaseRateLimiterStorage(client);
+      await storage.setupDatabase();
+      return new RateLimiter(storage, queueName, {
+        maxExecutions,
+        windowSizeInSeconds,
+      });
+    }
   );
 });

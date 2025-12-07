@@ -15,5 +15,5 @@ export * from "./limiter/ConcurrencyLimiter";
 export * from "./limiter/DelayLimiter";
 export * from "./limiter/EvenlySpacedRateLimiter";
 export * from "./limiter/ILimiter";
-export * from "./limiter/InMemoryRateLimiter";
 export * from "./limiter/NullLimiter";
+export * from "./limiter/RateLimiter";

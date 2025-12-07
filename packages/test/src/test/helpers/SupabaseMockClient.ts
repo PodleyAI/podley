@@ -88,6 +88,7 @@ export function createSupabaseMockClient(): SupabaseClient {
         _select: "*",
         _filters: [] as Array<{ column: string; operator: string; value: any }>,
         _limit: undefined as number | undefined,
+        _offset: undefined as number | undefined,
         _order: undefined as { column: string; ascending: boolean } | undefined,
         _single: false,
 
@@ -391,6 +392,12 @@ export function createSupabaseMockClient(): SupabaseClient {
           return queryBuilder;
         },
 
+        range: (start: number, end: number) => {
+          queryBuilder._offset = start;
+          queryBuilder._limit = end - start + 1;
+          return queryBuilder;
+        },
+
         single: async () => {
           queryBuilder._single = true;
           queryBuilder._limit = 1;
@@ -509,6 +516,10 @@ export function createSupabaseMockClient(): SupabaseClient {
 
           if (queryBuilder._order) {
             query += ` ORDER BY "${queryBuilder._order.column}" ${queryBuilder._order.ascending ? "ASC" : "DESC"}`;
+          }
+
+          if (queryBuilder._offset !== undefined) {
+            query += ` OFFSET ${queryBuilder._offset}`;
           }
 
           if (queryBuilder._limit !== undefined) {

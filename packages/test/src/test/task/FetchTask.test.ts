@@ -5,13 +5,13 @@
  */
 
 import {
-  InMemoryRateLimiter,
   JobQueueClient,
   JobQueueServer,
   PermanentJobError,
+  RateLimiter,
   RetryableJobError,
 } from "@workglow/job-queue";
-import { InMemoryQueueStorage } from "@workglow/storage";
+import { InMemoryQueueStorage, InMemoryRateLimiterStorage } from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   JobTaskFailedError,
@@ -89,7 +89,10 @@ describe("FetchTask", () => {
   test("respects rate limiting with InMemoryQueue", async () => {
     const queueName = "rate-limited-queue";
     // Create a rate limiter that allows 1 request per minute
-    const rateLimiter = new InMemoryRateLimiter({ maxExecutions: 1, windowSizeInSeconds: 1 }); // 1 request per 1 minute window
+    const rateLimiter = new RateLimiter(new InMemoryRateLimiterStorage(), queueName, {
+      maxExecutions: 1,
+      windowSizeInSeconds: 1,
+    }); // 1 request per 1 minute window
 
     // Create storage
     const storage = new InMemoryQueueStorage<FetchTaskInput, FetchTaskOutput>(queueName);

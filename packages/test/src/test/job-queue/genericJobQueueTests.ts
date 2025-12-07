@@ -92,7 +92,7 @@ export function runGenericJobQueueTests(
     queueName: string,
     maxExecutions: number,
     windowSizeInSeconds: number
-  ) => ILimiter
+  ) => ILimiter | Promise<ILimiter>
 ): void {
   let server: JobQueueServer<TInput, TOutput, TestJob>;
   let client: JobQueueClient<TInput, TOutput>;
@@ -104,10 +104,11 @@ export function runGenericJobQueueTests(
     storage = storageFactory(queueName);
     await storage.setupDatabase();
 
+    const limiter = await limiterFactory?.(queueName, 4, 60);
     server = new JobQueueServer<TInput, TOutput, TestJob>(TestJob, {
       storage,
       queueName,
-      limiter: limiterFactory?.(queueName, 4, 60),
+      limiter,
       pollIntervalMs: 1,
       cleanupIntervalMs: 1000,
     });
@@ -145,10 +146,11 @@ export function runGenericJobQueueTests(
 
       // Create a new server with deletion settings
       await server.stop();
+      const limiter = await limiterFactory?.(queueName, 4, 60);
       server = new JobQueueServer<TInput, TOutput, TestJob>(TestJob, {
         storage,
         queueName,
-        limiter: limiterFactory?.(queueName, 4, 60),
+        limiter,
         pollIntervalMs: 1,
         deleteAfterCompletionMs,
         cleanupIntervalMs: 5,
@@ -189,10 +191,11 @@ export function runGenericJobQueueTests(
     it("should delete jobs immediately when timing is set to 0", async () => {
       // Create a new server with immediate deletion
       await server.stop();
+      const limiter = await limiterFactory?.(queueName, 4, 60);
       server = new JobQueueServer<TInput, TOutput, TestJob>(TestJob, {
         storage,
         queueName,
-        limiter: limiterFactory?.(queueName, 4, 60),
+        limiter,
         pollIntervalMs: 1,
         deleteAfterCompletionMs: 0,
         deleteAfterFailureMs: 0,
@@ -422,17 +425,20 @@ export function runGenericJobQueueTests(
       await storage1.setupDatabase();
       await storage2.setupDatabase();
 
+      const limiter1 = await limiterFactory?.(queueName1, 4, 60);
+      const limiter2 = await limiterFactory?.(queueName2, 4, 60);
+
       const server1 = new JobQueueServer<TInput, TOutput, TestJob>(TestJob, {
         storage: storage1,
         queueName: queueName1,
-        limiter: limiterFactory?.(queueName1, 4, 60),
+        limiter: limiter1,
         pollIntervalMs: 1,
       });
 
       const server2 = new JobQueueServer<TInput, TOutput, TestJob>(TestJob, {
         storage: storage2,
         queueName: queueName2,
-        limiter: limiterFactory?.(queueName2, 4, 60),
+        limiter: limiter2,
         pollIntervalMs: 1,
       });
 

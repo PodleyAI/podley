@@ -141,17 +141,12 @@
       "name": "@workglow/job-queue",
       "version": "0.0.57",
       "devDependencies": {
-        "@types/pg": "^8.15.5",
-        "@workglow/sqlite": "workspace:*",
         "@workglow/storage": "workspace:*",
         "@workglow/util": "workspace:*",
-        "pg": "^8.16.3",
       },
       "peerDependencies": {
-        "@workglow/sqlite": "workspace:*",
         "@workglow/storage": "workspace:*",
         "@workglow/util": "workspace:*",
-        "pg": "^8.16.3",
       },
     },
     "packages/sqlite": {

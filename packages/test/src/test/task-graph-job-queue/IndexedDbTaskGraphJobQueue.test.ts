@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InMemoryRateLimiter, JobQueueClient, JobQueueServer } from "@workglow/job-queue";
-import { IndexedDbQueueStorage } from "@workglow/storage";
+import { JobQueueClient, JobQueueServer, RateLimiter } from "@workglow/job-queue";
+import { IndexedDbQueueStorage, InMemoryRateLimiterStorage } from "@workglow/storage";
 import { TaskInput, TaskOutput } from "@workglow/task-graph";
 import { uuid4 } from "@workglow/util";
 import "fake-indexeddb/auto";
@@ -21,7 +21,10 @@ describe("IndexedDbTaskGraphJobQueue", () => {
     const server = new JobQueueServer<TaskInput, TaskOutput>(TestJob, {
       storage,
       queueName,
-      limiter: new InMemoryRateLimiter({ maxExecutions: 1, windowSizeInSeconds: 10 }),
+      limiter: new RateLimiter(new InMemoryRateLimiterStorage(), queueName, {
+        maxExecutions: 1,
+        windowSizeInSeconds: 10,
+      }),
       pollIntervalMs: 1,
     });
 

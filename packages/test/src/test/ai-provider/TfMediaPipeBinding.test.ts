@@ -17,10 +17,14 @@ import {
   ConcurrencyLimiter,
   JobQueueClient,
   JobQueueServer,
-  SqliteRateLimiter,
+  RateLimiter,
 } from "@workglow/job-queue";
 import { Sqlite } from "@workglow/sqlite";
-import { InMemoryQueueStorage, SqliteQueueStorage } from "@workglow/storage";
+import {
+  InMemoryQueueStorage,
+  SqliteQueueStorage,
+  SqliteRateLimiterStorage,
+} from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
@@ -121,11 +125,12 @@ describe("TfMediaPipeBinding", () => {
         TENSORFLOW_MEDIAPIPE
       );
       await storage.setupDatabase();
-      const limiter = new SqliteRateLimiter(db, TENSORFLOW_MEDIAPIPE, {
+      const limiterStorage = new SqliteRateLimiterStorage(db);
+      await limiterStorage.setupDatabase();
+      const limiter = new RateLimiter(limiterStorage, TENSORFLOW_MEDIAPIPE, {
         maxExecutions: 4,
         windowSizeInSeconds: 1,
       });
-      limiter.ensureTableExists();
 
       const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(
         AiJob<AiJobInput<TaskInput>, TaskOutput>,

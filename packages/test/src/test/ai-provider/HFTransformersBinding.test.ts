@@ -16,10 +16,14 @@ import {
   ConcurrencyLimiter,
   JobQueueClient,
   JobQueueServer,
-  SqliteRateLimiter,
+  RateLimiter,
 } from "@workglow/job-queue";
 import { Sqlite } from "@workglow/sqlite";
-import { InMemoryQueueStorage, SqliteQueueStorage } from "@workglow/storage";
+import {
+  InMemoryQueueStorage,
+  SqliteQueueStorage,
+  SqliteRateLimiterStorage,
+} from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
@@ -102,11 +106,12 @@ describe("HFTransformersBinding", () => {
       const queueRegistry = getTaskQueueRegistry();
       const storage = new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(db, "test");
       await storage.setupDatabase();
-      const limiter = new SqliteRateLimiter(db, "test", {
+      const limiterStorage = new SqliteRateLimiterStorage(db);
+      await limiterStorage.setupDatabase();
+      const limiter = new RateLimiter(limiterStorage, "test", {
         maxExecutions: 4,
         windowSizeInSeconds: 1,
       });
-      limiter.ensureTableExists();
 
       const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(
         AiJob<AiJobInput<TaskInput>, TaskOutput>,

@@ -12,8 +12,8 @@ import {
   getGlobalModelRepository,
   setAiProviderRegistry,
 } from "@workglow/ai";
-import { InMemoryRateLimiter, JobQueueClient, JobQueueServer } from "@workglow/job-queue";
-import { InMemoryQueueStorage, IQueueStorage } from "@workglow/storage";
+import { JobQueueClient, JobQueueServer, RateLimiter } from "@workglow/job-queue";
+import { InMemoryQueueStorage, InMemoryRateLimiterStorage, IQueueStorage } from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
@@ -43,7 +43,10 @@ describe("AiProviderRegistry", () => {
       {
         storage,
         queueName: TEST_PROVIDER,
-        limiter: new InMemoryRateLimiter({ maxExecutions: 4, windowSizeInSeconds: 1 }),
+        limiter: new RateLimiter(new InMemoryRateLimiterStorage(), TEST_PROVIDER, {
+          maxExecutions: 4,
+          windowSizeInSeconds: 1,
+        }),
         pollIntervalMs: 1,
       }
     );

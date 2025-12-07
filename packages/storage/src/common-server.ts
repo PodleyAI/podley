@@ -21,8 +21,13 @@ export * from "./queue/PostgresQueueStorage";
 export * from "./queue/SqliteQueueStorage";
 export * from "./queue/SupabaseQueueStorage";
 
+export * from "./limiter/PostgresRateLimiterStorage";
+export * from "./limiter/SqliteRateLimiterStorage";
+export * from "./limiter/SupabaseRateLimiterStorage";
+
 // testing
 export * from "./kv/IndexedDbKvRepository";
 export * from "./queue/IndexedDbQueueStorage";
 export * from "./tabular/IndexedDbTabularRepository";
+export * from "./limiter/IndexedDbRateLimiterStorage";
 export * from "./util/IndexedDbTable";
