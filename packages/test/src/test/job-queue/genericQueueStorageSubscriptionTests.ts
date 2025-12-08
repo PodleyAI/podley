@@ -128,6 +128,7 @@ export function runGenericQueueStorageSubscriptionTests(
       expect(updateChange).toBeDefined();
       expect(updateChange?.old?.status).toBe(JobStatus.PENDING);
       expect(updateChange?.new?.status).toBe(JobStatus.PROCESSING);
+      expect(updateChange?.new?.id).toBe(jobId);
 
       unsubscribe();
     });
@@ -168,6 +169,7 @@ export function runGenericQueueStorageSubscriptionTests(
       expect(updateChange).toBeDefined();
       expect(updateChange?.new?.status).toBe(JobStatus.COMPLETED);
       expect(updateChange?.new?.output?.result).toBe("completed");
+      expect(updateChange?.new?.id).toBe(jobId);
 
       unsubscribe();
     });
@@ -259,6 +261,7 @@ export function runGenericQueueStorageSubscriptionTests(
       expect(updateChange).toBeDefined();
       expect(updateChange?.new?.progress).toBe(50);
       expect(updateChange?.new?.progress_message).toBe("Halfway done");
+      expect(updateChange?.new?.id).toBe(jobId);
 
       unsubscribe();
     });

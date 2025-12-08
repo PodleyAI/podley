@@ -119,7 +119,7 @@ export class JobQueueWorker<
     await sleep(sleepTime);
 
     // Abort all active jobs
-    for (const [jobId, controller] of this.activeJobAbortControllers.entries()) {
+    for (const controller of this.activeJobAbortControllers.values()) {
       if (!controller.signal.aborted) {
         controller.abort();
       }

@@ -406,12 +406,8 @@ export class JobQueueServer<
    */
   protected async cleanupJobs(): Promise<void> {
     try {
-      // Handle aborting jobs
-      const abortingJobs = await this.storage.peek(JobStatus.ABORTING);
-      for (const job of abortingJobs) {
-        // The workers will handle the abort via their abort controllers
-        // We just need to ensure the jobs get marked as failed
-      }
+      // The workers will handle the abort via their abort controllers
+      // We just need to ensure the jobs get marked as failed
 
       // Delete completed jobs after TTL
       if (this.deleteAfterCompletionMs !== undefined && this.deleteAfterCompletionMs > 0) {
@@ -524,4 +520,3 @@ export class JobQueueServer<
     };
   }
 }
-
