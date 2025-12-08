@@ -1,12 +1,12 @@
 import { getGlobalModelRepository, Model } from "@workglow/ai";
-import { HF_TRANSFORMERS_ONNX, QUANTIZATION_DATA_TYPES } from "@workglow/ai-provider";
+import { HF_TRANSFORMERS_ONNX, QuantizationDataType } from "@workglow/ai-provider";
 
 export async function addONNXModel(info: Partial<Model>, tasks: string[]) {
   const model = Object.assign(
     {
-      name: "onnx:" + info.url + ":" + (info.quantization ?? QUANTIZATION_DATA_TYPES.q8),
+      name: "onnx:" + info.url + ":" + (info.quantization ?? QuantizationDataType.q8),
       provider: HF_TRANSFORMERS_ONNX,
-      quantization: QUANTIZATION_DATA_TYPES.q8,
+      quantization: QuantizationDataType.q8,
       normalize: true,
       contextWindow: 4096,
       availableOnBrowser: true,
@@ -115,7 +115,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       pipeline: "text-generation",
       url: "Xenova/Phi-3-mini-4k-instruct",
       device: "webgpu",
-      quantization: QUANTIZATION_DATA_TYPES.q4,
+      quantization: QuantizationDataType.q4,
       use_external_data_format: true,
     },
     ["TextGenerationTask"]
@@ -127,7 +127,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       pipeline: "text-generation",
       url: "Xenova/Phi-3-mini-4k-instruct_fp16",
       device: "webgpu",
-      quantization: QUANTIZATION_DATA_TYPES.q4,
+      quantization: QuantizationDataType.q4,
       use_external_data_format: true,
     },
     ["TextGenerationTask"]
@@ -139,7 +139,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       pipeline: "text-generation",
       url: "onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX",
       device: "webgpu",
-      quantization: QUANTIZATION_DATA_TYPES.fp16,
+      quantization: QuantizationDataType.fp16,
       use_external_data_format: true,
     },
     ["TextGenerationTask"]
@@ -173,7 +173,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
     {
       pipeline: "summarization",
       url: "Falconsai/text_summarization",
-      quantization: QUANTIZATION_DATA_TYPES.fp32,
+      quantization: QuantizationDataType.fp32,
     },
     ["TextSummaryTask"]
   );

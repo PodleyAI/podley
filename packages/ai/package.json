@@ -39,8 +39,7 @@
     "@workglow/job-queue": "workspace:*",
     "@workglow/storage": "workspace:*",
     "@workglow/task-graph": "workspace:*",
-    "@workglow/util": "workspace:*",
-    "pg": "^8.16.3"
+    "@workglow/util": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@workglow/job-queue": {
@@ -60,8 +59,6 @@
     "@workglow/job-queue": "workspace:*",
     "@workglow/storage": "workspace:*",
     "@workglow/task-graph": "workspace:*",
-    "@workglow/util": "workspace:*",
-    "@types/pg": "^8.15.5",
-    "pg": "^8.16.3"
+    "@workglow/util": "workspace:*"
   }
 }

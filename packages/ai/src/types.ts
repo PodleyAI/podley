@@ -5,8 +5,3 @@
  */
 
 export * from "./common";
-
-export * from "./model/storage/IndexedDbModelRepository";
-export * from "./model/storage/InMemoryModelRepository";
-export * from "./model/storage/PostgresModelRepository";
-export * from "./model/storage/SqliteModelRepository";

@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SqliteTabularRepository } from "@workglow/storage";
 import {
-    ModelPrimaryKeyNames,
-    ModelRepository,
-    ModelSchema,
-    Task2ModelPrimaryKeyNames,
-    Task2ModelSchema,
-} from "../ModelRepository";
+  ModelPrimaryKeyNames,
+  ModelRepository,
+  ModelSchema,
+  Task2ModelPrimaryKeyNames,
+  Task2ModelSchema,
+} from "@workglow/ai";
+import { SqliteTabularRepository } from "@workglow/storage";
 
 /**
  * SQLite implementation of a model repository.

@@ -4,15 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import {
+  ModelPrimaryKeyNames,
+  ModelRepository,
+  ModelSchema,
+  Task2ModelPrimaryKeyNames,
+  Task2ModelSchema,
+} from "@workglow/ai";
 import { PostgresTabularRepository } from "@workglow/storage";
 import { Pool } from "pg";
-import {
-    ModelPrimaryKeyNames,
-    ModelRepository,
-    ModelSchema,
-    Task2ModelPrimaryKeyNames,
-    Task2ModelSchema,
-} from "../ModelRepository";
 
 /**
  * PostgreSQL implementation of a model repository.

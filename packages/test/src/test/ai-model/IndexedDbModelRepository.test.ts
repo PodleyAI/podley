@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IndexedDbModelRepository } from "@workglow/ai";
 import { uuid4 } from "@workglow/util";
 import "fake-indexeddb/auto";
 import { describe } from "vitest";
+import { IndexedDbModelRepository } from "../../binding/IndexedDbModelRepository";
 import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 
 describe("IndexedDbModelRepository", () => {

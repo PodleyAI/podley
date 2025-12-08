@@ -4,16 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { InMemoryModelRepository } from "./InMemoryModelRepository";
 import { ModelRepository } from "./ModelRepository";
-import { InMemoryModelRepository } from "./storage/InMemoryModelRepository";
-
-// temporary model registry that is synchronous until we have a proper model repository
-
-class FallbackModelRegistry extends InMemoryModelRepository {}
 
 let modelRegistry: ModelRepository;
-export function getGlobalModelRepository() {
-  if (!modelRegistry) modelRegistry = new FallbackModelRegistry();
+export function getGlobalModelRepository(): ModelRepository {
+  if (!modelRegistry) modelRegistry = new InMemoryModelRepository();
   return modelRegistry;
 }
 export function setGlobalModelRepository(pr: ModelRepository) {

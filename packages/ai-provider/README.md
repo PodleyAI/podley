@@ -125,7 +125,7 @@ Supports ONNX models from HuggingFace Hub with the following task types:
 Models support various quantization options:
 
 ```typescript
-import { QUANTIZATION_DATA_TYPES } from "@workglow/ai-provider";
+import { QuantizationDataType } from "@workglow/ai-provider";
 
 // Quantization options
 // "auto" - Auto-detect based on environment

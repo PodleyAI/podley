@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SqliteModelRepository } from "@workglow/ai";
 import { uuid4 } from "@workglow/util";
 import { describe } from "vitest";
+import { SqliteModelRepository } from "../../binding/SqliteModelRepository";
 import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 
 describe("SqliteModelRepository", () => {

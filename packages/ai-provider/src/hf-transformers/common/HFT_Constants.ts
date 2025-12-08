@@ -17,7 +17,7 @@ export type QuantizationDataType =
   | "bnb4"
   | "q4f16"; // fp16 model with int4 block weight quantization
 
-export const QUANTIZATION_DATA_TYPES = {
+export const QuantizationDataType = {
   auto: "auto",
   fp32: "fp32",
   fp16: "fp16",

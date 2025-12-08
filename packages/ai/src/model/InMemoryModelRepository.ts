@@ -5,13 +5,14 @@
  */
 
 import { InMemoryTabularRepository } from "@workglow/storage";
+
 import {
-    ModelPrimaryKeyNames,
-    ModelRepository,
-    ModelSchema,
-    Task2ModelPrimaryKeyNames,
-    Task2ModelSchema,
-} from "../ModelRepository";
+  ModelPrimaryKeyNames,
+  ModelRepository,
+  ModelSchema,
+  Task2ModelPrimaryKeyNames,
+  Task2ModelSchema,
+} from "./ModelRepository";
 
 /**
  * In-memory implementation of a model repository.

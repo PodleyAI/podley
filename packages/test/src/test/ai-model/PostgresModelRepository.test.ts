@@ -5,10 +5,10 @@
  */
 
 import { PGlite } from "@electric-sql/pglite";
-import { PostgresModelRepository } from "@workglow/ai";
 import { uuid4 } from "@workglow/util";
 import { Pool } from "pg";
 import { describe } from "vitest";
+import { PostgresModelRepository } from "../../binding/PostgresModelRepository";
 import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 
 const db = new PGlite() as unknown as Pool;

@@ -5,6 +5,3 @@
  */
 
 export * from "./common";
-
-export * from "./model/storage/IndexedDbModelRepository";
-export * from "./model/storage/InMemoryModelRepository";

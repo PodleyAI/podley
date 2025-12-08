@@ -5,6 +5,7 @@
  */
 
 export * from "./job/AiJob";
+export * from "./model/InMemoryModelRepository";
 export * from "./model/Model";
 export * from "./model/ModelRegistry";
 export * from "./model/ModelRepository";
