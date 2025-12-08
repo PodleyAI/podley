@@ -665,7 +665,20 @@ export function runGenericJobQueueTests(
       await server.start();
       const pendingAfterBurst = await client.size(JobStatus.PENDING);
       expect(pendingAfterBurst).toBeGreaterThan(0);
-      await sleep(3);
+
+      // Wait for at least one job to complete - jobs should complete in milliseconds
+      // but we need to account for event loop scheduling and async processing
+      const maxWaitTime = 1_000; // 1 second max wait (should be much faster)
+      const checkInterval = 5; // Check every 5ms for fast polling
+      const startTime = Date.now();
+      let completedCount = 0;
+
+      while (completedCount === 0 && Date.now() - startTime < maxWaitTime) {
+        completedCount = await client.size(JobStatus.COMPLETED);
+        if (completedCount === 0) {
+          await sleep(checkInterval);
+        }
+      }
 
       // Helper function to get job counts with retries
       async function getJobCounts(
