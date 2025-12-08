@@ -13,7 +13,14 @@ import {
   QueueSubscribeOptions,
 } from "@workglow/storage";
 import { sleep, uuid4 } from "@workglow/util";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const noop = () => {};
+const fakeTimers = !!vi.advanceTimersByTimeAsync;
+const useFakeTimers = fakeTimers ? vi.useFakeTimers : noop;
+const useRealTimers = fakeTimers ? vi.useRealTimers : noop;
+const advanceTimersByTimeAsync = fakeTimers ? vi.advanceTimersByTimeAsync : sleep;
+// const advanceTimersByTime = fakeTimers ? vi.advanceTimersByTime : sleep;
 
 /**
  * Generic tests for queue storage subscription functionality
@@ -70,9 +77,11 @@ export function runGenericQueueStorageSubscriptionTests(
       });
       testCounter++;
       await storage.setupDatabase();
+      useFakeTimers();
     });
 
     afterEach(async () => {
+      useRealTimers();
       await storage.deleteAll();
     });
 
@@ -91,7 +100,7 @@ export function runGenericQueueStorageSubscriptionTests(
         completed_at: null,
       });
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       expect(changes.length).toBeGreaterThan(0);
       const insertChange = changes.find((c) => c.type === "INSERT");
@@ -109,7 +118,7 @@ export function runGenericQueueStorageSubscriptionTests(
         completed_at: null,
       });
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       const changes: QueueChangePayload<TestInput, TestOutput>[] = [];
       const subscribeOptions: QueueSubscribeOptions = {
@@ -122,7 +131,7 @@ export function runGenericQueueStorageSubscriptionTests(
       // Update job status by calling next() which changes status to PROCESSING
       await storage.next();
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       const updateChange = changes.find((c) => c.type === "UPDATE");
       expect(updateChange).toBeDefined();
@@ -141,12 +150,12 @@ export function runGenericQueueStorageSubscriptionTests(
       });
 
       // Wait for the job to be visible (IndexedDB may need a yield between transactions)
-      await sleep(usesPolling ? Math.max(pollingIntervalMs, 5) : 5);
+      await advanceTimersByTimeAsync(usesPolling ? Math.max(pollingIntervalMs, 5) : 5);
 
       const job = await storage.next();
       expect(job).toBeDefined();
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       const changes: QueueChangePayload<TestInput, TestOutput>[] = [];
       const subscribeOptions: QueueSubscribeOptions = {
@@ -163,7 +172,7 @@ export function runGenericQueueStorageSubscriptionTests(
         completed_at: new Date().toISOString(),
       });
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       const updateChange = changes.find((c) => c.type === "UPDATE");
       expect(updateChange).toBeDefined();
@@ -181,7 +190,7 @@ export function runGenericQueueStorageSubscriptionTests(
         completed_at: null,
       });
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       const changes: QueueChangePayload<TestInput, TestOutput>[] = [];
       const subscribeOptions: QueueSubscribeOptions = {
@@ -193,7 +202,7 @@ export function runGenericQueueStorageSubscriptionTests(
 
       await storage.delete(jobId);
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       const deleteChange = changes.find((c) => c.type === "DELETE");
       expect(deleteChange).toBeDefined();
@@ -214,7 +223,7 @@ export function runGenericQueueStorageSubscriptionTests(
         completed_at: null,
       });
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       const changes: QueueChangePayload<TestInput, TestOutput>[] = [];
       const subscribeOptions: QueueSubscribeOptions = {
@@ -226,7 +235,7 @@ export function runGenericQueueStorageSubscriptionTests(
 
       await storage.deleteAll();
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       // Should have delete notifications for all jobs
       const deleteChanges = changes.filter((c) => c.type === "DELETE");
@@ -243,7 +252,7 @@ export function runGenericQueueStorageSubscriptionTests(
       });
 
       await storage.next();
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       const changes: QueueChangePayload<TestInput, TestOutput>[] = [];
       const subscribeOptions: QueueSubscribeOptions = {
@@ -255,7 +264,7 @@ export function runGenericQueueStorageSubscriptionTests(
 
       await storage.saveProgress(jobId, 50, "Halfway done", { step: 2 });
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       const updateChange = changes.find((c) => c.type === "UPDATE");
       expect(updateChange).toBeDefined();
@@ -281,7 +290,7 @@ export function runGenericQueueStorageSubscriptionTests(
         completed_at: null,
       });
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       expect(changes.length).toBeGreaterThan(0);
       const initialCount = changes.length;
@@ -294,7 +303,7 @@ export function runGenericQueueStorageSubscriptionTests(
         completed_at: null,
       });
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       // Should not have received new changes after unsubscribe
       expect(changes.length).toBe(initialCount);
@@ -320,7 +329,7 @@ export function runGenericQueueStorageSubscriptionTests(
         completed_at: null,
       });
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       expect(changes1.length).toBeGreaterThan(0);
       expect(changes2.length).toBeGreaterThan(0);
@@ -328,75 +337,6 @@ export function runGenericQueueStorageSubscriptionTests(
 
       unsubscribe1();
       unsubscribe2();
-    });
-
-    it("should respect prefix filtering in subscriptions", async () => {
-      const userId2 = uuid4();
-      const storage2 = storageFactory("test-queue-subscription", {
-        prefixes: singlePrefix,
-        prefixValues: { user_id: userId2 },
-      });
-      await storage2.setupDatabase();
-
-      try {
-        const changes1: QueueChangePayload<TestInput, TestOutput>[] = [];
-        const changes2: QueueChangePayload<TestInput, TestOutput>[] = [];
-
-        const subscribeOptions: QueueSubscribeOptions = {
-          pollingIntervalMs: usesPolling ? pollingIntervalMs : undefined,
-        };
-        const unsubscribe1 = storage.subscribeToChanges((change) => {
-          changes1.push(change);
-        }, subscribeOptions);
-        const unsubscribe2 = storage2.subscribeToChanges((change) => {
-          changes2.push(change);
-        }, subscribeOptions);
-
-        // Add job to storage1 (user1)
-        await storage.add({
-          input: { data: "user1-job" },
-          run_after: null,
-          completed_at: null,
-        });
-
-        // Add job to storage2 (user2)
-        await storage2.add({
-          input: { data: "user2-job" },
-          run_after: null,
-          completed_at: null,
-        });
-
-        await sleep(waitTime);
-
-        // storage1 should only see its own job
-        const user1Changes = changes1.filter(
-          (c) => c.new?.input?.data === "user1-job" || c.old?.input?.data === "user1-job"
-        );
-        expect(user1Changes.length).toBeGreaterThan(0);
-
-        // storage2 should only see its own job
-        const user2Changes = changes2.filter(
-          (c) => c.new?.input?.data === "user2-job" || c.old?.input?.data === "user2-job"
-        );
-        expect(user2Changes.length).toBeGreaterThan(0);
-
-        // storage1 should not see storage2's job
-        const user2InStorage1 = changes1.filter(
-          (c) => c.new?.input?.data === "user2-job" || c.old?.input?.data === "user2-job"
-        );
-        expect(user2InStorage1.length).toBe(0);
-
-        // storage2 should not see storage1's job
-        const user1InStorage2 = changes2.filter(
-          (c) => c.new?.input?.data === "user1-job" || c.old?.input?.data === "user1-job"
-        );
-        expect(user1InStorage2.length).toBe(0);
-
-        unsubscribe1();
-        unsubscribe2();
-      } finally {
-        await storage2.deleteAll();
-      }
     });
 
     it("should handle subscription options", async () => {
@@ -415,7 +355,7 @@ export function runGenericQueueStorageSubscriptionTests(
         completed_at: null,
       });
 
-      await sleep(waitTime);
+      await advanceTimersByTimeAsync(waitTime);
 
       expect(changes.length).toBeGreaterThan(0);
 
@@ -469,12 +409,76 @@ export function runGenericQueueStorageSubscriptionTests(
         await storage1.setupDatabase();
         await storage2.setupDatabase();
         await storage3.setupDatabase();
+        useFakeTimers();
       });
 
       afterEach(async () => {
+        useRealTimers();
         await storage1.deleteAll();
         await storage2.deleteAll();
         await storage3.deleteAll();
+      });
+
+      it("should respect prefix filtering in subscriptions", async () => {
+        try {
+          const changes1: QueueChangePayload<TestInput, TestOutput>[] = [];
+          const changes2: QueueChangePayload<TestInput, TestOutput>[] = [];
+
+          const subscribeOptions: QueueSubscribeOptions = {
+            pollingIntervalMs: usesPolling ? pollingIntervalMs : undefined,
+          };
+          const unsubscribe1 = storage1.subscribeToChanges((change) => {
+            changes1.push(change);
+          }, subscribeOptions);
+          const unsubscribe2 = storage2.subscribeToChanges((change) => {
+            changes2.push(change);
+          }, subscribeOptions);
+
+          // Add job to storage1 (user1)
+          await storage1.add({
+            input: { data: "user1-job" },
+            run_after: null,
+            completed_at: null,
+          });
+
+          // Add job to storage2 (user2)
+          await storage2.add({
+            input: { data: "user2-job" },
+            run_after: null,
+            completed_at: null,
+          });
+
+          await advanceTimersByTimeAsync(waitTime);
+
+          // storage1 should only see its own job
+          const user1Changes = changes1.filter(
+            (c) => c.new?.input?.data === "user1-job" || c.old?.input?.data === "user1-job"
+          );
+          expect(user1Changes.length).toBeGreaterThan(0);
+
+          // storage2 should only see its own job
+          const user2Changes = changes2.filter(
+            (c) => c.new?.input?.data === "user2-job" || c.old?.input?.data === "user2-job"
+          );
+          expect(user2Changes.length).toBeGreaterThan(0);
+
+          // storage1 should not see storage2's job
+          const user2InStorage1 = changes1.filter(
+            (c) => c.new?.input?.data === "user2-job" || c.old?.input?.data === "user2-job"
+          );
+          expect(user2InStorage1.length).toBe(0);
+
+          // storage2 should not see storage1's job
+          const user1InStorage2 = changes2.filter(
+            (c) => c.new?.input?.data === "user1-job" || c.old?.input?.data === "user1-job"
+          );
+          expect(user1InStorage2.length).toBe(0);
+
+          unsubscribe1();
+          unsubscribe2();
+        } finally {
+          await storage2.deleteAll();
+        }
       });
 
       it("should receive all changes with empty prefixFilter", async () => {
@@ -508,7 +512,7 @@ export function runGenericQueueStorageSubscriptionTests(
           completed_at: null,
         });
 
-        await sleep(waitTime * 2);
+        await advanceTimersByTimeAsync(waitTime * 2);
 
         // Should receive changes for all three jobs
         const allJobNames = allChanges
@@ -553,7 +557,7 @@ export function runGenericQueueStorageSubscriptionTests(
           completed_at: null,
         });
 
-        await sleep(waitTime * 2);
+        await advanceTimersByTimeAsync(waitTime * 2);
 
         // Should receive changes for user1's jobs only (both projects)
         const jobNames = user1Changes
@@ -598,7 +602,7 @@ export function runGenericQueueStorageSubscriptionTests(
           completed_at: null,
         });
 
-        await sleep(waitTime * 2);
+        await advanceTimersByTimeAsync(waitTime * 2);
 
         // Should only receive changes for storage1's exact prefix (user1 + project1)
         const jobNames = instanceChanges

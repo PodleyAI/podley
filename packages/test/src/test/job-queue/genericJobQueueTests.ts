@@ -16,9 +16,9 @@ import {
   PermanentJobError,
   RetryableJobError,
 } from "@workglow/job-queue";
-import { IQueueStorage } from "@workglow/storage";
+import { IndexedDbQueueStorage, IQueueStorage } from "@workglow/storage";
 import { BaseError, sleep, uuid4 } from "@workglow/util";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 export interface TInput {
   readonly taskType?: string;
@@ -94,6 +94,14 @@ export function runGenericJobQueueTests(
     windowSizeInSeconds: number
   ) => ILimiter | Promise<ILimiter>
 ): void {
+  const noop = () => {};
+  const fakeTimers =
+    !!vi.advanceTimersByTimeAsync &&
+    !(storageFactory("queueName") instanceof IndexedDbQueueStorage);
+  const useFakeTimers = fakeTimers ? vi.useFakeTimers : noop;
+  const useRealTimers = fakeTimers ? vi.useRealTimers : noop;
+  const advanceTimersByTimeAsync = fakeTimers ? vi.advanceTimersByTimeAsync : sleep;
+
   let server: JobQueueServer<TInput, TOutput, TestJob>;
   let client: JobQueueClient<TInput, TOutput>;
   let storage: IQueueStorage<TInput, TOutput>;
@@ -123,6 +131,9 @@ export function runGenericJobQueueTests(
   });
 
   afterEach(async () => {
+    if (vi.isFakeTimers()) {
+      useRealTimers();
+    }
     if (server) {
       await server.stop();
     }
@@ -134,7 +145,8 @@ export function runGenericJobQueueTests(
   describe("Basics", () => {
     it("should add a job to the queue", async () => {
       const handle = await client.submit({ taskType: "task1", data: "input1" });
-      expect(await client.size()).toBe(1);
+      const size = await client.size();
+      expect(size).toBe(1);
       const retrievedJob = await client.getJob(handle.id);
       expect(retrievedJob?.status).toBe(JobStatus.PENDING);
       expect(retrievedJob?.input.taskType).toBe("task1");
@@ -143,17 +155,21 @@ export function runGenericJobQueueTests(
 
     it("should delete completed jobs after specified time", async () => {
       const deleteAfterCompletionMs = 10;
+      const cleanupIntervalMs = 5;
+      const pollIntervalMs = 1;
 
       // Create a new server with deletion settings
       await server.stop();
+
       const limiter = await limiterFactory?.(queueName, 4, 60);
+
       server = new JobQueueServer<TInput, TOutput, TestJob>(TestJob, {
         storage,
         queueName,
         limiter,
-        pollIntervalMs: 1,
+        pollIntervalMs,
         deleteAfterCompletionMs,
-        cleanupIntervalMs: 5,
+        cleanupIntervalMs,
       });
       client.attach(server);
 
@@ -161,36 +177,35 @@ export function runGenericJobQueueTests(
 
       // Add and complete a job
       const handle = await client.submit({ taskType: "other", data: "input1" });
-      await handle.waitFor();
-
       const jobExists = !!(await client.getJob(handle.id));
       expect(jobExists).toBe(true);
-
-      await sleep(deleteAfterCompletionMs * 3);
-
-      const deletedJobExists = !!(await client.getJob(handle.id));
+      useFakeTimers();
+      await advanceTimersByTimeAsync(deleteAfterCompletionMs * 2);
+      const deletedJobExistsPromise = client.getJob(handle.id);
+      await advanceTimersByTimeAsync(1);
+      const deletedJob = await deletedJobExistsPromise;
+      const deletedJobExists = !!deletedJob;
       expect(deletedJobExists).toBe(false);
+      useRealTimers();
     });
 
     it("should not delete jobs when timing options are undefined", async () => {
       await server.start();
-
       // Add and complete a job
       const handle = await client.submit({ taskType: "other", data: "input1" });
-      await handle.waitFor();
 
-      // Give a small delay
-      await sleep(5);
+      useFakeTimers();
+      const waitForPromise = handle.waitFor();
+      await advanceTimersByTimeAsync(5);
+      await waitForPromise;
+      useRealTimers();
 
-      // Job should still exist
       const job = await client.getJob(handle.id);
       expect(job).toBeDefined();
       expect(job?.status).toBe(JobStatus.COMPLETED);
     });
 
     it("should delete jobs immediately when timing is set to 0", async () => {
-      // Create a new server with immediate deletion
-      await server.stop();
       const limiter = await limiterFactory?.(queueName, 4, 60);
       server = new JobQueueServer<TInput, TOutput, TestJob>(TestJob, {
         storage,
@@ -207,48 +222,64 @@ export function runGenericJobQueueTests(
 
       // Test completed job - immediate deletion happens in completeJob
       const completedHandle = await client.submit({ taskType: "other", data: "input1" });
-      await completedHandle.waitFor();
+
+      useFakeTimers();
+      const completedWaitForPromise = completedHandle.waitFor();
+      await advanceTimersByTimeAsync(1);
+      await completedWaitForPromise;
 
       // Small delay to allow cleanup
-      await sleep(10);
-      const completedJobExists = !!(await client.getJob(completedHandle.id));
+      await advanceTimersByTimeAsync(10);
+      const completedJobExistsPromise = client.getJob(completedHandle.id);
+      await advanceTimersByTimeAsync(0);
+      const completedJobExists = !!(await completedJobExistsPromise);
       expect(completedJobExists).toBe(false);
 
       // Test failed job
-      const failedHandle = await client.submit({ taskType: "failing", data: "input2" });
-      try {
-        await failedHandle.waitFor();
-      } catch (error) {
-        // Expected error
-      }
+      const failedHandlePromise = client.submit({ taskType: "failing", data: "input2" });
+      await advanceTimersByTimeAsync(0);
+      const failedHandle = await failedHandlePromise;
 
-      await sleep(10);
-      const failedJobExists = !!(await client.getJob(failedHandle.id));
+      const failedWaitForPromise = failedHandle.waitFor();
+      failedWaitForPromise.catch(() => {});
+      await advanceTimersByTimeAsync(50);
+
+      const failedJobExistsPromise = client.getJob(failedHandle.id);
+      await advanceTimersByTimeAsync(0);
+      const failedJobExists = !!(await failedJobExistsPromise);
       expect(failedJobExists).toBe(false);
-
-      await server.stop();
     });
 
     it("should process jobs and get stats", async () => {
       await server.start();
+
       const handle1 = await client.submit({ taskType: "other", data: "input1" });
       const handle2 = await client.submit({ taskType: "other", data: "input2" });
-      await handle1.waitFor();
-      await handle2.waitFor();
+
+      useFakeTimers();
+      const waitFor1Promise = handle1.waitFor();
+      await advanceTimersByTimeAsync(1);
+      await waitFor1Promise;
+      const waitFor2Promise = handle2.waitFor();
+      await advanceTimersByTimeAsync(1);
+      await waitFor2Promise;
 
       const stats = server.getStats();
       expect(stats.completedJobs).toBe(2);
       expect(stats.failedJobs).toBe(0);
       expect(stats.abortedJobs).toBe(0);
       expect(stats.retriedJobs).toBe(0);
+      useRealTimers();
     });
 
     it("should clear all jobs in the queue", async () => {
       await client.submit({ taskType: "task1", data: "input1" });
-      await client.submit({ taskType: "task1", data: "input1" });
-      expect(await client.size()).toBe(2);
+      await client.submit({ taskType: "task2", data: "input2" });
+      const size1 = await client.size();
+      expect(size1).toBe(2);
       await storage.deleteAll();
-      expect(await client.size()).toBe(0);
+      const size2 = await client.size();
+      expect(size2).toBe(0);
     });
 
     it("should retrieve the output for a given task type and input", async () => {
@@ -290,7 +321,9 @@ export function runGenericJobQueueTests(
       await client.submit({ taskType: "task1", data: "input1" });
       const lastHandle = await client.submit({ taskType: "task2", data: "input2" });
       await server.start();
-      await sleep(10);
+      useFakeTimers();
+      await advanceTimersByTimeAsync(10);
+      useRealTimers();
       await server.stop();
       const last = await client.getJob(lastHandle.id);
       expect(last?.status).toBe(JobStatus.PENDING);

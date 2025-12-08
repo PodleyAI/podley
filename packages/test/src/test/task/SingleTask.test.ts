@@ -5,8 +5,16 @@
  */
 
 import { Task, TaskAbortedError, TaskError, TaskStatus } from "@workglow/task-graph";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { sleep } from "@workglow/util";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventTestTask, SimpleProcessingTask, TestIOTask } from "./TestTasks";
+
+const noop = () => {};
+const fakeTimers = !!vi.advanceTimersByTimeAsync;
+const useFakeTimers = fakeTimers ? vi.useFakeTimers : noop;
+const useRealTimers = fakeTimers ? vi.useRealTimers : noop;
+const advanceTimersByTimeAsync = fakeTimers ? vi.advanceTimersByTimeAsync : sleep;
+const advanceTimersByTime = fakeTimers ? vi.advanceTimersByTime : noop;
 
 const spyOn = vi.spyOn;
 
@@ -364,7 +372,12 @@ describe("SingleTask", () => {
     let task: EventTestTask;
 
     beforeEach(() => {
+      useFakeTimers();
       task = new EventTestTask();
+    });
+
+    afterEach(() => {
+      useRealTimers();
     });
 
     describe("Basic event emission", () => {
@@ -438,7 +451,7 @@ describe("SingleTask", () => {
 
         const runPromise = task.run();
         task.abort();
-
+        advanceTimersByTime(1);
         await runPromise.catch(() => {});
 
         expect(receivedError).not.toBeNull();
@@ -484,13 +497,10 @@ describe("SingleTask", () => {
         task.shouldEmitProgress = true;
         task.delayMs = 50;
 
-        const runPromise = task.run();
-
+        task.run().catch(() => {});
         // Wait a bit to ensure progress event has time to fire
-        await new Promise((resolve) => setTimeout(resolve, 10));
-
+        await advanceTimersByTimeAsync(10);
         task.abort();
-        await runPromise.catch(() => {});
 
         expect(events).toEqual(["start", "progress", "abort"]);
       });
@@ -602,6 +612,7 @@ describe("SingleTask", () => {
         task.delayMs = 50;
         const runPromise = task.run();
         task.abort();
+        advanceTimersByTime(task.delayMs);
         await runPromise.catch(() => {});
         expect(task.status).toBe(TaskStatus.ABORTING);
       });
