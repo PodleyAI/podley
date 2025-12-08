@@ -145,7 +145,8 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
       error_code text,
       progress real DEFAULT 0,
       progress_message text DEFAULT '',
-      progress_details jsonb
+      progress_details jsonb,
+      worker_id text
     )`;
 
     const { error: tableError } = await this.client.rpc("exec_sql", { query: createTableSql });
@@ -266,9 +267,10 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
 
   /**
    * Retrieves the next available job that is ready to be processed.
+   * @param workerId - Optional worker ID to associate with the job
    * @returns The next job or undefined if no job is available
    */
-  public async next(): Promise<JobStorageFormat<Input, Output> | undefined> {
+  public async next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined> {
     // First, find the next job
     let selectQuery = this.client
       .from(this.tableName)
@@ -294,6 +296,7 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
       .update({
         status: JobStatus.PROCESSING,
         last_ran_at: new Date().toISOString(),
+        worker_id: workerId ?? null,
       })
       .eq("id", job.id)
       .eq("queue", this.queueName);

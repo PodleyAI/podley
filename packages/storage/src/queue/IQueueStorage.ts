@@ -108,6 +108,7 @@ export type JobStorageFormat<Input, Output> = {
   progress?: number;
   progress_message?: string;
   progress_details?: Record<string, any> | null;
+  worker_id?: string | null;
 };
 
 /**
@@ -130,9 +131,10 @@ export interface IQueueStorage<Input, Output> {
 
   /**
    * Gets the next job from the queue storage
+   * @param workerId - Optional worker ID to associate with the job
    * @returns The next job from the queue storage
    */
-  next(): Promise<JobStorageFormat<Input, Output> | undefined>;
+  next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined>;
 
   /**
    * Peeks at the next job(s) from the queue storage without removing them

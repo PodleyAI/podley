@@ -144,7 +144,8 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
       error_code text,
       progress real DEFAULT 0,
       progress_message text DEFAULT '',
-      progress_details jsonb
+      progress_details jsonb,
+      worker_id text
     )`;
 
     await this.db.query(sql);
@@ -284,17 +285,19 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
 
   /**
    * Retrieves the next available job that is ready to be processed.
+   * @param workerId - Optional worker ID to associate with the job
    * @returns The next job or undefined if no job is available
    */
-  public async next(): Promise<JobStorageFormat<Input, Output> | undefined> {
-    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(4);
+  public async next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined> {
+    // Parameters: $1=status, $2=queue, $3=status, $4=worker_id, $5+=prefix params
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(5);
     const result = await this.db.query<
       JobStorageFormat<Input, Output>,
-      Array<string | number | JobStatus>
+      Array<string | number | JobStatus | null>
     >(
       `
       UPDATE ${this.tableName} 
-      SET status = $1, last_ran_at = NOW() AT TIME ZONE 'UTC'
+      SET status = $1, last_ran_at = NOW() AT TIME ZONE 'UTC', worker_id = $4
       WHERE id = (
         SELECT id 
         FROM ${this.tableName} 
@@ -306,7 +309,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
         LIMIT 1
       )
       RETURNING *`,
-      [JobStatus.PROCESSING, this.queueName, JobStatus.PENDING, ...prefixParams]
+      [JobStatus.PROCESSING, this.queueName, JobStatus.PENDING, workerId ?? null, ...prefixParams]
     );
 
     return result?.rows?.[0] ?? undefined;

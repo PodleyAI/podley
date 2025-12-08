@@ -253,9 +253,10 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
 
   /**
    * Retrieves the next job from the queue.
+   * @param workerId - Optional worker ID to associate with the job
    * @returns A promise that resolves to the next job or undefined if the queue is empty.
    */
-  public async next(): Promise<JobStorageFormat<Input, Output> | undefined> {
+  public async next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined> {
     const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
@@ -299,6 +300,7 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
 
         job.status = JobStatus.PROCESSING;
         job.last_ran_at = now;
+        job.worker_id = workerId ?? null;
 
         try {
           const updateRequest = store.put(job);

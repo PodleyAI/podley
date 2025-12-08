@@ -135,7 +135,8 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         error_code TEXT,
         progress REAL DEFAULT 0,
         progress_message TEXT DEFAULT '',
-        progress_details TEXT NULL
+        progress_details TEXT NULL,
+        worker_id TEXT
       );
       
       CREATE INDEX IF NOT EXISTS job_queue_fetcher${indexSuffix}_idx ON ${this.tableName} (${prefixIndexPrefix}queue, status, run_after);
@@ -331,9 +332,10 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * Retrieves the next available job that is ready to be processed,
    * and updates its status to PROCESSING.
    *
+   * @param workerId - Optional worker ID to associate with the job
    * @returns The next job or undefined if no job is available
    */
-  public async next(): Promise<JobStorageFormat<Input, Output> | undefined> {
+  public async next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined> {
     const now = new Date().toISOString();
     const prefixConditions = this.buildPrefixWhereClause();
     const prefixParams = this.getPrefixParamValues();
@@ -345,11 +347,11 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
         output: string | null;
         progress_details: string | null;
       },
-      Array<string | number | JobStatus>
+      Array<string | number | JobStatus | null>
     >(
       `
       UPDATE ${this.tableName} 
-      SET status = ?, last_ran_at = ?
+      SET status = ?, last_ran_at = ?, worker_id = ?
       WHERE id = (
         SELECT id 
         FROM ${this.tableName} 
@@ -364,6 +366,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     const result = stmt.get(
       JobStatus.PROCESSING,
       now,
+      workerId ?? null,
       this.queueName,
       JobStatus.PENDING,
       ...prefixParams,

@@ -5,7 +5,7 @@
  */
 
 import { IQueueStorage, JobStatus, JobStorageFormat } from "@workglow/storage";
-import { EventEmitter, sleep } from "@workglow/util";
+import { EventEmitter, sleep, uuid4 } from "@workglow/util";
 import { ILimiter } from "../limiter/ILimiter";
 import { NullLimiter } from "../limiter/NullLimiter";
 import { Job, JobConstructorParam } from "./Job";
@@ -63,6 +63,7 @@ export class JobQueueWorker<
   QueueJob extends Job<Input, Output> = Job<Input, Output>,
 > {
   public readonly queueName: string;
+  public readonly workerId: string;
   protected readonly storage: IQueueStorage<Input, Output>;
   protected readonly jobClass: JobClass<Input, Output>;
   protected readonly limiter: ILimiter;
@@ -83,6 +84,7 @@ export class JobQueueWorker<
 
   constructor(jobClass: JobClass<Input, Output>, options: JobQueueWorkerOptions<Input, Output>) {
     this.queueName = options.queueName;
+    this.workerId = uuid4();
     this.storage = options.storage;
     this.jobClass = jobClass;
     this.limiter = options.limiter ?? new NullLimiter();
@@ -195,7 +197,7 @@ export class JobQueueWorker<
    * Get the next job from the queue
    */
   protected async next(): Promise<QueueJob | undefined> {
-    const job = await this.storage.next();
+    const job = await this.storage.next(this.workerId);
     if (!job) return undefined;
     return this.storageToClass(job) as QueueJob;
   }
@@ -534,4 +536,3 @@ export class JobQueueWorker<
     };
   }
 }
-
