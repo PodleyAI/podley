@@ -120,16 +120,23 @@ await graph.run();
 And unrolling the helpers, we get the following equivalent code:
 
 ```ts
-import { Dataflow, TaskGraph, getTaskQueueRegistry } from "@workglow/task-graph";
+import {
+  Dataflow,
+  TaskGraph,
+  getTaskQueueRegistry,
+  TaskInput,
+  TaskOutput,
+} from "@workglow/task-graph";
 import {
   DownloadModelTask,
   TextRewriterTask,
   AiJob,
+  AiJobInput,
   InMemoryModelRepository,
   setGlobalModelRepository,
 } from "@workglow/ai";
 import { DebugLogTask } from "@workglow/tasks";
-import { ConcurrencyLimiter, JobQueue } from "@workglow/job-queue";
+import { ConcurrencyLimiter, JobQueueClient, JobQueueServer } from "@workglow/job-queue";
 import { InMemoryQueueStorage } from "@workglow/storage";
 import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@workglow/ai-provider";
 
@@ -151,12 +158,23 @@ await modelRepo.connectTaskToModel("TextGenerationTask", "onnx:Xenova/LaMini-Fla
 await modelRepo.connectTaskToModel("TextRewriterTask", "onnx:Xenova/LaMini-Flan-T5-783M:q8");
 
 // Job queue for the provider
-const queue = new JobQueue(HF_TRANSFORMERS_ONNX, AiJob, {
+const queueName = HF_TRANSFORMERS_ONNX;
+const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(queueName);
+
+const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(AiJob, {
+  storage,
+  queueName,
   limiter: new ConcurrencyLimiter(1, 10),
-  storage: new InMemoryQueueStorage(HF_TRANSFORMERS_ONNX),
 });
-getTaskQueueRegistry().registerQueue(queue);
-queue.start();
+
+const client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+  storage,
+  queueName,
+});
+
+client.attach(server);
+getTaskQueueRegistry().registerQueue({ server, client, storage });
+await server.start();
 
 // Build and run graph
 const graph = new TaskGraph();
@@ -208,7 +226,7 @@ LLM providers have long running functions. These are handled by a Job Queue. The
 
 #### In memory:
 
-- **`register_HFT_InMemoryQueue`** sets up the Hugging Face Transformers provider (above), and a `JobQueue` with a `ConcurrencyLimiter` so the ONNX queue only runs one task/job at a time.
+- **`register_HFT_InMemoryQueue`** sets up the Hugging Face Transformers provider (above), and a job queue with `JobQueueServer` and `JobQueueClient` with a `ConcurrencyLimiter` so the ONNX queue only runs one task/job at a time.
 - **`register_TFMP_InMemoryQueue`** does the same for MediaPipe.
 
 #### Using SQLite:

@@ -5,7 +5,7 @@
  */
 
 import { EventParameters } from "@workglow/util";
-import { JobQueueStats } from "./JobQueue";
+import { JobQueueStats } from "./JobQueueServer";
 
 /**
  * Events that can be emitted by the JobQueue

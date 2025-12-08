@@ -6,7 +6,5 @@
 
 export * from "./common";
 
-export * from "./binding/IndexedDbJobQueue";
 export * from "./binding/IndexedDbTaskGraphRepository";
 export * from "./binding/IndexedDbTaskOutputRepository";
-export * from "./binding/InMemoryJobQueue";

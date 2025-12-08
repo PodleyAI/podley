@@ -4,8 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IJobExecuteContext, Job, JobQueue } from "@workglow/job-queue";
-import { getTaskQueueRegistry, JobQueueTask, TaskInput, TaskOutput } from "@workglow/task-graph";
+import { IJobExecuteContext, Job } from "@workglow/job-queue";
+import {
+  getTaskQueueRegistry,
+  JobQueueTask,
+  RegisteredQueue,
+  TaskInput,
+  TaskOutput,
+} from "@workglow/task-graph";
 import { DataPortSchema } from "@workglow/util";
 import { afterEach, beforeEach, expect, it } from "vitest";
 
@@ -39,39 +45,40 @@ export class TestJobTask extends JobQueueTask<{ a: number; b: number }, { result
 }
 
 export function runGenericTaskGraphJobQueueTests(
-  createJobQueue: () => Promise<JobQueue<TaskInput, TaskOutput>>
-) {
-  let jobQueue: JobQueue<TaskInput, TaskOutput>;
+  createQueue: () => Promise<RegisteredQueue<TaskInput, TaskOutput>>
+): void {
+  let registeredQueue: RegisteredQueue<TaskInput, TaskOutput>;
 
   beforeEach(async () => {
-    jobQueue = await createJobQueue();
-    getTaskQueueRegistry().registerQueue(jobQueue);
+    registeredQueue = await createQueue();
+    getTaskQueueRegistry().registerQueue(registeredQueue);
   });
 
   afterEach(async () => {
-    await jobQueue.stop();
-    await jobQueue.clear();
+    await registeredQueue.server.stop();
+    await registeredQueue.storage.deleteAll();
   });
 
   it("should run a task via job queue", async () => {
-    await jobQueue.start();
+    await registeredQueue.server.start();
     const task = new TestJobTask(
       { a: 1, b: 2 },
       {
-        queue: jobQueue.queueName,
+        queue: registeredQueue.server.queueName,
       }
     );
     const result = await task.run();
     expect(result).toEqual({ result: 3 });
   });
+
   it("should not run a task via job queue if not started", async () => {
     const task = new TestJobTask(
       { a: 1, b: 2 },
       {
-        queue: jobQueue.queueName,
+        queue: registeredQueue.server.queueName,
       }
     );
-    const wait = (ms: number, result: any) =>
+    const wait = (ms: number, result: unknown) =>
       new Promise((resolve) => setTimeout(resolve, ms, result));
     const result = await Promise.race([task.run(), wait(10, "STOP")]);
     expect(result).toEqual("STOP");

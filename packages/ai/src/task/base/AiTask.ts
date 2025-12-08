@@ -8,13 +8,13 @@
  * @description This file contains the implementation of the JobQueueTask class and its derived classes.
  */
 
-import { Job, JobQueue } from "@workglow/job-queue";
+import { Job } from "@workglow/job-queue";
 import {
-    JobQueueTask,
-    JobQueueTaskConfig,
-    TaskConfigurationError,
-    TaskInput,
-    type TaskOutput,
+  JobQueueTask,
+  JobQueueTaskConfig,
+  TaskConfigurationError,
+  TaskInput,
+  type TaskOutput,
 } from "@workglow/task-graph";
 import { type JsonSchema } from "@workglow/util";
 
@@ -64,13 +64,12 @@ export class AiTask<
   // ========================================================================
 
   /**
-   * Creates a new Job instance for the task
-   * @returns Promise<Job> - The created job
+   * Get the input to submit to the job queue.
+   * Transforms the task input to AiJobInput format.
+   * @param input - The task input
+   * @returns The AiJobInput to submit to the queue
    */
-  override async createJob(
-    input: Input,
-    queue?: JobQueue<Input, Output>
-  ): Promise<Job<AiJobInput<Input>, Output>> {
+  protected override async getJobInput(input: Input): Promise<AiJobInput<Input>> {
     if (typeof input.model !== "string") {
       console.error("AiTask: Model is not a string", input);
       throw new TaskConfigurationError(
@@ -79,18 +78,33 @@ export class AiTask<
     }
     const runtype = (this.constructor as any).runtype ?? (this.constructor as any).type;
     const model = await this.getModelForInput(input as AiSingleTaskInput);
-    const queueName = queue?.queueName ?? (await this.getDefaultQueueName(input));
-    if (!queueName) {
+
+    return {
+      taskType: runtype,
+      aiProvider: model.provider,
+      taskInput: input as Input & { model: string },
+    };
+  }
+
+  /**
+   * Creates a new Job instance for direct execution (without a queue).
+   * @param input - The task input
+   * @param queueName - The queue name (if any)
+   * @returns Promise<Job> - The created job
+   */
+  override async createJob(
+    input: Input,
+    queueName?: string
+  ): Promise<Job<AiJobInput<Input>, Output>> {
+    const jobInput = await this.getJobInput(input);
+    const resolvedQueueName = queueName ?? (await this.getDefaultQueueName(input));
+    if (!resolvedQueueName) {
       throw new TaskConfigurationError("JobQueueTask: Unable to determine queue for AI provider");
     }
     const job = new AiJob<AiJobInput<Input>, Output>({
-      queueName,
+      queueName: resolvedQueueName,
       jobRunId: this.config.runnerId, // could be undefined
-      input: {
-        taskType: runtype,
-        aiProvider: model.provider,
-        taskInput: input as Input & { model: string },
-      },
+      input: jobInput,
     });
     return job;
   }
@@ -109,7 +123,7 @@ export class AiTask<
     return model;
   }
 
-  protected override async getDefaultQueueName(input: Input) {
+  protected override async getDefaultQueueName(input: Input): Promise<string | undefined> {
     if (typeof input.model === "string") {
       const model = await this.getModelForInput(input as AiSingleTaskInput);
       return model.provider;

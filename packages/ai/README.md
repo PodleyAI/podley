@@ -32,9 +32,11 @@ import {
   setGlobalModelRepository,
   InMemoryModelRepository,
   AiJob,
+  AiJobInput,
 } from "@workglow/ai";
-import { Workflow, getTaskQueueRegistry } from "@workglow/task-graph";
-import { JobQueue } from "@workglow/job-queue";
+import { Workflow, getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-graph";
+import { ConcurrencyLimiter, JobQueueClient, JobQueueServer } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
 import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@workglow/ai-provider";
 
 // 1. Set up a model repository
@@ -59,7 +61,23 @@ await modelRepo.connectTaskToModel("TextGenerationTask", "onnx:Xenova/LaMini-Fla
 await register_HFT_InlineJobFns();
 
 // 5. Set up job queue for the provider
-getTaskQueueRegistry().registerQueue(new JobQueue(HF_TRANSFORMERS_ONNX, AiJob));
+const queueName = HF_TRANSFORMERS_ONNX;
+const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(queueName);
+
+const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(AiJob, {
+  storage,
+  queueName,
+  limiter: new ConcurrencyLimiter(1),
+});
+
+const client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+  storage,
+  queueName,
+});
+
+client.attach(server);
+getTaskQueueRegistry().registerQueue({ server, client, storage });
+await server.start();
 
 // 6. Create and run a workflow
 const workflow = new Workflow();
@@ -344,12 +362,29 @@ For compute-intensive tasks that should run in workers:
 Each provider needs a job queue for task execution:
 
 ```typescript
-import { getTaskQueueRegistry } from "@workglow/task-graph";
-import { JobQueue } from "@workglow/job-queue";
-import { AiJob } from "@workglow/ai";
+import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-graph";
+import { ConcurrencyLimiter, JobQueueClient, JobQueueServer } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
+import { AiJob, AiJobInput } from "@workglow/ai";
 import { HF_TRANSFORMERS_ONNX } from "@workglow/ai-provider";
 
-getTaskQueueRegistry().registerQueue(new JobQueue(HF_TRANSFORMERS_ONNX, AiJob));
+const queueName = HF_TRANSFORMERS_ONNX;
+const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(queueName);
+
+const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(AiJob, {
+  storage,
+  queueName,
+  limiter: new ConcurrencyLimiter(1),
+});
+
+const client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+  storage,
+  queueName,
+});
+
+client.attach(server);
+getTaskQueueRegistry().registerQueue({ server, client, storage });
+await server.start();
 ```
 
 ## Workflow Integration

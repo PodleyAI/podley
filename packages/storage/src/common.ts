@@ -16,3 +16,6 @@ export * from "./kv/KvViaTabularRepository";
 
 export * from "./queue/InMemoryQueueStorage";
 export * from "./queue/IQueueStorage";
+
+export * from "./limiter/IRateLimiterStorage";
+export * from "./limiter/InMemoryRateLimiterStorage";

@@ -6,6 +6,7 @@
 
 import { InMemoryTabularRepository } from "@workglow/storage";
 import { describe } from "vitest";
+import { runGenericTabularRepositorySubscriptionTests } from "./genericTabularRepositorySubscriptionTests";
 import {
   CompoundPrimaryKeyNames,
   CompoundSchema,
@@ -27,5 +28,14 @@ describe("InMemoryTabularRepository", () => {
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
       )
+  );
+
+  runGenericTabularRepositorySubscriptionTests(
+    async () =>
+      new InMemoryTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
+        CompoundSchema,
+        CompoundPrimaryKeyNames
+      ),
+    { usesPolling: false }
   );
 });

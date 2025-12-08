@@ -9,7 +9,7 @@ import { getTaskQueueRegistry } from "@workglow/task-graph";
 import { useCallback, useEffect, useState } from "react";
 
 export function QueueStatus({ queueType }: { queueType: string }) {
-  const queue = getTaskQueueRegistry().getQueue(queueType);
+  const registeredQueue = getTaskQueueRegistry().getQueue(queueType);
   const [pending, setPending] = useState<number>(0);
   const [processing, setProcessing] = useState<number>(0);
   const [completed, setCompleted] = useState<number>(0);
@@ -18,47 +18,56 @@ export function QueueStatus({ queueType }: { queueType: string }) {
   const [disabled, setDisabled] = useState<number>(0);
 
   useEffect(() => {
+    if (!registeredQueue) return;
+
+    const { client } = registeredQueue;
+
     async function listen() {
-      setPending(await queue.size(JobStatus.PENDING));
-      setProcessing(await queue.size(JobStatus.PROCESSING));
-      setCompleted(await queue.size(JobStatus.COMPLETED));
-      setAborting(await queue.size(JobStatus.ABORTING));
-      setErrors(await queue.size(JobStatus.FAILED));
-      setDisabled(await queue.size(JobStatus.DISABLED));
+      setPending(await client.size(JobStatus.PENDING));
+      setProcessing(await client.size(JobStatus.PROCESSING));
+      setCompleted(await client.size(JobStatus.COMPLETED));
+      setAborting(await client.size(JobStatus.ABORTING));
+      setErrors(await client.size(JobStatus.FAILED));
+      setDisabled(await client.size(JobStatus.DISABLED));
     }
 
-    queue.on("job_start", listen);
-    queue.on("job_complete", listen);
-    queue.on("job_error", listen);
-    queue.on("job_aborting", listen);
-    queue.on("job_disabled", listen);
+    client.on("job_start", listen);
+    client.on("job_complete", listen);
+    client.on("job_error", listen);
+    client.on("job_aborting", listen);
+    client.on("job_disabled", listen);
     listen();
 
     return () => {
-      queue.off("job_start", listen);
-      queue.off("job_complete", listen);
-      queue.off("job_error", listen);
-      queue.off("job_aborting", listen);
-      queue.off("job_disabled", listen);
+      client.off("job_start", listen);
+      client.off("job_complete", listen);
+      client.off("job_error", listen);
+      client.off("job_aborting", listen);
+      client.off("job_disabled", listen);
     };
-  }, []);
+  }, [registeredQueue]);
 
   const clear = useCallback(() => {
-    queue.clear();
+    if (!registeredQueue) return;
+    registeredQueue.storage.deleteAll();
     setPending(0);
     setProcessing(0);
     setCompleted(0);
     setAborting(0);
     setErrors(0);
     setDisabled(0);
-  }, [queue]);
+  }, [registeredQueue]);
+
+  if (!registeredQueue) {
+    return <span>Queue {queueType} not found</span>;
+  }
 
   return (
     <span>
-      <span>{queue.queueName.split("_").pop()}</span>: <span title="Pending">{pending}</span> /{" "}
-      <span title="Processing">{processing}</span> / <span title="Completed">{completed}</span> /{" "}
-      <span title="Aborting">{aborting}</span> / <span title="Errors">{errors}</span> /{" "}
-      <span title="Disabled">{disabled}</span>
+      <span>{registeredQueue.server.queueName.split("_").pop()}</span>:{" "}
+      <span title="Pending">{pending}</span> / <span title="Processing">{processing}</span> /{" "}
+      <span title="Completed">{completed}</span> / <span title="Aborting">{aborting}</span> /{" "}
+      <span title="Errors">{errors}</span> / <span title="Disabled">{disabled}</span>
       <button className="float-right" onClick={clear}>
         Clear
       </button>

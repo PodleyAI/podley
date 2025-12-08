@@ -5,7 +5,10 @@
  */
 
 import { env } from "@sroussey/transformers";
-import { getAiProviderRegistry } from "@workglow/ai";
+import { AiJob, AiJobInput, getAiProviderRegistry } from "@workglow/ai";
+import { ConcurrencyLimiter, JobQueueClient, JobQueueServer } from "@workglow/job-queue";
+import { InMemoryQueueStorage } from "@workglow/storage";
+import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-graph";
 import { HF_TRANSFORMERS_ONNX } from "../common/HFT_Constants";
 import {
   HFT_Download,
@@ -17,7 +20,15 @@ import {
   HFT_TextTranslation,
 } from "../common/HFT_JobRunFns";
 
-export async function register_HFT_InlineJobFns() {
+/**
+ * Registers the HuggingFace Transformers inline job functions for same-thread execution.
+ * If no client is provided, creates a default in-memory queue and registers it.
+ *
+ * @param client - Optional existing JobQueueClient. If not provided, creates a default in-memory queue.
+ */
+export async function register_HFT_InlineJobFns(
+  client?: JobQueueClient<AiJobInput<TaskInput>, TaskOutput>
+): Promise<void> {
   // @ts-ignore
   env.backends.onnx.wasm.proxy = true;
   const ProviderRegistry = getAiProviderRegistry();
@@ -32,5 +43,29 @@ export async function register_HFT_InlineJobFns() {
   };
   for (const [jobName, fn] of Object.entries(fns)) {
     ProviderRegistry.registerRunFn<any, any>(HF_TRANSFORMERS_ONNX, jobName, fn);
+  }
+
+  // If no client provided, create a default in-memory queue
+  if (!client) {
+    const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
+      HF_TRANSFORMERS_ONNX
+    );
+    await storage.setupDatabase();
+
+    const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(AiJob, {
+      storage,
+      queueName: HF_TRANSFORMERS_ONNX,
+      limiter: new ConcurrencyLimiter(1, 100),
+    });
+
+    client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+      storage,
+      queueName: HF_TRANSFORMERS_ONNX,
+    });
+
+    client.attach(server);
+
+    getTaskQueueRegistry().registerQueue({ server, client, storage });
+    await server.start();
   }
 }

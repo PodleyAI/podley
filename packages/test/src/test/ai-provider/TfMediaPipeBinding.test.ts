@@ -13,9 +13,18 @@ import {
   setGlobalModelRepository,
 } from "@workglow/ai";
 import { register_TFMP_InlineJobFns, TENSORFLOW_MEDIAPIPE } from "@workglow/ai-provider";
-import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@workglow/job-queue";
+import {
+  ConcurrencyLimiter,
+  JobQueueClient,
+  JobQueueServer,
+  RateLimiter,
+} from "@workglow/job-queue";
 import { Sqlite } from "@workglow/sqlite";
-import { InMemoryQueueStorage, SqliteQueueStorage } from "@workglow/storage";
+import {
+  InMemoryQueueStorage,
+  SqliteQueueStorage,
+  SqliteRateLimiterStorage,
+} from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
@@ -36,20 +45,30 @@ describe("TfMediaPipeBinding", () => {
   describe("InMemoryJobQueue", () => {
     it("should initialize without errors", async () => {
       const queueRegistry = getTaskQueueRegistry();
-      const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
-        TENSORFLOW_MEDIAPIPE,
+      const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
+        TENSORFLOW_MEDIAPIPE
+      );
+      await storage.setupDatabase();
+
+      const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(
         AiJob<AiJobInput<TaskInput>, TaskOutput>,
         {
-          storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
-            TENSORFLOW_MEDIAPIPE
-          ),
+          storage,
+          queueName: TENSORFLOW_MEDIAPIPE,
           limiter: new ConcurrencyLimiter(1, 10),
-          waitDurationInMilliseconds: 1,
+          pollIntervalMs: 1,
         }
       );
-      queueRegistry.registerQueue(jobQueue);
 
-      register_TFMP_InlineJobFns();
+      const client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+        storage,
+        queueName: TENSORFLOW_MEDIAPIPE,
+      });
+
+      client.attach(server);
+
+      await register_TFMP_InlineJobFns(client);
+      queueRegistry.registerQueue({ server, client, storage });
       setGlobalModelRepository(new InMemoryModelRepository());
 
       const universal_sentence_encoder: Model = {
@@ -66,9 +85,9 @@ describe("TfMediaPipeBinding", () => {
         universal_sentence_encoder.name
       );
 
-      const queue = queueRegistry.getQueue(TENSORFLOW_MEDIAPIPE);
-      expect(queue).toBeDefined();
-      expect(queue?.queueName).toEqual(TENSORFLOW_MEDIAPIPE);
+      const registeredQueue = queueRegistry.getQueue(TENSORFLOW_MEDIAPIPE);
+      expect(registeredQueue).toBeDefined();
+      expect(registeredQueue?.server.queueName).toEqual(TENSORFLOW_MEDIAPIPE);
 
       const workflow = new Workflow();
       workflow.DownloadModel({
@@ -76,15 +95,14 @@ describe("TfMediaPipeBinding", () => {
       });
       workflow.run();
       await sleep(1);
-      expect(await queue?.size()).toEqual(1);
+      expect(await registeredQueue?.client.size()).toEqual(1);
       workflow.reset();
-      await queue?.clear();
+      await registeredQueue?.storage.deleteAll();
     });
   });
 
   describe("SqliteJobQueue", () => {
     it("should not fail", async () => {
-      register_TFMP_InlineJobFns();
       setGlobalModelRepository(new InMemoryModelRepository());
       const universal_sentence_encoder: Model = {
         name: "media-pipe:Universal Sentence Encoder",
@@ -105,25 +123,35 @@ describe("TfMediaPipeBinding", () => {
         TENSORFLOW_MEDIAPIPE
       );
       await storage.setupDatabase();
-      const limiter = new SqliteRateLimiter(db, TENSORFLOW_MEDIAPIPE, {
+      const limiterStorage = new SqliteRateLimiterStorage(db);
+      await limiterStorage.setupDatabase();
+      const limiter = new RateLimiter(limiterStorage, TENSORFLOW_MEDIAPIPE, {
         maxExecutions: 4,
         windowSizeInSeconds: 1,
       });
-      limiter.ensureTableExists();
-      const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
-        TENSORFLOW_MEDIAPIPE,
+
+      const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(
         AiJob<AiJobInput<TaskInput>, TaskOutput>,
         {
-          storage: storage,
-          limiter: limiter,
-          waitDurationInMilliseconds: 1,
+          storage,
+          queueName: TENSORFLOW_MEDIAPIPE,
+          limiter,
+          pollIntervalMs: 1,
         }
       );
 
-      getTaskQueueRegistry().registerQueue(jobQueue);
-      const queue = getTaskQueueRegistry().getQueue(TENSORFLOW_MEDIAPIPE);
-      expect(queue).toBeDefined();
-      expect(queue?.queueName).toEqual(TENSORFLOW_MEDIAPIPE);
+      const client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+        storage,
+        queueName: TENSORFLOW_MEDIAPIPE,
+      });
+
+      client.attach(server);
+
+      await register_TFMP_InlineJobFns(client);
+      getTaskQueueRegistry().registerQueue({ server, client, storage });
+      const registeredQueue = getTaskQueueRegistry().getQueue(TENSORFLOW_MEDIAPIPE);
+      expect(registeredQueue).toBeDefined();
+      expect(registeredQueue?.server.queueName).toEqual(TENSORFLOW_MEDIAPIPE);
 
       const workflow = new Workflow();
       workflow.DownloadModel({
@@ -131,9 +159,9 @@ describe("TfMediaPipeBinding", () => {
       });
       workflow.run();
       await sleep(1);
-      expect(await queue?.size()).toEqual(1);
+      expect(await registeredQueue?.client.size()).toEqual(1);
       workflow.reset();
-      await queue?.clear();
+      await registeredQueue?.storage.deleteAll();
     });
   });
 

@@ -53,4 +53,7 @@ describe("SupabaseTabularRepository", () => {
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
       )
   );
+
+  // Subscription tests skipped for Supabase because mock client doesn't support realtime
+  // In production, Supabase uses realtime subscriptions which require a real Supabase instance
 });

@@ -6,34 +6,58 @@
 
 import { AiJob, AiJobInput } from "@workglow/ai";
 import { TENSORFLOW_MEDIAPIPE } from "@workglow/ai-provider";
-import { ConcurrencyLimiter, JobQueue } from "@workglow/job-queue";
+import { ConcurrencyLimiter, JobQueueClient, JobQueueServer } from "@workglow/job-queue";
 import { InMemoryQueueStorage } from "@workglow/storage";
 import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-graph";
 export * from "./MediaPipeModelSamples";
 export * from "./ONNXModelSamples";
 
-export async function register_HFT_InMemoryQueue() {
-  const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
-    "HF_TRANSFORMERS_ONNX",
+export async function register_HFT_InMemoryQueue(): Promise<void> {
+  const queueName = "HF_TRANSFORMERS_ONNX";
+  const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(queueName);
+  await storage.setupDatabase();
+
+  const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(
     AiJob<AiJobInput<TaskInput>, TaskOutput>,
     {
-      storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>("HF_TRANSFORMERS_ONNX"),
+      storage,
+      queueName,
       limiter: new ConcurrencyLimiter(1, 10),
     }
   );
-  getTaskQueueRegistry().registerQueue(jobQueue);
-  jobQueue.start();
+
+  const client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+    storage,
+    queueName,
+  });
+
+  client.attach(server);
+
+  getTaskQueueRegistry().registerQueue({ server, client, storage });
+  await server.start();
 }
 
-export async function register_TFMP_InMemoryQueue() {
-  const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
-    TENSORFLOW_MEDIAPIPE,
+export async function register_TFMP_InMemoryQueue(): Promise<void> {
+  const queueName = TENSORFLOW_MEDIAPIPE;
+  const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(queueName);
+  await storage.setupDatabase();
+
+  const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(
     AiJob<AiJobInput<TaskInput>, TaskOutput>,
     {
-      storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(TENSORFLOW_MEDIAPIPE),
+      storage,
+      queueName,
       limiter: new ConcurrencyLimiter(1, 10),
     }
   );
-  getTaskQueueRegistry().registerQueue(jobQueue);
-  jobQueue.start();
+
+  const client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+    storage,
+    queueName,
+  });
+
+  client.attach(server);
+
+  getTaskQueueRegistry().registerQueue({ server, client, storage });
+  await server.start();
 }

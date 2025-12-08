@@ -1,0 +1,538 @@
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { IQueueStorage, JobStatus, JobStorageFormat } from "@workglow/storage";
+import { EventEmitter, sleep, uuid4 } from "@workglow/util";
+import { ILimiter } from "../limiter/ILimiter";
+import { NullLimiter } from "../limiter/NullLimiter";
+import { Job, JobConstructorParam } from "./Job";
+import {
+  AbortSignalJobError,
+  JobDisabledError,
+  JobError,
+  JobNotFoundError,
+  PermanentJobError,
+  RetryableJobError,
+} from "./JobError";
+
+/**
+ * Events emitted by JobQueueWorker
+ */
+export type JobQueueWorkerEventListeners<Input, Output> = {
+  job_start: (jobId: unknown) => void;
+  job_complete: (jobId: unknown, output: Output) => void;
+  job_error: (jobId: unknown, error: string, errorCode?: string) => void;
+  job_disabled: (jobId: unknown) => void;
+  job_retry: (jobId: unknown, runAfter: Date) => void;
+  job_progress: (
+    jobId: unknown,
+    progress: number,
+    message: string,
+    details: Record<string, unknown> | null
+  ) => void;
+  worker_start: () => void;
+  worker_stop: () => void;
+};
+
+export type JobQueueWorkerEvents = keyof JobQueueWorkerEventListeners<unknown, unknown>;
+
+/**
+ * Options for creating a JobQueueWorker
+ */
+export interface JobQueueWorkerOptions<Input, Output> {
+  readonly storage: IQueueStorage<Input, Output>;
+  readonly queueName: string;
+  readonly limiter?: ILimiter;
+  readonly pollIntervalMs?: number;
+}
+
+type JobClass<Input, Output> = new (
+  param: JobConstructorParam<Input, Output>
+) => Job<Input, Output>;
+
+/**
+ * Worker that processes jobs from the queue.
+ * Reports progress and completion back to storage.
+ */
+export class JobQueueWorker<
+  Input,
+  Output,
+  QueueJob extends Job<Input, Output> = Job<Input, Output>,
+> {
+  public readonly queueName: string;
+  public readonly workerId: string;
+  protected readonly storage: IQueueStorage<Input, Output>;
+  protected readonly jobClass: JobClass<Input, Output>;
+  protected readonly limiter: ILimiter;
+  protected readonly pollIntervalMs: number;
+  protected readonly events = new EventEmitter<JobQueueWorkerEventListeners<Input, Output>>();
+
+  protected running = false;
+
+  /**
+   * Abort controllers for active jobs
+   */
+  protected readonly activeJobAbortControllers: Map<unknown, AbortController> = new Map();
+
+  /**
+   * Processing times for statistics
+   */
+  protected readonly processingTimes: Map<unknown, number> = new Map();
+
+  constructor(jobClass: JobClass<Input, Output>, options: JobQueueWorkerOptions<Input, Output>) {
+    this.queueName = options.queueName;
+    this.workerId = uuid4();
+    this.storage = options.storage;
+    this.jobClass = jobClass;
+    this.limiter = options.limiter ?? new NullLimiter();
+    this.pollIntervalMs = options.pollIntervalMs ?? 100;
+  }
+
+  /**
+   * Start the worker processing loop
+   */
+  public async start(): Promise<this> {
+    if (this.running) {
+      return this;
+    }
+    this.running = true;
+    this.events.emit("worker_start");
+    this.processJobs();
+    return this;
+  }
+
+  /**
+   * Stop the worker and abort any active jobs
+   */
+  public async stop(): Promise<this> {
+    if (!this.running) {
+      return this;
+    }
+    this.running = false;
+
+    // Wait for pending operations to settle
+    const size = await this.storage.size(JobStatus.PROCESSING);
+    const sleepTime = Math.max(100, size * 2);
+    await sleep(sleepTime);
+
+    // Abort all active jobs
+    for (const controller of this.activeJobAbortControllers.values()) {
+      if (!controller.signal.aborted) {
+        controller.abort();
+      }
+    }
+
+    await sleep(sleepTime);
+    this.events.emit("worker_stop");
+    return this;
+  }
+
+  /**
+   * Process a single job manually (useful for testing or manual control)
+   */
+  public async processNext(): Promise<boolean> {
+    const canProceed = await this.limiter.canProceed();
+    if (!canProceed) {
+      return false;
+    }
+
+    const job = await this.next();
+    if (!job) {
+      return false;
+    }
+
+    await this.processSingleJob(job);
+    return true;
+  }
+
+  /**
+   * Check if the worker is currently running
+   */
+  public isRunning(): boolean {
+    return this.running;
+  }
+
+  /**
+   * Get the number of active jobs being processed
+   */
+  public getActiveJobCount(): number {
+    return this.activeJobAbortControllers.size;
+  }
+
+  /**
+   * Get average processing time
+   */
+  public getAverageProcessingTime(): number | undefined {
+    const times = Array.from(this.processingTimes.values());
+    if (times.length === 0) return undefined;
+    return times.reduce((a, b) => a + b, 0) / times.length;
+  }
+
+  // ========================================================================
+  // Event handling
+  // ========================================================================
+
+  public on<Event extends JobQueueWorkerEvents>(
+    event: Event,
+    listener: JobQueueWorkerEventListeners<Input, Output>[Event]
+  ): void {
+    this.events.on(event, listener);
+  }
+
+  public off<Event extends JobQueueWorkerEvents>(
+    event: Event,
+    listener: JobQueueWorkerEventListeners<Input, Output>[Event]
+  ): void {
+    this.events.off(event, listener);
+  }
+
+  // ========================================================================
+  // Protected methods
+  // ========================================================================
+
+  /**
+   * Get the next job from the queue
+   */
+  protected async next(): Promise<QueueJob | undefined> {
+    const job = await this.storage.next(this.workerId);
+    if (!job) return undefined;
+    return this.storageToClass(job) as QueueJob;
+  }
+
+  /**
+   * Main job processing loop
+   */
+  protected async processJobs(): Promise<void> {
+    if (!this.running) {
+      return;
+    }
+
+    try {
+      // Check for aborting jobs
+      await this.checkForAbortingJobs();
+
+      const canProceed = await this.limiter.canProceed();
+      if (canProceed) {
+        const job = await this.next();
+        if (job) {
+          // Don't await - process in background to allow concurrent jobs
+          this.processSingleJob(job);
+        }
+      }
+    } finally {
+      if (this.running) {
+        setTimeout(() => this.processJobs(), this.pollIntervalMs);
+      }
+    }
+  }
+
+  /**
+   * Check for jobs that have been marked for abort and trigger their abort controllers
+   */
+  protected async checkForAbortingJobs(): Promise<void> {
+    const abortingJobs = await this.storage.peek(JobStatus.ABORTING);
+    for (const jobData of abortingJobs) {
+      const controller = this.activeJobAbortControllers.get(jobData.id);
+      if (controller && !controller.signal.aborted) {
+        controller.abort();
+      }
+    }
+  }
+
+  /**
+   * Process a single job
+   */
+  protected async processSingleJob(job: Job<Input, Output>): Promise<void> {
+    if (!job || !job.id) {
+      throw new JobNotFoundError("Invalid job provided for processing");
+    }
+
+    const startTime = Date.now();
+
+    try {
+      await this.validateJobState(job);
+      await this.limiter.recordJobStart();
+
+      const abortController = this.createAbortController(job.id);
+      this.events.emit("job_start", job.id);
+
+      const output = await this.executeJob(job, abortController.signal);
+      await this.completeJob(job, output);
+
+      this.processingTimes.set(job.id, Date.now() - startTime);
+    } catch (err: unknown) {
+      const error = this.normalizeError(err);
+      if (error instanceof RetryableJobError) {
+        if (job.runAttempts > job.maxRetries) {
+          await this.failJob(job, error);
+        } else {
+          await this.rescheduleJob(job, error.retryDate);
+        }
+      } else {
+        await this.failJob(job, error);
+      }
+    } finally {
+      await this.limiter.recordJobCompletion();
+    }
+  }
+
+  /**
+   * Execute a job with the provided abort signal
+   */
+  protected async executeJob(job: Job<Input, Output>, signal: AbortSignal): Promise<Output> {
+    if (!job) throw new JobNotFoundError("Cannot execute null or undefined job");
+    return await job.execute(job.input, {
+      signal,
+      updateProgress: this.updateProgress.bind(this, job.id),
+    });
+  }
+
+  /**
+   * Update progress for a job
+   */
+  protected async updateProgress(
+    jobId: unknown,
+    progress: number,
+    message: string = "",
+    details: Record<string, unknown> | null = null
+  ): Promise<void> {
+    // Validate progress value
+    progress = Math.max(0, Math.min(100, progress));
+
+    await this.storage.saveProgress(jobId, progress, message, details);
+    this.events.emit("job_progress", jobId, progress, message, details);
+  }
+
+  /**
+   * Mark a job as completed
+   */
+  protected async completeJob(job: Job<Input, Output>, output?: Output): Promise<void> {
+    try {
+      job.status = JobStatus.COMPLETED;
+      job.progress = 100;
+      job.progressMessage = "";
+      job.progressDetails = null;
+      job.completedAt = new Date();
+      job.output = output ?? null;
+      job.error = null;
+      job.errorCode = null;
+
+      await this.storage.complete(this.classToStorage(job));
+      this.events.emit("job_complete", job.id, output as Output);
+    } catch (err) {
+      console.error("completeJob errored:", err);
+    } finally {
+      this.cleanupJob(job.id);
+    }
+  }
+
+  /**
+   * Mark a job as failed
+   */
+  protected async failJob(job: Job<Input, Output>, error: JobError): Promise<void> {
+    try {
+      job.status = JobStatus.FAILED;
+      job.progress = 100;
+      job.completedAt = new Date();
+      job.progressMessage = "";
+      job.progressDetails = null;
+      job.error = error.message;
+      job.errorCode = error?.constructor?.name ?? null;
+
+      await this.storage.complete(this.classToStorage(job));
+      this.events.emit("job_error", job.id, error.message, error.constructor.name);
+    } catch (err) {
+      console.error("failJob errored:", err);
+    } finally {
+      this.cleanupJob(job.id);
+    }
+  }
+
+  /**
+   * Mark a job as disabled
+   */
+  protected async disableJob(job: Job<Input, Output>): Promise<void> {
+    try {
+      job.status = JobStatus.DISABLED;
+      job.progress = 100;
+      job.completedAt = new Date();
+      job.progressMessage = "";
+      job.progressDetails = null;
+
+      await this.storage.complete(this.classToStorage(job));
+      this.events.emit("job_disabled", job.id);
+    } catch (err) {
+      console.error("disableJob errored:", err);
+    } finally {
+      this.cleanupJob(job.id);
+    }
+  }
+
+  /**
+   * Reschedule a job for retry
+   */
+  protected async rescheduleJob(job: Job<Input, Output>, retryDate?: Date): Promise<void> {
+    try {
+      job.status = JobStatus.PENDING;
+      const nextAvailableTime = await this.limiter.getNextAvailableTime();
+      job.runAfter = retryDate instanceof Date ? retryDate : nextAvailableTime;
+      job.progress = 0;
+      job.progressMessage = "";
+      job.progressDetails = null;
+
+      await this.storage.complete(this.classToStorage(job));
+      this.events.emit("job_retry", job.id, job.runAfter);
+    } catch (err) {
+      console.error("rescheduleJob errored:", err);
+    }
+  }
+
+  /**
+   * Create an abort controller for a job
+   */
+  protected createAbortController(jobId: unknown): AbortController {
+    if (!jobId) throw new JobNotFoundError("Cannot create abort controller for undefined job");
+
+    if (this.activeJobAbortControllers.has(jobId)) {
+      return this.activeJobAbortControllers.get(jobId)!;
+    }
+
+    const abortController = new AbortController();
+    abortController.signal.addEventListener("abort", () => this.handleAbort(jobId));
+    this.activeJobAbortControllers.set(jobId, abortController);
+    return abortController;
+  }
+
+  /**
+   * Handle job abort
+   */
+  protected async handleAbort(jobId: unknown): Promise<void> {
+    const job = await this.getJob(jobId);
+    if (!job) {
+      console.error("handleAbort: job not found", jobId);
+      return;
+    }
+    const error = new AbortSignalJobError("Job Aborted");
+    await this.failJob(job, error);
+  }
+
+  /**
+   * Get a job by ID
+   */
+  protected async getJob(id: unknown): Promise<Job<Input, Output> | undefined> {
+    const job = await this.storage.get(id);
+    if (!job) return undefined;
+    return this.storageToClass(job);
+  }
+
+  /**
+   * Validate job state before processing
+   */
+  protected async validateJobState(job: Job<Input, Output>): Promise<void> {
+    if (job.status === JobStatus.COMPLETED) {
+      throw new PermanentJobError(`Job ${job.id} is already completed`);
+    }
+    if (job.status === JobStatus.FAILED) {
+      throw new PermanentJobError(`Job ${job.id} has failed`);
+    }
+    if (
+      job.status === JobStatus.ABORTING ||
+      this.activeJobAbortControllers.get(job.id)?.signal.aborted
+    ) {
+      throw new AbortSignalJobError(`Job ${job.id} is being aborted`);
+    }
+    if (job.deadlineAt && job.deadlineAt < new Date()) {
+      throw new PermanentJobError(`Job ${job.id} has exceeded its deadline`);
+    }
+    if (job.status === JobStatus.DISABLED) {
+      throw new JobDisabledError(`Job ${job.id} has been disabled`);
+    }
+  }
+
+  /**
+   * Normalize errors into JobError instances
+   */
+  protected normalizeError(err: unknown): JobError {
+    if (err instanceof JobError) {
+      return err;
+    }
+    if (err instanceof Error) {
+      return new PermanentJobError(err.message);
+    }
+    return new PermanentJobError(String(err));
+  }
+
+  /**
+   * Clean up job state after completion/failure
+   */
+  protected cleanupJob(jobId: unknown): void {
+    this.activeJobAbortControllers.delete(jobId);
+  }
+
+  /**
+   * Convert storage format to Job class
+   */
+  protected storageToClass(details: JobStorageFormat<Input, Output>): Job<Input, Output> {
+    const toDate = (date: string | null | undefined): Date | null => {
+      if (!date) return null;
+      const d = new Date(date);
+      return isNaN(d.getTime()) ? null : d;
+    };
+    return new this.jobClass({
+      id: details.id,
+      jobRunId: details.job_run_id,
+      queueName: details.queue,
+      fingerprint: details.fingerprint,
+      input: details.input as Input,
+      output: details.output as Output,
+      runAfter: toDate(details.run_after),
+      createdAt: toDate(details.created_at)!,
+      deadlineAt: toDate(details.deadline_at),
+      lastRanAt: toDate(details.last_ran_at),
+      completedAt: toDate(details.completed_at),
+      progress: details.progress || 0,
+      progressMessage: details.progress_message || "",
+      progressDetails: details.progress_details ?? null,
+      status: details.status as JobStatus,
+      error: details.error ?? null,
+      errorCode: details.error_code ?? null,
+      runAttempts: details.run_attempts ?? 0,
+      maxRetries: details.max_retries ?? 10,
+    });
+  }
+
+  /**
+   * Convert Job class to storage format
+   */
+  protected classToStorage(job: Job<Input, Output>): JobStorageFormat<Input, Output> {
+    const dateToISOString = (date: Date | null | undefined): string | null => {
+      if (!date) return null;
+      return isNaN(date.getTime()) ? null : date.toISOString();
+    };
+    const now = new Date().toISOString();
+    return {
+      id: job.id,
+      job_run_id: job.jobRunId,
+      queue: job.queueName || this.queueName,
+      fingerprint: job.fingerprint,
+      input: job.input,
+      status: job.status,
+      output: job.output ?? null,
+      error: job.error === null ? null : String(job.error),
+      error_code: job.errorCode || null,
+      run_attempts: job.runAttempts ?? 0,
+      max_retries: job.maxRetries ?? 10,
+      run_after: dateToISOString(job.runAfter) ?? now,
+      created_at: dateToISOString(job.createdAt) ?? now,
+      deadline_at: dateToISOString(job.deadlineAt),
+      last_ran_at: dateToISOString(job.lastRanAt),
+      completed_at: dateToISOString(job.completedAt),
+      progress: job.progress ?? 0,
+      progress_message: job.progressMessage ?? "",
+      progress_details: job.progressDetails ?? null,
+    };
+  }
+}

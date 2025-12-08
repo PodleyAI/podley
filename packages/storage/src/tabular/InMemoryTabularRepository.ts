@@ -5,12 +5,12 @@
  */
 
 import {
-    createServiceToken,
-    DataPortSchemaObject,
-    FromSchema,
-    makeFingerprint,
+  createServiceToken,
+  DataPortSchemaObject,
+  FromSchema,
+  makeFingerprint,
 } from "@workglow/util";
-import { ITabularRepository } from "./ITabularRepository";
+import { ITabularRepository, TabularChangePayload } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
 export const MEMORY_TABULAR_REPOSITORY = createServiceToken<
@@ -201,14 +201,44 @@ export class InMemoryTabularRepository<
           return false;
       }
     });
-    // Delete the filtered entries
-    for (const [id, _] of entriesToDelete) {
+    // Delete the filtered entries and emit events for each
+    for (const [id, entity] of entriesToDelete) {
       this.values.delete(id);
+      const { key } = this.separateKeyValueFromCombined(entity);
+      this.events.emit("delete", key as keyof Entity);
     }
+  }
 
-    if (Array.from(entriesToDelete).length > 0) {
-      this.events.emit("delete", column);
-    }
+  /**
+   * Subscribes to changes in the repository.
+   * Since InMemory is both client and server, changes are detected via local events.
+   *
+   * @param callback - Function called when a change occurs
+   * @returns Unsubscribe function
+   */
+  subscribeToChanges(callback: (change: TabularChangePayload<Entity>) => void): () => void {
+    const handlePut = (entity: Entity) => {
+      // InMemory can't distinguish INSERT vs UPDATE without tracking
+      callback({ type: "UPDATE", new: entity });
+    };
+
+    const handleDelete = (_key: keyof Entity) => {
+      callback({ type: "DELETE" });
+    };
+
+    const handleClearAll = () => {
+      callback({ type: "DELETE" });
+    };
+
+    this.events.on("put", handlePut);
+    this.events.on("delete", handleDelete);
+    this.events.on("clearall", handleClearAll);
+
+    return () => {
+      this.events.off("put", handlePut);
+      this.events.off("delete", handleDelete);
+      this.events.off("clearall", handleClearAll);
+    };
   }
 
   /**

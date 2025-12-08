@@ -8,6 +8,31 @@ import { createServiceToken } from "@workglow/util";
 
 export const QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>("jobqueue.storage");
 
+/**
+ * The type of a prefix column.
+ * - "uuid" maps to UUID in PostgreSQL/Supabase, TEXT in SQLite/IndexedDB/InMemory
+ * - "number" maps to INTEGER in PostgreSQL/Supabase/SQLite, number in IndexedDB/InMemory
+ */
+export type PrefixColumnType = "uuid" | "number";
+
+/**
+ * Defines a prefix column for queue storage filtering.
+ */
+export interface PrefixColumn {
+  readonly name: string;
+  readonly type: PrefixColumnType;
+}
+
+/**
+ * Options for configuring queue storage with prefix filters.
+ */
+export interface QueueStorageOptions {
+  /** The prefix column definitions for this storage */
+  readonly prefixes?: readonly PrefixColumn[];
+  /** The values for each prefix column */
+  readonly prefixValues?: Readonly<Record<string, string | number>>;
+}
+
 export enum JobStatus {
   PENDING = "PENDING",
   PROCESSING = "PROCESSING",
@@ -15,6 +40,49 @@ export enum JobStatus {
   ABORTING = "ABORTING",
   FAILED = "FAILED",
   DISABLED = "DISABLED",
+}
+
+/**
+ * Type of change that occurred in the queue
+ */
+export type QueueChangeType = "INSERT" | "UPDATE" | "DELETE";
+
+/**
+ * Payload describing a change to a job
+ */
+export interface QueueChangePayload<Input, Output> {
+  readonly type: QueueChangeType;
+  readonly old?: JobStorageFormat<Input, Output>;
+  readonly new?: JobStorageFormat<Input, Output>;
+}
+
+/**
+ * Options for subscribing to queue changes
+ */
+export interface QueueSubscribeOptions {
+  /** Polling interval in milliseconds (used by implementations that rely on polling) */
+  readonly pollingIntervalMs?: number;
+  /**
+   * Custom prefix filter for this subscription.
+   *
+   * - If not provided (undefined): Uses the storage instance's configured prefixValues
+   * - If empty object ({}): Receives ALL changes across all prefix combinations
+   * - If partial object: Receives changes matching the specified subset of prefixes
+   *
+   * @example
+   * // Storage configured with prefixes: [{name: "user_id"}, {name: "project_id"}]
+   * // and prefixValues: {user_id: "abc", project_id: "123"}
+   *
+   * // Subscribe to only this user+project (default behavior)
+   * storage.subscribeToChanges(callback);
+   *
+   * // Subscribe to all projects for this user
+   * storage.subscribeToChanges(callback, { prefixFilter: { user_id: "abc" } });
+   *
+   * // Subscribe to ALL jobs in this queue (admin/supervisor view)
+   * storage.subscribeToChanges(callback, { prefixFilter: {} });
+   */
+  readonly prefixFilter?: Readonly<Record<string, string | number>>;
 }
 
 /**
@@ -40,6 +108,7 @@ export type JobStorageFormat<Input, Output> = {
   progress?: number;
   progress_message?: string;
   progress_details?: Record<string, any> | null;
+  worker_id?: string | null;
 };
 
 /**
@@ -62,9 +131,10 @@ export interface IQueueStorage<Input, Output> {
 
   /**
    * Gets the next job from the queue storage
+   * @param workerId - Optional worker ID to associate with the job
    * @returns The next job from the queue storage
    */
-  next(): Promise<JobStorageFormat<Input, Output> | undefined>;
+  next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined>;
 
   /**
    * Peeks at the next job(s) from the queue storage without removing them
@@ -145,4 +215,15 @@ export interface IQueueStorage<Input, Output> {
    * For production use, database setup should be done via migrations.
    */
   setupDatabase(): Promise<void>;
+
+  /**
+   * Subscribes to changes in the queue (including remote changes).
+   * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options (e.g., polling interval)
+   * @returns Unsubscribe function
+   */
+  subscribeToChanges(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    options?: QueueSubscribeOptions
+  ): () => void;
 }

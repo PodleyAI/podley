@@ -6,7 +6,16 @@
 
 import { createServiceToken, makeFingerprint, uuid4 } from "@workglow/util";
 import { Pool } from "pg";
-import { IQueueStorage, JobStatus, JobStorageFormat } from "./IQueueStorage";
+import { PollingSubscriptionManager } from "../util/PollingSubscriptionManager";
+import {
+  IQueueStorage,
+  JobStatus,
+  JobStorageFormat,
+  PrefixColumn,
+  QueueChangePayload,
+  QueueStorageOptions,
+  QueueSubscribeOptions,
+} from "./IQueueStorage";
 
 export const POSTGRES_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>>(
   "jobqueue.storage.postgres"
@@ -19,10 +28,84 @@ export const POSTGRES_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, any>
  * Provides storage and retrieval for job execution states using PostgreSQL.
  */
 export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input, Output> {
+  /** The prefix column definitions */
+  protected readonly prefixes: readonly PrefixColumn[];
+  /** The prefix values for filtering */
+  protected readonly prefixValues: Readonly<Record<string, string | number>>;
+  /** The table name for the job queue */
+  protected readonly tableName: string;
+  /** Shared polling subscription manager */
+  private pollingManager: PollingSubscriptionManager<
+    JobStorageFormat<Input, Output>,
+    unknown,
+    QueueChangePayload<Input, Output>
+  > | null = null;
+
   constructor(
     protected readonly db: Pool,
-    protected readonly queueName: string
-  ) {}
+    protected readonly queueName: string,
+    options?: QueueStorageOptions
+  ) {
+    this.prefixes = options?.prefixes ?? [];
+    this.prefixValues = options?.prefixValues ?? {};
+    // Generate table name based on prefix configuration to avoid column conflicts
+    if (this.prefixes.length > 0) {
+      const prefixNames = this.prefixes.map((p) => p.name).join("_");
+      this.tableName = `job_queue_${prefixNames}`;
+    } else {
+      this.tableName = "job_queue";
+    }
+  }
+
+  /**
+   * Gets the SQL column type for a prefix column
+   */
+  private getPrefixColumnType(type: PrefixColumn["type"]): string {
+    return type === "uuid" ? "UUID" : "INTEGER";
+  }
+
+  /**
+   * Builds the prefix columns SQL for CREATE TABLE
+   */
+  private buildPrefixColumnsSql(): string {
+    if (this.prefixes.length === 0) return "";
+    return (
+      this.prefixes
+        .map((p) => `${p.name} ${this.getPrefixColumnType(p.type)} NOT NULL`)
+        .join(",\n      ") + ",\n      "
+    );
+  }
+
+  /**
+   * Builds prefix column names for use in queries
+   */
+  private getPrefixColumnNames(): string[] {
+    return this.prefixes.map((p) => p.name);
+  }
+
+  /**
+   * Builds WHERE clause conditions for prefix filtering
+   * @param startParam - The starting parameter number for parameterized queries
+   * @returns Object with conditions string and parameter values
+   */
+  private buildPrefixWhereClause(startParam: number): {
+    conditions: string;
+    params: Array<string | number>;
+  } {
+    if (this.prefixes.length === 0) {
+      return { conditions: "", params: [] };
+    }
+    const conditions = this.prefixes.map((p, i) => `${p.name} = $${startParam + i}`).join(" AND ");
+    const params = this.prefixes.map((p) => this.prefixValues[p.name]);
+    return { conditions: " AND " + conditions, params };
+  }
+
+  /**
+   * Gets prefix values as an array in column order
+   */
+  private getPrefixParamValues(): Array<string | number> {
+    return this.prefixes.map((p) => this.prefixValues[p.name]);
+  }
 
   public async setupDatabase(): Promise<void> {
     let sql: string;
@@ -36,10 +119,15 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
       if (e.code !== "42710") throw e;
     }
 
+    const prefixColumnsSql = this.buildPrefixColumnsSql();
+    const prefixColumnNames = this.getPrefixColumnNames();
+    const prefixIndexPrefix =
+      prefixColumnNames.length > 0 ? prefixColumnNames.join(", ") + ", " : "";
+
     sql = `
-    CREATE TABLE IF NOT EXISTS job_queue (
+    CREATE TABLE IF NOT EXISTS ${this.tableName} (
       id SERIAL NOT NULL,
-      fingerprint text NOT NULL,
+      ${prefixColumnsSql}fingerprint text NOT NULL,
       queue text NOT NULL,
       job_run_id text NOT NULL,
       status job_status NOT NULL default 'PENDING',
@@ -56,24 +144,28 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
       error_code text,
       progress real DEFAULT 0,
       progress_message text DEFAULT '',
-      progress_details jsonb
+      progress_details jsonb,
+      worker_id text
     )`;
 
     await this.db.query(sql);
 
+    // Create indexes with prefix columns prepended
+    const indexSuffix = prefixColumnNames.length > 0 ? "_" + prefixColumnNames.join("_") : "";
+
     sql = `
-      CREATE INDEX IF NOT EXISTS job_fetcher_idx 
-        ON job_queue (id, status, run_after)`;
+      CREATE INDEX IF NOT EXISTS job_fetcher${indexSuffix}_idx 
+        ON ${this.tableName} (${prefixIndexPrefix}id, status, run_after)`;
     await this.db.query(sql);
 
     sql = `
-      CREATE INDEX IF NOT EXISTS job_queue_fetcher_idx 
-        ON job_queue (queue, status, run_after)`;
+      CREATE INDEX IF NOT EXISTS job_queue_fetcher${indexSuffix}_idx 
+        ON ${this.tableName} (${prefixIndexPrefix}queue, status, run_after)`;
     await this.db.query(sql);
 
     sql = `
-      CREATE INDEX IF NOT EXISTS jobs_fingerprint_unique_idx 
-        ON job_queue (queue, fingerprint, status)`;
+      CREATE INDEX IF NOT EXISTS jobs_fingerprint${indexSuffix}_unique_idx 
+        ON ${this.tableName} (${prefixIndexPrefix}queue, fingerprint, status)`;
     await this.db.query(sql);
   }
 
@@ -82,7 +174,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @param job - The job to add
    * @returns The ID of the added job
    */
-  public async add(job: JobStorageFormat<Input, Output>) {
+  public async add(job: JobStorageFormat<Input, Output>): Promise<unknown> {
     const now = new Date().toISOString();
     job.queue = this.queueName;
     job.job_run_id = job.job_run_id ?? uuid4();
@@ -94,9 +186,19 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
     job.created_at = now;
     job.run_after = now;
 
+    const prefixColumnNames = this.getPrefixColumnNames();
+    const prefixColumnsInsert =
+      prefixColumnNames.length > 0 ? prefixColumnNames.join(", ") + ", " : "";
+    const prefixParamValues = this.getPrefixParamValues();
+    const prefixParamPlaceholders =
+      prefixColumnNames.length > 0
+        ? prefixColumnNames.map((_, i) => `$${i + 1}`).join(",") + ","
+        : "";
+    const baseParamStart = prefixColumnNames.length + 1;
+
     const sql = `
-      INSERT INTO job_queue(
-        queue, 
+      INSERT INTO ${this.tableName}(
+        ${prefixColumnsInsert}queue, 
         fingerprint, 
         input, 
         run_after,
@@ -109,9 +211,10 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
         progress_details
       )
       VALUES 
-        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        (${prefixParamPlaceholders}$${baseParamStart},$${baseParamStart + 1},$${baseParamStart + 2},$${baseParamStart + 3},$${baseParamStart + 4},$${baseParamStart + 5},$${baseParamStart + 6},$${baseParamStart + 7},$${baseParamStart + 8},$${baseParamStart + 9},$${baseParamStart + 10})
       RETURNING id`;
     const params = [
+      ...prefixParamValues,
       job.queue,
       job.fingerprint,
       JSON.stringify(job.input),
@@ -136,14 +239,15 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @param id - The ID of the job to retrieve
    * @returns The job if found, undefined otherwise
    */
-  public async get(id: number) {
+  public async get(id: unknown): Promise<JobStorageFormat<Input, Output> | undefined> {
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(3);
     const result = await this.db.query(
       `SELECT *
-        FROM job_queue
-        WHERE id = $1 AND queue = $2
+        FROM ${this.tableName}
+        WHERE id = $1 AND queue = $2${prefixConditions}
         FOR UPDATE SKIP LOCKED
         LIMIT 1`,
-      [id, this.queueName]
+      [id, this.queueName, ...prefixParams]
     );
 
     if (!result || result.rows.length === 0) return undefined;
@@ -155,21 +259,25 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @param num - Maximum number of jobs to return
    * @returns An array of jobs
    */
-  public async peek(status: JobStatus = JobStatus.PENDING, num: number = 100) {
+  public async peek(
+    status: JobStatus = JobStatus.PENDING,
+    num: number = 100
+  ): Promise<Array<JobStorageFormat<Input, Output>>> {
     num = Number(num) || 100; // TS does not validate, so ensure it is a number
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(4);
     const result = await this.db.query<
       JobStorageFormat<Input, Output>,
-      [string, JobStatus, number]
+      Array<string | number | JobStatus>
     >(
       `
       SELECT *
-        FROM job_queue
+        FROM ${this.tableName}
         WHERE queue = $1
-        AND status = $2
+        AND status = $2${prefixConditions}
         ORDER BY run_after ASC
         LIMIT $3
         FOR UPDATE SKIP LOCKED`,
-      [this.queueName, status, num]
+      [this.queueName, status, num, ...prefixParams]
     );
     if (!result) return [];
     return result.rows;
@@ -177,28 +285,31 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
 
   /**
    * Retrieves the next available job that is ready to be processed.
+   * @param workerId - Optional worker ID to associate with the job
    * @returns The next job or undefined if no job is available
    */
-  public async next() {
+  public async next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined> {
+    // Parameters: $1=status, $2=queue, $3=status, $4=worker_id, $5+=prefix params
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(5);
     const result = await this.db.query<
       JobStorageFormat<Input, Output>,
-      [JobStatus, string, JobStatus]
+      Array<string | number | JobStatus | null>
     >(
       `
-      UPDATE job_queue 
-      SET status = $1, last_ran_at = NOW() AT TIME ZONE 'UTC'
+      UPDATE ${this.tableName} 
+      SET status = $1, last_ran_at = NOW() AT TIME ZONE 'UTC', worker_id = $4
       WHERE id = (
         SELECT id 
-        FROM job_queue 
+        FROM ${this.tableName} 
         WHERE queue = $2 
-        AND status = $3 
+        AND status = $3${prefixConditions}
         AND run_after <= NOW() AT TIME ZONE 'UTC'
         ORDER BY run_after ASC 
         FOR UPDATE SKIP LOCKED 
         LIMIT 1
       )
       RETURNING *`,
-      [JobStatus.PROCESSING, this.queueName, JobStatus.PENDING]
+      [JobStatus.PROCESSING, this.queueName, JobStatus.PENDING, workerId ?? null, ...prefixParams]
     );
 
     return result?.rows?.[0] ?? undefined;
@@ -209,14 +320,15 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @param status - The status of the jobs to count
    * @returns The count of jobs with the specified status
    */
-  public async size(status = JobStatus.PENDING) {
-    const result = await this.db.query<{ count: string }, [string, JobStatus]>(
+  public async size(status = JobStatus.PENDING): Promise<number> {
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(3);
+    const result = await this.db.query<{ count: string }, Array<string | number | JobStatus>>(
       `
       SELECT COUNT(*) as count
-        FROM job_queue
+        FROM ${this.tableName}
         WHERE queue = $1
-        AND status = $2`,
-      [this.queueName, status]
+        AND status = $2${prefixConditions}`,
+      [this.queueName, status, ...prefixParams]
     );
     if (!result) return 0;
     return parseInt(result.rows[0].count, 10);
@@ -229,21 +341,25 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * - Marks a job as FAILED immediately for permanent or generic errors.
    */
   public async complete(jobDetails: JobStorageFormat<Input, Output>): Promise<void> {
+    const prefixParams = this.getPrefixParamValues();
+
     if (jobDetails.status === JobStatus.DISABLED) {
+      const { conditions: prefixConditions } = this.buildPrefixWhereClause(4);
       await this.db.query(
-        `UPDATE job_queue 
+        `UPDATE ${this.tableName} 
           SET 
             status = $1, 
             progress = 100,
             progress_message = '',
             progress_details = NULL,
             completed_at = NOW() AT TIME ZONE 'UTC'
-          WHERE id = $2 AND queue = $3`,
-        [jobDetails.status, jobDetails.id, this.queueName]
+          WHERE id = $2 AND queue = $3${prefixConditions}`,
+        [jobDetails.status, jobDetails.id, this.queueName, ...prefixParams]
       );
     } else if (jobDetails.status === JobStatus.PENDING) {
+      const { conditions: prefixConditions } = this.buildPrefixWhereClause(7);
       await this.db.query(
-        `UPDATE job_queue 
+        `UPDATE ${this.tableName} 
           SET 
             error = $1, 
             error_code = $2,
@@ -254,7 +370,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
             progress_details = NULL,
             run_attempts = run_attempts + 1, 
             last_ran_at = NOW() AT TIME ZONE 'UTC'
-          WHERE id = $5 AND queue = $6`,
+          WHERE id = $5 AND queue = $6${prefixConditions}`,
         [
           jobDetails.error,
           jobDetails.error_code,
@@ -262,12 +378,14 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
           jobDetails.run_after,
           jobDetails.id,
           this.queueName,
+          ...prefixParams,
         ]
       );
     } else {
+      const { conditions: prefixConditions } = this.buildPrefixWhereClause(7);
       await this.db.query(
         `
-          UPDATE job_queue 
+          UPDATE ${this.tableName} 
             SET 
               output = $1, 
               error = $2, 
@@ -279,7 +397,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
               run_attempts = run_attempts + 1, 
               completed_at = NOW() AT TIME ZONE 'UTC',
               last_ran_at = NOW() AT TIME ZONE 'UTC'
-          WHERE id = $5 AND queue = $6`,
+          WHERE id = $5 AND queue = $6${prefixConditions}`,
         [
           jobDetails.output ? JSON.stringify(jobDetails.output) : null,
           jobDetails.error ?? null,
@@ -287,6 +405,7 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
           jobDetails.status,
           jobDetails.id,
           this.queueName,
+          ...prefixParams,
         ]
       );
     }
@@ -295,12 +414,13 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
   /**
    * Clears all jobs from the queue.
    */
-  public async deleteAll() {
+  public async deleteAll(): Promise<void> {
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(2);
     await this.db.query(
       `
-      DELETE FROM job_queue
-        WHERE queue = $1`,
-      [this.queueName]
+      DELETE FROM ${this.tableName}
+        WHERE queue = $1${prefixConditions}`,
+      [this.queueName, ...prefixParams]
     );
   }
 
@@ -309,16 +429,17 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * Uses input fingerprinting for efficient matching
    * @returns The cached output or null if not found
    */
-  public async outputForInput(input: Input) {
+  public async outputForInput(input: Input): Promise<Output | null> {
     const fingerprint = await makeFingerprint(input);
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(3);
     const result = await this.db.query(
       `
       SELECT output
-        FROM job_queue
-        WHERE fingerprint = $1 AND queue = $2 AND status = 'COMPLETED'`,
-      [fingerprint, this.queueName]
+        FROM ${this.tableName}
+        WHERE fingerprint = $1 AND queue = $2 AND status = 'COMPLETED'${prefixConditions}`,
+      [fingerprint, this.queueName, ...prefixParams]
     );
-    if (!result) return null;
+    if (!result || result.rows.length === 0) return null;
     return result.rows[0].output;
   }
 
@@ -328,13 +449,14 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * the job's execute() method (if it supports an AbortSignal parameter)
    * can clean up and exit.
    */
-  public async abort(jobId: number) {
-    const result = await this.db.query(
+  public async abort(jobId: unknown): Promise<void> {
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(3);
+    await this.db.query(
       `
-      UPDATE job_queue 
+      UPDATE ${this.tableName} 
       SET status = 'ABORTING' 
-      WHERE id = $1 AND queue = $2`,
-      [jobId, this.queueName]
+      WHERE id = $1 AND queue = $2${prefixConditions}`,
+      [jobId, this.queueName, ...prefixParams]
     );
   }
 
@@ -343,11 +465,12 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * @param job_run_id - The ID of the job run to retrieve
    * @returns An array of jobs
    */
-  public async getByRunId(job_run_id: string) {
+  public async getByRunId(job_run_id: string): Promise<Array<JobStorageFormat<Input, Output>>> {
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(3);
     const result = await this.db.query(
       `
-      SELECT * FROM job_queue WHERE job_run_id = $1 AND queue = $2`,
-      [job_run_id, this.queueName]
+      SELECT * FROM ${this.tableName} WHERE job_run_id = $1 AND queue = $2${prefixConditions}`,
+      [job_run_id, this.queueName, ...prefixParams]
     );
     if (!result) return [];
     return result.rows;
@@ -362,14 +485,22 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
     message: string,
     details: Record<string, any>
   ): Promise<void> {
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(6);
     await this.db.query(
       `
-      UPDATE job_queue 
+      UPDATE ${this.tableName} 
       SET progress = $1,
           progress_message = $2,
           progress_details = $3
-      WHERE id = $4 AND queue = $5`,
-      [progress, message, details ? JSON.stringify(details) : null, jobId as number, this.queueName]
+      WHERE id = $4 AND queue = $5${prefixConditions}`,
+      [
+        progress,
+        message,
+        details ? JSON.stringify(details) : null,
+        jobId,
+        this.queueName,
+        ...prefixParams,
+      ]
     );
   }
 
@@ -377,10 +508,11 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    * Deletes a job by its ID
    */
   public async delete(jobId: unknown): Promise<void> {
-    await this.db.query("DELETE FROM job_queue WHERE id = $1 AND queue = $2", [
-      jobId,
-      this.queueName,
-    ]);
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(3);
+    await this.db.query(
+      `DELETE FROM ${this.tableName} WHERE id = $1 AND queue = $2${prefixConditions}`,
+      [jobId, this.queueName, ...prefixParams]
+    );
   }
 
   /**
@@ -390,13 +522,193 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
    */
   public async deleteJobsByStatusAndAge(status: JobStatus, olderThanMs: number): Promise<void> {
     const cutoffDate = new Date(Date.now() - olderThanMs).toISOString();
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(4);
     await this.db.query(
-      `DELETE FROM job_queue 
+      `DELETE FROM ${this.tableName} 
        WHERE queue = $1 
        AND status = $2 
        AND completed_at IS NOT NULL 
-       AND completed_at <= $3`,
-      [this.queueName, status, cutoffDate]
+       AND completed_at <= $3${prefixConditions}`,
+      [this.queueName, status, cutoffDate, ...prefixParams]
     );
+  }
+
+  /**
+   * Gets all jobs from the queue that match the current prefix values.
+   * Used internally for normal polling-based subscriptions (efficient - filters at DB level).
+   *
+   * @returns A promise that resolves to an array of jobs
+   */
+  private async getAllJobs(): Promise<Array<JobStorageFormat<Input, Output>>> {
+    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(2);
+    const result = await this.db.query<JobStorageFormat<Input, Output>, Array<string | number>>(
+      `SELECT * FROM ${this.tableName} WHERE queue = $1${prefixConditions}`,
+      [this.queueName, ...prefixParams]
+    );
+    if (!result) return [];
+    return result.rows;
+  }
+
+  /**
+   * Gets all jobs from the queue with a custom prefix filter.
+   * Used for subscriptions with custom prefix filters (filters at DB level).
+   *
+   * @param prefixFilter - The prefix values to filter by (empty object = all jobs)
+   * @returns A promise that resolves to an array of jobs
+   */
+  private async getAllJobsWithFilter(
+    prefixFilter: Readonly<Record<string, string | number>>
+  ): Promise<Array<JobStorageFormat<Input, Output>>> {
+    const filterEntries = Object.entries(prefixFilter);
+    let query = `SELECT * FROM ${this.tableName} WHERE queue = $1`;
+    const params: Array<string | number> = [this.queueName];
+
+    // Build dynamic WHERE clause for the filter
+    filterEntries.forEach(([key, value], index) => {
+      query += ` AND ${key} = $${index + 2}`;
+      params.push(value);
+    });
+
+    const result = await this.db.query<JobStorageFormat<Input, Output>, Array<string | number>>(
+      query,
+      params
+    );
+    if (!result) return [];
+    return result.rows;
+  }
+
+  /**
+   * Checks if a prefix filter is custom (different from instance's prefixes).
+   */
+  private isCustomPrefixFilter(prefixFilter?: Readonly<Record<string, string | number>>): boolean {
+    // No filter specified - use instance prefixes (not custom)
+    if (prefixFilter === undefined) {
+      return false;
+    }
+    // Empty filter - receive all (custom)
+    if (Object.keys(prefixFilter).length === 0) {
+      return true;
+    }
+    // Check if filter matches instance prefixes exactly
+    const instanceKeys = Object.keys(this.prefixValues);
+    const filterKeys = Object.keys(prefixFilter);
+    if (instanceKeys.length !== filterKeys.length) {
+      return true; // Different number of keys = custom
+    }
+    for (const key of instanceKeys) {
+      if (this.prefixValues[key] !== prefixFilter[key]) {
+        return true; // Different value = custom
+      }
+    }
+    return false; // Matches instance prefixes exactly
+  }
+
+  /**
+   * Gets or creates the shared polling subscription manager for normal subscriptions.
+   * This ensures all normal subscriptions share a single polling loop per interval.
+   */
+  private getPollingManager(): PollingSubscriptionManager<
+    JobStorageFormat<Input, Output>,
+    unknown,
+    QueueChangePayload<Input, Output>
+  > {
+    if (!this.pollingManager) {
+      this.pollingManager = new PollingSubscriptionManager<
+        JobStorageFormat<Input, Output>,
+        unknown,
+        QueueChangePayload<Input, Output>
+      >(
+        async () => {
+          // Fetch jobs with instance's prefix filter (efficient DB-level filtering)
+          const jobs = await this.getAllJobs();
+          return new Map(jobs.map((j) => [j.id, j]));
+        },
+        (a, b) => JSON.stringify(a) === JSON.stringify(b),
+        {
+          insert: (item) => ({ type: "INSERT" as const, new: item }),
+          update: (oldItem, newItem) => ({ type: "UPDATE" as const, old: oldItem, new: newItem }),
+          delete: (item) => ({ type: "DELETE" as const, old: item }),
+        }
+      );
+    }
+    return this.pollingManager;
+  }
+
+  /**
+   * Creates a dedicated polling subscription for custom prefix filters.
+   * This runs separately from the normal polling manager with DB-level filtering.
+   */
+  private subscribeWithCustomPrefixFilter(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    prefixFilter: Readonly<Record<string, string | number>>,
+    intervalMs: number
+  ): () => void {
+    let lastKnownJobs = new Map<unknown, JobStorageFormat<Input, Output>>();
+    let cancelled = false;
+
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const currentJobs = await this.getAllJobsWithFilter(prefixFilter);
+        if (cancelled) return;
+        const currentMap = new Map(currentJobs.map((j) => [j.id, j]));
+
+        // Detect changes
+        for (const [id, job] of currentMap) {
+          const old = lastKnownJobs.get(id);
+          if (!old) {
+            callback({ type: "INSERT", new: job });
+          } else if (JSON.stringify(old) !== JSON.stringify(job)) {
+            callback({ type: "UPDATE", old, new: job });
+          }
+        }
+
+        for (const [id, job] of lastKnownJobs) {
+          if (!currentMap.has(id)) {
+            callback({ type: "DELETE", old: job });
+          }
+        }
+
+        lastKnownJobs = currentMap;
+      } catch {
+        // Ignore polling errors
+      }
+    };
+
+    const intervalId = setInterval(poll, intervalMs);
+    poll(); // Initial poll
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }
+
+  /**
+   * Subscribes to changes in the queue.
+   * Uses polling since this PostgreSQL implementation doesn't use LISTEN/NOTIFY.
+   *
+   * Normal subscriptions (no custom prefix filter) share a single polling loop for efficiency.
+   * Custom prefix filter subscriptions get their own dedicated polling loop with DB-level filtering.
+   *
+   * @param callback - Function called when a change occurs
+   * @param options - Subscription options including polling interval and prefix filter
+   * @returns Unsubscribe function
+   */
+  public subscribeToChanges(
+    callback: (change: QueueChangePayload<Input, Output>) => void,
+    options?: QueueSubscribeOptions
+  ): () => void {
+    const intervalMs = options?.pollingIntervalMs ?? 1000;
+
+    // Check if this is a custom prefix filter subscription
+    if (this.isCustomPrefixFilter(options?.prefixFilter)) {
+      // Custom prefix filter - use dedicated polling with DB-level filtering
+      return this.subscribeWithCustomPrefixFilter(callback, options!.prefixFilter!, intervalMs);
+    }
+
+    // Normal subscription - use shared polling manager (efficient)
+    const manager = this.getPollingManager();
+    return manager.subscribe(callback, { intervalMs });
   }
 }

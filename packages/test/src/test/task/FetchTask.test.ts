@@ -5,12 +5,13 @@
  */
 
 import {
-  InMemoryRateLimiter,
-  JobQueue,
+  JobQueueClient,
+  JobQueueServer,
   PermanentJobError,
+  RateLimiter,
   RetryableJobError,
 } from "@workglow/job-queue";
-import { InMemoryQueueStorage } from "@workglow/storage";
+import { InMemoryQueueStorage, InMemoryRateLimiterStorage } from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   JobTaskFailedError,
@@ -88,36 +89,52 @@ describe("FetchTask", () => {
   test("respects rate limiting with InMemoryQueue", async () => {
     const queueName = "rate-limited-queue";
     // Create a rate limiter that allows 1 request per minute
-    const rateLimiter = new InMemoryRateLimiter({ maxExecutions: 1, windowSizeInSeconds: 1 }); // 1 request per 1 minute window
+    const rateLimiter = new RateLimiter(new InMemoryRateLimiterStorage(), queueName, {
+      maxExecutions: 1,
+      windowSizeInSeconds: 1,
+    }); // 1 request per 1 minute window
 
-    // Create a queue with the base Job type to match TaskQueueRegistry's expectations
-    const queue = new JobQueue<FetchTaskInput, FetchTaskOutput>(queueName, FetchJob, {
+    // Create storage
+    const storage = new InMemoryQueueStorage<FetchTaskInput, FetchTaskOutput>(queueName);
+    await storage.setupDatabase();
+
+    // Create server with the FetchJob class
+    const server = new JobQueueServer<FetchTaskInput, FetchTaskOutput>(FetchJob, {
+      storage,
+      queueName,
       limiter: rateLimiter,
-      storage: new InMemoryQueueStorage<FetchTaskInput, FetchTaskOutput>(queueName),
-      waitDurationInMilliseconds: 1,
+      pollIntervalMs: 1,
     });
 
+    // Create client
+    const client = new JobQueueClient<FetchTaskInput, FetchTaskOutput>({
+      storage,
+      queueName,
+    });
+
+    client.attach(server);
+
     // Register the queue with the registry
-    getTaskQueueRegistry().registerQueue(queue);
+    getTaskQueueRegistry().registerQueue({ server, client, storage });
 
     const mockResponse = { data: { success: true } };
     mockFetch.mockImplementation(() => Promise.resolve(createMockResponse(mockResponse)));
 
-    // Add jobs to queue
-    await queue.add(new FetchJob({ input: { url: "https://api.example.com/1" } }));
-    await queue.add(new FetchJob({ input: { url: "https://api.example.com/2" } }));
-    await queue.add(new FetchJob({ input: { url: "https://api.example.com/3" } }));
+    // Add jobs to queue via client
+    await client.submit({ url: "https://api.example.com/1" });
+    await client.submit({ url: "https://api.example.com/2" });
+    await client.submit({ url: "https://api.example.com/3" });
 
-    // Start the queue and wait for processing
-    await queue.start();
-    await sleep(1); // Give time for rate limiting and processing
+    // Start the server and wait for processing
+    await server.start();
+    await sleep(50); // Give time for rate limiting and processing
 
     // Verify that fetch was called only once due to rate limiting
     expect(mockFetch.mock.calls.length).toBe(1);
 
     // Clean up
-    await queue.stop();
-    await queue.clear();
+    await server.stop();
+    await storage.deleteAll();
   });
 
   test("handles HTTP error responses", async () => {
@@ -425,7 +442,7 @@ describe("FetchTask", () => {
     test("outputSchema returns all output types when response_type is null", () => {
       const task = new FetchTask({ url: "https://api.example.com/test", response_type: null });
       const schema = task.outputSchema();
-      
+
       expect(typeof schema).toBe("object");
       expect(schema).not.toBe(false);
       if (typeof schema === "object" && schema !== null && "properties" in schema) {
@@ -439,7 +456,7 @@ describe("FetchTask", () => {
     test("outputSchema returns all output types when response_type is undefined", () => {
       const task = new FetchTask({ url: "https://api.example.com/test" });
       const schema = task.outputSchema();
-      
+
       expect(typeof schema).toBe("object");
       expect(schema).not.toBe(false);
       if (typeof schema === "object" && schema !== null && "properties" in schema) {
@@ -453,7 +470,7 @@ describe("FetchTask", () => {
     test("outputSchema returns only json when response_type is json", () => {
       const task = new FetchTask({ url: "https://api.example.com/test", response_type: "json" });
       const schema = task.outputSchema();
-      
+
       expect(typeof schema).toBe("object");
       expect(schema).not.toBe(false);
       if (typeof schema === "object" && schema !== null && "properties" in schema) {
@@ -467,7 +484,7 @@ describe("FetchTask", () => {
     test("outputSchema returns only text when response_type is text", () => {
       const task = new FetchTask({ url: "https://api.example.com/test", response_type: "text" });
       const schema = task.outputSchema();
-      
+
       expect(typeof schema).toBe("object");
       expect(schema).not.toBe(false);
       if (typeof schema === "object" && schema !== null && "properties" in schema) {
@@ -481,7 +498,7 @@ describe("FetchTask", () => {
     test("outputSchema returns only blob when response_type is blob", () => {
       const task = new FetchTask({ url: "https://api.example.com/test", response_type: "blob" });
       const schema = task.outputSchema();
-      
+
       expect(typeof schema).toBe("object");
       expect(schema).not.toBe(false);
       if (typeof schema === "object" && schema !== null && "properties" in schema) {
@@ -493,9 +510,12 @@ describe("FetchTask", () => {
     });
 
     test("outputSchema returns only arraybuffer when response_type is arraybuffer", () => {
-      const task = new FetchTask({ url: "https://api.example.com/test", response_type: "arraybuffer" });
+      const task = new FetchTask({
+        url: "https://api.example.com/test",
+        response_type: "arraybuffer",
+      });
       const schema = task.outputSchema();
-      
+
       expect(typeof schema).toBe("object");
       expect(schema).not.toBe(false);
       if (typeof schema === "object" && schema !== null && "properties" in schema) {
@@ -509,7 +529,7 @@ describe("FetchTask", () => {
     test("outputSchema updates when response_type changes", () => {
       const task = new FetchTask({ url: "https://api.example.com/test", response_type: null });
       let schema = task.outputSchema();
-      
+
       // Initially should have all types
       expect(typeof schema).toBe("object");
       expect(schema).not.toBe(false);
@@ -520,7 +540,7 @@ describe("FetchTask", () => {
       // Change response_type to json
       task.setInput({ response_type: "json" });
       schema = task.outputSchema();
-      
+
       expect(typeof schema).toBe("object");
       expect(schema).not.toBe(false);
       if (typeof schema === "object" && schema !== null && "properties" in schema) {
@@ -545,7 +565,7 @@ describe("FetchTask", () => {
 
     test("emits schemaChange event when response_type changes", () => {
       const task = new FetchTask({ url: "https://api.example.com/test", response_type: null });
-      
+
       let schemaChangeEmitted = false;
       let receivedInputSchema: any;
       let receivedOutputSchema: any;
@@ -562,9 +582,13 @@ describe("FetchTask", () => {
       expect(schemaChangeEmitted).toBe(true);
       expect(receivedInputSchema).toBeDefined();
       expect(receivedOutputSchema).toBeDefined();
-      
+
       // Verify the output schema only has json property
-      if (typeof receivedOutputSchema === "object" && receivedOutputSchema !== null && "properties" in receivedOutputSchema) {
+      if (
+        typeof receivedOutputSchema === "object" &&
+        receivedOutputSchema !== null &&
+        "properties" in receivedOutputSchema
+      ) {
         expect(receivedOutputSchema.properties).toHaveProperty("json");
         expect(receivedOutputSchema.properties).not.toHaveProperty("text");
         expect(receivedOutputSchema.properties).not.toHaveProperty("blob");
@@ -574,7 +598,7 @@ describe("FetchTask", () => {
 
     test("emits schemaChange event when response_type changes from json to text", () => {
       const task = new FetchTask({ url: "https://api.example.com/test", response_type: "json" });
-      
+
       let schemaChangeEmitted = false;
       let receivedOutputSchema: any;
 
@@ -588,9 +612,13 @@ describe("FetchTask", () => {
 
       expect(schemaChangeEmitted).toBe(true);
       expect(receivedOutputSchema).toBeDefined();
-      
+
       // Verify the output schema only has text property
-      if (typeof receivedOutputSchema === "object" && receivedOutputSchema !== null && "properties" in receivedOutputSchema) {
+      if (
+        typeof receivedOutputSchema === "object" &&
+        receivedOutputSchema !== null &&
+        "properties" in receivedOutputSchema
+      ) {
         expect(receivedOutputSchema.properties).not.toHaveProperty("json");
         expect(receivedOutputSchema.properties).toHaveProperty("text");
         expect(receivedOutputSchema.properties).not.toHaveProperty("blob");
@@ -600,7 +628,7 @@ describe("FetchTask", () => {
 
     test("does not emit schemaChange event when response_type does not change", () => {
       const task = new FetchTask({ url: "https://api.example.com/test", response_type: "json" });
-      
+
       let schemaChangeEmitted = false;
 
       task.on("schemaChange", () => {

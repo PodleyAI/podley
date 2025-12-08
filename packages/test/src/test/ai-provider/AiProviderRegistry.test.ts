@@ -12,8 +12,8 @@ import {
   getGlobalModelRepository,
   setAiProviderRegistry,
 } from "@workglow/ai";
-import { InMemoryRateLimiter, JobQueue } from "@workglow/job-queue";
-import { InMemoryQueueStorage } from "@workglow/storage";
+import { JobQueueClient, JobQueueServer, RateLimiter } from "@workglow/job-queue";
+import { InMemoryQueueStorage, InMemoryRateLimiterStorage, IQueueStorage } from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
@@ -29,27 +29,48 @@ const mock = vi.fn;
 const TEST_PROVIDER = "test-provider";
 
 describe("AiProviderRegistry", () => {
-  let queue: JobQueue<AiJobInput<TaskInput>, TaskOutput>;
+  let server: JobQueueServer<AiJobInput<TaskInput>, TaskOutput>;
+  let client: JobQueueClient<AiJobInput<TaskInput>, TaskOutput>;
+  let storage: IQueueStorage<AiJobInput<TaskInput>, TaskOutput>;
   let aiProviderRegistry: AiProviderRegistry;
 
-  beforeEach(() => {
-    queue = new JobQueue(TEST_PROVIDER, AiJob<AiJobInput<TaskInput>, TaskOutput>, {
-      limiter: new InMemoryRateLimiter({ maxExecutions: 4, windowSizeInSeconds: 1 }),
-      storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(TEST_PROVIDER),
-      waitDurationInMilliseconds: 1,
+  beforeEach(async () => {
+    storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(TEST_PROVIDER);
+    await storage.setupDatabase();
+
+    server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(
+      AiJob<AiJobInput<TaskInput>, TaskOutput>,
+      {
+        storage,
+        queueName: TEST_PROVIDER,
+        limiter: new RateLimiter(new InMemoryRateLimiterStorage(), TEST_PROVIDER, {
+          maxExecutions: 4,
+          windowSizeInSeconds: 1,
+        }),
+        pollIntervalMs: 1,
+      }
+    );
+
+    client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+      storage,
+      queueName: TEST_PROVIDER,
     });
+
+    client.attach(server);
+
     setTaskQueueRegistry(new TaskQueueRegistry());
     const taskQueueRegistry = getTaskQueueRegistry();
-    taskQueueRegistry.registerQueue(queue);
+    taskQueueRegistry.registerQueue({ server, client, storage });
     setAiProviderRegistry(new AiProviderRegistry()); // Ensure we're using the test registry
     aiProviderRegistry = getAiProviderRegistry();
-    queue.start(); // Clear the queue before each test
+    await server.start();
   });
 
   afterEach(async () => {
-    await queue.stop();
-    await queue.clear();
+    await server.stop();
+    await storage.deleteAll();
   });
+
   afterAll(async () => {
     getTaskQueueRegistry().stopQueues().clearQueues();
     setTaskQueueRegistry(null);

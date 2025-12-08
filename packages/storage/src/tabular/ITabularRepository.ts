@@ -33,6 +33,20 @@ export type TabularEventParameters<
   Entity,
 > = EventParameters<TabularEventListeners<PrimaryKey, Entity>, Event>;
 
+/**
+ * Type of change that occurred in the repository
+ */
+export type TabularChangeType = "INSERT" | "UPDATE" | "DELETE";
+
+/**
+ * Payload describing a change to an entity
+ */
+export interface TabularChangePayload<Entity> {
+  readonly type: TabularChangeType;
+  readonly old?: Entity;
+  readonly new?: Entity;
+}
+
 // Type definitions for specialized string types
 export type uuid4 = string;
 export type JSONValue =
@@ -96,6 +110,13 @@ export interface ITabularRepository<
 
   // Convenience methods
   search(key: Partial<Entity>): Promise<Entity[] | undefined>;
+
+  /**
+   * Subscribes to changes in the repository (including remote changes).
+   * @param callback - Function called when a change occurs
+   * @returns Unsubscribe function
+   */
+  subscribeToChanges(callback: (change: TabularChangePayload<Entity>) => void): () => void;
 
   // Destroy the repository and frees up resources.
   destroy(): void;

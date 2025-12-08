@@ -1,51 +1,45 @@
 # @workglow/job-queue
 
-A TypeScript-first job queue system for managing and processing asynchronous tasks with rate limiting, progress tracking, and cross-platform persistence.
+A TypeScript-first job queue system with a separated client-server architecture for managing and processing asynchronous tasks. Features rate limiting, progress tracking, automatic retries, and cross-platform persistence.
 
 - [Features](#features)
 - [Installation](#installation)
+- [Architecture](#architecture)
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
   - [Jobs](#jobs)
-  - [Job Queues](#job-queues)
-  - [Storage Backends](#storage-backends)
-  - [Rate Limiters](#rate-limiters)
+  - [JobQueueClient](#jobqueueclient)
+  - [JobQueueServer](#jobqueueserver)
+  - [JobQueueWorker](#jobqueueworker)
 - [Usage Examples](#usage-examples)
   - [Creating Custom Jobs](#creating-custom-jobs)
-  - [Basic Queue Operations](#basic-queue-operations)
+  - [Submitting Jobs](#submitting-jobs)
   - [Progress Tracking](#progress-tracking)
   - [Error Handling and Retries](#error-handling-and-retries)
   - [Event Listeners](#event-listeners)
-  - [Job Completion and Output](#job-completion-and-output)
+  - [Aborting Jobs](#aborting-jobs)
 - [Storage Configurations](#storage-configurations)
-  - [In-Memory Storage](#in-memory-storage)
-  - [IndexedDB Storage (Browser)](#indexeddb-storage-browser)
-  - [SQLite Storage (Node.js/Bun)](#sqlite-storage-nodejsbun)
-  - [PostgreSQL Storage (Node.js/Bun)](#postgresql-storage-nodejsbun)
 - [Rate Limiting Strategies](#rate-limiting-strategies)
-  - [Concurrency Limiter](#concurrency-limiter)
-  - [Delay Limiter](#delay-limiter)
-  - [Rate Limiter](#rate-limiter)
-  - [Composite Limiter](#composite-limiter)
-- [Queue Modes](#queue-modes)
+- [Scaling Workers](#scaling-workers)
+- [Cross-Process Communication](#cross-process-communication)
 - [API Reference](#api-reference)
-  - [JobQueue Methods](#jobqueue-methods)
-  - [Job Class](#job-class)
 - [TypeScript Types](#typescript-types)
 - [Testing](#testing)
 - [License](#license)
 
 ## Features
 
+- **Separated architecture**: Client, server, and worker components for flexible deployment
 - **Cross-platform**: Works in browsers (IndexedDB), Node.js, and Bun
 - **Multiple storage backends**: In-Memory, IndexedDB, SQLite, PostgreSQL
 - **Rate limiting**: Concurrency, delay, and composite rate limiting strategies
 - **Progress tracking**: Real-time job progress with events and callbacks
-- **Retry logic**: Configurable retry attempts with exponential backoff
+- **Retry logic**: Configurable retry attempts with support for delayed retries
 - **Event system**: Comprehensive event listeners for job lifecycle
 - **TypeScript-first**: Full type safety with generic input/output types
-- **Job prioritization**: Support for job scheduling and deadlines
-- **Queue modes**: Client-only, server-only, or both modes of operation
+- **Worker scaling**: Dynamic worker count adjustment
+- **Same-process optimization**: Direct event forwarding when client and server run together
+- **Cross-process support**: Storage-based subscriptions for distributed deployments
 
 ## Installation
 
@@ -66,16 +60,44 @@ bun add pg @types/pg
 bun add @workglow/storage
 ```
 
+## Architecture
+
+The job queue system is split into three main components:
+
+```
+┌─────────────────┐     ┌─────────────────┐
+│  JobQueueClient │────▶│  JobQueueServer │
+│  (submit jobs)  │     │  (coordinate)   │
+└─────────────────┘     └────────┬────────┘
+                                 │
+                    ┌────────────┼────────────┐
+                    ▼            ▼            ▼
+              ┌──────────┐ ┌──────────┐ ┌──────────┐
+              │  Worker  │ │  Worker  │ │  Worker  │
+              └──────────┘ └──────────┘ └──────────┘
+                    │            │            │
+                    └────────────┴────────────┘
+                                 │
+                                 ▼
+                        ┌─────────────────┐
+                        │     Storage     │
+                        └─────────────────┘
+```
+
+- **JobQueueClient**: Submits jobs and monitors their progress
+- **JobQueueServer**: Coordinates workers, manages lifecycle, handles cleanup
+- **JobQueueWorker**: Processes jobs from the queue
+
 ## Quick Start
 
 ```typescript
-import { Job, JobQueue } from "@workglow/job-queue";
+import { Job, JobQueueClient, JobQueueServer, IJobExecuteContext } from "@workglow/job-queue";
 import { InMemoryQueueStorage } from "@workglow/storage";
 
 // 1. Define your input/output types
 interface ProcessTextInput {
   text: string;
-  options?: { uppercase?: boolean };
+  uppercase?: boolean;
 }
 
 interface ProcessTextOutput {
@@ -86,91 +108,134 @@ interface ProcessTextOutput {
 // 2. Create a custom job class
 class ProcessTextJob extends Job<ProcessTextInput, ProcessTextOutput> {
   async execute(input: ProcessTextInput, context: IJobExecuteContext): Promise<ProcessTextOutput> {
-    const { text, options = {} } = input;
-
-    // Simulate work with progress updates
     await context.updateProgress(25, "Starting text processing");
 
-    await new Promise((resolve) => setTimeout(resolve, 100)); // Simulate work
+    const processedText = input.uppercase ? input.text.toUpperCase() : input.text.toLowerCase();
     await context.updateProgress(50, "Processing text");
 
-    const processedText = options.uppercase ? text.toUpperCase() : text.toLowerCase();
-    await context.updateProgress(75, "Counting words");
-
-    const wordCount = text.split(/\s+/).filter((word) => word.length > 0).length;
+    const wordCount = input.text.split(/\s+/).filter((word) => word.length > 0).length;
     await context.updateProgress(100, "Complete");
 
     return { processedText, wordCount };
   }
 }
 
-// 3. Create and start the queue
-const queue = new JobQueue("text-processor", ProcessTextJob, {
-  storage: new InMemoryQueueStorage("text-processor"),
+// 3. Set up storage, server, and client
+const queueName = "text-processor";
+const storage = new InMemoryQueueStorage<ProcessTextInput, ProcessTextOutput>(queueName);
+await storage.setupDatabase();
+
+const server = new JobQueueServer(ProcessTextJob, {
+  storage,
+  queueName,
+  workerCount: 2,
   deleteAfterCompletionMs: 60_000, // Clean up after 1 minute
-  deleteAfterFailureMs: 300_000, // Keep failed jobs for 5 minutes
 });
 
-await queue.start();
-
-// 4. Add jobs and wait for results
-const job = new ProcessTextJob({
-  input: { text: "Hello World", options: { uppercase: true } },
-  maxRetries: 3,
+const client = new JobQueueClient<ProcessTextInput, ProcessTextOutput>({
+  storage,
+  queueName,
 });
 
-const jobId = await queue.add(job);
-const result = await queue.waitFor(jobId);
+// 4. Connect client to server for same-process optimization
+client.attach(server);
+
+// 5. Start the server
+await server.start();
+
+// 6. Submit jobs and wait for results
+const handle = await client.submit({ text: "Hello World", uppercase: true });
+const result = await handle.waitFor();
 console.log(result); // { processedText: "HELLO WORLD", wordCount: 2 }
 
-await queue.stop();
+// 7. Clean up
+await server.stop();
 ```
 
 ## Core Concepts
 
 ### Jobs
 
-Jobs are units of work that can be executed by a queue. Each job has:
+Jobs are units of work with strongly typed input and output. Extend the `Job` class and implement the `execute` method:
 
-- **Input**: Data needed for execution (strongly typed)
-- **Output**: Result of execution (strongly typed)
-- **Status**: PENDING, RUNNING, COMPLETED, FAILED, ABORTING, DISABLED
-- **Progress**: 0-100 with optional message and details
-- **Retry logic**: Configurable max retries and retry strategies
+```typescript
+class MyJob extends Job<MyInput, MyOutput> {
+  async execute(input: MyInput, context: IJobExecuteContext): Promise<MyOutput> {
+    // Check for abort signal
+    if (context.signal.aborted) {
+      throw new AbortSignalJobError("Job was aborted");
+    }
 
-### Job Queues
+    // Update progress
+    await context.updateProgress(50, "Halfway there", { stage: "processing" });
 
-Queues manage job execution with:
+    // Do work and return result
+    return { result: "done" };
+  }
+}
+```
 
-- **Storage backend**: Where jobs are persisted
-- **Rate limiting**: Controls job execution rate
-- **Event system**: Lifecycle notifications
-- **Queue modes**: CLIENT (submit only), SERVER (process only), BOTH
+### JobQueueClient
 
-### Storage Backends
+The client submits jobs and monitors their progress. It can operate in two modes:
 
-Storage determines where jobs are persisted:
+1. **Attached to server** (same process): Direct event forwarding for optimal performance
+2. **Connected via storage** (cross process): Uses storage subscriptions for updates
 
-- **InMemoryQueueStorage**: Volatile, lost on restart
-- **IndexedDbQueueStorage**: Browser persistent storage
-- **SqliteQueueStorage**: Local SQLite file
-- **PostgresQueueStorage**: PostgreSQL database
+```typescript
+const client = new JobQueueClient<Input, Output>({
+  storage,
+  queueName: "my-queue",
+});
 
-### Rate Limiters
+// Option 1: Attach to local server (recommended for same-process)
+client.attach(server);
 
-Control job execution rate:
+// Option 2: Connect via storage (for cross-process scenarios)
+client.connect();
+```
 
-- **ConcurrencyLimiter**: Max concurrent jobs
-- **DelayLimiter**: Minimum delay between jobs
-- **InMemoryRateLimiter**: Requests per time window
-- **CompositeLimiter**: Combine multiple limiters
+### JobQueueServer
+
+The server coordinates workers, manages job lifecycle, and handles cleanup:
+
+```typescript
+const server = new JobQueueServer(MyJob, {
+  storage,
+  queueName: "my-queue",
+  workerCount: 4, // Number of concurrent workers
+  pollIntervalMs: 100, // How often workers check for new jobs
+  deleteAfterCompletionMs: 60_000, // Delete completed jobs after 1 minute
+  deleteAfterFailureMs: 300_000, // Delete failed jobs after 5 minutes
+  deleteAfterDisabledMs: 60_000, // Delete disabled jobs after 1 minute
+  cleanupIntervalMs: 10_000, // How often to run cleanup
+  limiter: new ConcurrencyLimiter(10), // Rate limiting
+});
+```
+
+### JobQueueWorker
+
+Workers are created and managed by the server. You typically don't interact with them directly, but they can be used standalone for custom scenarios:
+
+```typescript
+const worker = new JobQueueWorker(MyJob, {
+  storage,
+  queueName: "my-queue",
+  limiter: new ConcurrencyLimiter(5),
+  pollIntervalMs: 100,
+});
+
+await worker.start();
+// Worker processes jobs until stopped
+await worker.stop();
+```
 
 ## Usage Examples
 
 ### Creating Custom Jobs
 
 ```typescript
-import { Job, IJobExecuteContext } from "@workglow/job-queue";
+import { Job, IJobExecuteContext, RetryableJobError, PermanentJobError } from "@workglow/job-queue";
 
 interface DownloadInput {
   url: string;
@@ -186,18 +251,19 @@ class DownloadJob extends Job<DownloadInput, DownloadOutput> {
   async execute(input: DownloadInput, context: IJobExecuteContext): Promise<DownloadOutput> {
     const { url, filename } = input;
 
-    // Check for abort signal
-    if (context.signal.aborted) {
-      throw new Error("Job was aborted");
-    }
+    // Handle abort signal
+    const checkAbort = () => {
+      if (context.signal.aborted) {
+        throw new AbortSignalJobError("Download aborted");
+      }
+    };
 
-    // Update progress
+    checkAbort();
     await context.updateProgress(10, "Starting download");
 
     // Simulate download with progress
     for (let i = 20; i <= 90; i += 10) {
-      if (context.signal.aborted) throw new Error("Job was aborted");
-
+      checkAbort();
       await new Promise((resolve) => setTimeout(resolve, 100));
       await context.updateProgress(i, `Downloaded ${i}%`);
     }
@@ -206,95 +272,82 @@ class DownloadJob extends Job<DownloadInput, DownloadOutput> {
 
     return {
       filepath: `/downloads/${filename}`,
-      size: 1024 * 1024, // 1MB
+      size: 1024 * 1024,
     };
   }
 }
 ```
 
-### Basic Queue Operations
+### Submitting Jobs
 
 ```typescript
-import { JobQueue, ConcurrencyLimiter } from "@workglow/job-queue";
-import { InMemoryQueueStorage } from "@workglow/storage";
+// Submit a single job
+const handle = await client.submit(
+  { url: "https://example.com/file.zip", filename: "file.zip" },
+  {
+    maxRetries: 5, // Override default retry count
+    jobRunId: "batch-001", // Group related jobs
+    runAfter: new Date(Date.now() + 60000), // Delay execution by 1 minute
+    deadlineAt: new Date(Date.now() + 3600000), // Must complete within 1 hour
+  }
+);
 
-// Create queue with concurrency limiting
-const queue = new JobQueue("downloads", DownloadJob, {
-  storage: new InMemoryQueueStorage("downloads"),
-  limiter: new ConcurrencyLimiter(3), // Max 3 concurrent downloads
-  waitDurationInMilliseconds: 500, // Check for new jobs every 500ms
+// The handle provides methods to interact with the job
+console.log(handle.id); // Job ID
+const output = await handle.waitFor(); // Wait for completion
+await handle.abort(); // Abort the job
+handle.onProgress((progress, message, details) => {
+  console.log(`${progress}%: ${message}`);
 });
 
-// Start the queue
-await queue.start();
-
-// Add multiple jobs
-const jobIds = await Promise.all([
-  queue.add(
-    new DownloadJob({
-      input: { url: "https://example.com/file1.zip", filename: "file1.zip" },
-    })
-  ),
-  queue.add(
-    new DownloadJob({
-      input: { url: "https://example.com/file2.zip", filename: "file2.zip" },
-    })
-  ),
-]);
-
-// Check queue status
-const queueSize = await queue.size(); // Total jobs
-const pendingJobs = await queue.size(JobStatus.PENDING);
-const runningJobs = await queue.size(JobStatus.RUNNING);
-
-// Peek at jobs
-const nextJobs = await queue.peek(JobStatus.PENDING, 5);
-
-// Get queue statistics
-const stats = queue.getStats();
-console.log(`Completed: ${stats.completedJobs}, Failed: ${stats.failedJobs}`);
+// Submit multiple jobs
+const handles = await client.submitBatch(
+  [
+    { url: "https://example.com/file1.zip", filename: "file1.zip" },
+    { url: "https://example.com/file2.zip", filename: "file2.zip" },
+  ],
+  { jobRunId: "batch-002" }
+);
 ```
 
 ### Progress Tracking
 
 ```typescript
-// Listen to progress for a specific job
-const removeListener = queue.onJobProgress(jobId, (progress, message, details) => {
-  console.log(`Job ${jobId}: ${progress}% - ${message}`);
+// Method 1: Using the job handle
+const handle = await client.submit(input);
+const cleanup = handle.onProgress((progress, message, details) => {
+  console.log(`Job ${handle.id}: ${progress}% - ${message}`);
   if (details) {
     console.log("Details:", details);
   }
 });
 
-// You can also listen on the job itself
-const job = new DownloadJob({ input: { url: "...", filename: "..." } });
-job.onJobProgress((progress, message, details) => {
-  console.log(`Progress: ${progress}% - ${message}`);
+await handle.waitFor();
+cleanup(); // Remove listener
+
+// Method 2: Using client events
+client.on("job_progress", (queueName, jobId, progress, message, details) => {
+  console.log(`[${queueName}] Job ${jobId}: ${progress}% - ${message}`);
 });
 
-const jobId = await queue.add(job);
-
-// Wait for completion
-try {
-  const result = await queue.waitFor(jobId);
-  console.log("Download completed:", result);
-} finally {
-  removeListener(); // Clean up listener
-}
+// Method 3: Using onJobProgress for a specific job
+const removeListener = client.onJobProgress(jobId, (progress, message, details) => {
+  console.log(`Progress: ${progress}%`);
+});
 ```
 
 ### Error Handling and Retries
 
 ```typescript
-import { RetryableJobError, PermanentJobError } from "@workglow/job-queue";
+import { RetryableJobError, PermanentJobError, AbortSignalJobError } from "@workglow/job-queue";
 
-class ApiCallJob extends Job<{ endpoint: string }, { data: any }> {
+class ApiCallJob extends Job<{ endpoint: string }, { data: unknown }> {
   async execute(input: { endpoint: string }, context: IJobExecuteContext) {
     try {
-      const response = await fetch(input.endpoint);
+      const response = await fetch(input.endpoint, { signal: context.signal });
 
       if (response.status === 429) {
-        // Rate limited - retry with delay
+        // Rate limited - retry after delay
         throw new RetryableJobError(
           "Rate limited",
           new Date(Date.now() + 60000) // Retry in 1 minute
@@ -307,104 +360,83 @@ class ApiCallJob extends Job<{ endpoint: string }, { data: any }> {
       }
 
       if (!response.ok) {
-        // Server error - allow retries
+        // Server error - allow retries (uses default retry logic)
         throw new RetryableJobError(`HTTP ${response.status}`);
       }
 
       return { data: await response.json() };
     } catch (error) {
-      if (error instanceof RetryableJobError || error instanceof PermanentJobError) {
+      if (
+        error instanceof RetryableJobError ||
+        error instanceof PermanentJobError ||
+        error instanceof AbortSignalJobError
+      ) {
         throw error;
       }
-      // Network errors etc. - allow retries
-      throw new RetryableJobError(error.message);
+      // Network errors - allow retries
+      throw new RetryableJobError(String(error));
     }
   }
 }
-
-// Create job with retry configuration
-const apiJob = new ApiCallJob({
-  input: { endpoint: "https://api.example.com/data" },
-  maxRetries: 5, // Try up to 5 times
-});
 ```
 
 ### Event Listeners
 
 ```typescript
-// Listen to all queue events
-queue.on("queue_start", (queueName) => {
-  console.log(`Queue ${queueName} started`);
+// Client events
+client.on("job_start", (queueName, jobId) => {
+  console.log(`Job ${jobId} started`);
 });
 
-queue.on("job_start", (queueName, jobId) => {
-  console.log(`Job ${jobId} started in queue ${queueName}`);
+client.on("job_complete", (queueName, jobId, output) => {
+  console.log(`Job ${jobId} completed:`, output);
 });
 
-queue.on("job_complete", (queueName, jobId, output) => {
-  console.log(`Job ${jobId} completed with output:`, output);
+client.on("job_error", (queueName, jobId, error) => {
+  console.error(`Job ${jobId} failed: ${error}`);
 });
 
-queue.on("job_error", (queueName, jobId, error) => {
-  console.error(`Job ${jobId} failed with error: ${error}`);
-});
-
-queue.on("job_retry", (queueName, jobId, runAfter) => {
+client.on("job_retry", (queueName, jobId, runAfter) => {
   console.log(`Job ${jobId} will retry at ${runAfter}`);
 });
 
-queue.on("job_progress", (queueName, jobId, progress, message, details) => {
-  console.log(`Job ${jobId}: ${progress}% - ${message}`);
+client.on("job_disabled", (queueName, jobId) => {
+  console.log(`Job ${jobId} was disabled`);
 });
 
-queue.on("queue_stats_update", (queueName, stats) => {
+client.on("job_aborting", (queueName, jobId) => {
+  console.log(`Job ${jobId} abort requested`);
+});
+
+// Server events
+server.on("server_start", (queueName) => {
+  console.log(`Server ${queueName} started`);
+});
+
+server.on("server_stop", (queueName) => {
+  console.log(`Server ${queueName} stopped`);
+});
+
+server.on("stats_update", (queueName, stats) => {
   console.log(`Queue stats:`, stats);
 });
 
 // Wait for specific events
-const [queueName] = await queue.waitOn("queue_start");
-const [queueName, jobId, output] = await queue.waitOn("job_complete");
+const [queueName, jobId, output] = await client.waitOn("job_complete");
 ```
 
-### Job Completion and Output
+### Aborting Jobs
 
 ```typescript
-// Wait for job completion
-const jobId = await queue.add(job);
+// Abort a single job
+const handle = await client.submit({ taskType: "long_running" });
+await handle.abort();
 
-try {
-  // This will resolve with the job output or reject with an error
-  const output = await queue.waitFor(jobId);
-  console.log("Job completed successfully:", output);
-} catch (error) {
-  console.error("Job failed:", error);
-}
+// Or using the client directly
+await client.abort(jobId);
 
-// Check if output already exists for given input (caching)
-const existingOutput = await queue.outputForInput({
-  url: "https://example.com/file.zip",
-  filename: "file.zip",
-});
-
-if (existingOutput) {
-  console.log("Already processed:", existingOutput);
-} else {
-  // Add new job
-  const newJobId = await queue.add(
-    new DownloadJob({
-      input: { url: "https://example.com/file.zip", filename: "file.zip" },
-    })
-  );
-}
-
-// Abort a running job
-await queue.abort(jobId);
-
-// Get job details
-const job = await queue.get(jobId);
-if (job) {
-  console.log(`Job status: ${job.status}, progress: ${job.progress}%`);
-}
+// Abort all jobs in a job run
+await client.abortJobRun("batch-001");
 ```
 
 ## Storage Configurations
@@ -412,44 +444,33 @@ if (job) {
 ### In-Memory Storage
 
 ```typescript
-import { JobQueue } from "@workglow/job-queue";
 import { InMemoryQueueStorage } from "@workglow/storage";
 
-const queue = new JobQueue("my-queue", MyJob, {
-  storage: new InMemoryQueueStorage("my-queue"),
-  // Jobs are lost when the process restarts
-});
+const storage = new InMemoryQueueStorage<Input, Output>("my-queue");
+await storage.setupDatabase();
 ```
 
 ### IndexedDB Storage (Browser)
 
 ```typescript
-import { JobQueue } from "@workglow/job-queue";
 import { IndexedDbQueueStorage } from "@workglow/storage";
 
-// For browser environments
-const queue = new JobQueue("my-queue", MyJob, {
-  storage: new IndexedDbQueueStorage("my-queue"),
-  // Jobs persist in browser storage
-});
+const storage = new IndexedDbQueueStorage<Input, Output>("my-queue");
+await storage.setupDatabase();
 ```
 
 ### SQLite Storage (Node.js/Bun)
 
 ```typescript
-import { JobQueue } from "@workglow/job-queue";
 import { SqliteQueueStorage } from "@workglow/storage";
 
-const queue = new JobQueue("my-queue", MyJob, {
-  storage: new SqliteQueueStorage("./jobs.db", "my-queue"),
-  // Jobs persist in SQLite file
-});
+const storage = new SqliteQueueStorage<Input, Output>("./jobs.db", "my-queue");
+await storage.setupDatabase();
 ```
 
 ### PostgreSQL Storage (Node.js/Bun)
 
 ```typescript
-import { JobQueue } from "@workglow/job-queue";
 import { PostgresQueueStorage } from "@workglow/storage";
 import { Pool } from "pg";
 
@@ -461,10 +482,8 @@ const pool = new Pool({
   password: "password",
 });
 
-const queue = new JobQueue("my-queue", MyJob, {
-  storage: new PostgresQueueStorage(pool, "my-queue"),
-  // Jobs persist in PostgreSQL
-});
+const storage = new PostgresQueueStorage<Input, Output>(pool, "my-queue");
+await storage.setupDatabase();
 ```
 
 ## Rate Limiting Strategies
@@ -474,13 +493,8 @@ const queue = new JobQueue("my-queue", MyJob, {
 ```typescript
 import { ConcurrencyLimiter } from "@workglow/job-queue";
 
-// Limit to 5 concurrent jobs with 1 second minimum between starts
-const limiter = new ConcurrencyLimiter(5, 1000);
-
-const queue = new JobQueue("my-queue", MyJob, {
-  storage: new InMemoryQueueStorage("my-queue"),
-  limiter,
-});
+// Limit to 5 concurrent jobs
+const limiter = new ConcurrencyLimiter(5);
 ```
 
 ### Delay Limiter
@@ -501,9 +515,9 @@ import { InMemoryRateLimiter } from "@workglow/job-queue";
 const limiter = new InMemoryRateLimiter({
   maxExecutions: 10,
   windowSizeInSeconds: 60,
-  initialBackoffDelay: 1000, // Start with 1s backoff
-  backoffMultiplier: 2, // Double delay each time
-  maxBackoffDelay: 60000, // Max 60s backoff
+  initialBackoffDelay: 1000,
+  backoffMultiplier: 2,
+  maxBackoffDelay: 60000,
 });
 ```
 
@@ -514,66 +528,130 @@ import { CompositeLimiter, ConcurrencyLimiter, DelayLimiter } from "@workglow/jo
 
 // Combine multiple limiting strategies
 const limiter = new CompositeLimiter([
-  new ConcurrencyLimiter(3), // Max 3 concurrent
-  new DelayLimiter(100), // 100ms between starts
+  new ConcurrencyLimiter(3),
+  new DelayLimiter(100),
   new InMemoryRateLimiter({
-    // Max 20 per minute
     maxExecutions: 20,
     windowSizeInSeconds: 60,
   }),
 ]);
 ```
 
-## Queue Modes
+## Scaling Workers
 
 ```typescript
-import { QueueMode } from "@workglow/job-queue";
+// Start with 2 workers
+const server = new JobQueueServer(MyJob, {
+  storage,
+  queueName: "my-queue",
+  workerCount: 2,
+});
 
-// Client mode - can add jobs and get progress, but doesn't process them
-await queue.start(QueueMode.CLIENT);
+await server.start();
 
-// Server mode - processes jobs but can't add new ones
-await queue.start(QueueMode.SERVER);
+// Scale up to 5 workers
+await server.scaleWorkers(5);
 
-// Both modes - can add and process jobs (default)
-await queue.start(QueueMode.BOTH);
+// Scale down to 1 worker
+await server.scaleWorkers(1);
+
+// Check current worker count
+console.log(server.getWorkerCount());
+```
+
+## Cross-Process Communication
+
+When the client and server run in different processes, use storage subscriptions:
+
+```typescript
+// Process A: Server
+const server = new JobQueueServer(MyJob, { storage, queueName });
+await server.start();
+
+// Process B: Client
+const client = new JobQueueClient<Input, Output>({ storage, queueName });
+client.connect(); // Uses storage subscriptions instead of direct attachment
+
+const handle = await client.submit(input);
+await handle.waitFor(); // Works across processes
+
+// Don't forget to disconnect when done
+client.disconnect();
 ```
 
 ## API Reference
 
-### JobQueue Methods
+### JobQueueClient
 
 ```typescript
-interface IJobQueue<Input, Output> {
-  // Queue management
-  start(mode?: QueueMode): Promise<this>;
-  stop(): Promise<this>;
-  clear(): Promise<this>;
-  restart(): Promise<this>;
+class JobQueueClient<Input, Output> {
+  // Connection management
+  attach(server: JobQueueServer<Input, Output>): void;
+  detach(): void;
+  connect(): void;
+  disconnect(): void;
 
-  // Job operations
-  add(job: Job<Input, Output>): Promise<unknown>;
-  get(id: unknown): Promise<Job<Input, Output> | undefined>;
-  waitFor(jobId: unknown): Promise<Output | undefined>;
-  abort(jobId: unknown): Promise<void>;
+  // Job submission
+  submit(input: Input, options?: SubmitOptions): Promise<JobHandle<Output>>;
+  submitBatch(
+    inputs: readonly Input[],
+    options?: BatchOptions
+  ): Promise<readonly JobHandle<Output>[]>;
 
-  // Queue inspection
-  peek(status?: JobStatus, num?: number): Promise<Job<Input, Output>[]>;
+  // Job queries
+  getJob(id: unknown): Promise<Job<Input, Output> | undefined>;
+  getJobsByRunId(runId: string): Promise<readonly Job<Input, Output>[]>;
+  peek(status?: JobStatus, num?: number): Promise<readonly Job<Input, Output>[]>;
   size(status?: JobStatus): Promise<number>;
-  getStats(): JobQueueStats;
-
-  // Utility
   outputForInput(input: Input): Promise<Output | null>;
-  getJobsByRunId(jobRunId: string): Promise<Job<Input, Output>[]>;
+
+  // Job control
+  waitFor(jobId: unknown): Promise<Output>;
+  abort(jobId: unknown): Promise<void>;
+  abortJobRun(jobRunId: string): Promise<void>;
 
   // Progress tracking
-  updateProgress(
-    jobId: unknown,
-    progress: number,
-    message?: string,
-    details?: Record<string, any>
-  ): Promise<void>;
   onJobProgress(jobId: unknown, listener: JobProgressListener): () => void;
+
+  // Events
+  on<Event extends JobQueueEvents>(event: Event, listener: Listener): void;
+  off<Event extends JobQueueEvents>(event: Event, listener: Listener): void;
+  once<Event extends JobQueueEvents>(event: Event, listener: Listener): void;
+  waitOn<Event extends JobQueueEvents>(event: Event): Promise<Parameters>;
+}
+```
+
+### JobQueueServer
+
+```typescript
+class JobQueueServer<Input, Output> {
+  // Lifecycle
+  start(): Promise<this>;
+  stop(): Promise<this>;
+  isRunning(): boolean;
+
+  // Workers
+  scaleWorkers(count: number): Promise<void>;
+  getWorkerCount(): number;
+
+  // Statistics
+  getStats(): JobQueueStats;
+  getStorage(): IQueueStorage<Input, Output>;
+
+  // Events
+  on<Event extends JobQueueServerEvents>(event: Event, listener: Listener): void;
+  off<Event extends JobQueueServerEvents>(event: Event, listener: Listener): void;
+}
+```
+
+### JobHandle
+
+```typescript
+interface JobHandle<Output> {
+  readonly id: unknown;
+  waitFor(): Promise<Output>;
+  abort(): Promise<void>;
+  onProgress(callback: JobProgressListener): () => void;
 }
 ```
 
@@ -588,17 +666,21 @@ class Job<Input, Output> {
   status: JobStatus;
   progress: number;
   progressMessage: string;
-  progressDetails: Record<string, any> | null;
+  progressDetails: Record<string, unknown> | null;
   maxRetries: number;
   runAttempts: number;
   error: string | null;
+  errorCode: string | null;
   createdAt: Date;
   completedAt: Date | null;
+  runAfter: Date;
+  deadlineAt: Date | null;
+  lastRanAt: Date | null;
+  jobRunId: string | undefined;
+  fingerprint: string | undefined;
 
-  // Methods
-  abstract execute(input: Input, context: IJobExecuteContext): Promise<Output>;
-  updateProgress(progress: number, message?: string, details?: Record<string, any>): Promise<void>;
-  onJobProgress(listener: JobProgressListener): () => void;
+  // Methods (override in subclass)
+  execute(input: Input, context: IJobExecuteContext): Promise<Output>;
 }
 ```
 
@@ -606,24 +688,7 @@ class Job<Input, Output> {
 
 ```typescript
 // Job statuses
-enum JobStatus {
-  PENDING = "PENDING",
-  RUNNING = "RUNNING",
-  COMPLETED = "COMPLETED",
-  FAILED = "FAILED",
-  ABORTING = "ABORTING",
-  DISABLED = "DISABLED",
-}
-
-// Queue options
-interface JobQueueOptions<Input, Output> {
-  deleteAfterCompletionMs?: number;
-  deleteAfterFailureMs?: number;
-  deleteAfterDisabledMs?: number;
-  waitDurationInMilliseconds?: number;
-  limiter?: ILimiter;
-  storage?: IQueueStorage<Input, Output>;
-}
+type JobStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "ABORTING" | "DISABLED";
 
 // Job execution context
 interface IJobExecuteContext {
@@ -631,7 +696,7 @@ interface IJobExecuteContext {
   updateProgress: (
     progress: number,
     message?: string,
-    details?: Record<string, any>
+    details?: Record<string, unknown> | null
   ) => Promise<void>;
 }
 
@@ -639,19 +704,38 @@ interface IJobExecuteContext {
 type JobProgressListener = (
   progress: number,
   message: string,
-  details: Record<string, any> | null
+  details: Record<string, unknown> | null
 ) => void;
 
 // Queue statistics
 interface JobQueueStats {
-  totalJobs: number;
-  completedJobs: number;
-  failedJobs: number;
-  abortedJobs: number;
-  retriedJobs: number;
-  disabledJobs: number;
-  averageProcessingTime?: number;
-  lastUpdateTime: Date;
+  readonly totalJobs: number;
+  readonly completedJobs: number;
+  readonly failedJobs: number;
+  readonly abortedJobs: number;
+  readonly retriedJobs: number;
+  readonly disabledJobs: number;
+  readonly averageProcessingTime?: number;
+  readonly lastUpdateTime: Date;
+}
+
+// Client options
+interface JobQueueClientOptions<Input, Output> {
+  readonly storage: IQueueStorage<Input, Output>;
+  readonly queueName: string;
+}
+
+// Server options
+interface JobQueueServerOptions<Input, Output> {
+  readonly storage: IQueueStorage<Input, Output>;
+  readonly queueName: string;
+  readonly limiter?: ILimiter;
+  readonly workerCount?: number;
+  readonly pollIntervalMs?: number;
+  readonly deleteAfterCompletionMs?: number;
+  readonly deleteAfterFailureMs?: number;
+  readonly deleteAfterDisabledMs?: number;
+  readonly cleanupIntervalMs?: number;
 }
 ```
 
@@ -666,25 +750,67 @@ bun test
 Example test:
 
 ```typescript
-import { describe, it, expect } from "vitest";
-import { JobQueue } from "@workglow/job-queue";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { Job, JobQueueClient, JobQueueServer, IJobExecuteContext } from "@workglow/job-queue";
 import { InMemoryQueueStorage } from "@workglow/storage";
 
+class TestJob extends Job<{ data: string }, { result: string }> {
+  async execute(input: { data: string }, context: IJobExecuteContext) {
+    await context.updateProgress(50, "Processing");
+    return { result: input.data.toUpperCase() };
+  }
+}
+
 describe("JobQueue", () => {
-  it("should process jobs successfully", async () => {
-    const queue = new JobQueue("test", TestJob, {
-      storage: new InMemoryQueueStorage("test"),
+  let server: JobQueueServer<{ data: string }, { result: string }>;
+  let client: JobQueueClient<{ data: string }, { result: string }>;
+  let storage: InMemoryQueueStorage<{ data: string }, { result: string }>;
+
+  beforeEach(async () => {
+    storage = new InMemoryQueueStorage("test-queue");
+    await storage.setupDatabase();
+
+    server = new JobQueueServer(TestJob, {
+      storage,
+      queueName: "test-queue",
+      pollIntervalMs: 1,
     });
 
-    await queue.start();
+    client = new JobQueueClient({
+      storage,
+      queueName: "test-queue",
+    });
 
-    const job = new TestJob({ input: { data: "test" } });
-    const jobId = await queue.add(job);
-    const result = await queue.waitFor(jobId);
+    client.attach(server);
+  });
 
-    expect(result).toEqual({ processed: "test" });
+  afterEach(async () => {
+    await server.stop();
+    await storage.deleteAll();
+  });
 
-    await queue.stop();
+  it("should process jobs successfully", async () => {
+    await server.start();
+
+    const handle = await client.submit({ data: "hello" });
+    const result = await handle.waitFor();
+
+    expect(result).toEqual({ result: "HELLO" });
+  });
+
+  it("should track progress", async () => {
+    await server.start();
+
+    const progressUpdates: number[] = [];
+    const handle = await client.submit({ data: "test" });
+
+    handle.onProgress((progress) => {
+      progressUpdates.push(progress);
+    });
+
+    await handle.waitFor();
+
+    expect(progressUpdates).toContain(50);
   });
 });
 ```

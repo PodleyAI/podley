@@ -4,23 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AiJob, AiJobInput } from "@workglow/ai";
-import {
-  HF_TRANSFORMERS_ONNX,
-  register_HFT_ClientJobFns,
-  register_TFMP_ClientJobFns,
-  TENSORFLOW_MEDIAPIPE,
-} from "@workglow/ai-provider";
-import { ConcurrencyLimiter, JobQueue } from "@workglow/job-queue";
-import { InMemoryQueueStorage } from "@workglow/storage";
-import {
-  getTaskQueueRegistry,
-  JsonTaskItem,
-  TaskGraph,
-  TaskInput,
-  TaskOutput,
-  Workflow,
-} from "@workglow/task-graph";
+import { register_HFT_ClientJobFns, register_TFMP_ClientJobFns } from "@workglow/ai-provider";
+import { getTaskQueueRegistry, JsonTaskItem, TaskGraph, Workflow } from "@workglow/task-graph";
 import { JsonTask } from "@workglow/tasks";
 import {
   IndexedDbTaskGraphRepository,
@@ -37,32 +22,16 @@ import { GraphStoreStatus } from "./status/GraphStoreStatus";
 import { OutputRepositoryStatus } from "./status/OutputRepositoryStatus";
 import { QueuesStatus } from "./status/QueueStatus";
 
-register_TFMP_ClientJobFns(
+await register_TFMP_ClientJobFns(
   new Worker(new URL("./worker_tfmp.ts", import.meta.url), { type: "module" })
 );
-register_HFT_ClientJobFns(
+await register_HFT_ClientJobFns(
   new Worker(new URL("./worker_hft.ts", import.meta.url), { type: "module" })
 );
 
 const queueRegistry = getTaskQueueRegistry();
-
-queueRegistry.registerQueue(
-  new JobQueue<AiJobInput<TaskInput>, TaskOutput>(HF_TRANSFORMERS_ONNX, AiJob, {
-    limiter: new ConcurrencyLimiter(1, 100),
-    storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(HF_TRANSFORMERS_ONNX),
-  })
-);
-
-queueRegistry.registerQueue(
-  new JobQueue<AiJobInput<TaskInput>, TaskOutput>(TENSORFLOW_MEDIAPIPE, AiJob, {
-    limiter: new ConcurrencyLimiter(1, 100),
-    storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(TENSORFLOW_MEDIAPIPE),
-  })
-);
-
 queueRegistry.clearQueues();
 queueRegistry.startQueues();
-
 const taskOutputCache = new IndexedDbTaskOutputRepository();
 const taskGraphRepo = new IndexedDbTaskGraphRepository();
 const resetGraph = () => {

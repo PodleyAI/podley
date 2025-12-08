@@ -12,9 +12,18 @@ import {
   setGlobalModelRepository,
 } from "@workglow/ai";
 import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@workglow/ai-provider";
-import { ConcurrencyLimiter, JobQueue, SqliteRateLimiter } from "@workglow/job-queue";
+import {
+  ConcurrencyLimiter,
+  JobQueueClient,
+  JobQueueServer,
+  RateLimiter,
+} from "@workglow/job-queue";
 import { Sqlite } from "@workglow/sqlite";
-import { InMemoryQueueStorage, SqliteQueueStorage } from "@workglow/storage";
+import {
+  InMemoryQueueStorage,
+  SqliteQueueStorage,
+  SqliteRateLimiterStorage,
+} from "@workglow/storage";
 import {
   getTaskQueueRegistry,
   setTaskQueueRegistry,
@@ -31,21 +40,35 @@ describe("HFTransformersBinding", () => {
   beforeEach(() => {
     setTaskQueueRegistry(null);
   });
+
   describe("InMemoryJobQueue", () => {
     it("Should have an item queued", async () => {
-      register_HFT_InlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
-      const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
-        HF_TRANSFORMERS_ONNX,
+
+      const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
+        HF_TRANSFORMERS_ONNX
+      );
+      await storage.setupDatabase();
+
+      const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(
         AiJob<AiJobInput<TaskInput>, TaskOutput>,
         {
+          storage,
+          queueName: HF_TRANSFORMERS_ONNX,
           limiter: new ConcurrencyLimiter(1, 10),
-          storage: new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
-            HF_TRANSFORMERS_ONNX
-          ),
+          pollIntervalMs: 1,
         }
       );
-      queueRegistry.registerQueue(jobQueue);
+
+      const client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+        storage,
+        queueName: HF_TRANSFORMERS_ONNX,
+      });
+
+      client.attach(server);
+
+      await register_HFT_InlineJobFns(client);
+      queueRegistry.registerQueue({ server, client, storage });
 
       const model = {
         name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
@@ -61,9 +84,9 @@ describe("HFTransformersBinding", () => {
       await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
       await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
 
-      const queue = queueRegistry.getQueue(HF_TRANSFORMERS_ONNX);
-      expect(queue).toBeDefined();
-      expect(queue!.queueName).toEqual(HF_TRANSFORMERS_ONNX);
+      const registeredQueue = queueRegistry.getQueue(HF_TRANSFORMERS_ONNX);
+      expect(registeredQueue).toBeDefined();
+      expect(registeredQueue!.server.queueName).toEqual(HF_TRANSFORMERS_ONNX);
 
       const workflow = new Workflow();
       workflow.DownloadModel({
@@ -71,34 +94,43 @@ describe("HFTransformersBinding", () => {
       });
       workflow.run();
       await sleep(1);
-      expect(await queue?.size()).toEqual(1);
+      expect(await registeredQueue?.client.size()).toEqual(1);
       workflow.reset();
-      await queue?.clear();
+      await registeredQueue?.storage.deleteAll();
     });
   });
 
   describe("SqliteJobQueue", () => {
     it("Should have an item queued", async () => {
-      register_HFT_InlineJobFns();
       const queueRegistry = getTaskQueueRegistry();
       const storage = new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(db, "test");
       await storage.setupDatabase();
-      const limiter = new SqliteRateLimiter(db, "test", {
+      const limiterStorage = new SqliteRateLimiterStorage(db);
+      await limiterStorage.setupDatabase();
+      const limiter = new RateLimiter(limiterStorage, "test", {
         maxExecutions: 4,
         windowSizeInSeconds: 1,
       });
-      limiter.ensureTableExists();
-      const jobQueue = new JobQueue<AiJobInput<TaskInput>, TaskOutput>(
-        HF_TRANSFORMERS_ONNX,
+
+      const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(
         AiJob<AiJobInput<TaskInput>, TaskOutput>,
         {
-          storage: storage,
-          limiter: limiter,
-          waitDurationInMilliseconds: 1,
+          storage,
+          queueName: HF_TRANSFORMERS_ONNX,
+          limiter,
+          pollIntervalMs: 1,
         }
       );
 
-      queueRegistry.registerQueue(jobQueue);
+      const client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
+        storage,
+        queueName: HF_TRANSFORMERS_ONNX,
+      });
+
+      client.attach(server);
+
+      await register_HFT_InlineJobFns(client);
+      queueRegistry.registerQueue({ server, client, storage });
 
       setGlobalModelRepository(new InMemoryModelRepository());
       const model = {
@@ -114,9 +146,9 @@ describe("HFTransformersBinding", () => {
       await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
       await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
 
-      const queue = queueRegistry.getQueue(HF_TRANSFORMERS_ONNX);
-      expect(queue).toBeDefined();
-      expect(queue?.queueName).toEqual(HF_TRANSFORMERS_ONNX);
+      const registeredQueue = queueRegistry.getQueue(HF_TRANSFORMERS_ONNX);
+      expect(registeredQueue).toBeDefined();
+      expect(registeredQueue?.server.queueName).toEqual(HF_TRANSFORMERS_ONNX);
 
       const workflow = new Workflow();
       workflow.DownloadModel({
@@ -124,9 +156,9 @@ describe("HFTransformersBinding", () => {
       });
       workflow.run();
       await sleep(1);
-      expect(await queue?.size()).toEqual(1);
+      expect(await registeredQueue?.client.size()).toEqual(1);
       workflow.reset();
-      await queue?.clear();
+      await registeredQueue?.storage.deleteAll();
     });
   });
 

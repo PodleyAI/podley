@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InMemoryRateLimiter } from "@workglow/job-queue";
-import { IndexedDbQueueStorage } from "@workglow/storage";
+import { RateLimiter } from "@workglow/job-queue";
+import { IndexedDbQueueStorage, IndexedDbRateLimiterStorage } from "@workglow/storage";
 import "fake-indexeddb/auto";
 import { describe } from "vitest";
 import { runGenericJobQueueTests } from "./genericJobQueueTests";
@@ -13,7 +13,13 @@ import { runGenericJobQueueTests } from "./genericJobQueueTests";
 describe("IndexedDbJobQueue", () => {
   runGenericJobQueueTests(
     (queueName: string) => new IndexedDbQueueStorage(queueName),
-    (queueName: string, maxExecutions: number, windowSizeInSeconds: number) =>
-      new InMemoryRateLimiter({ maxExecutions, windowSizeInSeconds })
+    async (queueName: string, maxExecutions: number, windowSizeInSeconds: number) => {
+      const storage = new IndexedDbRateLimiterStorage();
+      await storage.setupDatabase();
+      return new RateLimiter(storage, queueName, {
+        maxExecutions,
+        windowSizeInSeconds,
+      });
+    }
   );
 });
