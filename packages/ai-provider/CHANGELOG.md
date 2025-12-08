@@ -1,5 +1,17 @@
 # @workglow/ai-provider
 
+## 0.0.58
+
+### Patch Changes
+
+- Refactored the lame job queue into a less lame job queue
+- Updated dependencies
+  - @workglow/task-graph@0.0.58
+  - @workglow/job-queue@0.0.58
+  - @workglow/storage@0.0.58
+  - @workglow/ai@0.0.58
+  - @workglow/util@0.0.58
+
 ## 0.0.57
 
 ### Patch Changes
