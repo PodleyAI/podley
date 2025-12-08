@@ -41,7 +41,7 @@ import {
 } from "@workglow/ai";
 import { PermanentJobError } from "@workglow/job-queue";
 import { CallbackStatus } from "./HFT_CallbackStatus";
-import { QUANTIZATION_DATA_TYPES } from "./HFT_Constants";
+import { QuantizationDataType } from "./HFT_Constants";
 
 const pipelines = new Map<string, any>();
 
@@ -69,7 +69,7 @@ const getPipeline = async (
   };
 
   const pipelineOptions: PretrainedModelOptions = {
-    dtype: (model.quantization as QUANTIZATION_DATA_TYPES) || "q8",
+    dtype: (model.quantization as QuantizationDataType) || "q8",
     ...(model.use_external_data_format
       ? { use_external_data_format: model.use_external_data_format }
       : {}),
