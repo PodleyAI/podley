@@ -1,5 +1,22 @@
 # @workglow/web
 
+## 0.0.59
+
+### Patch Changes
+
+- Rework model config
+- Updated dependencies
+  - @workglow/ai-provider@0.0.59
+  - @workglow/storage@0.0.59
+  - @workglow/test@0.0.59
+  - @workglow/util@0.0.59
+  - @workglow/ai@0.0.59
+  - @workglow/debug@0.0.59
+  - @workglow/job-queue@0.0.59
+  - @workglow/sqlite@0.0.59
+  - @workglow/task-graph@0.0.59
+  - @workglow/tasks@0.0.59
+
 ## 0.0.58
 
 ### Patch Changes

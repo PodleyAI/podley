@@ -1,5 +1,11 @@
 # @workglow/util
 
+## 0.0.59
+
+### Patch Changes
+
+- Rework model config
+
 ## 0.0.58
 
 ### Patch Changes
