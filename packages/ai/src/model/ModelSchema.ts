@@ -18,6 +18,7 @@ export const ModelSchema = {
     metadata: { type: "object", default: {} },
   },
   required: ["model_id", "tasks", "provider", "title", "description", "providerConfig", "metadata"],
+  format: "model",
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 

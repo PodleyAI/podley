@@ -33,68 +33,68 @@ const TypedArraySchemaOptions = {
     // {
     //   pattern: {
     //     type: "number";
-    //     "x-semantic": "BigInt" | "Float64";
+    //     "format": "BigInt" | "Float64";
     //   };
     //   output: bigint;
     // },
     // {
     //   pattern: {
     //     type: "number";
-    //     "x-semantic": "Float64Array";
+    //     "format": "Float64Array";
     //   };
     //   output: Float64Array;
     // },
     // {
     //   pattern: {
     //     type: "number";
-    //     "x-semantic": "Float32Array";
+    //     "format": "Float32Array";
     //   };
     //   output: Float32Array;
     // },
     // {
     //   pattern: {
     //     type: "number";
-    //     "x-semantic": "Int32Array";
+    //     "format": "Int32Array";
     //   };
     //   output: Int32Array;
     // },
     // {
     //   pattern: {
     //     type: "number";
-    //     "x-semantic": "Int16Array";
+    //     "format": "Int16Array";
     //   };
     //   output: Int16Array;
     // },
     // {
     //   pattern: {
     //     type: "number";
-    //     "x-semantic": "Int8Array";
+    //     "format": "Int8Array";
     //   };
     //   output: Int8Array;
     // },
     // {
     //   pattern: {
     //     type: "number";
-    //     "x-semantic": "Uint8Array";
+    //     "format": "Uint8Array";
     //   };
     //   output: Uint8Array;
     // },
     // {
     //   pattern: {
     //     type: "number";
-    //     "x-semantic": "Uint16Array";
+    //     "format": "Uint16Array";
     //   };
     //   output: Uint16Array;
     // },
     // {
     //   pattern: {
     //     type: "number";
-    //     "x-semantic": "Uint32Array";
+    //     "format": "Uint32Array";
     //   };
     //   output: Uint32Array;
     // },
     // {
-    //   pattern: { type: "array"; items: { type: "number" }; "x-semantic": "Uint8ClampedArray" };
+    //   pattern: { type: "array"; items: { type: "number" }; "format": "Uint8ClampedArray" };
     //   output: Uint8ClampedArray;
     // },
     {
@@ -215,12 +215,28 @@ export function TypeModelAsString<
   } as const satisfies JsonSchema;
 }
 
+export function TypeModelByDetail<
+  S extends TypeModelSemantic = "model",
+  O extends Record<string, unknown> = {},
+>(semantic: S = "model" as S, options: O = {} as O) {
+  if (semantic !== "model" && !semantic.startsWith("model:")) {
+    throw new Error("Invalid semantic value");
+  }
+  return {
+    ...ModelSchema,
+    ...options,
+    format: semantic,
+  } as const satisfies JsonSchema;
+}
+
 export function TypeModel<
   S extends TypeModelSemantic = "model",
   O extends Record<string, unknown> = {},
 >(semantic: S = "model" as S, options: O = {} as O) {
   return {
-    oneOf: [TypeModelAsString<S, O>(semantic, options), ModelSchema],
+    oneOf: [TypeModelAsString<S, O>(semantic, options), TypeModelByDetail<S, O>(semantic, options)],
+    ...options,
+    format: semantic,
   } as const satisfies JsonSchema;
 }
 
