@@ -12,19 +12,7 @@ import { IndexedDbTabularRepository } from "@workglow/storage";
  * Provides storage and retrieval for models and task-to-model mappings.
  */
 export class IndexedDbModelRepository extends ModelRepository {
-  modelTabularRepository: IndexedDbTabularRepository<
-    typeof ModelSchema,
-    typeof ModelPrimaryKeyNames
-  >;
-
-  public type = "IndexedDbModelRepository" as const;
-
-  constructor(tableModels: string = "models", tableTask2Models: string = "task2models") {
-    super();
-    this.modelTabularRepository = new IndexedDbTabularRepository(
-      tableModels,
-      ModelSchema,
-      ModelPrimaryKeyNames
-    );
+  constructor(tableModels: string = "models") {
+    super(new IndexedDbTabularRepository(tableModels, ModelSchema, ModelPrimaryKeyNames));
   }
 }

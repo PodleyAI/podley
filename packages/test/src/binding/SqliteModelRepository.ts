@@ -12,19 +12,7 @@ import { SqliteTabularRepository } from "@workglow/storage";
  * Provides storage and retrieval for models and task-to-model mappings using SQLite.
  */
 export class SqliteModelRepository extends ModelRepository {
-  public type = "SqliteModelRepository" as const;
-  modelTabularRepository: SqliteTabularRepository<typeof ModelSchema, typeof ModelPrimaryKeyNames>;
-  constructor(
-    dbOrPath: string,
-    tableModels: string = "aimodel",
-    tableTask2Models: string = "aitask2aimodel"
-  ) {
-    super();
-    this.modelTabularRepository = new SqliteTabularRepository(
-      dbOrPath,
-      tableModels,
-      ModelSchema,
-      ModelPrimaryKeyNames
-    );
+  constructor(dbOrPath: string, tableModels: string = "aimodel") {
+    super(new SqliteTabularRepository(dbOrPath, tableModels, ModelSchema, ModelPrimaryKeyNames));
   }
 }

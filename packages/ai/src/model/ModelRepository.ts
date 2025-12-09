@@ -29,21 +29,23 @@ export type ModelEventParameters<Event extends ModelEvents> = EventParameters<
 >;
 
 /**
- * Abstract base class for managing AI models and their relationships with tasks.
+ * Base class for managing AI models and their relationships with tasks.
  * Provides functionality for storing, retrieving, and managing the lifecycle of models
  * and their associations with specific tasks.
  */
-export abstract class ModelRepository {
-  /** Repository type identifier */
-  public type = "ModelRepository";
-
+export class ModelRepository {
   /**
    * Repository for storing and managing Model instances
    */
-  abstract modelTabularRepository: TabularRepository<
+  protected readonly modelTabularRepository: TabularRepository<
     typeof ModelSchema,
     typeof ModelPrimaryKeyNames
   >;
+  constructor(
+    modelTabularRepository: TabularRepository<typeof ModelSchema, typeof ModelPrimaryKeyNames>
+  ) {
+    this.modelTabularRepository = modelTabularRepository;
+  }
 
   /** Event emitter for repository events */
   protected events = new EventEmitter<ModelEventListeners>();

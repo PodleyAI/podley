@@ -13,13 +13,7 @@ import { ModelPrimaryKeyNames, ModelSchema } from "./ModelSchema";
  * Provides storage and retrieval for models and task-to-model mappings.
  */
 export class InMemoryModelRepository extends ModelRepository {
-  modelTabularRepository: InMemoryTabularRepository<
-    typeof ModelSchema,
-    typeof ModelPrimaryKeyNames
-  >;
-  public type = "InMemoryModelRepository" as const;
   constructor() {
-    super();
-    this.modelTabularRepository = new InMemoryTabularRepository(ModelSchema, ModelPrimaryKeyNames);
+    super(new InMemoryTabularRepository(ModelSchema, ModelPrimaryKeyNames));
   }
 }

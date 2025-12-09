@@ -12,6 +12,6 @@ import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 describe("SqliteModelRepository", () => {
   runGenericModelRepositoryTests(async () => {
     const id = uuid4().replace(/-/g, "_");
-    return new SqliteModelRepository(":memory:", `aimodel_test_${id}`, `aitask2aimodel_test_${id}`);
+    return new SqliteModelRepository(":memory:", `aimodel_test_${id}`);
   });
 });

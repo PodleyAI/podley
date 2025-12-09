@@ -13,8 +13,6 @@ import { runGenericModelRepositoryTests } from "./genericModelRepositoryTests";
 describe("IndexedDbModelRepository", () => {
   runGenericModelRepositoryTests(async () => {
     const id = uuid4().replace(/-/g, "_");
-    const modelDbName = `idx_model_test_${id}`;
-    const task2modelDbName = `idx_task2model_test_${id}`;
-    return new IndexedDbModelRepository(modelDbName, task2modelDbName);
+    return new IndexedDbModelRepository(`idx_model_test_${id}`);
   });
 });
