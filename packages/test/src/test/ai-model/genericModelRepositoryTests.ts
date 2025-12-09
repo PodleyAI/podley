@@ -5,7 +5,7 @@
  */
 
 import { getGlobalModelRepository, ModelRepository, setGlobalModelRepository } from "@workglow/ai";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { beforeEach, expect, it } from "vitest";
 
 const HF_TRANSFORMERS_ONNX = "HF_TRANSFORMERS_ONNX";
 
@@ -19,23 +19,23 @@ export const runGenericModelRepositoryTests = (
     setGlobalModelRepository(repository);
   });
 
-  afterEach(async () => {
-    await repository.clear();
-  });
-
   it("store and find model by name", async () => {
     await getGlobalModelRepository().addModel({
-      name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
-      url: "Xenova/LaMini-Flan-T5-783M",
-      availableOnBrowser: true,
-      availableOnServer: true,
+      model_id: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
+      title: "LaMini-Flan-T5-783M",
+      description: "LaMini-Flan-T5-783M",
+      tasks: ["TextGenerationTask", "TextRewriterTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      pipeline: "text2text-generation",
+      providerConfig: {
+        pipeline: "text2text-generation",
+        modelPath: "Xenova/LaMini-Flan-T5-783M",
+      },
+      metadata: {},
     });
 
     const model = await getGlobalModelRepository().findByName("onnx:Xenova/LaMini-Flan-T5-783M:q8");
     expect(model).toBeDefined();
-    expect(model?.name).toEqual("onnx:Xenova/LaMini-Flan-T5-783M:q8");
+    expect(model?.model_id).toEqual("onnx:Xenova/LaMini-Flan-T5-783M:q8");
 
     const nonExistentModel = await getGlobalModelRepository().findByName("onnx:Xenova/no-exist");
     expect(nonExistentModel).toBeUndefined();
@@ -43,21 +43,17 @@ export const runGenericModelRepositoryTests = (
 
   it("store and find tasks by model", async () => {
     await getGlobalModelRepository().addModel({
-      name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
-      url: "Xenova/LaMini-Flan-T5-783M",
-      availableOnBrowser: true,
-      availableOnServer: true,
+      model_id: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
+      title: "LaMini-Flan-T5-783M",
+      description: "LaMini-Flan-T5-783M",
+      tasks: ["TextGenerationTask", "TextRewriterTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      pipeline: "text2text-generation",
+      providerConfig: {
+        pipeline: "text2text-generation",
+        modelPath: "Xenova/LaMini-Flan-T5-783M",
+      },
+      metadata: {},
     });
-    await getGlobalModelRepository().connectTaskToModel(
-      "TextGenerationTask",
-      "onnx:Xenova/LaMini-Flan-T5-783M:q8"
-    );
-    await getGlobalModelRepository().connectTaskToModel(
-      "TextRewriterTask",
-      "onnx:Xenova/LaMini-Flan-T5-783M:q8"
-    );
     const tasks = await getGlobalModelRepository().findTasksByModel(
       "onnx:Xenova/LaMini-Flan-T5-783M:q8"
     );
@@ -69,24 +65,28 @@ export const runGenericModelRepositoryTests = (
 
     // Add the model and wait for it to complete
     await repo.addModel({
-      name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
-      url: "Xenova/LaMini-Flan-T5-783M",
-      availableOnBrowser: true,
-      availableOnServer: true,
+      model_id: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
+      title: "LaMini-Flan-T5-783M",
+      description: "LaMini-Flan-T5-783M",
+      tasks: ["TextGenerationTask", "TextRewriterTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      pipeline: "text2text-generation",
+      providerConfig: {
+        pipeline: "text2text-generation",
+        modelPath: "Xenova/LaMini-Flan-T5-783M",
+        dtype: "q8",
+      },
+      metadata: {},
     });
-
-    // Connect task to model and wait for it to complete
-    await repo.connectTaskToModel("TextGenerationTask", "onnx:Xenova/LaMini-Flan-T5-783M:q8");
-    await repo.connectTaskToModel("TextRewriterTask", "onnx:Xenova/LaMini-Flan-T5-783M:q8");
 
     // Search for models by task
     const models = await repo.findModelsByTask("TextGenerationTask");
     expect(models).toBeDefined();
     expect(models?.length).toEqual(1);
-    expect(models?.[0].name).toEqual("onnx:Xenova/LaMini-Flan-T5-783M:q8");
+    expect(models?.[0].model_id).toEqual("onnx:Xenova/LaMini-Flan-T5-783M:q8");
+    expect(models?.[0].tasks).toEqual(["TextGenerationTask", "TextRewriterTask"]);
     expect(models?.[0].provider).toEqual(HF_TRANSFORMERS_ONNX);
-    expect(models?.[0].pipeline).toEqual("text2text-generation");
+    expect(models?.[0].providerConfig?.pipeline).toEqual("text2text-generation");
+    expect(models?.[0].providerConfig?.modelPath).toEqual("Xenova/LaMini-Flan-T5-783M");
+    expect(models?.[0].providerConfig?.dtype).toEqual("q8");
   });
 };

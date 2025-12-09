@@ -15,6 +15,8 @@ import {
 import { describe } from "vitest";
 import { createSupabaseMockClient } from "../helpers/SupabaseMockClient";
 import {
+  AllTypesPrimaryKeyNames,
+  AllTypesSchema,
   CompoundPrimaryKeyNames,
   CompoundSchema,
   runGenericTabularRepositoryTests,
@@ -51,7 +53,20 @@ describe("SupabaseTabularRepository", () => {
         SearchSchema,
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
-      )
+      ),
+    async () => {
+      const repo = new SupabaseTabularTestRepository<
+        typeof AllTypesSchema,
+        typeof AllTypesPrimaryKeyNames
+      >(
+        client,
+        `supabase_test_${uuid4().replace(/-/g, "_")}`,
+        AllTypesSchema,
+        AllTypesPrimaryKeyNames
+      );
+      await repo.setupDatabase();
+      return repo;
+    }
   );
 
   // Subscription tests skipped for Supabase because mock client doesn't support realtime

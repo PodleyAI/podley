@@ -16,6 +16,9 @@
     "emitDeclarationOnly": true,
     "declarationMap": true,
     "outDir": "./dist",
+    "incremental": true,
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "types": ["@types/bun"]
-  }
+  },
+  "exclude": ["dist", "node_modules"]
 }

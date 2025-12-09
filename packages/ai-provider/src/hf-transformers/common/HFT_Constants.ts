@@ -28,3 +28,86 @@ export const QuantizationDataType = {
   bnb4: "bnb4",
   q4f16: "q4f16",
 } as const satisfies Record<QuantizationDataType, QuantizationDataType>;
+
+export type TextPipelineUseCase =
+  | "fill-mask" // https://huggingface.co/tasks/fill-mask
+  | "token-classification" // https://huggingface.co/tasks/token-classification
+  | "text-generation" // https://huggingface.co/tasks/text-generation#completion-generation-models
+  | "text2text-generation" // https://huggingface.co/tasks/text-generation#text-to-text-generation-models
+  | "text-classification" // https://huggingface.co/tasks/text-classification
+  | "summarization" // https://huggingface.co/tasks/sentence-similarity
+  | "translation" // https://huggingface.co/tasks/translation
+  | "feature-extraction" // https://huggingface.co/tasks/feature-extraction
+  | "zero-shot-classification" // https://huggingface.co/tasks/zero-shot-classification
+  | "question-answering"; // https://huggingface.co/tasks/question-answering
+
+export const TextPipelineUseCase = {
+  "fill-mask": "fill-mask",
+  "token-classification": "token-classification",
+  "text-generation": "text-generation",
+  "text2text-generation": "text2text-generation",
+  "text-classification": "text-classification",
+  summarization: "summarization",
+  translation: "translation",
+  "feature-extraction": "feature-extraction",
+  "zero-shot-classification": "zero-shot-classification",
+  "question-answering": "question-answering",
+} as const satisfies Record<TextPipelineUseCase, TextPipelineUseCase>;
+
+export type VisionPipelineUseCase =
+  | "background-removal" // https://huggingface.co/tasks/image-segmentation#background-removal
+  | "image-segmentation" // https://huggingface.co/tasks/image-segmentation
+  | "depth-estimation" // https://huggingface.co/tasks/depth-estimation
+  | "image-classification" // https://huggingface.co/tasks/image-classification
+  | "image-to-image" // https://huggingface.co/tasks/image-to-image
+  | "object-detection" // https://huggingface.co/tasks/object-detection
+  | "image-feature-extraction"; // https://huggingface.co/tasks/image-feature-extraction
+
+export const VisionPipelineUseCase = {
+  "background-removal": "background-removal",
+  "image-segmentation": "image-segmentation",
+  "depth-estimation": "depth-estimation",
+  "image-classification": "image-classification",
+  "image-to-image": "image-to-image",
+  "object-detection": "object-detection",
+  "image-feature-extraction": "image-feature-extraction",
+} as const satisfies Record<VisionPipelineUseCase, VisionPipelineUseCase>;
+
+export type AudioPipelineUseCase =
+  | "audio-classification" // https://huggingface.co/tasks/audio-classification
+  | "automatic-speech-recognition" // https://huggingface.co/tasks/automatic-speech-recognition
+  | "text-to-speech"; // https://huggingface.co/tasks/text-to-speech
+
+export const AudioPipelineUseCase = {
+  "audio-classification": "audio-classification",
+  "automatic-speech-recognition": "automatic-speech-recognition",
+  "text-to-speech": "text-to-speech",
+} as const satisfies Record<AudioPipelineUseCase, AudioPipelineUseCase>;
+
+export type MultimodalPipelineUseCase =
+  | "document-question-answering" // https://huggingface.co/tasks/document-question-answering
+  | "image-to-text" // https://huggingface.co/tasks/image-to-text
+  | "zero-shot-audio-classification" // https://huggingface.co/tasks/zero-shot-audio-classification
+  | "zero-shot-image-classification" // https://huggingface.co/tasks/zero-shot-image-classification
+  | "zero-shot-object-detection"; // https://huggingface.co/tasks/zero-shot-object-detection
+
+export const MultimodalPipelineUseCase = {
+  "document-question-answering": "document-question-answering",
+  "image-to-text": "image-to-text",
+  "zero-shot-audio-classification": "zero-shot-audio-classification",
+  "zero-shot-image-classification": "zero-shot-image-classification",
+  "zero-shot-object-detection": "zero-shot-object-detection",
+} as const satisfies Record<MultimodalPipelineUseCase, MultimodalPipelineUseCase>;
+
+export type PipelineUseCase =
+  | TextPipelineUseCase
+  | VisionPipelineUseCase
+  | AudioPipelineUseCase
+  | MultimodalPipelineUseCase;
+
+export const PipelineUseCase = {
+  ...TextPipelineUseCase,
+  ...VisionPipelineUseCase,
+  ...AudioPipelineUseCase,
+  ...MultimodalPipelineUseCase,
+} as const satisfies Record<PipelineUseCase, PipelineUseCase>;

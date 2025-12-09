@@ -19,8 +19,8 @@ import {
 import { type JsonSchema } from "@workglow/util";
 
 import { AiJob, AiJobInput } from "../../job/AiJob";
-import type { Model } from "../../model/Model";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
+import type { ModelRecord } from "../../model/ModelSchema";
 
 function schemaFormat(schema: JsonSchema): string | undefined {
   return typeof schema === "object" && schema !== null && "format" in schema
@@ -33,7 +33,7 @@ export interface AiSingleTaskInput extends TaskInput {
 }
 
 export interface AiArrayTaskInput extends TaskInput {
-  model: string | string[];
+  model: string | ModelRecord | (string | ModelRecord)[];
 }
 
 /**
@@ -46,7 +46,7 @@ export class AiTask<
   Config extends JobQueueTaskConfig = JobQueueTaskConfig,
 > extends JobQueueTask<Input, Output, Config> {
   public static type: string = "AiTask";
-  private modelCache?: { name: string; model: Model };
+  private modelCache?: { name: string; model: ModelRecord };
 
   /**
    * Creates a new AiTask instance
@@ -109,7 +109,7 @@ export class AiTask<
     return job;
   }
 
-  protected async getModelForInput(input: AiSingleTaskInput): Promise<Model> {
+  protected async getModelForInput(input: AiSingleTaskInput): Promise<ModelRecord> {
     const modelname = input.model;
     if (!modelname) throw new TaskConfigurationError("AiTask: No model name found");
     if (this.modelCache && this.modelCache.name === modelname) {
@@ -154,7 +154,7 @@ export class AiTask<
       for (const [key, propSchema] of modelTaskProperties) {
         let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
         for (const model of requestedModels) {
-          const foundModel = taskModels?.find((m) => m.name === model);
+          const foundModel = taskModels?.find((m) => m.model_id === model);
           if (!foundModel) {
             throw new TaskConfigurationError(
               `AiTask: Missing model for '${key}' named '${model}' for task '${this.type}'`
@@ -200,7 +200,7 @@ export class AiTask<
       for (const [key, propSchema] of modelTaskProperties) {
         let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
         let usingModels = requestedModels.filter((model: string) =>
-          taskModels?.find((m) => m.name === model)
+          taskModels?.find((m) => m.model_id === model)
         );
 
         // we alter input to be the models that were found for this kind of input

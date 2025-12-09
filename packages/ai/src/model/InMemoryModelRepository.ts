@@ -5,14 +5,8 @@
  */
 
 import { InMemoryTabularRepository } from "@workglow/storage";
-
-import {
-  ModelPrimaryKeyNames,
-  ModelRepository,
-  ModelSchema,
-  Task2ModelPrimaryKeyNames,
-  Task2ModelSchema,
-} from "./ModelRepository";
+import { ModelRepository } from "./ModelRepository";
+import { ModelPrimaryKeyNames, ModelSchema } from "./ModelSchema";
 
 /**
  * In-memory implementation of a model repository.
@@ -23,18 +17,9 @@ export class InMemoryModelRepository extends ModelRepository {
     typeof ModelSchema,
     typeof ModelPrimaryKeyNames
   >;
-  task2ModelTabularRepository: InMemoryTabularRepository<
-    typeof Task2ModelSchema,
-    typeof Task2ModelPrimaryKeyNames
-  >;
   public type = "InMemoryModelRepository" as const;
   constructor() {
     super();
     this.modelTabularRepository = new InMemoryTabularRepository(ModelSchema, ModelPrimaryKeyNames);
-    this.task2ModelTabularRepository = new InMemoryTabularRepository(
-      Task2ModelSchema,
-      Task2ModelPrimaryKeyNames,
-      ["model"]
-    );
   }
 }

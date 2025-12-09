@@ -8,6 +8,8 @@ import { SqliteTabularRepository } from "@workglow/storage";
 import { uuid4 } from "@workglow/util";
 import { describe } from "vitest";
 import {
+  AllTypesPrimaryKeyNames,
+  AllTypesSchema,
   CompoundPrimaryKeyNames,
   CompoundSchema,
   runGenericTabularRepositoryTests,
@@ -31,6 +33,19 @@ describe("SqliteTabularRepository", () => {
         SearchSchema,
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
-      )
+      ),
+    async () => {
+      const repo = new SqliteTabularRepository<
+        typeof AllTypesSchema,
+        typeof AllTypesPrimaryKeyNames
+      >(
+        ":memory:",
+        `all_types_test_${uuid4().replace(/-/g, "_")}`,
+        AllTypesSchema,
+        AllTypesPrimaryKeyNames
+      );
+      await repo.setupDatabase();
+      return repo;
+    }
   );
 });

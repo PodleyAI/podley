@@ -124,22 +124,83 @@ export class SqliteTabularRepository<
    * Convert JS values to SQLite-compatible values. Ensures booleans are stored as 0/1.
    */
   protected jsToSqlValue(column: string, value: Entity[keyof Entity]): ValueOptionType {
+    if (value !== null && value !== undefined && typeof value === "object") {
+      // Handle special types that should be passed to base class
+      if (value instanceof Date) {
+        return super.jsToSqlValue(column, value);
+      }
+      if (value instanceof Uint8Array) {
+        return super.jsToSqlValue(column, value);
+      }
+      if (typeof Buffer !== "undefined" && value instanceof Buffer) {
+        return super.jsToSqlValue(column, value);
+      }
+      // Convert ALL other objects and arrays to JSON string
+      return JSON.stringify(value) as ValueOptionType;
+    }
+
+    // Handle null values
+    if (value === null) {
+      const typeDef = this.schema.properties[column as keyof typeof this.schema.properties] as
+        | JsonSchema
+        | undefined;
+      if (typeDef && this.isNullable(typeDef)) {
+        return null;
+      }
+      // If not nullable, fall through to base class
+    }
+
+    // Schema-based type handling for non-object/array values
     const typeDef = this.schema.properties[column as keyof typeof this.schema.properties] as
       | JsonSchema
       | undefined;
     if (typeDef) {
       const actualType = this.getNonNullType(typeDef);
-      if (typeof actualType !== "boolean" && actualType.type === "boolean") {
-        if (value === null && this.isNullable(typeDef)) {
-          return null;
-        }
+      const isObject =
+        typeDef === true || (typeof actualType !== "boolean" && actualType.type === "object");
+      const isArray =
+        typeDef === true || (typeof actualType !== "boolean" && actualType.type === "array");
+      const isBoolean =
+        typeDef === true || (typeof actualType !== "boolean" && actualType.type === "boolean");
+      if (isBoolean) {
         const v: any = value as any;
         if (typeof v === "boolean") return v ? 1 : 0;
         if (typeof v === "number") return v ? 1 : 0;
         if (typeof v === "string") return v === "1" || v.toLowerCase() === "true" ? 1 : 0;
       }
+      // Note: Objects/arrays are already handled above by runtime check
+      // This check is here for cases where schema says object but runtime value isn't
+      if ((isObject || isArray) && value !== null && typeof value === "object") {
+        // Double-check: if schema says object/array but wasn't caught by runtime check above
+        if (
+          !(value instanceof Date) &&
+          !(value instanceof Uint8Array) &&
+          (typeof Buffer === "undefined" || !(value instanceof Buffer))
+        ) {
+          if (Array.isArray(value) || Object.getPrototypeOf(value) === Object.prototype) {
+            return JSON.stringify(value) as ValueOptionType;
+          }
+        }
+      }
     }
-    return super.jsToSqlValue(column, value);
+
+    const result = super.jsToSqlValue(column, value);
+
+    // Final safety check: ensure we never return an object or array
+    // The base class should not return objects, but if it does, convert them
+    if (result !== null && typeof result === "object") {
+      // TypeScript now knows result is an object (not null), so we can use instanceof
+      const resultObj = result as object;
+      if (
+        !(resultObj instanceof Uint8Array) &&
+        (typeof Buffer === "undefined" || !(resultObj instanceof Buffer))
+      ) {
+        // Convert any remaining objects/arrays to JSON string
+        return JSON.stringify(resultObj) as ValueOptionType;
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -154,11 +215,33 @@ export class SqliteTabularRepository<
         return null as any;
       }
       const actualType = this.getNonNullType(typeDef);
-      if (typeof actualType !== "boolean" && actualType.type === "boolean") {
+      const isObject =
+        typeDef === true || (typeof actualType !== "boolean" && actualType.type === "object");
+      const isArray =
+        typeDef === true || (typeof actualType !== "boolean" && actualType.type === "array");
+      const isBoolean =
+        typeDef === true || (typeof actualType !== "boolean" && actualType.type === "boolean");
+
+      if (isBoolean) {
         const v: any = value as any;
         if (typeof v === "boolean") return v as any;
-        if (typeof v === "number") return (v !== 0) as any;
-        if (typeof v === "string") return (v === "1" || v.toLowerCase() === "true") as any;
+        if (typeof v === "number") return (v !== 0 ? true : false) as Entity[keyof Entity];
+        if (typeof v === "string")
+          return (v === "1" || v.toLowerCase() === "true" ? true : false) as Entity[keyof Entity];
+      }
+
+      // Handle array and object types - parse JSON string back to object/array
+      if (isArray || isObject) {
+        if (typeof value === "string") {
+          try {
+            return JSON.parse(value) as Entity[keyof Entity];
+          } catch (e) {
+            // If parsing fails, return the value as-is (might be a string that looks like JSON)
+            return value as Entity[keyof Entity];
+          }
+        }
+        // If it's already an object/array (shouldn't happen, but handle gracefully)
+        return value as Entity[keyof Entity];
       }
     }
     return super.sqlToJsValue(column, value);
@@ -248,6 +331,87 @@ export class SqliteTabularRepository<
     const valueParams = this.getValueAsOrderedArray(value);
     const params = [...primaryKeyParams, ...valueParams];
 
+    // CRITICAL: Ensure all params are SQLite-compatible before binding
+    // SQLite only accepts: string, number, bigint, boolean, null, Uint8Array
+    for (let i = 0; i < params.length; i++) {
+      let param = params[i];
+
+      // Convert undefined to null
+      if (param === undefined) {
+        params[i] = null;
+        continue;
+      }
+
+      // Convert objects/arrays to JSON string (except Uint8Array and Buffer)
+      if (param !== null && typeof param === "object") {
+        const paramObj = param as object;
+        if (paramObj instanceof Uint8Array) {
+          // Uint8Array is valid, keep as-is
+          continue;
+        }
+        if (typeof Buffer !== "undefined" && paramObj instanceof Buffer) {
+          // Buffer should be handled by jsToSqlValue, but convert to Uint8Array just in case
+          params[i] = new Uint8Array(paramObj) as ValueOptionType;
+          continue;
+        }
+        // Convert ALL other objects/arrays to JSON string
+        try {
+          params[i] = JSON.stringify(paramObj) as ValueOptionType;
+        } catch (e) {
+          throw new Error(
+            `Failed to stringify param at index ${i} for column binding: ${String(e)}`
+          );
+        }
+        continue;
+      }
+    }
+
+    // Final validation - ensure no objects/arrays remain and log for debugging
+    const invalidParams: Array<{ index: number; type: string; value: any }> = [];
+    for (let i = 0; i < params.length; i++) {
+      const param = params[i];
+      // Check if it's a valid SQLite type
+      if (
+        param === null ||
+        param === undefined ||
+        typeof param === "string" ||
+        typeof param === "number" ||
+        typeof param === "boolean" ||
+        typeof param === "bigint"
+      ) {
+        // Valid primitive types
+        continue;
+      }
+
+      // For objects, check if it's Uint8Array or Buffer
+      if (typeof param === "object") {
+        const paramObj = param as object;
+        if (
+          paramObj instanceof Uint8Array ||
+          (typeof Buffer !== "undefined" && paramObj instanceof Buffer)
+        ) {
+          // Valid object types
+          continue;
+        }
+        // Invalid object type
+        invalidParams.push({ index: i, type: typeof param, value: param });
+      } else {
+        // Invalid type
+        invalidParams.push({ index: i, type: typeof param, value: param });
+      }
+    }
+
+    if (invalidParams.length > 0) {
+      console.error("Invalid params detected:", invalidParams);
+      console.error(
+        "All params:",
+        params.map((p, i) => ({ i, type: typeof p, value: p, isArray: Array.isArray(p) }))
+      );
+      throw new Error(
+        `Invalid SQLite params detected at indices: ${invalidParams.map((p) => p.index).join(", ")}`
+      );
+    }
+
     // @ts-ignore
     const updatedEntity = stmt.get(...params) as Entity;
 
@@ -303,6 +467,23 @@ export class SqliteTabularRepository<
         const primaryKeyParams = this.getPrimaryKeyAsOrderedArray(key);
         const valueParams = this.getValueAsOrderedArray(value);
         const params = [...primaryKeyParams, ...valueParams];
+
+        // Ensure all params are SQLite-compatible (same validation as put method)
+        for (let i = 0; i < params.length; i++) {
+          let param = params[i];
+          if (param === undefined) {
+            params[i] = null;
+          } else if (param !== null && typeof param === "object") {
+            // TypeScript now knows param is an object (not null), so we can use instanceof
+            const paramObj: object = param as object;
+            if (
+              !(paramObj instanceof Uint8Array) &&
+              (typeof Buffer === "undefined" || !(paramObj instanceof Buffer))
+            ) {
+              params[i] = JSON.stringify(paramObj) as ValueOptionType;
+            }
+          }
+        }
 
         // @ts-ignore
         const updatedEntity = stmt.get(...params) as Entity;

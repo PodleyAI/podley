@@ -5,7 +5,7 @@
  */
 
 import { ITabularRepository } from "@workglow/storage";
-import { DataPortSchemaObject } from "@workglow/util";
+import { DataPortSchemaObject, FromSchema } from "@workglow/util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 export const CompoundPrimaryKeyNames = ["name", "type"] as const;
@@ -51,12 +51,41 @@ export const NullableSearchSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 
+export const AllTypesPrimaryKeyNames = ["id"] as const;
+export const AllTypesSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    textField: { type: "string" },
+    numberField: { type: "number" },
+    integerField: { type: "integer" },
+    booleanField: { type: "boolean" },
+    arrayField: { type: "array", items: { type: "string" } },
+    objectField: { type: "object", default: {} },
+    nestedObjectField: { type: "object", default: {} },
+  },
+  required: [
+    "id",
+    "textField",
+    "numberField",
+    "integerField",
+    "booleanField",
+    "arrayField",
+    "objectField",
+    "nestedObjectField",
+  ],
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
+
 export function runGenericTabularRepositoryTests(
   createCompoundPkRepository: () => Promise<
     ITabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>
   >,
   createSearchableRepository?: () => Promise<
     ITabularRepository<typeof SearchSchema, typeof SearchPrimaryKeyNames>
+  >,
+  createAllTypesRepository?: () => Promise<
+    ITabularRepository<typeof AllTypesSchema, typeof AllTypesPrimaryKeyNames>
   >
 ) {
   describe("with compound primary keys", () => {
@@ -847,6 +876,184 @@ export function runGenericTabularRepositoryTests(
           expect(sortedReturned[i].createdAt).toEqual(sortedRetrieved[i].createdAt);
           expect(sortedReturned[i].updatedAt).toEqual(sortedRetrieved[i].updatedAt);
         }
+      });
+    });
+  }
+
+  if (createAllTypesRepository) {
+    describe("data type coverage", () => {
+      type AllTypesRecord = FromSchema<typeof AllTypesSchema>;
+      let repository: ITabularRepository<typeof AllTypesSchema, typeof AllTypesPrimaryKeyNames>;
+
+      beforeEach(async () => {
+        repository = await createAllTypesRepository();
+      });
+
+      afterEach(async () => {
+        await repository.deleteAll();
+        repository.destroy();
+      });
+
+      it("should store and retrieve all data types correctly", async () => {
+        const entity: AllTypesRecord = {
+          id: "test-1",
+          textField: "Hello, World!",
+          numberField: 3.14159,
+          integerField: 42,
+          booleanField: true,
+          arrayField: ["item1", "item2", "item3"],
+          objectField: {
+            key1: "value1",
+            key2: 123,
+          },
+          nestedObjectField: {
+            level1: {
+              level2: {
+                nested: "value",
+                count: 456,
+              },
+            },
+          },
+        };
+
+        // Store the entity
+        const stored = await repository.put(entity);
+        expect(stored).toBeDefined();
+
+        // Retrieve the entity
+        const retrieved = await repository.get({ id: "test-1" });
+        expect(retrieved).toBeDefined();
+
+        // Verify all data types are preserved correctly
+        expect(retrieved?.id).toBe("test-1");
+        expect(retrieved?.textField).toBe("Hello, World!");
+        expect(retrieved?.numberField).toBe(3.14159);
+        expect(retrieved?.integerField).toBe(42);
+        expect(retrieved?.booleanField).toBe(true);
+        expect(retrieved?.arrayField).toEqual(["item1", "item2", "item3"]);
+        expect(retrieved?.objectField).toEqual({
+          key1: "value1",
+          key2: 123,
+        });
+        expect(retrieved?.nestedObjectField).toEqual({
+          level1: {
+            level2: {
+              nested: "value",
+              count: 456,
+            },
+          },
+        });
+      });
+
+      it("should handle boolean false correctly", async () => {
+        const entity: AllTypesRecord = {
+          id: "test-false",
+          textField: "Test",
+          numberField: 0,
+          integerField: 0,
+          booleanField: false,
+          arrayField: [],
+          objectField: {},
+          nestedObjectField: {},
+        };
+
+        await repository.put(entity);
+        const retrieved = await repository.get({ id: "test-false" });
+
+        expect(retrieved?.booleanField).toBe(false);
+        expect(retrieved?.arrayField).toEqual([]);
+        expect(retrieved?.objectField).toEqual({});
+      });
+
+      it("should handle complex arrays and objects", async () => {
+        const entity: AllTypesRecord = {
+          id: "test-complex",
+          textField: "Complex data",
+          numberField: -123.456,
+          integerField: -999,
+          booleanField: true,
+          arrayField: ["string1", "string2", "string with spaces", ""],
+          objectField: {
+            stringProp: "value",
+            numberProp: 789,
+            booleanProp: true,
+            arrayProp: [1, 2, 3],
+            nestedProp: {
+              deep: "nested value",
+            },
+          },
+          nestedObjectField: {
+            metadata: {
+              tags: ["tag1", "tag2"],
+              count: 10,
+            },
+            config: {
+              enabled: true,
+              threshold: 0.5,
+            },
+          },
+        };
+
+        await repository.put(entity);
+        const retrieved = await repository.get({ id: "test-complex" });
+
+        expect(retrieved?.arrayField).toEqual(["string1", "string2", "string with spaces", ""]);
+        expect(retrieved?.objectField).toEqual({
+          stringProp: "value",
+          numberProp: 789,
+          booleanProp: true,
+          arrayProp: [1, 2, 3],
+          nestedProp: {
+            deep: "nested value",
+          },
+        });
+        expect(retrieved?.nestedObjectField).toEqual({
+          metadata: {
+            tags: ["tag1", "tag2"],
+            count: 10,
+          },
+          config: {
+            enabled: true,
+            threshold: 0.5,
+          },
+        });
+      });
+
+      it("should handle bulk operations with all data types", async () => {
+        const entities: AllTypesRecord[] = [
+          {
+            id: "bulk-1",
+            textField: "First",
+            numberField: 1.1,
+            integerField: 1,
+            booleanField: true,
+            arrayField: ["a"],
+            objectField: { x: 1 },
+            nestedObjectField: {},
+          },
+          {
+            id: "bulk-2",
+            textField: "Second",
+            numberField: 2.2,
+            integerField: 2,
+            booleanField: false,
+            arrayField: ["b", "c"],
+            objectField: { y: 2 },
+            nestedObjectField: { nested: "value" },
+          },
+        ];
+
+        await repository.putBulk(entities);
+
+        const retrieved1 = await repository.get({ id: "bulk-1" });
+        const retrieved2 = await repository.get({ id: "bulk-2" });
+
+        expect(retrieved1?.booleanField).toBe(true);
+        expect(retrieved2?.booleanField).toBe(false);
+        expect(retrieved1?.arrayField).toEqual(["a"]);
+        expect(retrieved2?.arrayField).toEqual(["b", "c"]);
+        expect(retrieved1?.objectField).toEqual({ x: 1 });
+        expect(retrieved2?.nestedObjectField).toEqual({ nested: "value" });
       });
     });
   }

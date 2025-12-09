@@ -8,7 +8,7 @@ import type {
   FromExtendedSchema,
   FromExtendedSchemaOptions,
   FromSchemaOptions,
-} from "json-schema-to-ts";
+} from "@sroussey/json-schema-to-ts";
 import type { JsonSchema, JsonSchemaCustomProps } from "./JsonSchema";
 
 export { FromSchemaOptions };

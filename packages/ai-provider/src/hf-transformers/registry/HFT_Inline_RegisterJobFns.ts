@@ -5,7 +5,7 @@
  */
 
 import { env } from "@sroussey/transformers";
-import { AiJob, AiJobInput, getAiProviderRegistry } from "@workglow/ai";
+import { AiJob, AiJobInput, AiProviderRunFn, getAiProviderRegistry } from "@workglow/ai";
 import { ConcurrencyLimiter, JobQueueClient, JobQueueServer } from "@workglow/job-queue";
 import { InMemoryQueueStorage } from "@workglow/storage";
 import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-graph";
@@ -32,7 +32,7 @@ export async function register_HFT_InlineJobFns(
   // @ts-ignore
   env.backends.onnx.wasm.proxy = true;
   const ProviderRegistry = getAiProviderRegistry();
-  const fns = {
+  const fns: Record<string, AiProviderRunFn<any, any, any>> = {
     ["DownloadModelTask"]: HFT_Download,
     ["TextEmbeddingTask"]: HFT_TextEmbedding,
     ["TextGenerationTask"]: HFT_TextGeneration,

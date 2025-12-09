@@ -22,8 +22,16 @@ export async function register_TFMP_InlineJobFns(
 ): Promise<void> {
   const aiProviderRegistry = getAiProviderRegistry();
 
-  aiProviderRegistry.registerRunFn(TENSORFLOW_MEDIAPIPE, "DownloadModelTask", TFMP_Download);
-  aiProviderRegistry.registerRunFn(TENSORFLOW_MEDIAPIPE, "TextEmbeddingTask", TFMP_TextEmbedding);
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "DownloadModelTask",
+    TFMP_Download as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "TextEmbeddingTask",
+    TFMP_TextEmbedding as any
+  );
 
   // If no client provided, create a default in-memory queue
   if (!client) {

@@ -151,17 +151,24 @@ export function createSupabaseMockClient(): SupabaseClient {
               }
 
               const keys = Object.keys(records[0]);
+
+              // Use parameterized queries for better type handling (especially arrays)
+              const params: any[] = [];
+              let paramIndex = 1;
+
               const values = records
                 .map(
                   (record) =>
                     `(${keys
                       .map((k) => {
                         const val = record[k];
-                        if (val === null || val === undefined) return "NULL";
-                        if (typeof val === "object")
-                          return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
-                        if (typeof val === "string") return `'${val.replace(/'/g, "''")}'`;
-                        return String(val);
+                        if (val === null || val === undefined) {
+                          return "NULL";
+                        }
+                        // Use parameterized query for proper type handling
+                        params.push(val);
+                        const currentIndex = paramIndex++;
+                        return `$${currentIndex}`;
                       })
                       .join(",")})`
                 )
@@ -179,7 +186,7 @@ export function createSupabaseMockClient(): SupabaseClient {
 
               query += " RETURNING *";
 
-              const result = await pglite.query(query);
+              const result = await pglite.query(query, params);
               return { data: result.rows, error: null };
             } catch (error: any) {
               return { data: null, error };

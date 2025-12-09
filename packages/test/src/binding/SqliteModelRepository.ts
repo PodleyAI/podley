@@ -4,13 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  ModelPrimaryKeyNames,
-  ModelRepository,
-  ModelSchema,
-  Task2ModelPrimaryKeyNames,
-  Task2ModelSchema,
-} from "@workglow/ai";
+import { ModelPrimaryKeyNames, ModelRepository, ModelSchema } from "@workglow/ai";
 import { SqliteTabularRepository } from "@workglow/storage";
 
 /**
@@ -20,10 +14,6 @@ import { SqliteTabularRepository } from "@workglow/storage";
 export class SqliteModelRepository extends ModelRepository {
   public type = "SqliteModelRepository" as const;
   modelTabularRepository: SqliteTabularRepository<typeof ModelSchema, typeof ModelPrimaryKeyNames>;
-  task2ModelTabularRepository: SqliteTabularRepository<
-    typeof Task2ModelSchema,
-    typeof Task2ModelPrimaryKeyNames
-  >;
   constructor(
     dbOrPath: string,
     tableModels: string = "aimodel",
@@ -35,13 +25,6 @@ export class SqliteModelRepository extends ModelRepository {
       tableModels,
       ModelSchema,
       ModelPrimaryKeyNames
-    );
-    this.task2ModelTabularRepository = new SqliteTabularRepository(
-      dbOrPath,
-      tableTask2Models,
-      Task2ModelSchema,
-      Task2ModelPrimaryKeyNames,
-      ["model"]
     );
   }
 }

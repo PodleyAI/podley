@@ -8,6 +8,8 @@ import { InMemoryTabularRepository } from "@workglow/storage";
 import { describe } from "vitest";
 import { runGenericTabularRepositorySubscriptionTests } from "./genericTabularRepositorySubscriptionTests";
 import {
+  AllTypesPrimaryKeyNames,
+  AllTypesSchema,
   CompoundPrimaryKeyNames,
   CompoundSchema,
   runGenericTabularRepositoryTests,
@@ -27,6 +29,11 @@ describe("InMemoryTabularRepository", () => {
         SearchSchema,
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
+      ),
+    async () =>
+      new InMemoryTabularRepository<typeof AllTypesSchema, typeof AllTypesPrimaryKeyNames>(
+        AllTypesSchema,
+        AllTypesPrimaryKeyNames
       )
   );
 

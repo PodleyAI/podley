@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { JSONSchemaExtension } from "json-schema-to-ts";
+import type { JSONSchemaExtension } from "@sroussey/json-schema-to-ts";
 import { JsonSchema, JsonSchemaCustomProps } from "./JsonSchema";
 
 export type DataPortSchemaNonBoolean<

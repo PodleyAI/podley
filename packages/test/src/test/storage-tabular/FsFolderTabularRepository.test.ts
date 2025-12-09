@@ -8,6 +8,8 @@ import { FsFolderTabularRepository } from "@workglow/storage";
 import { mkdirSync, rmSync } from "fs";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
+  AllTypesPrimaryKeyNames,
+  AllTypesSchema,
   CompoundPrimaryKeyNames,
   CompoundSchema,
   runGenericTabularRepositoryTests,
@@ -38,6 +40,13 @@ describe("FsFolderTabularRepository", () => {
           testDir,
           CompoundSchema,
           CompoundPrimaryKeyNames
+        ),
+      undefined,
+      async () =>
+        new FsFolderTabularRepository<typeof AllTypesSchema, typeof AllTypesPrimaryKeyNames>(
+          testDir,
+          AllTypesSchema,
+          AllTypesPrimaryKeyNames
         )
     );
   });

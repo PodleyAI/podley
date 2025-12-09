@@ -9,10 +9,13 @@ import {
   AiJobInput,
   getGlobalModelRepository,
   InMemoryModelRepository,
-  Model,
   setGlobalModelRepository,
 } from "@workglow/ai";
-import { register_TFMP_InlineJobFns, TENSORFLOW_MEDIAPIPE } from "@workglow/ai-provider";
+import {
+  register_TFMP_InlineJobFns,
+  TENSORFLOW_MEDIAPIPE,
+  TFMPModelRecord,
+} from "@workglow/ai-provider";
 import {
   ConcurrencyLimiter,
   JobQueueClient,
@@ -71,19 +74,19 @@ describe("TfMediaPipeBinding", () => {
       queueRegistry.registerQueue({ server, client, storage });
       setGlobalModelRepository(new InMemoryModelRepository());
 
-      const universal_sentence_encoder: Model = {
-        name: "media-pipe:Universal Sentence Encoder",
-        url: "https://storage.googleapis.com/mediapipe-tasks/text_embedder/universal_sentence_encoder.tflite",
-        nativeDimensions: 100,
-        availableOnBrowser: true,
-        availableOnServer: false,
+      const universal_sentence_encoder: TFMPModelRecord = {
+        model_id: "media-pipe:Universal Sentence Encoder",
+        title: "Universal Sentence Encoder",
+        description: "Universal Sentence Encoder",
+        tasks: ["TextEmbeddingTask"],
         provider: TENSORFLOW_MEDIAPIPE,
+        providerConfig: {
+          modelPath:
+            "https://storage.googleapis.com/mediapipe-tasks/text_embedder/universal_sentence_encoder.tflite",
+        },
+        metadata: {},
       };
       await getGlobalModelRepository().addModel(universal_sentence_encoder);
-      await getGlobalModelRepository().connectTaskToModel(
-        "TextEmbeddingTask",
-        universal_sentence_encoder.name
-      );
 
       const registeredQueue = queueRegistry.getQueue(TENSORFLOW_MEDIAPIPE);
       expect(registeredQueue).toBeDefined();
@@ -104,19 +107,19 @@ describe("TfMediaPipeBinding", () => {
   describe("SqliteJobQueue", () => {
     it("should not fail", async () => {
       setGlobalModelRepository(new InMemoryModelRepository());
-      const universal_sentence_encoder: Model = {
-        name: "media-pipe:Universal Sentence Encoder",
-        url: "https://storage.googleapis.com/mediapipe-tasks/text_embedder/universal_sentence_encoder.tflite",
-        nativeDimensions: 100,
-        availableOnBrowser: true,
-        availableOnServer: false,
+      const universal_sentence_encoder: TFMPModelRecord = {
+        model_id: "media-pipe:Universal Sentence Encoder",
+        title: "Universal Sentence Encoder",
+        description: "Universal Sentence Encoder",
+        tasks: ["TextEmbeddingTask"],
         provider: TENSORFLOW_MEDIAPIPE,
+        providerConfig: {
+          modelPath:
+            "https://storage.googleapis.com/mediapipe-tasks/text_embedder/universal_sentence_encoder.tflite",
+        },
+        metadata: {},
       };
       await getGlobalModelRepository().addModel(universal_sentence_encoder);
-      await getGlobalModelRepository().connectTaskToModel(
-        "TextEmbeddingTask",
-        universal_sentence_encoder.name
-      );
 
       const storage = new SqliteQueueStorage<AiJobInput<TaskInput>, TaskOutput>(
         db,

@@ -6,14 +6,15 @@
 
 import { FilesetResolver, TextEmbedder } from "@mediapipe/tasks-text";
 import type {
-    AiProviderRunFn,
-    DeReplicateFromSchema,
-    DownloadModelTaskExecuteInput,
-    DownloadModelTaskExecuteOutput,
-    TextEmbeddingInputSchema,
-    TextEmbeddingOutputSchema,
+  AiProviderRunFn,
+  DeReplicateFromSchema,
+  DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteOutput,
+  TextEmbeddingInputSchema,
+  TextEmbeddingOutputSchema,
 } from "@workglow/ai";
 import { PermanentJobError } from "@workglow/job-queue";
+import { TFMPModelRecord } from "./TFMP_ModelSchema";
 
 /**
  * Core implementation for downloading and caching a MediaPipe TFJS model.
@@ -21,7 +22,8 @@ import { PermanentJobError } from "@workglow/job-queue";
  */
 export const TFMP_Download: AiProviderRunFn<
   DownloadModelTaskExecuteInput,
-  DownloadModelTaskExecuteOutput
+  DownloadModelTaskExecuteOutput,
+  TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
   const textFiles = await FilesetResolver.forTextTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@latest/wasm"
@@ -30,7 +32,7 @@ export const TFMP_Download: AiProviderRunFn<
   // Create an embedder to get dimensions
   const embedder = await TextEmbedder.createFromOptions(textFiles, {
     baseOptions: {
-      modelAssetPath: model!.url,
+      modelAssetPath: model!.providerConfig.modelPath,
     },
   });
 
@@ -45,7 +47,8 @@ export const TFMP_Download: AiProviderRunFn<
  */
 export const TFMP_TextEmbedding: AiProviderRunFn<
   DeReplicateFromSchema<typeof TextEmbeddingInputSchema>,
-  DeReplicateFromSchema<typeof TextEmbeddingOutputSchema>
+  DeReplicateFromSchema<typeof TextEmbeddingOutputSchema>,
+  TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
   const textFiles = await FilesetResolver.forTextTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@latest/wasm"
@@ -55,7 +58,7 @@ export const TFMP_TextEmbedding: AiProviderRunFn<
 
   const embedder = await TextEmbedder.createFromOptions(textFiles, {
     baseOptions: {
-      modelAssetPath: model!.url,
+      modelAssetPath: model!.providerConfig.modelPath,
     },
   });
 

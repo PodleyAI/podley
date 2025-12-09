@@ -11,6 +11,8 @@ import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  AllTypesPrimaryKeyNames,
+  AllTypesSchema,
   CompoundPrimaryKeyNames,
   CompoundSchema,
   runGenericTabularRepositoryTests,
@@ -34,7 +36,19 @@ describe("IndexedDbTabularRepository", () => {
         SearchSchema,
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
-      )
+      ),
+    async () => {
+      const repo = new IndexedDbTabularRepository<
+        typeof AllTypesSchema,
+        typeof AllTypesPrimaryKeyNames
+      >(
+        `${dbName}_alltypes`,
+        AllTypesSchema,
+        AllTypesPrimaryKeyNames
+      );
+      await repo.setupDatabase();
+      return repo;
+    }
   );
 
   // IndexedDB-specific tests for compound index optimization

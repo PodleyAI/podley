@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { ExtendedJSONSchema, JSONSchemaExtension } from "json-schema-to-ts";
+import type { ExtendedJSONSchema, JSONSchemaExtension } from "@sroussey/json-schema-to-ts";
 
 export type JsonSchemaCustomProps = {
   "x-replicate"?: boolean;

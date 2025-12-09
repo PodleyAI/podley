@@ -158,12 +158,16 @@ describe("AiProviderRegistry", () => {
 
       aiProviderRegistry.registerRunFn(TEST_PROVIDER, "text-generation", mockRunFn);
       const model = await getGlobalModelRepository().addModel({
-        name: "test-model",
+        model_id: "test:test-model:v1",
+        title: "test-model",
+        description: "test-model",
+        tasks: ["text-generation"],
         provider: TEST_PROVIDER,
-        url: "test-model",
-        availableOnBrowser: true,
-        availableOnServer: true,
-        pipeline: "text-generation",
+        providerConfig: {
+          pipeline: "text-generation",
+          modelPath: "test-model",
+        },
+        metadata: {},
       });
 
       const controller = new AbortController();
@@ -172,7 +176,7 @@ describe("AiProviderRegistry", () => {
         input: {
           aiProvider: TEST_PROVIDER,
           taskType: "text-generation",
-          taskInput: { text: "test", model: "test-model" },
+          taskInput: { text: "test", model: "test:test-model:v1" },
         },
       });
 

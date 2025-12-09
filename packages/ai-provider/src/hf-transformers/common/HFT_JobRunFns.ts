@@ -8,7 +8,6 @@ import {
   DocumentQuestionAnsweringSingle,
   type FeatureExtractionPipeline,
   pipeline,
-  type PipelineType,
   // @ts-ignore temporary "fix"
   type PretrainedModelOptions,
   QuestionAnsweringPipeline,
@@ -24,7 +23,6 @@ import {
   AiProviderRunFn,
   type DeReplicateFromSchema,
   DownloadModelTaskExecuteInput,
-  Model,
   TextEmbeddingInputSchema,
   TextEmbeddingOutputSchema,
   TextGenerationInputSchema,
@@ -41,7 +39,7 @@ import {
 } from "@workglow/ai";
 import { PermanentJobError } from "@workglow/job-queue";
 import { CallbackStatus } from "./HFT_CallbackStatus";
-import { QuantizationDataType } from "./HFT_Constants";
+import { HfTransformersOnnxModelRecord } from "./HFT_ModelSchema";
 
 const pipelines = new Map<string, any>();
 
@@ -49,12 +47,12 @@ const pipelines = new Map<string, any>();
  * Helper function to get a pipeline for a model
  */
 const getPipeline = async (
-  model: Model,
+  model: HfTransformersOnnxModelRecord,
   onProgress: (progress: number, message?: string, details?: any) => void,
   options: PretrainedModelOptions = {}
 ) => {
-  if (pipelines.has(model.name)) {
-    return pipelines.get(model.name);
+  if (pipelines.has(model.model_id)) {
+    return pipelines.get(model.model_id);
   }
 
   // Create a callback status object for progress tracking
@@ -69,18 +67,18 @@ const getPipeline = async (
   };
 
   const pipelineOptions: PretrainedModelOptions = {
-    dtype: (model.quantization as QuantizationDataType) || "q8",
-    ...(model.use_external_data_format
-      ? { use_external_data_format: model.use_external_data_format }
+    dtype: model.providerConfig.dType || "q8",
+    ...(model.providerConfig.useExternalDataFormat
+      ? { use_external_data_format: model.providerConfig.useExternalDataFormat }
       : {}),
-    ...(model.device ? { device: model.device as any } : {}),
+    ...(model.providerConfig.device ? { device: model.providerConfig.device as any } : {}),
     ...options,
     progress_callback: progressCallback,
   };
 
-  const pipelineType = model.pipeline as PipelineType;
-  const result = await pipeline(pipelineType, model.url, pipelineOptions);
-  pipelines.set(model.name, result);
+  const pipelineType = model.providerConfig.pipeline;
+  const result = await pipeline(pipelineType, model.providerConfig.modelPath, pipelineOptions);
+  pipelines.set(model.model_id, result);
   return result;
 };
 
@@ -90,7 +88,8 @@ const getPipeline = async (
  */
 export const HFT_Download: AiProviderRunFn<
   DownloadModelTaskExecuteInput,
-  DownloadModelTaskExecuteInput
+  DownloadModelTaskExecuteInput,
+  HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   // Download the model by creating a pipeline
   await getPipeline(model!, onProgress, { abort_signal: signal });
@@ -105,14 +104,11 @@ export const HFT_Download: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 
-type TextEmbeddingInput = DeReplicateFromSchema<typeof TextEmbeddingInputSchema>;
-type TextEmbeddingOutput = DeReplicateFromSchema<typeof TextEmbeddingOutputSchema>;
-export const HFT_TextEmbedding: AiProviderRunFn<TextEmbeddingInput, TextEmbeddingOutput> = async (
-  input,
-  model,
-  onProgress,
-  signal
-) => {
+export const HFT_TextEmbedding: AiProviderRunFn<
+  DeReplicateFromSchema<typeof TextEmbeddingInputSchema>,
+  DeReplicateFromSchema<typeof TextEmbeddingOutputSchema>,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
   const generateEmbedding: FeatureExtractionPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
   });
@@ -120,19 +116,19 @@ export const HFT_TextEmbedding: AiProviderRunFn<TextEmbeddingInput, TextEmbeddin
   // Generate the embedding
   const hfVector = await generateEmbedding(input.text, {
     pooling: "mean",
-    normalize: model!.normalize,
+    normalize: model?.providerConfig.normalize,
     ...(signal ? { abort_signal: signal } : {}),
   });
 
   // Validate the embedding dimensions
-  if (hfVector.size !== model!.nativeDimensions) {
+  if (hfVector.size !== model?.providerConfig.nativeDimensions) {
     console.warn(
-      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model!.nativeDimensions}`,
+      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.providerConfig.nativeDimensions}`,
       input,
       hfVector
     );
     throw new PermanentJobError(
-      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model!.nativeDimensions}`
+      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.providerConfig.nativeDimensions}`
     );
   }
 
@@ -145,7 +141,8 @@ export const HFT_TextEmbedding: AiProviderRunFn<TextEmbeddingInput, TextEmbeddin
  */
 export const HFT_TextGeneration: AiProviderRunFn<
   DeReplicateFromSchema<typeof TextGenerationInputSchema>,
-  DeReplicateFromSchema<typeof TextGenerationOutputSchema>
+  DeReplicateFromSchema<typeof TextGenerationOutputSchema>,
+  HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const generateText: TextGenerationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -177,7 +174,8 @@ export const HFT_TextGeneration: AiProviderRunFn<
  */
 export const HFT_TextTranslation: AiProviderRunFn<
   DeReplicateFromSchema<typeof TextTranslationInputSchema>,
-  DeReplicateFromSchema<typeof TextTranslationOutputSchema>
+  DeReplicateFromSchema<typeof TextTranslationOutputSchema>,
+  HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const translate: TranslationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -210,7 +208,8 @@ export const HFT_TextTranslation: AiProviderRunFn<
  */
 export const HFT_TextRewriter: AiProviderRunFn<
   DeReplicateFromSchema<typeof TextRewriterInputSchema>,
-  DeReplicateFromSchema<typeof TextRewriterOutputSchema>
+  DeReplicateFromSchema<typeof TextRewriterOutputSchema>,
+  HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const generateText: TextGenerationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -249,7 +248,8 @@ export const HFT_TextRewriter: AiProviderRunFn<
  */
 export const HFT_TextSummary: AiProviderRunFn<
   DeReplicateFromSchema<typeof TextSummaryInputSchema>,
-  DeReplicateFromSchema<typeof TextSummaryOutputSchema>
+  DeReplicateFromSchema<typeof TextSummaryOutputSchema>,
+  HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const generateSummary: SummarizationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -279,7 +279,8 @@ export const HFT_TextSummary: AiProviderRunFn<
  */
 export const HFT_TextQuestionAnswer: AiProviderRunFn<
   DeReplicateFromSchema<typeof TextQuestionAnswerInputSchema>,
-  DeReplicateFromSchema<typeof TextQuestionAnswerOutputSchema>
+  DeReplicateFromSchema<typeof TextQuestionAnswerOutputSchema>,
+  HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   // Get the question answering pipeline
   const generateAnswer: QuestionAnsweringPipeline = await getPipeline(model!, onProgress, {

@@ -5,12 +5,13 @@
  */
 
 import {
-    DataPortSchemaNonBoolean,
-    FromSchema,
-    FromSchemaDefaultOptions,
-    FromSchemaOptions,
-    JsonSchema,
+  DataPortSchemaNonBoolean,
+  FromSchema,
+  FromSchemaDefaultOptions,
+  FromSchemaOptions,
+  JsonSchema,
 } from "@workglow/util";
+import { ModelSchema } from "../../model/ModelSchema";
 
 export type TypedArray =
   | Float64Array
@@ -191,7 +192,7 @@ export type TTypeModel = DataPortSchemaNonBoolean & {
   readonly format: TypeModelSemantic;
 };
 
-export function TypeModel<
+export function TypeModelAsString<
   S extends TypeModelSemantic = "model",
   O extends Record<string, unknown> = {},
 >(semantic: S = "model" as S, options: O = {} as O) {
@@ -211,7 +212,16 @@ export function TypeModel<
     ...options,
     format: semantic,
     type: "string",
-  } as const;
+  } as const satisfies JsonSchema;
+}
+
+export function TypeModel<
+  S extends TypeModelSemantic = "model",
+  O extends Record<string, unknown> = {},
+>(semantic: S = "model" as S, options: O = {} as O) {
+  return {
+    oneOf: [TypeModelAsString<S, O>(semantic, options), ModelSchema],
+  } as const satisfies JsonSchema;
 }
 
 export const TypeReplicateArray = <T extends DataPortSchemaNonBoolean>(

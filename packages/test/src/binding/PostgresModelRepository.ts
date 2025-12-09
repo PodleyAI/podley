@@ -4,13 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  ModelPrimaryKeyNames,
-  ModelRepository,
-  ModelSchema,
-  Task2ModelPrimaryKeyNames,
-  Task2ModelSchema,
-} from "@workglow/ai";
+import { ModelPrimaryKeyNames, ModelRepository, ModelSchema } from "@workglow/ai";
 import { PostgresTabularRepository } from "@workglow/storage";
 import { Pool } from "pg";
 
@@ -24,10 +18,6 @@ export class PostgresModelRepository extends ModelRepository {
     typeof ModelSchema,
     typeof ModelPrimaryKeyNames
   >;
-  task2ModelTabularRepository: PostgresTabularRepository<
-    typeof Task2ModelSchema,
-    typeof Task2ModelPrimaryKeyNames
-  >;
 
   constructor(
     db: Pool,
@@ -40,13 +30,6 @@ export class PostgresModelRepository extends ModelRepository {
       tableModels,
       ModelSchema,
       ModelPrimaryKeyNames
-    );
-    this.task2ModelTabularRepository = new PostgresTabularRepository(
-      db,
-      tableTask2Models,
-      Task2ModelSchema,
-      Task2ModelPrimaryKeyNames,
-      ["model"]
     );
   }
 }

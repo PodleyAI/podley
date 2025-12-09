@@ -20,7 +20,7 @@ export function AddBaseCommands(program: Command) {
       if (options.model) {
         const model = await getGlobalModelRepository().findByName(options.model);
         if (model) {
-          graph.addTask(new DownloadModelTask({ model: model.name }));
+          graph.addTask(new DownloadModelTask({ model: model.model_id }));
         } else {
           program.error(`Unknown model ${options.model}`);
         }
@@ -39,9 +39,9 @@ export function AddBaseCommands(program: Command) {
     .option("--model <name>", "model to use")
     .action(async (text: string, options) => {
       const model = options.model
-        ? (await getGlobalModelRepository().findByName(options.model))?.name
+        ? (await getGlobalModelRepository().findByName(options.model))?.model_id
         : (await getGlobalModelRepository().findModelsByTask("TextEmbeddingTask"))?.map(
-            (m) => m.name
+            (m) => m.model_id
           );
 
       if (!model) {
@@ -64,9 +64,9 @@ export function AddBaseCommands(program: Command) {
     .option("--model <name>", "model to use")
     .action(async (text, options) => {
       const model = options.model
-        ? (await getGlobalModelRepository().findByName(options.model))?.name
+        ? (await getGlobalModelRepository().findByName(options.model))?.model_id
         : (await getGlobalModelRepository().findModelsByTask("TextSummaryTask"))?.map(
-            (m) => m.name
+            (m) => m.model_id
           );
       if (!model) {
         program.error(`Unknown model ${options.model}`);
@@ -89,9 +89,9 @@ export function AddBaseCommands(program: Command) {
     .option("--model <name>", "model to use")
     .action(async (text, options) => {
       const model = options.model
-        ? (await getGlobalModelRepository().findByName(options.model))?.name
+        ? (await getGlobalModelRepository().findByName(options.model))?.model_id
         : (await getGlobalModelRepository().findModelsByTask("TextRewriterTask"))?.map(
-            (m) => m.name
+            (m) => m.model_id
           );
       if (!model) {
         program.error(`Unknown model ${options.model}`);

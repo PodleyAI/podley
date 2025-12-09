@@ -6,6 +6,7 @@
 
 export * from "./common/HFT_Constants";
 export * from "./common/HFT_JobRunFns";
+export * from "./common/HFT_ModelSchema";
 export * from "./registry/HFT_Client_RegisterJobFns";
 export * from "./registry/HFT_Inline_RegisterJobFns";
 export * from "./registry/HFT_Worker_RegisterJobFns";

@@ -8,10 +8,10 @@ import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@wor
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
 import {
-    TypedArraySchema,
-    TypedArraySchemaOptions,
-    TypeModel,
-    TypeReplicateArray,
+  TypedArraySchema,
+  TypedArraySchemaOptions,
+  TypeModel,
+  TypeReplicateArray,
 } from "./base/AiTaskSchemas";
 
 const modelSchema = TypeReplicateArray(TypeModel("model:TextEmbeddingTask"));

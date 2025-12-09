@@ -6,7 +6,7 @@
 
 import { TaskInput, TaskOutput } from "@workglow/task-graph";
 import { globalServiceRegistry, WORKER_MANAGER } from "@workglow/util";
-import { Model } from "../model/Model";
+import { ModelRecord } from "../model/ModelSchema";
 
 /**
  * Type for the run function for the AiJob
@@ -14,6 +14,7 @@ import { Model } from "../model/Model";
 export type AiProviderRunFn<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
+  Model extends ModelRecord = ModelRecord,
 > = (
   input: Input,
   model: Model | undefined,
@@ -52,7 +53,7 @@ export class AiProviderRegistry {
   >(modelProvider: string, taskType: string) {
     const workerFn: AiProviderRunFn<Input, Output> = async (
       input: Input,
-      model: Model | undefined,
+      model: ModelRecord | undefined,
       update_progress: (progress: number, message?: string, details?: any) => void,
       signal?: AbortSignal
     ) => {

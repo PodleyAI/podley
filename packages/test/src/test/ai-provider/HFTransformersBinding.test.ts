@@ -11,7 +11,11 @@ import {
   InMemoryModelRepository,
   setGlobalModelRepository,
 } from "@workglow/ai";
-import { HF_TRANSFORMERS_ONNX, register_HFT_InlineJobFns } from "@workglow/ai-provider";
+import {
+  HF_TRANSFORMERS_ONNX,
+  HfTransformersOnnxModelRecord,
+  register_HFT_InlineJobFns,
+} from "@workglow/ai-provider";
 import {
   ConcurrencyLimiter,
   JobQueueClient,
@@ -70,19 +74,21 @@ describe("HFTransformersBinding", () => {
       await register_HFT_InlineJobFns(client);
       queueRegistry.registerQueue({ server, client, storage });
 
-      const model = {
-        name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
-        url: "Xenova/LaMini-Flan-T5-783M",
-        availableOnBrowser: true,
-        availableOnServer: true,
+      const model: HfTransformersOnnxModelRecord = {
+        model_id: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
+        title: "LaMini-Flan-T5-783M",
+        description: "LaMini-Flan-T5-783M",
+        tasks: ["TextGenerationTask", "TextRewriterTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        pipeline: "text2text-generation",
+        providerConfig: {
+          pipeline: "text2text-generation",
+          modelPath: "Xenova/LaMini-Flan-T5-783M",
+        },
+        metadata: {},
       };
 
       setGlobalModelRepository(new InMemoryModelRepository());
       await getGlobalModelRepository().addModel(model);
-      await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
-      await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
 
       const registeredQueue = queueRegistry.getQueue(HF_TRANSFORMERS_ONNX);
       expect(registeredQueue).toBeDefined();
@@ -133,18 +139,20 @@ describe("HFTransformersBinding", () => {
       queueRegistry.registerQueue({ server, client, storage });
 
       setGlobalModelRepository(new InMemoryModelRepository());
-      const model = {
-        name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
-        url: "Xenova/LaMini-Flan-T5-783M",
-        availableOnBrowser: true,
-        availableOnServer: true,
+      const model: HfTransformersOnnxModelRecord = {
+        model_id: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
+        title: "LaMini-Flan-T5-783M",
+        description: "LaMini-Flan-T5-783M",
+        tasks: ["TextGenerationTask", "TextRewriterTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        pipeline: "text2text-generation",
+        providerConfig: {
+          pipeline: "text2text-generation",
+          modelPath: "Xenova/LaMini-Flan-T5-783M",
+        },
+        metadata: {},
       };
 
       await getGlobalModelRepository().addModel(model);
-      await getGlobalModelRepository().connectTaskToModel("TextGenerationTask", model.name);
-      await getGlobalModelRepository().connectTaskToModel("TextRewriterTask", model.name);
 
       const registeredQueue = queueRegistry.getQueue(HF_TRANSFORMERS_ONNX);
       expect(registeredQueue).toBeDefined();

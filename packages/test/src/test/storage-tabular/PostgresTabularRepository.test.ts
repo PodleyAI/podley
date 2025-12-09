@@ -10,6 +10,8 @@ import { uuid4 } from "@workglow/util";
 import type { Pool } from "pg";
 import { describe } from "vitest";
 import {
+  AllTypesPrimaryKeyNames,
+  AllTypesSchema,
   CompoundPrimaryKeyNames,
   CompoundSchema,
   runGenericTabularRepositoryTests,
@@ -35,6 +37,19 @@ describe("PostgresTabularRepository", () => {
         SearchSchema,
         SearchPrimaryKeyNames,
         ["category", ["category", "subcategory"], ["subcategory", "category"], "value"]
-      )
+      ),
+    async () => {
+      const repo = new PostgresTabularRepository<
+        typeof AllTypesSchema,
+        typeof AllTypesPrimaryKeyNames
+      >(
+        db,
+        `all_types_test_${uuid4().replace(/-/g, "_")}`,
+        AllTypesSchema,
+        AllTypesPrimaryKeyNames
+      );
+      await repo.setupDatabase();
+      return repo;
+    }
   );
 });

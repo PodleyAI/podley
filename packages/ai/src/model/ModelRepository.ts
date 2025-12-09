@@ -5,19 +5,18 @@
  */
 
 import { type TabularRepository } from "@workglow/storage";
-import { DataPortSchemaObject, EventEmitter, EventParameters } from "@workglow/util";
-import { Model } from "./Model";
+import { EventEmitter, EventParameters } from "@workglow/util";
+
+import { ModelPrimaryKeyNames, ModelRecord, ModelSchema } from "./ModelSchema";
 
 /**
  * Events that can be emitted by the ModelRepository
  */
 
 export type ModelEventListeners = {
-  model_added: (model: Model) => void;
-  model_removed: (model: Model) => void;
-  task_model_connected: (task: string, model: string) => void;
-  task_model_disconnected: (task: string, model: string) => void;
-  model_updated: (model: Model) => void;
+  model_added: (model: ModelRecord) => void;
+  model_removed: (model: ModelRecord) => void;
+  model_updated: (model: ModelRecord) => void;
 };
 
 export type ModelEvents = keyof ModelEventListeners;
@@ -28,31 +27,6 @@ export type ModelEventParameters<Event extends ModelEvents> = EventParameters<
   ModelEventListeners,
   Event
 >;
-
-export const ModelSchema = {
-  type: "object",
-  properties: {
-    name: { type: "string" },
-    details: { type: "string" },
-  },
-  required: ["name", "details"],
-  additionalProperties: false,
-} as const satisfies DataPortSchemaObject;
-export const ModelPrimaryKeyNames = ["name"] as const;
-
-/**
- * Represents the structure for mapping tasks to models
- */
-export const Task2ModelSchema = {
-  type: "object",
-  properties: {
-    task: { type: "string" },
-    model: { type: "string" },
-  },
-  required: ["task", "model"],
-  additionalProperties: false,
-} as const satisfies DataPortSchemaObject;
-export const Task2ModelPrimaryKeyNames = ["task", "model"] as const;
 
 /**
  * Abstract base class for managing AI models and their relationships with tasks.
@@ -69,14 +43,6 @@ export abstract class ModelRepository {
   abstract modelTabularRepository: TabularRepository<
     typeof ModelSchema,
     typeof ModelPrimaryKeyNames
-  >;
-
-  /**
-   * Repository for managing relationships between tasks and models
-   */
-  abstract task2ModelTabularRepository: TabularRepository<
-    typeof Task2ModelSchema,
-    typeof Task2ModelPrimaryKeyNames
   >;
 
   /** Event emitter for repository events */
@@ -122,9 +88,8 @@ export abstract class ModelRepository {
    * Adds a new model to the repository
    * @param model - The model instance to add
    */
-  async addModel(model: Model) {
-    await this.modelTabularRepository.put({ name: model.name, details: JSON.stringify(model) });
-    this.models.set(model.name, model);
+  async addModel(model: ModelRecord) {
+    await this.modelTabularRepository.put(model);
     this.events.emit("model_added", model);
     return model;
   }
@@ -136,31 +101,23 @@ export abstract class ModelRepository {
    */
   async findModelsByTask(task: string) {
     if (typeof task != "string") return undefined;
-    const junctions = await this.task2ModelTabularRepository.search({ task });
-    if (!junctions || junctions.length === 0) return undefined;
-    const models = [];
-    for (const junction of junctions) {
-      const model = await this.modelTabularRepository.get({ name: junction.model } as any);
-      if (model) models.push(JSON.parse(model.details as string));
-    }
-    models.forEach((m) => this.models.set(m.name, m));
-    this.taskModels.set(task, models);
+    const allModels = await this.modelTabularRepository.getAll();
+    if (!allModels || allModels.length === 0) return undefined;
+    const models = allModels.filter((model) => model.tasks?.includes(task));
+    if (models.length === 0) return undefined;
     return models;
   }
-
-  models = new Map<string, Model>();
-  taskModels = new Map<string, Model[]>();
 
   /**
    * Finds all tasks associated with a specific model
    * @param model - The model identifier to search for
    * @returns Promise resolving to an array of associated tasks, or undefined if none found
    */
-  async findTasksByModel(model: string) {
-    if (typeof model != "string") return undefined;
-    const junctions = await this.task2ModelTabularRepository.search({ model });
-    if (!junctions || junctions.length === 0) return undefined;
-    return junctions.map((junction) => junction.task);
+  async findTasksByModel(model_id: string) {
+    if (typeof model_id != "string") return undefined;
+    const modelRecord = await this.modelTabularRepository.get({ model_id });
+    if (!modelRecord) return undefined;
+    return modelRecord.tasks && modelRecord.tasks.length > 0 ? modelRecord.tasks : undefined;
   }
 
   /**
@@ -168,10 +125,17 @@ export abstract class ModelRepository {
    * @returns Promise resolving to an array of task identifiers
    */
   async enumerateAllTasks() {
-    const junctions = await this.task2ModelTabularRepository.getAll();
-    if (!junctions || junctions.length === 0) return undefined;
-    const uniqueTasks = [...new Set(junctions.map((junction) => junction.task))];
-    return uniqueTasks;
+    const allModels = await this.modelTabularRepository.getAll();
+    if (!allModels || allModels.length === 0) return undefined;
+    const uniqueTasks = new Set<string>();
+    for (const model of allModels) {
+      if (model.tasks) {
+        for (const task of model.tasks) {
+          uniqueTasks.add(task);
+        }
+      }
+    }
+    return uniqueTasks.size > 0 ? Array.from(uniqueTasks) : undefined;
   }
 
   /**
@@ -181,33 +145,18 @@ export abstract class ModelRepository {
   async enumerateAllModels() {
     const models = await this.modelTabularRepository.getAll();
     if (!models || models.length === 0) return undefined;
-    const parsedModels = models.map((model) => JSON.parse(model.details as string));
-    parsedModels.forEach((m) => this.models.set(m.name, m));
-    return parsedModels;
+    return models;
   }
 
   /**
-   * Creates an association between a task and a model
-   * @param task - The task identifier
-   * @param model - The model to associate with the task
-   */
-  async connectTaskToModel(task: string, model: string) {
-    await this.task2ModelTabularRepository.put({ task, model });
-    this.events.emit("task_model_connected", task, model);
-  }
-
-  /**
-   * Retrieves a model by its name
-   * @param name - The name of the model to find
+   * Retrieves a model by its identifier
+   * @param modelId - The model_id of the model to find
    * @returns Promise resolving to the found model or undefined if not found
    */
-  async findByName(name: string) {
-    if (typeof name != "string") return undefined;
-    const modelstr = await this.modelTabularRepository.get({ name } as any);
-    if (!modelstr) return undefined;
-    const model = JSON.parse(modelstr.details as string);
-    this.models.set(model.name, model);
-    return model;
+  async findByName(model_id: string) {
+    if (typeof model_id != "string") return undefined;
+    const model = await this.modelTabularRepository.get({ model_id });
+    return model ?? undefined;
   }
 
   /**
@@ -216,12 +165,5 @@ export abstract class ModelRepository {
    */
   async size(): Promise<number> {
     return await this.modelTabularRepository.size();
-  }
-
-  /**
-   * Clears all models from the repository
-   */
-  async clear() {
-    await this.modelTabularRepository.deleteAll();
   }
 }
