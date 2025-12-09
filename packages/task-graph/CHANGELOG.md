@@ -1,5 +1,15 @@
 # @workglow/task-graph
 
+## 0.0.61
+
+### Patch Changes
+
+- Update model config bugs with narrowing
+- Updated dependencies
+  - @workglow/job-queue@0.0.61
+  - @workglow/storage@0.0.61
+  - @workglow/util@0.0.61
+
 ## 0.0.60
 
 ### Patch Changes

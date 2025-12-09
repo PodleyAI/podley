@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.61
+
+### Patch Changes
+
+- Update model config bugs with narrowing
+
 ## 0.0.60
 
 ### Patch Changes

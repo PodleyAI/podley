@@ -1,5 +1,20 @@
 # @workglow/test
 
+## 0.0.61
+
+### Patch Changes
+
+- Update model config bugs with narrowing
+- Updated dependencies
+  - @workglow/ai@0.0.61
+  - @workglow/ai-provider@0.0.61
+  - @workglow/job-queue@0.0.61
+  - @workglow/sqlite@0.0.61
+  - @workglow/storage@0.0.61
+  - @workglow/task-graph@0.0.61
+  - @workglow/tasks@0.0.61
+  - @workglow/util@0.0.61
+
 ## 0.0.60
 
 ### Patch Changes
