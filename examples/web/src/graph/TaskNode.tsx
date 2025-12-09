@@ -17,10 +17,24 @@ export type TaskNodeData = {
   task: ITask;
 };
 
+/**
+ * Calculate consolidated progress from subtasks if available, otherwise use task's own progress
+ */
+function calculateConsolidatedProgress(task: ITask): number {
+  if (task.hasChildren()) {
+    const tasks = task.subGraph.getTasks();
+    if (tasks.length > 0) {
+      const totalProgress = tasks.reduce((acc, t) => acc + t.progress, 0);
+      return Math.round(totalProgress / tasks.length);
+    }
+  }
+  return task.progress;
+}
+
 export function TaskNode(props: NodeProps<Node<TaskNodeData, string>>) {
   const { data, isConnectable } = props;
   const [status, setStatus] = useState<TaskStatus>(data.task.status);
-  const [progress, setProgress] = useState<number>(data.task.progress);
+  const [progress, setProgress] = useState<number>(calculateConsolidatedProgress(data.task));
   const [subTasks, setSubTasks] = useState<ITask[]>([]);
   const [isExpanded, setIsExpanded] = useState(data.task instanceof ArrayTask);
   const [isExpandable, setIsExpandable] = useState(false);
@@ -29,7 +43,7 @@ export function TaskNode(props: NodeProps<Node<TaskNodeData, string>>) {
     const task = data.task;
 
     setStatus(task.status);
-    setProgress(task.progress);
+    setProgress(calculateConsolidatedProgress(task));
     if (task.hasChildren()) {
       setSubTasks(task.subGraph.getTasks());
     }
@@ -37,22 +51,50 @@ export function TaskNode(props: NodeProps<Node<TaskNodeData, string>>) {
 
     const unsubscribes: (() => void)[] = [];
 
+    // Helper to update consolidated progress
+    const updateConsolidatedProgress = () => {
+      setProgress(calculateConsolidatedProgress(task));
+    };
+
     unsubscribes.push(
       task.subscribe("status", () => {
         setStatus(task.status);
-        setProgress(task.progress);
+        updateConsolidatedProgress();
       })
     );
 
     unsubscribes.push(
-      task.subscribe("progress", (progress) => {
-        setProgress(progress);
+      task.subscribe("progress", () => {
+        updateConsolidatedProgress();
       })
     );
+
+    // Subscribe to subtask progress changes to update consolidated progress
+    if (task.hasChildren()) {
+      const tasks = task.subGraph.getTasks();
+      tasks.forEach((subTask) => {
+        unsubscribes.push(subTask.subscribe("progress", updateConsolidatedProgress));
+        unsubscribes.push(subTask.subscribe("status", updateConsolidatedProgress));
+      });
+
+      // Subscribe to subgraph events to handle new tasks
+      unsubscribes.push(
+        task.subGraph.subscribe("task_added", () => {
+          setSubTasks(task.subGraph.getTasks());
+          // Subscribe to new task's progress
+          const newTasks = task.subGraph.getTasks();
+          const lastTask = newTasks[newTasks.length - 1];
+          unsubscribes.push(lastTask.subscribe("progress", updateConsolidatedProgress));
+          unsubscribes.push(lastTask.subscribe("status", updateConsolidatedProgress));
+          updateConsolidatedProgress();
+        })
+      );
+    }
 
     unsubscribes.push(
       task.subscribe("regenerate", () => {
         setSubTasks(task.subGraph.getTasks());
+        updateConsolidatedProgress();
       })
     );
 
@@ -90,7 +132,7 @@ export function TaskNode(props: NodeProps<Node<TaskNodeData, string>>) {
                 completed
               </span>
             </div>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
+            <div className="space-y-2 max-h-96 overflow-y-auto">
               {subTasks.map((subTask) => (
                 <SubTask key={subTask.config.id as string} subTask={subTask} />
               ))}
@@ -109,12 +151,23 @@ function SubTask({ subTask }: { subTask: ITask }) {
   const [progress, setProgress] = useState<number>(subTask.progress);
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [status, setStatus] = useState<TaskStatus>(subTask.status);
+  const [progressDetails, setProgressDetails] = useState<Array<{ file: string; progress: number }>>(
+    []
+  );
 
   useEffect(() => {
     setProgress(subTask.progress || 0);
     setStatus(subTask.status);
 
     const unsubscribes: (() => void)[] = [];
+
+    unsubscribes.push(
+      subTask.subscribe("start", () => {
+        setProgressDetails([]);
+        setProgressMessage("");
+        setProgress(0);
+      })
+    );
 
     unsubscribes.push(
       subTask.subscribe("status", () => {
@@ -130,6 +183,31 @@ function SubTask({ subTask }: { subTask: ITask }) {
       subTask.subscribe("progress", (progress, message, details) => {
         setProgress(progress);
         setProgressMessage(details?.text || details?.file || message);
+
+        // Track file-based progress details
+        if (details?.file) {
+          setProgressDetails((oldDetails) => {
+            const fileProgress = details.progress ?? progress;
+            // Remove files that have reached 100%
+            const filteredDetails = (oldDetails ?? []).filter((d) => d.progress < 100);
+
+            // If this file is at 100%, don't add it back
+            if (fileProgress >= 100) {
+              return filteredDetails;
+            }
+
+            if (filteredDetails.length === 0) {
+              return [{ file: details.file, progress: fileProgress }];
+            }
+            const found = filteredDetails.find((d) => d.file === details.file);
+            if (found) {
+              return filteredDetails.map((d) =>
+                d.file === details.file ? { file: details.file, progress: fileProgress } : d
+              );
+            }
+            return [...filteredDetails, { file: details.file, progress: fileProgress }];
+          });
+        }
       })
     );
 
@@ -138,15 +216,56 @@ function SubTask({ subTask }: { subTask: ITask }) {
     };
   }, [subTask.progress, subTask.status]);
 
+  // Calculate overall progress from all files or use single progress
+  const overallProgress =
+    progressDetails.length > 0
+      ? progressDetails.reduce((sum, d) => sum + d.progress, 0) / progressDetails.length
+      : progress;
+
+  const hasFileProgress = progressDetails.length > 0;
+
   return (
     <div key={subTask.config.id as string} className="text-xs subtask-progress">
-      <div className="flex justify-between mb-1">
-        <span className="truncate">{progressMessage}</span>
-        <span className="text-gray-500">{Math.round(progress || 0)}%</span>
-      </div>
-      <div className="progress-container">
-        <ProgressBar progress={progress || 0} status={status} showText={false} />
-      </div>
+      {hasFileProgress ? (
+        <>
+          {/* Overall progress section - only show when there are multiple files */}
+          <div className="mb-2">
+            <div className="flex justify-between mb-1">
+              <span className="truncate font-semibold">Overall Progress</span>
+              <span className="text-gray-500">{Math.round(overallProgress || 0)}%</span>
+            </div>
+            <div className="progress-container">
+              <ProgressBar progress={overallProgress || 0} status={status} showText={false} />
+            </div>
+          </div>
+
+          {/* Individual file progress details */}
+          <div className="mt-2 space-y-1.5 pl-2 border-l-2 border-gray-700">
+            {progressDetails.map((detail) => (
+              <div key={detail.file} className="text-xs">
+                <div className="flex justify-between mb-0.5">
+                  <span className="truncate text-gray-400">{detail.file}</span>
+                  <span className="text-gray-500">{Math.round(detail.progress || 0)}%</span>
+                </div>
+                <div className="progress-container">
+                  <ProgressBar progress={detail.progress || 0} status={status} showText={false} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        /* Single progress bar when there's only one message stream */
+        <div>
+          <div className="flex justify-between mb-1">
+            <span className="truncate">{progressMessage || "Progress"}</span>
+            <span className="text-gray-500">{Math.round(progress || 0)}%</span>
+          </div>
+          <div className="progress-container">
+            <ProgressBar progress={progress || 0} status={status} showText={false} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

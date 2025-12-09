@@ -60,6 +60,7 @@
   border-radius: var(--node-border-radius);
   flex-direction: column;
   width: 250px;
+  min-height: fit-content;
 }
 
 .gradient:before {
@@ -105,9 +106,10 @@
   border-radius: var(--node-border-radius);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   flex-grow: 1;
   position: relative;
+  min-height: fit-content;
 }
 
 .react-flow__node .icon {
