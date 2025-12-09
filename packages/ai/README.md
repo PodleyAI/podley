@@ -45,22 +45,20 @@ setGlobalModelRepository(modelRepo);
 
 // 2. Add a local ONNX model (Hugging Face Transformers)
 await modelRepo.addModel({
-  name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
-  url: "Xenova/LaMini-Flan-T5-783M",
+  model_id: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
+  tasks: ["TextGenerationTask","TextRewriterTask"],
+  title: "LaMini-Flan-T5-783M",
+  description: "LaMini-Flan-T5-783M quantized to 8bit",
   provider: HF_TRANSFORMERS_ONNX,
-  availableOnBrowser: true,
-  availableOnServer: true,
-  contextWindow: 4096,
-  pipeline: "text2text-generation",
+  providerConfig: {
+    pipeline: "text2text-generation",
+    modelPath: "Xenova/LaMini-Flan-T5-783M"
 });
 
-// 3. Connect models to tasks
-await modelRepo.connectTaskToModel("TextGenerationTask", "onnx:Xenova/LaMini-Flan-T5-783M:q8");
-
-// 4. Register provider functions (inline, same thread)
+// 3. Register provider functions (inline, same thread)
 await register_HFT_InlineJobFns();
 
-// 5. Set up job queue for the provider
+// 4. Set up job queue for the provider (optional, an in-memory queue will be setup automatically)
 const queueName = HF_TRANSFORMERS_ONNX;
 const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(queueName);
 

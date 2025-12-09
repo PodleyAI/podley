@@ -147,15 +147,15 @@ await register_HFT_InlineJobFns();
 const modelRepo = new InMemoryModelRepository();
 setGlobalModelRepository(modelRepo);
 await modelRepo.addModel({
-  name: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
-  url: "Xenova/LaMini-Flan-T5-783M",
-  availableOnBrowser: true,
-  availableOnServer: true,
+  model_id: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
+  tasks: ["TextGenerationTask","TextRewriterTask"],
+  title: "LaMini-Flan-T5-783M",
+  description: "LaMini-Flan-T5-783M quantized to 8bit",
   provider: HF_TRANSFORMERS_ONNX,
-  pipeline: "text2text-generation",
+  providerConfig: {
+    pipeline: "text2text-generation",
+    modelPath: "Xenova/LaMini-Flan-T5-783M"
 });
-await modelRepo.connectTaskToModel("TextGenerationTask", "onnx:Xenova/LaMini-Flan-T5-783M:q8");
-await modelRepo.connectTaskToModel("TextRewriterTask", "onnx:Xenova/LaMini-Flan-T5-783M:q8");
 
 // Job queue for the provider
 const queueName = HF_TRANSFORMERS_ONNX;
@@ -164,7 +164,7 @@ const storage = new InMemoryQueueStorage<AiJobInput<TaskInput>, TaskOutput>(queu
 const server = new JobQueueServer<AiJobInput<TaskInput>, TaskOutput>(AiJob, {
   storage,
   queueName,
-  limiter: new ConcurrencyLimiter(1, 10),
+  limiter: new ConcurrencyLimiter(1),
 });
 
 const client = new JobQueueClient<AiJobInput<TaskInput>, TaskOutput>({
