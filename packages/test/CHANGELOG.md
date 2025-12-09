@@ -1,5 +1,20 @@
 # @workglow/test
 
+## 0.0.60
+
+### Patch Changes
+
+- Rework and simplify the model repo
+- Updated dependencies
+  - @workglow/ai-provider@0.0.60
+  - @workglow/task-graph@0.0.60
+  - @workglow/job-queue@0.0.60
+  - @workglow/storage@0.0.60
+  - @workglow/sqlite@0.0.60
+  - @workglow/tasks@0.0.60
+  - @workglow/util@0.0.60
+  - @workglow/ai@0.0.60
+
 ## 0.0.59
 
 ### Patch Changes

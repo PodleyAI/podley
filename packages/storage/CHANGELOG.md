@@ -1,5 +1,14 @@
 # @workglow/storage
 
+## 0.0.60
+
+### Patch Changes
+
+- Rework and simplify the model repo
+- Updated dependencies
+  - @workglow/sqlite@0.0.60
+  - @workglow/util@0.0.60
+
 ## 0.0.59
 
 ### Patch Changes
