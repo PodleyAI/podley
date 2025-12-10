@@ -2,6 +2,6 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    testTimeout: 5000, // 5 second global timeout (PGlite initialization can be slow)
+    testTimeout: 15000, // 15 second global timeout (PgLite initialization can be slow)
   },
 });

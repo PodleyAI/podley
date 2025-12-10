@@ -1,5 +1,14 @@
 # @workglow/job-queue
 
+## 0.0.63
+
+### Patch Changes
+
+- Fix more max try issues
+- Updated dependencies
+  - @workglow/storage@0.0.63
+  - @workglow/util@0.0.63
+
 ## 0.0.62
 
 ### Patch Changes

@@ -1,5 +1,22 @@
 # @workglow/web
 
+## 0.0.63
+
+### Patch Changes
+
+- Fix more max try issues
+- Updated dependencies
+  - @workglow/ai@0.0.63
+  - @workglow/ai-provider@0.0.63
+  - @workglow/debug@0.0.63
+  - @workglow/job-queue@0.0.63
+  - @workglow/sqlite@0.0.63
+  - @workglow/storage@0.0.63
+  - @workglow/task-graph@0.0.63
+  - @workglow/tasks@0.0.63
+  - @workglow/test@0.0.63
+  - @workglow/util@0.0.63
+
 ## 0.0.62
 
 ### Patch Changes
