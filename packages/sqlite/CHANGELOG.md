@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.64
+
+### Patch Changes
+
+- Fix indexeddb queue to not mark completed on every progress message which made it look like it was retrying
+
 ## 0.0.63
 
 ### Patch Changes

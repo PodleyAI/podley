@@ -1,7 +1,7 @@
 {
   "name": "@workglow/test",
   "type": "module",
-  "version": "0.0.63",
+  "version": "0.0.64",
   "description": "Testing utilities and test suites for Workglow packages, providing comprehensive testing infrastructure.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
