@@ -252,6 +252,16 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   }
 
   /**
+   * Retrieves the next job from the queue using optimistic locking. In case multiple workers
+   * claim the same job, the first worker to claim it will process it and the other workers will return undefined.
+   * This ONLY happens if workers are running in multiple tabs.
+   *
+   * IndexedDB uses snapshot isolation, so concurrent transactions can both see the same
+   * PENDING job. To prevent processing the same job multiple times, this method:
+   * 1. Claims a job by setting it to PROCESSING with a unique claim token
+   * 2. After the transaction completes, re-reads the job to verify the claim succeeded
+   * 3. If another worker claimed it first (different claim token), returns undefined
+   *
    * @param workerId - Worker ID to associate with the job (required)
    * @returns A promise that resolves to the next job or undefined if the queue is empty.
    */
@@ -263,68 +273,103 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     const now = new Date().toISOString();
     const prefixKeyValues = this.getPrefixKeyValues();
 
-    return new Promise((resolve, reject) => {
-      const cursorRequest = index.openCursor(
-        IDBKeyRange.bound(
-          [...prefixKeyValues, this.queueName, JobStatus.PENDING, ""],
-          [...prefixKeyValues, this.queueName, JobStatus.PENDING, now],
-          false,
-          true
-        )
-      );
+    // This ensures we can verify that we actually won the race to claim this job
+    const claimToken = workerId;
 
-      let jobToReturn: JobStorageFormat<Input, Output> | undefined;
+    const jobToReturn = await new Promise<JobStorageFormat<Input, Output> | undefined>(
+      (resolve, reject) => {
+        const cursorRequest = index.openCursor(
+          IDBKeyRange.bound(
+            [...prefixKeyValues, this.queueName, JobStatus.PENDING, ""],
+            [...prefixKeyValues, this.queueName, JobStatus.PENDING, now],
+            false,
+            true
+          )
+        );
 
-      cursorRequest.onsuccess = (e) => {
-        const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
-        if (!cursor) {
-          if (jobToReturn) {
-            resolve(jobToReturn);
-          } else {
-            resolve(undefined);
+        let claimedJob: JobStorageFormat<Input, Output> | undefined;
+        let cursorStopped = false;
+
+        cursorRequest.onsuccess = (e) => {
+          const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+          if (!cursor) {
+            // Cursor exhausted - resolve with whatever we found (or undefined)
+            return;
           }
-          return;
-        }
 
-        const job = cursor.value as JobStorageFormat<Input, Output> & Record<string, unknown>;
-        // Verify the job belongs to this queue, matches prefixes, and is still in PENDING state
-        if (
-          job.queue !== this.queueName ||
-          job.status !== JobStatus.PENDING ||
-          !this.matchesPrefixes(job)
-        ) {
-          cursor.continue();
-          return;
-        }
+          // If we already found and updated a job, stop iterating
+          if (cursorStopped) {
+            return;
+          }
 
-        job.status = JobStatus.PROCESSING;
-        job.last_ran_at = now;
-        job.worker_id = workerId ?? null;
-
-        try {
-          const updateRequest = store.put(job);
-          updateRequest.onsuccess = () => {
-            jobToReturn = job;
-            // Don't resolve here - wait for transaction to complete
-          };
-          updateRequest.onerror = (err) => {
-            console.error("Failed to update job status:", err);
+          const job = cursor.value as JobStorageFormat<Input, Output> & Record<string, unknown>;
+          // Verify the job belongs to this queue, matches prefixes, and is still in PENDING state
+          if (
+            job.queue !== this.queueName ||
+            job.status !== JobStatus.PENDING ||
+            !this.matchesPrefixes(job)
+          ) {
             cursor.continue();
-          };
-        } catch (err) {
-          console.error("Error updating job:", err);
-          cursor.continue();
-        }
-      };
+            return;
+          }
 
-      cursorRequest.onerror = () => reject(cursorRequest.error);
+          // Claim the job with our unique token
+          job.status = JobStatus.PROCESSING;
+          job.last_ran_at = now;
+          job.worker_id = claimToken;
 
-      // Wait for transaction to complete before resolving
-      tx.oncomplete = () => {
-        resolve(jobToReturn);
-      };
-      tx.onerror = () => reject(tx.error);
-    });
+          try {
+            const updateRequest = store.put(job);
+            updateRequest.onsuccess = () => {
+              claimedJob = job;
+              cursorStopped = true;
+              // Stop cursor iteration - we've claimed a job
+            };
+            updateRequest.onerror = (err) => {
+              console.error("Failed to update job status:", err);
+              cursor.continue();
+            };
+          } catch (err) {
+            console.error("Error updating job:", err);
+            cursor.continue();
+          }
+        };
+
+        cursorRequest.onerror = () => reject(cursorRequest.error);
+
+        // Wait for transaction to complete before resolving
+        tx.oncomplete = () => resolve(claimedJob);
+        tx.onerror = () => reject(tx.error);
+      }
+    );
+
+    // If we didn't find any job to claim, return undefined
+    if (!jobToReturn) {
+      return undefined;
+    }
+
+    // Verify we actually won the race by re-reading the job
+    // This is the optimistic locking check - if another worker claimed it first,
+    // their claim token will be there instead of ours
+    const verifiedJob = await this.get(jobToReturn.id);
+
+    if (!verifiedJob) {
+      // Job was deleted - we lost the race
+      return undefined;
+    }
+
+    if (verifiedJob.worker_id !== claimToken) {
+      // Another worker claimed this job - we lost the race
+      return undefined;
+    }
+
+    if (verifiedJob.status !== JobStatus.PROCESSING) {
+      // Job status changed (e.g., another worker completed it already) - we lost the race
+      return undefined;
+    }
+
+    // We successfully claimed the job
+    return verifiedJob;
   }
 
   /**
