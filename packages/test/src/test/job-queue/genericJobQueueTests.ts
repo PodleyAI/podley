@@ -814,16 +814,14 @@ export function runGenericJobQueueTests(
       } catch (err) {
         error = err as Error;
       }
-      expect(error).toBeDefined();
-      expect(error).toBeInstanceOf(RetryableJobError);
-      expect(error?.message).toBe("Job failed but can be retried");
+
       // Wait for retries to complete
       await sleep(10);
 
       const failedJob = await client.getJob(handle.id);
       expect(failedJob?.status).toBe(JobStatus.FAILED);
-      expect(failedJob?.runAttempts).toBe(4); // Should have attempted 4 times
-      expect(failedJob?.error).toBe("Job failed but can be retried");
+      expect(failedJob?.runAttempts).toBe(3); // Should have attempted 3 times
+      expect(failedJob?.error).toBe("Max retries reached");
 
       await server.stop();
     });

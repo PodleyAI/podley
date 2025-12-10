@@ -47,6 +47,10 @@ export type JobConstructorParam<Input, Output> = {
   progressDetails?: Record<string, any> | null;
 };
 
+export type JobClass<Input, Output> = new (
+  param: JobConstructorParam<Input, Output>
+) => Job<Input, Output>;
+
 /**
  * A job that can be executed by a JobQueue.
  *

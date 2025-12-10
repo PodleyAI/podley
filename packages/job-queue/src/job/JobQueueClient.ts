@@ -6,7 +6,7 @@
 
 import { IQueueStorage, JobStatus, JobStorageFormat, QueueChangePayload } from "@workglow/storage";
 import { EventEmitter } from "@workglow/util";
-import { Job, JobConstructorParam } from "./Job";
+import { Job } from "./Job";
 import {
   AbortSignalJobError,
   JobDisabledError,
@@ -41,10 +41,6 @@ export interface JobQueueClientOptions<Input, Output> {
   readonly storage: IQueueStorage<Input, Output>;
   readonly queueName: string;
 }
-
-type JobClass<Input, Output> = new (
-  param: JobConstructorParam<Input, Output>
-) => Job<Input, Output>;
 
 /**
  * Client for submitting jobs and monitoring their progress.
@@ -549,4 +545,3 @@ export class JobQueueClient<Input, Output> {
     return new JobError(message);
   }
 }
-

@@ -8,7 +8,7 @@ import { IQueueStorage, JobStatus, JobStorageFormat } from "@workglow/storage";
 import { EventEmitter } from "@workglow/util";
 import { ILimiter } from "../limiter/ILimiter";
 import { NullLimiter } from "../limiter/NullLimiter";
-import { Job, JobConstructorParam } from "./Job";
+import { Job, JobClass } from "./Job";
 import { JobQueueClient } from "./JobQueueClient";
 import { JobQueueWorker } from "./JobQueueWorker";
 
@@ -63,10 +63,6 @@ export interface JobQueueServerOptions<Input, Output> {
   readonly deleteAfterDisabledMs?: number;
   readonly cleanupIntervalMs?: number;
 }
-
-type JobClass<Input, Output> = new (
-  param: JobConstructorParam<Input, Output>
-) => Job<Input, Output>;
 
 /**
  * Server that coordinates multiple workers and manages the job queue lifecycle.
@@ -442,12 +438,18 @@ export class JobQueueServer<
 
       for (const jobData of stuckJobs) {
         const job = this.storageToClass(jobData);
-        job.status = JobStatus.PENDING;
-        job.runAfter = job.lastRanAt || new Date();
-        job.progress = 0;
-        job.progressMessage = "";
-        job.progressDetails = null;
-        job.error = "Server restarted";
+        if (job.runAttempts >= job.maxRetries) {
+          job.status = JobStatus.FAILED;
+          job.error = "Max retries reached";
+          job.errorCode = "MAX_RETRIES_REACHED";
+        } else {
+          job.status = JobStatus.PENDING;
+          job.runAfter = job.lastRanAt || new Date();
+          job.progress = 0;
+          job.progressMessage = "";
+          job.progressDetails = null;
+          job.error = "Server restarted";
+        }
 
         await this.storage.complete(this.classToStorage(job));
       }

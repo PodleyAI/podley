@@ -8,7 +8,7 @@ import { IQueueStorage, JobStatus, JobStorageFormat } from "@workglow/storage";
 import { EventEmitter, sleep, uuid4 } from "@workglow/util";
 import { ILimiter } from "../limiter/ILimiter";
 import { NullLimiter } from "../limiter/NullLimiter";
-import { Job, JobConstructorParam } from "./Job";
+import { Job, JobClass } from "./Job";
 import {
   AbortSignalJobError,
   JobDisabledError,
@@ -48,10 +48,6 @@ export interface JobQueueWorkerOptions<Input, Output> {
   readonly limiter?: ILimiter;
   readonly pollIntervalMs?: number;
 }
-
-type JobClass<Input, Output> = new (
-  param: JobConstructorParam<Input, Output>
-) => Job<Input, Output>;
 
 /**
  * Worker that processes jobs from the queue.
@@ -220,6 +216,8 @@ export class JobQueueWorker<
         if (job) {
           // Don't await - process in background to allow concurrent jobs
           this.processSingleJob(job);
+        } else {
+          await sleep(this.pollIntervalMs);
         }
       }
     } finally {
@@ -266,8 +264,8 @@ export class JobQueueWorker<
     } catch (err: unknown) {
       const error = this.normalizeError(err);
       if (error instanceof RetryableJobError) {
-        if (job.runAttempts > job.maxRetries) {
-          await this.failJob(job, error);
+        if (job.runAttempts >= job.maxRetries) {
+          await this.failJob(job, new PermanentJobError("Max retries reached"));
         } else {
           await this.rescheduleJob(job, error.retryDate);
         }
