@@ -106,6 +106,33 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
     return values;
   }
 
+  /**
+   * Builds WHERE clause conditions for prefix filtering with inline values (for raw SQL)
+   * @returns SQL conditions string with values inlined
+   */
+  private buildPrefixWhereSql(): string {
+    if (this.prefixes.length === 0) {
+      return "";
+    }
+    const conditions = this.prefixes
+      .map((p) => {
+        const value = this.prefixValues[p.name];
+        if (p.type === "uuid") {
+          return `${p.name} = '${this.escapeSqlString(String(value))}'`;
+        }
+        return `${p.name} = ${Number(value ?? 0)}`;
+      })
+      .join(" AND ");
+    return " AND " + conditions;
+  }
+
+  /**
+   * Escapes a string value for use in SQL
+   */
+  private escapeSqlString(value: string): string {
+    return value.replace(/'/g, "''");
+  }
+
   public async setupDatabase(): Promise<void> {
     // Note: For Supabase, table creation should typically be done through migrations
     // This setup assumes the table already exists or uses exec_sql RPC function
@@ -267,46 +294,42 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
 
   /**
    * Retrieves the next available job that is ready to be processed.
-   * @param workerId - Optional worker ID to associate with the job
+   * Uses atomic UPDATE with subquery SELECT FOR UPDATE SKIP LOCKED to prevent race conditions.
+   * @param workerId - Worker ID to associate with the job (required)
    * @returns The next job or undefined if no job is available
    */
-  public async next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined> {
-    // First, find the next job
-    let selectQuery = this.client
-      .from(this.tableName)
-      .select("*")
-      .eq("queue", this.queueName)
-      .eq("status", JobStatus.PENDING)
-      .lte("run_after", new Date().toISOString());
+  public async next(workerId: string): Promise<JobStorageFormat<Input, Output> | undefined> {
+    const prefixConditions = this.buildPrefixWhereSql();
+    const escapedQueueName = this.escapeSqlString(this.queueName);
+    const escapedWorkerId = this.escapeSqlString(workerId);
 
-    selectQuery = this.applyPrefixFilters(selectQuery);
+    // Use the same atomic UPDATE...WHERE id = (SELECT...FOR UPDATE SKIP LOCKED) pattern as PostgresQueueStorage
+    const sql = `
+      UPDATE ${this.tableName}
+      SET status = '${JobStatus.PROCESSING}', last_ran_at = NOW() AT TIME ZONE 'UTC', worker_id = '${escapedWorkerId}'
+      WHERE id = (
+        SELECT id
+        FROM ${this.tableName}
+        WHERE queue = '${escapedQueueName}'
+        AND status = '${JobStatus.PENDING}'
+        ${prefixConditions}
+        AND run_after <= NOW() AT TIME ZONE 'UTC'
+        ORDER BY run_after ASC
+        FOR UPDATE SKIP LOCKED
+        LIMIT 1
+      )
+      RETURNING *`;
 
-    const { data: jobs, error: selectError } = await selectQuery
-      .order("run_after", { ascending: true })
-      .limit(1);
+    const { data, error } = await this.client.rpc("exec_sql", { query: sql });
 
-    if (selectError) throw selectError;
-    if (!jobs || jobs.length === 0) return undefined;
+    if (error) throw error;
 
-    const job = jobs[0];
+    // exec_sql returns result rows as an array
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return undefined;
+    }
 
-    // Update its status
-    let updateQuery = this.client
-      .from(this.tableName)
-      .update({
-        status: JobStatus.PROCESSING,
-        last_ran_at: new Date().toISOString(),
-        worker_id: workerId ?? null,
-      })
-      .eq("id", job.id)
-      .eq("queue", this.queueName);
-
-    updateQuery = this.applyPrefixFilters(updateQuery);
-
-    const { data: updatedJob, error: updateError } = await updateQuery.select().single();
-
-    if (updateError) throw updateError;
-    return updatedJob as JobStorageFormat<Input, Output>;
+    return data[0] as JobStorageFormat<Input, Output>;
   }
 
   /**

@@ -47,6 +47,11 @@ export interface JobQueueWorkerOptions<Input, Output> {
   readonly queueName: string;
   readonly limiter?: ILimiter;
   readonly pollIntervalMs?: number;
+  /**
+   * Optional worker ID. If not provided, a random UUID will be generated.
+   * Use a persistent ID if you want the worker to reclaim its own jobs after restart.
+   */
+  readonly workerId?: string | null;
 }
 
 /**
@@ -80,7 +85,7 @@ export class JobQueueWorker<
 
   constructor(jobClass: JobClass<Input, Output>, options: JobQueueWorkerOptions<Input, Output>) {
     this.queueName = options.queueName;
-    this.workerId = uuid4();
+    this.workerId = options.workerId ?? uuid4();
     this.storage = options.storage;
     this.jobClass = jobClass;
     this.limiter = options.limiter ?? new NullLimiter();
@@ -507,6 +512,7 @@ export class JobQueueWorker<
       errorCode: details.error_code ?? null,
       runAttempts: details.run_attempts ?? 0,
       maxRetries: details.max_retries ?? 10,
+      workerId: details.worker_id ?? null, // Allow null unclaimed
     });
   }
 
@@ -539,6 +545,7 @@ export class JobQueueWorker<
       progress: job.progress ?? 0,
       progress_message: job.progressMessage ?? "",
       progress_details: job.progressDetails ?? null,
+      worker_id: job.workerId ?? null, // Allow null unclaimed
     };
   }
 }

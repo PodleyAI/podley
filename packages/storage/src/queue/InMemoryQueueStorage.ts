@@ -141,9 +141,10 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
   /**
    * Retrieves the next available job that is ready to be processed
    * Updates the job status to PROCESSING before returning
-   * @param workerId - Optional worker ID to associate with the job
+   * @param workerId - Worker ID to associate with the job
+   * @returns The next job or undefined if no job is available
    */
-  public async next(workerId?: string) {
+  public async next(workerId: string): Promise<JobStorageFormat<Input, Output> | undefined> {
     await sleep(0);
     const top = this.pendingQueue();
 
@@ -152,7 +153,7 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
       const oldJob = { ...job };
       job.status = JobStatus.PROCESSING;
       job.last_ran_at = new Date().toISOString();
-      job.worker_id = workerId ?? null;
+      job.worker_id = workerId;
       this.events.emit("change", { type: "UPDATE", old: oldJob, new: job });
       return job;
     }

@@ -119,8 +119,11 @@ export function runGenericQueueStorageSubscriptionTests(
         changes.push(change);
       }, subscribeOptions);
 
+      // Wait for subscription initialization to complete before making changes
+      await sleep(usesPolling ? Math.max(pollingIntervalMs, 5) : 5);
+
       // Update job status by calling next() which changes status to PROCESSING
-      await storage.next();
+      await storage.next("test-worker");
 
       await sleep(waitTime);
 
@@ -143,7 +146,7 @@ export function runGenericQueueStorageSubscriptionTests(
       // Wait for the job to be visible (IndexedDB may need a yield between transactions)
       await sleep(usesPolling ? Math.max(pollingIntervalMs, 5) : 5);
 
-      const job = await storage.next();
+      const job = await storage.next("test-worker");
       expect(job).toBeDefined();
 
       await sleep(waitTime);
@@ -242,7 +245,7 @@ export function runGenericQueueStorageSubscriptionTests(
         completed_at: null,
       });
 
-      await storage.next();
+      await storage.next("test-worker");
       await sleep(waitTime);
 
       const changes: QueueChangePayload<TestInput, TestOutput>[] = [];

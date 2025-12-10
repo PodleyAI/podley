@@ -332,10 +332,10 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
    * Retrieves the next available job that is ready to be processed,
    * and updates its status to PROCESSING.
    *
-   * @param workerId - Optional worker ID to associate with the job
+   * @param workerId - Worker ID to associate with the job
    * @returns The next job or undefined if no job is available
    */
-  public async next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined> {
+  public async next(workerId: string): Promise<JobStorageFormat<Input, Output> | undefined> {
     const now = new Date().toISOString();
     const prefixConditions = this.buildPrefixWhereClause();
     const prefixParams = this.getPrefixParamValues();
@@ -366,7 +366,7 @@ export class SqliteQueueStorage<Input, Output> implements IQueueStorage<Input, O
     const result = stmt.get(
       JobStatus.PROCESSING,
       now,
-      workerId ?? null,
+      workerId,
       this.queueName,
       JobStatus.PENDING,
       ...prefixParams,

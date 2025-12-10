@@ -131,10 +131,10 @@ export interface IQueueStorage<Input, Output> {
 
   /**
    * Gets the next job from the queue storage
-   * @param workerId - Optional worker ID to associate with the job
+   * @param workerId - Worker ID to associate with the job (required)
    * @returns The next job from the queue storage
    */
-  next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined>;
+  next(workerId: string): Promise<JobStorageFormat<Input, Output> | undefined>;
 
   /**
    * Peeks at the next job(s) from the queue storage without removing them

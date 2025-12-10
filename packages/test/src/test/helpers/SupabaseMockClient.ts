@@ -52,12 +52,13 @@ export function createSupabaseMockClient(): SupabaseClient {
       };
     },
 
-    // RPC method for executing raw SQL (used in setup)
-    rpc: async (functionName: string, params?: { query?: string }) => {
+    // RPC method for executing raw SQL (used in setup and atomic operations)
+    rpc: async (functionName: string, params?: Record<string, any>) => {
       if (functionName === "exec_sql" && params?.query) {
         try {
-          await pglite.query(params.query);
-          return { data: null, error: null };
+          const result = await pglite.query(params.query);
+          // Return rows for queries with RETURNING clause, otherwise null
+          return { data: result.rows.length > 0 ? result.rows : null, error: null };
         } catch (error: any) {
           // Ignore "already exists" errors for tables, types, and indexes
           if (
@@ -78,7 +79,31 @@ export function createSupabaseMockClient(): SupabaseClient {
           return { data: null, error };
         }
       }
-      return { data: null, error: new Error(`Unknown RPC function: ${functionName}`) };
+
+      // Handle calling arbitrary PostgreSQL functions
+      try {
+        // Build the function call with parameters
+        const paramNames = params ? Object.keys(params) : [];
+        const paramValues = params ? Object.values(params) : [];
+
+        // Create parameterized placeholders
+        const placeholders = paramNames.map((_, i) => `$${i + 1}`).join(", ");
+
+        // Build the SELECT query to call the function
+        const query =
+          paramNames.length > 0
+            ? `SELECT * FROM ${functionName}(${placeholders})`
+            : `SELECT * FROM ${functionName}()`;
+
+        const result = await pglite.query(query, paramValues);
+        return { data: result.rows, error: null };
+      } catch (error: any) {
+        // If function doesn't exist, return appropriate error
+        if (error.message?.includes("does not exist")) {
+          return { data: null, error: { message: error.message, code: "42883" } };
+        }
+        return { data: null, error };
+      }
     },
 
     // From method for table operations

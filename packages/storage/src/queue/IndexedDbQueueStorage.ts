@@ -252,11 +252,10 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   }
 
   /**
-   * Retrieves the next job from the queue.
-   * @param workerId - Optional worker ID to associate with the job
+   * @param workerId - Worker ID to associate with the job (required)
    * @returns A promise that resolves to the next job or undefined if the queue is empty.
    */
-  public async next(workerId?: string): Promise<JobStorageFormat<Input, Output> | undefined> {
+  public async next(workerId: string): Promise<JobStorageFormat<Input, Output> | undefined> {
     const db = await this.getDb();
     const tx = db.transaction(this.tableName, "readwrite");
     const store = tx.objectStore(this.tableName);
@@ -522,7 +521,32 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     job.progress_message = message;
     job.progress_details = details;
 
-    await this.complete(job);
+    await this.put(job);
+  }
+
+  /**
+   * Persists a job to the store without modifying run_attempts or other completion logic.
+   */
+  private async put(job: JobStorageFormat<Input, Output>): Promise<void> {
+    const db = await this.getDb();
+    const tx = db.transaction(this.tableName, "readwrite");
+    const store = tx.objectStore(this.tableName);
+
+    // Ensure queue is set correctly
+    job.queue = this.queueName;
+
+    // Ensure prefix values are preserved
+    const jobWithPrefixes = job as JobStorageFormat<Input, Output> & Record<string, unknown>;
+    for (const [key, value] of Object.entries(this.prefixValues)) {
+      jobWithPrefixes[key] = value;
+    }
+
+    return new Promise((resolve, reject) => {
+      const putReq = store.put(jobWithPrefixes);
+      putReq.onerror = () => reject(putReq.error);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
   }
 
   /**

@@ -108,11 +108,11 @@ export function runGenericPrefixedQueueStorageTests(
       await sleep(10);
 
       // Get next job from storage1
-      const next1 = await storage1.next();
+      const next1 = await storage1.next("worker-1");
       expect(next1?.input.data).toBe("user1-job1");
 
       // Get next job from storage2 (should be independent)
-      const next2 = await storage2.next();
+      const next2 = await storage2.next("worker-2");
       expect(next2?.input.data).toBe("user2-job1");
 
       // storage1 should still have 1 pending
@@ -372,9 +372,9 @@ export function runGenericPrefixedQueueStorageTests(
       await sleep(10);
 
       // Process jobs from each queue
-      const next1 = await queue1.next();
-      const next2 = await queue2.next();
-      const next3 = await queue3.next();
+      const next1 = await queue1.next("worker-1");
+      const next2 = await queue2.next("worker-2");
+      const next3 = await queue3.next("worker-3");
 
       expect(next1?.input.data).toBe("queue1-job1");
       expect(next2?.input.data).toBe("queue2-job1");
@@ -541,9 +541,9 @@ export function runGenericPrefixedQueueStorageTests(
 
       await sleep(10);
 
-      const nextA = await queueA.next();
-      const nextB = await queueB.next();
-      const nextC = await queueC.next();
+      const nextA = await queueA.next("worker-a");
+      const nextB = await queueB.next("worker-b");
+      const nextC = await queueC.next("worker-c");
 
       expect(nextA?.input.data).toBe("queue-a-job1");
       expect(nextB?.input.data).toBe("queue-b-job1");
@@ -553,6 +553,96 @@ export function runGenericPrefixedQueueStorageTests(
       expect(await queueA.size(JobStatus.PENDING)).toBe(1);
       expect(await queueB.size(JobStatus.PENDING)).toBe(0);
       expect(await queueC.size(JobStatus.PENDING)).toBe(0);
+    });
+  });
+
+  describe("Concurrent Access", () => {
+    let storage: IQueueStorage<TestInput, TestOutput>;
+    const userId = uuid4();
+
+    beforeEach(async () => {
+      storage = storageFactory("concurrent-queue", {
+        prefixes: singlePrefix,
+        prefixValues: { user_id: userId },
+      });
+      await storage.setupDatabase();
+    });
+
+    afterEach(async () => {
+      await storage.deleteAll();
+    });
+
+    it("should prevent multiple workers from claiming the same job", async () => {
+      // Add a single job to the queue
+      await storage.add({
+        input: { data: "single-job" },
+        run_after: null,
+        completed_at: null,
+      });
+
+      // Small delay to ensure job is visible
+      await sleep(10);
+
+      // Simulate multiple concurrent workers trying to claim the same job
+      // Each worker calls next() with a unique worker ID
+      const numWorkers = 10;
+      const workerPromises = Array.from({ length: numWorkers }, (_, i) =>
+        storage.next(`worker-${i}`)
+      );
+
+      // Wait for all workers to attempt to claim the job
+      const results = await Promise.all(workerPromises);
+
+      // Count how many workers successfully claimed a job
+      const claimedJobs = results.filter((job) => job !== undefined);
+
+      // CRITICAL: Only ONE worker should have successfully claimed the job
+      // If more than one worker claims the same job, we have a race condition bug
+      expect(claimedJobs.length).toBe(1);
+
+      // Verify the claimed job has the correct data
+      expect(claimedJobs[0]?.input.data).toBe("single-job");
+      expect(claimedJobs[0]?.status).toBe(JobStatus.PROCESSING);
+
+      // Verify no more pending jobs remain
+      expect(await storage.size(JobStatus.PENDING)).toBe(0);
+      expect(await storage.size(JobStatus.PROCESSING)).toBe(1);
+    });
+
+    it("should handle concurrent claims on multiple jobs correctly", async () => {
+      // Add multiple jobs
+      const numJobs = 5;
+      for (let i = 0; i < numJobs; i++) {
+        await storage.add({
+          input: { data: `job-${i}` },
+          run_after: null,
+          completed_at: null,
+        });
+        // Small delay to ensure different run_after timestamps
+        await sleep(5);
+      }
+
+      await sleep(10);
+
+      // More workers than jobs - simulates contention
+      const numWorkers = 15;
+      const workerPromises = Array.from({ length: numWorkers }, (_, i) =>
+        storage.next(`worker-${i}`)
+      );
+
+      const results = await Promise.all(workerPromises);
+      const claimedJobs = results.filter((job) => job !== undefined);
+
+      // Exactly numJobs workers should have claimed jobs (one job per worker)
+      expect(claimedJobs.length).toBe(numJobs);
+
+      // Each job should only be claimed once - verify by checking unique job IDs
+      const claimedJobIds = new Set(claimedJobs.map((job) => job!.id));
+      expect(claimedJobIds.size).toBe(numJobs);
+
+      // All jobs should now be processing
+      expect(await storage.size(JobStatus.PENDING)).toBe(0);
+      expect(await storage.size(JobStatus.PROCESSING)).toBe(numJobs);
     });
   });
 
@@ -657,9 +747,9 @@ export function runGenericPrefixedQueueStorageTests(
 
       await sleep(10);
 
-      const nextNoPrefix = await queueNoPrefix.next();
-      const nextSinglePrefix = await queueSinglePrefix.next();
-      const nextTwoPrefixes = await queueTwoPrefixes.next();
+      const nextNoPrefix = await queueNoPrefix.next("worker1");
+      const nextSinglePrefix = await queueSinglePrefix.next("worker1");
+      const nextTwoPrefixes = await queueTwoPrefixes.next("worker1");
 
       expect(nextNoPrefix?.input.data).toBe("no-prefix-job1");
       expect(nextSinglePrefix?.input.data).toBe("single-prefix-job1");

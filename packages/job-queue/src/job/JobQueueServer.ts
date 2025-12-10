@@ -428,7 +428,9 @@ export class JobQueueServer<
   }
 
   /**
-   * Fix stuck jobs from previous server runs
+   * Fix stuck jobs from previous server runs.
+   * Jobs in PROCESSING or ABORTING state that are not owned by any of the current
+   * server's workers are considered orphaned and will be reset.
    */
   protected async fixupJobs(): Promise<void> {
     try {
@@ -436,12 +438,22 @@ export class JobQueueServer<
       const stuckAbortingJobs = await this.storage.peek(JobStatus.ABORTING);
       const stuckJobs = [...stuckProcessingJobs, ...stuckAbortingJobs];
 
+      // Get the worker IDs of all workers managed by this server
+      const currentWorkerIds = new Set(this.getWorkerIds());
+
       for (const jobData of stuckJobs) {
+        // Skip jobs that belong to workers in this server (they may still be processing)
+        if (jobData.worker_id && currentWorkerIds.has(jobData.worker_id)) {
+          continue;
+        }
+
         const job = this.storageToClass(jobData);
         if (job.runAttempts >= job.maxRetries) {
           job.status = JobStatus.FAILED;
           job.error = "Max retries reached";
           job.errorCode = "MAX_RETRIES_REACHED";
+          // Clear worker_id since job is now failed
+          job.workerId = null;
         } else {
           job.status = JobStatus.PENDING;
           job.runAfter = job.lastRanAt || new Date();
@@ -449,6 +461,8 @@ export class JobQueueServer<
           job.progressMessage = "";
           job.progressDetails = null;
           job.error = "Server restarted";
+          // Clear worker_id so a new worker can claim this job
+          job.workerId = null;
         }
 
         await this.storage.complete(this.classToStorage(job));
@@ -487,6 +501,7 @@ export class JobQueueServer<
       errorCode: details.error_code ?? null,
       runAttempts: details.run_attempts ?? 0,
       maxRetries: details.max_retries ?? 10,
+      workerId: details.worker_id ?? null, // Allow null for initial creation
     });
   }
 
@@ -519,6 +534,14 @@ export class JobQueueServer<
       progress: job.progress ?? 0,
       progress_message: job.progressMessage ?? "",
       progress_details: job.progressDetails ?? null,
+      worker_id: job.workerId ?? null, // Allow null for initial creation
     };
+  }
+
+  /**
+   * Get the worker IDs of all workers managed by this server
+   */
+  public getWorkerIds(): string[] {
+    return this.workers.map((worker) => worker.workerId);
   }
 }

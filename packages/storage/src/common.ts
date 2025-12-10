@@ -17,5 +17,7 @@ export * from "./kv/KvViaTabularRepository";
 export * from "./queue/InMemoryQueueStorage";
 export * from "./queue/IQueueStorage";
 
-export * from "./limiter/IRateLimiterStorage";
 export * from "./limiter/InMemoryRateLimiterStorage";
+export * from "./limiter/IRateLimiterStorage";
+
+export * from "./util/PollingSubscriptionManager";

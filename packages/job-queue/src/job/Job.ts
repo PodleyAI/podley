@@ -45,6 +45,8 @@ export type JobConstructorParam<Input, Output> = {
   progress?: number;
   progressMessage?: string;
   progressDetails?: Record<string, any> | null;
+  /** The ID of the worker that claimed this job, null if unclaimed */
+  workerId?: string | null;
 };
 
 export type JobClass<Input, Output> = new (
@@ -77,6 +79,8 @@ export class Job<Input, Output> {
   public progress: number = 0;
   public progressMessage: string = "";
   public progressDetails: Record<string, any> | null = null;
+  /** The ID of the worker that claimed this job */
+  public workerId: string | null = null;
 
   constructor({
     queueName,
@@ -98,6 +102,7 @@ export class Job<Input, Output> {
     progress = 0,
     progressMessage = "",
     progressDetails = null,
+    workerId = null,
   }: JobConstructorParam<Input, Output>) {
     this.runAfter = runAfter ?? new Date();
     this.createdAt = createdAt ?? new Date();
@@ -119,6 +124,7 @@ export class Job<Input, Output> {
     this.progress = progress;
     this.progressMessage = progressMessage;
     this.progressDetails = progressDetails;
+    this.workerId = workerId ?? null;
   }
 
   async execute(input: Input, context: IJobExecuteContext): Promise<Output> {
