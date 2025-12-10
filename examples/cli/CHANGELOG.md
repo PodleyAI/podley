@@ -1,5 +1,19 @@
 # @workglow/cli
 
+## 0.0.62
+
+### Patch Changes
+
+- Update the queue system with fixes around max retries
+- Updated dependencies
+  - @workglow/ai@0.0.62
+  - @workglow/ai-provider@0.0.62
+  - @workglow/storage@0.0.62
+  - @workglow/task-graph@0.0.62
+  - @workglow/tasks@0.0.62
+  - @workglow/test@0.0.62
+  - @workglow/util@0.0.62
+
 ## 0.0.61
 
 ### Patch Changes

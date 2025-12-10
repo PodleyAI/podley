@@ -1,5 +1,14 @@
 # @workglow/debug
 
+## 0.0.62
+
+### Patch Changes
+
+- Update the queue system with fixes around max retries
+- Updated dependencies
+  - @workglow/task-graph@0.0.62
+  - @workglow/util@0.0.62
+
 ## 0.0.61
 
 ### Patch Changes
