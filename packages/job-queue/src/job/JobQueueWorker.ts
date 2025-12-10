@@ -264,10 +264,15 @@ export class JobQueueWorker<
     } catch (err: unknown) {
       const error = this.normalizeError(err);
       if (error instanceof RetryableJobError) {
-        if (job.runAttempts >= job.maxRetries) {
-          await this.failJob(job, new PermanentJobError("Max retries reached"));
+        const currentJob = await this.getJob(job.id);
+        if (!currentJob) {
+          throw new JobNotFoundError(`Job ${job.id} not found`);
+        }
+
+        if (currentJob.runAttempts >= currentJob.maxRetries) {
+          await this.failJob(currentJob, new PermanentJobError("Max retries reached"));
         } else {
-          await this.rescheduleJob(job, error.retryDate);
+          await this.rescheduleJob(currentJob, error.retryDate);
         }
       } else {
         await this.failJob(job, error);
@@ -380,6 +385,9 @@ export class JobQueueWorker<
       job.progress = 0;
       job.progressMessage = "";
       job.progressDetails = null;
+      // Increment runAttempts to keep in-memory object in sync with storage
+      // The storage layer will read from DB and increment, so this keeps them aligned
+      job.runAttempts = (job.runAttempts ?? 0) + 1;
 
       await this.storage.complete(this.classToStorage(job));
       this.events.emit("job_retry", job.id, job.runAfter);

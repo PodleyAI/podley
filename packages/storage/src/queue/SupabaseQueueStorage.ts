@@ -378,15 +378,41 @@ export class SupabaseQueueStorage<Input, Output> implements IQueueStorage<Input,
     // Read current attempts to compute next value deterministically
     let getQuery = this.client
       .from(this.tableName)
-      .select("run_attempts")
+      .select("run_attempts, max_retries")
       .eq("id", jobDetails.id as number)
       .eq("queue", this.queueName);
     getQuery = this.applyPrefixFilters(getQuery);
     const { data: current, error: getError } = await getQuery.single();
     if (getError) throw getError;
-    const nextAttempts = ((current?.run_attempts as number | undefined) ?? 0) + 1;
+    const currentAttempts = (current?.run_attempts as number | undefined) ?? 0;
+    const maxRetries = (current?.max_retries as number | undefined) ?? jobDetails.max_retries ?? 10;
+    const nextAttempts = currentAttempts + 1;
 
     if (jobDetails.status === JobStatus.PENDING) {
+      // Check if the next attempt would exceed max retries
+      if (nextAttempts > maxRetries) {
+        // Update to FAILED status instead of rescheduling
+        let failQuery = this.client
+          .from(this.tableName)
+          .update({
+            status: JobStatus.FAILED,
+            error: "Max retries reached",
+            error_code: "MAX_RETRIES_REACHED",
+            progress: 100,
+            progress_message: "",
+            progress_details: null,
+            completed_at: now,
+            last_ran_at: now,
+          })
+          .eq("id", jobDetails.id)
+          .eq("queue", this.queueName);
+        failQuery = this.applyPrefixFilters(failQuery);
+        const { error: failError } = await failQuery;
+        if (failError) throw failError;
+        return;
+      }
+
+      // Reschedule the job
       let query = this.client
         .from(this.tableName)
         .update({
