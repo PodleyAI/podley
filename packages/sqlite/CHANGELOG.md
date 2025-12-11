@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.65
+
+### Patch Changes
+
+- Add a subscription to task graph for child progress events
+
 ## 0.0.64
 
 ### Patch Changes

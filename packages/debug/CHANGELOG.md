@@ -1,5 +1,14 @@
 # @workglow/debug
 
+## 0.0.65
+
+### Patch Changes
+
+- Add a subscription to task graph for child progress events
+- Updated dependencies
+  - @workglow/task-graph@0.0.65
+  - @workglow/util@0.0.65
+
 ## 0.0.64
 
 ### Patch Changes
