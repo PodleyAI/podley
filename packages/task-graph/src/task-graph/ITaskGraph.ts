@@ -54,6 +54,9 @@ export interface ITaskGraph {
     fn: TaskGraphEventListener<Event>
   ): () => void;
   subscribeToTaskStatus(callback: (taskId: TaskIdType, status: TaskStatus) => void): () => void;
+  subscribeToTaskProgress(
+    callback: (taskId: TaskIdType, progress: number, message?: string, ...args: any[]) => void
+  ): () => void;
   subscribeToDataflowStatus(
     callback: (dataflowId: DataflowIdType, status: TaskStatus) => void
   ): () => void;

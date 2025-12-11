@@ -422,6 +422,48 @@ export class TaskGraph implements ITaskGraph {
   }
 
   /**
+   * Subscribes to progress updates on all tasks (existing and future)
+   * @param callback - Function called when any task reports progress
+   * @param callback.taskId - The ID of the task reporting progress
+   * @param callback.progress - The progress value (0-100)
+   * @param callback.message - Optional progress message
+   * @param callback.args - Additional arguments passed with the progress update
+   * @returns a function to unsubscribe from all task progress events
+   */
+  public subscribeToTaskProgress(
+    callback: (taskId: TaskIdType, progress: number, message?: string, ...args: any[]) => void
+  ): () => void {
+    const unsubscribes: (() => void)[] = [];
+
+    // Subscribe to progress events on all existing tasks
+    const tasks = this.getTasks();
+    tasks.forEach((task) => {
+      const unsub = task.subscribe("progress", (progress, message, ...args) => {
+        callback(task.config.id, progress, message, ...args);
+      });
+      unsubscribes.push(unsub);
+    });
+
+    const handleTaskAdded = (taskId: TaskIdType) => {
+      const task = this.getTask(taskId);
+      if (!task || typeof task.subscribe !== "function") return;
+
+      const unsub = task.subscribe("progress", (progress, message, ...args) => {
+        callback(task.config.id, progress, message, ...args);
+      });
+      unsubscribes.push(unsub);
+    };
+
+    const graphUnsub = this.subscribe("task_added", handleTaskAdded);
+    unsubscribes.push(graphUnsub);
+
+    // Return unsubscribe function
+    return () => {
+      unsubscribes.forEach((unsub) => unsub());
+    };
+  }
+
+  /**
    * Subscribes to status changes on all dataflows (existing and future)
    * @param callback - Function called when any dataflow's status changes
    * @param callback.dataflowId - The ID of the dataflow whose status changed
