@@ -10,12 +10,12 @@ import {
   FromSchema,
   makeFingerprint,
 } from "@workglow/util";
+import { HybridSubscriptionManager } from "../util/HybridSubscriptionManager";
 import {
   ensureIndexedDbTable,
   ExpectedIndexDefinition,
   MigrationOptions,
 } from "../util/IndexedDbTable";
-import { PollingSubscriptionManager } from "../util/PollingSubscriptionManager";
 import {
   ITabularRepository,
   TabularChangePayload,
@@ -47,12 +47,17 @@ export class IndexedDbTabularRepository<
   private setupPromise: Promise<IDBDatabase> | null = null;
   /** Migration options for database schema changes */
   private migrationOptions: MigrationOptions;
-  /** Shared polling subscription manager */
-  private pollingManager: PollingSubscriptionManager<
+  /** Shared hybrid subscription manager */
+  private hybridManager: HybridSubscriptionManager<
     Entity,
     string,
     TabularChangePayload<Entity>
   > | null = null;
+  /** Hybrid subscription options */
+  private readonly hybridOptions: {
+    readonly useBroadcastChannel: boolean;
+    readonly backupPollingIntervalMs: number;
+  };
 
   /**
    * Creates a new IndexedDB-based tabular repository.
@@ -68,10 +73,17 @@ export class IndexedDbTabularRepository<
     schema: Schema,
     primaryKeyNames: PrimaryKeyNames,
     indexes: Array<keyof Entity | Array<keyof Entity>> = [],
-    migrationOptions: MigrationOptions = {}
+    migrationOptions: MigrationOptions & {
+      readonly useBroadcastChannel?: boolean;
+      readonly backupPollingIntervalMs?: number;
+    } = {}
   ) {
     super(schema, primaryKeyNames, indexes);
     this.migrationOptions = migrationOptions;
+    this.hybridOptions = {
+      useBroadcastChannel: migrationOptions.useBroadcastChannel ?? true,
+      backupPollingIntervalMs: migrationOptions.backupPollingIntervalMs ?? 5000,
+    };
   }
 
   /**
@@ -163,6 +175,10 @@ export class IndexedDbTabularRepository<
         this.events.emit("put", record);
         resolve(record);
       };
+      transaction.oncomplete = () => {
+        // Notify hybrid manager of local change
+        this.hybridManager?.notifyLocalChange();
+      };
     });
   }
 
@@ -190,6 +206,8 @@ export class IndexedDbTabularRepository<
 
       transaction.oncomplete = () => {
         if (!hasError) {
+          // Notify hybrid manager of local change
+          this.hybridManager?.notifyLocalChange();
           resolve(records);
         }
       };
@@ -422,6 +440,10 @@ export class IndexedDbTabularRepository<
         this.events.emit("delete", key as keyof Entity);
         resolve();
       };
+      transaction.oncomplete = () => {
+        // Notify hybrid manager of local change
+        this.hybridManager?.notifyLocalChange();
+      };
     });
   }
 
@@ -439,6 +461,10 @@ export class IndexedDbTabularRepository<
       request.onsuccess = () => {
         this.events.emit("clearall");
         resolve();
+      };
+      transaction.oncomplete = () => {
+        // Notify hybrid manager of local change
+        this.hybridManager?.notifyLocalChange();
       };
     });
   }
@@ -484,6 +510,8 @@ export class IndexedDbTabularRepository<
           if (!recordsToDelete || recordsToDelete.length === 0) {
             // No records found to delete
             this.events.emit("delete", column);
+            // Notify hybrid manager even if no records deleted
+            this.hybridManager?.notifyLocalChange();
             resolve();
             return;
           }
@@ -494,6 +522,8 @@ export class IndexedDbTabularRepository<
           // Set up transaction event handlers
           transaction.oncomplete = () => {
             this.events.emit("delete", column);
+            // Notify hybrid manager of local change
+            this.hybridManager?.notifyLocalChange();
             resolve();
           };
 
@@ -525,6 +555,8 @@ export class IndexedDbTabularRepository<
           // Set up transaction event handlers
           transaction.oncomplete = () => {
             this.events.emit("delete", column);
+            // Notify hybrid manager of local change
+            this.hybridManager?.notifyLocalChange();
             resolve();
           };
 
@@ -600,20 +632,24 @@ export class IndexedDbTabularRepository<
   }
 
   /**
-   * Gets or creates the shared polling subscription manager.
-   * This ensures all subscriptions share a single polling loop per interval.
+   * Gets or creates the shared hybrid subscription manager.
+   * This ensures all subscriptions share a single manager.
    */
-  private getPollingManager(): PollingSubscriptionManager<
+  private getHybridManager(): HybridSubscriptionManager<
     Entity,
     string,
     TabularChangePayload<Entity>
   > {
-    if (!this.pollingManager) {
-      this.pollingManager = new PollingSubscriptionManager<
+    if (!this.hybridManager) {
+      // Generate unique channel name based on table name
+      const channelName = `indexeddb-tabular-${this.table}`;
+
+      this.hybridManager = new HybridSubscriptionManager<
         Entity,
         string,
         TabularChangePayload<Entity>
       >(
+        channelName,
         async () => {
           // Fetch all entities and create a map keyed by entity fingerprint
           const entities = (await this.getAll()) || [];
@@ -630,10 +666,15 @@ export class IndexedDbTabularRepository<
           insert: (item) => ({ type: "INSERT" as const, new: item }),
           update: (oldItem, newItem) => ({ type: "UPDATE" as const, old: oldItem, new: newItem }),
           delete: (item) => ({ type: "DELETE" as const, old: item }),
+        },
+        {
+          defaultIntervalMs: 1000,
+          useBroadcastChannel: this.hybridOptions.useBroadcastChannel,
+          backupPollingIntervalMs: this.hybridOptions.backupPollingIntervalMs,
         }
       );
     }
-    return this.pollingManager;
+    return this.hybridManager;
   }
 
   /**
@@ -649,9 +690,9 @@ export class IndexedDbTabularRepository<
     options?: TabularSubscribeOptions
   ): () => void {
     // Note: We don't await setupDatabase() here to keep the method synchronous
-    // The getAll() method in the polling manager will call setupDatabase() when needed
+    // The getAll() method in the hybrid manager will call setupDatabase() when needed
     const intervalMs = options?.pollingIntervalMs ?? 1000;
-    const manager = this.getPollingManager();
+    const manager = this.getHybridManager();
     return manager.subscribe(callback, { intervalMs });
   }
 
@@ -659,9 +700,9 @@ export class IndexedDbTabularRepository<
    * Destroys this repository and frees up resources.
    */
   destroy(): void {
-    if (this.pollingManager) {
-      this.pollingManager.destroy();
-      this.pollingManager = null;
+    if (this.hybridManager) {
+      this.hybridManager.destroy();
+      this.hybridManager = null;
     }
     this.db?.close();
   }

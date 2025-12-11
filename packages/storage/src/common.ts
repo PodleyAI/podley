@@ -20,4 +20,5 @@ export * from "./queue/IQueueStorage";
 export * from "./limiter/InMemoryRateLimiterStorage";
 export * from "./limiter/IRateLimiterStorage";
 
+export * from "./util/HybridSubscriptionManager";
 export * from "./util/PollingSubscriptionManager";

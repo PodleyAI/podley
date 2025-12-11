@@ -5,12 +5,12 @@
  */
 
 import { createServiceToken, makeFingerprint, uuid4 } from "@workglow/util";
+import { HybridSubscriptionManager } from "../util/HybridSubscriptionManager";
 import {
   ensureIndexedDbTable,
   ExpectedIndexDefinition,
   MigrationOptions,
 } from "../util/IndexedDbTable";
-import { PollingSubscriptionManager } from "../util/PollingSubscriptionManager";
 import {
   IQueueStorage,
   JobStatus,
@@ -28,7 +28,12 @@ export const INDEXED_DB_QUEUE_STORAGE = createServiceToken<IQueueStorage<any, an
 /**
  * Extended options for IndexedDB queue storage including prefix support
  */
-export interface IndexedDbQueueStorageOptions extends QueueStorageOptions, MigrationOptions {}
+export interface IndexedDbQueueStorageOptions extends QueueStorageOptions, MigrationOptions {
+  /** Enable BroadcastChannel notifications (default: true) */
+  readonly useBroadcastChannel?: boolean;
+  /** Backup polling interval in ms (default: 5000, 0 to disable) */
+  readonly backupPollingIntervalMs?: number;
+}
 
 /**
  * IndexedDB implementation of a job queue storage.
@@ -42,12 +47,17 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   protected readonly prefixes: readonly PrefixColumn[];
   /** The prefix values for filtering */
   protected readonly prefixValues: Readonly<Record<string, string | number>>;
-  /** Shared polling subscription manager */
-  private pollingManager: PollingSubscriptionManager<
+  /** Shared hybrid subscription manager */
+  private hybridManager: HybridSubscriptionManager<
     JobStorageFormat<Input, Output>,
     unknown,
     QueueChangePayload<Input, Output>
   > | null = null;
+  /** Hybrid subscription options */
+  private readonly hybridOptions: {
+    readonly useBroadcastChannel: boolean;
+    readonly backupPollingIntervalMs: number;
+  };
 
   constructor(
     public readonly queueName: string,
@@ -56,6 +66,10 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     this.migrationOptions = options;
     this.prefixes = options.prefixes ?? [];
     this.prefixValues = options.prefixValues ?? {};
+    this.hybridOptions = {
+      useBroadcastChannel: options.useBroadcastChannel ?? true,
+      backupPollingIntervalMs: options.backupPollingIntervalMs ?? 5000,
+    };
     // Generate table name based on prefix configuration to avoid conflicts
     if (this.prefixes.length > 0) {
       const prefixNames = this.prefixes.map((p) => p.name).join("_");
@@ -173,7 +187,11 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
       const request = store.add(jobWithPrefixes);
 
       // Don't resolve until transaction is complete
-      tx.oncomplete = () => resolve(jobWithPrefixes.id);
+      tx.oncomplete = () => {
+        // Notify hybrid manager of local change
+        this.hybridManager?.notifyLocalChange();
+        resolve(jobWithPrefixes.id);
+      };
       tx.onerror = () => reject(tx.error);
       request.onerror = () => reject(request.error);
     });
@@ -338,7 +356,13 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
         cursorRequest.onerror = () => reject(cursorRequest.error);
 
         // Wait for transaction to complete before resolving
-        tx.oncomplete = () => resolve(claimedJob);
+        tx.oncomplete = () => {
+          // Notify hybrid manager of local change
+          if (claimedJob) {
+            this.hybridManager?.notifyLocalChange();
+          }
+          resolve(claimedJob);
+        };
         tx.onerror = () => reject(tx.error);
       }
     );
@@ -431,7 +455,11 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
       getReq.onerror = () => reject(getReq.error);
 
       // Don't resolve until transaction is complete
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => {
+        // Notify hybrid manager of local change
+        this.hybridManager?.notifyLocalChange();
+        resolve();
+      };
       tx.onerror = () => reject(tx.error);
     });
   }
@@ -511,7 +539,11 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
         }
       };
 
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => {
+        // Notify hybrid manager of local change
+        this.hybridManager?.notifyLocalChange();
+        resolve();
+      };
       tx.onerror = () => reject(tx.error);
       request.onerror = () => reject(request.error);
     });
@@ -589,7 +621,11 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     return new Promise((resolve, reject) => {
       const putReq = store.put(jobWithPrefixes);
       putReq.onerror = () => reject(putReq.error);
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => {
+        // Notify hybrid manager of local change
+        this.hybridManager?.notifyLocalChange();
+        resolve();
+      };
       tx.onerror = () => reject(tx.error);
     });
   }
@@ -609,6 +645,10 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
+      tx.oncomplete = () => {
+        // Notify hybrid manager of local change
+        this.hybridManager?.notifyLocalChange();
+      };
       tx.onerror = () => reject(tx.error);
     });
   }
@@ -648,7 +688,11 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
         }
       };
 
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => {
+        // Notify hybrid manager of local change
+        this.hybridManager?.notifyLocalChange();
+        resolve();
+      };
       tx.onerror = () => reject(tx.error);
       request.onerror = () => reject(request.error);
     });
@@ -773,20 +817,24 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
   }
 
   /**
-   * Gets or creates the shared polling subscription manager for normal subscriptions.
-   * This ensures all normal subscriptions share a single polling loop per interval.
+   * Gets or creates the shared hybrid subscription manager for normal subscriptions.
+   * This ensures all normal subscriptions share a single manager.
    */
-  private getPollingManager(): PollingSubscriptionManager<
+  private getHybridManager(): HybridSubscriptionManager<
     JobStorageFormat<Input, Output>,
     unknown,
     QueueChangePayload<Input, Output>
   > {
-    if (!this.pollingManager) {
-      this.pollingManager = new PollingSubscriptionManager<
+    if (!this.hybridManager) {
+      // Generate unique channel name based on queue name and table name
+      const channelName = `indexeddb-queue-${this.tableName}-${this.queueName}`;
+
+      this.hybridManager = new HybridSubscriptionManager<
         JobStorageFormat<Input, Output>,
         unknown,
         QueueChangePayload<Input, Output>
       >(
+        channelName,
         async () => {
           // Fetch jobs with instance's prefix filter (efficient DB-level filtering)
           const jobs = await this.getAllJobs();
@@ -797,10 +845,15 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
           insert: (item) => ({ type: "INSERT" as const, new: item }),
           update: (oldItem, newItem) => ({ type: "UPDATE" as const, old: oldItem, new: newItem }),
           delete: (item) => ({ type: "DELETE" as const, old: item }),
+        },
+        {
+          defaultIntervalMs: 1000,
+          useBroadcastChannel: this.hybridOptions.useBroadcastChannel,
+          backupPollingIntervalMs: this.hybridOptions.backupPollingIntervalMs,
         }
       );
     }
-    return this.pollingManager;
+    return this.hybridManager;
   }
 
   /**
@@ -876,8 +929,18 @@ export class IndexedDbQueueStorage<Input, Output> implements IQueueStorage<Input
       return this.subscribeWithCustomPrefixFilter(callback, options!.prefixFilter!, intervalMs);
     }
 
-    // Normal subscription - use shared polling manager (efficient)
-    const manager = this.getPollingManager();
+    // Normal subscription - use shared hybrid manager (efficient)
+    const manager = this.getHybridManager();
     return manager.subscribe(callback, { intervalMs });
+  }
+
+  /**
+   * Cleanup method to destroy the hybrid manager
+   */
+  destroy(): void {
+    if (this.hybridManager) {
+      this.hybridManager.destroy();
+      this.hybridManager = null;
+    }
   }
 }
