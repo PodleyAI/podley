@@ -74,7 +74,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       provider: HF_TRANSFORMERS_ONNX,
       providerConfig: {
         pipeline: "text-generation",
-        modelPath: "onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX",
+        modelPath: "Xenova/Phi-3-mini-4k-instruct",
         dType: "q4f16",
       },
       metadata: {},

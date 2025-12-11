@@ -1,5 +1,11 @@
 # @workglow/util
 
+## 0.0.66
+
+### Patch Changes
+
+- Subscriptions for all tabular repositories
+
 ## 0.0.65
 
 ### Patch Changes

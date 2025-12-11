@@ -1,5 +1,14 @@
 # @workglow/debug
 
+## 0.0.66
+
+### Patch Changes
+
+- Subscriptions for all tabular repositories
+- Updated dependencies
+  - @workglow/task-graph@0.0.66
+  - @workglow/util@0.0.66
+
 ## 0.0.65
 
 ### Patch Changes

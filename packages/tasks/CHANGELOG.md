@@ -1,5 +1,16 @@
 # @workglow/tasks
 
+## 0.0.66
+
+### Patch Changes
+
+- Subscriptions for all tabular repositories
+- Updated dependencies
+  - @workglow/job-queue@0.0.66
+  - @workglow/storage@0.0.66
+  - @workglow/task-graph@0.0.66
+  - @workglow/util@0.0.66
+
 ## 0.0.65
 
 ### Patch Changes
