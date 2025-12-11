@@ -7,6 +7,7 @@
 import { FsFolderTabularRepository } from "@workglow/storage";
 import { mkdirSync, rmSync } from "fs";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { runGenericTabularRepositorySubscriptionTests } from "./genericTabularRepositorySubscriptionTests";
 import {
   AllTypesPrimaryKeyNames,
   AllTypesSchema,
@@ -50,6 +51,16 @@ describe("FsFolderTabularRepository", () => {
         )
     );
   });
+
+  runGenericTabularRepositorySubscriptionTests(
+    async () =>
+      new FsFolderTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
+        testDir,
+        CompoundSchema,
+        CompoundPrimaryKeyNames
+      ),
+    { usesPolling: true, pollingIntervalMs: 50, supportsDeleteSearch: false }
+  );
 
   // Add specific tests for search functionality
   describe("search functionality", () => {

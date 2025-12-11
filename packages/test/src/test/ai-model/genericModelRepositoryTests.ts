@@ -16,6 +16,7 @@ export const runGenericModelRepositoryTests = (
 
   beforeEach(async () => {
     repository = await createRepository();
+    await (repository as any).setupDatabase?.();
     setGlobalModelRepository(repository);
   });
 

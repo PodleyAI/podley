@@ -24,6 +24,7 @@ export function runGenericTaskGraphRepositoryTests(
   beforeEach(async () => {
     TaskRegistry.all.clear();
     repository = await createRepository();
+    await (repository as any).setupDatabase?.();
   });
 
   afterEach(async () => {

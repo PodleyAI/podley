@@ -10,7 +10,11 @@ import {
   FromSchema,
   makeFingerprint,
 } from "@workglow/util";
-import { ITabularRepository, TabularChangePayload } from "./ITabularRepository";
+import {
+  ITabularRepository,
+  TabularChangePayload,
+  TabularSubscribeOptions,
+} from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
 export const MEMORY_TABULAR_REPOSITORY = createServiceToken<
@@ -214,9 +218,13 @@ export class InMemoryTabularRepository<
    * Since InMemory is both client and server, changes are detected via local events.
    *
    * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options (not used for in-memory)
    * @returns Unsubscribe function
    */
-  subscribeToChanges(callback: (change: TabularChangePayload<Entity>) => void): () => void {
+  subscribeToChanges(
+    callback: (change: TabularChangePayload<Entity>) => void,
+    options?: TabularSubscribeOptions
+  ): () => void {
     const handlePut = (entity: Entity) => {
       // InMemory can't distinguish INSERT vs UPDATE without tracking
       callback({ type: "UPDATE", new: entity });

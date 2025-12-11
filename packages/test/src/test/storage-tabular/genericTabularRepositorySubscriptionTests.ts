@@ -22,19 +22,24 @@ export function runGenericTabularRepositorySubscriptionTests(
     readonly usesPolling?: boolean;
     /** Custom polling interval for polling-based implementations */
     readonly pollingIntervalMs?: number;
+    /** Whether this repository implementation supports deleteSearch */
+    readonly supportsDeleteSearch?: boolean;
   }
 ) {
   const usesPolling = options?.usesPolling ?? false;
   const pollingIntervalMs = options?.pollingIntervalMs ?? 1;
   // Add buffer time for polling-based implementations
   // Need to wait for at least one full polling cycle after operations complete
-  const waitTime = usesPolling ? Math.max(pollingIntervalMs * 3, 10) : 50;
+  const waitTime = usesPolling ? Math.max(pollingIntervalMs * 3, 100) : 50;
+  // For polling implementations, wait for initial poll to complete before operations
+  const initWaitTime = usesPolling ? Math.max(pollingIntervalMs * 2, 100) : 10;
 
   describe("Subscription Tests", () => {
     let repository: ITabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>;
 
     beforeEach(async () => {
       repository = await createRepository();
+      await repository.setupDatabase?.();
     });
 
     afterEach(async () => {
@@ -46,7 +51,10 @@ export function runGenericTabularRepositorySubscriptionTests(
       const changes: TabularChangePayload<FromSchema<typeof CompoundSchema>>[] = [];
       const unsubscribe = repository.subscribeToChanges((change) => {
         changes.push(change);
-      });
+      }, options);
+
+      // Wait for initial poll to complete
+      await sleep(initWaitTime);
 
       const entity = {
         name: "test1",
@@ -84,7 +92,10 @@ export function runGenericTabularRepositorySubscriptionTests(
       const changes: TabularChangePayload<FromSchema<typeof CompoundSchema>>[] = [];
       const unsubscribe = repository.subscribeToChanges((change) => {
         changes.push(change);
-      });
+      }, options);
+
+      // Wait for initial poll to complete
+      await sleep(initWaitTime);
 
       const updatedEntity = {
         ...entity,
@@ -117,7 +128,10 @@ export function runGenericTabularRepositorySubscriptionTests(
       const changes: TabularChangePayload<FromSchema<typeof CompoundSchema>>[] = [];
       const unsubscribe = repository.subscribeToChanges((change) => {
         changes.push(change);
-      });
+      }, options);
+
+      // Wait for initial poll to complete
+      await sleep(initWaitTime);
 
       await repository.delete({ name: "test1", type: "string1" });
 
@@ -148,7 +162,10 @@ export function runGenericTabularRepositorySubscriptionTests(
       const changes: TabularChangePayload<FromSchema<typeof CompoundSchema>>[] = [];
       const unsubscribe = repository.subscribeToChanges((change) => {
         changes.push(change);
-      });
+      }, options);
+
+      // Wait for initial poll to complete
+      await sleep(initWaitTime);
 
       await repository.deleteAll();
 
@@ -165,7 +182,10 @@ export function runGenericTabularRepositorySubscriptionTests(
       const changes: TabularChangePayload<FromSchema<typeof CompoundSchema>>[] = [];
       const unsubscribe = repository.subscribeToChanges((change) => {
         changes.push(change);
-      });
+      }, options);
+
+      // Wait for initial poll to complete
+      await sleep(initWaitTime);
 
       const entities = [
         { name: "test1", type: "string1", option: "value1", success: true },
@@ -190,7 +210,10 @@ export function runGenericTabularRepositorySubscriptionTests(
       const changes: TabularChangePayload<FromSchema<typeof CompoundSchema>>[] = [];
       const unsubscribe = repository.subscribeToChanges((change) => {
         changes.push(change);
-      });
+      }, options);
+
+      // Wait for initial poll to complete
+      await sleep(initWaitTime);
 
       await repository.put({
         name: "test1",
@@ -225,10 +248,13 @@ export function runGenericTabularRepositorySubscriptionTests(
 
       const unsubscribe1 = repository.subscribeToChanges((change) => {
         changes1.push(change);
-      });
+      }, options);
       const unsubscribe2 = repository.subscribeToChanges((change) => {
         changes2.push(change);
-      });
+      }, options);
+
+      // Wait for initial poll to complete
+      await sleep(initWaitTime);
 
       await repository.put({
         name: "test1",
@@ -248,6 +274,11 @@ export function runGenericTabularRepositorySubscriptionTests(
     });
 
     it("should handle deleteSearch operations", async () => {
+      // Skip test if deleteSearch is not supported
+      if (options?.supportsDeleteSearch === false) {
+        return;
+      }
+
       await repository.put({
         name: "test1",
         type: "string1",
@@ -266,7 +297,10 @@ export function runGenericTabularRepositorySubscriptionTests(
       const changes: TabularChangePayload<FromSchema<typeof CompoundSchema>>[] = [];
       const unsubscribe = repository.subscribeToChanges((change) => {
         changes.push(change);
-      });
+      }, options);
+
+      // Wait for initial poll to complete
+      await sleep(initWaitTime);
 
       await repository.deleteSearch("option", "value1", "=");
 
@@ -280,4 +314,3 @@ export function runGenericTabularRepositorySubscriptionTests(
     });
   });
 }
-

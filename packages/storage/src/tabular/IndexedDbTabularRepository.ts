@@ -4,13 +4,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, DataPortSchemaObject, FromSchema } from "@workglow/util";
 import {
-    ensureIndexedDbTable,
-    ExpectedIndexDefinition,
-    MigrationOptions,
+  createServiceToken,
+  DataPortSchemaObject,
+  FromSchema,
+  makeFingerprint,
+} from "@workglow/util";
+import {
+  ensureIndexedDbTable,
+  ExpectedIndexDefinition,
+  MigrationOptions,
 } from "../util/IndexedDbTable";
-import { ITabularRepository } from "./ITabularRepository";
+import { PollingSubscriptionManager } from "../util/PollingSubscriptionManager";
+import {
+  ITabularRepository,
+  TabularChangePayload,
+  TabularSubscribeOptions,
+} from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
 export const IDB_TABULAR_REPOSITORY = createServiceToken<
@@ -33,8 +43,16 @@ export class IndexedDbTabularRepository<
 > extends TabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   /** Promise that resolves to the IndexedDB database instance */
   private db: IDBDatabase | undefined;
+  /** Promise to track ongoing database setup to prevent concurrent setup calls */
+  private setupPromise: Promise<IDBDatabase> | null = null;
   /** Migration options for database schema changes */
   private migrationOptions: MigrationOptions;
+  /** Shared polling subscription manager */
+  private pollingManager: PollingSubscriptionManager<
+    Entity,
+    string,
+    TabularChangePayload<Entity>
+  > | null = null;
 
   /**
    * Creates a new IndexedDB-based tabular repository.
@@ -57,11 +75,38 @@ export class IndexedDbTabularRepository<
   }
 
   /**
+   * Internal method to get the database, setting it up if needed.
+   * This ensures lazy initialization of the database.
+   */
+  private async getDb(): Promise<IDBDatabase> {
+    if (this.db) return this.db;
+    await this.setupDatabase();
+    return this.db!;
+  }
+
+  /**
    * Sets up the IndexedDB database table with the required schema and indexes.
    * Must be called before using any other methods.
    */
-  public async setupDatabase(): Promise<IDBDatabase> {
-    if (this.db) return this.db;
+  public async setupDatabase(): Promise<void> {
+    if (this.db) return;
+    if (this.setupPromise) {
+      await this.setupPromise;
+      return;
+    }
+
+    this.setupPromise = this.performSetup();
+    try {
+      this.db = await this.setupPromise;
+    } finally {
+      this.setupPromise = null;
+    }
+  }
+
+  /**
+   * Internal method to perform the actual database setup
+   */
+  private async performSetup(): Promise<IDBDatabase> {
     const pkColumns = super.primaryKeyColumns() as string[];
 
     // Create index definitions for both single and compound indexes
@@ -89,13 +134,12 @@ export class IndexedDbTabularRepository<
     const primaryKey = pkColumns.length === 1 ? pkColumns[0] : pkColumns;
 
     // Ensure that our table is created/upgraded only if the structure (indexes) has changed.
-    this.db = await ensureIndexedDbTable(
+    return await ensureIndexedDbTable(
       this.table,
       primaryKey,
       expectedIndexes,
       this.migrationOptions
     );
-    return this.db;
   }
 
   /**
@@ -105,7 +149,7 @@ export class IndexedDbTabularRepository<
    * @emits put - Emitted when the value is successfully stored
    */
   async put(record: Entity): Promise<Entity> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const { key } = this.separateKeyValueFromCombined(record);
     // Merge key and value, ensuring all fields are at the root level for indexing
     return new Promise((resolve, reject) => {
@@ -129,7 +173,7 @@ export class IndexedDbTabularRepository<
    * @emits put - Emitted for each record successfully stored
    */
   async putBulk(records: Entity[]): Promise<Entity[]> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readwrite");
       const store = transaction.objectStore(this.table);
@@ -187,7 +231,7 @@ export class IndexedDbTabularRepository<
    * @emits get - Emitted when the value is successfully retrieved
    */
   async get(key: PrimaryKey): Promise<Entity | undefined> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readonly");
       const store = transaction.objectStore(this.table);
@@ -210,7 +254,7 @@ export class IndexedDbTabularRepository<
    * @returns Array of all entries in the repository.
    */
   async getAll(): Promise<Entity[] | undefined> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const transaction = db.transaction(this.table, "readonly");
     const store = transaction.objectStore(this.table);
     const request = store.getAll();
@@ -230,7 +274,7 @@ export class IndexedDbTabularRepository<
    * @returns Array of matching records or undefined.
    */
   async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     const searchKeys = Object.keys(key) as Array<keyof Entity>;
     if (searchKeys.length === 0) {
       return undefined;
@@ -368,7 +412,7 @@ export class IndexedDbTabularRepository<
    * @param key - The key object to delete.
    */
   async delete(key: PrimaryKey): Promise<void> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readwrite");
       const store = transaction.objectStore(this.table);
@@ -386,7 +430,7 @@ export class IndexedDbTabularRepository<
    * @emits clearall - Emitted when all values are deleted
    */
   async deleteAll(): Promise<void> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readwrite");
       const store = transaction.objectStore(this.table);
@@ -404,7 +448,7 @@ export class IndexedDbTabularRepository<
    * @returns Count of stored items.
    */
   async size(): Promise<number> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.table, "readonly");
       const store = transaction.objectStore(this.table);
@@ -425,7 +469,7 @@ export class IndexedDbTabularRepository<
     value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
-    const db = await this.setupDatabase();
+    const db = await this.getDb();
 
     return new Promise(async (resolve, reject) => {
       try {
@@ -556,9 +600,69 @@ export class IndexedDbTabularRepository<
   }
 
   /**
+   * Gets or creates the shared polling subscription manager.
+   * This ensures all subscriptions share a single polling loop per interval.
+   */
+  private getPollingManager(): PollingSubscriptionManager<
+    Entity,
+    string,
+    TabularChangePayload<Entity>
+  > {
+    if (!this.pollingManager) {
+      this.pollingManager = new PollingSubscriptionManager<
+        Entity,
+        string,
+        TabularChangePayload<Entity>
+      >(
+        async () => {
+          // Fetch all entities and create a map keyed by entity fingerprint
+          const entities = (await this.getAll()) || [];
+          const map = new Map<string, Entity>();
+          for (const entity of entities) {
+            const { key } = this.separateKeyValueFromCombined(entity);
+            const fingerprint = await makeFingerprint(key);
+            map.set(fingerprint, entity);
+          }
+          return map;
+        },
+        (a, b) => JSON.stringify(a) === JSON.stringify(b),
+        {
+          insert: (item) => ({ type: "INSERT" as const, new: item }),
+          update: (oldItem, newItem) => ({ type: "UPDATE" as const, old: oldItem, new: newItem }),
+          delete: (item) => ({ type: "DELETE" as const, old: item }),
+        }
+      );
+    }
+    return this.pollingManager;
+  }
+
+  /**
+   * Subscribes to changes in the repository.
+   * Uses polling since IndexedDB has no native cross-tab change notifications.
+   *
+   * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options including polling interval
+   * @returns Unsubscribe function
+   */
+  subscribeToChanges(
+    callback: (change: TabularChangePayload<Entity>) => void,
+    options?: TabularSubscribeOptions
+  ): () => void {
+    // Note: We don't await setupDatabase() here to keep the method synchronous
+    // The getAll() method in the polling manager will call setupDatabase() when needed
+    const intervalMs = options?.pollingIntervalMs ?? 1000;
+    const manager = this.getPollingManager();
+    return manager.subscribe(callback, { intervalMs });
+  }
+
+  /**
    * Destroys this repository and frees up resources.
    */
   destroy(): void {
+    if (this.pollingManager) {
+      this.pollingManager.destroy();
+      this.pollingManager = null;
+    }
     this.db?.close();
   }
 }

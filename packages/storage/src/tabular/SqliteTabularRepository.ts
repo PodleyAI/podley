@@ -5,9 +5,21 @@
  */
 
 import { Sqlite } from "@workglow/sqlite";
-import { createServiceToken, DataPortSchemaObject, FromSchema, JsonSchema } from "@workglow/util";
+import {
+  createServiceToken,
+  DataPortSchemaObject,
+  FromSchema,
+  JsonSchema,
+  makeFingerprint,
+} from "@workglow/util";
+import { PollingSubscriptionManager } from "../util/PollingSubscriptionManager";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
-import { ITabularRepository, ValueOptionType } from "./ITabularRepository";
+import {
+  ITabularRepository,
+  TabularChangePayload,
+  TabularSubscribeOptions,
+  ValueOptionType,
+} from "./ITabularRepository";
 
 // Define local type for SQL operations
 type ExcludeDateKeyOptionType = Exclude<string | number | bigint, Date>;
@@ -36,6 +48,12 @@ export class SqliteTabularRepository<
 > extends BaseSqlTabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   /** The SQLite database instance */
   private db: Sqlite.Database;
+  /** Shared polling subscription manager */
+  private pollingManager: PollingSubscriptionManager<
+    Entity,
+    string,
+    TabularChangePayload<Entity>
+  > | null = null;
 
   /**
    * Creates a new SQLite key-value repository
@@ -61,12 +79,11 @@ export class SqliteTabularRepository<
     }
   }
 
-  #setup = false;
   /**
-   * Creates the database table if it doesn't exist with the defined schema
+   * Creates the database table if it doesn't exist with the defined schema.
+   * Must be called before using any other methods.
    */
-  public async setupDatabase(): Promise<Sqlite.Database> {
-    if (this.#setup) return this.db;
+  public async setupDatabase(): Promise<void> {
     const sql = `
       CREATE TABLE IF NOT EXISTS \`${this.table}\` (
         ${this.constructPrimaryKeyColumns()} ${this.constructValueColumns()},
@@ -116,8 +133,6 @@ export class SqliteTabularRepository<
         createdIndexes.add(columnKey);
       }
     }
-    this.#setup = true;
-    return this.db;
   }
 
   /**
@@ -313,7 +328,7 @@ export class SqliteTabularRepository<
    * @emits 'put' event when successful
    */
   async put(entity: Entity): Promise<Entity> {
-    const db = await this.setupDatabase();
+    const db = this.db;
     const { key, value } = this.separateKeyValueFromCombined(entity);
     const sql = `
       INSERT OR REPLACE INTO \`${
@@ -434,7 +449,7 @@ export class SqliteTabularRepository<
   async putBulk(entities: Entity[]): Promise<Entity[]> {
     if (entities.length === 0) return [];
 
-    const db = await this.setupDatabase();
+    const db = this.db;
 
     // For SQLite bulk inserts with RETURNING, we need to do them individually
     // or use a transaction with multiple INSERT statements
@@ -514,7 +529,7 @@ export class SqliteTabularRepository<
    * @emits 'get' event when successful
    */
   async get(key: PrimaryKey): Promise<Entity | undefined> {
-    const db = await this.setupDatabase();
+    const db = this.db;
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `\`${key}\` = ?`)
       .join(" AND ");
@@ -547,7 +562,7 @@ export class SqliteTabularRepository<
    * @returns Promise resolving to an array of combined key-value objects or undefined if not found
    */
   public async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
-    const db = await this.setupDatabase();
+    const db = this.db;
     const searchKeys = Object.keys(key) as Array<keyof Entity>;
     if (searchKeys.length === 0) {
       return undefined;
@@ -607,7 +622,7 @@ export class SqliteTabularRepository<
    * @emits 'delete' event when successful
    */
   async delete(key: PrimaryKey): Promise<void> {
-    const db = await this.setupDatabase();
+    const db = this.db;
     const whereClauses = (this.primaryKeyColumns() as string[])
       .map((key) => `${key} = ?`)
       .join(" AND ");
@@ -623,7 +638,7 @@ export class SqliteTabularRepository<
    * @returns Promise resolving to an array of entries or undefined if not found
    */
   async getAll(): Promise<Entity[] | undefined> {
-    const db = await this.setupDatabase();
+    const db = this.db;
     const sql = `SELECT * FROM \`${this.table}\``;
     const stmt = db.prepare<Entity, []>(sql);
     const value = stmt.all();
@@ -642,7 +657,7 @@ export class SqliteTabularRepository<
    * @emits 'clearall' event when successful
    */
   async deleteAll(): Promise<void> {
-    const db = await this.setupDatabase();
+    const db = this.db;
     db.exec(`DELETE FROM \`${this.table}\``);
     this.events.emit("clearall");
   }
@@ -652,7 +667,7 @@ export class SqliteTabularRepository<
    * @returns The count of entries
    */
   async size(): Promise<number> {
-    const db = await this.setupDatabase();
+    const db = this.db;
     const stmt = db.prepare<{ count: number }, []>(`
       SELECT COUNT(*) AS count FROM \`${this.table}\`
     `);
@@ -680,11 +695,78 @@ export class SqliteTabularRepository<
     value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
-    const db = await this.setupDatabase();
+    const db = this.db;
     const whereClause = this.generateWhereClause(column, operator);
     const stmt = db.prepare(`DELETE FROM \`${this.table}\` WHERE ${whereClause}`);
     // @ts-ignore
     stmt.run(this.jsToSqlValue(column as string, value));
     this.events.emit("delete", column as keyof Entity);
+  }
+
+  /**
+   * Gets or creates the shared polling subscription manager.
+   * This ensures all subscriptions share a single polling loop per interval.
+   */
+  private getPollingManager(): PollingSubscriptionManager<
+    Entity,
+    string,
+    TabularChangePayload<Entity>
+  > {
+    if (!this.pollingManager) {
+      this.pollingManager = new PollingSubscriptionManager<
+        Entity,
+        string,
+        TabularChangePayload<Entity>
+      >(
+        async () => {
+          // Fetch all entities and create a map keyed by entity fingerprint
+          const entities = (await this.getAll()) || [];
+          const map = new Map<string, Entity>();
+          for (const entity of entities) {
+            const { key } = this.separateKeyValueFromCombined(entity);
+            const fingerprint = await makeFingerprint(key);
+            map.set(fingerprint, entity);
+          }
+          return map;
+        },
+        (a, b) => JSON.stringify(a) === JSON.stringify(b),
+        {
+          insert: (item) => ({ type: "INSERT" as const, new: item }),
+          update: (oldItem, newItem) => ({ type: "UPDATE" as const, old: oldItem, new: newItem }),
+          delete: (item) => ({ type: "DELETE" as const, old: item }),
+        }
+      );
+    }
+    return this.pollingManager;
+  }
+
+  /**
+   * Subscribes to changes in the repository.
+   * Uses polling since SQLite has no native change notification support.
+   *
+   * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options including polling interval
+   * @returns Unsubscribe function
+   */
+  subscribeToChanges(
+    callback: (change: TabularChangePayload<Entity>) => void,
+    options?: TabularSubscribeOptions
+  ): () => void {
+    // Note: We don't await setupDatabase() here to keep the method synchronous
+    // The getAll() method in the polling manager will call setupDatabase() when needed
+    const intervalMs = options?.pollingIntervalMs ?? 1000;
+    const manager = this.getPollingManager();
+    return manager.subscribe(callback, { intervalMs });
+  }
+
+  /**
+   * Destroys the repository and frees up resources.
+   */
+  destroy(): void {
+    if (this.pollingManager) {
+      this.pollingManager.destroy();
+      this.pollingManager = null;
+    }
+    super.destroy();
   }
 }

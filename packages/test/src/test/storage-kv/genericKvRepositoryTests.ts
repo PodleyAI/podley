@@ -19,6 +19,7 @@ export function runGenericKvRepositoryTests(
 
     beforeEach(async () => {
       repository = await createRepository({ type: "string" }, {});
+      await (repository as any).setupDatabase?.();
     });
 
     afterEach(async () => {});
@@ -77,6 +78,7 @@ export function runGenericKvRepositoryTests(
           additionalProperties: false,
         }
       )) as IKvRepository<string, { option: string; success: boolean }>;
+      await (repository as any).setupDatabase?.();
     });
 
     it("should store and retrieve values for a key", async () => {

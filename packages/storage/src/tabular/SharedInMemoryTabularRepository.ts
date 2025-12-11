@@ -5,7 +5,7 @@
  */
 
 import { createServiceToken, DataPortSchemaObject, FromSchema } from "@workglow/util";
-import { ITabularRepository } from "./ITabularRepository";
+import { ITabularRepository, TabularSubscribeOptions } from "./ITabularRepository";
 import { InMemoryTabularRepository } from "./InMemoryTabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
@@ -247,7 +247,6 @@ export class SharedInMemoryTabularRepository<
    * @emits 'put' event with the stored entity when successful
    */
   async put(value: Entity): Promise<Entity> {
-    await this.setupDatabase();
     const result = await this.inMemoryRepo.put(value);
     this.broadcast({ type: "PUT", entity: value });
     return result;
@@ -260,7 +259,6 @@ export class SharedInMemoryTabularRepository<
    * @emits 'put' event for each value stored
    */
   async putBulk(values: Entity[]): Promise<Entity[]> {
-    await this.setupDatabase();
     const result = await this.inMemoryRepo.putBulk(values);
     this.broadcast({ type: "PUT_BULK", entities: values });
     return result;
@@ -273,7 +271,6 @@ export class SharedInMemoryTabularRepository<
    * @emits 'get' event with the fingerprint ID and value when found
    */
   async get(key: PrimaryKey): Promise<Entity | undefined> {
-    await this.setupDatabase();
     return await this.inMemoryRepo.get(key);
   }
 
@@ -284,7 +281,6 @@ export class SharedInMemoryTabularRepository<
    * @throws Error if search criteria outside of searchable fields
    */
   async search(key: Partial<Entity>): Promise<Entity[] | undefined> {
-    await this.setupDatabase();
     return await this.inMemoryRepo.search(key);
   }
 
@@ -294,7 +290,6 @@ export class SharedInMemoryTabularRepository<
    * @emits 'delete' event with the fingerprint ID when successful
    */
   async delete(value: PrimaryKey | Entity): Promise<void> {
-    await this.setupDatabase();
     await this.inMemoryRepo.delete(value);
     const { key } = this.separateKeyValueFromCombined(value as Entity);
     this.broadcast({ type: "DELETE", key });
@@ -305,7 +300,6 @@ export class SharedInMemoryTabularRepository<
    * @emits 'clearall' event when successful
    */
   async deleteAll(): Promise<void> {
-    await this.setupDatabase();
     await this.inMemoryRepo.deleteAll();
     this.broadcast({ type: "DELETE_ALL" });
   }
@@ -315,7 +309,6 @@ export class SharedInMemoryTabularRepository<
    * @returns Array of all entries in the repository
    */
   async getAll(): Promise<Entity[] | undefined> {
-    await this.setupDatabase();
     return await this.inMemoryRepo.getAll();
   }
 
@@ -324,7 +317,6 @@ export class SharedInMemoryTabularRepository<
    * @returns The total count of stored entries
    */
   async size(): Promise<number> {
-    await this.setupDatabase();
     return await this.inMemoryRepo.size();
   }
 
@@ -339,7 +331,6 @@ export class SharedInMemoryTabularRepository<
     value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
-    await this.setupDatabase();
     await this.inMemoryRepo.deleteSearch(column, value, operator);
     this.broadcast({
       type: "DELETE_SEARCH",
@@ -350,6 +341,22 @@ export class SharedInMemoryTabularRepository<
   }
 
   /**
+   * Subscribes to changes in the repository.
+   * Delegates to the internal InMemoryTabularRepository which monitors local changes.
+   * Changes from other tabs/windows are already propagated via BroadcastChannel.
+   *
+   * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options (not used for in-memory)
+   * @returns Unsubscribe function
+   */
+  subscribeToChanges(
+    callback: (change: any) => void,
+    options?: TabularSubscribeOptions
+  ): () => void {
+    return this.inMemoryRepo.subscribeToChanges(callback, options);
+  }
+
+  /**
    * Cleanup method to close the BroadcastChannel
    */
   destroy(): void {
@@ -357,5 +364,6 @@ export class SharedInMemoryTabularRepository<
       this.channel.close();
       this.channel = null;
     }
+    this.inMemoryRepo.destroy();
   }
 }

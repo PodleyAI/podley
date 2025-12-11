@@ -10,6 +10,7 @@ import { uuid4 } from "@workglow/util";
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { runGenericTabularRepositorySubscriptionTests } from "./genericTabularRepositorySubscriptionTests";
 import {
   AllTypesPrimaryKeyNames,
   AllTypesSchema,
@@ -41,14 +42,24 @@ describe("IndexedDbTabularRepository", () => {
       const repo = new IndexedDbTabularRepository<
         typeof AllTypesSchema,
         typeof AllTypesPrimaryKeyNames
-      >(
-        `${dbName}_alltypes`,
-        AllTypesSchema,
-        AllTypesPrimaryKeyNames
-      );
+      >(`${dbName}_alltypes`, AllTypesSchema, AllTypesPrimaryKeyNames);
       await repo.setupDatabase();
       return repo;
     }
+  );
+
+  runGenericTabularRepositorySubscriptionTests(
+    async () => {
+      // Use a unique database name for each test to avoid conflicts
+      const uniqueDbName = `${dbName}_subscription_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      return new IndexedDbTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
+        uniqueDbName,
+        CompoundSchema,
+        CompoundPrimaryKeyNames,
+        ["option"] // Add index for deleteSearch test
+      );
+    },
+    { usesPolling: true, pollingIntervalMs: 50 }
   );
 
   // IndexedDB-specific tests for compound index optimization

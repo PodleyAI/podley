@@ -27,6 +27,14 @@ export abstract class KvViaTabularRepository<
   >;
 
   /**
+   * Sets up the database for the repository.
+   * Must be called before using any other methods.
+   */
+  public async setupDatabase(): Promise<void> {
+    await this.tabularRepository.setupDatabase?.();
+  }
+
+  /**
    * Stores a row in the repository.
    * @param key - The primary key
    * @param value - The value to store
@@ -158,5 +166,12 @@ export abstract class KvViaTabularRepository<
    */
   public async size(): Promise<number> {
     return await this.tabularRepository.size();
+  }
+
+  /**
+   * Destroys the repository and frees up resources.
+   */
+  destroy(): void {
+    this.tabularRepository.destroy();
   }
 }

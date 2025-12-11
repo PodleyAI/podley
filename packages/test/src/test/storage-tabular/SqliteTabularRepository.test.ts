@@ -7,6 +7,7 @@
 import { SqliteTabularRepository } from "@workglow/storage";
 import { uuid4 } from "@workglow/util";
 import { describe } from "vitest";
+import { runGenericTabularRepositorySubscriptionTests } from "./genericTabularRepositorySubscriptionTests";
 import {
   AllTypesPrimaryKeyNames,
   AllTypesSchema,
@@ -47,5 +48,16 @@ describe("SqliteTabularRepository", () => {
       await repo.setupDatabase();
       return repo;
     }
+  );
+
+  runGenericTabularRepositorySubscriptionTests(
+    async () =>
+      new SqliteTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
+        ":memory:",
+        `sql_test_${uuid4().replace(/-/g, "_")}`,
+        CompoundSchema,
+        CompoundPrimaryKeyNames
+      ),
+    { usesPolling: true, pollingIntervalMs: 50 }
   );
 });

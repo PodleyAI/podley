@@ -6,6 +6,7 @@
 
 import { CachedTabularRepository, InMemoryTabularRepository } from "@workglow/storage";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { runGenericTabularRepositorySubscriptionTests } from "./genericTabularRepositorySubscriptionTests";
 import {
   CompoundPrimaryKeyNames,
   CompoundSchema,
@@ -51,6 +52,22 @@ describe("CachedTabularRepository", () => {
       }
     );
   });
+
+  runGenericTabularRepositorySubscriptionTests(
+    async () => {
+      const durable = new InMemoryTabularRepository<
+        typeof CompoundSchema,
+        typeof CompoundPrimaryKeyNames
+      >(CompoundSchema, CompoundPrimaryKeyNames);
+      return new CachedTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
+        durable,
+        undefined,
+        CompoundSchema,
+        CompoundPrimaryKeyNames
+      );
+    },
+    { usesPolling: false }
+  );
 
   describe("caching behavior", () => {
     let durable: InMemoryTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>;

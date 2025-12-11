@@ -4,10 +4,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createServiceToken, DataPortSchemaObject, FromSchema, sleep } from "@workglow/util";
+import {
+  createServiceToken,
+  DataPortSchemaObject,
+  FromSchema,
+  makeFingerprint,
+  sleep,
+} from "@workglow/util";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { ITabularRepository } from "./ITabularRepository";
+import { PollingSubscriptionManager } from "../util/PollingSubscriptionManager";
+import {
+  ITabularRepository,
+  TabularChangePayload,
+  TabularSubscribeOptions,
+} from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
 export const FS_FOLDER_TABULAR_REPOSITORY = createServiceToken<
@@ -30,6 +41,12 @@ export class FsFolderTabularRepository<
   Value = Omit<Entity, PrimaryKeyNames[number] & keyof Entity>,
 > extends TabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value> {
   private folderPath: string;
+  /** Shared polling subscription manager */
+  private pollingManager: PollingSubscriptionManager<
+    Entity,
+    string,
+    TabularChangePayload<Entity>
+  > | null = null;
 
   /**
    * Creates a new FsFolderTabularRepository instance.
@@ -225,5 +242,72 @@ export class FsFolderTabularRepository<
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
     throw new Error("Search not supported for FsFolderTabularRepository");
+  }
+
+  /**
+   * Gets or creates the shared polling subscription manager.
+   * This ensures all subscriptions share a single polling loop per interval.
+   */
+  private getPollingManager(): PollingSubscriptionManager<
+    Entity,
+    string,
+    TabularChangePayload<Entity>
+  > {
+    if (!this.pollingManager) {
+      this.pollingManager = new PollingSubscriptionManager<
+        Entity,
+        string,
+        TabularChangePayload<Entity>
+      >(
+        async () => {
+          // Fetch all entities and create a map keyed by entity fingerprint
+          const entities = (await this.getAll()) || [];
+          const map = new Map<string, Entity>();
+          for (const entity of entities) {
+            const { key } = this.separateKeyValueFromCombined(entity);
+            const fingerprint = await makeFingerprint(key);
+            map.set(fingerprint, entity);
+          }
+          return map;
+        },
+        (a, b) => JSON.stringify(a) === JSON.stringify(b),
+        {
+          insert: (item) => ({ type: "INSERT" as const, new: item }),
+          update: (oldItem, newItem) => ({ type: "UPDATE" as const, old: oldItem, new: newItem }),
+          delete: (item) => ({ type: "DELETE" as const, old: item }),
+        }
+      );
+    }
+    return this.pollingManager;
+  }
+
+  /**
+   * Subscribes to changes in the repository.
+   * Uses polling since filesystem has no native change notification support.
+   *
+   * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options including polling interval
+   * @returns Unsubscribe function
+   */
+  subscribeToChanges(
+    callback: (change: TabularChangePayload<Entity>) => void,
+    options?: TabularSubscribeOptions
+  ): () => void {
+    // Note: We don't await setupDirectory() here to keep the method synchronous
+    // The getAll() method in the polling manager will call setupDirectory() when needed
+    const intervalMs = options?.pollingIntervalMs ?? 1000;
+    const manager = this.getPollingManager();
+    return manager.subscribe(callback, { intervalMs });
+  }
+
+  /**
+   * Destroys the repository and frees up resources.
+   */
+  destroy(): void {
+    if (this.pollingManager) {
+      this.pollingManager.destroy();
+      this.pollingManager = null;
+    }
+    super.destroy();
   }
 }

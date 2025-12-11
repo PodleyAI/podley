@@ -11,6 +11,7 @@ import {
   ITabularRepository,
   TabularChangePayload,
   TabularChangeType,
+  TabularSubscribeOptions,
   ValueOptionType,
 } from "./ITabularRepository";
 
@@ -58,16 +59,13 @@ export class SupabaseTabularRepository<
     this.client = client;
   }
 
-  protected isSetup = true;
-
   /**
    * Initializes the database table with the required schema.
    * Creates the table if it doesn't exist with primary key and value columns.
+   * Must be called before using any other methods.
+   * Note: By default, assumes the table already exists (set isSetup in tests).
    */
-  public async setupDatabase(): Promise<SupabaseClient> {
-    if (this.isSetup) {
-      return this.client;
-    }
+  public async setupDatabase(): Promise<void> {
     const sql = `
       CREATE TABLE IF NOT EXISTS "${this.table}" (
         ${this.constructPrimaryKeyColumns('"')} ${this.constructValueColumns('"')},
@@ -120,8 +118,6 @@ export class SupabaseTabularRepository<
         createdIndexes.add(columnKey);
       }
     }
-    this.isSetup = true;
-    return this.client;
   }
 
   /**
@@ -356,7 +352,6 @@ export class SupabaseTabularRepository<
    * @emits "put" event with the updated entity when successful
    */
   async put(entity: Entity): Promise<Entity> {
-    await this.setupDatabase();
     // Normalize optional fields: convert undefined to null for optional fields
     const normalizedEntity = { ...entity } as any;
     const requiredSet = new Set(this.valueSchema.required ?? []);
@@ -396,8 +391,6 @@ export class SupabaseTabularRepository<
    */
   async putBulk(entities: Entity[]): Promise<Entity[]> {
     if (entities.length === 0) return [];
-
-    await this.setupDatabase();
     // Normalize optional fields: convert undefined to null for optional fields
     const requiredSet = new Set(this.valueSchema.required ?? []);
     const normalizedEntities = entities.map((entity) => {
@@ -439,8 +432,6 @@ export class SupabaseTabularRepository<
    * @emits "get" event with the key when successful
    */
   async get(key: PrimaryKey): Promise<Entity | undefined> {
-    await this.setupDatabase();
-
     let query = this.client.from(this.table).select("*");
 
     // Build the where clause from primary key
@@ -478,7 +469,6 @@ export class SupabaseTabularRepository<
    * @returns Promise resolving to an array of entities or undefined if not found
    */
   public async search(searchCriteria: Partial<Entity>): Promise<Entity[] | undefined> {
-    await this.setupDatabase();
     const searchKeys = Object.keys(searchCriteria);
     if (searchKeys.length === 0) {
       return undefined;
@@ -538,7 +528,6 @@ export class SupabaseTabularRepository<
    * @emits "delete" event with the key when successful
    */
   async delete(value: PrimaryKey | Entity): Promise<void> {
-    await this.setupDatabase();
     const { key } = this.separateKeyValueFromCombined(value as Entity);
 
     let query = this.client.from(this.table).delete();
@@ -559,7 +548,6 @@ export class SupabaseTabularRepository<
    * @returns Promise resolving to an array of entries or undefined if not found
    */
   async getAll(): Promise<Entity[] | undefined> {
-    await this.setupDatabase();
     const { data, error } = await this.client.from(this.table).select("*");
 
     if (error) throw error;
@@ -582,8 +570,6 @@ export class SupabaseTabularRepository<
    * @emits "clearall" event when successful
    */
   async deleteAll(): Promise<void> {
-    await this.setupDatabase();
-
     // Use the first primary key column for the delete condition
     const firstPkColumn = this.primaryKeyNames[0];
     const { error } = await this.client.from(this.table).delete().neq(String(firstPkColumn), null); // Delete all rows by using a condition that's always true
@@ -598,7 +584,6 @@ export class SupabaseTabularRepository<
    * @returns Promise resolving to the count of stored items
    */
   async size(): Promise<number> {
-    await this.setupDatabase();
     const { count, error } = await this.client
       .from(this.table)
       .select("*", { count: "exact", head: true });
@@ -628,8 +613,6 @@ export class SupabaseTabularRepository<
     value: Entity[keyof Entity],
     operator: "=" | "<" | "<=" | ">" | ">=" = "="
   ): Promise<void> {
-    await this.setupDatabase();
-
     let query = this.client.from(this.table).delete();
 
     switch (operator) {
@@ -676,9 +659,13 @@ export class SupabaseTabularRepository<
    * Receives notifications for INSERT, UPDATE, and DELETE operations from any source.
    *
    * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options (not used for Supabase realtime)
    * @returns Unsubscribe function
    */
-  subscribeToChanges(callback: (change: TabularChangePayload<Entity>) => void): () => void {
+  subscribeToChanges(
+    callback: (change: TabularChangePayload<Entity>) => void,
+    options?: TabularSubscribeOptions
+  ): () => void {
     // Create a unique channel name
     const channelName = `tabular-${this.table}-${Date.now()}`;
 

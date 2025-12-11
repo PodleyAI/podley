@@ -18,6 +18,7 @@ import {
   TabularEventListeners,
   TabularEventName,
   TabularEventParameters,
+  TabularSubscribeOptions,
   ValueOptionType,
 } from "./ITabularRepository";
 
@@ -261,13 +262,17 @@ export abstract class TabularRepository<
    * Default implementation throws an error - override in subclasses that support subscriptions.
    *
    * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options (e.g., polling interval)
    * @returns Unsubscribe function
    * @throws Error if not implemented by the concrete repository
    */
-  public subscribeToChanges(_callback: (change: TabularChangePayload<Entity>) => void): () => void {
+  public subscribeToChanges(
+    _callback: (change: TabularChangePayload<Entity>) => void,
+    _options?: TabularSubscribeOptions
+  ): () => void {
     throw new Error(
       `subscribeToChanges is not implemented for ${this.constructor.name}. ` +
-        `Use InMemoryTabularRepository or SupabaseTabularRepository for subscription support.`
+        `All concrete repository implementations should override this method.`
     );
   }
 
@@ -387,6 +392,15 @@ export abstract class TabularRepository<
     }
 
     return bestMatch;
+  }
+
+  /**
+   * Sets up the database/storage for the repository.
+   * Must be called before using any other methods (except for in-memory implementations).
+   * Default implementation is a no-op - override in subclasses that need setup.
+   */
+  async setupDatabase(): Promise<void> {
+    // no op by default
   }
 
   /**

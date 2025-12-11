@@ -6,7 +6,7 @@
 
 import { createServiceToken, DataPortSchemaObject, FromSchema } from "@workglow/util";
 import { InMemoryTabularRepository } from "./InMemoryTabularRepository";
-import { ITabularRepository } from "./ITabularRepository";
+import { ITabularRepository, TabularSubscribeOptions } from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
 export const CACHED_TABULAR_REPOSITORY = createServiceToken<
@@ -297,6 +297,37 @@ export class CachedTabularRepository<
     await this.cache.deleteAll();
     this.cacheInitialized = false;
     await this.initializeCache();
+  }
+
+  /**
+   * Subscribes to changes in the repository.
+   * Delegates to the durable repository to detect changes (including from other sources).
+   * Also updates the cache when changes are detected.
+   *
+   * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options (e.g., polling interval)
+   * @returns Unsubscribe function
+   */
+  subscribeToChanges(
+    callback: (change: any) => void,
+    options?: TabularSubscribeOptions
+  ): () => void {
+    // Subscribe to durable repository to detect all changes
+    return this.durable.subscribeToChanges(async (change) => {
+      // Update cache based on the change
+      if (change.type === "INSERT" || change.type === "UPDATE") {
+        if (change.new) {
+          await this.cache.put(change.new);
+        }
+      } else if (change.type === "DELETE") {
+        if (change.old) {
+          await this.cache.delete(change.old);
+        }
+      }
+
+      // Forward the change to the callback
+      callback(change);
+    }, options);
   }
 
   /**

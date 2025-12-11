@@ -21,6 +21,7 @@ export function runGenericTaskOutputRepositoryTests(
 
   beforeEach(async () => {
     repository = await createRepository();
+    await (repository as any).setupDatabase?.();
   });
 
   afterEach(async () => {

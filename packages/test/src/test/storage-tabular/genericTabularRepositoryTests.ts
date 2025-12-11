@@ -93,6 +93,7 @@ export function runGenericTabularRepositoryTests(
 
     beforeEach(async () => {
       repository = await createCompoundPkRepository();
+      await repository.setupDatabase?.();
     });
 
     afterEach(async () => {
@@ -210,6 +211,7 @@ export function runGenericTabularRepositoryTests(
 
       beforeEach(async () => {
         searchableRepo = await createSearchableRepository();
+        await searchableRepo.setupDatabase?.();
       });
 
       afterEach(async () => {
@@ -345,6 +347,7 @@ export function runGenericTabularRepositoryTests(
 
       beforeEach(async () => {
         repository = await createSearchableRepository();
+        await repository.setupDatabase?.();
       });
 
       afterEach(async () => {
@@ -708,6 +711,7 @@ export function runGenericTabularRepositoryTests(
 
       beforeEach(async () => {
         repository = await createSearchableRepository();
+        await repository.setupDatabase?.();
       });
 
       afterEach(async () => {
@@ -887,6 +891,7 @@ export function runGenericTabularRepositoryTests(
 
       beforeEach(async () => {
         repository = await createAllTypesRepository();
+        await repository.setupDatabase?.();
       });
 
       afterEach(async () => {

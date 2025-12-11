@@ -51,6 +51,14 @@ export class ModelRepository {
   protected events = new EventEmitter<ModelEventListeners>();
 
   /**
+   * Sets up the database for the repository.
+   * Must be called before using any other methods.
+   */
+  async setupDatabase(): Promise<void> {
+    await this.modelTabularRepository.setupDatabase?.();
+  }
+
+  /**
    * Registers an event listener for the specified event
    * @param name - The event name to listen for
    * @param fn - The callback function to execute when the event occurs

@@ -47,6 +47,14 @@ export interface TabularChangePayload<Entity> {
   readonly new?: Entity;
 }
 
+/**
+ * Options for subscribing to changes in a tabular repository
+ */
+export interface TabularSubscribeOptions {
+  /** Polling interval in milliseconds (used by implementations that rely on polling) */
+  readonly pollingIntervalMs?: number;
+}
+
 // Type definitions for specialized string types
 export type uuid4 = string;
 export type JSONValue =
@@ -114,9 +122,20 @@ export interface ITabularRepository<
   /**
    * Subscribes to changes in the repository (including remote changes).
    * @param callback - Function called when a change occurs
+   * @param options - Optional subscription options (e.g., polling interval)
    * @returns Unsubscribe function
    */
-  subscribeToChanges(callback: (change: TabularChangePayload<Entity>) => void): () => void;
+  subscribeToChanges(
+    callback: (change: TabularChangePayload<Entity>) => void,
+    options?: TabularSubscribeOptions
+  ): () => void;
+
+  /**
+   * Sets up the database/storage for the repository.
+   * Must be called before using any other methods (except for in-memory implementations).
+   * @returns Promise that resolves when setup is complete
+   */
+  setupDatabase(): Promise<void>;
 
   // Destroy the repository and frees up resources.
   destroy(): void;
