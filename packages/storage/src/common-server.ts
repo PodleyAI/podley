@@ -27,7 +27,7 @@ export * from "./limiter/SupabaseRateLimiterStorage";
 
 // testing
 export * from "./kv/IndexedDbKvRepository";
+export * from "./limiter/IndexedDbRateLimiterStorage";
 export * from "./queue/IndexedDbQueueStorage";
 export * from "./tabular/IndexedDbTabularRepository";
-export * from "./limiter/IndexedDbRateLimiterStorage";
 export * from "./util/IndexedDbTable";
