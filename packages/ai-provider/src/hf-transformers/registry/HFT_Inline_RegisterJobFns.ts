@@ -18,6 +18,7 @@ import {
   HFT_TextRewriter,
   HFT_TextSummary,
   HFT_TextTranslation,
+  HFT_Unload,
 } from "../common/HFT_JobRunFns";
 
 /**
@@ -34,6 +35,7 @@ export async function register_HFT_InlineJobFns(
   const ProviderRegistry = getAiProviderRegistry();
   const fns: Record<string, AiProviderRunFn<any, any, any>> = {
     ["DownloadModelTask"]: HFT_Download,
+    ["UnloadModelTask"]: HFT_Unload,
     ["TextEmbeddingTask"]: HFT_TextEmbedding,
     ["TextGenerationTask"]: HFT_TextGeneration,
     ["TextQuestionAnswerTask"]: HFT_TextQuestionAnswer,

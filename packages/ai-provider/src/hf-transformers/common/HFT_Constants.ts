@@ -5,6 +5,7 @@
  */
 
 export const HF_TRANSFORMERS_ONNX = "HF_TRANSFORMERS_ONNX";
+export const HTF_CACHE_NAME = "transformers-cache";
 
 export type QuantizationDataType =
   | "auto" // Auto-detect based on environment

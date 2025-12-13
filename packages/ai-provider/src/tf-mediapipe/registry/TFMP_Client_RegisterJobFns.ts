@@ -26,7 +26,7 @@ export async function register_TFMP_ClientJobFns(
   workerManager.registerWorker(TENSORFLOW_MEDIAPIPE, worker);
 
   const aiProviderRegistry = getAiProviderRegistry();
-  const names = ["DownloadModelTask", "TextEmbeddingTask"];
+  const names = ["DownloadModelTask", "UnloadModelTask", "TextEmbeddingTask"];
   for (const name of names) {
     aiProviderRegistry.registerAsWorkerRunFn(TENSORFLOW_MEDIAPIPE, name);
   }

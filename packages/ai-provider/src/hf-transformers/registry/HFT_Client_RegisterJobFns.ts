@@ -29,6 +29,7 @@ export async function register_HFT_ClientJobFns(
   const ProviderRegistry = getAiProviderRegistry();
   const names = [
     "DownloadModelTask",
+    "UnloadModelTask",
     "TextEmbeddingTask",
     "TextGenerationTask",
     "TextTranslationTask",

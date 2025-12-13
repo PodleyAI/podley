@@ -39,6 +39,7 @@ import {
 } from "@workglow/ai";
 import { PermanentJobError } from "@workglow/job-queue";
 import { CallbackStatus } from "./HFT_CallbackStatus";
+import { HTF_CACHE_NAME } from "./HFT_Constants";
 import { HfTransformersOnnxModelRecord } from "./HFT_ModelSchema";
 
 const pipelines = new Map<string, any>();
@@ -97,6 +98,69 @@ export const HFT_Download: AiProviderRunFn<
   return {
     model: input.model!,
   };
+};
+
+/**
+ * Core implementation for unloading a Hugging Face Transformers model.
+ * This is shared between inline and worker implementations.
+ */
+export const HFT_Unload: AiProviderRunFn<
+  DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteInput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  // Delete the pipeline from the in-memory map
+  if (pipelines.has(model!.model_id)) {
+    pipelines.delete(model!.model_id);
+    onProgress(50, "Pipeline removed from memory");
+  }
+
+  // Delete model cache entries
+  const modelPath = model!.providerConfig.modelPath;
+  await deleteModelCache(modelPath);
+  onProgress(100, "Model cache deleted");
+
+  return {
+    model: input.model!,
+  };
+};
+
+/**
+ * Deletes all cache entries for a given model path
+ * @param modelPath - The model path to delete from cache
+ */
+const deleteModelCache = async (modelPath: string): Promise<void> => {
+  const cache = await caches.open(HTF_CACHE_NAME);
+  const keys = await cache.keys();
+  const prefix = `/${modelPath}/`;
+
+  // Collect all matching requests first
+  const requestsToDelete: Request[] = [];
+  for (const request of keys) {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith(prefix)) {
+      requestsToDelete.push(request);
+    }
+  }
+
+  // Delete all matching requests
+  let deletedCount = 0;
+  for (const request of requestsToDelete) {
+    try {
+      const deleted = await cache.delete(request);
+      if (deleted) {
+        deletedCount++;
+      } else {
+        // If delete returns false, try with URL string as fallback
+        const deletedByUrl = await cache.delete(request.url);
+        if (deletedByUrl) {
+          deletedCount++;
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to delete cache entry: ${request.url}`, error);
+    }
+  }
 };
 
 /**

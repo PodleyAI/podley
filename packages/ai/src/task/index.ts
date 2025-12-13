@@ -8,6 +8,7 @@ export * from "./base/AiTask";
 export * from "./base/AiTaskSchemas";
 export * from "./DocumentSplitterTask";
 export * from "./DownloadModelTask";
+export * from "./UnloadModelTask";
 export * from "./TextEmbeddingTask";
 export * from "./TextGenerationTask";
 export * from "./TextQuestionAnswerTask";
