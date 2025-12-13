@@ -13,6 +13,8 @@ import {
   QuestionAnsweringPipeline,
   SummarizationPipeline,
   SummarizationSingle,
+  TextClassificationOutput,
+  TextClassificationPipeline,
   type TextGenerationPipeline,
   TextGenerationSingle,
   TextStreamer,
@@ -23,6 +25,10 @@ import {
   AiProviderRunFn,
   type DeReplicateFromSchema,
   DownloadModelTaskExecuteInput,
+  LanguageDetectionInputSchema,
+  LanguageDetectionOutputSchema,
+  TextClassifierInputSchema,
+  TextClassifierOutputSchema,
   TextEmbeddingInputSchema,
   TextEmbeddingOutputSchema,
   TextGenerationInputSchema,
@@ -197,6 +203,66 @@ export const HFT_TextEmbedding: AiProviderRunFn<
   }
 
   return { vector: hfVector.data as TypedArray };
+};
+
+export const HFT_TextClassifier: AiProviderRunFn<
+  DeReplicateFromSchema<typeof TextClassifierInputSchema>,
+  DeReplicateFromSchema<typeof TextClassifierOutputSchema>,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  const textClassifier: TextClassificationPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+  const result = await textClassifier(input.text, {
+    top_k: input.maxCategories || undefined,
+    ...(signal ? { abort_signal: signal } : {}),
+  });
+
+  if (Array.isArray(result[0])) {
+    return {
+      categories: result[0].map((category) => ({
+        label: category.label,
+        score: category.score,
+      })),
+    };
+  }
+
+  return {
+    categories: (result as TextClassificationOutput).map((category) => ({
+      label: category.label,
+      score: category.score,
+    })),
+  };
+};
+
+export const HFT_LanguageDetection: AiProviderRunFn<
+  DeReplicateFromSchema<typeof LanguageDetectionInputSchema>,
+  DeReplicateFromSchema<typeof LanguageDetectionOutputSchema>,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  const textClassifier: TextClassificationPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+  const result = await textClassifier(input.text, {
+    top_k: input.maxLanguages || undefined,
+    ...(signal ? { abort_signal: signal } : {}),
+  });
+
+  if (Array.isArray(result[0])) {
+    return {
+      languages: result[0].map((category) => ({
+        language: category.label,
+        score: category.score,
+      })),
+    };
+  }
+
+  return {
+    languages: (result as TextClassificationOutput).map((category) => ({
+      language: category.label,
+      score: category.score,
+    })),
+  };
 };
 
 /**

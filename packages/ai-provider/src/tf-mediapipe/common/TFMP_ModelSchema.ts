@@ -6,7 +6,7 @@
 
 import { ModelSchema } from "@workglow/ai";
 import { DataPortSchemaObject, FromSchema } from "@workglow/util";
-import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
+import { TENSORFLOW_MEDIAPIPE, TextPipelineTask } from "../common/TFMP_Constants";
 
 export const TFMPModelSchema = {
   type: "object",
@@ -23,8 +23,18 @@ export const TFMPModelSchema = {
           type: "string",
           description: "Filesystem path or URI for the ONNX model.",
         },
+        taskEngine: {
+          type: "string",
+          enum: ["text", "audio", "vision", "genai"],
+          description: "Task engine for the MediaPipe model.",
+        },
+        pipeline: {
+          type: "string",
+          enum: Object.values(TextPipelineTask),
+          description: "Pipeline task type for the MediaPipe model.",
+        },
       },
-      required: ["modelPath"],
+      required: ["modelPath", "taskEngine", "pipeline"],
       additionalProperties: false,
     },
   },

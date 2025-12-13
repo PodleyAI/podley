@@ -36,7 +36,10 @@
     "@workglow/task-graph": "workspace:*",
     "@workglow/util": "workspace:*",
     "@sroussey/transformers": "catalog:",
-    "@mediapipe/tasks-text": "catalog:"
+    "@mediapipe/tasks-text": "catalog:",
+    "@mediapipe/tasks-vision": "catalog:",
+    "@mediapipe/tasks-audio": "catalog:",
+    "@mediapipe/tasks-genai": "catalog:"
   },
   "peerDependenciesMeta": {
     "@workglow/ai": {
@@ -62,6 +65,9 @@
     "@workglow/task-graph": "workspace:*",
     "@workglow/util": "workspace:*",
     "@sroussey/transformers": "catalog:",
-    "@mediapipe/tasks-text": "catalog:"
+    "@mediapipe/tasks-text": "catalog:",
+    "@mediapipe/tasks-vision": "catalog:",
+    "@mediapipe/tasks-audio": "catalog:",
+    "@mediapipe/tasks-genai": "catalog:"
   }
 }

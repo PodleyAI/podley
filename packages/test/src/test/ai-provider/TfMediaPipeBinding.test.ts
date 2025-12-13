@@ -83,6 +83,8 @@ describe("TfMediaPipeBinding", () => {
         providerConfig: {
           modelPath:
             "https://storage.googleapis.com/mediapipe-tasks/text_embedder/universal_sentence_encoder.tflite",
+          pipeline: "text-embedder",
+          taskEngine: "text",
         },
         metadata: {},
       };
@@ -116,6 +118,8 @@ describe("TfMediaPipeBinding", () => {
         providerConfig: {
           modelPath:
             "https://storage.googleapis.com/mediapipe-tasks/text_embedder/universal_sentence_encoder.tflite",
+          taskEngine: "text",
+          pipeline: "text-embedder",
         },
         metadata: {},
       };

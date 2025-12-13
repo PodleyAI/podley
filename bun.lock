@@ -30,7 +30,10 @@
       "version": "0.0.66",
       "bin": "./dist/workglow.js",
       "dependencies": {
+        "@mediapipe/tasks-audio": "catalog:",
+        "@mediapipe/tasks-genai": "catalog:",
         "@mediapipe/tasks-text": "catalog:",
+        "@mediapipe/tasks-vision": "catalog:",
         "@sroussey/transformers": "catalog:",
         "@types/react": "=18.3.12",
         "@workglow/ai": "workspace:*",
@@ -54,7 +57,10 @@
       "version": "0.0.66",
       "dependencies": {
         "@codemirror/lang-json": "^6.0.2",
+        "@mediapipe/tasks-audio": "catalog:",
+        "@mediapipe/tasks-genai": "catalog:",
         "@mediapipe/tasks-text": "catalog:",
+        "@mediapipe/tasks-vision": "catalog:",
         "@radix-ui/react-icons": "^1.3.2",
         "@sroussey/transformers": "catalog:",
         "@uiw/codemirror-theme-vscode": "^4.25.2",
@@ -108,7 +114,10 @@
       "name": "@workglow/ai-provider",
       "version": "0.0.66",
       "devDependencies": {
+        "@mediapipe/tasks-audio": "catalog:",
+        "@mediapipe/tasks-genai": "catalog:",
         "@mediapipe/tasks-text": "catalog:",
+        "@mediapipe/tasks-vision": "catalog:",
         "@sroussey/transformers": "catalog:",
         "@workglow/ai": "workspace:*",
         "@workglow/job-queue": "workspace:*",
@@ -117,7 +126,10 @@
         "@workglow/util": "workspace:*",
       },
       "peerDependencies": {
+        "@mediapipe/tasks-audio": "catalog:",
+        "@mediapipe/tasks-genai": "catalog:",
         "@mediapipe/tasks-text": "catalog:",
+        "@mediapipe/tasks-vision": "catalog:",
         "@sroussey/transformers": "catalog:",
         "@workglow/ai": "workspace:*",
         "@workglow/job-queue": "workspace:*",
@@ -255,7 +267,10 @@
     "protobufjs",
   ],
   "catalog": {
-    "@mediapipe/tasks-text": "^0.10.21",
+    "@mediapipe/tasks-audio": "^0.10.22-rc.20250304",
+    "@mediapipe/tasks-genai": "^0.10.22-rc.20250304",
+    "@mediapipe/tasks-text": "^0.10.22-rc.20250304",
+    "@mediapipe/tasks-vision": "^0.10.22-rc.20250304",
     "@sroussey/transformers": "3.8.1",
   },
   "packages": {
@@ -513,7 +528,13 @@
 
     "@marijn/find-cluster-break": ["@marijn/find-cluster-break@1.0.2", "", {}, "sha512-l0h88YhZFyKdXIFNfSWpyjStDjGHwZ/U7iobcK1cQQD8sejsONdQtTVU+1wVN1PBw40PiiHB1vA5S7VTfQiP9g=="],
 
-    "@mediapipe/tasks-text": ["@mediapipe/tasks-text@0.10.21", "", {}, "sha512-ACK1rNJDbSuLgJr5c2ewDPfrW064i+z1o/ENdPIadcioeRqKgw9KKg3iVXUq67fbqQBfaTbtUOA710YA6q91oQ=="],
+    "@mediapipe/tasks-audio": ["@mediapipe/tasks-audio@0.10.22-rc.20250304", "", {}, "sha512-3rUl/8/+/J7kkoGU2a6mLQnBpw5KktsKmBKtL50GopzBUE0vd8D0dXwGPHAL2tIRYiQ1TMv1UDJSPrRrHTbnPA=="],
+
+    "@mediapipe/tasks-genai": ["@mediapipe/tasks-genai@0.10.25", "", {}, "sha512-/ce/qNTC/CzzPJ5QRBz4MIoaYD+L65wkeE38ysb7saAZd38RZgzzVp1ZoLVFe/52LC3Ly/h2qcZWmkQf5PSJag=="],
+
+    "@mediapipe/tasks-text": ["@mediapipe/tasks-text@0.10.22-rc.20250304", "", {}, "sha512-J2AFxsh+Pra2OZXf+T4iC8p4JeLyLjg7wU7l2mxcNPNY13wmVhYADxkOLSQq7BPRuXj5aBj7A98dBgZh++s6OQ=="],
+
+    "@mediapipe/tasks-vision": ["@mediapipe/tasks-vision@0.10.22-rc.20250304", "", {}, "sha512-dElxVXMFGthshfIj+qAVm8KE2jmNo2p8oXFib8WzEjb7GNaX/ClWBc8UJfoSZwjEMVrdHJ4YUfa7P3ifl6MIWw=="],
 
     "@nodelib/fs.scandir": ["@nodelib/fs.scandir@2.1.5", "", { "dependencies": { "@nodelib/fs.stat": "2.0.5", "run-parallel": "^1.1.9" } }, "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g=="],
 

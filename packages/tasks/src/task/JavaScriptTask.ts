@@ -16,6 +16,7 @@ const inputSchema = {
       title: "Code",
       minLength: 1,
       description: "JavaScript code to execute",
+      format: "code:javascript",
     },
   },
   required: ["javascript_code"],

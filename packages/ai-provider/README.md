@@ -33,7 +33,7 @@ Depending on which providers you use, you may need to install additional peer de
 npm install @sroussey/transformers
 
 # For MediaPipe support
-npm install @mediapipe/tasks-text
+npm install @mediapipe/tasks-text @mediapipe/tasks-vision @mediapipe/tasks-audio @mediapipe/tasks-genai
 ```
 
 ## Quick Start
