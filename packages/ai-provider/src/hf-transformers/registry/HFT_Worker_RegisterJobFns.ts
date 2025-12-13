@@ -20,6 +20,7 @@ import {
   HFT_TextRewriter,
   HFT_TextSummary,
   HFT_TextTranslation,
+  HFT_Unload,
 } from "../common/HFT_JobRunFns";
 
 export const HFT_WORKER_JOBRUN = createServiceToken("worker.ai-provider.hft");
@@ -29,6 +30,7 @@ export const HFT_WORKER_JOBRUN_REGISTER = globalServiceRegistry.register(
   () => {
     const workerServer = globalServiceRegistry.get(WORKER_SERVER);
     workerServer.registerFunction("DownloadModelTask", HFT_Download);
+    workerServer.registerFunction("UnloadModelTask", HFT_Unload);
     workerServer.registerFunction("TextEmbeddingTask", HFT_TextEmbedding);
     workerServer.registerFunction("TextGenerationTask", HFT_TextGeneration);
     workerServer.registerFunction("TextLanguageDetectionTask", HFT_TextLanguageDetection);

@@ -1,5 +1,17 @@
 # @workglow/ai-provider
 
+## 0.0.68
+
+### Patch Changes
+
+- Fix missing unload model task in worker version
+- Updated dependencies
+  - @workglow/ai@0.0.68
+  - @workglow/job-queue@0.0.68
+  - @workglow/storage@0.0.68
+  - @workglow/task-graph@0.0.68
+  - @workglow/util@0.0.68
+
 ## 0.0.67
 
 ### Patch Changes

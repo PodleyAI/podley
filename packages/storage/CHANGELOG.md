@@ -1,5 +1,14 @@
 # @workglow/storage
 
+## 0.0.68
+
+### Patch Changes
+
+- Fix missing unload model task in worker version
+- Updated dependencies
+  - @workglow/sqlite@0.0.68
+  - @workglow/util@0.0.68
+
 ## 0.0.67
 
 ### Patch Changes
