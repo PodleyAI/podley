@@ -9,7 +9,13 @@ import { ConcurrencyLimiter, JobQueueClient, JobQueueServer } from "@workglow/jo
 import { InMemoryQueueStorage } from "@workglow/storage";
 import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-graph";
 import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
-import { TFMP_Download, TFMP_TextEmbedding, TFMP_Unload } from "../common/TFMP_JobRunFns";
+import {
+  TFMP_Download,
+  TFMP_TextClassifier,
+  TFMP_TextEmbedding,
+  TFMP_TextLanguageDetection,
+  TFMP_Unload,
+} from "../common/TFMP_JobRunFns";
 
 /**
  * Registers the TensorFlow MediaPipe inline job functions for same-thread execution.
@@ -36,6 +42,16 @@ export async function register_TFMP_InlineJobFns(
     TENSORFLOW_MEDIAPIPE,
     "TextEmbeddingTask",
     TFMP_TextEmbedding as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "TextLanguageDetectionTask",
+    TFMP_TextLanguageDetection as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "TextClassifierTask",
+    TFMP_TextClassifier as any
   );
 
   // If no client provided, create a default in-memory queue

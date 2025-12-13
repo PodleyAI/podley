@@ -9,9 +9,9 @@ import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
 import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
-const modelSchema = TypeReplicateArray(TypeModel("model:LanguageDetectionTask"));
+const modelSchema = TypeReplicateArray(TypeModel("model:TextLanguageDetectionTask"));
 
-export const LanguageDetectionInputSchema = {
+export const TextLanguageDetectionInputSchema = {
   type: "object",
   properties: {
     text: TypeReplicateArray({
@@ -39,7 +39,7 @@ export const LanguageDetectionInputSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchema;
 
-export const LanguageDetectionOutputSchema = {
+export const TextLanguageDetectionOutputSchema = {
   type: "object",
   properties: {
     languages: {
@@ -69,51 +69,51 @@ export const LanguageDetectionOutputSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchema;
 
-export type LanguageDetectionTaskInput = FromSchema<typeof LanguageDetectionInputSchema>;
-export type LanguageDetectionTaskOutput = FromSchema<typeof LanguageDetectionOutputSchema>;
+export type TextLanguageDetectionTaskInput = FromSchema<typeof TextLanguageDetectionInputSchema>;
+export type TextLanguageDetectionTaskOutput = FromSchema<typeof TextLanguageDetectionOutputSchema>;
 
 /**
  * Detects the language of text using language models
  */
-export class LanguageDetectionTask extends AiTask<
-  LanguageDetectionTaskInput,
-  LanguageDetectionTaskOutput
+export class TextLanguageDetectionTask extends AiTask<
+  TextLanguageDetectionTaskInput,
+  TextLanguageDetectionTaskOutput
 > {
-  public static type = "LanguageDetectionTask";
+  public static type = "TextLanguageDetectionTask";
   public static category = "AI Text Model";
   public static title = "Language Detection";
   public static description = "Detects the language of text using language models";
   public static inputSchema(): DataPortSchema {
-    return LanguageDetectionInputSchema as DataPortSchema;
+    return TextLanguageDetectionInputSchema as DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
-    return LanguageDetectionOutputSchema as DataPortSchema;
+    return TextLanguageDetectionOutputSchema as DataPortSchema;
   }
 }
 
-TaskRegistry.registerTask(LanguageDetectionTask);
+TaskRegistry.registerTask(TextLanguageDetectionTask);
 
 /**
  * Convenience function to run language detection tasks.
- * Creates and executes a LanguageDetectionTask with the provided input.
+ * Creates and executes a TextLanguageDetectionTask with the provided input.
  * @param input The input parameters for language detection (text and model)
  * @returns Promise resolving to the languages with scores
  */
-export const LanguageDetection = (
-  input: LanguageDetectionTaskInput,
+export const TextLanguageDetection = (
+  input: TextLanguageDetectionTaskInput,
   config?: JobQueueTaskConfig
 ) => {
-  return new LanguageDetectionTask(input, config).run();
+  return new TextLanguageDetectionTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    LanguageDetection: CreateWorkflow<
-      LanguageDetectionTaskInput,
-      LanguageDetectionTaskOutput,
+    TextLanguageDetection: CreateWorkflow<
+      TextLanguageDetectionTaskInput,
+      TextLanguageDetectionTaskOutput,
       JobQueueTaskConfig
     >;
   }
 }
 
-Workflow.prototype.LanguageDetection = CreateWorkflow(LanguageDetectionTask);
+Workflow.prototype.TextLanguageDetection = CreateWorkflow(TextLanguageDetectionTask);

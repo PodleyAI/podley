@@ -31,6 +31,8 @@ export async function register_HFT_ClientJobFns(
     "DownloadModelTask",
     "UnloadModelTask",
     "TextEmbeddingTask",
+    "TextLanguageDetectionTask",
+    "TextClassifierTask",
     "TextGenerationTask",
     "TextTranslationTask",
     "TextRewriterTask",

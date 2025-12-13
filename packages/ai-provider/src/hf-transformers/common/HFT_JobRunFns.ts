@@ -25,14 +25,14 @@ import {
   AiProviderRunFn,
   type DeReplicateFromSchema,
   DownloadModelTaskExecuteInput,
-  LanguageDetectionInputSchema,
-  LanguageDetectionOutputSchema,
   TextClassifierInputSchema,
   TextClassifierOutputSchema,
   TextEmbeddingInputSchema,
   TextEmbeddingOutputSchema,
   TextGenerationInputSchema,
   TextGenerationOutputSchema,
+  TextLanguageDetectionInputSchema,
+  TextLanguageDetectionOutputSchema,
   TextQuestionAnswerInputSchema,
   TextQuestionAnswerOutputSchema,
   TextRewriterInputSchema,
@@ -235,9 +235,9 @@ export const HFT_TextClassifier: AiProviderRunFn<
   };
 };
 
-export const HFT_LanguageDetection: AiProviderRunFn<
-  DeReplicateFromSchema<typeof LanguageDetectionInputSchema>,
-  DeReplicateFromSchema<typeof LanguageDetectionOutputSchema>,
+export const HFT_TextLanguageDetection: AiProviderRunFn<
+  DeReplicateFromSchema<typeof TextLanguageDetectionInputSchema>,
+  DeReplicateFromSchema<typeof TextLanguageDetectionOutputSchema>,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const textClassifier: TextClassificationPipeline = await getPipeline(model!, onProgress, {

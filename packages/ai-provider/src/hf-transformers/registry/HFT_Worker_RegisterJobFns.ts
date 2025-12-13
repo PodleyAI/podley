@@ -12,8 +12,10 @@ import {
 } from "@workglow/util";
 import {
   HFT_Download,
+  HFT_TextClassifier,
   HFT_TextEmbedding,
   HFT_TextGeneration,
+  HFT_TextLanguageDetection,
   HFT_TextQuestionAnswer,
   HFT_TextRewriter,
   HFT_TextSummary,
@@ -29,6 +31,8 @@ export const HFT_WORKER_JOBRUN_REGISTER = globalServiceRegistry.register(
     workerServer.registerFunction("DownloadModelTask", HFT_Download);
     workerServer.registerFunction("TextEmbeddingTask", HFT_TextEmbedding);
     workerServer.registerFunction("TextGenerationTask", HFT_TextGeneration);
+    workerServer.registerFunction("TextLanguageDetectionTask", HFT_TextLanguageDetection);
+    workerServer.registerFunction("TextClassifierTask", HFT_TextClassifier);
     workerServer.registerFunction("TextTranslationTask", HFT_TextTranslation);
     workerServer.registerFunction("TextRewriterTask", HFT_TextRewriter);
     workerServer.registerFunction("TextSummaryTask", HFT_TextSummary);

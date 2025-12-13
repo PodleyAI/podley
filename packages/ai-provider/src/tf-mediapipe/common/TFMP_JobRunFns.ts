@@ -15,12 +15,12 @@ import type {
   DeReplicateFromSchema,
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
-  LanguageDetectionInputSchema,
-  LanguageDetectionOutputSchema,
   TextClassifierInputSchema,
   TextClassifierOutputSchema,
   TextEmbeddingInputSchema,
   TextEmbeddingOutputSchema,
+  TextLanguageDetectionInputSchema,
+  TextLanguageDetectionOutputSchema,
 } from "@workglow/ai";
 import { PermanentJobError } from "@workglow/job-queue";
 import { TFMPModelRecord } from "./TFMP_ModelSchema";
@@ -260,9 +260,9 @@ export const TFMP_TextClassifier: AiProviderRunFn<
  * Core implementation for language detection using MediaPipe TFJS.
  * This is shared between inline and worker implementations.
  */
-export const TFMP_LanguageDetection: AiProviderRunFn<
-  DeReplicateFromSchema<typeof LanguageDetectionInputSchema>,
-  DeReplicateFromSchema<typeof LanguageDetectionOutputSchema>,
+export const TFMP_TextLanguageDetection: AiProviderRunFn<
+  DeReplicateFromSchema<typeof TextLanguageDetectionInputSchema>,
+  DeReplicateFromSchema<typeof TextLanguageDetectionOutputSchema>,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
   onProgress(0.1, "Model loaded");
