@@ -1,5 +1,22 @@
 # @workglow/web
 
+## 0.0.67
+
+### Patch Changes
+
+- Add new tasks: UnloadModelTask, TextClassifierTask, TextLanguageDetectionTask
+- Updated dependencies
+  - @workglow/ai-provider@0.0.67
+  - @workglow/tasks@0.0.67
+  - @workglow/test@0.0.67
+  - @workglow/ai@0.0.67
+  - @workglow/debug@0.0.67
+  - @workglow/job-queue@0.0.67
+  - @workglow/sqlite@0.0.67
+  - @workglow/storage@0.0.67
+  - @workglow/task-graph@0.0.67
+  - @workglow/util@0.0.67
+
 ## 0.0.66
 
 ### Patch Changes

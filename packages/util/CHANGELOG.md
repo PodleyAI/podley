@@ -1,5 +1,11 @@
 # @workglow/util
 
+## 0.0.67
+
+### Patch Changes
+
+- Add new tasks: UnloadModelTask, TextClassifierTask, TextLanguageDetectionTask
+
 ## 0.0.66
 
 ### Patch Changes
