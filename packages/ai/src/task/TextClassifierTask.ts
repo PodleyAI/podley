@@ -7,7 +7,7 @@
 import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
+import { DeReplicateFromSchema, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
 const modelSchema = TypeReplicateArray(TypeModel("model:TextClassifierTask"));
 
@@ -71,6 +71,12 @@ export const TextClassifierOutputSchema = {
 
 export type TextClassifierTaskInput = FromSchema<typeof TextClassifierInputSchema>;
 export type TextClassifierTaskOutput = FromSchema<typeof TextClassifierOutputSchema>;
+export type TextClassifierTaskExecuteInput = DeReplicateFromSchema<
+  typeof TextClassifierInputSchema
+>;
+export type TextClassifierTaskExecuteOutput = DeReplicateFromSchema<
+  typeof TextClassifierOutputSchema
+>;
 
 /**
  * Classifies text into predefined categories using language models

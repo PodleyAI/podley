@@ -7,7 +7,7 @@
 import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
+import { DeReplicateFromSchema, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
 const contextSchema = {
   type: "string",
@@ -55,6 +55,12 @@ export const TextQuestionAnswerOutputSchema = {
 
 export type TextQuestionAnswerTaskInput = FromSchema<typeof TextQuestionAnswerInputSchema>;
 export type TextQuestionAnswerTaskOutput = FromSchema<typeof TextQuestionAnswerOutputSchema>;
+export type TextQuestionAnswerTaskExecuteInput = DeReplicateFromSchema<
+  typeof TextQuestionAnswerInputSchema
+>;
+export type TextQuestionAnswerTaskExecuteOutput = DeReplicateFromSchema<
+  typeof TextQuestionAnswerOutputSchema
+>;
 
 /**
  * This is a special case of text generation that takes a context and a question

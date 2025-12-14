@@ -7,7 +7,12 @@
 import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
-import { TypeLanguage, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
+import {
+  DeReplicateFromSchema,
+  TypeLanguage,
+  TypeModel,
+  TypeReplicateArray,
+} from "./base/AiTaskSchemas";
 
 const modelSchema = TypeReplicateArray(TypeModel("model:TextTranslationTask"));
 
@@ -68,6 +73,12 @@ export const TextTranslationOutputSchema = {
 
 export type TextTranslationTaskInput = FromSchema<typeof TextTranslationInputSchema>;
 export type TextTranslationTaskOutput = FromSchema<typeof TextTranslationOutputSchema>;
+export type TextTranslationTaskExecuteInput = DeReplicateFromSchema<
+  typeof TextTranslationInputSchema
+>;
+export type TextTranslationTaskExecuteOutput = DeReplicateFromSchema<
+  typeof TextTranslationOutputSchema
+>;
 
 /**
  * This translates text from one language to another

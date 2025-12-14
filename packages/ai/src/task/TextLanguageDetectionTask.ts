@@ -7,7 +7,7 @@
 import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
+import { DeReplicateFromSchema, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
 const modelSchema = TypeReplicateArray(TypeModel("model:TextLanguageDetectionTask"));
 
@@ -71,6 +71,12 @@ export const TextLanguageDetectionOutputSchema = {
 
 export type TextLanguageDetectionTaskInput = FromSchema<typeof TextLanguageDetectionInputSchema>;
 export type TextLanguageDetectionTaskOutput = FromSchema<typeof TextLanguageDetectionOutputSchema>;
+export type TextLanguageDetectionTaskExecuteInput = DeReplicateFromSchema<
+  typeof TextLanguageDetectionInputSchema
+>;
+export type TextLanguageDetectionTaskExecuteOutput = DeReplicateFromSchema<
+  typeof TextLanguageDetectionOutputSchema
+>;
 
 /**
  * Detects the language of text using language models

@@ -7,7 +7,7 @@
 import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
+import { DeReplicateFromSchema, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
 const modelSchema = TypeReplicateArray(TypeModel("model:TextSummaryTask"));
 
@@ -40,6 +40,8 @@ export const TextSummaryOutputSchema = {
 
 export type TextSummaryTaskInput = FromSchema<typeof TextSummaryInputSchema>;
 export type TextSummaryTaskOutput = FromSchema<typeof TextSummaryOutputSchema>;
+export type TextSummaryTaskExecuteInput = DeReplicateFromSchema<typeof TextSummaryInputSchema>;
+export type TextSummaryTaskExecuteOutput = DeReplicateFromSchema<typeof TextSummaryOutputSchema>;
 
 /**
  * This summarizes a piece of text

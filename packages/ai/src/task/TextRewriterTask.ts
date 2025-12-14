@@ -7,7 +7,7 @@
 import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
+import { DeReplicateFromSchema, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
 const modelSchema = TypeReplicateArray(TypeModel("model:TextRewriterTask"));
 
@@ -45,6 +45,8 @@ export const TextRewriterOutputSchema = {
 
 export type TextRewriterTaskInput = FromSchema<typeof TextRewriterInputSchema>;
 export type TextRewriterTaskOutput = FromSchema<typeof TextRewriterOutputSchema>;
+export type TextRewriterTaskExecuteInput = DeReplicateFromSchema<typeof TextRewriterInputSchema>;
+export type TextRewriterTaskExecuteOutput = DeReplicateFromSchema<typeof TextRewriterOutputSchema>;
 
 /**
  * This is a special case of text generation that takes a prompt and text to rewrite

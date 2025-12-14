@@ -23,25 +23,24 @@ import {
 } from "@sroussey/transformers";
 import {
   AiProviderRunFn,
-  type DeReplicateFromSchema,
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
-  TextClassifierInputSchema,
-  TextClassifierOutputSchema,
-  TextEmbeddingInputSchema,
-  TextEmbeddingOutputSchema,
-  TextGenerationInputSchema,
-  TextGenerationOutputSchema,
-  TextLanguageDetectionInputSchema,
-  TextLanguageDetectionOutputSchema,
-  TextQuestionAnswerInputSchema,
-  TextQuestionAnswerOutputSchema,
-  TextRewriterInputSchema,
-  TextRewriterOutputSchema,
-  TextSummaryInputSchema,
-  TextSummaryOutputSchema,
-  TextTranslationInputSchema,
-  TextTranslationOutputSchema,
+  TextClassifierTaskExecuteInput,
+  TextClassifierTaskExecuteOutput,
+  TextEmbeddingTaskExecuteInput,
+  TextEmbeddingTaskExecuteOutput,
+  TextGenerationTaskExecuteInput,
+  TextGenerationTaskExecuteOutput,
+  TextLanguageDetectionTaskExecuteInput,
+  TextLanguageDetectionTaskExecuteOutput,
+  TextQuestionAnswerTaskExecuteInput,
+  TextQuestionAnswerTaskExecuteOutput,
+  TextRewriterTaskExecuteInput,
+  TextRewriterTaskExecuteOutput,
+  TextSummaryTaskExecuteInput,
+  TextSummaryTaskExecuteOutput,
+  TextTranslationTaskExecuteInput,
+  TextTranslationTaskExecuteOutput,
   TypedArray,
   UnloadModelTaskExecuteInput,
   UnloadModelTaskExecuteOutput,
@@ -178,8 +177,8 @@ const deleteModelCache = async (modelPath: string): Promise<void> => {
  */
 
 export const HFT_TextEmbedding: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextEmbeddingInputSchema>,
-  DeReplicateFromSchema<typeof TextEmbeddingOutputSchema>,
+  TextEmbeddingTaskExecuteInput,
+  TextEmbeddingTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const generateEmbedding: FeatureExtractionPipeline = await getPipeline(model!, onProgress, {
@@ -209,8 +208,8 @@ export const HFT_TextEmbedding: AiProviderRunFn<
 };
 
 export const HFT_TextClassifier: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextClassifierInputSchema>,
-  DeReplicateFromSchema<typeof TextClassifierOutputSchema>,
+  TextClassifierTaskExecuteInput,
+  TextClassifierTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const textClassifier: TextClassificationPipeline = await getPipeline(model!, onProgress, {
@@ -239,8 +238,8 @@ export const HFT_TextClassifier: AiProviderRunFn<
 };
 
 export const HFT_TextLanguageDetection: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextLanguageDetectionInputSchema>,
-  DeReplicateFromSchema<typeof TextLanguageDetectionOutputSchema>,
+  TextLanguageDetectionTaskExecuteInput,
+  TextLanguageDetectionTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const textClassifier: TextClassificationPipeline = await getPipeline(model!, onProgress, {
@@ -273,8 +272,8 @@ export const HFT_TextLanguageDetection: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextGeneration: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextGenerationInputSchema>,
-  DeReplicateFromSchema<typeof TextGenerationOutputSchema>,
+  TextGenerationTaskExecuteInput,
+  TextGenerationTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const generateText: TextGenerationPipeline = await getPipeline(model!, onProgress, {
@@ -306,8 +305,8 @@ export const HFT_TextGeneration: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextTranslation: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextTranslationInputSchema>,
-  DeReplicateFromSchema<typeof TextTranslationOutputSchema>,
+  TextTranslationTaskExecuteInput,
+  TextTranslationTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const translate: TranslationPipeline = await getPipeline(model!, onProgress, {
@@ -340,8 +339,8 @@ export const HFT_TextTranslation: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextRewriter: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextRewriterInputSchema>,
-  DeReplicateFromSchema<typeof TextRewriterOutputSchema>,
+  TextRewriterTaskExecuteInput,
+  TextRewriterTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const generateText: TextGenerationPipeline = await getPipeline(model!, onProgress, {
@@ -380,8 +379,8 @@ export const HFT_TextRewriter: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextSummary: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextSummaryInputSchema>,
-  DeReplicateFromSchema<typeof TextSummaryOutputSchema>,
+  TextSummaryTaskExecuteInput,
+  TextSummaryTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   const generateSummary: SummarizationPipeline = await getPipeline(model!, onProgress, {
@@ -411,8 +410,8 @@ export const HFT_TextSummary: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_TextQuestionAnswer: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextQuestionAnswerInputSchema>,
-  DeReplicateFromSchema<typeof TextQuestionAnswerOutputSchema>,
+  TextQuestionAnswerTaskExecuteInput,
+  TextQuestionAnswerTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   // Get the question answering pipeline

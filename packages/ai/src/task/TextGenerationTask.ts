@@ -7,7 +7,7 @@
 import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
-import { TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
+import { DeReplicateFromSchema, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
 const generatedTextSchema = {
   type: "string",
@@ -86,6 +86,12 @@ export const TextGenerationOutputSchema = {
 
 export type TextGenerationTaskInput = FromSchema<typeof TextGenerationInputSchema>;
 export type TextGenerationTaskOutput = FromSchema<typeof TextGenerationOutputSchema>;
+export type TextGenerationTaskExecuteInput = DeReplicateFromSchema<
+  typeof TextGenerationInputSchema
+>;
+export type TextGenerationTaskExecuteOutput = DeReplicateFromSchema<
+  typeof TextGenerationOutputSchema
+>;
 
 export class TextGenerationTask extends AiTask<
   TextGenerationTaskInput,

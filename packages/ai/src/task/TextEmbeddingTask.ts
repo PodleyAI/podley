@@ -8,6 +8,7 @@ import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@wor
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
 import {
+  DeReplicateFromSchema,
   TypedArraySchema,
   TypedArraySchemaOptions,
   TypeModel,
@@ -51,6 +52,10 @@ export type TextEmbeddingTaskInput = FromSchema<
 export type TextEmbeddingTaskOutput = FromSchema<
   typeof TextEmbeddingOutputSchema,
   TypedArraySchemaOptions
+>;
+export type TextEmbeddingTaskExecuteInput = DeReplicateFromSchema<typeof TextEmbeddingInputSchema>;
+export type TextEmbeddingTaskExecuteOutput = DeReplicateFromSchema<
+  typeof TextEmbeddingOutputSchema
 >;
 
 /**

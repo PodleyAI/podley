@@ -12,15 +12,14 @@ import {
 } from "@mediapipe/tasks-text";
 import type {
   AiProviderRunFn,
-  DeReplicateFromSchema,
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
-  TextClassifierInputSchema,
-  TextClassifierOutputSchema,
-  TextEmbeddingInputSchema,
-  TextEmbeddingOutputSchema,
-  TextLanguageDetectionInputSchema,
-  TextLanguageDetectionOutputSchema,
+  TextClassifierTaskExecuteInput,
+  TextClassifierTaskExecuteOutput,
+  TextEmbeddingTaskExecuteInput,
+  TextEmbeddingTaskExecuteOutput,
+  TextLanguageDetectionTaskExecuteInput,
+  TextLanguageDetectionTaskExecuteOutput,
   UnloadModelTaskExecuteInput,
   UnloadModelTaskExecuteOutput,
 } from "@workglow/ai";
@@ -135,6 +134,8 @@ const getModelTask = async <
   // Load WASM if needed
   const wasmFileset = await getWasmTask(model, onProgress, signal);
 
+  onProgress(0.2, "Creating model task");
+
   // Create new model instance
   const task = await TaskType.createFromOptions(wasmFileset, {
     baseOptions: {
@@ -210,8 +211,8 @@ export const TFMP_Download: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const TFMP_TextEmbedding: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextEmbeddingInputSchema>,
-  DeReplicateFromSchema<typeof TextEmbeddingOutputSchema>,
+  TextEmbeddingTaskExecuteInput,
+  TextEmbeddingTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
   onProgress(0.1, "Model loaded");
@@ -235,8 +236,8 @@ export const TFMP_TextEmbedding: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const TFMP_TextClassifier: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextClassifierInputSchema>,
-  DeReplicateFromSchema<typeof TextClassifierOutputSchema>,
+  TextClassifierTaskExecuteInput,
+  TextClassifierTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
   onProgress(0.1, "Model loaded");
@@ -263,8 +264,8 @@ export const TFMP_TextClassifier: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const TFMP_TextLanguageDetection: AiProviderRunFn<
-  DeReplicateFromSchema<typeof TextLanguageDetectionInputSchema>,
-  DeReplicateFromSchema<typeof TextLanguageDetectionOutputSchema>,
+  TextLanguageDetectionTaskExecuteInput,
+  TextLanguageDetectionTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
   onProgress(0.1, "Model loaded");
