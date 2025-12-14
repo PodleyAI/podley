@@ -342,6 +342,19 @@ export class JobQueueClient<Input, Output> {
     return this.events.waitOn(event) as Promise<JobQueueEventParameters<Event, Input, Output>>;
   }
 
+  /**
+   * Subscribes to an event and returns a function to unsubscribe
+   * @param event - The event name to subscribe to
+   * @param listener - The listener function to add
+   * @returns a function to unsubscribe from the event
+   */
+  public subscribe<Event extends JobQueueEvents>(
+    event: Event,
+    listener: JobQueueEventListener<Event>
+  ): () => void {
+    return this.events.subscribe(event, listener);
+  }
+
   // ========================================================================
   // Internal methods called by JobQueueServer for same-process optimization
   // ========================================================================
