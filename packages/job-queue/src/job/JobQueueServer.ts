@@ -11,6 +11,7 @@ import { NullLimiter } from "../limiter/NullLimiter";
 import { Job, JobClass } from "./Job";
 import { JobQueueClient } from "./JobQueueClient";
 import { JobQueueWorker } from "./JobQueueWorker";
+import { classToStorage, storageToClass } from "./JobStorageConverters";
 
 /**
  * Statistics tracked for the job queue
@@ -476,66 +477,14 @@ export class JobQueueServer<
    * Convert storage format to Job class
    */
   protected storageToClass(details: JobStorageFormat<Input, Output>): Job<Input, Output> {
-    const toDate = (date: string | null | undefined): Date | null => {
-      if (!date) return null;
-      const d = new Date(date);
-      return isNaN(d.getTime()) ? null : d;
-    };
-    return new this.jobClass({
-      id: details.id,
-      jobRunId: details.job_run_id,
-      queueName: details.queue,
-      fingerprint: details.fingerprint,
-      input: details.input as Input,
-      output: details.output as Output,
-      runAfter: toDate(details.run_after),
-      createdAt: toDate(details.created_at)!,
-      deadlineAt: toDate(details.deadline_at),
-      lastRanAt: toDate(details.last_ran_at),
-      completedAt: toDate(details.completed_at),
-      progress: details.progress || 0,
-      progressMessage: details.progress_message || "",
-      progressDetails: details.progress_details ?? null,
-      status: details.status as JobStatus,
-      error: details.error ?? null,
-      errorCode: details.error_code ?? null,
-      runAttempts: details.run_attempts ?? 0,
-      maxRetries: details.max_retries ?? 10,
-      workerId: details.worker_id ?? null, // Allow null for initial creation
-    });
+    return storageToClass(details, this.jobClass);
   }
 
   /**
    * Convert Job class to storage format
    */
   protected classToStorage(job: Job<Input, Output>): JobStorageFormat<Input, Output> {
-    const dateToISOString = (date: Date | null | undefined): string | null => {
-      if (!date) return null;
-      return isNaN(date.getTime()) ? null : date.toISOString();
-    };
-    const now = new Date().toISOString();
-    return {
-      id: job.id,
-      job_run_id: job.jobRunId,
-      queue: job.queueName || this.queueName,
-      fingerprint: job.fingerprint,
-      input: job.input,
-      status: job.status,
-      output: job.output ?? null,
-      error: job.error === null ? null : String(job.error),
-      error_code: job.errorCode || null,
-      run_attempts: job.runAttempts ?? 0,
-      max_retries: job.maxRetries ?? 10,
-      run_after: dateToISOString(job.runAfter) ?? now,
-      created_at: dateToISOString(job.createdAt) ?? now,
-      deadline_at: dateToISOString(job.deadlineAt),
-      last_ran_at: dateToISOString(job.lastRanAt),
-      completed_at: dateToISOString(job.completedAt),
-      progress: job.progress ?? 0,
-      progress_message: job.progressMessage ?? "",
-      progress_details: job.progressDetails ?? null,
-      worker_id: job.workerId ?? null, // Allow null for initial creation
-    };
+    return classToStorage(job, this.queueName);
   }
 
   /**

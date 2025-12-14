@@ -23,6 +23,7 @@ import {
   JobQueueEvents,
 } from "./JobQueueEventListeners";
 import type { JobQueueServer } from "./JobQueueServer";
+import { storageToClass } from "./JobStorageConverters";
 
 /**
  * Handle returned when submitting a job, providing methods to interact with the job
@@ -497,32 +498,7 @@ export class JobQueueClient<Input, Output> {
   }
 
   protected storageToClass(details: JobStorageFormat<Input, Output>): Job<Input, Output> {
-    const toDate = (date: string | null | undefined): Date | null => {
-      if (!date) return null;
-      const d = new Date(date);
-      return isNaN(d.getTime()) ? null : d;
-    };
-    return new Job<Input, Output>({
-      id: details.id,
-      jobRunId: details.job_run_id,
-      queueName: details.queue,
-      fingerprint: details.fingerprint,
-      input: details.input as Input,
-      output: details.output as Output,
-      runAfter: toDate(details.run_after),
-      createdAt: toDate(details.created_at)!,
-      deadlineAt: toDate(details.deadline_at),
-      lastRanAt: toDate(details.last_ran_at),
-      completedAt: toDate(details.completed_at),
-      progress: details.progress || 0,
-      progressMessage: details.progress_message || "",
-      progressDetails: details.progress_details ?? null,
-      status: details.status as JobStatus,
-      error: details.error ?? null,
-      errorCode: details.error_code ?? null,
-      runAttempts: details.run_attempts ?? 0,
-      maxRetries: details.max_retries ?? 10,
-    });
+    return storageToClass(details, Job, { includeWorkerId: true });
   }
 
   protected buildErrorFromJob(job: Job<Input, Output>): JobError {
