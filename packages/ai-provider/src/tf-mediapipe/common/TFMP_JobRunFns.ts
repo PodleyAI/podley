@@ -21,6 +21,8 @@ import type {
   TextEmbeddingOutputSchema,
   TextLanguageDetectionInputSchema,
   TextLanguageDetectionOutputSchema,
+  UnloadModelTaskExecuteInput,
+  UnloadModelTaskExecuteOutput,
 } from "@workglow/ai";
 import { PermanentJobError } from "@workglow/job-queue";
 import { TFMPModelRecord } from "./TFMP_ModelSchema";
@@ -294,8 +296,8 @@ export const TFMP_TextLanguageDetection: AiProviderRunFn<
  * 3. If no other models are using the WASM fileset (count reaches 0), unloads the WASM
  */
 export const TFMP_Unload: AiProviderRunFn<
-  DownloadModelTaskExecuteInput,
-  DownloadModelTaskExecuteOutput,
+  UnloadModelTaskExecuteInput,
+  UnloadModelTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
   const modelPath = model!.providerConfig.modelPath;

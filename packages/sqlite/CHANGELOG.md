@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.69
+
+### Patch Changes
+
+- Fix build
+
 ## 0.0.68
 
 ### Patch Changes

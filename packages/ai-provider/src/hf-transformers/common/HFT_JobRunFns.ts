@@ -25,6 +25,7 @@ import {
   AiProviderRunFn,
   type DeReplicateFromSchema,
   DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteOutput,
   TextClassifierInputSchema,
   TextClassifierOutputSchema,
   TextEmbeddingInputSchema,
@@ -42,6 +43,8 @@ import {
   TextTranslationInputSchema,
   TextTranslationOutputSchema,
   TypedArray,
+  UnloadModelTaskExecuteInput,
+  UnloadModelTaskExecuteOutput,
 } from "@workglow/ai";
 import { PermanentJobError } from "@workglow/job-queue";
 import { CallbackStatus } from "./HFT_CallbackStatus";
@@ -95,7 +98,7 @@ const getPipeline = async (
  */
 export const HFT_Download: AiProviderRunFn<
   DownloadModelTaskExecuteInput,
-  DownloadModelTaskExecuteInput,
+  DownloadModelTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   // Download the model by creating a pipeline
@@ -111,8 +114,8 @@ export const HFT_Download: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  */
 export const HFT_Unload: AiProviderRunFn<
-  DownloadModelTaskExecuteInput,
-  DownloadModelTaskExecuteInput,
+  UnloadModelTaskExecuteInput,
+  UnloadModelTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
   // Delete the pipeline from the in-memory map

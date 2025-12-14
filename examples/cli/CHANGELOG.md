@@ -1,5 +1,19 @@
 # @workglow/cli
 
+## 0.0.69
+
+### Patch Changes
+
+- Fix build
+- Updated dependencies
+  - @workglow/ai-provider@0.0.69
+  - @workglow/ai@0.0.69
+  - @workglow/storage@0.0.69
+  - @workglow/task-graph@0.0.69
+  - @workglow/tasks@0.0.69
+  - @workglow/test@0.0.69
+  - @workglow/util@0.0.69
+
 ## 0.0.68
 
 ### Patch Changes

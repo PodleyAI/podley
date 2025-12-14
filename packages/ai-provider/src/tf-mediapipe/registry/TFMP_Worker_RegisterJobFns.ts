@@ -26,10 +26,10 @@ export const TFMP_WORKER_JOBRUN_REGISTER = globalServiceRegistry.register(
   () => {
     const workerServer = globalServiceRegistry.get(WORKER_SERVER);
     workerServer.registerFunction("DownloadModelTask", TFMP_Download);
+    workerServer.registerFunction("UnloadModelTask", TFMP_Unload);
     workerServer.registerFunction("TextEmbeddingTask", TFMP_TextEmbedding);
     workerServer.registerFunction("TextLanguageDetectionTask", TFMP_TextLanguageDetection);
     workerServer.registerFunction("TextClassifierTask", TFMP_TextClassifier);
-    workerServer.registerFunction("UnloadModelTask", TFMP_Unload);
     parentPort.postMessage({ type: "ready" });
     console.log("TFMP_WORKER_JOBRUN registered");
     return workerServer;

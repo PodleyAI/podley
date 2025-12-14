@@ -1,5 +1,14 @@
 # @workglow/job-queue
 
+## 0.0.69
+
+### Patch Changes
+
+- Fix build
+- Updated dependencies
+  - @workglow/storage@0.0.69
+  - @workglow/util@0.0.69
+
 ## 0.0.68
 
 ### Patch Changes
