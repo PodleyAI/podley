@@ -25,7 +25,7 @@ export type StripJSONSchema<T> = T extends object
 
 export const FromSchemaDefaultOptions = {
   parseNotKeyword: true,
-  parseIfThenElseKeywords: false,
+  parseIfThenElseKeywords: true,
   keepDefaultedPropertiesOptional: true,
   references: false,
   deserialize: false,

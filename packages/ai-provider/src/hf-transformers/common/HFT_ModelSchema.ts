@@ -73,6 +73,16 @@ export const HfTransformersOnnxModelSchema = {
       },
       required: ["modelPath", "pipeline"],
       additionalProperties: false,
+      if: {
+        properties: {
+          pipeline: {
+            const: "feature-extraction",
+          },
+        },
+      },
+      then: {
+        required: ["nativeDimensions"],
+      },
     },
   },
   required: ["provider", "providerConfig"],
