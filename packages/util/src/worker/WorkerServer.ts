@@ -46,18 +46,28 @@ export class WorkerServer {
 
   private functions: Record<string, (...args: any[]) => Promise<any>> = {};
 
+  // Keep track of each request's AbortController
+  private requestControllers = new Map<string, AbortController>();
+  // Keep track of requests that have already been responded to
+  private completedRequests = new Set<string>();
+
   private postResult = (id: string, result: any) => {
+    if (this.completedRequests.has(id)) {
+      return; // Already responded to this request
+    }
+    this.completedRequests.add(id);
     const transferables = extractTransferables(result);
     // @ts-ignore - Ignore type mismatch between standard Transferable and Bun.Transferable
     postMessage({ id, type: "complete", data: result }, transferables);
   };
 
   private postError = (id: string, errorMessage: string) => {
+    if (this.completedRequests.has(id)) {
+      return; // Already responded to this request
+    }
+    this.completedRequests.add(id);
     postMessage({ id, type: "error", data: errorMessage });
   };
-
-  // Keep track of each request’s AbortController
-  private requestControllers = new Map<string, AbortController>();
 
   registerFunction(name: string, fn: (...args: any[]) => Promise<any>) {
     this.functions[name] = fn;
@@ -76,7 +86,11 @@ export class WorkerServer {
 
   async handleAbort(id: string) {
     if (this.requestControllers.has(id)) {
-      this.requestControllers.get(id)?.abort();
+      const controller = this.requestControllers.get(id);
+      controller?.abort();
+      this.requestControllers.delete(id);
+      // Send error response back to main thread so the promise rejects
+      this.postError(id, "Operation aborted");
     }
   }
 
@@ -92,7 +106,10 @@ export class WorkerServer {
 
       const fn = this.functions[functionName];
       const postProgress = (progress: number, message?: string, details?: any) => {
-        postMessage({ id, type: "progress", data: { progress, message, details } });
+        // Don't send progress updates after the request is completed/aborted
+        if (!this.completedRequests.has(id)) {
+          postMessage({ id, type: "progress", data: { progress, message, details } });
+        }
       };
       const result = await fn(input, model, postProgress, abortController.signal);
       this.postResult(id, result);
@@ -100,6 +117,11 @@ export class WorkerServer {
       this.postError(id, error.message);
     } finally {
       this.requestControllers.delete(id);
+      // Clean up completed requests set after a delay to handle any race conditions
+      // where abort message might arrive shortly after completion
+      setTimeout(() => {
+        this.completedRequests.delete(id);
+      }, 1000);
     }
   }
 }
