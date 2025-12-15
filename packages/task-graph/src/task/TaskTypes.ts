@@ -15,22 +15,29 @@ import type { Task } from "./Task";
  *  PENDING -> PROCESSING -> ABORTING -> FAILED
  *  PENDING -> PROCESSING -> FAILED
  *  PENDING -> DISABLED
- *
  */
-export enum TaskStatus {
+export type TaskStatus =
+  | "PENDING"
+  | "DISABLED"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "ABORTING"
+  | "FAILED";
+
+export const TaskStatus = {
   /** Task is created but not yet started */
-  PENDING = "PENDING",
+  PENDING: "PENDING",
   /** Task is disabled due to conditional logic */
-  DISABLED = "DISABLED",
+  DISABLED: "DISABLED",
   /** Task is currently running */
-  PROCESSING = "PROCESSING",
+  PROCESSING: "PROCESSING",
   /** Task has completed successfully */
-  COMPLETED = "COMPLETED",
+  COMPLETED: "COMPLETED",
   /** Task is in the process of being aborted */
-  ABORTING = "ABORTING",
+  ABORTING: "ABORTING",
   /** Task has failed */
-  FAILED = "FAILED",
-}
+  FAILED: "FAILED",
+} as const satisfies Record<TaskStatus, TaskStatus>;
 
 // ========================================================================
 // Core Task Data Types

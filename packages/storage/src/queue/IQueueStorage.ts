@@ -33,14 +33,15 @@ export interface QueueStorageOptions {
   readonly prefixValues?: Readonly<Record<string, string | number>>;
 }
 
-export enum JobStatus {
-  PENDING = "PENDING",
-  PROCESSING = "PROCESSING",
-  COMPLETED = "COMPLETED",
-  ABORTING = "ABORTING",
-  FAILED = "FAILED",
-  DISABLED = "DISABLED",
-}
+export type JobStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "ABORTING" | "FAILED" | "DISABLED";
+export const JobStatus = {
+  PENDING: "PENDING",
+  PROCESSING: "PROCESSING",
+  COMPLETED: "COMPLETED",
+  ABORTING: "ABORTING",
+  FAILED: "FAILED",
+  DISABLED: "DISABLED",
+} as const satisfies Record<JobStatus, JobStatus>;
 
 /**
  * Type of change that occurred in the queue

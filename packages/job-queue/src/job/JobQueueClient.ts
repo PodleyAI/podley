@@ -283,7 +283,7 @@ export class JobQueueClient<Input, Output> {
     const jobs = await this.getJobsByRunId(jobRunId);
     await Promise.allSettled(
       jobs.map((job) => {
-        if ([JobStatus.PROCESSING, JobStatus.PENDING].includes(job.status)) {
+        if (job.status === JobStatus.PROCESSING || job.status === JobStatus.PENDING) {
           return this.abort(job.id);
         }
       })

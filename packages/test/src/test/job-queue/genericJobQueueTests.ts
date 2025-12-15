@@ -381,8 +381,8 @@ export function runGenericJobQueueTests(
         const job3Status = (await client.getJob(handle3.id))?.status;
         const job4Status = (await client.getJob(handle4.id))?.status;
         if (
-          [JobStatus.FAILED, JobStatus.ABORTING].includes(job3Status!) &&
-          [JobStatus.FAILED, JobStatus.ABORTING].includes(job4Status!)
+          (job3Status === JobStatus.FAILED || job3Status === JobStatus.ABORTING) &&
+          (job4Status === JobStatus.FAILED || job4Status === JobStatus.ABORTING)
         ) {
           break;
         }

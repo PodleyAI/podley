@@ -642,7 +642,7 @@ export class TaskGraphRunner {
   protected async handleError(error: TaskError): Promise<void> {
     await Promise.allSettled(
       this.graph.getTasks().map(async (task: ITask) => {
-        if ([TaskStatus.PROCESSING].includes(task.status)) {
+        if (task.status === TaskStatus.PROCESSING) {
           task.abort();
         }
       })
@@ -660,7 +660,7 @@ export class TaskGraphRunner {
    */
   protected async handleAbort(): Promise<void> {
     this.graph.getTasks().map(async (task: ITask) => {
-      if ([TaskStatus.PROCESSING].includes(task.status)) {
+      if (task.status === TaskStatus.PROCESSING) {
         task.abort();
       }
     });
@@ -678,7 +678,7 @@ export class TaskGraphRunner {
   protected async handleDisable(): Promise<void> {
     await Promise.allSettled(
       this.graph.getTasks().map(async (task: ITask) => {
-        if ([TaskStatus.PENDING].includes(task.status)) {
+        if (task.status === TaskStatus.PENDING) {
           return task.disable();
         }
       })
