@@ -1,5 +1,16 @@
 # @workglow/tasks
 
+## 0.0.71
+
+### Patch Changes
+
+- Add TextFillMaskTask and TextNamedEntityRecognitionTask
+- Updated dependencies
+  - @workglow/job-queue@0.0.71
+  - @workglow/storage@0.0.71
+  - @workglow/task-graph@0.0.71
+  - @workglow/util@0.0.71
+
 ## 0.0.70
 
 ### Patch Changes

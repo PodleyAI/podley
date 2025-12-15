@@ -1,5 +1,11 @@
 # @workglow/util
 
+## 0.0.71
+
+### Patch Changes
+
+- Add TextFillMaskTask and TextNamedEntityRecognitionTask
+
 ## 0.0.70
 
 ### Patch Changes
