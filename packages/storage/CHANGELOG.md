@@ -1,5 +1,14 @@
 # @workglow/storage
 
+## 0.0.70
+
+### Patch Changes
+
+- Updates to download progress, etc
+- Updated dependencies
+  - @workglow/sqlite@0.0.70
+  - @workglow/util@0.0.70
+
 ## 0.0.69
 
 ### Patch Changes

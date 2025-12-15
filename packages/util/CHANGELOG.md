@@ -1,5 +1,11 @@
 # @workglow/util
 
+## 0.0.70
+
+### Patch Changes
+
+- Updates to download progress, etc
+
 ## 0.0.69
 
 ### Patch Changes

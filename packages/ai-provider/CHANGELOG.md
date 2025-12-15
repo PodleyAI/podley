@@ -1,5 +1,17 @@
 # @workglow/ai-provider
 
+## 0.0.70
+
+### Patch Changes
+
+- Updates to download progress, etc
+- Updated dependencies
+  - @workglow/ai@0.0.70
+  - @workglow/job-queue@0.0.70
+  - @workglow/storage@0.0.70
+  - @workglow/task-graph@0.0.70
+  - @workglow/util@0.0.70
+
 ## 0.0.69
 
 ### Patch Changes
