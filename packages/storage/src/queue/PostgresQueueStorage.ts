@@ -6,7 +6,6 @@
 
 import { createServiceToken, makeFingerprint, uuid4 } from "@workglow/util";
 import { Pool } from "pg";
-import { PollingSubscriptionManager } from "../util/PollingSubscriptionManager";
 import {
   IQueueStorage,
   JobStatus,
@@ -34,12 +33,6 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
   protected readonly prefixValues: Readonly<Record<string, string | number>>;
   /** The table name for the job queue */
   protected readonly tableName: string;
-  /** Shared polling subscription manager */
-  private pollingManager: PollingSubscriptionManager<
-    JobStorageFormat<Input, Output>,
-    unknown,
-    QueueChangePayload<Input, Output>
-  > | null = null;
 
   constructor(
     protected readonly db: Pool,
@@ -535,181 +528,15 @@ export class PostgresQueueStorage<Input, Output> implements IQueueStorage<Input,
   }
 
   /**
-   * Gets all jobs from the queue that match the current prefix values.
-   * Used internally for normal polling-based subscriptions (efficient - filters at DB level).
-   *
-   * @returns A promise that resolves to an array of jobs
-   */
-  private async getAllJobs(): Promise<Array<JobStorageFormat<Input, Output>>> {
-    const { conditions: prefixConditions, params: prefixParams } = this.buildPrefixWhereClause(2);
-    const result = await this.db.query<JobStorageFormat<Input, Output>, Array<string | number>>(
-      `SELECT * FROM ${this.tableName} WHERE queue = $1${prefixConditions}`,
-      [this.queueName, ...prefixParams]
-    );
-    if (!result) return [];
-    return result.rows;
-  }
-
-  /**
-   * Gets all jobs from the queue with a custom prefix filter.
-   * Used for subscriptions with custom prefix filters (filters at DB level).
-   *
-   * @param prefixFilter - The prefix values to filter by (empty object = all jobs)
-   * @returns A promise that resolves to an array of jobs
-   */
-  private async getAllJobsWithFilter(
-    prefixFilter: Readonly<Record<string, string | number>>
-  ): Promise<Array<JobStorageFormat<Input, Output>>> {
-    const filterEntries = Object.entries(prefixFilter);
-    let query = `SELECT * FROM ${this.tableName} WHERE queue = $1`;
-    const params: Array<string | number> = [this.queueName];
-
-    // Build dynamic WHERE clause for the filter
-    filterEntries.forEach(([key, value], index) => {
-      query += ` AND ${key} = $${index + 2}`;
-      params.push(value);
-    });
-
-    const result = await this.db.query<JobStorageFormat<Input, Output>, Array<string | number>>(
-      query,
-      params
-    );
-    if (!result) return [];
-    return result.rows;
-  }
-
-  /**
-   * Checks if a prefix filter is custom (different from instance's prefixes).
-   */
-  private isCustomPrefixFilter(prefixFilter?: Readonly<Record<string, string | number>>): boolean {
-    // No filter specified - use instance prefixes (not custom)
-    if (prefixFilter === undefined) {
-      return false;
-    }
-    // Empty filter - receive all (custom)
-    if (Object.keys(prefixFilter).length === 0) {
-      return true;
-    }
-    // Check if filter matches instance prefixes exactly
-    const instanceKeys = Object.keys(this.prefixValues);
-    const filterKeys = Object.keys(prefixFilter);
-    if (instanceKeys.length !== filterKeys.length) {
-      return true; // Different number of keys = custom
-    }
-    for (const key of instanceKeys) {
-      if (this.prefixValues[key] !== prefixFilter[key]) {
-        return true; // Different value = custom
-      }
-    }
-    return false; // Matches instance prefixes exactly
-  }
-
-  /**
-   * Gets or creates the shared polling subscription manager for normal subscriptions.
-   * This ensures all normal subscriptions share a single polling loop per interval.
-   */
-  private getPollingManager(): PollingSubscriptionManager<
-    JobStorageFormat<Input, Output>,
-    unknown,
-    QueueChangePayload<Input, Output>
-  > {
-    if (!this.pollingManager) {
-      this.pollingManager = new PollingSubscriptionManager<
-        JobStorageFormat<Input, Output>,
-        unknown,
-        QueueChangePayload<Input, Output>
-      >(
-        async () => {
-          // Fetch jobs with instance's prefix filter (efficient DB-level filtering)
-          const jobs = await this.getAllJobs();
-          return new Map(jobs.map((j) => [j.id, j]));
-        },
-        (a, b) => JSON.stringify(a) === JSON.stringify(b),
-        {
-          insert: (item) => ({ type: "INSERT" as const, new: item }),
-          update: (oldItem, newItem) => ({ type: "UPDATE" as const, old: oldItem, new: newItem }),
-          delete: (item) => ({ type: "DELETE" as const, old: item }),
-        }
-      );
-    }
-    return this.pollingManager;
-  }
-
-  /**
-   * Creates a dedicated polling subscription for custom prefix filters.
-   * This runs separately from the normal polling manager with DB-level filtering.
-   */
-  private subscribeWithCustomPrefixFilter(
-    callback: (change: QueueChangePayload<Input, Output>) => void,
-    prefixFilter: Readonly<Record<string, string | number>>,
-    intervalMs: number
-  ): () => void {
-    let lastKnownJobs = new Map<unknown, JobStorageFormat<Input, Output>>();
-    let cancelled = false;
-
-    const poll = async () => {
-      if (cancelled) return;
-      try {
-        const currentJobs = await this.getAllJobsWithFilter(prefixFilter);
-        if (cancelled) return;
-        const currentMap = new Map(currentJobs.map((j) => [j.id, j]));
-
-        // Detect changes
-        for (const [id, job] of currentMap) {
-          const old = lastKnownJobs.get(id);
-          if (!old) {
-            callback({ type: "INSERT", new: job });
-          } else if (JSON.stringify(old) !== JSON.stringify(job)) {
-            callback({ type: "UPDATE", old, new: job });
-          }
-        }
-
-        for (const [id, job] of lastKnownJobs) {
-          if (!currentMap.has(id)) {
-            callback({ type: "DELETE", old: job });
-          }
-        }
-
-        lastKnownJobs = currentMap;
-      } catch {
-        // Ignore polling errors
-      }
-    };
-
-    const intervalId = setInterval(poll, intervalMs);
-    poll(); // Initial poll
-
-    return () => {
-      cancelled = true;
-      clearInterval(intervalId);
-    };
-  }
-
-  /**
    * Subscribes to changes in the queue.
-   * Uses polling since this PostgreSQL implementation doesn't use LISTEN/NOTIFY.
+   * NOT IMPLEMENTED for PostgreSQL storage.
    *
-   * Normal subscriptions (no custom prefix filter) share a single polling loop for efficiency.
-   * Custom prefix filter subscriptions get their own dedicated polling loop with DB-level filtering.
-   *
-   * @param callback - Function called when a change occurs
-   * @param options - Subscription options including polling interval and prefix filter
-   * @returns Unsubscribe function
+   * @throws Error always - subscribeToChanges is not supported for PostgreSQL storage
    */
   public subscribeToChanges(
     callback: (change: QueueChangePayload<Input, Output>) => void,
     options?: QueueSubscribeOptions
   ): () => void {
-    const intervalMs = options?.pollingIntervalMs ?? 1000;
-
-    // Check if this is a custom prefix filter subscription
-    if (this.isCustomPrefixFilter(options?.prefixFilter)) {
-      // Custom prefix filter - use dedicated polling with DB-level filtering
-      return this.subscribeWithCustomPrefixFilter(callback, options!.prefixFilter!, intervalMs);
-    }
-
-    // Normal subscription - use shared polling manager (efficient)
-    const manager = this.getPollingManager();
-    return manager.subscribe(callback, { intervalMs });
+    throw new Error("subscribeToChanges is not supported for PostgresQueueStorage");
   }
 }

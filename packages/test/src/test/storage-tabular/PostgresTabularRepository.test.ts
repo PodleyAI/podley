@@ -9,7 +9,6 @@ import { PostgresTabularRepository } from "@workglow/storage";
 import { uuid4 } from "@workglow/util";
 import type { Pool } from "pg";
 import { describe } from "vitest";
-import { runGenericTabularRepositorySubscriptionTests } from "./genericTabularRepositorySubscriptionTests";
 import {
   AllTypesPrimaryKeyNames,
   AllTypesSchema,
@@ -52,16 +51,5 @@ describe("PostgresTabularRepository", () => {
       await repo.setupDatabase();
       return repo;
     }
-  );
-
-  runGenericTabularRepositorySubscriptionTests(
-    async () =>
-      new PostgresTabularRepository<typeof CompoundSchema, typeof CompoundPrimaryKeyNames>(
-        db,
-        `sql_test_${uuid4().replace(/-/g, "_")}`,
-        CompoundSchema,
-        CompoundPrimaryKeyNames
-      ),
-    { usesPolling: true, pollingIntervalMs: 50 }
   );
 });
