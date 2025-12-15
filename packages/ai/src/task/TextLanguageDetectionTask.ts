@@ -20,23 +20,52 @@ export const TextLanguageDetectionInputSchema = {
       description: "The text to detect the language of",
     }),
     maxLanguages: {
-      oneOf: [
-        {
-          type: "number",
-          minimum: 1,
-          maximum: 1000,
-        },
-        {
-          type: "null",
-        },
-      ],
+      type: "number",
+      minimum: 0,
+      maximum: 100,
+      default: 5,
       title: "Max Languages",
       description: "The maximum number of languages to return",
     },
+    // scoreThreshold: {
+    //   type: "number",
+    //   minimum: 0,
+    //   maximum: 1,
+    //   title: "Score Threshold",
+    //   description: "The score threshold for the languages to return",
+    //   "x-ui-group": "Configuration",
+    //   "x-ui-order": 1,
+    //   "x-ui-group-open": false,
+    // },
+    // allowList: {
+    //   type: "array",
+    //   items: {
+    //     type: "string",
+    //   },
+    //   title: "Allow List",
+    //   description: "The languages to allow (mutually exclusive with blockList)",
+    //   "x-ui-group": "Configuration",
+    //   "x-ui-order": 2,
+    //   "x-ui-group-open": false,
+    // },
+    // blockList: {
+    //   type: "array",
+    //   items: {
+    //     type: "string",
+    //   },
+    //   title: "Block List",
+    //   description: "The languages to block (mutually exclusive with allowList)",
+    //   "x-ui-group": "Configuration",
+    //   "x-ui-order": 3,
+    //   "x-ui-group-open": false,
+    // },
     model: modelSchema,
   },
   required: ["text", "model"],
   additionalProperties: false,
+  // not: {
+  //   required: ["allowList", "blockList"],
+  // },
 } as const satisfies DataPortSchema;
 
 export const TextLanguageDetectionOutputSchema = {

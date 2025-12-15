@@ -14,8 +14,10 @@ import {
   HFT_Download,
   HFT_TextClassifier,
   HFT_TextEmbedding,
+  HFT_TextFillMask,
   HFT_TextGeneration,
   HFT_TextLanguageDetection,
+  HFT_TextNamedEntityRecognition,
   HFT_TextQuestionAnswer,
   HFT_TextRewriter,
   HFT_TextSummary,
@@ -35,6 +37,8 @@ export const HFT_WORKER_JOBRUN_REGISTER = globalServiceRegistry.register(
     workerServer.registerFunction("TextGenerationTask", HFT_TextGeneration);
     workerServer.registerFunction("TextLanguageDetectionTask", HFT_TextLanguageDetection);
     workerServer.registerFunction("TextClassifierTask", HFT_TextClassifier);
+    workerServer.registerFunction("TextFillMaskTask", HFT_TextFillMask);
+    workerServer.registerFunction("TextNamedEntityRecognitionTask", HFT_TextNamedEntityRecognition);
     workerServer.registerFunction("TextTranslationTask", HFT_TextTranslation);
     workerServer.registerFunction("TextRewriterTask", HFT_TextRewriter);
     workerServer.registerFunction("TextSummaryTask", HFT_TextSummary);

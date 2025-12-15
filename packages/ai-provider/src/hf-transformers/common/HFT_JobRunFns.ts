@@ -7,6 +7,8 @@
 import {
   DocumentQuestionAnsweringSingle,
   type FeatureExtractionPipeline,
+  FillMaskPipeline,
+  FillMaskSingle,
   pipeline,
   // @ts-ignore temporary "fix"
   type PretrainedModelOptions,
@@ -18,6 +20,8 @@ import {
   type TextGenerationPipeline,
   TextGenerationSingle,
   TextStreamer,
+  TokenClassificationPipeline,
+  TokenClassificationSingle,
   TranslationPipeline,
   TranslationSingle,
 } from "@sroussey/transformers";
@@ -29,10 +33,14 @@ import {
   TextClassifierTaskExecuteOutput,
   TextEmbeddingTaskExecuteInput,
   TextEmbeddingTaskExecuteOutput,
+  TextFillMaskTaskExecuteInput,
+  TextFillMaskTaskExecuteOutput,
   TextGenerationTaskExecuteInput,
   TextGenerationTaskExecuteOutput,
   TextLanguageDetectionTaskExecuteInput,
   TextLanguageDetectionTaskExecuteOutput,
+  TextNamedEntityRecognitionTaskExecuteInput,
+  TextNamedEntityRecognitionTaskExecuteOutput,
   TextQuestionAnswerTaskExecuteInput,
   TextQuestionAnswerTaskExecuteOutput,
   TextRewriterTaskExecuteInput,
@@ -562,6 +570,61 @@ export const HFT_TextLanguageDetection: AiProviderRunFn<
     languages: (result as TextClassificationOutput).map((category) => ({
       language: category.label,
       score: category.score,
+    })),
+  };
+};
+
+export const HFT_TextNamedEntityRecognition: AiProviderRunFn<
+  TextNamedEntityRecognitionTaskExecuteInput,
+  TextNamedEntityRecognitionTaskExecuteOutput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  const textNamedEntityRecognition: TokenClassificationPipeline = await getPipeline(
+    model!,
+    onProgress,
+    {
+      abort_signal: signal,
+    }
+  );
+  let results = await textNamedEntityRecognition(input.text, {
+    ignore_labels: input.blockList as string[] | undefined,
+    ...(signal ? { abort_signal: signal } : {}),
+  });
+  let entities: TokenClassificationSingle[] = [];
+  if (!Array.isArray(results)) {
+    entities = [results];
+  } else {
+    entities = results as TokenClassificationSingle[];
+  }
+  return {
+    entities: entities.map((entity) => ({
+      entity: entity.entity,
+      score: entity.score,
+      word: entity.word,
+    })),
+  };
+};
+
+export const HFT_TextFillMask: AiProviderRunFn<
+  TextFillMaskTaskExecuteInput,
+  TextFillMaskTaskExecuteOutput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  const unmasker: FillMaskPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+  let results = await unmasker(input.text);
+  let predictions: FillMaskSingle[] = [];
+  if (!Array.isArray(results)) {
+    predictions = [results];
+  } else {
+    predictions = results as FillMaskSingle[];
+  }
+  return {
+    predictions: predictions.map((prediction) => ({
+      entity: prediction.token_str,
+      score: prediction.score,
+      sequence: prediction.sequence,
     })),
   };
 };

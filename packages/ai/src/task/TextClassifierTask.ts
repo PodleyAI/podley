@@ -20,22 +20,51 @@ export const TextClassifierInputSchema = {
       description: "The text to classify",
     }),
     maxCategories: {
-      oneOf: [
-        {
-          type: "number",
-          minimum: 1,
-          maximum: 1000,
-        },
-        {
-          type: "null",
-        },
-      ],
+      type: "number",
+      minimum: 1,
+      maximum: 1000,
+      default: 5,
       title: "Max Categories",
       description: "The maximum number of categories to return",
     },
+    // scoreThreshold: {
+    //   type: "number",
+    //   minimum: 0,
+    //   maximum: 1,
+    //   title: "Score Threshold",
+    //   description: "The score threshold for the categories to return",
+    //   "x-ui-group": "Configuration",
+    //   "x-ui-order": 1,
+    //   "x-ui-group-open": false,
+    // },
+    // allowList: {
+    //   type: "array",
+    //   items: {
+    //     type: "string",
+    //   },
+    //   title: "Allow List",
+    //   description: "The categories to allow (mutually exclusive with blockList)",
+    //   "x-ui-group": "Configuration",
+    //   "x-ui-order": 2,
+    //   "x-ui-group-open": false,
+    // },
+    // blockList: {
+    //   type: "array",
+    //   items: {
+    //     type: "string",
+    //   },
+    //   title: "Block List",
+    //   description: "The categories to block (mutually exclusive with allowList)",
+    //   "x-ui-group": "Configuration",
+    //   "x-ui-order": 3,
+    //   "x-ui-group-open": false,
+    // },
     model: modelSchema,
   },
   required: ["text", "model"],
+  // not: {
+  //   required: ["allowList", "blockList"],
+  // },
   additionalProperties: false,
 } as const satisfies DataPortSchema;
 
