@@ -36,7 +36,7 @@ describe("TextEmbeddingTask with real models", () => {
   beforeEach(() => {});
 
   describe("HuggingFace Transformers", () => {
-    it.only("should generate embeddings with gte-small model", async () => {
+    it("should generate embeddings with gte-small model", async () => {
       // Register model
       const model: HfTransformersOnnxModelRecord = {
         model_id: "onnx:Supabase/gte-small:q8",
