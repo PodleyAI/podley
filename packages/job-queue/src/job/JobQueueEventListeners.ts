@@ -5,7 +5,6 @@
  */
 
 import { EventParameters } from "@workglow/util";
-import { JobQueueStats } from "./JobQueueServer";
 
 /**
  * Events that can be emitted by the JobQueue
@@ -19,7 +18,6 @@ export type JobQueueEventListeners<Input, Output> = {
   job_error: (queueName: string, jobId: unknown, error: string) => void;
   job_disabled: (queueName: string, jobId: unknown) => void;
   job_retry: (queueName: string, jobId: unknown, runAfter: Date) => void;
-  queue_stats_update: (queueName: string, stats: JobQueueStats) => void;
   job_progress: (
     queueName: string,
     jobId: unknown,

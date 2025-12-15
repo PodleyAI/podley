@@ -417,10 +417,6 @@ server.on("server_stop", (queueName) => {
   console.log(`Server ${queueName} stopped`);
 });
 
-server.on("stats_update", (queueName, stats) => {
-  console.log(`Queue stats:`, stats);
-});
-
 // Wait for specific events
 const [queueName, jobId, output] = await client.waitOn("job_complete");
 ```

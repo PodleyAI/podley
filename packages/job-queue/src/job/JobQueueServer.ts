@@ -33,7 +33,6 @@ export interface JobQueueStats {
 export type JobQueueServerEventListeners<Input, Output> = {
   server_start: (queueName: string) => void;
   server_stop: (queueName: string) => void;
-  stats_update: (queueName: string, stats: JobQueueStats) => void;
   job_start: (queueName: string, jobId: unknown) => void;
   job_complete: (queueName: string, jobId: unknown, output: Output) => void;
   job_error: (queueName: string, jobId: unknown, error: string) => void;
