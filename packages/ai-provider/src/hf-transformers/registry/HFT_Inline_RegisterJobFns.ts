@@ -12,7 +12,7 @@ import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-grap
 import { HF_TRANSFORMERS_ONNX } from "../common/HFT_Constants";
 import {
   HFT_Download,
-  HFT_TextClassifier,
+  HFT_TextClassification,
   HFT_TextEmbedding,
   HFT_TextFillMask,
   HFT_TextGeneration,
@@ -44,7 +44,7 @@ export async function register_HFT_InlineJobFns(
     ["TextGenerationTask"]: HFT_TextGeneration,
     ["TextQuestionAnswerTask"]: HFT_TextQuestionAnswer,
     ["TextLanguageDetectionTask"]: HFT_TextLanguageDetection,
-    ["TextClassifierTask"]: HFT_TextClassifier,
+    ["TextClassificationTask"]: HFT_TextClassification,
     ["TextFillMaskTask"]: HFT_TextFillMask,
     ["TextNamedEntityRecognitionTask"]: HFT_TextNamedEntityRecognition,
     ["TextRewriterTask"]: HFT_TextRewriter,

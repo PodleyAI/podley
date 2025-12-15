@@ -14,8 +14,8 @@ import type {
   AiProviderRunFn,
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
-  TextClassifierTaskExecuteInput,
-  TextClassifierTaskExecuteOutput,
+  TextClassificationTaskExecuteInput,
+  TextClassificationTaskExecuteOutput,
   TextEmbeddingTaskExecuteInput,
   TextEmbeddingTaskExecuteOutput,
   TextLanguageDetectionTaskExecuteInput,
@@ -199,7 +199,7 @@ const getTextEmbedder = async (
   return getModelTask(model, options, onProgress, signal, TextEmbedder);
 };
 
-const getTextClassifier = async (
+const getTextClassifer = async (
   model: TFMPModelRecord,
   options: Record<string, unknown>,
   onProgress: (progress: number, message?: string, details?: any) => void,
@@ -232,7 +232,7 @@ export const TFMP_Download: AiProviderRunFn<
       task = await getTextEmbedder(model, {}, onProgress, signal);
       break;
     case "text-classifier":
-      task = await getTextClassifier(model, {}, onProgress, signal);
+      task = await getTextClassifer(model, {}, onProgress, signal);
       break;
     case "text-language-detector":
       task = await getTextLanguageDetector(model, {}, onProgress, signal);
@@ -278,12 +278,12 @@ export const TFMP_TextEmbedding: AiProviderRunFn<
  * Core implementation for text classification using MediaPipe TFJS.
  * This is shared between inline and worker implementations.
  */
-export const TFMP_TextClassifier: AiProviderRunFn<
-  TextClassifierTaskExecuteInput,
-  TextClassifierTaskExecuteOutput,
+export const TFMP_TextClassification: AiProviderRunFn<
+  TextClassificationTaskExecuteInput,
+  TextClassificationTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
-  const textClassifier = await getTextClassifier(
+  const TextClassification = await getTextClassifer(
     model!,
     {
       maxCategories: input.maxCategories,
@@ -294,7 +294,7 @@ export const TFMP_TextClassifier: AiProviderRunFn<
     onProgress,
     signal
   );
-  const result = textClassifier.classify(input.text);
+  const result = TextClassification.classify(input.text);
 
   if (!result.classifications?.[0]?.categories) {
     throw new PermanentJobError("Failed to classify text: Empty result");

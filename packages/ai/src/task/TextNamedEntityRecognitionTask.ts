@@ -92,8 +92,8 @@ export class TextNamedEntityRecognitionTask extends AiTask<
 > {
   public static type = "TextNamedEntityRecognitionTask";
   public static category = "AI Text Model";
-  public static title = "Text Named Entity Recognition";
-  public static description = "Extracts named entities from text using language models";
+  public static title = "Named Entity Recognition";
+  public static description = "Extracts named entities from text";
   public static inputSchema(): DataPortSchema {
     return TextNamedEntityRecognitionInputSchema as DataPortSchema;
   }

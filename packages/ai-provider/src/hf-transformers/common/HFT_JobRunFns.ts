@@ -29,8 +29,8 @@ import {
   AiProviderRunFn,
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
-  TextClassifierTaskExecuteInput,
-  TextClassifierTaskExecuteOutput,
+  TextClassificationTaskExecuteInput,
+  TextClassificationTaskExecuteOutput,
   TextEmbeddingTaskExecuteInput,
   TextEmbeddingTaskExecuteOutput,
   TextFillMaskTaskExecuteInput,
@@ -514,15 +514,15 @@ export const HFT_TextEmbedding: AiProviderRunFn<
   return { vector: hfVector.data as TypedArray };
 };
 
-export const HFT_TextClassifier: AiProviderRunFn<
-  TextClassifierTaskExecuteInput,
-  TextClassifierTaskExecuteOutput,
+export const HFT_TextClassification: AiProviderRunFn<
+  TextClassificationTaskExecuteInput,
+  TextClassificationTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
-  const textClassifier: TextClassificationPipeline = await getPipeline(model!, onProgress, {
+  const TextClassification: TextClassificationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
   });
-  const result = await textClassifier(input.text, {
+  const result = await TextClassification(input.text, {
     top_k: input.maxCategories || undefined,
     ...(signal ? { abort_signal: signal } : {}),
   });
@@ -549,10 +549,10 @@ export const HFT_TextLanguageDetection: AiProviderRunFn<
   TextLanguageDetectionTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
-  const textClassifier: TextClassificationPipeline = await getPipeline(model!, onProgress, {
+  const TextClassification: TextClassificationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
   });
-  const result = await textClassifier(input.text, {
+  const result = await TextClassification(input.text, {
     top_k: input.maxLanguages || undefined,
     ...(signal ? { abort_signal: signal } : {}),
   });

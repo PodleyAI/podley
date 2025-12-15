@@ -8,7 +8,7 @@ export * from "./base/AiTask";
 export * from "./base/AiTaskSchemas";
 export * from "./DocumentSplitterTask";
 export * from "./DownloadModelTask";
-export * from "./TextClassifierTask";
+export * from "./TextClassificationTask";
 export * from "./TextEmbeddingTask";
 export * from "./TextFillMaskTask";
 export * from "./TextGenerationTask";

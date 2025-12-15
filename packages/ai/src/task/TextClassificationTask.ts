@@ -9,9 +9,9 @@ import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
 import { DeReplicateFromSchema, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
-const modelSchema = TypeReplicateArray(TypeModel("model:TextClassifierTask"));
+const modelSchema = TypeReplicateArray(TypeModel("model:TextClassificationTask"));
 
-export const TextClassifierInputSchema = {
+export const TextClassificationInputSchema = {
   type: "object",
   properties: {
     text: TypeReplicateArray({
@@ -68,7 +68,7 @@ export const TextClassifierInputSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchema;
 
-export const TextClassifierOutputSchema = {
+export const TextClassificationOutputSchema = {
   type: "object",
   properties: {
     categories: {
@@ -98,51 +98,57 @@ export const TextClassifierOutputSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchema;
 
-export type TextClassifierTaskInput = FromSchema<typeof TextClassifierInputSchema>;
-export type TextClassifierTaskOutput = FromSchema<typeof TextClassifierOutputSchema>;
-export type TextClassifierTaskExecuteInput = DeReplicateFromSchema<
-  typeof TextClassifierInputSchema
+export type TextClassificationTaskInput = FromSchema<typeof TextClassificationInputSchema>;
+export type TextClassificationTaskOutput = FromSchema<typeof TextClassificationOutputSchema>;
+export type TextClassificationTaskExecuteInput = DeReplicateFromSchema<
+  typeof TextClassificationInputSchema
 >;
-export type TextClassifierTaskExecuteOutput = DeReplicateFromSchema<
-  typeof TextClassifierOutputSchema
+export type TextClassificationTaskExecuteOutput = DeReplicateFromSchema<
+  typeof TextClassificationOutputSchema
 >;
 
 /**
  * Classifies text into predefined categories using language models
  */
-export class TextClassifierTask extends AiTask<TextClassifierTaskInput, TextClassifierTaskOutput> {
-  public static type = "TextClassifierTask";
+export class TextClassificationTask extends AiTask<
+  TextClassificationTaskInput,
+  TextClassificationTaskOutput
+> {
+  public static type = "TextClassificationTask";
   public static category = "AI Text Model";
   public static title = "Text Classifier";
   public static description = "Classifies text into predefined categories using language models";
   public static inputSchema(): DataPortSchema {
-    return TextClassifierInputSchema as DataPortSchema;
+    return TextClassificationInputSchema as DataPortSchema;
   }
   public static outputSchema(): DataPortSchema {
-    return TextClassifierOutputSchema as DataPortSchema;
+    return TextClassificationOutputSchema as DataPortSchema;
   }
 }
 
-TaskRegistry.registerTask(TextClassifierTask);
+TaskRegistry.registerTask(TextClassificationTask);
 
 /**
  * Convenience function to run text classifier tasks.
- * Creates and executes a TextClassifierTask with the provided input.
+ * Creates and executes a TextClassificationTask with the provided input.
  * @param input The input parameters for text classification (text and model)
  * @returns Promise resolving to the classification categories with scores
  */
-export const TextClassifier = (input: TextClassifierTaskInput, config?: JobQueueTaskConfig) => {
-  return new TextClassifierTask(input, config).run();
+export const TextClassification = (
+  input: TextClassificationTaskInput,
+  config?: JobQueueTaskConfig
+) => {
+  return new TextClassificationTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextClassifier: CreateWorkflow<
-      TextClassifierTaskInput,
-      TextClassifierTaskOutput,
+    TextClassification: CreateWorkflow<
+      TextClassificationTaskInput,
+      TextClassificationTaskOutput,
       JobQueueTaskConfig
     >;
   }
 }
 
-Workflow.prototype.TextClassifier = CreateWorkflow(TextClassifierTask);
+Workflow.prototype.TextClassification = CreateWorkflow(TextClassificationTask);

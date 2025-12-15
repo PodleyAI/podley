@@ -12,7 +12,7 @@ import {
 } from "@workglow/util";
 import {
   TFMP_Download,
-  TFMP_TextClassifier,
+  TFMP_TextClassification,
   TFMP_TextEmbedding,
   TFMP_TextLanguageDetection,
   TFMP_Unload,
@@ -29,7 +29,7 @@ export const TFMP_WORKER_JOBRUN_REGISTER = globalServiceRegistry.register(
     workerServer.registerFunction("UnloadModelTask", TFMP_Unload);
     workerServer.registerFunction("TextEmbeddingTask", TFMP_TextEmbedding);
     workerServer.registerFunction("TextLanguageDetectionTask", TFMP_TextLanguageDetection);
-    workerServer.registerFunction("TextClassifierTask", TFMP_TextClassifier);
+    workerServer.registerFunction("TextClassificationTask", TFMP_TextClassification);
     parentPort.postMessage({ type: "ready" });
     console.log("TFMP_WORKER_JOBRUN registered");
     return workerServer;

@@ -31,7 +31,7 @@ export async function register_TFMP_ClientJobFns(
     "UnloadModelTask",
     "TextEmbeddingTask",
     "TextLanguageDetectionTask",
-    "TextClassifierTask",
+    "TextClassificationTask",
   ];
   for (const name of names) {
     aiProviderRegistry.registerAsWorkerRunFn(TENSORFLOW_MEDIAPIPE, name);

@@ -63,9 +63,7 @@ export const TextFillMaskOutputSchema = {
 export type TextFillMaskTaskInput = FromSchema<typeof TextFillMaskInputSchema>;
 export type TextFillMaskTaskOutput = FromSchema<typeof TextFillMaskOutputSchema>;
 export type TextFillMaskTaskExecuteInput = DeReplicateFromSchema<typeof TextFillMaskInputSchema>;
-export type TextFillMaskTaskExecuteOutput = DeReplicateFromSchema<
-  typeof TextFillMaskOutputSchema
->;
+export type TextFillMaskTaskExecuteOutput = DeReplicateFromSchema<typeof TextFillMaskOutputSchema>;
 
 /**
  * Fills masked tokens in text using language models
@@ -73,8 +71,8 @@ export type TextFillMaskTaskExecuteOutput = DeReplicateFromSchema<
 export class TextFillMaskTask extends AiTask<TextFillMaskTaskInput, TextFillMaskTaskOutput> {
   public static type = "TextFillMaskTask";
   public static category = "AI Text Model";
-  public static title = "Text Fill Mask";
-  public static description = "Fills masked tokens in text using language models";
+  public static title = "Fill Mask";
+  public static description = "Fills masked tokens in text";
   public static inputSchema(): DataPortSchema {
     return TextFillMaskInputSchema as DataPortSchema;
   }
@@ -97,13 +95,8 @@ export const TextFillMask = (input: TextFillMaskTaskInput, config?: JobQueueTask
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextFillMask: CreateWorkflow<
-      TextFillMaskTaskInput,
-      TextFillMaskTaskOutput,
-      JobQueueTaskConfig
-    >;
+    TextFillMask: CreateWorkflow<TextFillMaskTaskInput, TextFillMaskTaskOutput, JobQueueTaskConfig>;
   }
 }
 
 Workflow.prototype.TextFillMask = CreateWorkflow(TextFillMaskTask);
-
