@@ -190,33 +190,6 @@ const getModelTask = async <
   return task as any;
 };
 
-const getTextEmbedder = async (
-  model: TFMPModelRecord,
-  options: Record<string, unknown>,
-  onProgress: (progress: number, message?: string, details?: any) => void,
-  signal: AbortSignal
-): Promise<TextEmbedder> => {
-  return getModelTask(model, options, onProgress, signal, TextEmbedder);
-};
-
-const getTextClassifer = async (
-  model: TFMPModelRecord,
-  options: Record<string, unknown>,
-  onProgress: (progress: number, message?: string, details?: any) => void,
-  signal: AbortSignal
-): Promise<TextClassifier> => {
-  return getModelTask(model, options, onProgress, signal, TextClassifier);
-};
-
-const getTextLanguageDetector = async (
-  model: TFMPModelRecord,
-  options: Record<string, unknown>,
-  onProgress: (progress: number, message?: string, details?: any) => void,
-  signal: AbortSignal
-): Promise<LanguageDetector> => {
-  return getModelTask(model, options, onProgress, signal, LanguageDetector);
-};
-
 /**
  * Core implementation for downloading and caching a MediaPipe TFJS model.
  * This is shared between inline and worker implementations.
@@ -229,13 +202,13 @@ export const TFMP_Download: AiProviderRunFn<
   let task: TextEmbedder | TextClassifier | LanguageDetector;
   switch (model?.providerConfig.pipeline) {
     case "text-embedder":
-      task = await getTextEmbedder(model, {}, onProgress, signal);
+      task = await getModelTask(model, {}, onProgress, signal, TextEmbedder);
       break;
     case "text-classifier":
-      task = await getTextClassifer(model, {}, onProgress, signal);
+      task = await getModelTask(model, {}, onProgress, signal, TextClassifier);
       break;
     case "text-language-detector":
-      task = await getTextLanguageDetector(model, {}, onProgress, signal);
+      task = await getModelTask(model, {}, onProgress, signal, LanguageDetector);
       break;
     default:
       throw new PermanentJobError("Invalid pipeline");
@@ -260,7 +233,7 @@ export const TFMP_TextEmbedding: AiProviderRunFn<
   TextEmbeddingTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
-  const textEmbedder = await getTextEmbedder(model!, {}, onProgress, signal);
+  const textEmbedder = await getModelTask(model!, {}, onProgress, signal, TextEmbedder);
   const result = textEmbedder.embed(input.text);
 
   if (!result.embeddings?.[0]?.floatEmbedding) {
@@ -283,7 +256,7 @@ export const TFMP_TextClassification: AiProviderRunFn<
   TextClassificationTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
-  const TextClassification = await getTextClassifer(
+  const TextClassification = await getModelTask(
     model!,
     {
       maxCategories: input.maxCategories,
@@ -292,7 +265,8 @@ export const TFMP_TextClassification: AiProviderRunFn<
       // blockList: input.blockList,
     },
     onProgress,
-    signal
+    signal,
+    TextClassifier
   );
   const result = TextClassification.classify(input.text);
 
@@ -321,7 +295,7 @@ export const TFMP_TextLanguageDetection: AiProviderRunFn<
 > = async (input, model, onProgress, signal) => {
   const maxLanguages = input.maxLanguages === 0 ? -1 : input.maxLanguages;
 
-  const textLanguageDetector = await getTextLanguageDetector(
+  const textLanguageDetector = await getModelTask(
     model!,
     {
       maxLanguages,
@@ -330,7 +304,8 @@ export const TFMP_TextLanguageDetection: AiProviderRunFn<
       // blockList: input.blockList,
     },
     onProgress,
-    signal
+    signal,
+    LanguageDetector
   );
   const result = textLanguageDetector.detect(input.text);
 
@@ -363,7 +338,7 @@ export const TFMP_Unload: AiProviderRunFn<
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
   const modelPath = model!.providerConfig.modelPath;
-
+  onProgress(10, "Unloading model");
   // Dispose of all cached model tasks if they exist
   if (modelTaskCache.has(modelPath)) {
     const cachedTasks = modelTaskCache.get(modelPath)!;
