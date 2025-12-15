@@ -106,7 +106,13 @@ const getWasmTask = async (
   return wasmFileset;
 };
 
-const modelTaskCache = new Map<string, TextEmbedder | TextClassifier | LanguageDetector>();
+interface CachedModelTask {
+  readonly task: TextEmbedder | TextClassifier | LanguageDetector;
+  readonly options: Record<string, unknown>;
+  readonly taskEngine: string;
+}
+
+const modelTaskCache = new Map<string, CachedModelTask[]>();
 
 type InferTaskInstance<T> = T extends typeof TextEmbedder
   ? TextEmbedder
@@ -116,10 +122,32 @@ type InferTaskInstance<T> = T extends typeof TextEmbedder
       ? LanguageDetector
       : never;
 
+/**
+ * Checks if two option objects are deeply equal.
+ */
+const optionsMatch = (opts1: Record<string, unknown>, opts2: Record<string, unknown>): boolean => {
+  const keys1 = Object.keys(opts1).sort();
+  const keys2 = Object.keys(opts2).sort();
+
+  if (keys1.length !== keys2.length) return false;
+
+  return keys1.every((key) => {
+    const val1 = opts1[key];
+    const val2 = opts2[key];
+
+    if (Array.isArray(val1) && Array.isArray(val2)) {
+      return JSON.stringify(val1) === JSON.stringify(val2);
+    }
+
+    return val1 === val2;
+  });
+};
+
 const getModelTask = async <
   T extends typeof TextEmbedder | typeof TextClassifier | typeof LanguageDetector,
 >(
   model: TFMPModelRecord,
+  options: Record<string, unknown>,
   onProgress: (progress: number, message?: string, details?: any) => void,
   signal: AbortSignal,
   TaskType: T
@@ -127,8 +155,13 @@ const getModelTask = async <
   const modelPath = model.providerConfig.modelPath;
   const taskEngine = model.providerConfig.taskEngine;
 
-  if (modelTaskCache.has(modelPath)) {
-    return modelTaskCache.get(modelPath)! as any;
+  // Check if we have a cached instance with matching options
+  const cachedTasks = modelTaskCache.get(modelPath);
+  if (cachedTasks) {
+    const matchedTask = cachedTasks.find((cached) => optionsMatch(cached.options, options));
+    if (matchedTask) {
+      return matchedTask.task as InferTaskInstance<T>;
+    }
   }
 
   // Load WASM if needed
@@ -141,13 +174,17 @@ const getModelTask = async <
     baseOptions: {
       modelAssetPath: modelPath,
     },
+    ...options,
   });
 
-  // Cache the model
-  modelTaskCache.set(modelPath, task);
+  // Cache the task with its options and task engine
+  const cachedTask: CachedModelTask = { task, options, taskEngine };
+  if (!modelTaskCache.has(modelPath)) {
+    modelTaskCache.set(modelPath, []);
+  }
+  modelTaskCache.get(modelPath)!.push(cachedTask);
 
-  // Track WASM usage for this model and increment reference count
-  model_to_wasm_mapping.set(modelPath, taskEngine);
+  // Increment WASM reference count for this cached task
   wasm_reference_counts.set(taskEngine, (wasm_reference_counts.get(taskEngine) || 0) + 1);
 
   return task as any;
@@ -155,26 +192,29 @@ const getModelTask = async <
 
 const getTextEmbedder = async (
   model: TFMPModelRecord,
+  options: Record<string, unknown>,
   onProgress: (progress: number, message?: string, details?: any) => void,
   signal: AbortSignal
 ): Promise<TextEmbedder> => {
-  return getModelTask(model, onProgress, signal, TextEmbedder);
+  return getModelTask(model, options, onProgress, signal, TextEmbedder);
 };
 
 const getTextClassifier = async (
   model: TFMPModelRecord,
+  options: Record<string, unknown>,
   onProgress: (progress: number, message?: string, details?: any) => void,
   signal: AbortSignal
 ): Promise<TextClassifier> => {
-  return getModelTask(model, onProgress, signal, TextClassifier);
+  return getModelTask(model, options, onProgress, signal, TextClassifier);
 };
 
 const getTextLanguageDetector = async (
   model: TFMPModelRecord,
+  options: Record<string, unknown>,
   onProgress: (progress: number, message?: string, details?: any) => void,
   signal: AbortSignal
 ): Promise<LanguageDetector> => {
-  return getModelTask(model, onProgress, signal, LanguageDetector);
+  return getModelTask(model, options, onProgress, signal, LanguageDetector);
 };
 
 /**
@@ -186,20 +226,25 @@ export const TFMP_Download: AiProviderRunFn<
   DownloadModelTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
+  let task: TextEmbedder | TextClassifier | LanguageDetector;
   switch (model?.providerConfig.pipeline) {
     case "text-embedder":
-      await getTextEmbedder(model, onProgress, signal);
+      task = await getTextEmbedder(model, {}, onProgress, signal);
       break;
     case "text-classifier":
-      await getTextClassifier(model, onProgress, signal);
+      task = await getTextClassifier(model, {}, onProgress, signal);
       break;
     case "text-language-detector":
-      await getTextLanguageDetector(model, onProgress, signal);
+      task = await getTextLanguageDetector(model, {}, onProgress, signal);
       break;
     default:
       throw new PermanentJobError("Invalid pipeline");
   }
   onProgress(0.9, "Pipeline loaded");
+  task.close(); // Close the task to release the resources, but it is still in the browser cache
+  // Decrease reference count for WASM fileset for this cached task since this is a fake model cache entry
+  const taskEngine = model?.providerConfig.taskEngine;
+  wasm_reference_counts.set(taskEngine, wasm_reference_counts.get(taskEngine)! - 1);
 
   return {
     model: input.model,
@@ -215,9 +260,7 @@ export const TFMP_TextEmbedding: AiProviderRunFn<
   TextEmbeddingTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
-  onProgress(0.1, "Model loaded");
-
-  const textEmbedder = await getTextEmbedder(model!, onProgress, signal);
+  const textEmbedder = await getTextEmbedder(model!, {}, onProgress, signal);
   const result = textEmbedder.embed(input.text);
 
   if (!result.embeddings?.[0]?.floatEmbedding) {
@@ -240,9 +283,17 @@ export const TFMP_TextClassifier: AiProviderRunFn<
   TextClassifierTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
-  onProgress(0.1, "Model loaded");
-
-  const textClassifier = await getTextClassifier(model!, onProgress, signal);
+  const textClassifier = await getTextClassifier(
+    model!,
+    {
+      maxCategories: input.maxCategories,
+      // scoreThreshold: input.scoreThreshold,
+      // allowList: input.allowList,
+      // blockList: input.blockList,
+    },
+    onProgress,
+    signal
+  );
   const result = textClassifier.classify(input.text);
 
   if (!result.classifications?.[0]?.categories) {
@@ -268,9 +319,19 @@ export const TFMP_TextLanguageDetection: AiProviderRunFn<
   TextLanguageDetectionTaskExecuteOutput,
   TFMPModelRecord
 > = async (input, model, onProgress, signal) => {
-  onProgress(0.1, "Model loaded");
+  const maxLanguages = input.maxLanguages === 0 ? -1 : input.maxLanguages;
 
-  const textLanguageDetector = await getTextLanguageDetector(model!, onProgress, signal);
+  const textLanguageDetector = await getTextLanguageDetector(
+    model!,
+    {
+      maxLanguages,
+      // scoreThreshold: input.scoreThreshold,
+      // allowList: input.allowList,
+      // blockList: input.blockList,
+    },
+    onProgress,
+    signal
+  );
   const result = textLanguageDetector.detect(input.text);
 
   if (!result.languages?.[0]?.languageCode) {
@@ -292,8 +353,8 @@ export const TFMP_TextLanguageDetection: AiProviderRunFn<
  * This is shared between inline and worker implementations.
  *
  * When a model is unloaded, this function:
- * 1. Disposes of the model instance
- * 2. Decrements the reference count for the associated WASM fileset
+ * 1. Disposes of all cached model instances for the given model path
+ * 2. Decrements the reference count for the associated WASM fileset for each instance
  * 3. If no other models are using the WASM fileset (count reaches 0), unloads the WASM
  */
 export const TFMP_Unload: AiProviderRunFn<
@@ -303,30 +364,29 @@ export const TFMP_Unload: AiProviderRunFn<
 > = async (input, model, onProgress, signal) => {
   const modelPath = model!.providerConfig.modelPath;
 
-  // Dispose of the model task if it exists
+  // Dispose of all cached model tasks if they exist
   if (modelTaskCache.has(modelPath)) {
-    const item = modelTaskCache.get(modelPath)!;
-    if ("dispose" in item && typeof item.dispose === "function") {
-      item.dispose();
+    const cachedTasks = modelTaskCache.get(modelPath)!;
+
+    for (const cachedTask of cachedTasks) {
+      const task = cachedTask.task;
+      task.close();
+
+      // Decrease reference count for WASM fileset for this cached task
+      const taskEngine = cachedTask.taskEngine;
+      const currentCount = wasm_reference_counts.get(taskEngine) || 0;
+      const newCount = currentCount - 1;
+
+      if (newCount <= 0) {
+        // No more models using this WASM fileset, unload it
+        wasm_tasks.delete(taskEngine);
+        wasm_reference_counts.delete(taskEngine);
+      } else {
+        wasm_reference_counts.set(taskEngine, newCount);
+      }
     }
+
     modelTaskCache.delete(modelPath);
-  }
-
-  // Decrease reference count for WASM fileset
-  const taskEngine = model_to_wasm_mapping.get(modelPath);
-  if (taskEngine) {
-    const currentCount = wasm_reference_counts.get(taskEngine) || 0;
-    const newCount = currentCount - 1;
-
-    if (newCount <= 0) {
-      // No more models using this WASM fileset, unload it
-      wasm_tasks.delete(taskEngine);
-      wasm_reference_counts.delete(taskEngine);
-    } else {
-      wasm_reference_counts.set(taskEngine, newCount);
-    }
-
-    model_to_wasm_mapping.delete(modelPath);
   }
 
   return {
