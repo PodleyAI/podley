@@ -1,0 +1,232 @@
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
+import {
+  DeReplicateFromSchema,
+  TypeImageInput,
+  TypeModel,
+  TypeReplicateArray,
+} from "./base/AiTaskSchemas";
+import { AiVisionTask } from "./base/AiVisionTask";
+
+const modelSchema = TypeReplicateArray(TypeModel("model:FaceLandmarkerTask"));
+
+/**
+ * A landmark point with x, y, z coordinates.
+ */
+const TypeLandmark = {
+  type: "object",
+  properties: {
+    x: {
+      type: "number",
+      title: "X Coordinate",
+      description: "X coordinate normalized to [0.0, 1.0]",
+    },
+    y: {
+      type: "number",
+      title: "Y Coordinate",
+      description: "Y coordinate normalized to [0.0, 1.0]",
+    },
+    z: {
+      type: "number",
+      title: "Z Coordinate",
+      description: "Z coordinate (depth)",
+    },
+  },
+  required: ["x", "y", "z"],
+  additionalProperties: false,
+} as const;
+
+/**
+ * A blendshape coefficient representing facial expression.
+ */
+const TypeBlendshape = {
+  type: "object",
+  properties: {
+    label: {
+      type: "string",
+      title: "Blendshape Label",
+      description: "Name of the blendshape (e.g., 'browDownLeft', 'eyeBlinkRight', etc.)",
+    },
+    score: {
+      type: "number",
+      title: "Coefficient Value",
+      description: "Coefficient value for this blendshape",
+    },
+  },
+  required: ["label", "score"],
+  additionalProperties: false,
+} as const;
+
+/**
+ * A 4x4 transformation matrix.
+ */
+const TypeTransformationMatrix = {
+  type: "array",
+  items: { type: "number" },
+  minItems: 16,
+  maxItems: 16,
+  title: "Transformation Matrix",
+  description: "4x4 transformation matrix for face effects rendering",
+} as const;
+
+/**
+ * Detection result for a single face.
+ */
+const TypeFaceLandmarkerDetection = {
+  type: "object",
+  properties: {
+    landmarks: {
+      type: "array",
+      items: TypeLandmark,
+      title: "Landmarks",
+      description: "478 facial landmarks in image coordinates",
+    },
+    blendshapes: {
+      type: "array",
+      items: TypeBlendshape,
+      title: "Blendshapes",
+      description: "52 blendshape coefficients representing facial expressions",
+    },
+    transformationMatrix: TypeTransformationMatrix,
+  },
+  required: ["landmarks"],
+  additionalProperties: false,
+} as const;
+
+export const FaceLandmarkerInputSchema = {
+  type: "object",
+  properties: {
+    image: TypeReplicateArray(TypeImageInput),
+    model: modelSchema,
+    numFaces: {
+      type: "number",
+      minimum: 1,
+      maximum: 10,
+      default: 1,
+      title: "Number of Faces",
+      description: "The maximum number of faces to detect",
+      "x-ui-group": "Configuration",
+    },
+    minFaceDetectionConfidence: {
+      type: "number",
+      minimum: 0,
+      maximum: 1,
+      default: 0.5,
+      title: "Min Face Detection Confidence",
+      description: "Minimum confidence score for face detection",
+      "x-ui-group": "Configuration",
+    },
+    minFacePresenceConfidence: {
+      type: "number",
+      minimum: 0,
+      maximum: 1,
+      default: 0.5,
+      title: "Min Face Presence Confidence",
+      description: "Minimum confidence score for face presence",
+      "x-ui-group": "Configuration",
+    },
+    minTrackingConfidence: {
+      type: "number",
+      minimum: 0,
+      maximum: 1,
+      default: 0.5,
+      title: "Min Tracking Confidence",
+      description: "Minimum confidence score for face tracking",
+      "x-ui-group": "Configuration",
+    },
+    outputFaceBlendshapes: {
+      type: "boolean",
+      default: false,
+      title: "Output Face Blendshapes",
+      description: "Whether to output blendshape coefficients for facial expressions",
+      "x-ui-group": "Configuration",
+    },
+    outputFacialTransformationMatrixes: {
+      type: "boolean",
+      default: false,
+      title: "Output Facial Transformation Matrix",
+      description: "Whether to output transformation matrix for effects rendering",
+      "x-ui-group": "Configuration",
+    },
+  },
+  required: ["image", "model"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+export const FaceLandmarkerOutputSchema = {
+  type: "object",
+  properties: {
+    faces: {
+      oneOf: [
+        { type: "array", items: TypeFaceLandmarkerDetection },
+        { type: "array", items: { type: "array", items: TypeFaceLandmarkerDetection } },
+      ],
+      title: "Face Detections",
+      description: "Detected faces with landmarks, blendshapes, and transformation matrices",
+    },
+  },
+  required: ["faces"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+export type FaceLandmarkerTaskInput = FromSchema<typeof FaceLandmarkerInputSchema>;
+export type FaceLandmarkerTaskOutput = FromSchema<typeof FaceLandmarkerOutputSchema>;
+export type FaceLandmarkerTaskExecuteInput = DeReplicateFromSchema<
+  typeof FaceLandmarkerInputSchema
+>;
+export type FaceLandmarkerTaskExecuteOutput = DeReplicateFromSchema<
+  typeof FaceLandmarkerOutputSchema
+>;
+
+/**
+ * Detects facial landmarks and expressions in images using MediaPipe Face Landmarker.
+ * Identifies 478 facial landmarks, 52 blendshape coefficients for expressions,
+ * and provides transformation matrices for AR effects.
+ */
+export class FaceLandmarkerTask extends AiVisionTask<
+  FaceLandmarkerTaskInput,
+  FaceLandmarkerTaskOutput,
+  JobQueueTaskConfig
+> {
+  public static type = "FaceLandmarkerTask";
+  public static category = "AI Vision Model";
+  public static title = "Face Landmarker";
+  public static description =
+    "Detects facial landmarks and expressions in images. Identifies 478 facial landmarks, blendshapes for expressions, and transformation matrices for AR effects.";
+  public static inputSchema(): DataPortSchema {
+    return FaceLandmarkerInputSchema as DataPortSchema;
+  }
+  public static outputSchema(): DataPortSchema {
+    return FaceLandmarkerOutputSchema as DataPortSchema;
+  }
+}
+
+TaskRegistry.registerTask(FaceLandmarkerTask);
+
+/**
+ * Convenience function to run face landmark detection tasks.
+ * Creates and executes a FaceLandmarkerTask with the provided input.
+ * @param input The input parameters for face landmark detection (image, model, and optional configuration)
+ * @returns Promise resolving to the detected facial landmarks, blendshapes, and transformation matrices
+ */
+export const FaceLandmarker = (input: FaceLandmarkerTaskInput, config?: JobQueueTaskConfig) => {
+  return new FaceLandmarkerTask(input, config).run();
+};
+
+declare module "@workglow/task-graph" {
+  interface Workflow {
+    FaceLandmarker: CreateWorkflow<
+      FaceLandmarkerTaskInput,
+      FaceLandmarkerTaskOutput,
+      JobQueueTaskConfig
+    >;
+  }
+}
+
+Workflow.prototype.FaceLandmarker = CreateWorkflow(FaceLandmarkerTask);

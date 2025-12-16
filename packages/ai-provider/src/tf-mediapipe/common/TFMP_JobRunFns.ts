@@ -11,15 +11,28 @@ import {
   TextEmbedder,
 } from "@mediapipe/tasks-text";
 import {
+  FaceDetector,
+  FaceLandmarker,
+  GestureRecognizer,
+  HandLandmarker,
   ImageClassifier,
   ImageEmbedder,
   ImageSegmenter,
   ObjectDetector,
+  PoseLandmarker,
 } from "@mediapipe/tasks-vision";
 import type {
   AiProviderRunFn,
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
+  FaceDetectorTaskExecuteInput,
+  FaceDetectorTaskExecuteOutput,
+  FaceLandmarkerTaskExecuteInput,
+  FaceLandmarkerTaskExecuteOutput,
+  GestureRecognizerTaskExecuteInput,
+  GestureRecognizerTaskExecuteOutput,
+  HandLandmarkerTaskExecuteInput,
+  HandLandmarkerTaskExecuteOutput,
   ImageClassificationTaskExecuteInput,
   ImageClassificationTaskExecuteOutput,
   ImageEmbeddingTaskExecuteInput,
@@ -28,6 +41,8 @@ import type {
   ImageSegmentationTaskExecuteOutput,
   ObjectDetectionTaskExecuteInput,
   ObjectDetectionTaskExecuteOutput,
+  PoseLandmarkerTaskExecuteInput,
+  PoseLandmarkerTaskExecuteOutput,
   TextClassificationTaskExecuteInput,
   TextClassificationTaskExecuteOutput,
   TextEmbeddingTaskExecuteInput,
@@ -121,7 +136,12 @@ type TaskType =
   | typeof ImageClassifier
   | typeof ImageEmbedder
   | typeof ImageSegmenter
-  | typeof ObjectDetector;
+  | typeof ObjectDetector
+  | typeof GestureRecognizer
+  | typeof HandLandmarker
+  | typeof FaceDetector
+  | typeof FaceLandmarker
+  | typeof PoseLandmarker;
 
 type TaskInstance =
   | TextEmbedder
@@ -130,7 +150,12 @@ type TaskInstance =
   | ImageClassifier
   | ImageEmbedder
   | ImageSegmenter
-  | ObjectDetector;
+  | ObjectDetector
+  | GestureRecognizer
+  | HandLandmarker
+  | FaceDetector
+  | FaceLandmarker
+  | PoseLandmarker;
 
 interface CachedModelTask {
   readonly task: TaskInstance;
@@ -154,7 +179,17 @@ type InferTaskInstance<T> = T extends typeof TextEmbedder
             ? ImageSegmenter
             : T extends typeof ObjectDetector
               ? ObjectDetector
-              : never;
+              : T extends typeof GestureRecognizer
+                ? GestureRecognizer
+                : T extends typeof HandLandmarker
+                  ? HandLandmarker
+                  : T extends typeof FaceDetector
+                    ? FaceDetector
+                    : T extends typeof FaceLandmarker
+                      ? FaceLandmarker
+                      : T extends typeof PoseLandmarker
+                        ? PoseLandmarker
+                        : never;
 
 /**
  * Checks if two option objects are deeply equal.
@@ -525,5 +560,268 @@ export const TFMP_ObjectDetection: AiProviderRunFn<
 
   return {
     detections,
+  };
+};
+
+/**
+ * Core implementation for gesture recognition using MediaPipe.
+ */
+export const TFMP_GestureRecognizer: AiProviderRunFn<
+  GestureRecognizerTaskExecuteInput,
+  GestureRecognizerTaskExecuteOutput,
+  TFMPModelRecord
+> = async (input, model, onProgress, signal) => {
+  const gestureRecognizer = await getModelTask(
+    model!,
+    {
+      numHands: (input as any).numHands,
+      minHandDetectionConfidence: (input as any).minHandDetectionConfidence,
+      minHandPresenceConfidence: (input as any).minHandPresenceConfidence,
+      minTrackingConfidence: (input as any).minTrackingConfidence,
+    },
+    onProgress,
+    signal,
+    GestureRecognizer
+  );
+  const result = gestureRecognizer.recognize(input.image as any);
+
+  if (!result.gestures || !result.landmarks) {
+    throw new PermanentJobError("Failed to recognize gestures: Empty result");
+  }
+
+  const hands = result.gestures.map((gestures: any, index: number) => ({
+    gestures: gestures.map((g: any) => ({
+      label: g.categoryName,
+      score: g.score,
+    })),
+    handedness: result.handedness[index].map((h: any) => ({
+      label: h.categoryName,
+      score: h.score,
+    })),
+    landmarks: result.landmarks[index].map((l: any) => ({
+      x: l.x,
+      y: l.y,
+      z: l.z,
+    })),
+    worldLandmarks: result.worldLandmarks[index].map((l: any) => ({
+      x: l.x,
+      y: l.y,
+      z: l.z,
+    })),
+  }));
+
+  return {
+    hands,
+  };
+};
+
+/**
+ * Core implementation for hand landmark detection using MediaPipe.
+ */
+export const TFMP_HandLandmarker: AiProviderRunFn<
+  HandLandmarkerTaskExecuteInput,
+  HandLandmarkerTaskExecuteOutput,
+  TFMPModelRecord
+> = async (input, model, onProgress, signal) => {
+  const handLandmarker = await getModelTask(
+    model!,
+    {
+      numHands: (input as any).numHands,
+      minHandDetectionConfidence: (input as any).minHandDetectionConfidence,
+      minHandPresenceConfidence: (input as any).minHandPresenceConfidence,
+      minTrackingConfidence: (input as any).minTrackingConfidence,
+    },
+    onProgress,
+    signal,
+    HandLandmarker
+  );
+  const result = handLandmarker.detect(input.image as any);
+
+  if (!result.landmarks) {
+    throw new PermanentJobError("Failed to detect hand landmarks: Empty result");
+  }
+
+  const hands = result.landmarks.map((landmarks: any, index: number) => ({
+    handedness: result.handedness[index].map((h: any) => ({
+      label: h.categoryName,
+      score: h.score,
+    })),
+    landmarks: landmarks.map((l: any) => ({
+      x: l.x,
+      y: l.y,
+      z: l.z,
+    })),
+    worldLandmarks: result.worldLandmarks[index].map((l: any) => ({
+      x: l.x,
+      y: l.y,
+      z: l.z,
+    })),
+  }));
+
+  return {
+    hands,
+  };
+};
+
+/**
+ * Core implementation for face detection using MediaPipe.
+ */
+export const TFMP_FaceDetector: AiProviderRunFn<
+  FaceDetectorTaskExecuteInput,
+  FaceDetectorTaskExecuteOutput,
+  TFMPModelRecord
+> = async (input, model, onProgress, signal) => {
+  const faceDetector = await getModelTask(
+    model!,
+    {
+      minDetectionConfidence: (input as any).minDetectionConfidence,
+      minSuppressionThreshold: (input as any).minSuppressionThreshold,
+    },
+    onProgress,
+    signal,
+    FaceDetector
+  );
+  const result = faceDetector.detect(input.image as any);
+
+  if (!result.detections) {
+    throw new PermanentJobError("Failed to detect faces: Empty result");
+  }
+
+  const faces = result.detections.map((detection: any) => ({
+    box: {
+      x: detection.boundingBox?.originX || 0,
+      y: detection.boundingBox?.originY || 0,
+      width: detection.boundingBox?.width || 0,
+      height: detection.boundingBox?.height || 0,
+    },
+    keypoints:
+      detection.keypoints?.map((kp: any) => ({
+        x: kp.x,
+        y: kp.y,
+        label: kp.label,
+      })) || [],
+    score: detection.categories?.[0]?.score || 0,
+  }));
+
+  return {
+    faces,
+  };
+};
+
+/**
+ * Core implementation for face landmark detection using MediaPipe.
+ */
+export const TFMP_FaceLandmarker: AiProviderRunFn<
+  FaceLandmarkerTaskExecuteInput,
+  FaceLandmarkerTaskExecuteOutput,
+  TFMPModelRecord
+> = async (input, model, onProgress, signal) => {
+  const faceLandmarker = await getModelTask(
+    model!,
+    {
+      numFaces: (input as any).numFaces,
+      minFaceDetectionConfidence: (input as any).minFaceDetectionConfidence,
+      minFacePresenceConfidence: (input as any).minFacePresenceConfidence,
+      minTrackingConfidence: (input as any).minTrackingConfidence,
+      outputFaceBlendshapes: (input as any).outputFaceBlendshapes,
+      outputFacialTransformationMatrixes: (input as any).outputFacialTransformationMatrixes,
+    },
+    onProgress,
+    signal,
+    FaceLandmarker
+  );
+  const result = faceLandmarker.detect(input.image as any);
+
+  if (!result.faceLandmarks) {
+    throw new PermanentJobError("Failed to detect face landmarks: Empty result");
+  }
+
+  const faces = result.faceLandmarks.map((landmarks: any, index: number) => {
+    const face: any = {
+      landmarks: landmarks.map((l: any) => ({
+        x: l.x,
+        y: l.y,
+        z: l.z,
+      })),
+    };
+
+    if (result.faceBlendshapes && result.faceBlendshapes[index]) {
+      face.blendshapes = result.faceBlendshapes[index].categories.map((b: any) => ({
+        label: b.categoryName,
+        score: b.score,
+      }));
+    }
+
+    if (result.facialTransformationMatrixes && result.facialTransformationMatrixes[index]) {
+      face.transformationMatrix = Array.from(result.facialTransformationMatrixes[index].data);
+    }
+
+    return face;
+  });
+
+  return {
+    faces,
+  };
+};
+
+/**
+ * Core implementation for pose landmark detection using MediaPipe.
+ */
+export const TFMP_PoseLandmarker: AiProviderRunFn<
+  PoseLandmarkerTaskExecuteInput,
+  PoseLandmarkerTaskExecuteOutput,
+  TFMPModelRecord
+> = async (input, model, onProgress, signal) => {
+  const poseLandmarker = await getModelTask(
+    model!,
+    {
+      numPoses: (input as any).numPoses,
+      minPoseDetectionConfidence: (input as any).minPoseDetectionConfidence,
+      minPosePresenceConfidence: (input as any).minPosePresenceConfidence,
+      minTrackingConfidence: (input as any).minTrackingConfidence,
+      outputSegmentationMasks: (input as any).outputSegmentationMasks,
+    },
+    onProgress,
+    signal,
+    PoseLandmarker
+  );
+  const result = poseLandmarker.detect(input.image as any);
+
+  if (!result.landmarks) {
+    throw new PermanentJobError("Failed to detect pose landmarks: Empty result");
+  }
+
+  const poses = result.landmarks.map((landmarks: any, index: number) => {
+    const pose: any = {
+      landmarks: landmarks.map((l: any) => ({
+        x: l.x,
+        y: l.y,
+        z: l.z,
+        visibility: l.visibility,
+        presence: l.presence,
+      })),
+      worldLandmarks: result.worldLandmarks[index].map((l: any) => ({
+        x: l.x,
+        y: l.y,
+        z: l.z,
+        visibility: l.visibility,
+        presence: l.presence,
+      })),
+    };
+
+    if (result.segmentationMasks && result.segmentationMasks[index]) {
+      const mask = result.segmentationMasks[index];
+      pose.segmentationMask = {
+        data: mask.canvas || mask,
+        width: mask.width,
+        height: mask.height,
+      };
+    }
+
+    return pose;
+  });
+
+  return {
+    poses,
   };
 };

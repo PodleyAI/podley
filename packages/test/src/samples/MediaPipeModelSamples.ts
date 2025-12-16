@@ -118,6 +118,77 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       },
       metadata: {},
     },
+    // New Vision Tasks
+    {
+      model_id: "media-pipe:Gesture Recognizer",
+      title: "Gesture Recognizer",
+      description: "Recognizes hand gestures (thumbs up, victory, etc.)",
+      tasks: ["GestureRecognizerTask"],
+      provider: TENSORFLOW_MEDIAPIPE,
+      providerConfig: {
+        taskEngine: "vision",
+        pipeline: "vision-gesture-recognizer",
+        modelPath:
+          "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+      },
+      metadata: {},
+    },
+    {
+      model_id: "media-pipe:Hand Landmarker",
+      title: "Hand Landmarker",
+      description: "Detects 21 hand landmarks",
+      tasks: ["HandLandmarkerTask"],
+      provider: TENSORFLOW_MEDIAPIPE,
+      providerConfig: {
+        taskEngine: "vision",
+        pipeline: "vision-hand-landmarker",
+        modelPath:
+          "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+      },
+      metadata: {},
+    },
+    {
+      model_id: "media-pipe:Face Detector",
+      title: "Face Detector",
+      description: "Detects faces with bounding boxes and keypoints",
+      tasks: ["FaceDetectorTask"],
+      provider: TENSORFLOW_MEDIAPIPE,
+      providerConfig: {
+        taskEngine: "vision",
+        pipeline: "vision-face-detector",
+        modelPath:
+          "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
+      },
+      metadata: {},
+    },
+    {
+      model_id: "media-pipe:Face Landmarker",
+      title: "Face Landmarker",
+      description: "Detects 478 facial landmarks with blendshapes",
+      tasks: ["FaceLandmarkerTask"],
+      provider: TENSORFLOW_MEDIAPIPE,
+      providerConfig: {
+        taskEngine: "vision",
+        pipeline: "vision-face-landmarker",
+        modelPath:
+          "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+      },
+      metadata: {},
+    },
+    {
+      model_id: "media-pipe:Pose Landmarker",
+      title: "Pose Landmarker",
+      description: "Detects 33 body pose landmarks",
+      tasks: ["PoseLandmarkerTask"],
+      provider: TENSORFLOW_MEDIAPIPE,
+      providerConfig: {
+        taskEngine: "vision",
+        pipeline: "vision-pose-landmarker",
+        modelPath:
+          "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+      },
+      metadata: {},
+    },
   ];
 
   for (const model of models) {

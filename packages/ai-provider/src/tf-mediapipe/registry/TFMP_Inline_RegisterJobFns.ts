@@ -11,10 +11,15 @@ import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-grap
 import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
 import {
   TFMP_Download,
+  TFMP_FaceDetector,
+  TFMP_FaceLandmarker,
+  TFMP_GestureRecognizer,
+  TFMP_HandLandmarker,
   TFMP_ImageClassification,
   TFMP_ImageEmbedding,
   TFMP_ImageSegmentation,
   TFMP_ObjectDetection,
+  TFMP_PoseLandmarker,
   TFMP_TextClassification,
   TFMP_TextEmbedding,
   TFMP_TextLanguageDetection,
@@ -76,6 +81,31 @@ export async function register_TFMP_InlineJobFns(
     TENSORFLOW_MEDIAPIPE,
     "ObjectDetectionTask",
     TFMP_ObjectDetection as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "GestureRecognizerTask",
+    TFMP_GestureRecognizer as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "HandLandmarkerTask",
+    TFMP_HandLandmarker as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "FaceDetectorTask",
+    TFMP_FaceDetector as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "FaceLandmarkerTask",
+    TFMP_FaceLandmarker as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "PoseLandmarkerTask",
+    TFMP_PoseLandmarker as any
   );
 
   // If no client provided, create a default in-memory queue
