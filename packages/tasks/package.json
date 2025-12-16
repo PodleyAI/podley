@@ -54,5 +54,9 @@
     "@workglow/storage": "workspace:*",
     "@workglow/task-graph": "workspace:*",
     "@workglow/util": "workspace:*"
+  },
+  "dependencies": {
+    "glfx": "^0.0.4",
+    "sharp": "^0.34.5"
   }
 }
