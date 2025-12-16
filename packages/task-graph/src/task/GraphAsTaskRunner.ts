@@ -59,8 +59,22 @@ export class GraphAsTaskRunner<
 
   private fixInput(input: Input): Input {
     // inputs has turned each property into an array, so we need to flatten the input
+    // but only for properties marked with x-replicate in the schema
+    const inputSchema = this.task.inputSchema();
+    if (typeof inputSchema === "boolean") {
+      return input;
+    }
+
     const flattenedInput = Object.entries(input).reduce((acc, [key, value]) => {
-      if (Array.isArray(value)) {
+      const inputDef = inputSchema.properties?.[key];
+      const shouldFlatten =
+        Array.isArray(value) &&
+        typeof inputDef === "object" &&
+        inputDef !== null &&
+        "x-replicate" in inputDef &&
+        (inputDef as any)["x-replicate"] === true;
+
+      if (shouldFlatten) {
         return { ...acc, [key]: value[0] };
       }
       return { ...acc, [key]: value };
@@ -83,8 +97,7 @@ export class GraphAsTaskRunner<
         this.task.compoundMerge
       );
     } else {
-      // Don't call fixInput when there are no children - no array wrapping to undo
-      const result = await super.executeTask(input);
+      const result = await super.executeTask(this.fixInput(input));
       this.task.runOutputData = result ?? ({} as Output);
     }
     return this.task.runOutputData as Output;
@@ -101,8 +114,7 @@ export class GraphAsTaskRunner<
         this.task.compoundMerge
       );
     } else {
-      // Don't call fixInput when there are no children - no array wrapping to undo
-      const reactiveResults = await super.executeTaskReactive(input, output);
+      const reactiveResults = await super.executeTaskReactive(this.fixInput(input), output);
       this.task.runOutputData = reactiveResults ?? output ?? ({} as Output);
     }
     return this.task.runOutputData as Output;
