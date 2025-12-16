@@ -14,10 +14,58 @@ import { createServiceToken, globalServiceRegistry } from "../di";
  */
 function extractTransferables(obj: any) {
   const transferables: Transferable[] = [];
+  const seen = new WeakSet();
 
   function findTransferables(value: any) {
+    // Avoid infinite recursion
+    if (value && typeof value === "object" && seen.has(value)) {
+      return;
+    }
+    if (value && typeof value === "object") {
+      seen.add(value);
+    }
+
+    // Handle TypedArrays
     if (value instanceof Float32Array || value instanceof Int16Array) {
       transferables.push(value.buffer);
+    }
+    // Handle other TypedArrays
+    else if (
+      value instanceof Uint8Array ||
+      value instanceof Uint8ClampedArray ||
+      value instanceof Int8Array ||
+      value instanceof Uint16Array ||
+      value instanceof Int32Array ||
+      value instanceof Uint32Array ||
+      value instanceof Float64Array ||
+      value instanceof BigInt64Array ||
+      value instanceof BigUint64Array
+    ) {
+      transferables.push(value.buffer);
+    }
+    // Handle OffscreenCanvas
+    else if (typeof OffscreenCanvas !== "undefined" && value instanceof OffscreenCanvas) {
+      transferables.push(value);
+    }
+    // Handle ImageBitmap
+    else if (typeof ImageBitmap !== "undefined" && value instanceof ImageBitmap) {
+      transferables.push(value);
+    }
+    // Handle VideoFrame
+    else if (typeof VideoFrame !== "undefined" && value instanceof VideoFrame) {
+      transferables.push(value);
+    }
+    // Handle MessagePort
+    else if (typeof MessagePort !== "undefined" && value instanceof MessagePort) {
+      transferables.push(value);
+    }
+    // Handle ArrayBuffer
+    else if (value instanceof ArrayBuffer) {
+      transferables.push(value);
+    }
+    // Recursively search arrays and objects
+    else if (Array.isArray(value)) {
+      value.forEach(findTransferables);
     } else if (value && typeof value === "object") {
       Object.values(value).forEach(findTransferables);
     }
