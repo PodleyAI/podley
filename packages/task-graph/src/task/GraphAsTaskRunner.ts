@@ -83,7 +83,8 @@ export class GraphAsTaskRunner<
         this.task.compoundMerge
       );
     } else {
-      const result = await super.executeTask(this.fixInput(input));
+      // Don't call fixInput when there are no children - no array wrapping to undo
+      const result = await super.executeTask(input);
       this.task.runOutputData = result ?? ({} as Output);
     }
     return this.task.runOutputData as Output;
@@ -100,7 +101,8 @@ export class GraphAsTaskRunner<
         this.task.compoundMerge
       );
     } else {
-      const reactiveResults = await super.executeTaskReactive(this.fixInput(input), output);
+      // Don't call fixInput when there are no children - no array wrapping to undo
+      const reactiveResults = await super.executeTaskReactive(input, output);
       this.task.runOutputData = reactiveResults ?? output ?? ({} as Output);
     }
     return this.task.runOutputData as Output;

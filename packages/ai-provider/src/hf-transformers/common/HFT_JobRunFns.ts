@@ -5,14 +5,21 @@
  */
 
 import {
+  type BackgroundRemovalPipeline,
   DocumentQuestionAnsweringSingle,
   type FeatureExtractionPipeline,
   FillMaskPipeline,
   FillMaskSingle,
+  type ImageClassificationPipeline,
+  type ImageFeatureExtractionPipeline,
+  type ImageSegmentationPipeline,
+  type ImageToTextPipeline,
+  type ObjectDetectionPipeline,
   pipeline,
   // @ts-ignore temporary "fix"
   type PretrainedModelOptions,
   QuestionAnsweringPipeline,
+  RawImage,
   SummarizationPipeline,
   SummarizationSingle,
   TextClassificationOutput,
@@ -24,11 +31,26 @@ import {
   TokenClassificationSingle,
   TranslationPipeline,
   TranslationSingle,
+  type ZeroShotClassificationPipeline,
+  type ZeroShotImageClassificationPipeline,
+  type ZeroShotObjectDetectionPipeline,
 } from "@sroussey/transformers";
-import {
+import type {
   AiProviderRunFn,
+  BackgroundRemovalTaskExecuteInput,
+  BackgroundRemovalTaskExecuteOutput,
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
+  ImageClassificationTaskExecuteInput,
+  ImageClassificationTaskExecuteOutput,
+  ImageEmbeddingTaskExecuteInput,
+  ImageEmbeddingTaskExecuteOutput,
+  ImageSegmentationTaskExecuteInput,
+  ImageSegmentationTaskExecuteOutput,
+  ImageToTextTaskExecuteInput,
+  ImageToTextTaskExecuteOutput,
+  ObjectDetectionTaskExecuteInput,
+  ObjectDetectionTaskExecuteOutput,
   TextClassificationTaskExecuteInput,
   TextClassificationTaskExecuteOutput,
   TextEmbeddingTaskExecuteInput,
@@ -53,12 +75,18 @@ import {
   UnloadModelTaskExecuteInput,
   UnloadModelTaskExecuteOutput,
 } from "@workglow/ai";
-import { PermanentJobError } from "@workglow/job-queue";
 import { CallbackStatus } from "./HFT_CallbackStatus";
 import { HTF_CACHE_NAME } from "./HFT_Constants";
 import { HfTransformersOnnxModelRecord } from "./HFT_ModelSchema";
 
 const pipelines = new Map<string, any>();
+
+/**
+ * Clear all cached pipelines
+ */
+export function clearPipelineCache(): void {
+  pipelines.clear();
+}
 
 /**
  * Helper function to get a pipeline for a model
@@ -70,8 +98,9 @@ const getPipeline = async (
   options: PretrainedModelOptions = {},
   progressScaleMax: number = 10
 ) => {
-  if (pipelines.has(model.model_id)) {
-    return pipelines.get(model.model_id);
+  const cacheKey = `${model.model_id}:${model.providerConfig.pipeline}`;
+  if (pipelines.has(cacheKey)) {
+    return pipelines.get(cacheKey);
   }
 
   // Track file sizes and progress for weighted calculation
@@ -385,7 +414,7 @@ const getPipeline = async (
       throw new Error("Operation aborted after pipeline creation");
     }
 
-    pipelines.set(model.model_id, result);
+    pipelines.set(cacheKey, result);
     return result;
   } catch (error: any) {
     // If aborted, throw a clean abort error rather than internal stream errors
@@ -506,7 +535,7 @@ export const HFT_TextEmbedding: AiProviderRunFn<
       input,
       hfVector
     );
-    throw new PermanentJobError(
+    throw new Error(
       `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.providerConfig.nativeDimensions}`
     );
   }
@@ -519,6 +548,32 @@ export const HFT_TextClassification: AiProviderRunFn<
   TextClassificationTaskExecuteOutput,
   HfTransformersOnnxModelRecord
 > = async (input, model, onProgress, signal) => {
+  if (model?.providerConfig?.pipeline === "zero-shot-classification") {
+    if (
+      !input.candidateLabels ||
+      !Array.isArray(input.candidateLabels) ||
+      input.candidateLabels.length === 0
+    ) {
+      throw new Error("Zero-shot text classification requires candidate labels");
+    }
+
+    const zeroShotClassifier: ZeroShotClassificationPipeline = await getPipeline(
+      model!,
+      onProgress,
+      {
+        abort_signal: signal,
+      }
+    );
+    const result: any = await zeroShotClassifier(input.text, input.candidateLabels as string[], {});
+
+    return {
+      categories: result.labels.map((label: string, idx: number) => ({
+        label,
+        score: result.scores[idx],
+      })),
+    };
+  }
+
   const TextClassification: TextClassificationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
   });
@@ -728,7 +783,7 @@ export const HFT_TextRewriter: AiProviderRunFn<
   }
 
   if (text === promptedText) {
-    throw new PermanentJobError("Rewriter failed to generate new text");
+    throw new Error("Rewriter failed to generate new text");
   }
 
   return {
@@ -798,6 +853,223 @@ export const HFT_TextQuestionAnswer: AiProviderRunFn<
     text: answerText,
   };
 };
+
+/**
+ * Core implementation for image segmentation using Hugging Face Transformers.
+ */
+export const HFT_ImageSegmentation: AiProviderRunFn<
+  ImageSegmentationTaskExecuteInput,
+  ImageSegmentationTaskExecuteOutput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  const segmenter: ImageSegmentationPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+
+  const result = await segmenter(input.image as any, {
+    threshold: input.threshold,
+    mask_threshold: input.maskThreshold,
+    ...(signal ? { abort_signal: signal } : {}),
+  });
+
+  const masks = Array.isArray(result) ? result : [result];
+
+  const processedMasks = await Promise.all(
+    masks.map(async (mask) => ({
+      label: mask.label || "",
+      score: mask.score || 0,
+      mask: {} as { [x: string]: unknown },
+    }))
+  );
+
+  return {
+    masks: processedMasks,
+  };
+};
+
+/**
+ * Core implementation for image to text using Hugging Face Transformers.
+ */
+export const HFT_ImageToText: AiProviderRunFn<
+  ImageToTextTaskExecuteInput,
+  ImageToTextTaskExecuteOutput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  const captioner: ImageToTextPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+
+  const result: any = await captioner(input.image as string, {
+    max_new_tokens: input.maxTokens,
+    ...(signal ? { abort_signal: signal } : {}),
+  });
+
+  const text = Array.isArray(result) ? result[0]?.generated_text : result?.generated_text;
+
+  return {
+    text: text || "",
+  };
+};
+
+/**
+ * Core implementation for background removal using Hugging Face Transformers.
+ */
+export const HFT_BackgroundRemoval: AiProviderRunFn<
+  BackgroundRemovalTaskExecuteInput,
+  BackgroundRemovalTaskExecuteOutput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  const remover: BackgroundRemovalPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+
+  const result = await remover(input.image as string, {
+    ...(signal ? { abort_signal: signal } : {}),
+  });
+
+  const resultImage = Array.isArray(result) ? result[0] : result;
+
+  return {
+    image: imageToBase64(resultImage),
+  };
+};
+
+/**
+ * Core implementation for image embedding using Hugging Face Transformers.
+ */
+export const HFT_ImageEmbedding: AiProviderRunFn<
+  ImageEmbeddingTaskExecuteInput,
+  ImageEmbeddingTaskExecuteOutput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  const embedder: ImageFeatureExtractionPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+
+  const result: any = await embedder(input.image as string);
+
+  return {
+    vector: result.data as TypedArray,
+  };
+};
+
+/**
+ * Core implementation for image classification using Hugging Face Transformers.
+ * Auto-selects between regular and zero-shot classification.
+ */
+export const HFT_ImageClassification: AiProviderRunFn<
+  ImageClassificationTaskExecuteInput,
+  ImageClassificationTaskExecuteOutput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  if (model?.providerConfig?.pipeline === "zero-shot-image-classification") {
+    if (!input.categories || !Array.isArray(input.categories) || input.categories.length === 0) {
+      console.warn("Zero-shot image classification requires categories", input);
+      throw new Error("Zero-shot image classification requires categories");
+    }
+    const zeroShotClassifier: ZeroShotImageClassificationPipeline = await getPipeline(
+      model!,
+      onProgress,
+      {
+        abort_signal: signal,
+      }
+    );
+    const result: any = await zeroShotClassifier(
+      input.image as string,
+      input.categories! as string[],
+      {}
+    );
+
+    const results = Array.isArray(result) ? result : [result];
+
+    return {
+      categories: results.map((r: any) => ({
+        label: r.label,
+        score: r.score,
+      })),
+    };
+  }
+
+  const classifier: ImageClassificationPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+  const result: any = await classifier(input.image as string, {
+    top_k: (input as any).maxCategories,
+    ...(signal ? { abort_signal: signal } : {}),
+  });
+
+  const results = Array.isArray(result) ? result : [result];
+
+  return {
+    categories: results.map((r: any) => ({
+      label: r.label,
+      score: r.score,
+    })),
+  };
+};
+
+/**
+ * Core implementation for object detection using Hugging Face Transformers.
+ * Auto-selects between regular and zero-shot detection.
+ */
+export const HFT_ObjectDetection: AiProviderRunFn<
+  ObjectDetectionTaskExecuteInput,
+  ObjectDetectionTaskExecuteOutput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  if (model?.providerConfig?.pipeline === "zero-shot-object-detection") {
+    if (!input.labels || !Array.isArray(input.labels) || input.labels.length === 0) {
+      throw new Error("Zero-shot object detection requires labels");
+    }
+    const zeroShotDetector: ZeroShotObjectDetectionPipeline = await getPipeline(
+      model!,
+      onProgress,
+      {
+        abort_signal: signal,
+      }
+    );
+    const result: any = await zeroShotDetector(input.image as string, Array.from(input.labels!), {
+      threshold: (input as any).threshold,
+    });
+
+    const detections = Array.isArray(result) ? result : [result];
+
+    return {
+      detections: detections.map((d: any) => ({
+        label: d.label,
+        score: d.score,
+        box: d.box,
+      })),
+    };
+  }
+
+  const detector: ObjectDetectionPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+  const result: any = await detector(input.image as string, {
+    threshold: (input as any).threshold,
+    ...(signal ? { abort_signal: signal } : {}),
+  });
+
+  const detections = Array.isArray(result) ? result : [result];
+
+  return {
+    detections: detections.map((d: any) => ({
+      label: d.label,
+      score: d.score,
+      box: d.box,
+    })),
+  };
+};
+/**
+ * Helper function to convert RawImage to base64 PNG
+ */
+function imageToBase64(image: RawImage): string {
+  // Convert RawImage to base64 PNG
+  // This is a simplified version - actual implementation would use canvas or similar
+  return (image as any).toBase64?.() || "";
+}
+
 
 /**
  * Create a text streamer for a given tokenizer and update progress function

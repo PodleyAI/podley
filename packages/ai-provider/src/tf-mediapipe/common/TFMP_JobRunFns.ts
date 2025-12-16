@@ -10,10 +10,24 @@ import {
   TextClassifier,
   TextEmbedder,
 } from "@mediapipe/tasks-text";
+import {
+  ImageClassifier,
+  ImageEmbedder,
+  ImageSegmenter,
+  ObjectDetector,
+} from "@mediapipe/tasks-vision";
 import type {
   AiProviderRunFn,
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
+  ImageClassificationTaskExecuteInput,
+  ImageClassificationTaskExecuteOutput,
+  ImageEmbeddingTaskExecuteInput,
+  ImageEmbeddingTaskExecuteOutput,
+  ImageSegmentationTaskExecuteInput,
+  ImageSegmentationTaskExecuteOutput,
+  ObjectDetectionTaskExecuteInput,
+  ObjectDetectionTaskExecuteOutput,
   TextClassificationTaskExecuteInput,
   TextClassificationTaskExecuteOutput,
   TextEmbeddingTaskExecuteInput,
@@ -48,12 +62,6 @@ const wasm_tasks = new Map<string, TFMPWasmFileset>();
  * When count reaches 0, the WASM fileset can be safely unloaded.
  */
 const wasm_reference_counts = new Map<string, number>();
-
-/**
- * Maps model paths to their corresponding task engine.
- * Used to determine which WASM fileset to decrement when a model is unloaded.
- */
-const model_to_wasm_mapping = new Map<string, string>();
 
 /**
  * Helper function to get a WASM task for a model
@@ -106,8 +114,26 @@ const getWasmTask = async (
   return wasmFileset;
 };
 
+type TaskType =
+  | typeof TextEmbedder
+  | typeof TextClassifier
+  | typeof LanguageDetector
+  | typeof ImageClassifier
+  | typeof ImageEmbedder
+  | typeof ImageSegmenter
+  | typeof ObjectDetector;
+
+type TaskInstance =
+  | TextEmbedder
+  | TextClassifier
+  | LanguageDetector
+  | ImageClassifier
+  | ImageEmbedder
+  | ImageSegmenter
+  | ObjectDetector;
+
 interface CachedModelTask {
-  readonly task: TextEmbedder | TextClassifier | LanguageDetector;
+  readonly task: TaskInstance;
   readonly options: Record<string, unknown>;
   readonly taskEngine: string;
 }
@@ -120,7 +146,15 @@ type InferTaskInstance<T> = T extends typeof TextEmbedder
     ? TextClassifier
     : T extends typeof LanguageDetector
       ? LanguageDetector
-      : never;
+      : T extends typeof ImageClassifier
+        ? ImageClassifier
+        : T extends typeof ImageEmbedder
+          ? ImageEmbedder
+          : T extends typeof ImageSegmenter
+            ? ImageSegmenter
+            : T extends typeof ObjectDetector
+              ? ObjectDetector
+              : never;
 
 /**
  * Checks if two option objects are deeply equal.
@@ -143,9 +177,7 @@ const optionsMatch = (opts1: Record<string, unknown>, opts2: Record<string, unkn
   });
 };
 
-const getModelTask = async <
-  T extends typeof TextEmbedder | typeof TextClassifier | typeof LanguageDetector,
->(
+const getModelTask = async <T extends TaskType>(
   model: TFMPModelRecord,
   options: Record<string, unknown>,
   onProgress: (progress: number, message?: string, details?: any) => void,
@@ -345,7 +377,7 @@ export const TFMP_Unload: AiProviderRunFn<
 
     for (const cachedTask of cachedTasks) {
       const task = cachedTask.task;
-      task.close();
+      if ("close" in task && typeof task.close === "function") task.close();
 
       // Decrease reference count for WASM fileset for this cached task
       const taskEngine = cachedTask.taskEngine;
@@ -366,5 +398,132 @@ export const TFMP_Unload: AiProviderRunFn<
 
   return {
     model: input.model,
+  };
+};
+
+/**
+ * Core implementation for image segmentation using MediaPipe.
+ */
+export const TFMP_ImageSegmentation: AiProviderRunFn<
+  ImageSegmentationTaskExecuteInput,
+  ImageSegmentationTaskExecuteOutput,
+  TFMPModelRecord
+> = async (input, model, onProgress, signal) => {
+  const imageSegmenter = await getModelTask(model!, {}, onProgress, signal, ImageSegmenter);
+  const result = imageSegmenter.segment(input.image as any);
+
+  if (!result.categoryMask) {
+    throw new PermanentJobError("Failed to segment image: Empty result");
+  }
+
+  // MediaPipe returns a single mask, create a placeholder result
+  const masks = [
+    {
+      label: "segment",
+      score: 1.0,
+      mask: {
+        data: result.categoryMask.canvas,
+        width: result.categoryMask.width,
+        height: result.categoryMask.height,
+      },
+    },
+  ];
+
+  return {
+    masks,
+  };
+};
+
+/**
+ * Core implementation for image embedding using MediaPipe.
+ */
+export const TFMP_ImageEmbedding: AiProviderRunFn<
+  ImageEmbeddingTaskExecuteInput,
+  ImageEmbeddingTaskExecuteOutput,
+  TFMPModelRecord
+> = async (input, model, onProgress, signal) => {
+  const imageEmbedder = await getModelTask(model!, {}, onProgress, signal, ImageEmbedder);
+  const result = imageEmbedder.embed(input.image as any);
+
+  if (!result.embeddings?.[0]?.floatEmbedding) {
+    throw new PermanentJobError("Failed to generate embedding: Empty result");
+  }
+
+  const embedding = Float32Array.from(result.embeddings[0].floatEmbedding);
+
+  return {
+    vector: embedding,
+  };
+};
+
+/**
+ * Core implementation for image classification using MediaPipe.
+ */
+export const TFMP_ImageClassification: AiProviderRunFn<
+  ImageClassificationTaskExecuteInput,
+  ImageClassificationTaskExecuteOutput,
+  TFMPModelRecord
+> = async (input, model, onProgress, signal) => {
+  const imageClassifier = await getModelTask(
+    model!,
+    {
+      maxResults: (input as any).maxCategories,
+    },
+    onProgress,
+    signal,
+    ImageClassifier
+  );
+  const result = imageClassifier.classify(input.image as any);
+
+  if (!result.classifications?.[0]?.categories) {
+    throw new PermanentJobError("Failed to classify image: Empty result");
+  }
+
+  const categories = result.classifications[0].categories.map((category: any) => ({
+    label: category.categoryName,
+    score: category.score,
+  }));
+
+  return {
+    categories,
+  };
+};
+
+/**
+ * Core implementation for object detection using MediaPipe.
+ */
+export const TFMP_ObjectDetection: AiProviderRunFn<
+  ObjectDetectionTaskExecuteInput,
+  ObjectDetectionTaskExecuteOutput,
+  TFMPModelRecord
+> = async (input, model, onProgress, signal) => {
+  const objectDetector = await getModelTask(
+    model!,
+    {
+      scoreThreshold: (input as any).threshold,
+    },
+    onProgress,
+    signal,
+    ObjectDetector
+  );
+  const result = objectDetector.detect(input.image as any);
+
+  if (!result.detections) {
+    throw new PermanentJobError("Failed to detect objects: Empty result");
+  }
+
+  const detections = result.detections.map((detection: any) => ({
+    label: detection.categories?.[0]?.categoryName || "unknown",
+    score: detection.categories?.[0]?.score || 0,
+    box: {
+      x: detection.boundingBox?.originX || 0,
+      y: detection.boundingBox?.originY || 0,
+      width: detection.boundingBox?.width || 0,
+      height: detection.boundingBox?.height || 0,
+    },
+  }));
+
+  return {
+    detections,
   };
 };

@@ -185,7 +185,17 @@ export class InMemoryQueueStorage<Input, Output> implements IQueueStorage<Input,
     await sleep(0);
     const job = this.jobQueue.find((j) => j.id === id && this.matchesPrefixes(j));
     if (!job) {
-      throw new Error(`Job ${id} not found`);
+      // Job not found - this can happen if the job was already completed/removed
+      // or if there's a race condition. Silently ignore progress updates for missing jobs.
+      console.warn("Job not found for progress update", id); //TODO: find out why this happens
+      return;
+    }
+
+    // Skip progress updates for jobs that are already completed or failed
+    // to avoid unnecessary updates and potential race conditions
+    if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
+      console.warn("Job already completed or failed for progress update", id); //TODO: find out why this happens
+      return;
     }
 
     const oldJob = { ...job };

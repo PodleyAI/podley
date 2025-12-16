@@ -286,3 +286,130 @@ export type DeReplicateFromSchema<S extends { properties: Record<string, any> }>
     ? UnwrapArrayUnion<TypedArrayFromSchema<S["properties"][K]>>
     : TypedArrayFromSchema<S["properties"][K]>;
 };
+
+export type ImageSource = ImageBitmap | OffscreenCanvas | VideoFrame;
+
+/**
+ * Image input schema supporting URIs and base64-encoded images in multiple formats
+ */
+export const TypeImageInput = {
+  oneOf: [
+    {
+      type: "string",
+      title: "Image Data",
+      description: "Image as data-uri",
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        data: {
+          oneOf: [
+            {
+              type: "object",
+              format: "image:ImageBitmap",
+              title: "ImageBitmap",
+            },
+            {
+              type: "object",
+              format: "image:OffscreenCanvas",
+              title: "OffscreenCanvas",
+            },
+            {
+              type: "object",
+              format: "image:VideoFrame",
+              title: "VideoFrame",
+            },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: { type: "number", format: "Uint8Clamped" },
+                  format: "Uint8ClampedArray",
+                  title: "Data",
+                  description: "Data of the image",
+                },
+                width: { type: "number", title: "Width", description: "Width of the image" },
+                height: { type: "number", title: "Height", description: "Height of the image" },
+                channels: {
+                  type: "number",
+                  title: "Channels",
+                  description: "Channels of the image",
+                },
+                rawChannels: {
+                  type: "number",
+                  title: "Raw Channels",
+                  description: "Raw channels of the image",
+                },
+              },
+              additionalProperties: false,
+              required: ["data", "width", "height", "channels"],
+              format: "image:ImageBinary",
+              title: "ImageBinary",
+            },
+          ],
+        },
+        width: { type: "number", title: "Width", description: "Width of the image" },
+        height: { type: "number", title: "Height", description: "Height of the image" },
+        channels: {
+          type: "number",
+          title: "Channels",
+          description: "Channels of the image",
+          minimum: 1,
+          maximum: 4,
+        },
+      },
+      required: ["data", "width", "height", "channels"],
+    },
+  ],
+  title: "Image",
+  description: "Image as URL or base64-encoded data",
+} as const satisfies JsonSchema;
+
+/**
+ * Audio input schema supporting URIs and base64-encoded audio in multiple formats
+ */
+export const TypeAudioInput = {
+  type: "string",
+  title: "Audio",
+  description: "Audio as data-uri, or Blob",
+} as const satisfies JsonSchema;
+
+/**
+ * Bounding box coordinates
+ */
+export const TypeBoundingBox = {
+  type: "object",
+  properties: {
+    x: { type: "number", title: "X coordinate", description: "Left edge of the bounding box" },
+    y: { type: "number", title: "Y coordinate", description: "Top edge of the bounding box" },
+    width: { type: "number", title: "Width", description: "Width of the bounding box" },
+    height: { type: "number", title: "Height", description: "Height of the bounding box" },
+  },
+  required: ["x", "y", "width", "height"],
+  additionalProperties: false,
+  title: "Bounding Box",
+  description: "Bounding box coordinates",
+} as const satisfies JsonSchema;
+
+/**
+ * Classification category with label and confidence score
+ */
+export const TypeCategory = {
+  type: "object",
+  properties: {
+    label: { type: "string", title: "Label", description: "Category label" },
+    score: {
+      type: "number",
+      title: "Confidence Score",
+      description: "Confidence score between 0 and 1",
+      minimum: 0,
+      maximum: 1,
+    },
+  },
+  required: ["label", "score"],
+  additionalProperties: false,
+  title: "Category",
+  description: "Classification category with label and score",
+} as const satisfies JsonSchema;

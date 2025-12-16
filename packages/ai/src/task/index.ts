@@ -4,10 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export * from "./BackgroundRemovalTask";
 export * from "./base/AiTask";
 export * from "./base/AiTaskSchemas";
 export * from "./DocumentSplitterTask";
 export * from "./DownloadModelTask";
+export * from "./ImageClassificationTask";
+export * from "./ImageEmbeddingTask";
+export * from "./ImageSegmentationTask";
+export * from "./ImageToTextTask";
+export * from "./ObjectDetectionTask";
 export * from "./TextClassificationTask";
 export * from "./TextEmbeddingTask";
 export * from "./TextFillMaskTask";

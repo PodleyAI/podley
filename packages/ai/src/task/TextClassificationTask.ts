@@ -19,6 +19,15 @@ export const TextClassificationInputSchema = {
       title: "Text",
       description: "The text to classify",
     }),
+    candidateLabels: {
+      type: "array",
+      items: {
+        type: "string",
+      },
+      title: "Candidate Labels",
+      description: "List of candidate labels (optional, if provided uses zero-shot classification)",
+      "x-ui-group": "Configuration",
+    },
     maxCategories: {
       type: "number",
       minimum: 1,
@@ -26,45 +35,11 @@ export const TextClassificationInputSchema = {
       default: 5,
       title: "Max Categories",
       description: "The maximum number of categories to return",
+      "x-ui-group": "Configuration",
     },
-    // scoreThreshold: {
-    //   type: "number",
-    //   minimum: 0,
-    //   maximum: 1,
-    //   title: "Score Threshold",
-    //   description: "The score threshold for the categories to return",
-    //   "x-ui-group": "Configuration",
-    //   "x-ui-order": 1,
-    //   "x-ui-group-open": false,
-    // },
-    // allowList: {
-    //   type: "array",
-    //   items: {
-    //     type: "string",
-    //   },
-    //   title: "Allow List",
-    //   description: "The categories to allow (mutually exclusive with blockList)",
-    //   "x-ui-group": "Configuration",
-    //   "x-ui-order": 2,
-    //   "x-ui-group-open": false,
-    // },
-    // blockList: {
-    //   type: "array",
-    //   items: {
-    //     type: "string",
-    //   },
-    //   title: "Block List",
-    //   description: "The categories to block (mutually exclusive with allowList)",
-    //   "x-ui-group": "Configuration",
-    //   "x-ui-order": 3,
-    //   "x-ui-group-open": false,
-    // },
     model: modelSchema,
   },
   required: ["text", "model"],
-  // not: {
-  //   required: ["allowList", "blockList"],
-  // },
   additionalProperties: false,
 } as const satisfies DataPortSchema;
 
@@ -108,7 +83,8 @@ export type TextClassificationTaskExecuteOutput = DeReplicateFromSchema<
 >;
 
 /**
- * Classifies text into predefined categories using language models
+ * Classifies text into categories using language models.
+ * Automatically selects between regular and zero-shot classification based on whether candidate labels are provided.
  */
 export class TextClassificationTask extends AiTask<
   TextClassificationTaskInput,
@@ -117,7 +93,8 @@ export class TextClassificationTask extends AiTask<
   public static type = "TextClassificationTask";
   public static category = "AI Text Model";
   public static title = "Text Classifier";
-  public static description = "Classifies text into predefined categories using language models";
+  public static description =
+    "Classifies text into categories using language models. Supports zero-shot classification when candidate labels are provided.";
   public static inputSchema(): DataPortSchema {
     return TextClassificationInputSchema as DataPortSchema;
   }

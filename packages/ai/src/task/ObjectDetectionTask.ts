@@ -1,0 +1,139 @@
+/**
+ * @license
+ * Copyright 2025 Steven Roussey <sroussey@gmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { CreateWorkflow, JobQueueTaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
+import { DataPortSchema, FromSchema } from "@workglow/util";
+import {
+  DeReplicateFromSchema,
+  TypeBoundingBox,
+  TypeImageInput,
+  TypeModel,
+  TypeReplicateArray,
+} from "./base/AiTaskSchemas";
+import { AiVisionTask } from "./base/AiVisionTask";
+
+const modelSchema = TypeReplicateArray(TypeModel("model:ObjectDetectionTask"));
+
+const detectionSchema = {
+  type: "object",
+  properties: {
+    label: {
+      type: "string",
+      title: "Label",
+      description: "The label of the detected object",
+    },
+    score: {
+      type: "number",
+      title: "Confidence Score",
+      description: "The confidence score for this detection",
+      minimum: 0,
+      maximum: 1,
+    },
+    box: TypeBoundingBox,
+  },
+  required: ["label", "score", "box"],
+  additionalProperties: false,
+} as const;
+
+export const ObjectDetectionInputSchema = {
+  type: "object",
+  properties: {
+    image: TypeReplicateArray(TypeImageInput),
+    model: modelSchema,
+    labels: {
+      type: "array",
+      items: {
+        type: "string",
+      },
+      title: "Labels",
+      description:
+        "List of object labels to detect (optional, if provided uses zero-shot detection)",
+      "x-ui-group": "Configuration",
+    },
+    threshold: {
+      type: "number",
+      title: "Threshold",
+      description: "The threshold for filtering detections by score",
+      minimum: 0,
+      maximum: 1,
+      default: 0.5,
+      "x-ui-group": "Configuration",
+    },
+  },
+  required: ["image", "model"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+export const ObjectDetectionOutputSchema = {
+  type: "object",
+  properties: {
+    detections: {
+      oneOf: [
+        { type: "array", items: detectionSchema },
+        { type: "array", items: { type: "array", items: detectionSchema } },
+      ],
+      title: "Detections",
+      description: "The detected objects with their labels, scores, and bounding boxes",
+    },
+  },
+  required: ["detections"],
+  additionalProperties: false,
+} as const satisfies DataPortSchema;
+
+export type ObjectDetectionTaskInput = FromSchema<typeof ObjectDetectionInputSchema>;
+export type ObjectDetectionTaskOutput = FromSchema<typeof ObjectDetectionOutputSchema>;
+export type ObjectDetectionTaskExecuteInput = DeReplicateFromSchema<
+  typeof ObjectDetectionInputSchema
+>;
+export type ObjectDetectionTaskExecuteOutput = DeReplicateFromSchema<
+  typeof ObjectDetectionOutputSchema
+>;
+
+/**
+ * Detects objects in images using vision models.
+ * Automatically selects between regular and zero-shot detection based on whether labels are provided.
+ */
+export class ObjectDetectionTask extends AiVisionTask<
+  ObjectDetectionTaskInput,
+  ObjectDetectionTaskOutput,
+  JobQueueTaskConfig
+> {
+  public static type = "ObjectDetectionTask";
+  public static category = "AI Vision Model";
+  public static title = "Object Detection";
+  public static description =
+    "Detects objects in images using vision models. Supports zero-shot detection when labels are provided.";
+  public static inputSchema(): DataPortSchema {
+    return ObjectDetectionInputSchema as DataPortSchema;
+  }
+  public static outputSchema(): DataPortSchema {
+    return ObjectDetectionOutputSchema as DataPortSchema;
+  }
+}
+
+TaskRegistry.registerTask(ObjectDetectionTask);
+
+/**
+ * Convenience function to run object detection tasks.
+ * Creates and executes an ObjectDetectionTask with the provided input.
+ * @param input The input parameters for object detection (image, model, and optional labels)
+ * @returns Promise resolving to the detected objects with labels, scores, and bounding boxes
+ */
+export const ObjectDetection = (input: ObjectDetectionTaskInput, config?: JobQueueTaskConfig) => {
+  return new ObjectDetectionTask(input, config).run();
+};
+
+declare module "@workglow/task-graph" {
+  interface Workflow {
+    ObjectDetection: CreateWorkflow<
+      ObjectDetectionTaskInput,
+      ObjectDetectionTaskOutput,
+      JobQueueTaskConfig
+    >;
+  }
+}
+
+Workflow.prototype.ObjectDetection = CreateWorkflow(ObjectDetectionTask);

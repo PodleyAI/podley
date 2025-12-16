@@ -79,6 +79,10 @@ export class AiTask<
     const runtype = (this.constructor as any).runtype ?? (this.constructor as any).type;
     const model = await this.getModelForInput(input as AiSingleTaskInput);
 
+    // TODO: if the queue is not memory based, we need to convert to something that can structure clone to the queue
+    // const registeredQueue = await this.resolveQueue(input);
+    // const queueName = registeredQueue?.server.queueName;
+
     return {
       taskType: runtype,
       aiProvider: model.provider,
@@ -149,6 +153,7 @@ export class AiTask<
     const modelTaskProperties = Object.entries<JsonSchema>(
       (inputSchema.properties || {}) as Record<string, JsonSchema>
     ).filter(([key, schema]) => schemaFormat(schema)?.startsWith("model:"));
+
     if (modelTaskProperties.length > 0) {
       const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
       for (const [key, propSchema] of modelTaskProperties) {
@@ -163,9 +168,11 @@ export class AiTask<
         }
       }
     }
+
     const modelPlainProperties = Object.entries<JsonSchema>(
       (inputSchema.properties || {}) as Record<string, JsonSchema>
     ).filter(([key, schema]) => schemaFormat(schema) === "model");
+
     if (modelPlainProperties.length > 0) {
       for (const [key, propSchema] of modelPlainProperties) {
         let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];

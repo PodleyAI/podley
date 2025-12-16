@@ -11,6 +11,10 @@ import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-grap
 import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
 import {
   TFMP_Download,
+  TFMP_ImageClassification,
+  TFMP_ImageEmbedding,
+  TFMP_ImageSegmentation,
+  TFMP_ObjectDetection,
   TFMP_TextClassification,
   TFMP_TextEmbedding,
   TFMP_TextLanguageDetection,
@@ -52,6 +56,26 @@ export async function register_TFMP_InlineJobFns(
     TENSORFLOW_MEDIAPIPE,
     "TextClassificationTask",
     TFMP_TextClassification as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "ImageSegmentationTask",
+    TFMP_ImageSegmentation as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "ImageEmbeddingTask",
+    TFMP_ImageEmbedding as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "ImageClassificationTask",
+    TFMP_ImageClassification as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "ObjectDetectionTask",
+    TFMP_ObjectDetection as any
   );
 
   // If no client provided, create a default in-memory queue

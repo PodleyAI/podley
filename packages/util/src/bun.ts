@@ -7,4 +7,5 @@
 export * from "./common";
 export * from "./compress/compress.node";
 export * from "./crypto/Crypto.bun";
+export * from "./media/image.node";
 export * from "./worker/Worker.bun";

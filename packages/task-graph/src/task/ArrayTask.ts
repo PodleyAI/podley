@@ -61,7 +61,6 @@ export class ArrayTask<
       for (const inputId of keys) {
         const inputValue = this.runInputData[inputId];
         const inputDef = inputSchema.properties?.[inputId];
-
         if (
           typeof inputDef === "object" &&
           inputDef !== null &&
@@ -84,9 +83,6 @@ export class ArrayTask<
       super.regenerateGraph();
       return;
     }
-
-    // Clear the existing subgraph
-    this.subGraph = new TaskGraph();
 
     // Create all combinations of inputs
     const inputIds = Array.from(arrayInputs.keys());

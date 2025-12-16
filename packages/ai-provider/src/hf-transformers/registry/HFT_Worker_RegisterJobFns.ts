@@ -11,7 +11,13 @@ import {
   WORKER_SERVER,
 } from "@workglow/util";
 import {
+  HFT_BackgroundRemoval,
   HFT_Download,
+  HFT_ImageClassification,
+  HFT_ImageEmbedding,
+  HFT_ImageSegmentation,
+  HFT_ImageToText,
+  HFT_ObjectDetection,
   HFT_TextClassification,
   HFT_TextEmbedding,
   HFT_TextFillMask,
@@ -43,6 +49,12 @@ export const HFT_WORKER_JOBRUN_REGISTER = globalServiceRegistry.register(
     workerServer.registerFunction("TextRewriterTask", HFT_TextRewriter);
     workerServer.registerFunction("TextSummaryTask", HFT_TextSummary);
     workerServer.registerFunction("TextQuestionAnswerTask", HFT_TextQuestionAnswer);
+    workerServer.registerFunction("ImageSegmentationTask", HFT_ImageSegmentation);
+    workerServer.registerFunction("ImageToTextTask", HFT_ImageToText);
+    workerServer.registerFunction("BackgroundRemovalTask", HFT_BackgroundRemoval);
+    workerServer.registerFunction("ImageEmbeddingTask", HFT_ImageEmbedding);
+    workerServer.registerFunction("ImageClassificationTask", HFT_ImageClassification);
+    workerServer.registerFunction("ObjectDetectionTask", HFT_ObjectDetection);
     parentPort.postMessage({ type: "ready" });
     console.log("HFT_WORKER_JOBRUN registered");
     return workerServer;

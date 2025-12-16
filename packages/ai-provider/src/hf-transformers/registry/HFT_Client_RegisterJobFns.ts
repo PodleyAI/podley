@@ -40,6 +40,12 @@ export async function register_HFT_ClientJobFns(
     "TextRewriterTask",
     "TextSummaryTask",
     "TextQuestionAnswerTask",
+    "ImageSegmentationTask",
+    "ImageToTextTask",
+    "BackgroundRemovalTask",
+    "ImageEmbeddingTask",
+    "ImageClassificationTask",
+    "ObjectDetectionTask",
   ];
   for (const name of names) {
     ProviderRegistry.registerAsWorkerRunFn(HF_TRANSFORMERS_ONNX, name);

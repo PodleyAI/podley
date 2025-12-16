@@ -127,7 +127,7 @@ export class Job<Input, Output> {
     this.workerId = workerId ?? null;
   }
 
-  async execute(input: Input, context: IJobExecuteContext): Promise<Output> {
+  async execute(_input: Input, _context: IJobExecuteContext): Promise<Output> {
     throw new JobError("Method not implemented.");
   }
 
