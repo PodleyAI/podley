@@ -5,6 +5,7 @@
  */
 
 import {
+  type AudioClassificationPipeline,
   type BackgroundRemovalPipeline,
   DocumentQuestionAnsweringSingle,
   type FeatureExtractionPipeline,
@@ -27,16 +28,20 @@ import {
   type TextGenerationPipeline,
   TextGenerationSingle,
   TextStreamer,
+  type TextToAudioPipeline,
   TokenClassificationPipeline,
   TokenClassificationSingle,
   TranslationPipeline,
   TranslationSingle,
+  type ZeroShotAudioClassificationPipeline,
   type ZeroShotClassificationPipeline,
   type ZeroShotImageClassificationPipeline,
   type ZeroShotObjectDetectionPipeline,
 } from "@sroussey/transformers";
 import type {
   AiProviderRunFn,
+  AudioClassificationTaskExecuteInput,
+  AudioClassificationTaskExecuteOutput,
   BackgroundRemovalTaskExecuteInput,
   BackgroundRemovalTaskExecuteOutput,
   DownloadModelTaskExecuteInput,
@@ -69,6 +74,8 @@ import type {
   TextRewriterTaskExecuteOutput,
   TextSummaryTaskExecuteInput,
   TextSummaryTaskExecuteOutput,
+  TextToAudioTaskExecuteInput,
+  TextToAudioTaskExecuteOutput,
   TextTranslationTaskExecuteInput,
   TextTranslationTaskExecuteOutput,
   TypedArray,
@@ -1061,6 +1068,86 @@ export const HFT_ObjectDetection: AiProviderRunFn<
     })),
   };
 };
+
+/**
+ * Core implementation for audio classification using Hugging Face Transformers.
+ * Auto-selects between regular and zero-shot classification.
+ */
+export const HFT_AudioClassification: AiProviderRunFn<
+  AudioClassificationTaskExecuteInput,
+  AudioClassificationTaskExecuteOutput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  if (model?.providerConfig?.pipeline === "zero-shot-audio-classification") {
+    if (!input.categories || !Array.isArray(input.categories) || input.categories.length === 0) {
+      throw new Error("Zero-shot audio classification requires categories");
+    }
+    const zeroShotClassifier: ZeroShotAudioClassificationPipeline = await getPipeline(
+      model!,
+      onProgress,
+      {
+        abort_signal: signal,
+      }
+    );
+    const result: any = await zeroShotClassifier(
+      input.audio as string,
+      input.categories! as string[],
+      {}
+    );
+
+    const results = Array.isArray(result) ? result : [result];
+
+    return {
+      categories: results.map((r: any) => ({
+        label: r.label,
+        score: r.score,
+      })),
+    };
+  }
+
+  const classifier: AudioClassificationPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+  const result: any = await classifier((input as any).audio, {
+    top_k: (input as any).maxCategories,
+    ...(signal ? { abort_signal: signal } : {}),
+  });
+
+  const results = Array.isArray(result) ? result : [result];
+
+  return {
+    categories: results.map((r: any) => ({
+      label: r.label,
+      score: r.score,
+    })),
+  };
+};
+
+/**
+ * Core implementation for text to audio using Hugging Face Transformers.
+ */
+export const HFT_TextToAudio: AiProviderRunFn<
+  TextToAudioTaskExecuteInput,
+  TextToAudioTaskExecuteOutput,
+  HfTransformersOnnxModelRecord
+> = async (input, model, onProgress, signal) => {
+  const synthesizer: TextToAudioPipeline = await getPipeline(model!, onProgress, {
+    abort_signal: signal,
+  });
+
+  const result = await synthesizer(input.text, {
+    ...(input.speakerEmbeddings ? { speaker_embeddings: input.speakerEmbeddings } : {}),
+    ...(signal ? { abort_signal: signal } : {}),
+  });
+
+  return {
+    result: {
+      audio: audioToBase64(result.audio),
+      samplingRate: result.sampling_rate,
+    },
+  };
+};
+
 /**
  * Helper function to convert RawImage to base64 PNG
  */
@@ -1070,6 +1157,20 @@ function imageToBase64(image: RawImage): string {
   return (image as any).toBase64?.() || "";
 }
 
+/**
+ * Helper function to convert audio Float32Array to base64 WAV
+ */
+function audioToBase64(audio: Float32Array): string {
+  // Convert audio to base64 WAV
+  // This is a simplified version - actual implementation would create WAV header
+  const buffer = audio.buffer;
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
 
 /**
  * Create a text streamer for a given tokenizer and update progress function

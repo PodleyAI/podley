@@ -312,6 +312,46 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       },
       metadata: {},
     },
+    // Audio Models
+    {
+      model_id: "onnx:Xenova/wav2vec2-base-960h:q8",
+      title: "Wav2Vec2 Base 960h",
+      description: "Audio classification model",
+      tasks: ["AudioClassificationTask"],
+      provider: HF_TRANSFORMERS_ONNX,
+      providerConfig: {
+        pipeline: "audio-classification",
+        modelPath: "Xenova/wav2vec2-base-960h",
+        dType: "q8",
+      },
+      metadata: {},
+    },
+    {
+      model_id: "onnx:Xenova/clap-htsat-unfused:q8",
+      title: "CLAP HTSAT",
+      description: "Zero-shot audio classification model",
+      tasks: ["AudioClassificationTask"],
+      provider: HF_TRANSFORMERS_ONNX,
+      providerConfig: {
+        pipeline: "zero-shot-audio-classification",
+        modelPath: "Xenova/clap-htsat-unfused",
+        dType: "q8",
+      },
+      metadata: {},
+    },
+    {
+      model_id: "onnx:Xenova/speecht5_tts:q8",
+      title: "SpeechT5 TTS",
+      description: "Text to speech model",
+      tasks: ["TextToAudioTask"],
+      provider: HF_TRANSFORMERS_ONNX,
+      providerConfig: {
+        pipeline: "text-to-speech",
+        modelPath: "Xenova/speecht5_tts",
+        dType: "q8",
+      },
+      metadata: {},
+    },
     {
       model_id: "onnx:Xenova/mobilebert-uncased-mnli:q8",
       title: "MobileBERT MNLI",

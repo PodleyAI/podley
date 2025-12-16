@@ -46,6 +46,8 @@ export async function register_HFT_ClientJobFns(
     "ImageEmbeddingTask",
     "ImageClassificationTask",
     "ObjectDetectionTask",
+    "AudioClassificationTask",
+    "TextToAudioTask",
   ];
   for (const name of names) {
     ProviderRegistry.registerAsWorkerRunFn(HF_TRANSFORMERS_ONNX, name);

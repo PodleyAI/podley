@@ -11,6 +11,7 @@ import {
   WORKER_SERVER,
 } from "@workglow/util";
 import {
+  HFT_AudioClassification,
   HFT_BackgroundRemoval,
   HFT_Download,
   HFT_ImageClassification,
@@ -27,6 +28,7 @@ import {
   HFT_TextQuestionAnswer,
   HFT_TextRewriter,
   HFT_TextSummary,
+  HFT_TextToAudio,
   HFT_TextTranslation,
   HFT_Unload,
 } from "../common/HFT_JobRunFns";
@@ -55,6 +57,8 @@ export const HFT_WORKER_JOBRUN_REGISTER = globalServiceRegistry.register(
     workerServer.registerFunction("ImageEmbeddingTask", HFT_ImageEmbedding);
     workerServer.registerFunction("ImageClassificationTask", HFT_ImageClassification);
     workerServer.registerFunction("ObjectDetectionTask", HFT_ObjectDetection);
+    workerServer.registerFunction("AudioClassificationTask", HFT_AudioClassification);
+    workerServer.registerFunction("TextToAudioTask", HFT_TextToAudio);
     parentPort.postMessage({ type: "ready" });
     console.log("HFT_WORKER_JOBRUN registered");
     return workerServer;

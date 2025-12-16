@@ -11,6 +11,7 @@ import { InMemoryQueueStorage } from "@workglow/storage";
 import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-graph";
 import { HF_TRANSFORMERS_ONNX } from "../common/HFT_Constants";
 import {
+  HFT_AudioClassification,
   HFT_BackgroundRemoval,
   HFT_Download,
   HFT_ImageClassification,
@@ -27,6 +28,7 @@ import {
   HFT_TextQuestionAnswer,
   HFT_TextRewriter,
   HFT_TextSummary,
+  HFT_TextToAudio,
   HFT_TextTranslation,
   HFT_Unload,
 } from "../common/HFT_JobRunFns";
@@ -62,6 +64,8 @@ export async function register_HFT_InlineJobFns(
     ["ImageEmbeddingTask"]: HFT_ImageEmbedding,
     ["ImageClassificationTask"]: HFT_ImageClassification,
     ["ObjectDetectionTask"]: HFT_ObjectDetection,
+    ["AudioClassificationTask"]: HFT_AudioClassification,
+    ["TextToAudioTask"]: HFT_TextToAudio,
   };
   for (const [jobName, fn] of Object.entries(fns)) {
     ProviderRegistry.registerRunFn<any, any>(HF_TRANSFORMERS_ONNX, jobName, fn);

@@ -10,6 +10,7 @@ import { InMemoryQueueStorage } from "@workglow/storage";
 import { getTaskQueueRegistry, TaskInput, TaskOutput } from "@workglow/task-graph";
 import { TENSORFLOW_MEDIAPIPE } from "../common/TFMP_Constants";
 import {
+  TFMP_AudioClassification,
   TFMP_Download,
   TFMP_ImageClassification,
   TFMP_ImageEmbedding,
@@ -76,6 +77,11 @@ export async function register_TFMP_InlineJobFns(
     TENSORFLOW_MEDIAPIPE,
     "ObjectDetectionTask",
     TFMP_ObjectDetection as any
+  );
+  aiProviderRegistry.registerRunFn<any, any>(
+    TENSORFLOW_MEDIAPIPE,
+    "AudioClassificationTask",
+    TFMP_AudioClassification as any
   );
 
   // If no client provided, create a default in-memory queue

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { AudioClassifier } from "@mediapipe/tasks-audio";
 import {
   FilesetResolver,
   LanguageDetector,
@@ -121,7 +122,8 @@ type TaskType =
   | typeof ImageClassifier
   | typeof ImageEmbedder
   | typeof ImageSegmenter
-  | typeof ObjectDetector;
+  | typeof ObjectDetector
+  | typeof AudioClassifier;
 
 type TaskInstance =
   | TextEmbedder
@@ -154,7 +156,9 @@ type InferTaskInstance<T> = T extends typeof TextEmbedder
             ? ImageSegmenter
             : T extends typeof ObjectDetector
               ? ObjectDetector
-              : never;
+              : T extends typeof AudioClassifier
+                ? AudioClassifier
+                : never;
 
 /**
  * Checks if two option objects are deeply equal.

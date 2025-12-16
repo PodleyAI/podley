@@ -36,6 +36,7 @@ export async function register_TFMP_ClientJobFns(
     "ImageEmbeddingTask",
     "ImageClassificationTask",
     "ObjectDetectionTask",
+    "AudioClassificationTask",
   ];
   for (const name of names) {
     aiProviderRegistry.registerAsWorkerRunFn(TENSORFLOW_MEDIAPIPE, name);

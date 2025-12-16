@@ -11,6 +11,7 @@ import {
   WORKER_SERVER,
 } from "@workglow/util";
 import {
+  TFMP_AudioClassification,
   TFMP_Download,
   TFMP_ImageClassification,
   TFMP_ImageEmbedding,
@@ -38,6 +39,7 @@ export const TFMP_WORKER_JOBRUN_REGISTER = globalServiceRegistry.register(
     workerServer.registerFunction("ImageEmbeddingTask", TFMP_ImageEmbedding);
     workerServer.registerFunction("ImageClassificationTask", TFMP_ImageClassification);
     workerServer.registerFunction("ObjectDetectionTask", TFMP_ObjectDetection);
+    workerServer.registerFunction("AudioClassificationTask", TFMP_AudioClassification);
     parentPort.postMessage({ type: "ready" });
     console.log("TFMP_WORKER_JOBRUN registered");
     return workerServer;

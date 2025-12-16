@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export * from "./AudioClassificationTask";
 export * from "./BackgroundRemovalTask";
 export * from "./base/AiTask";
 export * from "./base/AiTaskSchemas";
@@ -23,6 +24,7 @@ export * from "./TextNamedEntityRecognitionTask";
 export * from "./TextQuestionAnswerTask";
 export * from "./TextRewriterTask";
 export * from "./TextSummaryTask";
+export * from "./TextToAudioTask";
 export * from "./TextTranslationTask";
 export * from "./UnloadModelTask";
 export * from "./VectorSimilarityTask";
