@@ -1,5 +1,14 @@
 # @workglow/storage
 
+## 0.0.72
+
+### Patch Changes
+
+- Add Vision/Image tasks
+- Updated dependencies
+  - @workglow/util@0.0.72
+  - @workglow/sqlite@0.0.72
+
 ## 0.0.71
 
 ### Patch Changes

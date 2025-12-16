@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.72
+
+### Patch Changes
+
+- Add Vision/Image tasks
+
 ## 0.0.71
 
 ### Patch Changes

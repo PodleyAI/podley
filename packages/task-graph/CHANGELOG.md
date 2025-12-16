@@ -1,5 +1,15 @@
 # @workglow/task-graph
 
+## 0.0.72
+
+### Patch Changes
+
+- Add Vision/Image tasks
+- Updated dependencies
+  - @workglow/job-queue@0.0.72
+  - @workglow/storage@0.0.72
+  - @workglow/util@0.0.72
+
 ## 0.0.71
 
 ### Patch Changes
