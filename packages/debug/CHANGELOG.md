@@ -1,5 +1,32 @@
 # @workglow/debug
 
+## 0.0.75
+
+### Patch Changes
+
+- Change priority order for image transfer across workers
+- Updated dependencies
+  - @workglow/task-graph@0.0.75
+  - @workglow/util@0.0.75
+
+## 0.0.74
+
+### Patch Changes
+
+- Another attempt at transferables
+- Updated dependencies
+  - @workglow/task-graph@0.0.74
+  - @workglow/util@0.0.74
+
+## 0.0.73
+
+### Patch Changes
+
+- Fix serious bug that made ai tasks fail
+- Updated dependencies
+  - @workglow/task-graph@0.0.73
+  - @workglow/util@0.0.73
+
 ## 0.0.72
 
 ### Patch Changes

@@ -1,5 +1,23 @@
 # @workglow/util
 
+## 0.0.75
+
+### Patch Changes
+
+- Change priority order for image transfer across workers
+
+## 0.0.74
+
+### Patch Changes
+
+- Another attempt at transferables
+
+## 0.0.73
+
+### Patch Changes
+
+- Fix serious bug that made ai tasks fail
+
 ## 0.0.72
 
 ### Patch Changes
