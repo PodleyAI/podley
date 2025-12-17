@@ -42,9 +42,6 @@ export async function convertImageDataToUseableForm(
   if (supports.includes("ImageBitmap") && imageData instanceof ImageBitmap) {
     return imageData;
   }
-  if (supports.includes("OffscreenCanvas") && imageData instanceof OffscreenCanvas) {
-    return imageData;
-  }
   if (supports.includes("VideoFrame") && imageData instanceof VideoFrame) {
     return imageData;
   }
@@ -68,6 +65,9 @@ export async function convertImageDataToUseableForm(
   }
   if (supports.includes("OffscreenCanvas") && imageData instanceof Blob) {
     return await convertBlobToOffscreenCanvas(imageData);
+  }
+  if (supports.includes("ImageBitmap") && imageData instanceof OffscreenCanvas) {
+    return imageData.transferToImageBitmap();
   }
   // if not, convert it to the first supported format
   if (supports.includes("ImageBitmap") && typeof imageData === "string") {

@@ -45,11 +45,19 @@ export class AiVisionTask<
     const registeredQueue = await this.resolveQueue(input);
     const queueName = registeredQueue?.server.queueName;
 
+    // Image format support by model type and platform, that are transferable:
+    // ┌─────────────────────────┬──────────────────────────────────────────────────────────────┬────────────────────────────────────────────┐
+    // │ Model Type              │ Web Support                                                  │ Node Support                               │
+    // ├─────────────────────────┼──────────────────────────────────────────────────────────────┼────────────────────────────────────────────┤
+    // │ TENSORFLOW_MEDIAPIPE    │ Blob, ImageBitmap, VideoFrame,                               │ (none)                                     │
+    // │                         │ OffscreenCanvas (no rendering ctx)                           │                                            │
+    // ├─────────────────────────┼──────────────────────────────────────────────────────────────┼────────────────────────────────────────────┤
+    // │ HF_TRANSFORMERS_ONNX    │ Blob, OffscreenCanvas (no rendering ctx),                    │ Blob, Tensor, ImageBinary,                 │
+    // │                         │ ImageBinary, Tensor, DataUri                                 │ DataUri, Sharp                             │
+    // └─────────────────────────┴──────────────────────────────────────────────────────────────┴────────────────────────────────────────────┘
     const supports: ImageDataSupport[] = ["Blob"];
     if (input.image) {
-      if ("OffscreenCanvas" in globalThis) {
-        supports.push("OffscreenCanvas");
-      } else if (queueName === "TENSORFLOW_MEDIAPIPE" && "ImageBitmap" in globalThis) {
+      if (queueName === "TENSORFLOW_MEDIAPIPE" && "ImageBitmap" in globalThis) {
         supports.push("ImageBitmap");
       } else if (queueName === "TENSORFLOW_MEDIAPIPE" && "VideoFrame" in globalThis) {
         supports.push("VideoFrame");
