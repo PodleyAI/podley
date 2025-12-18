@@ -1,5 +1,33 @@
 # @workglow/cli
 
+## 0.0.77
+
+### Patch Changes
+
+- semantic compat via format should allow dashes
+- Updated dependencies
+  - @workglow/ai-provider@0.0.77
+  - @workglow/task-graph@0.0.77
+  - @workglow/storage@0.0.77
+  - @workglow/tasks@0.0.77
+  - @workglow/test@0.0.77
+  - @workglow/util@0.0.77
+  - @workglow/ai@0.0.77
+
+## 0.0.76
+
+### Patch Changes
+
+- fix array task reactive
+- Updated dependencies
+  - @workglow/task-graph@0.0.76
+  - @workglow/test@0.0.76
+  - @workglow/ai@0.0.76
+  - @workglow/ai-provider@0.0.76
+  - @workglow/storage@0.0.76
+  - @workglow/tasks@0.0.76
+  - @workglow/util@0.0.76
+
 ## 0.0.75
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @workglow/sqlite
 
+## 0.0.77
+
+### Patch Changes
+
+- semantic compat via format should allow dashes
+
+## 0.0.76
+
+### Patch Changes
+
+- fix array task reactive
+
 ## 0.0.75
 
 ### Patch Changes

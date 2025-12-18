@@ -115,7 +115,7 @@ export class GraphAsTaskRunner<
       );
     } else {
       const reactiveResults = await super.executeTaskReactive(this.fixInput(input), output);
-      this.task.runOutputData = reactiveResults ?? output ?? ({} as Output);
+      this.task.runOutputData = Object.assign({}, output, reactiveResults ?? {}) as Output;
     }
     return this.task.runOutputData as Output;
   }

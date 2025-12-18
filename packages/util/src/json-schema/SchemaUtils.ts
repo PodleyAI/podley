@@ -56,7 +56,8 @@ function areFormatStringsCompatible(
   sourceFormat: string,
   targetFormat: string
 ): "static" | "runtime" | "incompatible" {
-  const formatPattern = /^\w+(:\w+)?$/;
+  // Allow letters (must start), numbers, underscore, and dash; e.g., my-type:another_type
+  const formatPattern = /^[a-zA-Z][a-zA-Z0-9_-]*(?::[a-zA-Z][a-zA-Z0-9_-]*)?$/;
   if (!formatPattern.test(sourceFormat) || !formatPattern.test(targetFormat)) {
     return "incompatible";
   }

@@ -1,5 +1,23 @@
 # @workglow/debug
 
+## 0.0.77
+
+### Patch Changes
+
+- semantic compat via format should allow dashes
+- Updated dependencies
+  - @workglow/task-graph@0.0.77
+  - @workglow/util@0.0.77
+
+## 0.0.76
+
+### Patch Changes
+
+- fix array task reactive
+- Updated dependencies
+  - @workglow/task-graph@0.0.76
+  - @workglow/util@0.0.76
+
 ## 0.0.75
 
 ### Patch Changes

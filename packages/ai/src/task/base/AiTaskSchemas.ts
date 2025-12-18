@@ -298,6 +298,7 @@ export const TypeImageInput = {
       type: "string",
       title: "Image Data",
       description: "Image as data-uri",
+      format: "image:data-uri",
     },
     {
       type: "object",
@@ -364,6 +365,7 @@ export const TypeImageInput = {
     },
   ],
   title: "Image",
+  format: "image",
   description: "Image as URL or base64-encoded data",
 } as const satisfies JsonSchema;
 
@@ -373,6 +375,7 @@ export const TypeImageInput = {
 export const TypeAudioInput = {
   type: "string",
   title: "Audio",
+  format: "audio:data-uri",
   description: "Audio as data-uri, or Blob",
 } as const satisfies JsonSchema;
 

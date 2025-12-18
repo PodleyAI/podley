@@ -20,8 +20,7 @@ export class TaskRunner<
   Input extends TaskInput = TaskInput,
   Output extends TaskOutput = TaskOutput,
   Config extends TaskConfig = TaskConfig,
-> implements ITaskRunner<Input, Output, Config>
-{
+> implements ITaskRunner<Input, Output, Config> {
   /**
    * Whether the task is currently running
    */
@@ -180,11 +179,7 @@ export class TaskRunner<
    */
   protected async executeTaskReactive(input: Input, output: Output): Promise<Output> {
     const reactiveResult = await this.task.executeReactive(input, output, { own: this.own });
-    return (
-      Object.keys(reactiveResult || {}) >= Object.keys(output || {})
-        ? reactiveResult
-        : (output ?? {})
-    ) as Output;
+    return Object.assign({}, output, reactiveResult ?? {}) as Output;
   }
 
   // ========================================================================

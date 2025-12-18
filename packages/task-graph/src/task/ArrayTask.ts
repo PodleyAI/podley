@@ -199,4 +199,20 @@ class ArrayTaskRunner<
   protected async executeTaskChildren(_input: Input): Promise<GraphResultArray<Output>> {
     return super.executeTaskChildren({} as Input);
   }
+
+  /**
+   * Override to handle single task mode (no children) properly.
+   * In single task mode, call the task's executeReactive directly without fixInput.
+   */
+  public async executeTaskReactive(input: Input, output: Output): Promise<Output> {
+    const reactiveResults = await super.executeTaskReactive(input, output);
+    if (this.task.hasChildren()) {
+      // Multiple subtasks: use parent implementation
+      return reactiveResults;
+    } else {
+      // Single task mode: call task's executeReactive directly
+      this.task.runOutputData = Object.assign({}, output, reactiveResults ?? {}) as Output;
+      return this.task.runOutputData as Output;
+    }
+  }
 }

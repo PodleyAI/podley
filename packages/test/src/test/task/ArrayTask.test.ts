@@ -6,8 +6,10 @@
 
 import {
   ArrayTask,
+  Dataflow,
   IExecuteContext,
   ITask,
+  JobQueueTask,
   PROPERTY_ARRAY,
   TaskConfig,
   TaskGraph,
@@ -215,6 +217,99 @@ class SquareRunReactiveTask extends ArrayTask<
   }
 }
 
+interface JobQueueTestInput extends TaskInput {
+  value: number;
+}
+
+interface JobQueueTestOutput extends TaskOutput {
+  result: number;
+}
+
+class JobQueueReactiveTask extends JobQueueTask<
+  ConvertAllToOptionalArray<JobQueueTestInput>,
+  ConvertAllToOptionalArray<JobQueueTestOutput>
+> {
+  public static type = "JobQueueReactiveTask";
+
+  public static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        value: {
+          oneOf: [
+            { type: "number", default: 0 },
+            { type: "array", items: { type: "number", default: 0 } },
+          ],
+          "x-replicate": true,
+        },
+      },
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
+  }
+
+  public static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        result: {
+          oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
+        },
+      },
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
+  }
+
+  public async executeReactive(
+    input: JobQueueTestInput,
+    output: JobQueueTestOutput
+  ): Promise<JobQueueTestOutput> {
+    // Simple reactive computation: double the value
+    return {
+      result: input.value * 2,
+    };
+  }
+}
+
+class JobQueueReactiveTask2 extends JobQueueTask<JobQueueTestInput, JobQueueTestOutput> {
+  public static type = "JobQueueReactiveTask2";
+
+  public static inputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        value: {
+          type: "number",
+          format: "int32",
+        },
+      },
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
+  }
+
+  public static outputSchema(): DataPortSchema {
+    return {
+      type: "object",
+      properties: {
+        result: {
+          type: "number",
+          format: "int32",
+        },
+      },
+      additionalProperties: false,
+    } as const satisfies DataPortSchema;
+  }
+
+  public async executeReactive(
+    input: JobQueueTestInput,
+    output: JobQueueTestOutput
+  ): Promise<JobQueueTestOutput> {
+    // Simple reactive computation: double the value
+    return {
+      result: input.value * 2,
+    };
+  }
+}
+
 describe("ArrayTask", () => {
   test("MultiplyRunTask in task mode run plain", async () => {
     const task = new MultiplyRunTask({
@@ -330,6 +425,49 @@ describe("ArrayTask", () => {
     const task = new SquareRunReactiveTask({ a: 5 });
     const results = await task.runReactive();
     expect(results).toEqual({ result: 25 } as SquareOutput);
+  });
+
+  test("ArrayTask runReactive calls executeReactive in single task mode (no children)", async () => {
+    // Create a task with non-array input - this puts it in single task mode (no subtasks)
+    const task = new SquareRunReactiveTask({ a: 7 });
+
+    // Verify it has no children (single task mode)
+    expect(task.hasChildren()).toBe(false);
+
+    // Spy on executeReactive to verify it's called
+    const executeReactiveSpy = spyOn(task, "executeReactive");
+
+    // Call runReactive without calling run() first
+    const results = await task.runReactive();
+
+    // Verify executeReactive was actually called
+    expect(executeReactiveSpy).toHaveBeenCalledTimes(1);
+    expect(executeReactiveSpy).toHaveBeenCalledWith(
+      { a: 7 },
+      {},
+      expect.objectContaining({ own: expect.any(Function) })
+    );
+
+    // Verify the result is correct (executeReactive should have computed it)
+    expect(results).toEqual({ result: 49 }); // 7 * 7 = 49
+  });
+
+  test("ArrayTask runReactive works in single task mode without prior run() call", async () => {
+    // This test ensures runReactive works even when run() hasn't been called first
+    const task = new MultiplyRunReactiveTask({
+      a: 3,
+      b: 4,
+    });
+
+    // Verify single task mode
+    expect(task.hasChildren()).toBe(false);
+
+    // Call runReactive without calling run() first
+    const results = await task.runReactive();
+
+    // Should compute the result using executeReactive
+    expect(results).toEqual({ result: 12 }); // 3 * 4 = 12
+    expect(task.runOutputData).toEqual({ result: 12 });
   });
 
   test("in task mode non-reactive run", async () => {
@@ -554,4 +692,58 @@ describe("ArrayTask", () => {
   //   expect(task.status).toBe(TaskStatus.FAILED);
   //   expect(task.error).toBeDefined();
   // });
+
+  test("JobQueueTask runReactive calls executeReactive in single task mode (no children)", async () => {
+    // Create a JobQueueTask with non-array input - this puts it in single task mode (no subtasks)
+    // Set queue: false to run directly without a queue
+    const task = new JobQueueReactiveTask({ value: 5 });
+
+    // Verify it has no children (single task mode)
+    expect(task.hasChildren()).toBe(false);
+
+    // Spy on executeReactive to verify it's called
+    const executeReactiveSpy = spyOn(task, "executeReactive");
+
+    // Call runReactive without calling run() first
+    const results = await task.runReactive();
+
+    // Verify executeReactive was actually called
+    expect(executeReactiveSpy).toHaveBeenCalledTimes(1);
+    expect(executeReactiveSpy).toHaveBeenCalledWith(
+      { value: 5 },
+      {},
+      expect.objectContaining({ own: expect.any(Function) })
+    );
+
+    // Verify the result is correct (executeReactive should have computed it)
+    expect(results).toEqual({ result: 10 }); // 5 * 2 = 10
+  });
+
+  test("JobQueueTask runReactive works in single task mode without prior run() call", async () => {
+    // This test ensures runReactive works even when run() hasn't been called first
+    const task = new JobQueueReactiveTask({ value: 7 });
+
+    // Verify single task mode
+    expect(task.hasChildren()).toBe(false);
+
+    // Call runReactive without calling run() first
+    const results = await task.runReactive();
+
+    // Should compute the result using executeReactive
+    expect(results).toEqual({ result: 14 }); // 7 * 2 = 14
+    expect(task.runOutputData).toEqual({ result: 14 });
+  });
+
+  test("JobQueueTask runReactive works task graph mode", async () => {
+    const graph = new TaskGraph();
+    const task1 = new JobQueueReactiveTask2({ value: 7 }, { id: "task1" });
+    const task2 = new JobQueueReactiveTask2({ value: 8 }, { id: "task2" });
+    graph.addTask(task1);
+    graph.addTask(task2);
+    graph.addDataflow(new Dataflow("task1", "result", "task2", "value"));
+    const results = await graph.runReactive<JobQueueTestOutput>();
+    expect(task1.runOutputData).toEqual({ result: 14 });
+    expect(task2.runOutputData).toEqual({ result: 28 });
+    expect(results[0].data).toEqual({ result: 28 });
+  });
 });
