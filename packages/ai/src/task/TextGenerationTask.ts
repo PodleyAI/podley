@@ -115,13 +115,13 @@ TaskRegistry.registerTask(TextGenerationTask);
 /**
  * Task for generating text using a language model
  */
-export const TextGeneration = (input: TextGenerationTaskInput, config?: JobQueueTaskConfig) => {
+export const textGeneration = (input: TextGenerationTaskInput, config?: JobQueueTaskConfig) => {
   return new TextGenerationTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextGeneration: CreateWorkflow<
+    textGeneration: CreateWorkflow<
       TextGenerationTaskInput,
       TextGenerationTaskOutput,
       JobQueueTaskConfig
@@ -129,4 +129,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.TextGeneration = CreateWorkflow(TextGenerationTask);
+Workflow.prototype.textGeneration = CreateWorkflow(TextGenerationTask);

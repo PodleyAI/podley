@@ -6,12 +6,12 @@
 
 import {
   getGlobalModelRepository,
-  ImageClassification,
-  ImageEmbedding,
-  ImageSegmentation,
-  ImageToText,
+  imageClassification,
+  imageEmbedding,
+  imageSegmentation,
+  imageToText,
   InMemoryModelRepository,
-  ObjectDetection,
+  objectDetection,
   setGlobalModelRepository,
 } from "@workglow/ai";
 import {
@@ -59,7 +59,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
 
       await getGlobalModelRepository().addModel(model);
 
-      const result = await ImageSegmentation({
+      const result = await imageSegmentation({
         image: TEST_IMAGE_BASE64,
         model: model.model_id,
       });
@@ -92,7 +92,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
 
       await getGlobalModelRepository().addModel(model);
 
-      const result = await ImageClassification({
+      const result = await imageClassification({
         image: TEST_IMAGE_BASE64,
         model: model.model_id,
         maxCategories: 5,
@@ -123,7 +123,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
 
       await getGlobalModelRepository().addModel(model);
 
-      const result = await ImageClassification({
+      const result = await imageClassification({
         image: TEST_IMAGE_BASE64,
         model: model.model_id,
         categories: ["cat", "dog", "bird"],
@@ -153,7 +153,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
 
       await getGlobalModelRepository().addModel(model);
 
-      const result = await ImageEmbedding({
+      const result = await imageEmbedding({
         image: TEST_IMAGE_BASE64,
         model: model.model_id,
       });
@@ -182,7 +182,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
 
       await getGlobalModelRepository().addModel(model);
 
-      const result = await ObjectDetection({
+      const result = await objectDetection({
         image: TEST_IMAGE_BASE64,
         model: model.model_id,
         threshold: 0.5,
@@ -211,7 +211,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
 
       await getGlobalModelRepository().addModel(model);
 
-      const result = await ImageToText({
+      const result = await imageToText({
         image: TEST_IMAGE_BASE64,
         model: model.model_id,
         maxTokens: 50,
@@ -259,7 +259,7 @@ describe("Vision Tasks - MediaPipe", () => {
 
         await getGlobalModelRepository().addModel(model);
 
-        const result = await ImageClassification({
+        const result = await imageClassification({
           image: TEST_IMAGE_BASE64,
           model: model.model_id,
           maxCategories: 5,
@@ -294,7 +294,7 @@ describe("Vision Tasks - MediaPipe", () => {
 
         await getGlobalModelRepository().addModel(model);
 
-        const result = await ImageEmbedding({
+        const result = await imageEmbedding({
           image: TEST_IMAGE_BASE64,
           model: model.model_id,
         });
@@ -329,7 +329,7 @@ describe("Vision Tasks - MediaPipe", () => {
 
         await getGlobalModelRepository().addModel(model);
 
-        const result = await ObjectDetection({
+        const result = await objectDetection({
           image: TEST_IMAGE_BASE64,
           model: model.model_id,
           threshold: 0.5,

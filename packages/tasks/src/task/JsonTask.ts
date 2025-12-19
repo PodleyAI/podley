@@ -102,15 +102,15 @@ TaskRegistry.registerTask(JsonTask);
 /**
  * Convenience function to create and run a JsonTask
  */
-export const Json = (input: JsonTaskInput, config: TaskConfig = {}) => {
+export const json = (input: JsonTaskInput, config: TaskConfig = {}) => {
   return new JsonTask(input, config).run();
 };
 
 // Add Json task workflow to Workflow interface
 declare module "@workglow/task-graph" {
   interface Workflow {
-    Json: CreateWorkflow<JsonTaskInput, JsonTaskOutput, TaskConfig>;
+    json: CreateWorkflow<JsonTaskInput, JsonTaskOutput, TaskConfig>;
   }
 }
 
-Workflow.prototype.Json = CreateWorkflow(JsonTask);
+Workflow.prototype.json = CreateWorkflow(JsonTask);

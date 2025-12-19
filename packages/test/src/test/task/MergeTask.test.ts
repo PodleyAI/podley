@@ -5,12 +5,12 @@
  */
 
 import { TaskGraph, TaskStatus, Workflow } from "@workglow/task-graph";
-import { Merge, MergeTask } from "@workglow/tasks";
+import { merge, MergeTask } from "@workglow/tasks";
 import { describe, expect, test } from "vitest";
 
 describe("MergeTask", () => {
   test("merges multiple inputs into a single array", async () => {
-    const result = await Merge({
+    const result = await merge({
       input_0: 1,
       input_1: 2,
       input_2: 3,
@@ -21,7 +21,7 @@ describe("MergeTask", () => {
   });
 
   test("merges string inputs into an array", async () => {
-    const result = await Merge({
+    const result = await merge({
       input_0: "apple",
       input_1: "banana",
       input_2: "cherry",
@@ -30,19 +30,19 @@ describe("MergeTask", () => {
   });
 
   test("handles a single input", async () => {
-    const result = await Merge({
+    const result = await merge({
       input_0: "single value",
     });
     expect(result.output).toEqual(["single value"]);
   });
 
   test("handles empty input object", async () => {
-    const result = await Merge({});
+    const result = await merge({});
     expect(result.output).toEqual([]);
   });
 
   test("handles object inputs", async () => {
-    const result = await Merge({
+    const result = await merge({
       input_0: { id: 1 },
       input_1: { id: 2 },
       input_2: { id: 3 },
@@ -51,7 +51,7 @@ describe("MergeTask", () => {
   });
 
   test("handles mixed type inputs", async () => {
-    const result = await Merge({
+    const result = await merge({
       input_0: 1,
       input_1: "two",
       input_2: { three: 3 },
@@ -62,7 +62,7 @@ describe("MergeTask", () => {
   });
 
   test("sorts inputs by key name", async () => {
-    const result = await Merge({
+    const result = await merge({
       z: "last",
       a: "first",
       m: "middle",
@@ -71,7 +71,7 @@ describe("MergeTask", () => {
   });
 
   test("handles numeric-like keys in order", async () => {
-    const result = await Merge({
+    const result = await merge({
       input_10: "ten",
       input_1: "one",
       input_2: "two",
@@ -81,7 +81,7 @@ describe("MergeTask", () => {
   });
 
   test("handles keys with underscores and dashes", async () => {
-    const result = await Merge({
+    const result = await merge({
       key_3: "c",
       key_1: "a",
       key_2: "b",
@@ -121,7 +121,7 @@ describe("MergeTask", () => {
 
   test("in workflow mode", async () => {
     const workflow = new Workflow();
-    workflow.Merge({
+    workflow.merge({
       first: 100,
       second: 200,
       third: 300,
@@ -160,7 +160,7 @@ describe("MergeTask", () => {
   });
 
   test("handles array inputs (merges arrays as elements)", async () => {
-    const result = await Merge({
+    const result = await merge({
       input_0: [1, 2],
       input_1: [3, 4],
       input_2: [5, 6],
@@ -173,7 +173,7 @@ describe("MergeTask", () => {
   });
 
   test("handles undefined values", async () => {
-    const result = await Merge({
+    const result = await merge({
       input_0: 1,
       input_1: undefined,
       input_2: 3,
@@ -182,7 +182,7 @@ describe("MergeTask", () => {
   });
 
   test("handles boolean inputs", async () => {
-    const result = await Merge({
+    const result = await merge({
       input_0: true,
       input_1: false,
       input_2: true,
@@ -191,7 +191,7 @@ describe("MergeTask", () => {
   });
 
   test("preserves input order when keys are sorted", async () => {
-    const result = await Merge({
+    const result = await merge({
       c: "third",
       a: "first",
       b: "second",
@@ -201,7 +201,7 @@ describe("MergeTask", () => {
   });
 
   test("handles keys with special characters", async () => {
-    const result = await Merge({
+    const result = await merge({
       "key.1": "one",
       "key.2": "two",
       "key.3": "three",

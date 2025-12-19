@@ -73,7 +73,7 @@ describe("TextEmbeddingTask with real models", () => {
 
       // Now test embeddings
       const embeddingWorkflow = new Workflow();
-      embeddingWorkflow.TextEmbedding({
+      embeddingWorkflow.textEmbedding({
         model: "onnx:Supabase/gte-small:q8",
         text: "The quick brown fox jumps over the lazy dog",
       });
@@ -112,14 +112,14 @@ describe("TextEmbeddingTask with real models", () => {
 
       // Download the model
       const downloadWorkflow = new Workflow();
-      downloadWorkflow.DownloadModel({
+      downloadWorkflow.downloadModel({
         model: "onnx:Xenova/bge-base-en-v1.5:q8",
       });
       await downloadWorkflow.run();
 
       // Test embeddings
       const embeddingWorkflow = new Workflow();
-      embeddingWorkflow.TextEmbedding({
+      embeddingWorkflow.textEmbedding({
         model: "onnx:Xenova/bge-base-en-v1.5:q8",
         text: "Machine learning is a subset of artificial intelligence",
       });

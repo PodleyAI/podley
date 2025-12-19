@@ -122,13 +122,13 @@ TaskRegistry.registerTask(ObjectDetectionTask);
  * @param input The input parameters for object detection (image, model, and optional labels)
  * @returns Promise resolving to the detected objects with labels, scores, and bounding boxes
  */
-export const ObjectDetection = (input: ObjectDetectionTaskInput, config?: JobQueueTaskConfig) => {
+export const objectDetection = (input: ObjectDetectionTaskInput, config?: JobQueueTaskConfig) => {
   return new ObjectDetectionTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    ObjectDetection: CreateWorkflow<
+    objectDetection: CreateWorkflow<
       ObjectDetectionTaskInput,
       ObjectDetectionTaskOutput,
       JobQueueTaskConfig
@@ -136,4 +136,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.ObjectDetection = CreateWorkflow(ObjectDetectionTask);
+Workflow.prototype.objectDetection = CreateWorkflow(ObjectDetectionTask);

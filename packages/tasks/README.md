@@ -29,13 +29,13 @@ bun add @workglow/tasks
 ## Quick Start
 
 ```typescript
-import { Workflow, Fetch, DebugLog, Delay } from "@workglow/tasks";
+import { Workflow, fetch, debugLog, delay } from "@workglow/tasks";
 
 // Simple workflow example (fluent API)
 const workflow = new Workflow()
-  .Fetch({ url: "https://api.example.com/data", response_type: "json" })
-  .DebugLog({ log_level: "info" })
-  .Delay({ delay: 1000 });
+  .fetch({ url: "https://api.example.com/data", response_type: "json" })
+  .debugLog({ log_level: "info" })
+  .delay({ delay: 1000 });
 
 const results = await workflow.run();
 ```
@@ -58,13 +58,13 @@ await new DelayTask({ delay: 1000 }).run();
 ```
 
 ```typescript
-import { Fetch, DebugLog, Delay } from "@workglow/tasks";
+import { fetch, debugLog, delay } from "@workglow/tasks";
 
-const data = await Fetch({
+const data = await fetch({
   url: "https://example.com/readme.txt",
   response_type: "text",
 });
-await DebugLog({
+await debugLog({
   console: data.text,
   log_level: "info",
 });
@@ -161,9 +161,9 @@ await new DebugLogTask({
 
 // In workflow with data flow
 const workflow = new Workflow()
-  .Fetch({ url: "https://api.example.com/data" })
-  .DebugLog({ log_level: "dir" }) // Logs the fetched data
-  .Delay({ delay: 1000 });
+  .fetch({ url: "https://api.example.com/data" })
+  .debugLog({ log_level: "dir" }) // Logs the fetched data
+  .delay({ delay: 1000 });
 ```
 
 **Features:**
@@ -201,9 +201,9 @@ console.log(result); // { message: "Data preserved through delay" }
 
 // In workflow
 const workflow = new Workflow()
-  .Fetch({ url: "https://api.example.com/data" })
-  .Delay({ delay: 2000 }) // 2 second delay
-  .DebugLog({ log_level: "info" });
+  .fetch({ url: "https://api.example.com/data" })
+  .delay({ delay: 2000 }) // 2 second delay
+  .debugLog({ log_level: "info" });
 ```
 
 **Features:**
@@ -249,14 +249,14 @@ console.log(processed.output); // { sum: 15, average: 3, count: 5 }
 
 // In workflow
 const workflow = new Workflow()
-  .Fetch({ url: "https://api.example.com/data" })
-  .JavaScript({
+  .fetch({ url: "https://api.example.com/data" })
+  .javaScript({
     code: `
       const data = input.json;
       return data.filter(item => item.active === true);
     `,
   })
-  .DebugLog({ log_level: "info" });
+  .debugLog({ log_level: "info" });
 ```
 
 **Features:**
@@ -503,16 +503,16 @@ import { Workflow } from "@workglow/tasks";
 
 // Fluent workflow API
 const workflow = new Workflow()
-  .Fetch({
+  .fetch({
     url: "https://api.example.com/data",
     response_type: "json",
   })
-  .JavaScript({
+  .javaScript({
     code: "return input.json.filter(item => item.status === 'active');",
   })
-  .DebugLog({ log_level: "info" })
-  .Delay({ delay: 500 })
-  .Lambda(
+  .debugLog({ log_level: "info" })
+  .delay({ delay: 500 })
+  .lambda(
     {},
     {
       execute: async (input) => ({

@@ -84,7 +84,7 @@ TaskRegistry.registerTask(BackgroundRemovalTask);
  * @param input The input parameters for background removal (image and model)
  * @returns Promise resolving to the image with transparent background
  */
-export const BackgroundRemoval = (
+export const backgroundRemoval = (
   input: BackgroundRemovalTaskInput,
   config?: JobQueueTaskConfig
 ) => {
@@ -93,7 +93,7 @@ export const BackgroundRemoval = (
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    BackgroundRemoval: CreateWorkflow<
+    backgroundRemoval: CreateWorkflow<
       BackgroundRemovalTaskInput,
       BackgroundRemovalTaskOutput,
       JobQueueTaskConfig
@@ -101,4 +101,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.BackgroundRemoval = CreateWorkflow(BackgroundRemovalTask);
+Workflow.prototype.backgroundRemoval = CreateWorkflow(BackgroundRemovalTask);

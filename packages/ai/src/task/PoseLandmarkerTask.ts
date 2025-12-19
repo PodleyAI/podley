@@ -210,13 +210,13 @@ TaskRegistry.registerTask(PoseLandmarkerTask);
  * @param input The input parameters for pose landmark detection (image, model, and optional configuration)
  * @returns Promise resolving to the detected pose landmarks and optional segmentation masks
  */
-export const PoseLandmarker = (input: PoseLandmarkerTaskInput, config?: JobQueueTaskConfig) => {
+export const poseLandmarker = (input: PoseLandmarkerTaskInput, config?: JobQueueTaskConfig) => {
   return new PoseLandmarkerTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    PoseLandmarker: CreateWorkflow<
+    poseLandmarker: CreateWorkflow<
       PoseLandmarkerTaskInput,
       PoseLandmarkerTaskOutput,
       JobQueueTaskConfig
@@ -224,4 +224,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.PoseLandmarker = CreateWorkflow(PoseLandmarkerTask);
+Workflow.prototype.poseLandmarker = CreateWorkflow(PoseLandmarkerTask);

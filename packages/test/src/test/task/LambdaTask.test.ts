@@ -5,12 +5,12 @@
  */
 
 import { TaskGraph, Workflow } from "@workglow/task-graph";
-import { Lambda, LambdaTask } from "@workglow/tasks";
+import { lambda, LambdaTask } from "@workglow/tasks";
 import { describe, expect, test } from "vitest";
 
 describe("LambdaTask", () => {
   test("in command mode", async () => {
-    const results = await Lambda(
+    const results = await lambda(
       { data: null },
       {
         execute: async () => {
@@ -22,7 +22,7 @@ describe("LambdaTask", () => {
   });
 
   test("in command mode with reactive with input", async () => {
-    const results = await Lambda(
+    const results = await lambda(
       {
         a: 1,
         b: 2,
@@ -68,7 +68,7 @@ describe("LambdaTask", () => {
 
   test("in task workflow mode", async () => {
     const workflow = new Workflow();
-    workflow.Lambda(
+    workflow.lambda(
       {},
       {
         execute: async () => {
@@ -84,7 +84,7 @@ describe("LambdaTask", () => {
 
   test("in task workflow mode with input execute", async () => {
     const workflow = new Workflow();
-    workflow.Lambda(
+    workflow.lambda(
       {
         a: 1,
         b: 2,
@@ -101,7 +101,7 @@ describe("LambdaTask", () => {
 
   test("in task workflow mode with input executeReactive", async () => {
     const workflow = new Workflow();
-    workflow.Lambda(
+    workflow.lambda(
       {
         a: 1,
         b: 2,

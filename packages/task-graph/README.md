@@ -107,14 +107,14 @@ console.log(result); // { result: 60 }
 import { CreateWorkflow } from "@workglow/task-graph";
 declare module "@workglow/task-graph" {
   interface Workflow {
-    MultiplyBy2: CreateWorkflow<{ value: number }>;
+    multiplyBy2: CreateWorkflow<{ value: number }>;
   }
 }
-Workflow.prototype.MultiplyBy2 = CreateWorkflow(MultiplyBy2Task);
+Workflow.prototype.multiplyBy2 = CreateWorkflow(MultiplyBy2Task);
 
 const wf = new Workflow();
-wf.MultiplyBy2({ value: 15 });
-wf.MultiplyBy2(); // input is output from previous task
+wf.multiplyBy2({ value: 15 });
+wf.multiplyBy2(); // input is output from previous task
 const result = await wf.run();
 console.log(result); // { result: 60 }
 
@@ -691,15 +691,15 @@ const result = await workflow.run();
 // Register tasks with the workflow system
 declare module "@workglow/task-graph" {
   interface Workflow {
-    MyTextProcessor: CreateWorkflow<MyInput, MyOutput>;
+    myTextProcessor: CreateWorkflow<MyInput, MyOutput>;
   }
 }
 
-Workflow.prototype.MyTextProcessor = Workflow.createWorkflow(TextProcessorTask);
+Workflow.prototype.myTextProcessor = Workflow.createWorkflow(TextProcessorTask);
 
 // Now you can use it fluently
 const workflow = new Workflow();
-workflow.MyTextProcessor({ text: "Hello" }).MyTextProcessor({ multiplier: 3 });
+workflow.myTextProcessor({ text: "Hello" }).myTextProcessor({ multiplier: 3 });
 
 const result = await workflow.run();
 ```

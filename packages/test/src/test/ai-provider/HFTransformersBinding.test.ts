@@ -95,7 +95,7 @@ describe("HFTransformersBinding", () => {
       expect(registeredQueue!.server.queueName).toEqual(HF_TRANSFORMERS_ONNX);
 
       const workflow = new Workflow();
-      workflow.DownloadModel({
+      workflow.downloadModel({
         model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
       });
       workflow.run();
@@ -159,7 +159,7 @@ describe("HFTransformersBinding", () => {
       expect(registeredQueue?.server.queueName).toEqual(HF_TRANSFORMERS_ONNX);
 
       const workflow = new Workflow();
-      workflow.DownloadModel({
+      workflow.downloadModel({
         model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
       });
       workflow.run();

@@ -5,33 +5,33 @@
  */
 
 import { TaskGraph, TaskStatus, Workflow } from "@workglow/task-graph";
-import { JavaScript, JavaScriptTask } from "@workglow/tasks";
+import { javaScript, JavaScriptTask } from "@workglow/tasks";
 import { describe, expect, test } from "vitest";
 
 describe("JavaScriptTask", () => {
   test("executes simple JavaScript code", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "1 + 1",
     });
     expect(result.output).toBe(2);
   });
 
   test("executes code with string operations", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: '"hello" + " " + "world"',
     });
     expect(result.output).toBe("hello world");
   });
 
   test("executes code with variables", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "var x = 10; var y = 20; x + y",
     });
     expect(result.output).toBe(30);
   });
 
   test("executes code with functions", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: `
         function add(a, b) {
           return a + b;
@@ -43,7 +43,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with arrays", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: `
         var arr = [1, 2, 3, 4, 5];
         var sum = 0;
@@ -57,7 +57,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with objects", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: `
         var obj = { name: "Alice", age: 30 };
         obj.name + " is " + obj.age + " years old"
@@ -67,7 +67,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with conditional statements", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: `
         var x = 10;
         if (x > 5) {
@@ -81,7 +81,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with loops", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: `
         var result = "";
         for (var i = 0; i < 3; i++) {
@@ -98,14 +98,14 @@ describe("JavaScriptTask", () => {
   });
 
   test("handles code with no return value", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "var x = 10;",
     });
     expect(result.output).toBeUndefined();
   });
 
   test("executes code with input parameter - simple value", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "input",
       input: 42,
     });
@@ -113,7 +113,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with multiple input parameters - simple values", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "a + b",
       a: 10,
       b: 20,
@@ -122,7 +122,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with input parameter - object", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "input.value * 2",
       input: { value: 100 },
     });
@@ -130,7 +130,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with input parameter - array", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: `
         var sum = 0;
         for (var i = 0; i < arr.length; i++) {
@@ -144,7 +144,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with input parameter - string manipulation", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "input.toUpperCase()",
       input: "hello world",
     });
@@ -152,7 +152,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with input parameter - nested object", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "input.user.name + ' is ' + input.user.age + ' years old'",
       input: {
         user: {
@@ -165,7 +165,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with input parameter - boolean", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "!input",
       input: false,
     });
@@ -173,7 +173,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with input parameter - null", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "input === null",
       input: null,
     });
@@ -181,14 +181,14 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with input parameter - undefined", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "typeof input === 'undefined'",
     });
     expect(result.output).toBe(true);
   });
 
   test("executes code with input parameter - complex calculation", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: `
         var total = 0;
         for (var i = 0; i < input.items.length; i++) {
@@ -252,7 +252,7 @@ describe("JavaScriptTask", () => {
 
   test("in workflow mode", async () => {
     const workflow = new Workflow();
-    workflow.JavaScript({
+    workflow.javaScript({
       javascript_code: "5 + 5",
     });
     const results = await workflow.run();
@@ -274,7 +274,7 @@ describe("JavaScriptTask", () => {
 
   test("in workflow mode with input", async () => {
     const workflow = new Workflow();
-    workflow.JavaScript({
+    workflow.javaScript({
       javascript_code: "input.a + input.b + input.c",
       input: { a: 10, b: 20, c: 30 },
     });
@@ -284,7 +284,7 @@ describe("JavaScriptTask", () => {
 
   test("handles syntax errors gracefully", async () => {
     // The task catches errors and logs them, but still returns output
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: "var x = ;", // Invalid syntax
     });
     // Error is caught and logged, output will be undefined
@@ -292,7 +292,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("executes code with nested functions", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: `
         function outer(x) {
           function inner(y) {
@@ -307,7 +307,7 @@ describe("JavaScriptTask", () => {
   });
 
   test("handles boolean operations", async () => {
-    const result = await JavaScript({
+    const result = await javaScript({
       javascript_code: `
         var a = true;
         var b = false;
@@ -319,9 +319,9 @@ describe("JavaScriptTask", () => {
 
   test("multiple tasks in sequence", async () => {
     const results = await Promise.all([
-      JavaScript({ javascript_code: "1 + 1" }),
-      JavaScript({ javascript_code: "2 + 2" }),
-      JavaScript({ javascript_code: "3 + 3" }),
+      javaScript({ javascript_code: "1 + 1" }),
+      javaScript({ javascript_code: "2 + 2" }),
+      javaScript({ javascript_code: "3 + 3" }),
     ]);
     expect(results[0].output).toBe(2);
     expect(results[1].output).toBe(4);

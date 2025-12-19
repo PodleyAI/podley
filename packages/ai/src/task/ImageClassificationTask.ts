@@ -101,7 +101,7 @@ TaskRegistry.registerTask(ImageClassificationTask);
  * @param input The input parameters for image classification (image, model, and optional categories)
  * @returns Promise resolving to the classification categories with scores
  */
-export const ImageClassification = (
+export const imageClassification = (
   input: ImageClassificationTaskInput,
   config?: JobQueueTaskConfig
 ) => {
@@ -110,7 +110,7 @@ export const ImageClassification = (
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    ImageClassification: CreateWorkflow<
+    imageClassification: CreateWorkflow<
       ImageClassificationTaskInput,
       ImageClassificationTaskOutput,
       JobQueueTaskConfig
@@ -118,4 +118,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.ImageClassification = CreateWorkflow(ImageClassificationTask);
+Workflow.prototype.imageClassification = CreateWorkflow(ImageClassificationTask);

@@ -87,15 +87,15 @@ export class SplitTask<
 
 TaskRegistry.registerTask(SplitTask);
 
-export const Split = (input: SplitTaskInput, config: TaskConfig = {}) => {
+export const split = (input: SplitTaskInput, config: TaskConfig = {}) => {
   const task = new SplitTask(input, config);
   return task.run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    Split: CreateWorkflow<SplitTaskInput, SplitTaskOutput, TaskConfig>;
+    split: CreateWorkflow<SplitTaskInput, SplitTaskOutput, TaskConfig>;
   }
 }
 
-Workflow.prototype.Split = CreateWorkflow(SplitTask);
+Workflow.prototype.split = CreateWorkflow(SplitTask);

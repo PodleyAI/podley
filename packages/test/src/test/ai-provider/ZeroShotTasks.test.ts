@@ -8,11 +8,11 @@ import {
   AiJob,
   type AiJobInput,
   getGlobalModelRepository,
-  ImageClassification,
+  imageClassification,
   InMemoryModelRepository,
-  ObjectDetection,
+  objectDetection,
   setGlobalModelRepository,
-  TextClassification,
+  textClassification,
 } from "@workglow/ai";
 import {
   clearPipelineCache,
@@ -81,7 +81,7 @@ describe("Zero-Shot Classification Tasks", () => {
 
       await server.start();
 
-      const result = await TextClassification({
+      const result = await textClassification({
         text: "This is a great product!",
         model: model.model_id,
         candidateLabels: ["positive", "negative", "neutral"],
@@ -140,7 +140,7 @@ describe("Zero-Shot Classification Tasks", () => {
 
       await server.start();
 
-      const result = await ImageClassification({
+      const result = await imageClassification({
         image: TEST_IMAGE_BASE64,
         model: model.model_id,
         maxCategories: 3,
@@ -194,7 +194,7 @@ describe("Zero-Shot Classification Tasks", () => {
 
       await server.start();
 
-      const result = await ImageClassification({
+      const result = await imageClassification({
         image: TEST_IMAGE_BASE64,
         model: model.model_id,
         categories: ["cat", "dog", "bird", "car"],
@@ -258,7 +258,7 @@ describe("Zero-Shot Classification Tasks", () => {
 
       await server.start();
 
-      const result = await ObjectDetection({
+      const result = await objectDetection({
         image: TEST_IMAGE_BASE64,
         model: model.model_id,
         labels: ["person", "car", "dog"],

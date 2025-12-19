@@ -73,14 +73,14 @@ export class JavaScriptTask extends Task<JavaScriptTaskInput, JavaScriptTaskOutp
 
 TaskRegistry.registerTask(JavaScriptTask);
 
-export const JavaScript = (input: JavaScriptTaskInput, config: TaskConfig = {}) => {
+export const javaScript = (input: JavaScriptTaskInput, config: TaskConfig = {}) => {
   return new JavaScriptTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    JavaScript: CreateWorkflow<JavaScriptTaskInput, JavaScriptTaskOutput, TaskConfig>;
+    javaScript: CreateWorkflow<JavaScriptTaskInput, JavaScriptTaskOutput, TaskConfig>;
   }
 }
 
-Workflow.prototype.JavaScript = CreateWorkflow(JavaScriptTask);
+Workflow.prototype.javaScript = CreateWorkflow(JavaScriptTask);

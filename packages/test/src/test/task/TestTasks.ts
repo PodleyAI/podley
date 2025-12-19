@@ -830,25 +830,25 @@ export class TestAddTask extends Task<TestAddTaskInput, TestAddTaskOutput> {
  */
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TestSimpleTask: CreateWorkflow<{ input: string }, { output: string }, TaskConfig>;
-    TestOutputTask: CreateWorkflow<{ input: string }, { customOutput: string }, TaskConfig>;
-    TestInputTask: CreateWorkflow<{ customInput: string }, { output: string }, TaskConfig>;
-    FailingTask: CreateWorkflow<{}, {}, TaskConfig>;
-    LongRunningTask: CreateWorkflow<{}, {}, TaskConfig>;
-    StringTask: CreateWorkflow<{ input: string }, { output: string }, TaskConfig>;
-    NumberToStringTask: CreateWorkflow<{ input: number }, { output: string }, TaskConfig>;
-    NumberTask: CreateWorkflow<{ input: number }, { output: number }, TaskConfig>;
-    TestAddTask: CreateWorkflow<TestAddTaskInput, TestAddTaskOutput, TaskConfig>;
+    testSimple: CreateWorkflow<{ input: string }, { output: string }, TaskConfig>;
+    testOutput: CreateWorkflow<{ input: string }, { customOutput: string }, TaskConfig>;
+    testInput: CreateWorkflow<{ customInput: string }, { output: string }, TaskConfig>;
+    failing: CreateWorkflow<{}, {}, TaskConfig>;
+    longRunning: CreateWorkflow<{}, {}, TaskConfig>;
+    string: CreateWorkflow<{ input: string }, { output: string }, TaskConfig>;
+    numberToString: CreateWorkflow<{ input: number }, { output: string }, TaskConfig>;
+    number: CreateWorkflow<{ input: number }, { output: number }, TaskConfig>;
+    testAdd: CreateWorkflow<TestAddTaskInput, TestAddTaskOutput, TaskConfig>;
   }
 }
 
 // Register test tasks with the workflow system
-Workflow.prototype.TestSimpleTask = CreateWorkflow(TestSimpleTask);
-Workflow.prototype.TestOutputTask = CreateWorkflow(TestOutputTask);
-Workflow.prototype.TestInputTask = CreateWorkflow(TestInputTask);
-Workflow.prototype.FailingTask = CreateWorkflow(FailingTask);
-Workflow.prototype.LongRunningTask = CreateWorkflow(LongRunningTask);
-Workflow.prototype.StringTask = CreateWorkflow(StringTask);
-Workflow.prototype.NumberToStringTask = CreateWorkflow(NumberToStringTask);
-Workflow.prototype.NumberTask = CreateWorkflow(NumberTask);
-Workflow.prototype.TestAddTask = CreateWorkflow(TestAddTask);
+Workflow.prototype.testSimple = CreateWorkflow(TestSimpleTask);
+Workflow.prototype.testOutput = CreateWorkflow(TestOutputTask);
+Workflow.prototype.testInput = CreateWorkflow(TestInputTask);
+Workflow.prototype.failing = CreateWorkflow(FailingTask);
+Workflow.prototype.longRunning = CreateWorkflow(LongRunningTask);
+Workflow.prototype.string = CreateWorkflow(StringTask);
+Workflow.prototype.numberToString = CreateWorkflow(NumberToStringTask);
+Workflow.prototype.number = CreateWorkflow(NumberTask);
+Workflow.prototype.testAdd = CreateWorkflow(TestAddTask);

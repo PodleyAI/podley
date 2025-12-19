@@ -95,7 +95,7 @@ describe("TfMediaPipeBinding", () => {
       expect(registeredQueue?.server.queueName).toEqual(TENSORFLOW_MEDIAPIPE);
 
       const workflow = new Workflow();
-      workflow.DownloadModel({
+      workflow.downloadModel({
         model: "media-pipe:Universal Sentence Encoder",
       });
       workflow.run();
@@ -161,7 +161,7 @@ describe("TfMediaPipeBinding", () => {
       expect(registeredQueue?.server.queueName).toEqual(TENSORFLOW_MEDIAPIPE);
 
       const workflow = new Workflow();
-      workflow.DownloadModel({
+      workflow.downloadModel({
         model: "media-pipe:Universal Sentence Encoder",
       });
       workflow.run();

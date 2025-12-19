@@ -5,11 +5,11 @@
  */
 
 import {
-    CreateWorkflow,
-    JobQueueTaskConfig,
-    Task,
-    TaskRegistry,
-    Workflow,
+  CreateWorkflow,
+  JobQueueTaskConfig,
+  Task,
+  TaskRegistry,
+  Workflow,
 } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { Document, DocumentFragment } from "../source/Document";
@@ -81,13 +81,13 @@ export class DocumentSplitterTask extends Task<
 
 TaskRegistry.registerTask(DocumentSplitterTask);
 
-export const DocumentSplitter = (input: DocumentSplitterTaskInput) => {
+export const documentSplitter = (input: DocumentSplitterTaskInput) => {
   return new DocumentSplitterTask(input).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    DocumentSplitter: CreateWorkflow<
+    documentSplitter: CreateWorkflow<
       DocumentSplitterTaskInput,
       DocumentSplitterTaskOutput,
       JobQueueTaskConfig
@@ -95,4 +95,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.DocumentSplitter = CreateWorkflow(DocumentSplitterTask);
+Workflow.prototype.documentSplitter = CreateWorkflow(DocumentSplitterTask);

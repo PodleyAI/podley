@@ -193,13 +193,13 @@ TaskRegistry.registerTask(HandLandmarkerTask);
  * @param input The input parameters for hand landmark detection (image, model, and optional configuration)
  * @returns Promise resolving to the detected hand landmarks and handedness
  */
-export const HandLandmarker = (input: HandLandmarkerTaskInput, config?: JobQueueTaskConfig) => {
+export const handLandmarker = (input: HandLandmarkerTaskInput, config?: JobQueueTaskConfig) => {
   return new HandLandmarkerTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    HandLandmarker: CreateWorkflow<
+    handLandmarker: CreateWorkflow<
       HandLandmarkerTaskInput,
       HandLandmarkerTaskOutput,
       JobQueueTaskConfig
@@ -207,4 +207,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.HandLandmarker = CreateWorkflow(HandLandmarkerTask);
+Workflow.prototype.handLandmarker = CreateWorkflow(HandLandmarkerTask);

@@ -5,17 +5,17 @@
  */
 
 import {
-    CreateWorkflow,
-    DATAFLOW_ALL_PORTS,
-    IExecuteContext,
-    IExecuteReactiveContext,
-    Task,
-    TaskConfig,
-    TaskConfigurationError,
-    TaskInput,
-    TaskOutput,
-    TaskRegistry,
-    Workflow,
+  CreateWorkflow,
+  DATAFLOW_ALL_PORTS,
+  IExecuteContext,
+  IExecuteReactiveContext,
+  Task,
+  TaskConfig,
+  TaskConfigurationError,
+  TaskInput,
+  TaskOutput,
+  TaskRegistry,
+  Workflow,
 } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 
@@ -119,15 +119,15 @@ export function process(value: string | number | boolean): string | number {
 /**
  * Convenience function to create and run a LambdaTask
  */
-export function Lambda<I extends TaskInput, O extends TaskOutput>(
+export function lambda<I extends TaskInput, O extends TaskOutput>(
   fn: (input: I, context: IExecuteContext) => Promise<O>
 ): Promise<TaskOutput>;
-export function Lambda<I extends TaskInput, O extends TaskOutput>(
+export function lambda<I extends TaskInput, O extends TaskOutput>(
   input: I,
   config?: LambdaTaskConfig<I, O>
 ): Promise<TaskOutput>;
 
-export function Lambda<I extends TaskInput, O extends TaskOutput>(
+export function lambda<I extends TaskInput, O extends TaskOutput>(
   input: I | ((input: I, context: IExecuteContext) => Promise<O>),
   config?: LambdaTaskConfig<I, O>
 ): Promise<TaskOutput> {
@@ -145,11 +145,11 @@ export function Lambda<I extends TaskInput, O extends TaskOutput>(
 // Add Lambda task workflow to Workflow interface
 declare module "@workglow/task-graph" {
   interface Workflow {
-    Lambda: <I extends TaskInput, O extends TaskOutput>(
+    lambda: <I extends TaskInput, O extends TaskOutput>(
       input: Partial<I>,
       config: LambdaTaskConfig<I, O>
     ) => Workflow;
   }
 }
 
-Workflow.prototype.Lambda = CreateWorkflow(LambdaTask);
+Workflow.prototype.lambda = CreateWorkflow(LambdaTask);

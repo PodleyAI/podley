@@ -215,13 +215,13 @@ TaskRegistry.registerTask(FaceLandmarkerTask);
  * @param input The input parameters for face landmark detection (image, model, and optional configuration)
  * @returns Promise resolving to the detected facial landmarks, blendshapes, and transformation matrices
  */
-export const FaceLandmarker = (input: FaceLandmarkerTaskInput, config?: JobQueueTaskConfig) => {
+export const faceLandmarker = (input: FaceLandmarkerTaskInput, config?: JobQueueTaskConfig) => {
   return new FaceLandmarkerTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    FaceLandmarker: CreateWorkflow<
+    faceLandmarker: CreateWorkflow<
       FaceLandmarkerTaskInput,
       FaceLandmarkerTaskOutput,
       JobQueueTaskConfig
@@ -229,4 +229,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.FaceLandmarker = CreateWorkflow(FaceLandmarkerTask);
+Workflow.prototype.faceLandmarker = CreateWorkflow(FaceLandmarkerTask);

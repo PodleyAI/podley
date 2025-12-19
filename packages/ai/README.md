@@ -397,15 +397,15 @@ const workflow = new Workflow();
 
 // Chain AI tasks together
 const result = await workflow
-  .TextGenerationTask({
+  .textGeneration({
     model: "onnx:Xenova/gpt2:q8",
     prompt: "Write about artificial intelligence",
   })
-  .TextEmbeddingTask({
+  .textEmbedding({
     model: "onnx:Supabase/gte-small:q8",
     text: workflow.previous().text, // Use previous task output
   })
-  .VectorSimilarityTask({
+  .similarity({
     model: "onnx:Supabase/gte-small:q8",
     text1: "artificial intelligence",
     embedding2: workflow.previous().vector, // Use embedding from previous task

@@ -88,15 +88,15 @@ export class DebugLogTask<
 
 TaskRegistry.registerTask(DebugLogTask);
 
-export const DebugLog = (input: DebugLogTaskInput, config: TaskConfig = {}) => {
+export const debugLog = (input: DebugLogTaskInput, config: TaskConfig = {}) => {
   const task = new DebugLogTask(input, config);
   return task.run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    DebugLog: CreateWorkflow<DebugLogTaskInput, DebugLogTaskOutput, TaskConfig>;
+    debugLog: CreateWorkflow<DebugLogTaskInput, DebugLogTaskOutput, TaskConfig>;
   }
 }
 
-Workflow.prototype.DebugLog = CreateWorkflow(DebugLogTask);
+Workflow.prototype.debugLog = CreateWorkflow(DebugLogTask);

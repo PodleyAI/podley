@@ -69,14 +69,14 @@ TaskRegistry.registerTask(TextSummaryTask);
  * @param input The input parameters for text summary (text and model)
  * @returns Promise resolving to the summarized text output(s)
  */
-export const TextSummary = async (input: TextSummaryTaskInput, config?: JobQueueTaskConfig) => {
+export const textSummary = async (input: TextSummaryTaskInput, config?: JobQueueTaskConfig) => {
   return new TextSummaryTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextSummary: CreateWorkflow<TextSummaryTaskInput, TextSummaryTaskOutput, JobQueueTaskConfig>;
+    textSummary: CreateWorkflow<TextSummaryTaskInput, TextSummaryTaskOutput, JobQueueTaskConfig>;
   }
 }
 
-Workflow.prototype.TextSummary = CreateWorkflow(TextSummaryTask);
+Workflow.prototype.textSummary = CreateWorkflow(TextSummaryTask);
