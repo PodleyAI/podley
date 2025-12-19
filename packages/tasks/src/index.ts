@@ -10,3 +10,5 @@ export * from "./task/FetchTask";
 export * from "./task/JavaScriptTask";
 export * from "./task/JsonTask";
 export * from "./task/LambdaTask";
+export * from "./task/MergeTask";
+export * from "./task/SplitTask";
