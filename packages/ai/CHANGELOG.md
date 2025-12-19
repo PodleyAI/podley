@@ -1,5 +1,16 @@
 # @workglow/ai
 
+## 0.0.78
+
+### Patch Changes
+
+- Added Input and Output tasks and rewrote deleteSearch to not be lame
+- Updated dependencies
+  - @workglow/job-queue@0.0.78
+  - @workglow/storage@0.0.78
+  - @workglow/task-graph@0.0.78
+  - @workglow/util@0.0.78
+
 ## 0.0.77
 
 ### Patch Changes

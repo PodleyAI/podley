@@ -1,5 +1,14 @@
 # @workglow/debug
 
+## 0.0.78
+
+### Patch Changes
+
+- Added Input and Output tasks and rewrote deleteSearch to not be lame
+- Updated dependencies
+  - @workglow/task-graph@0.0.78
+  - @workglow/util@0.0.78
+
 ## 0.0.77
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.78
+
+### Patch Changes
+
+- Added Input and Output tasks and rewrote deleteSearch to not be lame
+
 ## 0.0.77
 
 ### Patch Changes
