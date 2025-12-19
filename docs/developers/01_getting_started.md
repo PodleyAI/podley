@@ -54,13 +54,13 @@ register_HFT_InMemoryQueue();
 
 const workflow = new Workflow();
 workflow
-  .DownloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" })
-  .TextRewriter({
+  .downloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" })
+  .textRewriter({
     text: "The quick brown fox jumps over the lazy dog.",
     prompt: ["Rewrite the following text in reverse:", "Rewrite this to sound like a pirate:"],
   })
   .rename("text", "console")
-  .DebugLog();
+  .debugLog();
 await workflow.run();
 
 // Export the graph
@@ -244,7 +244,7 @@ An example is TextEmbeddingTask and TextEmbeddingCompoundTask. The first takes a
 ```ts
 import { Workflow } from "@workglow/task-graph";
 const workflow = new Workflow();
-workflow.TextEmbedding({
+workflow.textEmbedding({
   model: "onnx:Xenova/LaMini-Flan-T5-783M:q8",
   text: "The quick brown fox jumps over the lazy dog.",
 });
@@ -256,7 +256,7 @@ OR
 ```ts
 import { Workflow } from "@workglow/task-graph";
 const workflow = new Workflow();
-workflow.TextEmbedding({
+workflow.textEmbedding({
   model: ["onnx:Xenova/LaMini-Flan-T5-783M:q8", "Universal Sentence Encoder"],
   text: "The quick brown fox jumps over the lazy dog.",
 });
@@ -269,14 +269,14 @@ The workflow will look at outputs of one task and automatically connect it to th
 import { Workflow } from "@workglow/task-graph";
 const workflow = new Workflow();
 workflow
-  .DownloadModel({
+  .downloadModel({
     model: ["onnx:Xenova/LaMini-Flan-T5-783M:q8", "Universal Sentence Encoder"],
   })
-  .TextEmbedding({
+  .textEmbedding({
     text: "The quick brown fox jumps over the lazy dog.",
   });
   .rename("*", "console")
-  .DebugLog();
+  .debugLog();
 await workflow.run();
 ```
 

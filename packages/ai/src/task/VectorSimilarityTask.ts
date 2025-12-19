@@ -5,12 +5,12 @@
  */
 
 import {
-    ArrayTask,
-    CreateWorkflow,
-    JobQueueTaskConfig,
-    TaskError,
-    TaskRegistry,
-    Workflow,
+  ArrayTask,
+  CreateWorkflow,
+  JobQueueTaskConfig,
+  TaskError,
+  TaskRegistry,
+  Workflow,
 } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 import { TypedArray, TypedArraySchema, TypedArraySchemaOptions } from "./base/AiTaskSchemas";
@@ -136,13 +136,13 @@ export class VectorSimilarityTask extends ArrayTask<
 
 TaskRegistry.registerTask(VectorSimilarityTask);
 
-export const Similarity = (input: VectorSimilarityTaskInput, config?: JobQueueTaskConfig) => {
+export const similarity = (input: VectorSimilarityTaskInput, config?: JobQueueTaskConfig) => {
   return new VectorSimilarityTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    Similarity: CreateWorkflow<
+    similarity: CreateWorkflow<
       VectorSimilarityTaskInput,
       VectorSimilarityTaskOutput,
       JobQueueTaskConfig
@@ -150,7 +150,7 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.Similarity = CreateWorkflow(VectorSimilarityTask);
+Workflow.prototype.similarity = CreateWorkflow(VectorSimilarityTask);
 
 // ===============================================================================
 

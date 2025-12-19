@@ -72,16 +72,13 @@ describe("Workflow", () => {
     });
 
     it("should add a task to the workflow when using the prototype method", () => {
-      workflow = workflow.TestSimpleTask({ input: "test" });
+      workflow = workflow.testSimple({ input: "test" });
       expect(workflow.graph.getTasks()).toHaveLength(1);
       expect(workflow.graph.getTasks()[0]).toBeInstanceOf(TestSimpleTask);
     });
 
     it("should add a task and convert to GraphAsTask", () => {
-      workflow = workflow
-        .NumberTask({ input: 5 })
-        .NumberToStringTask()
-        .TestSimpleTask({ input: "test" });
+      workflow = workflow.number({ input: 5 }).numberToString().testSimple({ input: "test" });
       const task = workflow.toTask();
       expect(task.subGraph.getTasks()).toHaveLength(3);
       expect(task.subGraph.getTasks()[0]).toBeInstanceOf(NumberTask);
@@ -94,7 +91,7 @@ describe("Workflow", () => {
 
   describe("run", () => {
     it("should run the task graph and return output", async () => {
-      workflow = workflow.TestSimpleTask({ input: "test" });
+      workflow = workflow.testSimple({ input: "test" });
 
       const startSpy = spyOn(workflow.events, "emit");
       const result = await workflow.run();
@@ -105,7 +102,7 @@ describe("Workflow", () => {
     });
 
     it("should run the task graph with provided input parameters", async () => {
-      workflow = workflow.TestSimpleTask();
+      workflow = workflow.testSimple();
 
       const startSpy = spyOn(workflow.events, "emit");
       const result = await workflow.run({ input: "custom-input" });
@@ -116,7 +113,7 @@ describe("Workflow", () => {
     });
 
     it("should emit error event when task execution fails", async () => {
-      workflow = workflow.FailingTask();
+      workflow = workflow.failing();
 
       const errorSpy = spyOn(workflow.events, "emit");
 
@@ -132,7 +129,7 @@ describe("Workflow", () => {
 
   describe("abort", () => {
     it("should abort a running task graph", async () => {
-      workflow = workflow.LongRunningTask();
+      workflow = workflow.longRunning();
 
       const runPromise = workflow.run();
       await sleep(1);
@@ -144,7 +141,7 @@ describe("Workflow", () => {
 
   describe("pop", () => {
     it("should remove the last task from the graph", () => {
-      workflow = workflow.TestSimpleTask({ input: "test1" }).TestSimpleTask({ input: "test2" });
+      workflow = workflow.testSimple({ input: "test1" }).testSimple({ input: "test2" });
 
       expect(workflow.graph.getTasks()).toHaveLength(2);
 

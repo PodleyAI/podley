@@ -134,7 +134,7 @@ TaskRegistry.registerTask(TextLanguageDetectionTask);
  * @param input The input parameters for language detection (text and model)
  * @returns Promise resolving to the languages with scores
  */
-export const TextLanguageDetection = (
+export const textLanguageDetection = (
   input: TextLanguageDetectionTaskInput,
   config?: JobQueueTaskConfig
 ) => {
@@ -143,7 +143,7 @@ export const TextLanguageDetection = (
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextLanguageDetection: CreateWorkflow<
+    textLanguageDetection: CreateWorkflow<
       TextLanguageDetectionTaskInput,
       TextLanguageDetectionTaskOutput,
       JobQueueTaskConfig
@@ -151,4 +151,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.TextLanguageDetection = CreateWorkflow(TextLanguageDetectionTask);
+Workflow.prototype.textLanguageDetection = CreateWorkflow(TextLanguageDetectionTask);

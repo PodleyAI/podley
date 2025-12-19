@@ -84,15 +84,15 @@ export class MergeTask<
 
 TaskRegistry.registerTask(MergeTask);
 
-export const Merge = (input: MergeTaskInput, config: TaskConfig = {}) => {
+export const merge = (input: MergeTaskInput, config: TaskConfig = {}) => {
   const task = new MergeTask(input, config);
   return task.run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    Merge: CreateWorkflow<MergeTaskInput, MergeTaskOutput, TaskConfig>;
+    merge: CreateWorkflow<MergeTaskInput, MergeTaskOutput, TaskConfig>;
   }
 }
 
-Workflow.prototype.Merge = CreateWorkflow(MergeTask);
+Workflow.prototype.merge = CreateWorkflow(MergeTask);

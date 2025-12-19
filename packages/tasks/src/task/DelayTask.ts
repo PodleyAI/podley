@@ -5,13 +5,13 @@
  */
 
 import {
-    CreateWorkflow,
-    IExecuteContext,
-    Task,
-    TaskAbortedError,
-    TaskConfig,
-    TaskRegistry,
-    Workflow,
+  CreateWorkflow,
+  IExecuteContext,
+  Task,
+  TaskAbortedError,
+  TaskConfig,
+  TaskRegistry,
+  Workflow,
 } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema, sleep } from "@workglow/util";
 
@@ -87,15 +87,15 @@ TaskRegistry.registerTask(DelayTask);
  *
  * @param {delay} - The delay in milliseconds
  */
-export const Delay = (input: DelayTaskInput, config: TaskConfig = {}) => {
+export const delay = (input: DelayTaskInput, config: TaskConfig = {}) => {
   const task = new DelayTask(input, config);
   return task.run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    Delay: CreateWorkflow<DelayTaskInput, DelayTaskOutput, TaskConfig>;
+    delay: CreateWorkflow<DelayTaskInput, DelayTaskOutput, TaskConfig>;
   }
 }
 
-Workflow.prototype.Delay = CreateWorkflow(DelayTask);
+Workflow.prototype.delay = CreateWorkflow(DelayTask);

@@ -5,12 +5,12 @@
  */
 
 import { TaskGraph, TaskStatus, Workflow } from "@workglow/task-graph";
-import { Split, SplitTask } from "@workglow/tasks";
+import { split, SplitTask } from "@workglow/tasks";
 import { describe, expect, test } from "vitest";
 
 describe("SplitTask", () => {
   test("splits an array into individual outputs", async () => {
-    const result = await Split({
+    const result = await split({
       input: [1, 2, 3, 4, 5],
     });
     expect(result.output_0).toBe(1);
@@ -21,7 +21,7 @@ describe("SplitTask", () => {
   });
 
   test("splits a string array into individual outputs", async () => {
-    const result = await Split({
+    const result = await split({
       input: ["apple", "banana", "cherry"],
     });
     expect(result.output_0).toBe("apple");
@@ -30,7 +30,7 @@ describe("SplitTask", () => {
   });
 
   test("handles a single value as a single-element array", async () => {
-    const result = await Split({
+    const result = await split({
       input: "single value",
     });
     expect(result.output_0).toBe("single value");
@@ -38,7 +38,7 @@ describe("SplitTask", () => {
   });
 
   test("handles a single number", async () => {
-    const result = await Split({
+    const result = await split({
       input: 42,
     });
     expect(result.output_0).toBe(42);
@@ -46,14 +46,14 @@ describe("SplitTask", () => {
   });
 
   test("handles an empty array", async () => {
-    const result = await Split({
+    const result = await split({
       input: [],
     });
     expect(Object.keys(result).length).toBe(0);
   });
 
   test("handles array with objects", async () => {
-    const result = await Split({
+    const result = await split({
       input: [{ id: 1 }, { id: 2 }, { id: 3 }],
     });
     expect(result.output_0).toEqual({ id: 1 });
@@ -62,7 +62,7 @@ describe("SplitTask", () => {
   });
 
   test("handles array with mixed types", async () => {
-    const result = await Split({
+    const result = await split({
       input: [1, "two", { three: 3 }, true, null],
     });
     expect(result.output_0).toBe(1);
@@ -104,7 +104,7 @@ describe("SplitTask", () => {
 
   test("in workflow mode", async () => {
     const workflow = new Workflow();
-    workflow.Split({
+    workflow.split({
       input: [100, 200, 300],
     });
     const results = await workflow.run();
@@ -130,7 +130,7 @@ describe("SplitTask", () => {
   });
 
   test("handles single-element array", async () => {
-    const result = await Split({
+    const result = await split({
       input: [999],
     });
     expect(result.output_0).toBe(999);
@@ -151,7 +151,7 @@ describe("SplitTask", () => {
   });
 
   test("handles array with nested arrays", async () => {
-    const result = await Split({
+    const result = await split({
       input: [
         [1, 2],
         [3, 4],
@@ -164,7 +164,7 @@ describe("SplitTask", () => {
   });
 
   test("preserves undefined values in array", async () => {
-    const result = await Split({
+    const result = await split({
       input: [1, undefined, 3],
     });
     expect(result.output_0).toBe(1);
@@ -173,7 +173,7 @@ describe("SplitTask", () => {
   });
 
   test("handles boolean single value", async () => {
-    const result = await Split({
+    const result = await split({
       input: true,
     });
     expect(result.output_0).toBe(true);

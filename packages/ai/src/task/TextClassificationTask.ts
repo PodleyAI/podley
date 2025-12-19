@@ -111,7 +111,7 @@ TaskRegistry.registerTask(TextClassificationTask);
  * @param input The input parameters for text classification (text and model)
  * @returns Promise resolving to the classification categories with scores
  */
-export const TextClassification = (
+export const textClassification = (
   input: TextClassificationTaskInput,
   config?: JobQueueTaskConfig
 ) => {
@@ -120,7 +120,7 @@ export const TextClassification = (
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextClassification: CreateWorkflow<
+    textClassification: CreateWorkflow<
       TextClassificationTaskInput,
       TextClassificationTaskOutput,
       JobQueueTaskConfig
@@ -128,4 +128,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.TextClassification = CreateWorkflow(TextClassificationTask);
+Workflow.prototype.textClassification = CreateWorkflow(TextClassificationTask);

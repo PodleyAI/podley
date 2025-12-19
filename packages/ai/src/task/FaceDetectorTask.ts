@@ -175,14 +175,14 @@ TaskRegistry.registerTask(FaceDetectorTask);
  * @param input The input parameters for face detection (image, model, and optional configuration)
  * @returns Promise resolving to the detected faces with bounding boxes and keypoints
  */
-export const FaceDetector = (input: FaceDetectorTaskInput, config?: JobQueueTaskConfig) => {
+export const faceDetector = (input: FaceDetectorTaskInput, config?: JobQueueTaskConfig) => {
   return new FaceDetectorTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    FaceDetector: CreateWorkflow<FaceDetectorTaskInput, FaceDetectorTaskOutput, JobQueueTaskConfig>;
+    faceDetector: CreateWorkflow<FaceDetectorTaskInput, FaceDetectorTaskOutput, JobQueueTaskConfig>;
   }
 }
 
-Workflow.prototype.FaceDetector = CreateWorkflow(FaceDetectorTask);
+Workflow.prototype.faceDetector = CreateWorkflow(FaceDetectorTask);

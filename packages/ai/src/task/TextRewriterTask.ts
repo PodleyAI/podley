@@ -72,14 +72,14 @@ TaskRegistry.registerTask(TextRewriterTask);
  * @param input The input parameters for text rewriting (text, prompt, and model)
  * @returns Promise resolving to the rewritten text output(s)
  */
-export const TextRewriter = (input: TextRewriterTaskInput, config?: JobQueueTaskConfig) => {
+export const textRewriter = (input: TextRewriterTaskInput, config?: JobQueueTaskConfig) => {
   return new TextRewriterTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextRewriter: CreateWorkflow<TextRewriterTaskInput, TextRewriterTaskOutput, JobQueueTaskConfig>;
+    textRewriter: CreateWorkflow<TextRewriterTaskInput, TextRewriterTaskOutput, JobQueueTaskConfig>;
   }
 }
 
-Workflow.prototype.TextRewriter = CreateWorkflow(TextRewriterTask);
+Workflow.prototype.textRewriter = CreateWorkflow(TextRewriterTask);

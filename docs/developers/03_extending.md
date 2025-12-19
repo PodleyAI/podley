@@ -116,17 +116,17 @@ TaskRegistry.registerTask(SimpleDebugLogTask);
 To use the Task in Workflow, there are a few steps:
 
 ```ts
-export const SimpleDebug = (input: DebugLogTaskInput) => {
+export const simpleDebug = (input: DebugLogTaskInput) => {
   return new SimpleDebugTask(input).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    SimpleDebug: CreateWorkflow<DebugLogTaskInput, DebugLogTaskOutput, TaskConfig>;
+    simpleDebug: CreateWorkflow<DebugLogTaskInput, DebugLogTaskOutput, TaskConfig>;
   }
 }
 
-Workflow.prototype.SimpleDebug = CreateWorkflow(SimpleDebugTask);
+Workflow.prototype.simpleDebug = CreateWorkflow(SimpleDebugTask);
 ```
 
 ## Job Queues and LLM tasks

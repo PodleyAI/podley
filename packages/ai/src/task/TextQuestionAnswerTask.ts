@@ -90,7 +90,7 @@ TaskRegistry.registerTask(TextQuestionAnswerTask);
  * @param input The input parameters for text question answer (context, question, and model)
  * @returns Promise resolving to the generated answer(s)
  */
-export const TextQuestionAnswer = (
+export const textQuestionAnswer = (
   input: TextQuestionAnswerTaskInput,
   config?: JobQueueTaskConfig
 ) => {
@@ -99,7 +99,7 @@ export const TextQuestionAnswer = (
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextQuestionAnswer: CreateWorkflow<
+    textQuestionAnswer: CreateWorkflow<
       TextQuestionAnswerTaskInput,
       TextQuestionAnswerTaskOutput,
       JobQueueTaskConfig
@@ -107,4 +107,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.TextQuestionAnswer = CreateWorkflow(TextQuestionAnswerTask);
+Workflow.prototype.textQuestionAnswer = CreateWorkflow(TextQuestionAnswerTask);

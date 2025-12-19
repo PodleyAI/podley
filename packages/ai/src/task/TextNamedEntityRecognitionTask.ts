@@ -110,7 +110,7 @@ TaskRegistry.registerTask(TextNamedEntityRecognitionTask);
  * @param input The input parameters for named entity recognition (text and model)
  * @returns Promise resolving to the extracted named entities with types, scores, and text
  */
-export const TextNamedEntityRecognition = (
+export const textNamedEntityRecognition = (
   input: TextNamedEntityRecognitionTaskInput,
   config?: JobQueueTaskConfig
 ) => {
@@ -119,7 +119,7 @@ export const TextNamedEntityRecognition = (
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextNamedEntityRecognition: CreateWorkflow<
+    textNamedEntityRecognition: CreateWorkflow<
       TextNamedEntityRecognitionTaskInput,
       TextNamedEntityRecognitionTaskOutput,
       JobQueueTaskConfig
@@ -127,4 +127,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.TextNamedEntityRecognition = CreateWorkflow(TextNamedEntityRecognitionTask);
+Workflow.prototype.textNamedEntityRecognition = CreateWorkflow(TextNamedEntityRecognitionTask);

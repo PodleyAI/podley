@@ -48,7 +48,7 @@ export function AddBaseCommands(program: Command) {
         program.error(`Unknown model ${options.model}`);
       } else {
         const workflow = new Workflow();
-        workflow.TextEmbedding({ model, text });
+        workflow.textEmbedding({ model, text });
         try {
           await runTasks(workflow);
         } catch (error) {
@@ -72,7 +72,7 @@ export function AddBaseCommands(program: Command) {
         program.error(`Unknown model ${options.model}`);
       } else {
         const workflow = new Workflow();
-        workflow.TextSummary({ model, text });
+        workflow.textSummary({ model, text });
         try {
           await runTasks(workflow);
         } catch (error) {
@@ -97,7 +97,7 @@ export function AddBaseCommands(program: Command) {
         program.error(`Unknown model ${options.model}`);
       } else {
         const workflow = new Workflow();
-        workflow.TextRewriter({ model, text, prompt: options.prompt });
+        workflow.textRewriter({ model, text, prompt: options.prompt });
         try {
           await runTasks(workflow);
         } catch (error) {
@@ -157,12 +157,12 @@ export function AddBaseCommands(program: Command) {
     .action(async () => {
       const workflow = new Workflow();
       workflow
-        .DownloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" })
-        .TextGeneration({
+        .downloadModel({ model: "onnx:Xenova/LaMini-Flan-T5-783M:q8" })
+        .textGeneration({
           prompt: "Where in the sky is the sun?",
         })
         .rename("*", "console")
-        .DebugLog();
+        .debugLog();
 
       try {
         await runTasks(workflow);

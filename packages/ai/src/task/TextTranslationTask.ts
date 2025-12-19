@@ -107,13 +107,13 @@ TaskRegistry.registerTask(TextTranslationTask);
  * @param input The input parameters for text translation (text, model, source_lang, and target_lang)
  * @returns Promise resolving to the translated text output(s)
  */
-export const TextTranslation = (input: TextTranslationTaskInput, config?: JobQueueTaskConfig) => {
+export const textTranslation = (input: TextTranslationTaskInput, config?: JobQueueTaskConfig) => {
   return new TextTranslationTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextTranslation: CreateWorkflow<
+    textTranslation: CreateWorkflow<
       TextTranslationTaskInput,
       TextTranslationTaskOutput,
       JobQueueTaskConfig
@@ -121,4 +121,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.TextTranslation = CreateWorkflow(TextTranslationTask);
+Workflow.prototype.textTranslation = CreateWorkflow(TextTranslationTask);

@@ -109,7 +109,7 @@ async function fetchWithProgress(
     throw new TaskConfigurationError("An AbortSignal must be provided.");
   }
 
-  const response = await fetch(url, options);
+  const response = await globalThis.fetch(url, options);
   if (!response.body) {
     throw new Error("ReadableStream not supported in this environment.");
   }
@@ -353,15 +353,15 @@ export class FetchTask<
     const getCurrentResponseType = () => {
       return this.runInputData?.response_type ?? this.defaults?.response_type ?? null;
     };
-    
+
     const previousResponseType = getCurrentResponseType();
-    
+
     // Call parent to update the input
     super.setInput(input);
-    
+
     // Get the new response_type after updating (from runInputData, which is what setInput updates)
     const newResponseType = getCurrentResponseType();
-    
+
     // If response_type changed, emit schemaChange event
     // Compare using strict equality (handles null/undefined correctly)
     if (previousResponseType !== newResponseType) {
@@ -389,7 +389,7 @@ export class FetchTask<
 
 TaskRegistry.registerTask(FetchTask);
 
-export const Fetch = async (
+export const fetch = async (
   input: FetchTaskInput,
   config: FetchTaskConfig = {}
 ): Promise<FetchTaskOutput> => {
@@ -399,8 +399,8 @@ export const Fetch = async (
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    Fetch: CreateWorkflow<FetchTaskInput, FetchTaskOutput, FetchTaskConfig>;
+    fetch: CreateWorkflow<FetchTaskInput, FetchTaskOutput, FetchTaskConfig>;
   }
 }
 
-Workflow.prototype.Fetch = CreateWorkflow(FetchTask);
+Workflow.prototype.fetch = CreateWorkflow(FetchTask);

@@ -85,13 +85,13 @@ TaskRegistry.registerTask(TextEmbeddingTask);
  * @param input - Input containing text(s) and model(s) for embedding
  * @returns  Promise resolving to the generated embeddings
  */
-export const TextEmbedding = async (input: TextEmbeddingTaskInput, config?: JobQueueTaskConfig) => {
+export const textEmbedding = async (input: TextEmbeddingTaskInput, config?: JobQueueTaskConfig) => {
   return new TextEmbeddingTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextEmbedding: CreateWorkflow<
+    textEmbedding: CreateWorkflow<
       TextEmbeddingTaskInput,
       TextEmbeddingTaskOutput,
       JobQueueTaskConfig
@@ -99,4 +99,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.TextEmbedding = CreateWorkflow(TextEmbeddingTask);
+Workflow.prototype.textEmbedding = CreateWorkflow(TextEmbeddingTask);

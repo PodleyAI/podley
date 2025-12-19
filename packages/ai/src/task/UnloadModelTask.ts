@@ -32,9 +32,7 @@ const UnloadModelOutputSchema = {
 export type UnloadModelTaskRunInput = FromSchema<typeof UnloadModelInputSchema>;
 export type UnloadModelTaskRunOutput = FromSchema<typeof UnloadModelOutputSchema>;
 export type UnloadModelTaskExecuteInput = DeReplicateFromSchema<typeof UnloadModelInputSchema>;
-export type UnloadModelTaskExecuteOutput = DeReplicateFromSchema<
-  typeof UnloadModelOutputSchema
->;
+export type UnloadModelTaskExecuteOutput = DeReplicateFromSchema<typeof UnloadModelOutputSchema>;
 
 /**
  * Unload a model from memory and clear its cache.
@@ -68,13 +66,13 @@ TaskRegistry.registerTask(UnloadModelTask);
  * @param input - Input containing model(s) to unload
  * @returns Promise resolving to the unloaded model(s)
  */
-export const UnloadModel = (input: UnloadModelTaskRunInput, config?: JobQueueTaskConfig) => {
+export const unloadModel = (input: UnloadModelTaskRunInput, config?: JobQueueTaskConfig) => {
   return new UnloadModelTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    UnloadModel: CreateWorkflow<
+    unloadModel: CreateWorkflow<
       UnloadModelTaskRunInput,
       UnloadModelTaskRunOutput,
       JobQueueTaskConfig
@@ -82,5 +80,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.UnloadModel = CreateWorkflow(UnloadModelTask);
-
+Workflow.prototype.unloadModel = CreateWorkflow(UnloadModelTask);

@@ -82,13 +82,13 @@ TaskRegistry.registerTask(ImageEmbeddingTask);
  * @param input The input parameters for image embedding (image and model)
  * @returns Promise resolving to the image embedding vector
  */
-export const ImageEmbedding = (input: ImageEmbeddingTaskInput, config?: JobQueueTaskConfig) => {
+export const imageEmbedding = (input: ImageEmbeddingTaskInput, config?: JobQueueTaskConfig) => {
   return new ImageEmbeddingTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    ImageEmbedding: CreateWorkflow<
+    imageEmbedding: CreateWorkflow<
       ImageEmbeddingTaskInput,
       ImageEmbeddingTaskOutput,
       JobQueueTaskConfig
@@ -96,4 +96,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.ImageEmbedding = CreateWorkflow(ImageEmbeddingTask);
+Workflow.prototype.imageEmbedding = CreateWorkflow(ImageEmbeddingTask);

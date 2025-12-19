@@ -17,7 +17,7 @@ import {
   JobTaskFailedError,
   setTaskQueueRegistry,
 } from "@workglow/task-graph";
-import { Fetch, FetchJob, FetchTask, FetchTaskInput, FetchTaskOutput } from "@workglow/tasks";
+import { fetch, FetchJob, FetchTask, FetchTaskInput, FetchTaskOutput } from "@workglow/tasks";
 import { sleep } from "@workglow/util";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -76,7 +76,7 @@ describe("FetchTask", () => {
       "https://api.example.com/3",
     ];
 
-    const results = await Promise.all(urls.map((url) => Fetch({ url })));
+    const results = await Promise.all(urls.map((url) => fetch({ url })));
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results).toHaveLength(3);
     const sorted = results
@@ -147,7 +147,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const fetchPromise = Fetch({
+    const fetchPromise = fetch({
       url: "https://api.example.com/notfound",
     });
 
@@ -165,7 +165,7 @@ describe("FetchTask", () => {
   test("handles network errors", async () => {
     mockFetch.mockImplementation(() => Promise.reject(new Error("Network error")));
 
-    const fetchPromise = Fetch({
+    const fetchPromise = fetch({
       url: "https://api.example.com/network-error",
     });
 
@@ -192,7 +192,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const fetchPromise = Fetch({
+    const fetchPromise = fetch({
       url: "https://api.example.com/invalid-json",
     });
 
@@ -226,7 +226,7 @@ describe("FetchTask", () => {
       "https://api.example.com/not-found",
     ];
 
-    const results = await Promise.allSettled(urls.map((url) => Fetch({ url })));
+    const results = await Promise.allSettled(urls.map((url) => fetch({ url })));
 
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results[0].status).toBe("fulfilled");
@@ -254,7 +254,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await Fetch({
+    const error = await fetch({
       url: "https://api.example.com/rate-limited",
     }).catch((e) => e);
 
@@ -282,7 +282,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await Fetch({
+    const error = await fetch({
       url: "https://api.example.com/service-unavailable",
     }).catch((e) => e);
 
@@ -308,7 +308,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await Fetch({
+    const error = await fetch({
       url: "https://api.example.com/rate-limited-date",
     }).catch((e) => e);
 
@@ -338,7 +338,7 @@ describe("FetchTask", () => {
     );
 
     const beforeTest = Date.now();
-    const error = await Fetch({
+    const error = await fetch({
       url: "https://api.example.com/rate-limited-invalid",
     }).catch((e) => e);
 
@@ -363,7 +363,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await Fetch({
+    const error = await fetch({
       url: "https://api.example.com/rate-limited-past",
     }).catch((e) => e);
 
@@ -389,7 +389,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await Fetch({
+    const error = await fetch({
       url: "https://api.example.com/rate-limited-rfc1123",
     }).catch((e) => e);
 
@@ -421,7 +421,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await Fetch({
+    const error = await fetch({
       url: "https://api.example.com/rate-limited-iso8601",
     }).catch((e) => e);
 
@@ -553,7 +553,7 @@ describe("FetchTask", () => {
       const mockResponse = { data: { success: true } };
       mockFetch.mockImplementation(() => Promise.resolve(createMockResponse(mockResponse)));
 
-      const result = await Fetch({
+      const result = await fetch({
         url: "https://api.example.com/test",
         response_type: null,
       });

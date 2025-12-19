@@ -221,7 +221,7 @@ TaskRegistry.registerTask(GestureRecognizerTask);
  * @param input The input parameters for gesture recognition (image, model, and optional configuration)
  * @returns Promise resolving to the detected gestures with landmarks and handedness
  */
-export const GestureRecognizer = (
+export const gestureRecognizer = (
   input: GestureRecognizerTaskInput,
   config?: JobQueueTaskConfig
 ) => {
@@ -230,7 +230,7 @@ export const GestureRecognizer = (
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    GestureRecognizer: CreateWorkflow<
+    gestureRecognizer: CreateWorkflow<
       GestureRecognizerTaskInput,
       GestureRecognizerTaskOutput,
       JobQueueTaskConfig
@@ -238,4 +238,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.GestureRecognizer = CreateWorkflow(GestureRecognizerTask);
+Workflow.prototype.gestureRecognizer = CreateWorkflow(GestureRecognizerTask);

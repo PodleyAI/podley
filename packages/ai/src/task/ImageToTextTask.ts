@@ -87,14 +87,14 @@ TaskRegistry.registerTask(ImageToTextTask);
  * @param input The input parameters for image to text (image and model)
  * @returns Promise resolving to the generated text description
  */
-export const ImageToText = (input: ImageToTextTaskInput, config?: JobQueueTaskConfig) => {
+export const imageToText = (input: ImageToTextTaskInput, config?: JobQueueTaskConfig) => {
   return new ImageToTextTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    ImageToText: CreateWorkflow<ImageToTextTaskInput, ImageToTextTaskOutput, JobQueueTaskConfig>;
+    imageToText: CreateWorkflow<ImageToTextTaskInput, ImageToTextTaskOutput, JobQueueTaskConfig>;
   }
 }
 
-Workflow.prototype.ImageToText = CreateWorkflow(ImageToTextTask);
+Workflow.prototype.imageToText = CreateWorkflow(ImageToTextTask);

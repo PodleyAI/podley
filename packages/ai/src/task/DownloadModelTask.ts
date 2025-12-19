@@ -102,13 +102,13 @@ TaskRegistry.registerTask(DownloadModelTask);
  * @param input - Input containing model(s) to download
  * @returns Promise resolving to the downloaded model(s)
  */
-export const DownloadModel = (input: DownloadModelTaskRunInput, config?: JobQueueTaskConfig) => {
+export const downloadModel = (input: DownloadModelTaskRunInput, config?: JobQueueTaskConfig) => {
   return new DownloadModelTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    DownloadModel: CreateWorkflow<
+    downloadModel: CreateWorkflow<
       DownloadModelTaskRunInput,
       DownloadModelTaskRunOutput,
       JobQueueTaskConfig
@@ -116,4 +116,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.DownloadModel = CreateWorkflow(DownloadModelTask);
+Workflow.prototype.downloadModel = CreateWorkflow(DownloadModelTask);

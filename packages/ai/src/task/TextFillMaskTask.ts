@@ -89,14 +89,14 @@ TaskRegistry.registerTask(TextFillMaskTask);
  * @param input The input parameters for fill mask (text with mask token and model)
  * @returns Promise resolving to the predicted tokens with scores and complete sequences
  */
-export const TextFillMask = (input: TextFillMaskTaskInput, config?: JobQueueTaskConfig) => {
+export const textFillMask = (input: TextFillMaskTaskInput, config?: JobQueueTaskConfig) => {
   return new TextFillMaskTask(input, config).run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    TextFillMask: CreateWorkflow<TextFillMaskTaskInput, TextFillMaskTaskOutput, JobQueueTaskConfig>;
+    textFillMask: CreateWorkflow<TextFillMaskTaskInput, TextFillMaskTaskOutput, JobQueueTaskConfig>;
   }
 }
 
-Workflow.prototype.TextFillMask = CreateWorkflow(TextFillMaskTask);
+Workflow.prototype.textFillMask = CreateWorkflow(TextFillMaskTask);

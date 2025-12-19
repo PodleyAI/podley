@@ -124,7 +124,7 @@ TaskRegistry.registerTask(ImageSegmentationTask);
  * @param input The input parameters for image segmentation (image and model)
  * @returns Promise resolving to the segmentation masks with labels and scores
  */
-export const ImageSegmentation = (
+export const imageSegmentation = (
   input: ImageSegmentationTaskInput,
   config?: JobQueueTaskConfig
 ) => {
@@ -133,7 +133,7 @@ export const ImageSegmentation = (
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    ImageSegmentation: CreateWorkflow<
+    imageSegmentation: CreateWorkflow<
       ImageSegmentationTaskInput,
       ImageSegmentationTaskOutput,
       JobQueueTaskConfig
@@ -141,4 +141,4 @@ declare module "@workglow/task-graph" {
   }
 }
 
-Workflow.prototype.ImageSegmentation = CreateWorkflow(ImageSegmentationTask);
+Workflow.prototype.imageSegmentation = CreateWorkflow(ImageSegmentationTask);
