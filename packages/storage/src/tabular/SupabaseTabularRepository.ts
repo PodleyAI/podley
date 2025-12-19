@@ -8,7 +8,10 @@ import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { createServiceToken, DataPortSchemaObject, FromSchema, JsonSchema } from "@workglow/util";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import {
+  DeleteSearchCriteria,
+  isSearchCondition,
   ITabularRepository,
+  SearchOperator,
   TabularChangePayload,
   TabularChangeType,
   TabularSubscribeOptions,
@@ -592,51 +595,59 @@ export class SupabaseTabularRepository<
     return count ?? 0;
   }
 
-  protected generateWhereClause(
-    column: keyof Entity,
-    operator: "=" | "<" | "<=" | ">" | ">=" = "="
-  ): string {
-    if (!(column in this.schema.properties)) {
-      throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
-    }
-    return `${String(column)} ${operator} $1`;
-  }
-
   /**
-   * Deletes all entries matching a search criteria
-   * @param column - The column name to compare against
-   * @param value - The value to compare against
-   * @param operator - The operator to use for comparison
+   * Deletes all entries matching the specified search criteria.
+   * Supports multiple columns with optional comparison operators.
+   *
+   * @param criteria - Object with column names as keys and values or SearchConditions
    */
-  async deleteSearch(
-    column: keyof Entity,
-    value: Entity[keyof Entity],
-    operator: "=" | "<" | "<=" | ">" | ">=" = "="
-  ): Promise<void> {
+  async deleteSearch(criteria: DeleteSearchCriteria<Entity>): Promise<void> {
+    const criteriaKeys = Object.keys(criteria) as Array<keyof Entity>;
+    if (criteriaKeys.length === 0) {
+      return;
+    }
+
     let query = this.client.from(this.table).delete();
 
-    switch (operator) {
-      case "=":
-        query = query.eq(String(column), value);
-        break;
-      case "<":
-        query = query.lt(String(column), value);
-        break;
-      case "<=":
-        query = query.lte(String(column), value);
-        break;
-      case ">":
-        query = query.gt(String(column), value);
-        break;
-      case ">=":
-        query = query.gte(String(column), value);
-        break;
+    for (const column of criteriaKeys) {
+      if (!(column in this.schema.properties)) {
+        throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
+      }
+
+      const criterion = criteria[column];
+      let operator: SearchOperator = "=";
+      let value: Entity[keyof Entity];
+
+      if (isSearchCondition(criterion)) {
+        operator = criterion.operator;
+        value = criterion.value as Entity[keyof Entity];
+      } else {
+        value = criterion as Entity[keyof Entity];
+      }
+
+      switch (operator) {
+        case "=":
+          query = query.eq(String(column), value);
+          break;
+        case "<":
+          query = query.lt(String(column), value);
+          break;
+        case "<=":
+          query = query.lte(String(column), value);
+          break;
+        case ">":
+          query = query.gt(String(column), value);
+          break;
+        case ">=":
+          query = query.gte(String(column), value);
+          break;
+      }
     }
 
     const { error } = await query;
 
     if (error) throw error;
-    this.events.emit("delete", column as keyof Entity);
+    this.events.emit("delete", criteriaKeys[0] as keyof Entity);
   }
 
   /**

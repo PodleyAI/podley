@@ -12,6 +12,7 @@ import {
   makeFingerprint,
 } from "@workglow/util";
 import {
+  DeleteSearchCriteria,
   ITabularRepository,
   TabularChangePayload,
   TabularEventListener,
@@ -242,11 +243,13 @@ export abstract class TabularRepository<
   abstract getAll(): Promise<Entity[] | undefined>;
   abstract deleteAll(): Promise<void>;
   abstract size(): Promise<number>;
-  abstract deleteSearch(
-    column: keyof Entity,
-    value: Entity[keyof Entity],
-    operator: "=" | "<" | "<=" | ">" | ">="
-  ): Promise<void>;
+  /**
+   * Deletes all entries matching the specified search criteria.
+   * Supports multiple columns with optional comparison operators.
+   *
+   * @param criteria - Object with column names as keys and values or SearchConditions
+   */
+  abstract deleteSearch(criteria: DeleteSearchCriteria<Entity>): Promise<void>;
 
   /**
    * Abstract method to be implemented by concrete repositories to search for rows

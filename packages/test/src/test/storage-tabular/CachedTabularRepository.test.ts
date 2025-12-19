@@ -664,7 +664,7 @@ describe("CachedTabularRepository", () => {
       await cached.putBulk(entities);
 
       // Delete entries older than now
-      await cached.deleteSearch("createdAt", now.toISOString(), "<");
+      await cached.deleteSearch({ createdAt: { value: now.toISOString(), operator: "<" } });
 
       // Verify deleted from both
       const durableResults = await durable.getAll();

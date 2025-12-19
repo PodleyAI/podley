@@ -302,7 +302,7 @@ export function runGenericTabularRepositorySubscriptionTests(
       // Wait for initial poll to complete
       await sleep(initWaitTime);
 
-      await repository.deleteSearch("option", "value1", "=");
+      await repository.deleteSearch({ option: "value1" });
 
       await sleep(waitTime);
 

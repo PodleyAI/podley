@@ -327,9 +327,15 @@ const userCount = await userRepo.size();
 const engineeringUsers = await userRepo.search({ department: "Engineering" });
 const adultUsers = await userRepo.search({ age: 25 }); // Exact match
 
-// Delete by search criteria
-await userRepo.deleteSearch("department", "Sales", "=");
-await userRepo.deleteSearch("age", 65, ">="); // Delete users 65 and older
+// Delete by search criteria (supports multiple columns)
+await userRepo.deleteSearch({ department: "Sales" }); // Equality
+await userRepo.deleteSearch({ age: { value: 65, operator: ">=" } }); // Delete users 65 and older
+
+// Multiple criteria (AND logic)
+await userRepo.deleteSearch({
+  department: "Sales",
+  age: { value: 30, operator: "<" },
+}); // Delete young Sales employees
 ```
 
 #### Environment-Specific Tabular Storage
@@ -629,11 +635,7 @@ interface ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value>
 
   // Search operations
   search(criteria: Partial<Entity>): Promise<Entity[] | undefined>;
-  deleteSearch(
-    column: keyof Entity,
-    value: any,
-    operator: "=" | "<" | "<=" | ">" | ">="
-  ): Promise<void>;
+  deleteSearch(criteria: DeleteSearchCriteria<Entity>): Promise<void>;
 
   // Event handling
   on(event: "put" | "get" | "search" | "delete" | "clearall", callback: Function): void;
@@ -642,6 +644,37 @@ interface ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value>
   waitOn(event: string): Promise<any[]>;
   emit(event: string, ...args: any[]): void;
 }
+```
+
+#### DeleteSearchCriteria<Entity>
+
+The `deleteSearch` method accepts a criteria object that supports multiple columns with optional comparison operators:
+
+```typescript
+// Type definitions
+type SearchOperator = "=" | "<" | "<=" | ">" | ">=";
+
+interface SearchCondition<T> {
+  readonly value: T;
+  readonly operator: SearchOperator;
+}
+
+type DeleteSearchCriteria<Entity> = {
+  readonly [K in keyof Entity]?: Entity[K] | SearchCondition<Entity[K]>;
+};
+
+// Usage examples
+// Equality match (direct value)
+await repo.deleteSearch({ category: "electronics" });
+
+// With comparison operator
+await repo.deleteSearch({ createdAt: { value: date, operator: "<" } });
+
+// Multiple criteria (AND logic)
+await repo.deleteSearch({
+  category: "electronics",
+  value: { value: 100, operator: ">=" },
+});
 ```
 
 ### IQueueStorage<Input, Output>

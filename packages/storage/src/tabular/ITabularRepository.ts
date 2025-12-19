@@ -66,6 +66,50 @@ export type JSONValue =
   | { [key: string]: JSONValue };
 
 /**
+ * Comparison operators for search and deleteSearch operations
+ */
+export type SearchOperator = "=" | "<" | "<=" | ">" | ">=";
+
+/**
+ * A search condition with a value and comparison operator
+ */
+export interface SearchCondition<T> {
+  readonly value: T;
+  readonly operator: SearchOperator;
+}
+
+/**
+ * Criteria for deleteSearch operations supporting multiple columns.
+ * Each column can have either a direct value (equality) or a SearchCondition with an operator.
+ *
+ * @example
+ * // Equality match
+ * { category: "electronics" }
+ *
+ * // With operator
+ * { createdAt: { value: date, operator: "<" } }
+ *
+ * // Multiple columns
+ * { category: "electronics", createdAt: { value: date, operator: "<" } }
+ */
+export type DeleteSearchCriteria<Entity> = {
+  readonly [K in keyof Entity]?: Entity[K] | SearchCondition<Entity[K]>;
+};
+
+/**
+ * Type guard to check if a value is a SearchCondition
+ */
+export function isSearchCondition<T>(value: unknown): value is SearchCondition<T> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "value" in value &&
+    "operator" in value &&
+    typeof (value as SearchCondition<T>).operator === "string"
+  );
+}
+
+/**
  * Interface defining the contract for tabular storage repositories.
  * Provides a flexible interface for storing and retrieving data with typed
  * primary keys and values, and supports compound keys and partial key lookup.
@@ -89,11 +133,22 @@ export interface ITabularRepository<
   getAll(): Promise<Entity[] | undefined>;
   deleteAll(): Promise<void>;
   size(): Promise<number>;
-  deleteSearch(
-    column: keyof Entity,
-    value: Entity[keyof Entity],
-    operator: "=" | "<" | "<=" | ">" | ">="
-  ): Promise<void>;
+  /**
+   * Deletes all entries matching the specified search criteria.
+   * Supports multiple columns with optional comparison operators.
+   *
+   * @param criteria - Object with column names as keys and values or SearchConditions
+   * @example
+   * // Delete by equality
+   * await repo.deleteSearch({ category: "electronics" });
+   *
+   * // Delete with operator
+   * await repo.deleteSearch({ createdAt: { value: date, operator: "<" } });
+   *
+   * // Delete with multiple criteria (AND)
+   * await repo.deleteSearch({ category: "electronics", value: { value: 100, operator: "<" } });
+   */
+  deleteSearch(criteria: DeleteSearchCriteria<Entity>): Promise<void>;
 
   // Event handling methods
   on<Event extends TabularEventName>(

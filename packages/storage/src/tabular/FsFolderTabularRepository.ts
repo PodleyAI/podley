@@ -15,6 +15,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PollingSubscriptionManager } from "../util/PollingSubscriptionManager";
 import {
+  DeleteSearchCriteria,
   ITabularRepository,
   TabularChangePayload,
   TabularSubscribeOptions,
@@ -231,17 +232,14 @@ export class FsFolderTabularRepository<
   }
 
   /**
-   * Deletes all entries with a date column value older than the provided date
-   * @param column - The name of the date column to compare against
-   * @param value - The value to compare against
-   * @param operator - The operator to use for comparison
+   * Deletes all entries matching the specified search criteria.
+   * Not supported for filesystem repository.
+   *
+   * @param _criteria - Object with column names as keys and values or SearchConditions
+   * @throws Error always - deleteSearch is not supported for filesystem storage
    */
-  async deleteSearch(
-    column: keyof Entity,
-    value: Entity[keyof Entity],
-    operator: "=" | "<" | "<=" | ">" | ">=" = "="
-  ): Promise<void> {
-    throw new Error("Search not supported for FsFolderTabularRepository");
+  async deleteSearch(_criteria: DeleteSearchCriteria<Entity>): Promise<void> {
+    throw new Error("deleteSearch is not supported for FsFolderTabularRepository");
   }
 
   /**

@@ -17,7 +17,10 @@ import {
   MigrationOptions,
 } from "../util/IndexedDbTable";
 import {
+  DeleteSearchCriteria,
+  isSearchCondition,
   ITabularRepository,
+  SearchOperator,
   TabularChangePayload,
   TabularSubscribeOptions,
 } from "./ITabularRepository";
@@ -485,58 +488,107 @@ export class IndexedDbTabularRepository<
   }
 
   /**
-   * Deletes all entries with a date column value older than the provided date
-   * @param column - The name of the date column to compare against
-   * @param value - The value to compare against
-   * @param operator - The operator to use for comparison
+   * Checks if a record matches all criteria conditions.
+   * @param record - The record to check
+   * @param criteria - The search criteria
+   * @returns true if all conditions match
    */
-  async deleteSearch(
-    column: keyof Entity,
-    value: Entity[keyof Entity],
-    operator: "=" | "<" | "<=" | ">" | ">=" = "="
-  ): Promise<void> {
+  private matchesCriteria(record: Entity, criteria: DeleteSearchCriteria<Entity>): boolean {
+    for (const column of Object.keys(criteria) as Array<keyof Entity>) {
+      const criterion = criteria[column];
+      const recordValue = record[column];
+
+      let operator: SearchOperator = "=";
+      let value: Entity[keyof Entity];
+
+      if (isSearchCondition(criterion)) {
+        operator = criterion.operator;
+        value = criterion.value as Entity[keyof Entity];
+      } else {
+        value = criterion as Entity[keyof Entity];
+      }
+
+      // Skip null values for comparison operators
+      if (operator !== "=" && (recordValue === null || recordValue === undefined)) {
+        return false;
+      }
+
+      switch (operator) {
+        case "=":
+          if (recordValue !== value) return false;
+          break;
+        case "<":
+          if (!(recordValue < value)) return false;
+          break;
+        case "<=":
+          if (!(recordValue <= value)) return false;
+          break;
+        case ">":
+          if (!(recordValue > value)) return false;
+          break;
+        case ">=":
+          if (!(recordValue >= value)) return false;
+          break;
+        default:
+          return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Deletes all entries matching the specified search criteria.
+   * Supports multiple columns with optional comparison operators.
+   *
+   * @param criteria - Object with column names as keys and values or SearchConditions
+   */
+  async deleteSearch(criteria: DeleteSearchCriteria<Entity>): Promise<void> {
+    const criteriaKeys = Object.keys(criteria) as Array<keyof Entity>;
+    if (criteriaKeys.length === 0) {
+      return;
+    }
+
     const db = await this.getDb();
 
     return new Promise(async (resolve, reject) => {
       try {
-        // For equality operator, we can use the search method directly
-        if (operator === "=") {
-          // Create a search key based on the column and value
-          const searchKey: Partial<Entity> = { [column]: value } as Partial<Entity>;
+        const transaction = db.transaction(this.table, "readwrite");
+        const store = transaction.objectStore(this.table);
 
-          // Search for records to delete
-          const recordsToDelete = await this.search(searchKey);
+        // Set up transaction event handlers
+        transaction.oncomplete = () => {
+          this.events.emit("delete", criteriaKeys[0] as keyof Entity);
+          // Notify hybrid manager of local change
+          this.hybridManager?.notifyLocalChange();
+          resolve();
+        };
 
-          if (!recordsToDelete || recordsToDelete.length === 0) {
-            // No records found to delete
-            this.events.emit("delete", column);
-            // Notify hybrid manager even if no records deleted
-            this.hybridManager?.notifyLocalChange();
-            resolve();
+        transaction.onerror = () => {
+          reject(transaction.error);
+        };
+
+        // Get all records and filter
+        const getAllRequest = store.getAll();
+
+        getAllRequest.onsuccess = () => {
+          const allRecords: Entity[] = getAllRequest.result;
+
+          // Filter records that match all criteria
+          const recordsToDelete = allRecords.filter((record) =>
+            this.matchesCriteria(record, criteria)
+          );
+
+          if (recordsToDelete.length === 0) {
+            // No records to delete
             return;
           }
-
-          const transaction = db.transaction(this.table, "readwrite");
-          const store = transaction.objectStore(this.table);
-
-          // Set up transaction event handlers
-          transaction.oncomplete = () => {
-            this.events.emit("delete", column);
-            // Notify hybrid manager of local change
-            this.hybridManager?.notifyLocalChange();
-            resolve();
-          };
-
-          transaction.onerror = () => {
-            reject(transaction.error);
-          };
 
           // Delete each record that matches the criteria
           for (const record of recordsToDelete) {
             // Extract the primary key from the record
-            const primaryKey = this.primaryKeyColumns().reduce((key, column) => {
+            const primaryKey = this.primaryKeyColumns().reduce((key, col) => {
               // @ts-ignore - We know these properties exist on the record
-              key[column] = record[column];
+              key[col] = record[col];
               return key;
             }, {} as PrimaryKey);
 
@@ -547,84 +599,11 @@ export class IndexedDbTabularRepository<
               console.error("Error deleting record:", request.error);
             };
           }
-        } else {
-          // For non-equality operators, we need to get all records and filter
-          const transaction = db.transaction(this.table, "readwrite");
-          const store = transaction.objectStore(this.table);
+        };
 
-          // Set up transaction event handlers
-          transaction.oncomplete = () => {
-            this.events.emit("delete", column);
-            // Notify hybrid manager of local change
-            this.hybridManager?.notifyLocalChange();
-            resolve();
-          };
-
-          transaction.onerror = () => {
-            reject(transaction.error);
-          };
-
-          // Get all records
-          const getAllRequest = store.getAll();
-
-          getAllRequest.onsuccess = () => {
-            const allRecords: Entity[] = getAllRequest.result;
-
-            // Filter records based on the operator and value
-            const recordsToDelete = allRecords.filter((record) => {
-              const recordValue = record[column];
-
-              // Skip null values or handle them based on business logic
-              if (
-                recordValue === null ||
-                recordValue === undefined ||
-                value === null ||
-                value === undefined
-              ) {
-                return false;
-              }
-
-              switch (operator) {
-                case "<":
-                  return recordValue < value;
-                case "<=":
-                  return recordValue <= value;
-                case ">":
-                  return recordValue > value;
-                case ">=":
-                  return recordValue >= value;
-                default:
-                  return false;
-              }
-            });
-
-            if (recordsToDelete.length === 0) {
-              // No records to delete
-              return;
-            }
-
-            // Delete each record that matches the criteria
-            for (const record of recordsToDelete) {
-              // Extract the primary key from the record
-              const primaryKey = this.primaryKeyColumns().reduce((key, column) => {
-                // @ts-ignore - We know these properties exist on the record
-                key[column] = record[column];
-                return key;
-              }, {} as PrimaryKey);
-
-              // Delete the record using the primary key
-              const request = store.delete(this.getIndexedKey(primaryKey));
-
-              request.onerror = () => {
-                console.error("Error deleting record:", request.error);
-              };
-            }
-          };
-
-          getAllRequest.onerror = () => {
-            reject(getAllRequest.error);
-          };
-        }
+        getAllRequest.onerror = () => {
+          reject(getAllRequest.error);
+        };
       } catch (error) {
         reject(error);
       }

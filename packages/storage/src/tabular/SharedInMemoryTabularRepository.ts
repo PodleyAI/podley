@@ -5,7 +5,11 @@
  */
 
 import { createServiceToken, DataPortSchemaObject, FromSchema } from "@workglow/util";
-import { ITabularRepository, TabularSubscribeOptions } from "./ITabularRepository";
+import {
+  DeleteSearchCriteria,
+  ITabularRepository,
+  TabularSubscribeOptions,
+} from "./ITabularRepository";
 import { InMemoryTabularRepository } from "./InMemoryTabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
@@ -23,7 +27,7 @@ type BroadcastMessage =
   | { type: "PUT_BULK"; entities: any[] }
   | { type: "DELETE"; key: any }
   | { type: "DELETE_ALL" }
-  | { type: "DELETE_SEARCH"; column: string; value: any; operator: string };
+  | { type: "DELETE_SEARCH"; criteria: DeleteSearchCriteria<any> };
 
 /**
  * A tabular repository implementation that shares data across browser tabs/windows
@@ -185,11 +189,7 @@ export class SharedInMemoryTabularRepository<
 
       case "DELETE_SEARCH":
         // Apply deleteSearch from another tab
-        await this.inMemoryRepo.deleteSearch(
-          message.column as keyof Entity,
-          message.value,
-          message.operator as "=" | "<" | "<=" | ">" | ">="
-        );
+        await this.inMemoryRepo.deleteSearch(message.criteria as DeleteSearchCriteria<Entity>);
         break;
     }
   }
@@ -321,22 +321,16 @@ export class SharedInMemoryTabularRepository<
   }
 
   /**
-   * Deletes all entries with a date column value matching the provided criteria
-   * @param column - The name of the date column to compare against
-   * @param value - The value to compare against
-   * @param operator - The operator to use for comparison
+   * Deletes all entries matching the specified search criteria.
+   * Supports multiple columns with optional comparison operators.
+   *
+   * @param criteria - Object with column names as keys and values or SearchConditions
    */
-  async deleteSearch(
-    column: keyof Entity,
-    value: Entity[keyof Entity],
-    operator: "=" | "<" | "<=" | ">" | ">=" = "="
-  ): Promise<void> {
-    await this.inMemoryRepo.deleteSearch(column, value, operator);
+  async deleteSearch(criteria: DeleteSearchCriteria<Entity>): Promise<void> {
+    await this.inMemoryRepo.deleteSearch(criteria);
     this.broadcast({
       type: "DELETE_SEARCH",
-      column: String(column),
-      value,
-      operator,
+      criteria,
     });
   }
 

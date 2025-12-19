@@ -11,6 +11,8 @@ import {
   makeFingerprint,
 } from "@workglow/util";
 import {
+  DeleteSearchCriteria,
+  isSearchCondition,
   ITabularRepository,
   TabularChangePayload,
   TabularSubscribeOptions,
@@ -176,35 +178,58 @@ export class InMemoryTabularRepository<
   }
 
   /**
-   * Deletes all entries with a date column value older than the provided date
-   * @param column - The name of the date column to compare against
-   * @param value - The value to compare against
-   * @param operator - The operator to use for comparison
+   * Deletes all entries matching the specified search criteria.
+   * Supports multiple columns with optional comparison operators.
+   *
+   * @param criteria - Object with column names as keys and values or SearchConditions
    */
-  async deleteSearch(
-    column: keyof Entity,
-    value: Entity[keyof Entity],
-    operator: "=" | "<" | "<=" | ">" | ">=" = "="
-  ): Promise<void> {
-    const entries = this.values.entries();
+  async deleteSearch(criteria: DeleteSearchCriteria<Entity>): Promise<void> {
+    const criteriaKeys = Object.keys(criteria) as Array<keyof Entity>;
+    if (criteriaKeys.length === 0) {
+      return;
+    }
+
+    // Convert to array first to avoid iterator issues when modifying the Map
+    const entries = Array.from(this.values.entries());
 
     const entriesToDelete = entries.filter(([_, entity]) => {
-      const columnValue = entity[column];
-      switch (operator) {
-        case "=":
-          return columnValue === value;
-        case "<":
-          return columnValue !== null && columnValue !== undefined && columnValue < value;
-        case "<=":
-          return columnValue !== null && columnValue !== undefined && columnValue <= value;
-        case ">":
-          return columnValue !== null && columnValue !== undefined && columnValue > value;
-        case ">=":
-          return columnValue !== null && columnValue !== undefined && columnValue >= value;
-        default:
-          return false;
+      // All criteria must match (AND logic)
+      for (const column of criteriaKeys) {
+        const criterion = criteria[column];
+        const columnValue = entity[column];
+
+        if (isSearchCondition(criterion)) {
+          const { value, operator } = criterion;
+          // Cast to any for comparison - TypeScript can't infer the type relationship
+          const v = value as any;
+          const cv = columnValue as any;
+          switch (operator) {
+            case "=":
+              if (cv !== v) return false;
+              break;
+            case "<":
+              if (cv === null || cv === undefined || !(cv < v)) return false;
+              break;
+            case "<=":
+              if (cv === null || cv === undefined || !(cv <= v)) return false;
+              break;
+            case ">":
+              if (cv === null || cv === undefined || !(cv > v)) return false;
+              break;
+            case ">=":
+              if (cv === null || cv === undefined || !(cv >= v)) return false;
+              break;
+            default:
+              return false;
+          }
+        } else {
+          // Direct value means equality
+          if (columnValue !== criterion) return false;
+        }
       }
+      return true;
     });
+
     // Delete the filtered entries and emit events for each
     for (const [id, entity] of entriesToDelete) {
       this.values.delete(id);

@@ -8,7 +8,10 @@ import { Sqlite } from "@workglow/sqlite";
 import { createServiceToken, DataPortSchemaObject, FromSchema, JsonSchema } from "@workglow/util";
 import { BaseSqlTabularRepository } from "./BaseSqlTabularRepository";
 import {
+  DeleteSearchCriteria,
+  isSearchCondition,
   ITabularRepository,
+  SearchOperator,
   TabularChangePayload,
   TabularSubscribeOptions,
   ValueOptionType,
@@ -661,33 +664,62 @@ export class SqliteTabularRepository<
     return stmt.get()?.count || 0;
   }
 
-  protected generateWhereClause(
-    column: keyof Entity,
-    operator: "=" | "<" | "<=" | ">" | ">=" = "="
-  ): string {
-    if (!(column in this.schema.properties)) {
-      throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
+  /**
+   * Builds WHERE clause conditions from delete search criteria.
+   * @param criteria - The search criteria object
+   * @returns Object with whereClause string and params array
+   */
+  protected buildDeleteSearchWhere(criteria: DeleteSearchCriteria<Entity>): {
+    whereClause: string;
+    params: ValueOptionType[];
+  } {
+    const conditions: string[] = [];
+    const params: ValueOptionType[] = [];
+
+    for (const column of Object.keys(criteria) as Array<keyof Entity>) {
+      if (!(column in this.schema.properties)) {
+        throw new Error(`Schema must have a ${String(column)} field to use deleteSearch`);
+      }
+
+      const criterion = criteria[column];
+      let operator: SearchOperator = "=";
+      let value: Entity[keyof Entity];
+
+      if (isSearchCondition(criterion)) {
+        operator = criterion.operator;
+        value = criterion.value as Entity[keyof Entity];
+      } else {
+        value = criterion as Entity[keyof Entity];
+      }
+
+      conditions.push(`\`${String(column)}\` ${operator} ?`);
+      params.push(this.jsToSqlValue(column as string, value));
     }
-    return `${String(column)} ${operator} ?`;
+
+    return {
+      whereClause: conditions.join(" AND "),
+      params,
+    };
   }
 
   /**
-   * Deletes all entries with a date column value older than the provided date
-   * @param column - The name of the date column to compare against
-   * @param value - The value to compare against
-   * @param operator - The operator to use for comparison
+   * Deletes all entries matching the specified search criteria.
+   * Supports multiple columns with optional comparison operators.
+   *
+   * @param criteria - Object with column names as keys and values or SearchConditions
    */
-  async deleteSearch(
-    column: keyof Entity,
-    value: Entity[keyof Entity],
-    operator: "=" | "<" | "<=" | ">" | ">=" = "="
-  ): Promise<void> {
+  async deleteSearch(criteria: DeleteSearchCriteria<Entity>): Promise<void> {
+    const criteriaKeys = Object.keys(criteria) as Array<keyof Entity>;
+    if (criteriaKeys.length === 0) {
+      return;
+    }
+
     const db = this.db;
-    const whereClause = this.generateWhereClause(column, operator);
+    const { whereClause, params } = this.buildDeleteSearchWhere(criteria);
     const stmt = db.prepare(`DELETE FROM \`${this.table}\` WHERE ${whereClause}`);
     // @ts-ignore
-    stmt.run(this.jsToSqlValue(column as string, value));
-    this.events.emit("delete", column as keyof Entity);
+    stmt.run(...params);
+    this.events.emit("delete", criteriaKeys[0] as keyof Entity);
   }
 
   /**

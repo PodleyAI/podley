@@ -399,7 +399,7 @@ export function runGenericTabularRepositoryTests(
         expect((await repository.getAll())?.length).toBe(4);
 
         // Delete entries older than yesterday
-        await repository.deleteSearch("createdAt", yesterday, "<");
+        await repository.deleteSearch({ createdAt: { value: yesterday, operator: "<" } });
 
         // Verify only entries from yesterday and today remain
         const remaining = await repository.getAll();
@@ -451,7 +451,7 @@ export function runGenericTabularRepositoryTests(
         expect((await repository.getAll())?.length).toBe(4);
 
         // Delete entries with updatedAt older than yesterday
-        await repository.deleteSearch("updatedAt", yesterday, "<");
+        await repository.deleteSearch({ updatedAt: { value: yesterday, operator: "<" } });
 
         // Verify only entries with recent updatedAt remain
         const remaining = await repository.getAll();
@@ -463,7 +463,9 @@ export function runGenericTabularRepositoryTests(
         // Verify repository is empty
         expect(await repository.getAll()).toBeUndefined();
 
-        const result = await repository.deleteSearch("createdAt", new Date().toISOString(), "<");
+        const result = await repository.deleteSearch({
+          createdAt: { value: new Date().toISOString(), operator: "<" },
+        });
         expect(result).toBeUndefined();
       });
 
@@ -491,7 +493,7 @@ export function runGenericTabularRepositoryTests(
         });
         // Try to delete entries older than 3 days ago
         const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
-        await repository.deleteSearch("createdAt", threeDaysAgo, "<");
+        await repository.deleteSearch({ createdAt: { value: threeDaysAgo, operator: "<" } });
 
         // Verify all entries still exist
         const remaining = await repository.getAll();
@@ -526,7 +528,7 @@ export function runGenericTabularRepositoryTests(
           updatedAt: now.toISOString(),
         });
 
-        await repository.deleteSearch("value", 200, "<");
+        await repository.deleteSearch({ value: { value: 200, operator: "<" } });
         const remaining = await repository.getAll();
         expect(remaining?.length).toBe(2);
         expect(remaining?.map((item) => item.id).sort()).toEqual(["2", "3"]);
@@ -560,7 +562,7 @@ export function runGenericTabularRepositoryTests(
           updatedAt: now.toISOString(),
         });
 
-        await repository.deleteSearch("value", 200, "<=");
+        await repository.deleteSearch({ value: { value: 200, operator: "<=" } });
         const remaining = await repository.getAll();
         expect(remaining?.length).toBe(1);
         expect(remaining?.[0].id).toBe("3");
@@ -594,7 +596,7 @@ export function runGenericTabularRepositoryTests(
           updatedAt: now.toISOString(),
         });
 
-        await repository.deleteSearch("value", 200, ">");
+        await repository.deleteSearch({ value: { value: 200, operator: ">" } });
         const remaining = await repository.getAll();
         expect(remaining?.length).toBe(2);
         expect(remaining?.map((item) => item.id).sort()).toEqual(["1", "2"]);
@@ -628,7 +630,7 @@ export function runGenericTabularRepositoryTests(
           updatedAt: now.toISOString(),
         });
 
-        await repository.deleteSearch("value", 200, ">=");
+        await repository.deleteSearch({ value: { value: 200, operator: ">=" } });
         const remaining = await repository.getAll();
         expect(remaining?.length).toBe(1);
         expect(remaining?.[0].id).toBe("1");
@@ -662,7 +664,7 @@ export function runGenericTabularRepositoryTests(
           updatedAt: now.toISOString(),
         });
 
-        await repository.deleteSearch("value", 200, "=");
+        await repository.deleteSearch({ value: 200 });
 
         const remaining = await repository.getAll();
         expect(remaining?.length).toBe(1);
@@ -698,11 +700,105 @@ export function runGenericTabularRepositoryTests(
           updatedAt: now.toISOString(),
         });
 
-        await repository.deleteSearch("value", 200, "<");
+        await repository.deleteSearch({ value: { value: 200, operator: "<" } });
 
         const remaining = await repository.getAll();
         expect(remaining?.length).toBe(2);
         expect(remaining?.map((item) => item.id).sort()).toEqual(["2", "3"]);
+      });
+
+      it("should delete entries matching multiple criteria", async () => {
+        const now = new Date();
+
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "laptops",
+          value: 200,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "3",
+          category: "books",
+          subcategory: "fiction",
+          value: 150,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "4",
+          category: "electronics",
+          subcategory: "phones",
+          value: 300,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+
+        // Delete electronics with value >= 200
+        await repository.deleteSearch({
+          category: "electronics",
+          value: { value: 200, operator: ">=" },
+        });
+
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(2);
+        expect(remaining?.map((item) => item.id).sort()).toEqual(["1", "3"]);
+      });
+
+      it("should delete entries matching multiple equality criteria", async () => {
+        const now = new Date();
+
+        await repository.put({
+          id: "1",
+          category: "electronics",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "2",
+          category: "electronics",
+          subcategory: "phones",
+          value: 200,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "3",
+          category: "electronics",
+          subcategory: "laptops",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        await repository.put({
+          id: "4",
+          category: "books",
+          subcategory: "phones",
+          value: 100,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+
+        // Delete electronics phones
+        await repository.deleteSearch({
+          category: "electronics",
+          subcategory: "phones",
+        });
+
+        const remaining = await repository.getAll();
+        expect(remaining?.length).toBe(2);
+        expect(remaining?.map((item) => item.id).sort()).toEqual(["3", "4"]);
       });
     });
 

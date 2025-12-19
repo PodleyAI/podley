@@ -6,7 +6,11 @@
 
 import { createServiceToken, DataPortSchemaObject, FromSchema } from "@workglow/util";
 import { InMemoryTabularRepository } from "./InMemoryTabularRepository";
-import { ITabularRepository, TabularSubscribeOptions } from "./ITabularRepository";
+import {
+  DeleteSearchCriteria,
+  ITabularRepository,
+  TabularSubscribeOptions,
+} from "./ITabularRepository";
 import { TabularRepository } from "./TabularRepository";
 
 export const CACHED_TABULAR_REPOSITORY = createServiceToken<
@@ -263,23 +267,19 @@ export class CachedTabularRepository<
   }
 
   /**
-   * Deletes all entries with a date column value matching the provided criteria
-   * @param column - The name of the date column to compare against
-   * @param value - The value to compare against
-   * @param operator - The operator to use for comparison
+   * Deletes all entries matching the specified search criteria.
+   * Supports multiple columns with optional comparison operators.
+   *
+   * @param criteria - Object with column names as keys and values or SearchConditions
    */
-  async deleteSearch(
-    column: keyof Entity,
-    value: Entity[keyof Entity],
-    operator: "=" | "<" | "<=" | ">" | ">=" = "="
-  ): Promise<void> {
+  async deleteSearch(criteria: DeleteSearchCriteria<Entity>): Promise<void> {
     await this.initializeCache();
 
     // Delete from durable first (source of truth)
-    await this.durable.deleteSearch(column, value, operator);
+    await this.durable.deleteSearch(criteria);
 
     // Then delete from cache
-    await this.cache.deleteSearch(column, value, operator);
+    await this.cache.deleteSearch(criteria);
   }
 
   /**

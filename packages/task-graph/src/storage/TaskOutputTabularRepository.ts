@@ -168,7 +168,7 @@ export class TaskOutputTabularRepository extends TaskOutputRepository {
    */
   async clearOlderThan(olderThanInMs: number): Promise<void> {
     const date = new Date(Date.now() - olderThanInMs).toISOString();
-    await this.tabularRepository.deleteSearch("createdAt", date, "<");
+    await this.tabularRepository.deleteSearch({ createdAt: { value: date, operator: "<" } });
     this.emit("output_pruned");
   }
 }
