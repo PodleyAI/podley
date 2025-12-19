@@ -32,11 +32,11 @@ const outputSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchema;
 
-export type ArrayMergeTaskInput = FromSchema<typeof inputSchema>;
-export type ArrayMergeTaskOutput = FromSchema<typeof outputSchema>;
+export type MergeTaskInput = FromSchema<typeof inputSchema>;
+export type MergeTaskOutput = FromSchema<typeof outputSchema>;
 
 /**
- * ArrayMergeTask takes multiple inputs and merges them into a single array output.
+ * MergeTask takes multiple inputs and merges them into a single array output.
  * Input properties are collected and sorted by key name to create a deterministic output order.
  * Useful for collecting results from parallel branches into a single array.
  *
@@ -50,12 +50,12 @@ export type ArrayMergeTaskOutput = FromSchema<typeof outputSchema>;
  * Input: { input_0: "a", input_1: "b", input_2: "c" }
  * Output: { output: ["a", "b", "c"] }
  */
-export class ArrayMergeTask<
-  Input extends ArrayMergeTaskInput = ArrayMergeTaskInput,
-  Output extends ArrayMergeTaskOutput = ArrayMergeTaskOutput,
+export class MergeTask<
+  Input extends MergeTaskInput = MergeTaskInput,
+  Output extends MergeTaskOutput = MergeTaskOutput,
   Config extends TaskConfig = TaskConfig,
 > extends Task<Input, Output, Config> {
-  public static type = "ArrayMergeTask";
+  public static type = "MergeTask";
   public static category = "Array";
   public static title = "Array Merge";
   public static description = "Merges multiple inputs into a single array output";
@@ -82,17 +82,17 @@ export class ArrayMergeTask<
   }
 }
 
-TaskRegistry.registerTask(ArrayMergeTask);
+TaskRegistry.registerTask(MergeTask);
 
-export const ArrayMerge = (input: ArrayMergeTaskInput, config: TaskConfig = {}) => {
-  const task = new ArrayMergeTask(input, config);
+export const Merge = (input: MergeTaskInput, config: TaskConfig = {}) => {
+  const task = new MergeTask(input, config);
   return task.run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    ArrayMerge: CreateWorkflow<ArrayMergeTaskInput, ArrayMergeTaskOutput, TaskConfig>;
+    Merge: CreateWorkflow<MergeTaskInput, MergeTaskOutput, TaskConfig>;
   }
 }
 
-Workflow.prototype.ArrayMerge = CreateWorkflow(ArrayMergeTask);
+Workflow.prototype.Merge = CreateWorkflow(MergeTask);

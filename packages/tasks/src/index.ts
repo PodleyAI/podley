@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export * from "./task/ArrayMergeTask";
-export * from "./task/ArraySplitTask";
 export * from "./task/DebugLogTask";
 export * from "./task/DelayTask";
 export * from "./task/FetchTask";
 export * from "./task/JavaScriptTask";
 export * from "./task/JsonTask";
 export * from "./task/LambdaTask";
+export * from "./task/MergeTask";
+export * from "./task/SplitTask";

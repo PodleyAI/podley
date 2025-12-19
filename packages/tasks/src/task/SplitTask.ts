@@ -18,17 +18,8 @@ const inputSchema = {
   type: "object",
   properties: {
     input: {
-      oneOf: [
-        {
-          type: "array",
-          title: "Array Input",
-          description: "An array to split into individual outputs",
-        },
-        {
-          title: "Single Input",
-          description: "A single value to output",
-        },
-      ],
+      title: "Single Input",
+      description: "A single value to output",
     },
   },
   additionalProperties: false,
@@ -40,11 +31,11 @@ const outputSchema = {
   additionalProperties: true,
 } as const satisfies DataPortSchema;
 
-export type ArraySplitTaskInput = FromSchema<typeof inputSchema>;
-export type ArraySplitTaskOutput = FromSchema<typeof outputSchema>;
+export type SplitTaskInput = FromSchema<typeof inputSchema>;
+export type SplitTaskOutput = FromSchema<typeof outputSchema>;
 
 /**
- * ArraySplitTask takes an array or single value as input and creates
+ * SplitTask takes an array or single value as input and creates
  * separate outputs for each element. Each output is named by its index (0, 1, 2, etc.).
  * Useful for workflows that need to process array elements in parallel branches.
  *
@@ -58,12 +49,12 @@ export type ArraySplitTaskOutput = FromSchema<typeof outputSchema>;
  * Input: { input: [1, 2, 3] }
  * Output: { output_0: 1, output_1: 2, output_2: 3 }
  */
-export class ArraySplitTask<
-  Input extends ArraySplitTaskInput = ArraySplitTaskInput,
-  Output extends ArraySplitTaskOutput = ArraySplitTaskOutput,
+export class SplitTask<
+  Input extends SplitTaskInput = SplitTaskInput,
+  Output extends SplitTaskOutput = SplitTaskOutput,
   Config extends TaskConfig = TaskConfig,
 > extends Task<Input, Output, Config> {
-  public static type = "ArraySplitTask";
+  public static type = "SplitTask";
   public static category = "Array";
   public static title = "Array Split";
   public static description =
@@ -96,17 +87,17 @@ export class ArraySplitTask<
   }
 }
 
-TaskRegistry.registerTask(ArraySplitTask);
+TaskRegistry.registerTask(SplitTask);
 
-export const ArraySplit = (input: ArraySplitTaskInput, config: TaskConfig = {}) => {
-  const task = new ArraySplitTask(input, config);
+export const Split = (input: SplitTaskInput, config: TaskConfig = {}) => {
+  const task = new SplitTask(input, config);
   return task.run();
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    ArraySplit: CreateWorkflow<ArraySplitTaskInput, ArraySplitTaskOutput, TaskConfig>;
+    Split: CreateWorkflow<SplitTaskInput, SplitTaskOutput, TaskConfig>;
   }
 }
 
-Workflow.prototype.ArraySplit = CreateWorkflow(ArraySplitTask);
+Workflow.prototype.Split = CreateWorkflow(SplitTask);

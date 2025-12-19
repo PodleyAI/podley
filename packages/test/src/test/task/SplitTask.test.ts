@@ -5,12 +5,12 @@
  */
 
 import { TaskGraph, TaskStatus, Workflow } from "@workglow/task-graph";
-import { ArraySplit, ArraySplitTask } from "@workglow/tasks";
+import { Split, SplitTask } from "@workglow/tasks";
 import { describe, expect, test } from "vitest";
 
-describe("ArraySplitTask", () => {
+describe("SplitTask", () => {
   test("splits an array into individual outputs", async () => {
-    const result = await ArraySplit({
+    const result = await Split({
       input: [1, 2, 3, 4, 5],
     });
     expect(result.output_0).toBe(1);
@@ -21,7 +21,7 @@ describe("ArraySplitTask", () => {
   });
 
   test("splits a string array into individual outputs", async () => {
-    const result = await ArraySplit({
+    const result = await Split({
       input: ["apple", "banana", "cherry"],
     });
     expect(result.output_0).toBe("apple");
@@ -30,7 +30,7 @@ describe("ArraySplitTask", () => {
   });
 
   test("handles a single value as a single-element array", async () => {
-    const result = await ArraySplit({
+    const result = await Split({
       input: "single value",
     });
     expect(result.output_0).toBe("single value");
@@ -38,7 +38,7 @@ describe("ArraySplitTask", () => {
   });
 
   test("handles a single number", async () => {
-    const result = await ArraySplit({
+    const result = await Split({
       input: 42,
     });
     expect(result.output_0).toBe(42);
@@ -46,14 +46,14 @@ describe("ArraySplitTask", () => {
   });
 
   test("handles an empty array", async () => {
-    const result = await ArraySplit({
+    const result = await Split({
       input: [],
     });
     expect(Object.keys(result).length).toBe(0);
   });
 
   test("handles array with objects", async () => {
-    const result = await ArraySplit({
+    const result = await Split({
       input: [{ id: 1 }, { id: 2 }, { id: 3 }],
     });
     expect(result.output_0).toEqual({ id: 1 });
@@ -62,7 +62,7 @@ describe("ArraySplitTask", () => {
   });
 
   test("handles array with mixed types", async () => {
-    const result = await ArraySplit({
+    const result = await Split({
       input: [1, "two", { three: 3 }, true, null],
     });
     expect(result.output_0).toBe(1);
@@ -73,7 +73,7 @@ describe("ArraySplitTask", () => {
   });
 
   test("in task mode", async () => {
-    const task = new ArraySplitTask(
+    const task = new SplitTask(
       {
         input: ["a", "b", "c"],
       },
@@ -89,7 +89,7 @@ describe("ArraySplitTask", () => {
   test("in task graph mode", async () => {
     const graph = new TaskGraph();
     graph.addTask(
-      new ArraySplitTask(
+      new SplitTask(
         {
           input: [10, 20, 30],
         },
@@ -104,7 +104,7 @@ describe("ArraySplitTask", () => {
 
   test("in workflow mode", async () => {
     const workflow = new Workflow();
-    workflow.ArraySplit({
+    workflow.Split({
       input: [100, 200, 300],
     });
     const results = await workflow.run();
@@ -114,15 +114,15 @@ describe("ArraySplitTask", () => {
   });
 
   test("static properties are correct", () => {
-    expect(ArraySplitTask.type).toBe("ArraySplitTask");
-    expect(ArraySplitTask.category).toBe("Array");
-    expect(ArraySplitTask.title).toBe("Array Split");
-    expect(ArraySplitTask.description).toContain("Splits an array");
+    expect(SplitTask.type).toBe("SplitTask");
+    expect(SplitTask.category).toBe("Array");
+    expect(SplitTask.title).toBe("Array Split");
+    expect(SplitTask.description).toContain("Splits an array");
   });
 
   test("input and output schemas are defined", () => {
-    const inputSchema = ArraySplitTask.inputSchema();
-    const outputSchema = ArraySplitTask.outputSchema();
+    const inputSchema = SplitTask.inputSchema();
+    const outputSchema = SplitTask.outputSchema();
     expect(inputSchema).toBeDefined();
     expect(outputSchema).toBeDefined();
     expect(inputSchema.additionalProperties).toBe(false);
@@ -130,7 +130,7 @@ describe("ArraySplitTask", () => {
   });
 
   test("handles single-element array", async () => {
-    const result = await ArraySplit({
+    const result = await Split({
       input: [999],
     });
     expect(result.output_0).toBe(999);
@@ -138,7 +138,7 @@ describe("ArraySplitTask", () => {
   });
 
   test("task metadata is preserved", async () => {
-    const task = new ArraySplitTask(
+    const task = new SplitTask(
       { input: [1, 2] },
       {
         id: "test-metadata",
@@ -151,8 +151,12 @@ describe("ArraySplitTask", () => {
   });
 
   test("handles array with nested arrays", async () => {
-    const result = await ArraySplit({
-      input: [[1, 2], [3, 4], [5, 6]],
+    const result = await Split({
+      input: [
+        [1, 2],
+        [3, 4],
+        [5, 6],
+      ],
     });
     expect(result.output_0).toEqual([1, 2]);
     expect(result.output_1).toEqual([3, 4]);
@@ -160,7 +164,7 @@ describe("ArraySplitTask", () => {
   });
 
   test("preserves undefined values in array", async () => {
-    const result = await ArraySplit({
+    const result = await Split({
       input: [1, undefined, 3],
     });
     expect(result.output_0).toBe(1);
@@ -169,7 +173,7 @@ describe("ArraySplitTask", () => {
   });
 
   test("handles boolean single value", async () => {
-    const result = await ArraySplit({
+    const result = await Split({
       input: true,
     });
     expect(result.output_0).toBe(true);

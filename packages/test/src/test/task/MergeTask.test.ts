@@ -5,12 +5,12 @@
  */
 
 import { TaskGraph, TaskStatus, Workflow } from "@workglow/task-graph";
-import { ArrayMerge, ArrayMergeTask } from "@workglow/tasks";
+import { Merge, MergeTask } from "@workglow/tasks";
 import { describe, expect, test } from "vitest";
 
-describe("ArrayMergeTask", () => {
+describe("MergeTask", () => {
   test("merges multiple inputs into a single array", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       input_0: 1,
       input_1: 2,
       input_2: 3,
@@ -21,7 +21,7 @@ describe("ArrayMergeTask", () => {
   });
 
   test("merges string inputs into an array", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       input_0: "apple",
       input_1: "banana",
       input_2: "cherry",
@@ -30,19 +30,19 @@ describe("ArrayMergeTask", () => {
   });
 
   test("handles a single input", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       input_0: "single value",
     });
     expect(result.output).toEqual(["single value"]);
   });
 
   test("handles empty input object", async () => {
-    const result = await ArrayMerge({});
+    const result = await Merge({});
     expect(result.output).toEqual([]);
   });
 
   test("handles object inputs", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       input_0: { id: 1 },
       input_1: { id: 2 },
       input_2: { id: 3 },
@@ -51,7 +51,7 @@ describe("ArrayMergeTask", () => {
   });
 
   test("handles mixed type inputs", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       input_0: 1,
       input_1: "two",
       input_2: { three: 3 },
@@ -62,7 +62,7 @@ describe("ArrayMergeTask", () => {
   });
 
   test("sorts inputs by key name", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       z: "last",
       a: "first",
       m: "middle",
@@ -71,7 +71,7 @@ describe("ArrayMergeTask", () => {
   });
 
   test("handles numeric-like keys in order", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       input_10: "ten",
       input_1: "one",
       input_2: "two",
@@ -81,7 +81,7 @@ describe("ArrayMergeTask", () => {
   });
 
   test("handles keys with underscores and dashes", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       key_3: "c",
       key_1: "a",
       key_2: "b",
@@ -90,7 +90,7 @@ describe("ArrayMergeTask", () => {
   });
 
   test("in task mode", async () => {
-    const task = new ArrayMergeTask(
+    const task = new MergeTask(
       {
         a: "first",
         b: "second",
@@ -106,7 +106,7 @@ describe("ArrayMergeTask", () => {
   test("in task graph mode", async () => {
     const graph = new TaskGraph();
     graph.addTask(
-      new ArrayMergeTask(
+      new MergeTask(
         {
           x: 10,
           y: 20,
@@ -121,7 +121,7 @@ describe("ArrayMergeTask", () => {
 
   test("in workflow mode", async () => {
     const workflow = new Workflow();
-    workflow.ArrayMerge({
+    workflow.Merge({
       first: 100,
       second: 200,
       third: 300,
@@ -131,15 +131,15 @@ describe("ArrayMergeTask", () => {
   });
 
   test("static properties are correct", () => {
-    expect(ArrayMergeTask.type).toBe("ArrayMergeTask");
-    expect(ArrayMergeTask.category).toBe("Array");
-    expect(ArrayMergeTask.title).toBe("Array Merge");
-    expect(ArrayMergeTask.description).toContain("Merges multiple inputs");
+    expect(MergeTask.type).toBe("MergeTask");
+    expect(MergeTask.category).toBe("Array");
+    expect(MergeTask.title).toBe("Array Merge");
+    expect(MergeTask.description).toContain("Merges multiple inputs");
   });
 
   test("input and output schemas are defined", () => {
-    const inputSchema = ArrayMergeTask.inputSchema();
-    const outputSchema = ArrayMergeTask.outputSchema();
+    const inputSchema = MergeTask.inputSchema();
+    const outputSchema = MergeTask.outputSchema();
     expect(inputSchema).toBeDefined();
     expect(outputSchema).toBeDefined();
     expect(inputSchema.additionalProperties).toBe(true);
@@ -147,7 +147,7 @@ describe("ArrayMergeTask", () => {
   });
 
   test("task metadata is preserved", async () => {
-    const task = new ArrayMergeTask(
+    const task = new MergeTask(
       { a: 1, b: 2 },
       {
         id: "test-metadata",
@@ -160,16 +160,20 @@ describe("ArrayMergeTask", () => {
   });
 
   test("handles array inputs (merges arrays as elements)", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       input_0: [1, 2],
       input_1: [3, 4],
       input_2: [5, 6],
     });
-    expect(result.output).toEqual([[1, 2], [3, 4], [5, 6]]);
+    expect(result.output).toEqual([
+      [1, 2],
+      [3, 4],
+      [5, 6],
+    ]);
   });
 
   test("handles undefined values", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       input_0: 1,
       input_1: undefined,
       input_2: 3,
@@ -178,7 +182,7 @@ describe("ArrayMergeTask", () => {
   });
 
   test("handles boolean inputs", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       input_0: true,
       input_1: false,
       input_2: true,
@@ -187,7 +191,7 @@ describe("ArrayMergeTask", () => {
   });
 
   test("preserves input order when keys are sorted", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       c: "third",
       a: "first",
       b: "second",
@@ -197,7 +201,7 @@ describe("ArrayMergeTask", () => {
   });
 
   test("handles keys with special characters", async () => {
-    const result = await ArrayMerge({
+    const result = await Merge({
       "key.1": "one",
       "key.2": "two",
       "key.3": "three",
