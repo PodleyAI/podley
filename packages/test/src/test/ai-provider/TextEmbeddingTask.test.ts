@@ -36,6 +36,41 @@ describe("TextEmbeddingTask with real models", () => {
   beforeEach(() => {});
 
   describe("HuggingFace Transformers", () => {
+    it("should accept an inline model config (no repository lookup required)", async () => {
+      const model: HfTransformersOnnxModelRecord = {
+        model_id: "onnx:Supabase/gte-small:q8",
+        title: "gte-small",
+        description: "Supabase/gte-small quantized to 8bit",
+        tasks: ["TextEmbeddingTask", "DownloadModelTask"],
+        provider: HF_TRANSFORMERS_ONNX,
+        providerConfig: {
+          pipeline: "feature-extraction",
+          modelPath: "Supabase/gte-small",
+          dType: "q8",
+          nativeDimensions: 384,
+        },
+        metadata: {},
+      };
+
+      // Intentionally do NOT add to ModelRepository; tasks should run from inline model config
+      const download = new DownloadModelTask({ model });
+      await download.run();
+
+      const embeddingWorkflow = new Workflow();
+      embeddingWorkflow.TextEmbedding({
+        model,
+        text: "The quick brown fox jumps over the lazy dog",
+      });
+
+      const result = (await embeddingWorkflow.run()) as TextEmbeddingTaskOutput;
+
+      expect(result).toBeDefined();
+      expect(result.vector).toBeDefined();
+      const vector = result.vector as Float32Array | number[];
+      expect(Array.isArray(vector) || vector instanceof Float32Array).toBe(true);
+      expect(vector.length).toBe(384);
+    }, 120000);
+
     it("should generate embeddings with gte-small model", async () => {
       // Register model
       const model: HfTransformersOnnxModelRecord = {

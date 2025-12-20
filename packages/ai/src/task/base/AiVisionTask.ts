@@ -16,7 +16,7 @@ import type { ModelRecord } from "../../model/ModelSchema";
 import { AiTask } from "./AiTask";
 
 export interface AiVisionTaskSingleInput extends TaskInput {
-  model: string;
+  model: string | ModelRecord;
 }
 
 export interface AiVisionArrayTaskInput extends TaskInput {

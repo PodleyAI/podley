@@ -28,8 +28,22 @@ function schemaFormat(schema: JsonSchema): string | undefined {
     : undefined;
 }
 
+function isModelRecord(value: unknown): value is ModelRecord {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "model_id" in value &&
+    "provider" in value &&
+    "tasks" in value
+  );
+}
+
+function modelRefToId(model: string | ModelRecord): string {
+  return typeof model === "string" ? model : model.model_id;
+}
+
 export interface AiSingleTaskInput extends TaskInput {
-  model: string;
+  model: string | ModelRecord;
 }
 
 export interface AiArrayTaskInput extends TaskInput {
@@ -53,9 +67,14 @@ export class AiTask<
    * @param config - Configuration object for the task
    */
   constructor(input: Input = {} as Input, config: Config = {} as Config) {
-    config.name ||= `${new.target.type || new.target.name}${
-      input.model ? " with model " + input.model : ""
-    }`;
+    const modelLabel = Array.isArray(input.model)
+      ? input.model.map((m) => (isModelRecord(m) ? m.model_id : String(m))).join(", ")
+      : input.model
+        ? isModelRecord(input.model)
+          ? input.model.model_id
+          : String(input.model)
+        : "";
+    config.name ||= `${new.target.type || new.target.name}${modelLabel ? " with model " + modelLabel : ""}`;
     super(input, config);
   }
 
@@ -70,11 +89,9 @@ export class AiTask<
    * @returns The AiJobInput to submit to the queue
    */
   protected override async getJobInput(input: Input): Promise<AiJobInput<Input>> {
-    if (typeof input.model !== "string") {
-      console.error("AiTask: Model is not a string", input);
-      throw new TaskConfigurationError(
-        "AiTask: Model is not a string, only create job for single model tasks"
-      );
+    if (Array.isArray(input.model)) {
+      console.error("AiTask: Model is an array", input);
+      throw new TaskConfigurationError("AiTask: Model is an array, only create job for single model tasks");
     }
     const runtype = (this.constructor as any).runtype ?? (this.constructor as any).type;
     const model = await this.getModelForInput(input as AiSingleTaskInput);
@@ -86,7 +103,7 @@ export class AiTask<
     return {
       taskType: runtype,
       aiProvider: model.provider,
-      taskInput: input as Input & { model: string },
+      taskInput: input as Input & { model: string | ModelRecord },
     };
   }
 
@@ -114,25 +131,30 @@ export class AiTask<
   }
 
   protected async getModelForInput(input: AiSingleTaskInput): Promise<ModelRecord> {
-    const modelname = input.model;
-    if (!modelname) throw new TaskConfigurationError("AiTask: No model name found");
-    if (this.modelCache && this.modelCache.name === modelname) {
-      return this.modelCache.model;
+    const modelRef = input.model;
+    if (!modelRef) throw new TaskConfigurationError("AiTask: No model found");
+
+    if (typeof modelRef !== "string") {
+      if (!isModelRecord(modelRef)) {
+        throw new TaskConfigurationError("AiTask: Invalid model config");
+      }
+      return modelRef;
     }
+
+    const modelname = modelRef;
+    if (this.modelCache && this.modelCache.name === modelname) return this.modelCache.model;
+
     const model = await getGlobalModelRepository().findByName(modelname);
-    if (!model) {
-      throw new TaskConfigurationError(`JobQueueTask: No model ${modelname} found`);
-    }
+    if (!model) throw new TaskConfigurationError(`JobQueueTask: No model ${modelname} found`);
+
     this.modelCache = { name: modelname, model };
     return model;
   }
 
   protected override async getDefaultQueueName(input: Input): Promise<string | undefined> {
-    if (typeof input.model === "string") {
-      const model = await this.getModelForInput(input as AiSingleTaskInput);
-      return model.provider;
-    }
-    return undefined;
+    if (Array.isArray(input.model)) return undefined;
+    const model = await this.getModelForInput(input as AiSingleTaskInput);
+    return model.provider;
   }
 
   /**
@@ -155,16 +177,36 @@ export class AiTask<
     ).filter(([key, schema]) => schemaFormat(schema)?.startsWith("model:"));
 
     if (modelTaskProperties.length > 0) {
-      const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
       for (const [key, propSchema] of modelTaskProperties) {
         let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
-        for (const model of requestedModels) {
-          const foundModel = taskModels?.find((m) => m.model_id === model);
-          if (!foundModel) {
-            throw new TaskConfigurationError(
-              `AiTask: Missing model for '${key}' named '${model}' for task '${this.type}'`
-            );
+        const needsRepoLookup = requestedModels.some((m) => typeof m === "string");
+        const taskModels = needsRepoLookup
+          ? await getGlobalModelRepository().findModelsByTask(this.type)
+          : undefined;
+
+        for (const requested of requestedModels) {
+          if (typeof requested === "string") {
+            const foundModel = taskModels?.find((m) => m.model_id === requested);
+            if (!foundModel) {
+              throw new TaskConfigurationError(
+                `AiTask: Missing model for '${key}' named '${requested}' for task '${this.type}'`
+              );
+            }
+            continue;
           }
+
+          if (isModelRecord(requested)) {
+            if (!requested.tasks?.includes(this.type)) {
+              throw new TaskConfigurationError(
+                `AiTask: Model config for '${key}' (${requested.model_id}) is not compatible with task '${this.type}'`
+              );
+            }
+            continue;
+          }
+
+          throw new TaskConfigurationError(
+            `AiTask: Invalid model value for '${key}' (expected string or model config)`
+          );
         }
       }
     }
@@ -176,11 +218,18 @@ export class AiTask<
     if (modelPlainProperties.length > 0) {
       for (const [key, propSchema] of modelPlainProperties) {
         let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
-        for (const model of requestedModels) {
-          const foundModel = await getGlobalModelRepository().findByName(model);
-          if (!foundModel) {
-            throw new TaskConfigurationError(`AiTask: Missing model for "${key}" named "${model}"`);
+        for (const requested of requestedModels) {
+          if (typeof requested === "string") {
+            const foundModel = await getGlobalModelRepository().findByName(requested);
+            if (!foundModel) {
+              throw new TaskConfigurationError(`AiTask: Missing model for "${key}" named "${requested}"`);
+            }
+            continue;
           }
+          if (isModelRecord(requested)) continue;
+          throw new TaskConfigurationError(
+            `AiTask: Invalid model value for "${key}" (expected string or model config)`
+          );
         }
       }
     }
@@ -203,12 +252,22 @@ export class AiTask<
       (inputSchema.properties || {}) as Record<string, JsonSchema>
     ).filter(([key, schema]) => schemaFormat(schema)?.startsWith("model:"));
     if (modelTaskProperties.length > 0) {
-      const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
       for (const [key, propSchema] of modelTaskProperties) {
         let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
-        let usingModels = requestedModels.filter((model: string) =>
-          taskModels?.find((m) => m.model_id === model)
-        );
+        const needsRepoLookup = requestedModels.some((m) => typeof m === "string");
+        const taskModels = needsRepoLookup
+          ? await getGlobalModelRepository().findModelsByTask(this.type)
+          : undefined;
+
+        let usingModels = requestedModels.filter((requested: unknown) => {
+          if (typeof requested === "string") {
+            return Boolean(taskModels?.find((m) => m.model_id === requested));
+          }
+          if (isModelRecord(requested)) {
+            return Boolean(requested.tasks?.includes(this.type));
+          }
+          return false;
+        });
 
         // we alter input to be the models that were found for this kind of input
         usingModels = usingModels.length > 1 ? usingModels : usingModels[0];
