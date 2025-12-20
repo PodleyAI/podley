@@ -9,7 +9,6 @@ import {
   AiJobInput,
   AiProviderRegistry,
   getAiProviderRegistry,
-  getGlobalModelRepository,
   setAiProviderRegistry,
 } from "@workglow/ai";
 import { JobQueueClient, JobQueueServer, RateLimiter } from "@workglow/job-queue";
@@ -157,7 +156,7 @@ describe("AiProviderRegistry", () => {
       });
 
       aiProviderRegistry.registerRunFn(TEST_PROVIDER, "text-generation", mockRunFn);
-      const model = await getGlobalModelRepository().addModel({
+      const model = {
         model_id: "test:test-model:v1",
         title: "test-model",
         description: "test-model",
@@ -168,7 +167,7 @@ describe("AiProviderRegistry", () => {
           modelPath: "test-model",
         },
         metadata: {},
-      });
+      };
 
       const controller = new AbortController();
       const job = new AiJob({
@@ -176,7 +175,7 @@ describe("AiProviderRegistry", () => {
         input: {
           aiProvider: TEST_PROVIDER,
           taskType: "text-generation",
-          taskInput: { text: "test", model: "test:test-model:v1" },
+          taskInput: { text: "test", model },
         },
       });
 

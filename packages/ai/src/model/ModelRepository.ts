@@ -7,7 +7,7 @@
 import { type TabularRepository } from "@workglow/storage";
 import { EventEmitter, EventParameters } from "@workglow/util";
 
-import { ModelPrimaryKeyNames, ModelRecord, ModelSchema } from "./ModelSchema";
+import { ModelPrimaryKeyNames, ModelRecord as ModelRecordSchema, type ModelRecord } from "./ModelSchema";
 
 /**
  * Events that can be emitted by the ModelRepository
@@ -38,11 +38,11 @@ export class ModelRepository {
    * Repository for storing and managing Model instances
    */
   protected readonly modelTabularRepository: TabularRepository<
-    typeof ModelSchema,
+    typeof ModelRecordSchema,
     typeof ModelPrimaryKeyNames
   >;
   constructor(
-    modelTabularRepository: TabularRepository<typeof ModelSchema, typeof ModelPrimaryKeyNames>
+    modelTabularRepository: TabularRepository<typeof ModelRecordSchema, typeof ModelPrimaryKeyNames>
   ) {
     this.modelTabularRepository = modelTabularRepository;
   }

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ModelPrimaryKeyNames, ModelRepository, ModelSchema } from "@workglow/ai";
+import { ModelPrimaryKeyNames, ModelRecord as ModelRecordSchema, ModelRepository } from "@workglow/ai";
 import { PostgresTabularRepository } from "@workglow/storage";
 import { Pool } from "pg";
 
@@ -14,6 +14,6 @@ import { Pool } from "pg";
  */
 export class PostgresModelRepository extends ModelRepository {
   constructor(db: Pool, tableModels: string = "aimodel") {
-    super(new PostgresTabularRepository(db, tableModels, ModelSchema, ModelPrimaryKeyNames));
+    super(new PostgresTabularRepository(db, tableModels, ModelRecordSchema, ModelPrimaryKeyNames));
   }
 }

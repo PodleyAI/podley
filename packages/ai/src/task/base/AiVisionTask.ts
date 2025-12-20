@@ -12,15 +12,15 @@ import { JobQueueTaskConfig, TaskInput, type TaskOutput } from "@workglow/task-g
 import { convertImageDataToUseableForm, ImageDataSupport } from "@workglow/util";
 
 import { AiJobInput } from "../../job/AiJob";
-import type { ModelRecord } from "../../model/ModelSchema";
+import type { ModelConfig } from "../../model/ModelSchema";
 import { AiTask } from "./AiTask";
 
 export interface AiVisionTaskSingleInput extends TaskInput {
-  model: string;
+  model: string | ModelConfig;
 }
 
 export interface AiVisionArrayTaskInput extends TaskInput {
-  model: string | ModelRecord | (string | ModelRecord)[];
+  model: string | ModelConfig | (string | ModelConfig)[];
 }
 
 /**

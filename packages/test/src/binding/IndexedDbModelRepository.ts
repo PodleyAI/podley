@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ModelPrimaryKeyNames, ModelRepository, ModelSchema } from "@workglow/ai";
+import { ModelPrimaryKeyNames, ModelRecord as ModelRecordSchema, ModelRepository } from "@workglow/ai";
 import { IndexedDbTabularRepository } from "@workglow/storage";
 
 /**
@@ -13,6 +13,6 @@ import { IndexedDbTabularRepository } from "@workglow/storage";
  */
 export class IndexedDbModelRepository extends ModelRepository {
   constructor(tableModels: string = "models") {
-    super(new IndexedDbTabularRepository(tableModels, ModelSchema, ModelPrimaryKeyNames));
+    super(new IndexedDbTabularRepository(tableModels, ModelRecordSchema, ModelPrimaryKeyNames));
   }
 }
