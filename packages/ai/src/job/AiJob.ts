@@ -15,6 +15,16 @@ import { TaskInput, TaskOutput } from "@workglow/task-graph";
 import type { ModelRecord } from "../model/ModelSchema";
 import { getAiProviderRegistry } from "../provider/AiProviderRegistry";
 
+function isModelRecord(value: unknown): value is ModelRecord {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "model_id" in value &&
+    "provider" in value &&
+    "tasks" in value
+  );
+}
+
 /**
  * Input data for the AiJob
  */
@@ -63,6 +73,11 @@ export class AiJob<
           );
         }
         const model = input.taskInput.model;
+        if (!isModelRecord(model)) {
+          throw new PermanentJobError(
+            "Invalid job payload: expected taskInput.model to be a ModelRecord (jobs do not accept model name strings)"
+          );
+        }
         if (context.signal?.aborted) {
           throw new AbortSignalJobError("Job aborted");
         }
