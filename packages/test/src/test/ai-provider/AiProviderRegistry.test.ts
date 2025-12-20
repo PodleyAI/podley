@@ -176,7 +176,7 @@ describe("AiProviderRegistry", () => {
         input: {
           aiProvider: TEST_PROVIDER,
           taskType: "text-generation",
-          taskInput: { text: "test", model: "test:test-model:v1" },
+          taskInput: { text: "test", model },
         },
       });
 

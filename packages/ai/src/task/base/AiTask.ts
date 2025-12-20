@@ -96,6 +96,12 @@ export class AiTask<
     const runtype = (this.constructor as any).runtype ?? (this.constructor as any).type;
     const model = await this.getModelForInput(input as AiSingleTaskInput);
 
+    // Ensure job payload is self-contained: replace model string with resolved model config
+    const taskInputWithModelConfig = {
+      ...(input as any),
+      model,
+    } as Input & { model: ModelRecord };
+
     // TODO: if the queue is not memory based, we need to convert to something that can structure clone to the queue
     // const registeredQueue = await this.resolveQueue(input);
     // const queueName = registeredQueue?.server.queueName;
@@ -103,7 +109,7 @@ export class AiTask<
     return {
       taskType: runtype,
       aiProvider: model.provider,
-      taskInput: input as Input & { model: string | ModelRecord },
+      taskInput: taskInputWithModelConfig,
     };
   }
 

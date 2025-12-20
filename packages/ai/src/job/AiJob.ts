@@ -12,7 +12,6 @@ import {
   PermanentJobError,
 } from "@workglow/job-queue";
 import { TaskInput, TaskOutput } from "@workglow/task-graph";
-import { getGlobalModelRepository } from "../model/ModelRegistry";
 import type { ModelRecord } from "../model/ModelSchema";
 import { getAiProviderRegistry } from "../provider/AiProviderRegistry";
 
@@ -22,7 +21,7 @@ import { getAiProviderRegistry } from "../provider/AiProviderRegistry";
 export interface AiJobInput<Input extends TaskInput = TaskInput> {
   taskType: string;
   aiProvider: string;
-  taskInput: Input & { model: string | ModelRecord };
+  taskInput: Input & { model: ModelRecord };
 }
 
 /**
@@ -63,13 +62,7 @@ export class AiJob<
             `No run function found for task type ${input.taskType} and model provider ${input.aiProvider}`
           );
         }
-        const modelRef = input.taskInput.model;
-        const model: ModelRecord | undefined =
-          typeof modelRef === "string" ? await getGlobalModelRepository().findByName(modelRef) : modelRef;
-
-        if (typeof modelRef === "string" && !model) {
-          throw new PermanentJobError(`Model ${modelRef} not found`);
-        }
+        const model = input.taskInput.model;
         if (context.signal?.aborted) {
           throw new AbortSignalJobError("Job aborted");
         }

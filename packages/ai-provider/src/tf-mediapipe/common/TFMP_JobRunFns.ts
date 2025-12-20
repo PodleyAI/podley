@@ -287,7 +287,7 @@ export const TFMP_Download: AiProviderRunFn<
   wasm_reference_counts.set(taskEngine, wasm_reference_counts.get(taskEngine)! - 1);
 
   return {
-    model: input.model,
+    model: model!.model_id,
   };
 };
 
@@ -432,7 +432,7 @@ export const TFMP_Unload: AiProviderRunFn<
   }
 
   return {
-    model: input.model,
+    model: model!.model_id,
   };
 };
 

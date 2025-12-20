@@ -440,7 +440,7 @@ export const HFT_Download: AiProviderRunFn<
   await getPipeline(model!, onProgress, { abort_signal: signal }, 100);
 
   return {
-    model: input.model!,
+    model: model!.model_id,
   };
 };
 
@@ -465,7 +465,7 @@ export const HFT_Unload: AiProviderRunFn<
   onProgress(100, "Model cache deleted");
 
   return {
-    model: input.model!,
+    model: model!.model_id,
   };
 };
 
