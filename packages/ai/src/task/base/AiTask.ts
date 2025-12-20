@@ -16,11 +16,11 @@ import {
   TaskInput,
   type TaskOutput,
 } from "@workglow/task-graph";
-import { type JsonSchema } from "@workglow/util";
+import { makeFingerprint, type JsonSchema } from "@workglow/util";
 
 import { AiJob, AiJobInput } from "../../job/AiJob";
 import { getGlobalModelRepository } from "../../model/ModelRegistry";
-import type { ModelRecord } from "../../model/ModelSchema";
+import type { ModelConfig, ModelRecord } from "../../model/ModelSchema";
 
 function schemaFormat(schema: JsonSchema): string | undefined {
   return typeof schema === "object" && schema !== null && "format" in schema
@@ -38,16 +38,30 @@ function isModelRecord(value: unknown): value is ModelRecord {
   );
 }
 
-function modelRefToId(model: string | ModelRecord): string {
-  return typeof model === "string" ? model : model.model_id;
+function isModelConfig(value: unknown): value is ModelConfig {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "provider" in value &&
+    typeof (value as any).provider === "string" &&
+    "providerConfig" in value &&
+    typeof (value as any).providerConfig === "object" &&
+    (value as any).providerConfig !== null
+  );
+}
+
+function modelRefToLabel(model: string | ModelConfig): string {
+  if (typeof model === "string") return model;
+  if (typeof (model as any).model_id === "string") return (model as any).model_id;
+  return `${model.provider} (inline)`;
 }
 
 export interface AiSingleTaskInput extends TaskInput {
-  model: string | ModelRecord;
+  model: string | ModelConfig;
 }
 
 export interface AiArrayTaskInput extends TaskInput {
-  model: string | ModelRecord | (string | ModelRecord)[];
+  model: string | ModelConfig | (string | ModelConfig)[];
 }
 
 /**
@@ -68,11 +82,9 @@ export class AiTask<
    */
   constructor(input: Input = {} as Input, config: Config = {} as Config) {
     const modelLabel = Array.isArray(input.model)
-      ? input.model.map((m) => (isModelRecord(m) ? m.model_id : String(m))).join(", ")
+      ? input.model.map((m) => modelRefToLabel(m as any)).join(", ")
       : input.model
-        ? isModelRecord(input.model)
-          ? input.model.model_id
-          : String(input.model)
+        ? modelRefToLabel(input.model as any)
         : "";
     config.name ||= `${new.target.type || new.target.name}${modelLabel ? " with model " + modelLabel : ""}`;
     super(input, config);
@@ -141,10 +153,28 @@ export class AiTask<
     if (!modelRef) throw new TaskConfigurationError("AiTask: No model found");
 
     if (typeof modelRef !== "string") {
-      if (!isModelRecord(modelRef)) {
-        throw new TaskConfigurationError("AiTask: Invalid model config");
+      if (!isModelConfig(modelRef)) {
+        throw new TaskConfigurationError("AiTask: Invalid model config (expected provider + providerConfig)");
       }
-      return modelRef;
+
+      const provider = modelRef.provider;
+      const providerConfig = modelRef.providerConfig ?? {};
+      const fingerprint = await makeFingerprint({ provider, providerConfig });
+      const model_id = modelRef.model_id ?? `${provider}:${fingerprint}`;
+      const tasks = modelRef.tasks ?? [];
+      const title = modelRef.title ?? model_id;
+      const description = modelRef.description ?? "";
+      const metadata = modelRef.metadata ?? {};
+
+      return {
+        model_id,
+        tasks,
+        provider,
+        providerConfig,
+        title,
+        description,
+        metadata,
+      };
     }
 
     const modelname = modelRef;
@@ -201,10 +231,11 @@ export class AiTask<
             continue;
           }
 
-          if (isModelRecord(requested)) {
-            if (!requested.tasks?.includes(this.type)) {
+          if (isModelConfig(requested)) {
+            // If tasks are provided, enforce compatibility; otherwise allow (tasks are repository concerns).
+            if (Array.isArray((requested as any).tasks) && !(requested as any).tasks.includes(this.type)) {
               throw new TaskConfigurationError(
-                `AiTask: Model config for '${key}' (${requested.model_id}) is not compatible with task '${this.type}'`
+                `AiTask: Model config for '${key}' is not compatible with task '${this.type}'`
               );
             }
             continue;
@@ -232,7 +263,7 @@ export class AiTask<
             }
             continue;
           }
-          if (isModelRecord(requested)) continue;
+          if (isModelConfig(requested)) continue;
           throw new TaskConfigurationError(
             `AiTask: Invalid model value for "${key}" (expected string or model config)`
           );
@@ -269,8 +300,10 @@ export class AiTask<
           if (typeof requested === "string") {
             return Boolean(taskModels?.find((m) => m.model_id === requested));
           }
-          if (isModelRecord(requested)) {
-            return Boolean(requested.tasks?.includes(this.type));
+          if (isModelConfig(requested)) {
+            // If tasks are absent, keep the model (cannot narrow by compatibility).
+            if (!Array.isArray((requested as any).tasks)) return true;
+            return Boolean((requested as any).tasks.includes(this.type));
           }
           return false;
         });

@@ -8,6 +8,7 @@ import {
   DownloadModelTask,
   getGlobalModelRepository,
   InMemoryModelRepository,
+  ModelConfig,
   setGlobalModelRepository,
   TextEmbeddingTaskOutput,
 } from "@workglow/ai";
@@ -37,11 +38,7 @@ describe("TextEmbeddingTask with real models", () => {
 
   describe("HuggingFace Transformers", () => {
     it("should accept an inline model config (no repository lookup required)", async () => {
-      const model: HfTransformersOnnxModelRecord = {
-        model_id: "onnx:Supabase/gte-small:q8",
-        title: "gte-small",
-        description: "Supabase/gte-small quantized to 8bit",
-        tasks: ["TextEmbeddingTask", "DownloadModelTask"],
+      const model: ModelConfig = {
         provider: HF_TRANSFORMERS_ONNX,
         providerConfig: {
           pipeline: "feature-extraction",
@@ -49,7 +46,6 @@ describe("TextEmbeddingTask with real models", () => {
           dType: "q8",
           nativeDimensions: 384,
         },
-        metadata: {},
       };
 
       // Intentionally do NOT add to ModelRepository; tasks should run from inline model config
