@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ModelPrimaryKeyNames, ModelRecord as ModelRecordSchema, ModelRepository } from "@workglow/ai";
+import { ModelPrimaryKeyNames, ModelRecordSchema, ModelRepository } from "@workglow/ai";
 import { IndexedDbTabularRepository } from "@workglow/storage";
 
 /**

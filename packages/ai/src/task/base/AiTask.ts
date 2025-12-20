@@ -60,7 +60,7 @@ export class AiTask<
           ? undefined
           : typeof input.model === "object" && input.model
             ? input.model.model_id || input.model.title || input.model.provider
-          : undefined;
+            : undefined;
     config.name ||= `${new.target.type || new.target.name}${
       modelLabel ? " with model " + modelLabel : ""
     }`;
@@ -269,7 +269,9 @@ export class AiTask<
       const taskModels = await getGlobalModelRepository().findModelsByTask(this.type);
       for (const [key, propSchema] of modelTaskProperties) {
         let requestedModels = Array.isArray(input[key]) ? input[key] : [input[key]];
-        const requestedStrings = requestedModels.filter((m: unknown): m is string => typeof m === "string");
+        const requestedStrings = requestedModels.filter(
+          (m: unknown): m is string => typeof m === "string"
+        );
         const requestedInline = requestedModels.filter(
           (m: unknown): m is ModelConfig => typeof m === "object" && m !== null
         );

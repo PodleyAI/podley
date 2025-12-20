@@ -77,7 +77,7 @@ import type {
 } from "@workglow/ai";
 import { CallbackStatus } from "./HFT_CallbackStatus";
 import { HTF_CACHE_NAME } from "./HFT_Constants";
-import { HfTransformersOnnxModelRecord } from "./HFT_ModelSchema";
+import { HfTransformersOnnxModelConfig } from "./HFT_ModelSchema";
 
 const pipelines = new Map<string, any>();
 
@@ -93,12 +93,12 @@ export function clearPipelineCache(): void {
  * @param progressScaleMax - Maximum progress value for download phase (100 for download-only, 10 for download+run)
  */
 const getPipeline = async (
-  model: HfTransformersOnnxModelRecord,
+  model: HfTransformersOnnxModelConfig,
   onProgress: (progress: number, message?: string, details?: any) => void,
   options: PretrainedModelOptions = {},
   progressScaleMax: number = 10
 ) => {
-  const cacheKey = `${model.model_id}:${model.providerConfig.pipeline}`;
+  const cacheKey = `${model.providerConfig.modelPath}:${model.providerConfig.pipeline}`;
   if (pipelines.has(cacheKey)) {
     return pipelines.get(cacheKey);
   }
@@ -433,7 +433,7 @@ const getPipeline = async (
 export const HFT_Download: AiProviderRunFn<
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   // Download the model by creating a pipeline
   // Use 100 as progressScaleMax since this is download-only (0-100%)
@@ -451,11 +451,12 @@ export const HFT_Download: AiProviderRunFn<
 export const HFT_Unload: AiProviderRunFn<
   UnloadModelTaskExecuteInput,
   UnloadModelTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   // Delete the pipeline from the in-memory map
-  if (pipelines.has(model!.model_id)) {
-    pipelines.delete(model!.model_id);
+  const cacheKey = `${model!.providerConfig.modelPath}:${model!.providerConfig.pipeline}`;
+  if (pipelines.has(cacheKey)) {
+    pipelines.delete(cacheKey);
     onProgress(50, "Pipeline removed from memory");
   }
 
@@ -515,7 +516,7 @@ const deleteModelCache = async (modelPath: string): Promise<void> => {
 export const HFT_TextEmbedding: AiProviderRunFn<
   TextEmbeddingTaskExecuteInput,
   TextEmbeddingTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const generateEmbedding: FeatureExtractionPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -546,7 +547,7 @@ export const HFT_TextEmbedding: AiProviderRunFn<
 export const HFT_TextClassification: AiProviderRunFn<
   TextClassificationTaskExecuteInput,
   TextClassificationTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   if (model?.providerConfig?.pipeline === "zero-shot-classification") {
     if (
@@ -602,7 +603,7 @@ export const HFT_TextClassification: AiProviderRunFn<
 export const HFT_TextLanguageDetection: AiProviderRunFn<
   TextLanguageDetectionTaskExecuteInput,
   TextLanguageDetectionTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const TextClassification: TextClassificationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -632,7 +633,7 @@ export const HFT_TextLanguageDetection: AiProviderRunFn<
 export const HFT_TextNamedEntityRecognition: AiProviderRunFn<
   TextNamedEntityRecognitionTaskExecuteInput,
   TextNamedEntityRecognitionTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const textNamedEntityRecognition: TokenClassificationPipeline = await getPipeline(
     model!,
@@ -663,7 +664,7 @@ export const HFT_TextNamedEntityRecognition: AiProviderRunFn<
 export const HFT_TextFillMask: AiProviderRunFn<
   TextFillMaskTaskExecuteInput,
   TextFillMaskTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const unmasker: FillMaskPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -691,7 +692,7 @@ export const HFT_TextFillMask: AiProviderRunFn<
 export const HFT_TextGeneration: AiProviderRunFn<
   TextGenerationTaskExecuteInput,
   TextGenerationTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const generateText: TextGenerationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -724,7 +725,7 @@ export const HFT_TextGeneration: AiProviderRunFn<
 export const HFT_TextTranslation: AiProviderRunFn<
   TextTranslationTaskExecuteInput,
   TextTranslationTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const translate: TranslationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -758,7 +759,7 @@ export const HFT_TextTranslation: AiProviderRunFn<
 export const HFT_TextRewriter: AiProviderRunFn<
   TextRewriterTaskExecuteInput,
   TextRewriterTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const generateText: TextGenerationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -798,7 +799,7 @@ export const HFT_TextRewriter: AiProviderRunFn<
 export const HFT_TextSummary: AiProviderRunFn<
   TextSummaryTaskExecuteInput,
   TextSummaryTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const generateSummary: SummarizationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -829,7 +830,7 @@ export const HFT_TextSummary: AiProviderRunFn<
 export const HFT_TextQuestionAnswer: AiProviderRunFn<
   TextQuestionAnswerTaskExecuteInput,
   TextQuestionAnswerTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   // Get the question answering pipeline
   const generateAnswer: QuestionAnsweringPipeline = await getPipeline(model!, onProgress, {
@@ -860,7 +861,7 @@ export const HFT_TextQuestionAnswer: AiProviderRunFn<
 export const HFT_ImageSegmentation: AiProviderRunFn<
   ImageSegmentationTaskExecuteInput,
   ImageSegmentationTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const segmenter: ImageSegmentationPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -893,7 +894,7 @@ export const HFT_ImageSegmentation: AiProviderRunFn<
 export const HFT_ImageToText: AiProviderRunFn<
   ImageToTextTaskExecuteInput,
   ImageToTextTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const captioner: ImageToTextPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -917,7 +918,7 @@ export const HFT_ImageToText: AiProviderRunFn<
 export const HFT_BackgroundRemoval: AiProviderRunFn<
   BackgroundRemovalTaskExecuteInput,
   BackgroundRemovalTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const remover: BackgroundRemovalPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -940,7 +941,7 @@ export const HFT_BackgroundRemoval: AiProviderRunFn<
 export const HFT_ImageEmbedding: AiProviderRunFn<
   ImageEmbeddingTaskExecuteInput,
   ImageEmbeddingTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   const embedder: ImageFeatureExtractionPipeline = await getPipeline(model!, onProgress, {
     abort_signal: signal,
@@ -960,7 +961,7 @@ export const HFT_ImageEmbedding: AiProviderRunFn<
 export const HFT_ImageClassification: AiProviderRunFn<
   ImageClassificationTaskExecuteInput,
   ImageClassificationTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   if (model?.providerConfig?.pipeline === "zero-shot-image-classification") {
     if (!input.categories || !Array.isArray(input.categories) || input.categories.length === 0) {
@@ -1015,7 +1016,7 @@ export const HFT_ImageClassification: AiProviderRunFn<
 export const HFT_ObjectDetection: AiProviderRunFn<
   ObjectDetectionTaskExecuteInput,
   ObjectDetectionTaskExecuteOutput,
-  HfTransformersOnnxModelRecord
+  HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   if (model?.providerConfig?.pipeline === "zero-shot-object-detection") {
     if (!input.labels || !Array.isArray(input.labels) || input.labels.length === 0) {
@@ -1069,7 +1070,6 @@ function imageToBase64(image: RawImage): string {
   // This is a simplified version - actual implementation would use canvas or similar
   return (image as any).toBase64?.() || "";
 }
-
 
 /**
  * Create a text streamer for a given tokenizer and update progress function

@@ -7,7 +7,7 @@
 import { type TabularRepository } from "@workglow/storage";
 import { EventEmitter, EventParameters } from "@workglow/util";
 
-import { ModelPrimaryKeyNames, ModelRecord as ModelRecordSchema, type ModelRecord } from "./ModelSchema";
+import { ModelPrimaryKeyNames, ModelRecord, ModelRecordSchema } from "./ModelSchema";
 
 /**
  * Events that can be emitted by the ModelRepository

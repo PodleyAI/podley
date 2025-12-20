@@ -11,7 +11,7 @@ import {
   FromSchemaOptions,
   JsonSchema,
 } from "@workglow/util";
-import { ModelConfig } from "../../model/ModelSchema";
+import { ModelConfigSchema } from "../../model/ModelSchema";
 
 export type TypedArray =
   | Float64Array
@@ -223,7 +223,7 @@ export function TypeModelByDetail<
     throw new Error("Invalid semantic value");
   }
   return {
-    ...ModelConfig,
+    ...ModelConfigSchema,
     ...options,
     format: semantic,
   } as const satisfies JsonSchema;

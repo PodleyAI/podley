@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ModelRecord as ModelRecordSchema } from "@workglow/ai";
+import { ModelConfigSchema, ModelRecordSchema } from "@workglow/ai";
 import { DataPortSchemaObject, FromSchema } from "@workglow/util";
 import { HF_TRANSFORMERS_ONNX, PipelineUseCase, QuantizationDataType } from "./HFT_Constants";
 
@@ -89,7 +89,7 @@ export const HfTransformersOnnxModelSchema = {
   additionalProperties: true,
 } as const satisfies DataPortSchemaObject;
 
-const ExtendedModelSchema = {
+const ExtendedModelRecordSchema = {
   type: "object",
   properties: {
     ...ModelRecordSchema.properties,
@@ -99,4 +99,16 @@ const ExtendedModelSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 
-export type HfTransformersOnnxModelRecord = FromSchema<typeof ExtendedModelSchema>;
+export type HfTransformersOnnxModelRecord = FromSchema<typeof ExtendedModelRecordSchema>;
+
+const ExtendedModelConfigSchema = {
+  type: "object",
+  properties: {
+    ...ModelConfigSchema.properties,
+    ...HfTransformersOnnxModelSchema.properties,
+  },
+  required: [...ModelConfigSchema.required, ...HfTransformersOnnxModelSchema.required],
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
+
+export type HfTransformersOnnxModelConfig = FromSchema<typeof ExtendedModelConfigSchema>;

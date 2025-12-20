@@ -6,7 +6,7 @@
 
 import { InMemoryTabularRepository } from "@workglow/storage";
 import { ModelRepository } from "./ModelRepository";
-import { ModelPrimaryKeyNames, ModelRecord as ModelRecordSchema } from "./ModelSchema";
+import { ModelPrimaryKeyNames, ModelRecordSchema } from "./ModelSchema";
 
 /**
  * In-memory implementation of a model repository.
