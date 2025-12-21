@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ModelPrimaryKeyNames, ModelRepository, ModelSchema } from "@workglow/ai";
+import { ModelPrimaryKeyNames, ModelRecordSchema, ModelRepository } from "@workglow/ai";
 import { SqliteTabularRepository } from "@workglow/storage";
 
 /**
@@ -13,6 +13,8 @@ import { SqliteTabularRepository } from "@workglow/storage";
  */
 export class SqliteModelRepository extends ModelRepository {
   constructor(dbOrPath: string, tableModels: string = "aimodel") {
-    super(new SqliteTabularRepository(dbOrPath, tableModels, ModelSchema, ModelPrimaryKeyNames));
+    super(
+      new SqliteTabularRepository(dbOrPath, tableModels, ModelRecordSchema, ModelPrimaryKeyNames)
+    );
   }
 }

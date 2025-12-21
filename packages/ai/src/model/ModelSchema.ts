@@ -6,7 +6,14 @@
 
 import { DataPortSchemaObject, FromSchema } from "@workglow/util";
 
-export const ModelSchema = {
+/**
+ * A model configuration suitable for task/job inputs.
+ *
+ * @remarks
+ * This is intentionally less strict than {@link ModelRecord} so jobs can carry only the
+ * provider configuration required to execute, without requiring access to a model repository.
+ */
+export const ModelConfigSchema = {
   type: "object",
   properties: {
     model_id: { type: "string" },
@@ -17,10 +24,24 @@ export const ModelSchema = {
     providerConfig: { type: "object", default: {} },
     metadata: { type: "object", default: {} },
   },
+  required: ["provider", "providerConfig"],
+  format: "model",
+  additionalProperties: false,
+} as const satisfies DataPortSchemaObject;
+
+/**
+ * A fully-specified model record suitable for persistence in a repository.
+ */
+export const ModelRecordSchema = {
+  type: "object",
+  properties: {
+    ...ModelConfigSchema.properties,
+  },
   required: ["model_id", "tasks", "provider", "title", "description", "providerConfig", "metadata"],
   format: "model",
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 
-export type ModelRecord = FromSchema<typeof ModelSchema>;
+export type ModelConfig = FromSchema<typeof ModelConfigSchema>;
+export type ModelRecord = FromSchema<typeof ModelRecordSchema>;
 export const ModelPrimaryKeyNames = ["model_id"] as const;

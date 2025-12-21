@@ -53,7 +53,7 @@ import type {
   UnloadModelTaskExecuteOutput,
 } from "@workglow/ai";
 import { PermanentJobError } from "@workglow/job-queue";
-import { TFMPModelRecord } from "./TFMP_ModelSchema";
+import { TFMPModelConfig } from "./TFMP_ModelSchema";
 
 interface TFMPWasmFileset {
   /** The path to the Wasm loader script. */
@@ -82,7 +82,7 @@ const wasm_reference_counts = new Map<string, number>();
  * Helper function to get a WASM task for a model
  */
 const getWasmTask = async (
-  model: TFMPModelRecord,
+  model: TFMPModelConfig,
   onProgress: (progress: number, message?: string, details?: any) => void,
   signal: AbortSignal
 ): Promise<TFMPWasmFileset> => {
@@ -213,7 +213,7 @@ const optionsMatch = (opts1: Record<string, unknown>, opts2: Record<string, unkn
 };
 
 const getModelTask = async <T extends TaskType>(
-  model: TFMPModelRecord,
+  model: TFMPModelConfig,
   options: Record<string, unknown>,
   onProgress: (progress: number, message?: string, details?: any) => void,
   signal: AbortSignal,
@@ -264,7 +264,7 @@ const getModelTask = async <T extends TaskType>(
 export const TFMP_Download: AiProviderRunFn<
   DownloadModelTaskExecuteInput,
   DownloadModelTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   let task: TextEmbedder | TextClassifier | LanguageDetector;
   switch (model?.providerConfig.pipeline) {
@@ -298,7 +298,7 @@ export const TFMP_Download: AiProviderRunFn<
 export const TFMP_TextEmbedding: AiProviderRunFn<
   TextEmbeddingTaskExecuteInput,
   TextEmbeddingTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const textEmbedder = await getModelTask(model!, {}, onProgress, signal, TextEmbedder);
   const result = textEmbedder.embed(input.text);
@@ -321,7 +321,7 @@ export const TFMP_TextEmbedding: AiProviderRunFn<
 export const TFMP_TextClassification: AiProviderRunFn<
   TextClassificationTaskExecuteInput,
   TextClassificationTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const TextClassification = await getModelTask(
     model!,
@@ -358,7 +358,7 @@ export const TFMP_TextClassification: AiProviderRunFn<
 export const TFMP_TextLanguageDetection: AiProviderRunFn<
   TextLanguageDetectionTaskExecuteInput,
   TextLanguageDetectionTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const maxLanguages = input.maxLanguages === 0 ? -1 : input.maxLanguages;
 
@@ -402,7 +402,7 @@ export const TFMP_TextLanguageDetection: AiProviderRunFn<
 export const TFMP_Unload: AiProviderRunFn<
   UnloadModelTaskExecuteInput,
   UnloadModelTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const modelPath = model!.providerConfig.modelPath;
   onProgress(10, "Unloading model");
@@ -442,7 +442,7 @@ export const TFMP_Unload: AiProviderRunFn<
 export const TFMP_ImageSegmentation: AiProviderRunFn<
   ImageSegmentationTaskExecuteInput,
   ImageSegmentationTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const imageSegmenter = await getModelTask(model!, {}, onProgress, signal, ImageSegmenter);
   const result = imageSegmenter.segment(input.image as any);
@@ -475,7 +475,7 @@ export const TFMP_ImageSegmentation: AiProviderRunFn<
 export const TFMP_ImageEmbedding: AiProviderRunFn<
   ImageEmbeddingTaskExecuteInput,
   ImageEmbeddingTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const imageEmbedder = await getModelTask(model!, {}, onProgress, signal, ImageEmbedder);
   const result = imageEmbedder.embed(input.image as any);
@@ -497,7 +497,7 @@ export const TFMP_ImageEmbedding: AiProviderRunFn<
 export const TFMP_ImageClassification: AiProviderRunFn<
   ImageClassificationTaskExecuteInput,
   ImageClassificationTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const imageClassifier = await getModelTask(
     model!,
@@ -530,7 +530,7 @@ export const TFMP_ImageClassification: AiProviderRunFn<
 export const TFMP_ObjectDetection: AiProviderRunFn<
   ObjectDetectionTaskExecuteInput,
   ObjectDetectionTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const objectDetector = await getModelTask(
     model!,
@@ -569,7 +569,7 @@ export const TFMP_ObjectDetection: AiProviderRunFn<
 export const TFMP_GestureRecognizer: AiProviderRunFn<
   GestureRecognizerTaskExecuteInput,
   GestureRecognizerTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const gestureRecognizer = await getModelTask(
     model!,
@@ -621,7 +621,7 @@ export const TFMP_GestureRecognizer: AiProviderRunFn<
 export const TFMP_HandLandmarker: AiProviderRunFn<
   HandLandmarkerTaskExecuteInput,
   HandLandmarkerTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const handLandmarker = await getModelTask(
     model!,
@@ -669,7 +669,7 @@ export const TFMP_HandLandmarker: AiProviderRunFn<
 export const TFMP_FaceDetector: AiProviderRunFn<
   FaceDetectorTaskExecuteInput,
   FaceDetectorTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const faceDetector = await getModelTask(
     model!,
@@ -714,7 +714,7 @@ export const TFMP_FaceDetector: AiProviderRunFn<
 export const TFMP_FaceLandmarker: AiProviderRunFn<
   FaceLandmarkerTaskExecuteInput,
   FaceLandmarkerTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const faceLandmarker = await getModelTask(
     model!,
@@ -770,7 +770,7 @@ export const TFMP_FaceLandmarker: AiProviderRunFn<
 export const TFMP_PoseLandmarker: AiProviderRunFn<
   PoseLandmarkerTaskExecuteInput,
   PoseLandmarkerTaskExecuteOutput,
-  TFMPModelRecord
+  TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   const poseLandmarker = await getModelTask(
     model!,
