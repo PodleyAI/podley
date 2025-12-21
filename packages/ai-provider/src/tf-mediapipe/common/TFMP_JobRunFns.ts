@@ -266,8 +266,9 @@ export const TFMP_Download: AiProviderRunFn<
   DownloadModelTaskExecuteOutput,
   TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
-  let task: TextEmbedder | TextClassifier | LanguageDetector;
+  let task: TaskInstance;
   switch (model?.providerConfig.pipeline) {
+    // Text pipelines
     case "text-embedder":
       task = await getModelTask(model, {}, onProgress, signal, TextEmbedder);
       break;
@@ -277,8 +278,38 @@ export const TFMP_Download: AiProviderRunFn<
     case "text-language-detector":
       task = await getModelTask(model, {}, onProgress, signal, LanguageDetector);
       break;
+    // Vision pipelines
+    case "vision-image-classifier":
+      task = await getModelTask(model, {}, onProgress, signal, ImageClassifier);
+      break;
+    case "vision-image-embedder":
+      task = await getModelTask(model, {}, onProgress, signal, ImageEmbedder);
+      break;
+    case "vision-image-segmenter":
+      task = await getModelTask(model, {}, onProgress, signal, ImageSegmenter);
+      break;
+    case "vision-object-detector":
+      task = await getModelTask(model, {}, onProgress, signal, ObjectDetector);
+      break;
+    case "vision-face-detector":
+      task = await getModelTask(model, {}, onProgress, signal, FaceDetector);
+      break;
+    case "vision-face-landmarker":
+      task = await getModelTask(model, {}, onProgress, signal, FaceLandmarker);
+      break;
+    case "vision-gesture-recognizer":
+      task = await getModelTask(model, {}, onProgress, signal, GestureRecognizer);
+      break;
+    case "vision-hand-landmarker":
+      task = await getModelTask(model, {}, onProgress, signal, HandLandmarker);
+      break;
+    case "vision-pose-landmarker":
+      task = await getModelTask(model, {}, onProgress, signal, PoseLandmarker);
+      break;
     default:
-      throw new PermanentJobError("Invalid pipeline");
+      throw new PermanentJobError(
+        `Invalid pipeline: ${model?.providerConfig.pipeline}. Supported pipelines: text-embedder, text-classifier, text-language-detector, vision-image-classifier, vision-image-embedder, vision-image-segmenter, vision-object-detector, vision-face-detector, vision-face-landmarker, vision-gesture-recognizer, vision-hand-landmarker, vision-pose-landmarker`
+      );
   }
   onProgress(0.9, "Pipeline loaded");
   task.close(); // Close the task to release the resources, but it is still in the browser cache
