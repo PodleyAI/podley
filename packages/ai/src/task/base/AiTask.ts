@@ -120,7 +120,7 @@ export class AiTask<
       this.modelCache = { name: modelname, model };
       return model;
     }
-    if (typeof modelValue === "object" && modelValue !== null) {
+    if (typeof modelValue === "object") {
       return modelValue;
     }
     throw new TaskConfigurationError("AiTask: Invalid model value");
