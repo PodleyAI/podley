@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ModelRecordSchema } from "@workglow/ai";
+import { ModelConfigSchema, ModelRecordSchema } from "@workglow/ai";
 import { DataPortSchemaObject, FromSchema } from "@workglow/util";
 import { TENSORFLOW_MEDIAPIPE, TextPipelineTask } from "../common/TFMP_Constants";
 
@@ -57,10 +57,10 @@ export type TFMPModelRecord = FromSchema<typeof ExtendedModelRecordSchema>;
 const ExtendedModelConfigSchema = {
   type: "object",
   properties: {
-    ...ModelRecordSchema.properties,
+    ...ModelConfigSchema.properties,
     ...TFMPModelSchema.properties,
   },
-  required: [...ModelRecordSchema.required, ...TFMPModelSchema.required],
+  required: [...ModelConfigSchema.required, ...TFMPModelSchema.required],
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 
