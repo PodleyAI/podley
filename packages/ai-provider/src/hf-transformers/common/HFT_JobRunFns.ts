@@ -89,6 +89,16 @@ export function clearPipelineCache(): void {
 }
 
 /**
+ * Generate a cache key for a pipeline that includes all configuration options
+ * that affect pipeline creation (modelPath, pipeline, dType, device)
+ */
+function getPipelineCacheKey(model: HfTransformersOnnxModelConfig): string {
+  const dType = model.providerConfig.dType || "q8";
+  const device = model.providerConfig.device || "";
+  return `${model.providerConfig.modelPath}:${model.providerConfig.pipeline}:${dType}:${device}`;
+}
+
+/**
  * Helper function to get a pipeline for a model
  * @param progressScaleMax - Maximum progress value for download phase (100 for download-only, 10 for download+run)
  */
@@ -98,7 +108,7 @@ const getPipeline = async (
   options: PretrainedModelOptions = {},
   progressScaleMax: number = 10
 ) => {
-  const cacheKey = `${model.providerConfig.modelPath}:${model.providerConfig.pipeline}`;
+  const cacheKey = getPipelineCacheKey(model);
   if (pipelines.has(cacheKey)) {
     return pipelines.get(cacheKey);
   }
@@ -454,7 +464,7 @@ export const HFT_Unload: AiProviderRunFn<
   HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
   // Delete the pipeline from the in-memory map
-  const cacheKey = `${model!.providerConfig.modelPath}:${model!.providerConfig.pipeline}`;
+  const cacheKey = getPipelineCacheKey(model!);
   if (pipelines.has(cacheKey)) {
     pipelines.delete(cacheKey);
     onProgress(50, "Pipeline removed from memory");

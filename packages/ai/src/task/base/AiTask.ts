@@ -280,7 +280,17 @@ export class AiTask<
           taskModels?.find((m) => m.model_id === model)
         );
 
-        const combined: (string | ModelConfig)[] = [...requestedInline, ...usingStrings];
+        const usingInline = requestedInline.filter((model: ModelConfig) => {
+          const tasks = model.tasks;
+          // Filter out inline configs with explicit incompatible tasks arrays
+          // This matches the validation logic in validateInput
+          if (Array.isArray(tasks) && tasks.length > 0 && !tasks.includes(this.type)) {
+            return false;
+          }
+          return true;
+        });
+
+        const combined: (string | ModelConfig)[] = [...usingInline, ...usingStrings];
 
         // we alter input to be the models that were found for this kind of input
         (input as any)[key] = combined.length > 1 ? combined : combined[0];
