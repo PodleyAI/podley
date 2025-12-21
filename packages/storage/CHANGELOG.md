@@ -1,5 +1,14 @@
 # @workglow/storage
 
+## 0.0.80
+
+### Patch Changes
+
+- Renamed FetchTask to FetchUrlTask, and camelCased the workflow methods, all breaking changes
+- Updated dependencies
+  - @workglow/sqlite@0.0.80
+  - @workglow/util@0.0.80
+
 ## 0.0.79
 
 ### Patch Changes

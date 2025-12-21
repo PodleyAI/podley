@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.80
+
+### Patch Changes
+
+- Renamed FetchTask to FetchUrlTask, and camelCased the workflow methods, all breaking changes
+
 ## 0.0.79
 
 ### Patch Changes

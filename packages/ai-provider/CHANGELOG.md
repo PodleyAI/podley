@@ -1,5 +1,17 @@
 # @workglow/ai-provider
 
+## 0.0.80
+
+### Patch Changes
+
+- Renamed FetchTask to FetchUrlTask, and camelCased the workflow methods, all breaking changes
+- Updated dependencies
+  - @workglow/ai@0.0.80
+  - @workglow/job-queue@0.0.80
+  - @workglow/storage@0.0.80
+  - @workglow/task-graph@0.0.80
+  - @workglow/util@0.0.80
+
 ## 0.0.79
 
 ### Patch Changes
