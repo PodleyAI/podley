@@ -132,9 +132,9 @@ describe("MergeTask", () => {
 
   test("static properties are correct", () => {
     expect(MergeTask.type).toBe("MergeTask");
-    expect(MergeTask.category).toBe("Array");
-    expect(MergeTask.title).toBe("Array Merge");
-    expect(MergeTask.description).toContain("Merges multiple inputs");
+    expect(MergeTask.category).toBe("Utility");
+    expect(MergeTask.title).toBe("Merge");
+    expect(MergeTask.description).toContain("Merges multiple inputs into a single array");
   });
 
   test("input and output schemas are defined", () => {

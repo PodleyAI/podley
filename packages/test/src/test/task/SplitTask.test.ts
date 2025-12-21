@@ -115,8 +115,8 @@ describe("SplitTask", () => {
 
   test("static properties are correct", () => {
     expect(SplitTask.type).toBe("SplitTask");
-    expect(SplitTask.category).toBe("Array");
-    expect(SplitTask.title).toBe("Array Split");
+    expect(SplitTask.category).toBe("Utility");
+    expect(SplitTask.title).toBe("Split");
     expect(SplitTask.description).toContain("Splits an array");
   });
 
