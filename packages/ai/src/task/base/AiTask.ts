@@ -115,7 +115,7 @@ export class AiTask<
       }
       const model = await getGlobalModelRepository().findByName(modelname);
       if (!model) {
-        throw new TaskConfigurationError(`JobQueueTask: No model ${modelname} found`);
+        throw new TaskConfigurationError(`AiTask: No model ${modelname} found`);
       }
       this.modelCache = { name: modelname, model };
       return model;
