@@ -1,5 +1,14 @@
 # @workglow/debug
 
+## 0.0.79
+
+### Patch Changes
+
+- Merge and Split
+- Updated dependencies
+  - @workglow/task-graph@0.0.79
+  - @workglow/util@0.0.79
+
 ## 0.0.78
 
 ### Patch Changes

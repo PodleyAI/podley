@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.79
+
+### Patch Changes
+
+- Merge and Split
+
 ## 0.0.78
 
 ### Patch Changes

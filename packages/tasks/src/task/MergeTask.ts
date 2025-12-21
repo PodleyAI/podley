@@ -56,8 +56,8 @@ export class MergeTask<
   Config extends TaskConfig = TaskConfig,
 > extends Task<Input, Output, Config> {
   public static type = "MergeTask";
-  public static category = "Array";
-  public static title = "Array Merge";
+  public static category = "Utility";
+  public static title = "Merge";
   public static description = "Merges multiple inputs into a single array output";
   static readonly cacheable = true;
 

@@ -1,5 +1,16 @@
 # @workglow/tasks
 
+## 0.0.79
+
+### Patch Changes
+
+- Merge and Split
+- Updated dependencies
+  - @workglow/job-queue@0.0.79
+  - @workglow/storage@0.0.79
+  - @workglow/task-graph@0.0.79
+  - @workglow/util@0.0.79
+
 ## 0.0.78
 
 ### Patch Changes

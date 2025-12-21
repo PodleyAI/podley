@@ -4,14 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  CreateWorkflow,
-  IExecuteContext,
-  Task,
-  TaskConfig,
-  TaskRegistry,
-  Workflow,
-} from "@workglow/task-graph";
+import { CreateWorkflow, Task, TaskConfig, TaskRegistry, Workflow } from "@workglow/task-graph";
 import { DataPortSchema, FromSchema } from "@workglow/util";
 
 const inputSchema = {
@@ -55,11 +48,12 @@ export class SplitTask<
   Config extends TaskConfig = TaskConfig,
 > extends Task<Input, Output, Config> {
   public static type = "SplitTask";
-  public static category = "Array";
-  public static title = "Array Split";
+  public static category = "Utility";
+  public static title = "Split";
   public static description =
     "Splits an array into individual outputs, creating one output per element";
-  static readonly cacheable = true;
+  static hasDynamicSchemas = true;
+  static readonly cacheable = false;
 
   public static inputSchema() {
     return inputSchema;
@@ -69,7 +63,11 @@ export class SplitTask<
     return outputSchema;
   }
 
-  async execute(input: Input, context: IExecuteContext): Promise<Output> {
+  public outputSchema(): DataPortSchema {
+    return outputSchema;
+  }
+
+  async executeReactive(input: Input): Promise<Output> {
     const inputValue = input.input;
     const output = {} as Output;
 
