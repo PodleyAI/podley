@@ -1,7 +1,7 @@
 {
   "name": "@workglow/sqlite",
   "type": "module",
-  "version": "0.0.80",
+  "version": "0.0.81",
   "description": "SQLite database providing cross-platform database support for browser, Node.js, and Bun environments.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -38,24 +38,24 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./dist/bun.js",
-      "types": "./dist/types.d.ts",
-      "node": "./dist/node.js"
+      "bun": "./src/bun.ts",
+      "types": "./src/types.ts",
+      "import": "./dist/node.js"
     },
     "./bun": {
-      "types": "./dist/bun.d.ts",
-      "import": "./dist/bun.js"
+      "types": "./src/bun.ts",
+      "import": "./src/bun.ts"
     },
     "./node": {
       "types": "./dist/node.d.ts",
       "import": "./dist/node.js"
     },
     "./browser": {
-      "types": "./dist/browser.ts",
+      "types": "./dist/browser.d.ts",
       "import": "./dist/browser.js"
     },
     "./react-native": {
-      "types": "./dist/browser.ts",
+      "types": "./dist/browser.d.ts",
       "import": "./dist/browser.js"
     }
   },

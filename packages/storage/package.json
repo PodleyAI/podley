@@ -1,7 +1,7 @@
 {
   "name": "@workglow/storage",
   "type": "module",
-  "version": "0.0.80",
+  "version": "0.0.81",
   "description": "Storage abstraction layer for Workglow, supporting IndexedDB, PostgreSQL, and Supabase with unified interfaces.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -45,9 +45,9 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./dist/bun.js",
-      "types": "./dist/types.d.ts",
-      "node": "./dist/node.js"
+      "bun": "./src/bun.ts",
+      "types": "./src/types.ts",
+      "import": "./dist/node.js"
     }
   },
   "files": [

@@ -1,7 +1,7 @@
 {
   "name": "@workglow/debug",
   "type": "module",
-  "version": "0.0.80",
+  "version": "0.0.81",
   "description": "Debug utilities for Workglow, including Chrome DevTools custom formatters for task graphs and workflows.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -19,9 +19,9 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./dist/browser.js",
-      "types": "./dist/types.d.ts",
-      "node": "./dist/browser.js"
+      "bun": "./src/browser.ts",
+      "types": "./src/types.ts",
+      "import": "./dist/browser.js"
     }
   },
   "files": [

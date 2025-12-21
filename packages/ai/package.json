@@ -1,7 +1,7 @@
 {
   "name": "@workglow/ai",
   "type": "module",
-  "version": "0.0.80",
+  "version": "0.0.81",
   "description": "Core AI functionality for Workglow, including task execution, model management, and AI pipeline orchestration.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -23,9 +23,9 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./dist/bun.js",
-      "types": "./dist/types.d.ts",
-      "node": "./dist/node.js"
+      "bun": "./src/bun.ts",
+      "types": "./src/types.ts",
+      "import": "./dist/node.js"
     }
   },
   "files": [

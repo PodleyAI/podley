@@ -1,5 +1,14 @@
 # @workglow/job-queue
 
+## 0.0.81
+
+### Patch Changes
+
+- Fix mediapipe download for vision models
+- Updated dependencies
+  - @workglow/storage@0.0.81
+  - @workglow/util@0.0.81
+
 ## 0.0.80
 
 ### Patch Changes

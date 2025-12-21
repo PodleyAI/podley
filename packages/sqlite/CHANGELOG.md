@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.81
+
+### Patch Changes
+
+- Fix mediapipe download for vision models
+
 ## 0.0.80
 
 ### Patch Changes

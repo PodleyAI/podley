@@ -1,5 +1,22 @@
 # @workglow/web
 
+## 0.0.81
+
+### Patch Changes
+
+- Fix mediapipe download for vision models
+- Updated dependencies
+  - @workglow/task-graph@0.0.81
+  - @workglow/job-queue@0.0.81
+  - @workglow/storage@0.0.81
+  - @workglow/sqlite@0.0.81
+  - @workglow/debug@0.0.81
+  - @workglow/test@0.0.81
+  - @workglow/util@0.0.81
+  - @workglow/ai@0.0.81
+  - @workglow/ai-provider@0.0.81
+  - @workglow/tasks@0.0.81
+
 ## 0.0.80
 
 ### Patch Changes
