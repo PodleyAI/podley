@@ -12,7 +12,7 @@ import {
 } from "@workglow/ai";
 import { installDevToolsFormatters, isDarkMode } from "@workglow/debug";
 import { Task, TaskGraph, Workflow } from "@workglow/task-graph";
-import { DebugLogTask, DelayTask, FetchTask, JsonTask, LambdaTask } from "@workglow/tasks";
+import { DebugLogTask, DelayTask, FetchUrlTask, JsonTask, LambdaTask } from "@workglow/tasks";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
 import "./main.css";
@@ -37,7 +37,7 @@ installDevToolsFormatters();
   TaskGraph,
   JsonTask,
   DelayTask,
-  FetchTask,
+  FetchUrlTask,
   LambdaTask,
 ].forEach((item) => {
   window[item.name] = item;

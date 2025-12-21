@@ -17,7 +17,13 @@ import {
   JobTaskFailedError,
   setTaskQueueRegistry,
 } from "@workglow/task-graph";
-import { fetch, FetchJob, FetchTask, FetchTaskInput, FetchTaskOutput } from "@workglow/tasks";
+import {
+  fetchUrl,
+  FetchUrlJob,
+  FetchUrlTask,
+  FetchUrlTaskInput,
+  FetchUrlTaskOutput,
+} from "@workglow/tasks";
 import { sleep } from "@workglow/util";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -40,7 +46,7 @@ const mockFetch = mock((input: RequestInfo | URL, init?: RequestInit) =>
 
 const oldFetch = global.fetch;
 
-describe("FetchTask", () => {
+describe("FetchUrlTask", () => {
   beforeAll(() => {
     (global as any).fetch = mockFetch;
   });
@@ -76,7 +82,7 @@ describe("FetchTask", () => {
       "https://api.example.com/3",
     ];
 
-    const results = await Promise.all(urls.map((url) => fetch({ url })));
+    const results = await Promise.all(urls.map((url) => fetchUrl({ url })));
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results).toHaveLength(3);
     const sorted = results
@@ -95,11 +101,11 @@ describe("FetchTask", () => {
     }); // 1 request per 1 minute window
 
     // Create storage
-    const storage = new InMemoryQueueStorage<FetchTaskInput, FetchTaskOutput>(queueName);
+    const storage = new InMemoryQueueStorage<FetchUrlTaskInput, FetchUrlTaskOutput>(queueName);
     await storage.setupDatabase();
 
-    // Create server with the FetchJob class
-    const server = new JobQueueServer<FetchTaskInput, FetchTaskOutput>(FetchJob, {
+    // Create server with the FetchUrlJob class
+    const server = new JobQueueServer<FetchUrlTaskInput, FetchUrlTaskOutput>(FetchUrlJob, {
       storage,
       queueName,
       limiter: rateLimiter,
@@ -107,7 +113,7 @@ describe("FetchTask", () => {
     });
 
     // Create client
-    const client = new JobQueueClient<FetchTaskInput, FetchTaskOutput>({
+    const client = new JobQueueClient<FetchUrlTaskInput, FetchUrlTaskOutput>({
       storage,
       queueName,
     });
@@ -147,7 +153,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const fetchPromise = fetch({
+    const fetchPromise = fetchUrl({
       url: "https://api.example.com/notfound",
     });
 
@@ -165,7 +171,7 @@ describe("FetchTask", () => {
   test("handles network errors", async () => {
     mockFetch.mockImplementation(() => Promise.reject(new Error("Network error")));
 
-    const fetchPromise = fetch({
+    const fetchPromise = fetchUrl({
       url: "https://api.example.com/network-error",
     });
 
@@ -192,7 +198,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const fetchPromise = fetch({
+    const fetchPromise = fetchUrl({
       url: "https://api.example.com/invalid-json",
     });
 
@@ -226,7 +232,7 @@ describe("FetchTask", () => {
       "https://api.example.com/not-found",
     ];
 
-    const results = await Promise.allSettled(urls.map((url) => fetch({ url })));
+    const results = await Promise.allSettled(urls.map((url) => fetchUrl({ url })));
 
     expect(mockFetch.mock.calls.length).toBe(3);
     expect(results[0].status).toBe("fulfilled");
@@ -254,7 +260,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await fetch({
+    const error = await fetchUrl({
       url: "https://api.example.com/rate-limited",
     }).catch((e) => e);
 
@@ -282,7 +288,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await fetch({
+    const error = await fetchUrl({
       url: "https://api.example.com/service-unavailable",
     }).catch((e) => e);
 
@@ -308,7 +314,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await fetch({
+    const error = await fetchUrl({
       url: "https://api.example.com/rate-limited-date",
     }).catch((e) => e);
 
@@ -338,7 +344,7 @@ describe("FetchTask", () => {
     );
 
     const beforeTest = Date.now();
-    const error = await fetch({
+    const error = await fetchUrl({
       url: "https://api.example.com/rate-limited-invalid",
     }).catch((e) => e);
 
@@ -363,7 +369,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await fetch({
+    const error = await fetchUrl({
       url: "https://api.example.com/rate-limited-past",
     }).catch((e) => e);
 
@@ -389,7 +395,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await fetch({
+    const error = await fetchUrl({
       url: "https://api.example.com/rate-limited-rfc1123",
     }).catch((e) => e);
 
@@ -421,7 +427,7 @@ describe("FetchTask", () => {
       )
     );
 
-    const error = await fetch({
+    const error = await fetchUrl({
       url: "https://api.example.com/rate-limited-iso8601",
     }).catch((e) => e);
 
@@ -440,7 +446,7 @@ describe("FetchTask", () => {
 
   describe("dynamic outputSchema", () => {
     test("outputSchema returns all output types when response_type is null", () => {
-      const task = new FetchTask({ url: "https://api.example.com/test", response_type: null });
+      const task = new FetchUrlTask({ url: "https://api.example.com/test", response_type: null });
       const schema = task.outputSchema();
 
       expect(typeof schema).toBe("object");
@@ -454,7 +460,7 @@ describe("FetchTask", () => {
     });
 
     test("outputSchema returns all output types when response_type is undefined", () => {
-      const task = new FetchTask({ url: "https://api.example.com/test" });
+      const task = new FetchUrlTask({ url: "https://api.example.com/test" });
       const schema = task.outputSchema();
 
       expect(typeof schema).toBe("object");
@@ -468,7 +474,7 @@ describe("FetchTask", () => {
     });
 
     test("outputSchema returns only json when response_type is json", () => {
-      const task = new FetchTask({ url: "https://api.example.com/test", response_type: "json" });
+      const task = new FetchUrlTask({ url: "https://api.example.com/test", response_type: "json" });
       const schema = task.outputSchema();
 
       expect(typeof schema).toBe("object");
@@ -482,7 +488,7 @@ describe("FetchTask", () => {
     });
 
     test("outputSchema returns only text when response_type is text", () => {
-      const task = new FetchTask({ url: "https://api.example.com/test", response_type: "text" });
+      const task = new FetchUrlTask({ url: "https://api.example.com/test", response_type: "text" });
       const schema = task.outputSchema();
 
       expect(typeof schema).toBe("object");
@@ -496,7 +502,7 @@ describe("FetchTask", () => {
     });
 
     test("outputSchema returns only blob when response_type is blob", () => {
-      const task = new FetchTask({ url: "https://api.example.com/test", response_type: "blob" });
+      const task = new FetchUrlTask({ url: "https://api.example.com/test", response_type: "blob" });
       const schema = task.outputSchema();
 
       expect(typeof schema).toBe("object");
@@ -510,7 +516,7 @@ describe("FetchTask", () => {
     });
 
     test("outputSchema returns only arraybuffer when response_type is arraybuffer", () => {
-      const task = new FetchTask({
+      const task = new FetchUrlTask({
         url: "https://api.example.com/test",
         response_type: "arraybuffer",
       });
@@ -527,7 +533,7 @@ describe("FetchTask", () => {
     });
 
     test("outputSchema updates when response_type changes", () => {
-      const task = new FetchTask({ url: "https://api.example.com/test", response_type: null });
+      const task = new FetchUrlTask({ url: "https://api.example.com/test", response_type: null });
       let schema = task.outputSchema();
 
       // Initially should have all types
@@ -553,7 +559,7 @@ describe("FetchTask", () => {
       const mockResponse = { data: { success: true } };
       mockFetch.mockImplementation(() => Promise.resolve(createMockResponse(mockResponse)));
 
-      const result = await fetch({
+      const result = await fetchUrl({
         url: "https://api.example.com/test",
         response_type: null,
       });
@@ -564,7 +570,7 @@ describe("FetchTask", () => {
     });
 
     test("emits schemaChange event when response_type changes", () => {
-      const task = new FetchTask({ url: "https://api.example.com/test", response_type: null });
+      const task = new FetchUrlTask({ url: "https://api.example.com/test", response_type: null });
 
       let schemaChangeEmitted = false;
       let receivedInputSchema: any;
@@ -597,7 +603,7 @@ describe("FetchTask", () => {
     });
 
     test("emits schemaChange event when response_type changes from json to text", () => {
-      const task = new FetchTask({ url: "https://api.example.com/test", response_type: "json" });
+      const task = new FetchUrlTask({ url: "https://api.example.com/test", response_type: "json" });
 
       let schemaChangeEmitted = false;
       let receivedOutputSchema: any;
@@ -627,7 +633,7 @@ describe("FetchTask", () => {
     });
 
     test("does not emit schemaChange event when response_type does not change", () => {
-      const task = new FetchTask({ url: "https://api.example.com/test", response_type: "json" });
+      const task = new FetchUrlTask({ url: "https://api.example.com/test", response_type: "json" });
 
       let schemaChangeEmitted = false;
 

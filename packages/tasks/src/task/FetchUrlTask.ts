@@ -95,10 +95,10 @@ const outputSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchema;
 
-export type FetchTaskInput = FromSchema<typeof inputSchema>;
-export type FetchTaskOutput = FromSchema<typeof outputSchema>;
+export type FetchUrlTaskInput = FromSchema<typeof inputSchema>;
+export type FetchUrlTaskOutput = FromSchema<typeof outputSchema>;
 
-export type FetchTaskConfig = JobQueueTaskConfig;
+export type FetchUrlTaskConfig = JobQueueTaskConfig;
 
 async function fetchWithProgress(
   url: string,
@@ -165,14 +165,14 @@ async function fetchWithProgress(
  * Extends the base Job class to provide custom execution functionality
  * through a provided function.
  */
-export class FetchJob<
-  Input extends FetchTaskInput = FetchTaskInput,
-  Output = FetchTaskOutput,
+export class FetchUrlJob<
+  Input extends FetchUrlTaskInput = FetchUrlTaskInput,
+  Output = FetchUrlTaskOutput,
 > extends Job<Input, Output> {
   constructor(config: JobQueueTaskConfig & { input: Input } = { input: {} as Input }) {
     super(config);
   }
-  static readonly type: string = "FetchJob";
+  static readonly type: string = "FetchUrlJob";
   /**
    * Executes the job using the provided function.
    */
@@ -257,14 +257,14 @@ export class FetchJob<
 }
 
 /**
- * FetchTask provides a task for fetching data from a URL.
+ * FetchUrlTask provides a task for fetching data from a URL.
  */
-export class FetchTask<
-  Input extends FetchTaskInput = FetchTaskInput,
-  Output extends FetchTaskOutput = FetchTaskOutput,
-  Config extends FetchTaskConfig = FetchTaskConfig,
+export class FetchUrlTask<
+  Input extends FetchUrlTaskInput = FetchUrlTaskInput,
+  Output extends FetchUrlTaskOutput = FetchUrlTaskOutput,
+  Config extends FetchUrlTaskConfig = FetchUrlTaskConfig,
 > extends JobQueueTask<Input, Output, Config> {
-  public static type = "FetchTask";
+  public static type = "FetchUrlTask";
   public static category = "Input";
   public static title = "Fetch";
   public static description =
@@ -291,11 +291,11 @@ export class FetchTask<
 
     // If response_type is null or undefined, return all output types (static schema)
     if (responseType === null || responseType === undefined) {
-      return (this.constructor as typeof FetchTask).outputSchema();
+      return (this.constructor as typeof FetchUrlTask).outputSchema();
     }
 
     // If response_type is a specific value, return only that output type
-    const staticSchema = (this.constructor as typeof FetchTask).outputSchema();
+    const staticSchema = (this.constructor as typeof FetchUrlTask).outputSchema();
     if (typeof staticSchema === "boolean") {
       return staticSchema;
     }
@@ -334,7 +334,7 @@ export class FetchTask<
       config.queue = false; // change default to false to run directly
     }
     super(input, config);
-    this.jobClass = FetchJob;
+    this.jobClass = FetchUrlJob;
   }
 
   /**
@@ -387,20 +387,20 @@ export class FetchTask<
   }
 }
 
-TaskRegistry.registerTask(FetchTask);
+TaskRegistry.registerTask(FetchUrlTask);
 
-export const fetch = async (
-  input: FetchTaskInput,
-  config: FetchTaskConfig = {}
-): Promise<FetchTaskOutput> => {
-  const result = await new FetchTask(input, config).run();
-  return result as FetchTaskOutput;
+export const fetchUrl = async (
+  input: FetchUrlTaskInput,
+  config: FetchUrlTaskConfig = {}
+): Promise<FetchUrlTaskOutput> => {
+  const result = await new FetchUrlTask(input, config).run();
+  return result as FetchUrlTaskOutput;
 };
 
 declare module "@workglow/task-graph" {
   interface Workflow {
-    fetch: CreateWorkflow<FetchTaskInput, FetchTaskOutput, FetchTaskConfig>;
+    fetch: CreateWorkflow<FetchUrlTaskInput, FetchUrlTaskOutput, FetchUrlTaskConfig>;
   }
 }
 
-Workflow.prototype.fetch = CreateWorkflow(FetchTask);
+Workflow.prototype.fetch = CreateWorkflow(FetchUrlTask);

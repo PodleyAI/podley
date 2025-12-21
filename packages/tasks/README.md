@@ -8,7 +8,7 @@ A package of task types for common operations, workflow management, and data pro
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Available Tasks](#available-tasks)
-  - [FetchTask](#fetchtask)
+  - [FetchUrlTask](#fetchurltask)
   - [DebugLogTask](#debuglogtask)
   - [DelayTask](#delaytask)
   - [JavaScriptTask](#javascripttask)
@@ -41,10 +41,10 @@ const results = await workflow.run();
 ```
 
 ```typescript
-import { FetchTask, DebugLogTask, DelayTask } from "@workglow/tasks";
+import { FetchUrlTask, DebugLogTask, DelayTask } from "@workglow/tasks";
 
 // Simple sequence using Task classes directly
-const fetchResult = await new FetchTask({
+const fetchResult = await new FetchUrlTask({
   url: "https://api.example.com/data",
   response_type: "json",
 }).run();
@@ -72,7 +72,7 @@ await debugLog({
 
 ## Available Tasks
 
-### FetchTask
+### FetchUrlTask
 
 Makes HTTP requests with built-in retry logic, progress tracking, and multiple response types.
 
@@ -97,14 +97,14 @@ Makes HTTP requests with built-in retry logic, progress tracking, and multiple r
 
 ```typescript
 // Simple GET request
-const response = await new FetchTask({
+const response = await new FetchUrlTask({
   url: "https://api.example.com/users",
   response_type: "json",
 }).run();
 console.log(response.json);
 
 // POST request with headers
-const postResponse = await new FetchTask({
+const postResponse = await new FetchUrlTask({
   url: "https://api.example.com/users",
   method: "POST",
   headers: {
@@ -116,7 +116,7 @@ const postResponse = await new FetchTask({
 }).run();
 
 // Text response
-const textResponse = await new FetchTask({
+const textResponse = await new FetchUrlTask({
   url: "https://example.com/readme.txt",
   response_type: "text",
 }).run();
@@ -380,7 +380,7 @@ Creates and executes task graphs from JSON configurations, enabling dynamic work
 ```typescript
 interface JsonTaskItem {
   id: string; // Unique task identifier
-  type: string; // Task type (e.g., "FetchTask", "DelayTask")
+  type: string; // Task type (e.g., "FetchUrlTask", "DelayTask")
   input?: any; // Task input data
   config?: any; // Task configuration
   dependencies?: {
@@ -403,7 +403,7 @@ const linearWorkflow = await new JsonTask({
   json: JSON.stringify([
     {
       id: "fetch-data",
-      type: "FetchTask",
+      type: "FetchUrlTask",
       input: {
         url: "https://api.example.com/users",
         response_type: "json",
@@ -432,7 +432,7 @@ const complexWorkflow = await new JsonTask({
   json: JSON.stringify([
     {
       id: "fetch-users",
-      type: "FetchTask",
+      type: "FetchUrlTask",
       input: {
         url: "https://api.example.com/users",
         response_type: "json",
@@ -440,7 +440,7 @@ const complexWorkflow = await new JsonTask({
     },
     {
       id: "fetch-posts",
-      type: "FetchTask",
+      type: "FetchUrlTask",
       input: {
         url: "https://api.example.com/posts",
         response_type: "json",
@@ -532,7 +532,7 @@ Tasks include comprehensive error handling:
 
 ```typescript
 try {
-  const result = await new FetchTask({
+  const result = await new FetchUrlTask({
     url: "https://api.example.com/data",
     response_type: "json",
     timeout: 5000,
@@ -556,7 +556,7 @@ Tasks support various configuration options:
 
 ```typescript
 // Task-specific configuration
-const fetchTask = new FetchTask(
+const fetchTask = new FetchUrlTask(
   {
     url: "https://api.example.com/data",
   },
