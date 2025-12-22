@@ -1,5 +1,19 @@
 # @workglow/cli
 
+## 0.0.83
+
+### Patch Changes
+
+- Update definitions for secondary key array as const
+- Updated dependencies
+  - @workglow/ai@0.0.83
+  - @workglow/ai-provider@0.0.83
+  - @workglow/storage@0.0.83
+  - @workglow/task-graph@0.0.83
+  - @workglow/tasks@0.0.83
+  - @workglow/test@0.0.83
+  - @workglow/util@0.0.83
+
 ## 0.0.82
 
 ### Patch Changes

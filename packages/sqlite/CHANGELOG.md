@@ -1,5 +1,11 @@
 # @workglow/sqlite
 
+## 0.0.83
+
+### Patch Changes
+
+- Update definitions for secondary key array as const
+
 ## 0.0.82
 
 ### Patch Changes

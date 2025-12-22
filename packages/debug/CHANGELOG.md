@@ -1,5 +1,14 @@
 # @workglow/debug
 
+## 0.0.83
+
+### Patch Changes
+
+- Update definitions for secondary key array as const
+- Updated dependencies
+  - @workglow/task-graph@0.0.83
+  - @workglow/util@0.0.83
+
 ## 0.0.82
 
 ### Patch Changes
