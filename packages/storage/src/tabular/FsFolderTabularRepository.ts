@@ -61,7 +61,7 @@ export class FsFolderTabularRepository<
     folderPath: string,
     schema: Schema,
     primaryKeyNames: PrimaryKeyNames,
-    indexes: Array<keyof Entity | Array<keyof Entity>> = []
+    indexes: readonly (keyof Entity | readonly (keyof Entity)[])[] = []
   ) {
     super(schema, primaryKeyNames, indexes);
     this.folderPath = path.join(folderPath);

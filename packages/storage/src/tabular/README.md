@@ -101,7 +101,7 @@ type UserEntity = FromSchema<typeof userSchema>;
 const repo = new InMemoryTabularRepository<typeof userSchema, typeof primaryKeys, UserEntity>(
   userSchema,
   primaryKeys,
-  ["email", "active"] // Indexes
+  ["email", "active"] as const // Indexes
 );
 
 // Use with type safety
@@ -144,7 +144,7 @@ type UserEntity = z.infer<typeof userSchemaZod>;
 const repo = new InMemoryTabularRepository<typeof userSchema, typeof primaryKeys, UserEntity>(
   userSchema,
   primaryKeys,
-  ["email", "active"] // Indexes
+  ["email", "active"] as const // Indexes
 );
 
 // Use with type safety
@@ -192,7 +192,7 @@ const repo = new SqliteTabularRepository<
   "users", // Table name
   schema,
   primaryKeys,
-  [["name", "active"], "age"] // Indexes
+  [["name", "active"], "age"] as const // Indexes
 );
 ```
 
@@ -218,7 +218,7 @@ const repo = new PostgresTabularRepository<
   "users",
   schema,
   primaryKeys,
-  [["name", "active"], "age"]
+  [["name", "active"], "age"] as const
 );
 ```
 
@@ -238,7 +238,7 @@ const repo = new IndexedDbTabularRepository<
   "user_db", // Database name
   schema,
   primaryKeys,
-  [["name", "active"], "age"]
+  [["name", "active"], "age"] as const
 );
 ```
 

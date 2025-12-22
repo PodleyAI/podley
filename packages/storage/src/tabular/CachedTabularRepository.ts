@@ -52,7 +52,7 @@ export class CachedTabularRepository<
     cache?: ITabularRepository<Schema, PrimaryKeyNames, Entity, PrimaryKey, Value>,
     schema?: Schema,
     primaryKeyNames?: PrimaryKeyNames,
-    indexes?: Array<keyof Entity | Array<keyof Entity>>
+    indexes?: readonly (keyof Entity | readonly (keyof Entity)[])[]
   ) {
     // Extract schema and primaryKeyNames from durable repository if not provided
     // Note: This is a limitation - we can't always extract these from an interface

@@ -61,7 +61,7 @@ export abstract class TabularRepository<
   constructor(
     protected schema: Schema,
     protected primaryKeyNames: PrimaryKeyNames,
-    indexes: Array<keyof Entity | Array<keyof Entity>> = []
+    indexes: readonly (keyof Entity | readonly (keyof Entity)[])[] = []
   ) {
     const primaryKeyProps: Record<string, any> = {};
     const valueProps: Record<string, any> = {};
