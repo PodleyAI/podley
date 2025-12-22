@@ -86,7 +86,7 @@ const getWasmTask = async (
   onProgress: (progress: number, message?: string, details?: any) => void,
   signal: AbortSignal
 ): Promise<TFMPWasmFileset> => {
-  const taskEngine = model.providerConfig.taskEngine;
+  const taskEngine = model.provider_config.taskEngine;
 
   if (wasm_tasks.has(taskEngine)) {
     return wasm_tasks.get(taskEngine)!;
@@ -219,8 +219,8 @@ const getModelTask = async <T extends TaskType>(
   signal: AbortSignal,
   TaskType: T
 ): Promise<InferTaskInstance<T>> => {
-  const modelPath = model.providerConfig.modelPath;
-  const taskEngine = model.providerConfig.taskEngine;
+  const modelPath = model.provider_config.modelPath;
+  const taskEngine = model.provider_config.taskEngine;
 
   // Check if we have a cached instance with matching options
   const cachedTasks = modelTaskCache.get(modelPath);
@@ -267,7 +267,7 @@ export const TFMP_Download: AiProviderRunFn<
   TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
   let task: TaskInstance;
-  switch (model?.providerConfig.pipeline) {
+  switch (model?.provider_config.pipeline) {
     // Text pipelines
     case "text-embedder":
       task = await getModelTask(model, {}, onProgress, signal, TextEmbedder);
@@ -308,13 +308,13 @@ export const TFMP_Download: AiProviderRunFn<
       break;
     default:
       throw new PermanentJobError(
-        `Invalid pipeline: ${model?.providerConfig.pipeline}. Supported pipelines: text-embedder, text-classifier, text-language-detector, vision-image-classifier, vision-image-embedder, vision-image-segmenter, vision-object-detector, vision-face-detector, vision-face-landmarker, vision-gesture-recognizer, vision-hand-landmarker, vision-pose-landmarker`
+        `Invalid pipeline: ${model?.provider_config.pipeline}. Supported pipelines: text-embedder, text-classifier, text-language-detector, vision-image-classifier, vision-image-embedder, vision-image-segmenter, vision-object-detector, vision-face-detector, vision-face-landmarker, vision-gesture-recognizer, vision-hand-landmarker, vision-pose-landmarker`
       );
   }
   onProgress(0.9, "Pipeline loaded");
   task.close(); // Close the task to release the resources, but it is still in the browser cache
   // Decrease reference count for WASM fileset for this cached task since this is a fake model cache entry
-  const taskEngine = model?.providerConfig.taskEngine;
+  const taskEngine = model?.provider_config.taskEngine;
   wasm_reference_counts.set(taskEngine, wasm_reference_counts.get(taskEngine)! - 1);
 
   return {
@@ -435,7 +435,7 @@ export const TFMP_Unload: AiProviderRunFn<
   UnloadModelTaskExecuteOutput,
   TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
-  const modelPath = model!.providerConfig.modelPath;
+  const modelPath = model!.provider_config.modelPath;
   onProgress(10, "Unloading model");
   // Dispose of all cached model tasks if they exist
   if (modelTaskCache.has(modelPath)) {

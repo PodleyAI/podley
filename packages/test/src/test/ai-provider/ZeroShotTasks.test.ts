@@ -69,7 +69,7 @@ describe("Zero-Shot Classification Tasks", () => {
         description: "Zero-shot text classification model",
         tasks: ["TextClassificationTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "zero-shot-classification",
           modelPath: "Xenova/mobilebert-uncased-mnli",
         },
@@ -128,7 +128,7 @@ describe("Zero-Shot Classification Tasks", () => {
         description: "Image classification model",
         tasks: ["ImageClassificationTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "image-classification",
           modelPath: "Xenova/vit-base-patch16-224",
         },
@@ -182,7 +182,7 @@ describe("Zero-Shot Classification Tasks", () => {
         description: "Zero-shot image classification model",
         tasks: ["ImageClassificationTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "zero-shot-image-classification",
           modelPath: "Xenova/clip-vit-base-patch32",
         },
@@ -246,7 +246,7 @@ describe("Zero-Shot Classification Tasks", () => {
         description: "Zero-shot object detection model",
         tasks: ["ObjectDetectionTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "zero-shot-object-detection",
           modelPath: "Xenova/owlvit-base-patch32",
         },

@@ -15,7 +15,7 @@ export const HfTransformersOnnxModelSchema = {
       const: HF_TRANSFORMERS_ONNX,
       description: "Discriminator: ONNX runtime backend.",
     },
-    providerConfig: {
+    provider_config: {
       type: "object",
       description: "ONNX runtime-specific options.",
       properties: {
@@ -86,7 +86,7 @@ export const HfTransformersOnnxModelSchema = {
       },
     },
   },
-  required: ["provider", "providerConfig"],
+  required: ["provider", "provider_config"],
   additionalProperties: true,
 } as const satisfies DataPortSchemaObject;
 

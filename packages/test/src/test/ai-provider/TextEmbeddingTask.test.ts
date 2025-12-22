@@ -44,7 +44,7 @@ describe("TextEmbeddingTask with real models", () => {
         description: "Supabase/gte-small quantized to 8bit",
         tasks: ["TextEmbeddingTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "feature-extraction",
           modelPath: "Supabase/gte-small",
           dType: "q8",
@@ -100,7 +100,7 @@ describe("TextEmbeddingTask with real models", () => {
         description: "Xenova/bge-base-en-v1.5 quantized to 8bit",
         tasks: ["TextEmbeddingTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "feature-extraction",
           modelPath: "Xenova/bge-base-en-v1.5",
           nativeDimensions: 768,

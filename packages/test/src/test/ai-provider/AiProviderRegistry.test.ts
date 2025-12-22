@@ -162,7 +162,7 @@ describe("AiProviderRegistry", () => {
         description: "test-model",
         tasks: ["text-generation"],
         provider: TEST_PROVIDER,
-        providerConfig: {
+        provider_config: {
           pipeline: "text-generation",
           modelPath: "test-model",
         },

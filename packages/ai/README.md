@@ -50,7 +50,7 @@ await modelRepo.addModel({
   title: "LaMini-Flan-T5-783M",
   description: "LaMini-Flan-T5-783M quantized to 8bit",
   provider: HF_TRANSFORMERS_ONNX,
-  providerConfig: {
+  provider_config: {
     pipeline: "text2text-generation",
     modelPath: "Xenova/LaMini-Flan-T5-783M"
 });

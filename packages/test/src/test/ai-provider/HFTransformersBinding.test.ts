@@ -80,7 +80,7 @@ describe("HFTransformersBinding", () => {
         description: "LaMini-Flan-T5-783M",
         tasks: ["TextGenerationTask", "TextRewriterTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "text2text-generation",
           modelPath: "Xenova/LaMini-Flan-T5-783M",
         },
@@ -145,7 +145,7 @@ describe("HFTransformersBinding", () => {
         description: "LaMini-Flan-T5-783M",
         tasks: ["TextGenerationTask", "TextRewriterTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "text2text-generation",
           modelPath: "Xenova/LaMini-Flan-T5-783M",
         },

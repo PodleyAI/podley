@@ -21,10 +21,10 @@ export const ModelConfigSchema = {
     title: { type: "string" },
     description: { type: "string", "x-ui-editor": "textarea" },
     provider: { type: "string" },
-    providerConfig: { type: "object", default: {} },
+    provider_config: { type: "object", default: {} },
     metadata: { type: "object", default: {}, "x-ui-hidden": true },
   },
-  required: ["provider", "providerConfig"],
+  required: ["provider", "provider_config"],
   format: "model",
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
@@ -37,7 +37,15 @@ export const ModelRecordSchema = {
   properties: {
     ...ModelConfigSchema.properties,
   },
-  required: ["model_id", "tasks", "provider", "title", "description", "providerConfig", "metadata"],
+  required: [
+    "model_id",
+    "tasks",
+    "provider",
+    "title",
+    "description",
+    "provider_config",
+    "metadata",
+  ],
   format: "model",
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;

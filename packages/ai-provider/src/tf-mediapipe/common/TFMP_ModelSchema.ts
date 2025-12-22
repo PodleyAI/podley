@@ -15,7 +15,7 @@ export const TFMPModelSchema = {
       const: TENSORFLOW_MEDIAPIPE,
       description: "Discriminator: TensorFlow MediaPipe backend.",
     },
-    providerConfig: {
+    provider_config: {
       type: "object",
       description: "TensorFlow MediaPipe-specific options.",
       properties: {
@@ -38,7 +38,7 @@ export const TFMPModelSchema = {
       additionalProperties: false,
     },
   },
-  required: ["provider", "providerConfig"],
+  required: ["provider", "provider_config"],
   additionalProperties: true,
 } as const satisfies DataPortSchemaObject;
 

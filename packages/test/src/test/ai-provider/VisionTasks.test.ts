@@ -50,7 +50,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         description: "Image segmentation model",
         tasks: ["ImageSegmentationTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "image-segmentation",
           modelPath: "Xenova/segformer-b0-finetuned-ade-512-512",
         },
@@ -83,7 +83,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         description: "Image classification model",
         tasks: ["ImageClassificationTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "image-classification",
           modelPath: "Xenova/vit-base-patch16-224",
         },
@@ -114,7 +114,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         description: "Zero-shot image classification model",
         tasks: ["ImageClassificationTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "zero-shot-image-classification",
           modelPath: "Xenova/clip-vit-base-patch32",
         },
@@ -144,7 +144,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         description: "Image embedding model",
         tasks: ["ImageEmbeddingTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "image-feature-extraction",
           modelPath: "Xenova/clip-vit-base-patch32",
         },
@@ -173,7 +173,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         description: "Object detection model",
         tasks: ["ObjectDetectionTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "object-detection",
           modelPath: "Xenova/detr-resnet-50",
         },
@@ -202,7 +202,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         description: "Image to text model",
         tasks: ["ImageToTextTask"],
         provider: HF_TRANSFORMERS_ONNX,
-        providerConfig: {
+        provider_config: {
           pipeline: "image-to-text",
           modelPath: "Xenova/vit-gpt2-image-captioning",
         },
@@ -248,7 +248,7 @@ describe("Vision Tasks - MediaPipe", () => {
           description: "Image classification model",
           tasks: ["ImageClassificationTask"],
           provider: TENSORFLOW_MEDIAPIPE,
-          providerConfig: {
+          provider_config: {
             taskEngine: "vision",
             pipeline: "vision-image-classifier",
             modelPath:
@@ -283,7 +283,7 @@ describe("Vision Tasks - MediaPipe", () => {
           description: "Image embedding model",
           tasks: ["ImageEmbeddingTask"],
           provider: TENSORFLOW_MEDIAPIPE,
-          providerConfig: {
+          provider_config: {
             taskEngine: "vision",
             pipeline: "vision-image-embedder",
             modelPath:
@@ -318,7 +318,7 @@ describe("Vision Tasks - MediaPipe", () => {
           description: "Object detection model",
           tasks: ["ObjectDetectionTask"],
           provider: TENSORFLOW_MEDIAPIPE,
-          providerConfig: {
+          provider_config: {
             taskEngine: "vision",
             pipeline: "vision-object-detector",
             modelPath:

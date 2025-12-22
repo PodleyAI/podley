@@ -9,7 +9,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/all-MiniLM-L6-v2",
       tasks: ["TextEmbeddingTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "feature-extraction",
         modelPath: "Xenova/all-MiniLM-L6-v2",
         device: "webgpu",
@@ -23,7 +23,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/bge-base-en-v1.5",
       tasks: ["TextEmbeddingTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "feature-extraction",
         modelPath: "Xenova/bge-base-en-v1.5",
         device: "webgpu",
@@ -37,7 +37,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/gte-small",
       tasks: ["TextEmbeddingTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "feature-extraction",
         modelPath: "Xenova/gte-small",
         device: "webgpu",
@@ -51,7 +51,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "onnx-community/bert_uncased_L-2_H-128_A-2-ONNX",
       tasks: ["TextEmbeddingTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "feature-extraction",
         modelPath: "onnx-community/bert_uncased_L-2_H-128_A-2-ONNX",
         device: "webgpu",
@@ -65,7 +65,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/paraphrase-albert-base-v2",
       tasks: ["TextEmbeddingTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "feature-extraction",
         modelPath: "Xenova/paraphrase-albert-base-v2",
         device: "webgpu",
@@ -79,7 +79,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/distilbert-base-uncased-distilled-squad quantized to 8bit",
       tasks: ["TextQuestionAnsweringTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "question-answering",
         modelPath: "Xenova/distilbert-base-uncased-distilled-squad",
       },
@@ -91,7 +91,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/gpt2 quantized to 8bit",
       tasks: ["TextGenerationTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "text-generation",
         modelPath: "Xenova/gpt2",
         dType: "q8",
@@ -104,7 +104,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/Phi-3-mini-4k-instruct quantized to q4f16",
       tasks: ["TextGenerationTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "text-generation",
         modelPath: "Xenova/Phi-3-mini-4k-instruct",
         device: "webgpu",
@@ -119,7 +119,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/distilgpt2 quantized to 8bit",
       tasks: ["TextGenerationTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "text-generation",
         modelPath: "Xenova/distilgpt2",
         dType: "q8",
@@ -132,7 +132,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/LaMini-Flan-T5-783M quantized to 8bit",
       tasks: ["TextGenerationTask", "TextRewriterTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "text2text-generation",
         modelPath: "Xenova/LaMini-Flan-T5-783M",
       },
@@ -144,7 +144,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/LaMini-Flan-T5-783M quantized to 8bit",
       tasks: ["TextGenerationTask", "TextRewriterTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "text2text-generation",
         modelPath: "Xenova/LaMini-Flan-T5-783M",
         dType: "q8",
@@ -157,7 +157,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Falconsai/text_summarization quantized to 8bit",
       tasks: ["TextSummaryTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "summarization",
         modelPath: "Falconsai/text_summarization",
         dType: "q8",
@@ -170,7 +170,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/nllb-200-distilled-600M quantized to 8bit",
       tasks: ["TextTranslationTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "translation",
         modelPath: "Xenova/nllb-200-distilled-600M",
         languageStyle: "FLORES-200",
@@ -184,7 +184,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/m2m100_418M quantized to 8bit",
       tasks: ["TextTranslationTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "translation",
         modelPath: "Xenova/m2m100_418M",
         languageStyle: "ISO-639",
@@ -198,7 +198,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/m2m100_418M quantized to 8bit",
       tasks: ["TextTranslationTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "translation",
         modelPath: "Xenova/m2m100_418M",
         languageStyle: "ISO-639",
@@ -212,7 +212,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Xenova/mbart-large-50-many-to-many-mmt quantized to 8bit",
       tasks: ["TextTranslationTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "translation",
         modelPath: "Xenova/mbart-large-50-many-to-many-mmt",
         languageStyle: "ISO-639_ISO-3166-1-alpha-2",
@@ -227,7 +227,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Vision Transformer for image classification",
       tasks: ["ImageClassificationTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "image-classification",
         modelPath: "Xenova/vit-base-patch16-224",
         dType: "q8",
@@ -240,7 +240,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "CLIP model for zero-shot image classification and embeddings",
       tasks: ["ImageClassificationTask", "ImageEmbeddingTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "zero-shot-image-classification",
         modelPath: "Xenova/clip-vit-base-patch32",
         dType: "q8",
@@ -253,7 +253,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Object detection model",
       tasks: ["ObjectDetectionTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "object-detection",
         modelPath: "Xenova/detr-resnet-50",
         dType: "q8",
@@ -266,7 +266,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Zero-shot object detection model",
       tasks: ["ObjectDetectionTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "zero-shot-object-detection",
         modelPath: "Xenova/owlvit-base-patch32",
         dType: "q8",
@@ -279,7 +279,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Image segmentation model trained on ADE20K dataset",
       tasks: ["ImageSegmentationTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "image-segmentation",
         modelPath: "Xenova/segformer-b0-finetuned-ade-512-512",
         dType: "q8",
@@ -292,7 +292,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Image to text captioning model",
       tasks: ["ImageToTextTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "image-to-text",
         modelPath: "Xenova/vit-gpt2-image-captioning",
         dType: "q8",
@@ -305,7 +305,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Background removal model",
       tasks: ["BackgroundRemovalTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "background-removal",
         modelPath: "Xenova/modnet",
         dType: "q8",
@@ -318,7 +318,7 @@ export async function registerHuggingfaceLocalModels(): Promise<void> {
       description: "Zero-shot text classification model",
       tasks: ["TextClassificationTask"],
       provider: HF_TRANSFORMERS_ONNX,
-      providerConfig: {
+      provider_config: {
         pipeline: "zero-shot-classification",
         modelPath: "Xenova/mobilebert-uncased-mnli",
         dType: "q8",

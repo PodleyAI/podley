@@ -93,9 +93,9 @@ export function clearPipelineCache(): void {
  * that affect pipeline creation (modelPath, pipeline, dType, device)
  */
 function getPipelineCacheKey(model: HfTransformersOnnxModelConfig): string {
-  const dType = model.providerConfig.dType || "q8";
-  const device = model.providerConfig.device || "";
-  return `${model.providerConfig.modelPath}:${model.providerConfig.pipeline}:${dType}:${device}`;
+  const dType = model.provider_config.dType || "q8";
+  const device = model.provider_config.device || "";
+  return `${model.provider_config.modelPath}:${model.provider_config.pipeline}:${dType}:${device}`;
 }
 
 /**
@@ -379,11 +379,11 @@ const getPipeline = async (
   };
 
   const pipelineOptions: PretrainedModelOptions = {
-    dtype: model.providerConfig.dType || "q8",
-    ...(model.providerConfig.useExternalDataFormat
-      ? { use_external_data_format: model.providerConfig.useExternalDataFormat }
+    dtype: model.provider_config.dType || "q8",
+    ...(model.provider_config.useExternalDataFormat
+      ? { use_external_data_format: model.provider_config.useExternalDataFormat }
       : {}),
-    ...(model.providerConfig.device ? { device: model.providerConfig.device as any } : {}),
+    ...(model.provider_config.device ? { device: model.provider_config.device as any } : {}),
     ...options,
     progress_callback: progressCallback,
   };
@@ -393,7 +393,7 @@ const getPipeline = async (
     throw new Error("Operation aborted before pipeline creation");
   }
 
-  const pipelineType = model.providerConfig.pipeline;
+  const pipelineType = model.provider_config.pipeline;
 
   // Wrap the pipeline call with abort handling
   // Create a promise that rejects when aborted
@@ -412,7 +412,7 @@ const getPipeline = async (
   });
 
   // Race between pipeline creation and abort
-  const pipelinePromise = pipeline(pipelineType, model.providerConfig.modelPath, pipelineOptions);
+  const pipelinePromise = pipeline(pipelineType, model.provider_config.modelPath, pipelineOptions);
 
   try {
     const result = await (abortSignal
@@ -471,7 +471,7 @@ export const HFT_Unload: AiProviderRunFn<
   }
 
   // Delete model cache entries
-  const modelPath = model!.providerConfig.modelPath;
+  const modelPath = model!.provider_config.modelPath;
   await deleteModelCache(modelPath);
   onProgress(100, "Model cache deleted");
 
@@ -535,19 +535,19 @@ export const HFT_TextEmbedding: AiProviderRunFn<
   // Generate the embedding
   const hfVector = await generateEmbedding(input.text, {
     pooling: "mean",
-    normalize: model?.providerConfig.normalize,
+    normalize: model?.provider_config.normalize,
     ...(signal ? { abort_signal: signal } : {}),
   });
 
   // Validate the embedding dimensions
-  if (hfVector.size !== model?.providerConfig.nativeDimensions) {
+  if (hfVector.size !== model?.provider_config.nativeDimensions) {
     console.warn(
-      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.providerConfig.nativeDimensions}`,
+      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.provider_config.nativeDimensions}`,
       input,
       hfVector
     );
     throw new Error(
-      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.providerConfig.nativeDimensions}`
+      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.provider_config.nativeDimensions}`
     );
   }
 
@@ -559,7 +559,7 @@ export const HFT_TextClassification: AiProviderRunFn<
   TextClassificationTaskExecuteOutput,
   HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
-  if (model?.providerConfig?.pipeline === "zero-shot-classification") {
+  if (model?.provider_config?.pipeline === "zero-shot-classification") {
     if (
       !input.candidateLabels ||
       !Array.isArray(input.candidateLabels) ||
@@ -973,7 +973,7 @@ export const HFT_ImageClassification: AiProviderRunFn<
   ImageClassificationTaskExecuteOutput,
   HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
-  if (model?.providerConfig?.pipeline === "zero-shot-image-classification") {
+  if (model?.provider_config?.pipeline === "zero-shot-image-classification") {
     if (!input.categories || !Array.isArray(input.categories) || input.categories.length === 0) {
       console.warn("Zero-shot image classification requires categories", input);
       throw new Error("Zero-shot image classification requires categories");
@@ -1028,7 +1028,7 @@ export const HFT_ObjectDetection: AiProviderRunFn<
   ObjectDetectionTaskExecuteOutput,
   HfTransformersOnnxModelConfig
 > = async (input, model, onProgress, signal) => {
-  if (model?.providerConfig?.pipeline === "zero-shot-object-detection") {
+  if (model?.provider_config?.pipeline === "zero-shot-object-detection") {
     if (!input.labels || !Array.isArray(input.labels) || input.labels.length === 0) {
       throw new Error("Zero-shot object detection requires labels");
     }
