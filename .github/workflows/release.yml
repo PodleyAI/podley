@@ -33,7 +33,6 @@ jobs:
         with:
           node-version: 24
           registry-url: "https://registry.npmjs.org/"
-          always-auth: true
 
       - uses: oven-sh/setup-bun@v2
         with:
