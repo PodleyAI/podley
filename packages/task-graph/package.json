@@ -1,7 +1,7 @@
 {
   "name": "@workglow/task-graph",
   "type": "module",
-  "version": "0.0.81",
+  "version": "0.0.82",
   "description": "Task graph management for Workglow, providing DAG construction, execution planning, and workflow orchestration.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -23,8 +23,8 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./src/bun.ts",
-      "types": "./src/types.ts",
+      "bun": "./dist/bun.js",
+      "types": "./dist/types.d.ts",
       "import": "./dist/node.js"
     }
   },

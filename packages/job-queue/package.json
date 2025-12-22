@@ -1,7 +1,7 @@
 {
   "name": "@workglow/job-queue",
   "type": "module",
-  "version": "0.0.81",
+  "version": "0.0.82",
   "description": "Job queue management for Workglow, handling task scheduling, execution, and distributed processing.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -23,8 +23,8 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./src/bun.ts",
-      "types": "./src/types.ts",
+      "bun": "./dist/bun.js",
+      "types": "./dist/types.d.ts",
       "import": "./dist/node.js"
     }
   },

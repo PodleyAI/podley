@@ -1,7 +1,7 @@
 {
   "name": "@workglow/test",
   "type": "module",
-  "version": "0.0.81",
+  "version": "0.0.82",
   "description": "Testing utilities and test suites for Workglow packages, providing comprehensive testing infrastructure.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -23,8 +23,8 @@
     ".": {
       "react-native": "./dist/browser.js",
       "browser": "./dist/browser.js",
-      "bun": "./src/bun.ts",
-      "types": "./src/types.ts",
+      "bun": "./dist/bun.js",
+      "types": "./dist/types.d.ts",
       "import": "./dist/node.js"
     }
   },

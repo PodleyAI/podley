@@ -42,7 +42,7 @@ export const TFMPModelSchema = {
   additionalProperties: true,
 } as const satisfies DataPortSchemaObject;
 
-const ExtendedModelRecordSchema = {
+export const TFMPModelRecordSchema = {
   type: "object",
   properties: {
     ...ModelRecordSchema.properties,
@@ -52,9 +52,9 @@ const ExtendedModelRecordSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 
-export type TFMPModelRecord = FromSchema<typeof ExtendedModelRecordSchema>;
+export type TFMPModelRecord = FromSchema<typeof TFMPModelRecordSchema>;
 
-const ExtendedModelConfigSchema = {
+export const TFMPModelConfigSchema = {
   type: "object",
   properties: {
     ...ModelConfigSchema.properties,
@@ -64,4 +64,4 @@ const ExtendedModelConfigSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 
-export type TFMPModelConfig = FromSchema<typeof ExtendedModelConfigSchema>;
+export type TFMPModelConfig = FromSchema<typeof TFMPModelConfigSchema>;

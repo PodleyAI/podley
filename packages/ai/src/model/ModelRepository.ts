@@ -105,6 +105,19 @@ export class ModelRepository {
   }
 
   /**
+   * Removes a model from the repository
+   * @param model_id - The model_id of the model to remove
+   */
+  async removeModel(model_id: string): Promise<void> {
+    const model = await this.modelTabularRepository.get({ model_id });
+    if (!model) {
+      throw new Error(`Model with id "${model_id}" not found`);
+    }
+    await this.modelTabularRepository.delete({ model_id });
+    this.events.emit("model_removed", model);
+  }
+
+  /**
    * Finds all models associated with a specific task
    * @param task - The task identifier to search for
    * @returns Promise resolving to an array of associated models, or undefined if none found

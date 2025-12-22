@@ -1,5 +1,11 @@
 # @workglow/util
 
+## 0.0.82
+
+### Patch Changes
+
+- Small updates for model definitions and repo
+
 ## 0.0.81
 
 ### Patch Changes

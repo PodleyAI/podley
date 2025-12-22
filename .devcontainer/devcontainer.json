@@ -1,5 +1,5 @@
 {
-  "name": "Workglow",
+  "name": "Workglow-libs",
   "build": { "dockerfile": "./Dockerfile" },
 
   // Configure tool-specific properties

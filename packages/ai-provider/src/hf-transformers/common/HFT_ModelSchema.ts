@@ -33,7 +33,7 @@ export const HfTransformersOnnxModelSchema = {
           type: "string",
           enum: Object.values(QuantizationDataType),
           description: "Data type for the ONNX model.",
-          default: "float32",
+          default: "auto",
         },
         device: {
           type: "string",
@@ -45,6 +45,7 @@ export const HfTransformersOnnxModelSchema = {
           type: "array",
           items: { type: "string" },
           description: "Raw ONNX Runtime execution provider identifiers.",
+          "x-ui-hidden": true,
         },
         intraOpNumThreads: {
           type: "integer",
@@ -89,7 +90,7 @@ export const HfTransformersOnnxModelSchema = {
   additionalProperties: true,
 } as const satisfies DataPortSchemaObject;
 
-const ExtendedModelRecordSchema = {
+export const HfTransformersOnnxModelRecordSchema = {
   type: "object",
   properties: {
     ...ModelRecordSchema.properties,
@@ -99,9 +100,9 @@ const ExtendedModelRecordSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 
-export type HfTransformersOnnxModelRecord = FromSchema<typeof ExtendedModelRecordSchema>;
+export type HfTransformersOnnxModelRecord = FromSchema<typeof HfTransformersOnnxModelRecordSchema>;
 
-const ExtendedModelConfigSchema = {
+export const HfTransformersOnnxModelConfigSchema = {
   type: "object",
   properties: {
     ...ModelConfigSchema.properties,
@@ -111,4 +112,4 @@ const ExtendedModelConfigSchema = {
   additionalProperties: false,
 } as const satisfies DataPortSchemaObject;
 
-export type HfTransformersOnnxModelConfig = FromSchema<typeof ExtendedModelConfigSchema>;
+export type HfTransformersOnnxModelConfig = FromSchema<typeof HfTransformersOnnxModelConfigSchema>;

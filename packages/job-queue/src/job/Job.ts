@@ -131,7 +131,7 @@ export class Job<Input, Output> {
     throw new JobError("Method not implemented.");
   }
 
-  private progressListeners: Set<JobProgressListener> = new Set();
+  public progressListeners: Set<JobProgressListener> = new Set();
 
   /**
    * Update the job's progress (for direct execution without a worker)

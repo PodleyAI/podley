@@ -1,7 +1,7 @@
 {
   "name": "@workglow/ai-provider",
   "type": "module",
-  "version": "0.0.81",
+  "version": "0.0.82",
   "description": "AI provider integrations for Workglow, supporting OpenAI, Hugging Face Transformers, MediaPipe, and GGML models.",
   "scripts": {
     "watch": "concurrently -c 'auto' 'bun:watch-*'",
@@ -17,8 +17,8 @@
   },
   "exports": {
     ".": {
-      "bun": "./src/index.ts",
-      "types": "./src/types.ts",
+      "bun": "./dist/index.js",
+      "types": "./dist/types.d.ts",
       "import": "./dist/index.js"
     }
   },
