@@ -1,5 +1,11 @@
 # @workglow/util
 
+## 0.0.84
+
+### Patch Changes
+
+- Fix model lookup for named entity rec
+
 ## 0.0.83
 
 ### Patch Changes

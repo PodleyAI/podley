@@ -1,5 +1,17 @@
 # @workglow/ai-provider
 
+## 0.0.84
+
+### Patch Changes
+
+- Fix model lookup for named entity rec
+- Updated dependencies
+  - @workglow/ai@0.0.84
+  - @workglow/job-queue@0.0.84
+  - @workglow/storage@0.0.84
+  - @workglow/task-graph@0.0.84
+  - @workglow/util@0.0.84
+
 ## 0.0.83
 
 ### Patch Changes

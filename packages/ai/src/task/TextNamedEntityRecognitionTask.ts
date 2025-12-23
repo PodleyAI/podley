@@ -9,7 +9,7 @@ import { DataPortSchema, FromSchema } from "@workglow/util";
 import { AiTask } from "./base/AiTask";
 import { DeReplicateFromSchema, TypeModel, TypeReplicateArray } from "./base/AiTaskSchemas";
 
-const modelSchema = TypeReplicateArray(TypeModel("model:NamedEntityRecognitionTask"));
+const modelSchema = TypeReplicateArray(TypeModel("model:TextNamedEntityRecognitionTask"));
 
 export const TextNamedEntityRecognitionInputSchema = {
   type: "object",
