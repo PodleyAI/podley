@@ -71,6 +71,10 @@ export const HfTransformersOnnxModelSchema = {
           type: "string",
           description: "The language style of the model.",
         },
+        mrl: {
+          type: "boolean",
+          description: "Whether the model uses matryoshka.",
+        },
       },
       required: ["modelPath", "pipeline"],
       additionalProperties: false,
