@@ -164,7 +164,7 @@ describe("AiProviderRegistry", () => {
         provider: TEST_PROVIDER,
         provider_config: {
           pipeline: "text-generation",
-          modelPath: "test-model",
+          model_path: "test-model",
         },
         metadata: {},
       };

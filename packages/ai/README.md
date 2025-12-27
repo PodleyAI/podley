@@ -52,7 +52,7 @@ await modelRepo.addModel({
   provider: HF_TRANSFORMERS_ONNX,
   provider_config: {
     pipeline: "text2text-generation",
-    modelPath: "Xenova/LaMini-Flan-T5-783M"
+    model_path: "Xenova/LaMini-Flan-T5-783M"
 });
 
 // 3. Register provider functions (inline, same thread)

@@ -82,7 +82,7 @@ describe("HFTransformersBinding", () => {
         provider: HF_TRANSFORMERS_ONNX,
         provider_config: {
           pipeline: "text2text-generation",
-          modelPath: "Xenova/LaMini-Flan-T5-783M",
+          model_path: "Xenova/LaMini-Flan-T5-783M",
         },
         metadata: {},
       };
@@ -147,7 +147,7 @@ describe("HFTransformersBinding", () => {
         provider: HF_TRANSFORMERS_ONNX,
         provider_config: {
           pipeline: "text2text-generation",
-          modelPath: "Xenova/LaMini-Flan-T5-783M",
+          model_path: "Xenova/LaMini-Flan-T5-783M",
         },
         metadata: {},
       };

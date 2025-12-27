@@ -86,10 +86,10 @@ const getWasmTask = async (
   onProgress: (progress: number, message?: string, details?: any) => void,
   signal: AbortSignal
 ): Promise<TFMPWasmFileset> => {
-  const taskEngine = model.provider_config.taskEngine;
+  const task_engine = model.provider_config.task_engine;
 
-  if (wasm_tasks.has(taskEngine)) {
-    return wasm_tasks.get(taskEngine)!;
+  if (wasm_tasks.has(task_engine)) {
+    return wasm_tasks.get(task_engine)!;
   }
 
   if (signal.aborted) {
@@ -100,7 +100,7 @@ const getWasmTask = async (
 
   let wasmFileset: TFMPWasmFileset;
 
-  switch (taskEngine) {
+  switch (task_engine) {
     case "text":
       wasmFileset = await FilesetResolver.forTextTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-text@latest/wasm"
@@ -125,7 +125,7 @@ const getWasmTask = async (
       throw new PermanentJobError("Invalid task engine");
   }
 
-  wasm_tasks.set(taskEngine, wasmFileset);
+  wasm_tasks.set(task_engine, wasmFileset);
   return wasmFileset;
 };
 
@@ -160,7 +160,7 @@ type TaskInstance =
 interface CachedModelTask {
   readonly task: TaskInstance;
   readonly options: Record<string, unknown>;
-  readonly taskEngine: string;
+  readonly task_engine: string;
 }
 
 const modelTaskCache = new Map<string, CachedModelTask[]>();
@@ -219,11 +219,11 @@ const getModelTask = async <T extends TaskType>(
   signal: AbortSignal,
   TaskType: T
 ): Promise<InferTaskInstance<T>> => {
-  const modelPath = model.provider_config.modelPath;
-  const taskEngine = model.provider_config.taskEngine;
+  const model_path = model.provider_config.model_path;
+  const task_engine = model.provider_config.task_engine;
 
   // Check if we have a cached instance with matching options
-  const cachedTasks = modelTaskCache.get(modelPath);
+  const cachedTasks = modelTaskCache.get(model_path);
   if (cachedTasks) {
     const matchedTask = cachedTasks.find((cached) => optionsMatch(cached.options, options));
     if (matchedTask) {
@@ -239,20 +239,20 @@ const getModelTask = async <T extends TaskType>(
   // Create new model instance
   const task = await TaskType.createFromOptions(wasmFileset, {
     baseOptions: {
-      modelAssetPath: modelPath,
+      modelAssetPath: model_path,
     },
     ...options,
   });
 
   // Cache the task with its options and task engine
-  const cachedTask: CachedModelTask = { task, options, taskEngine };
-  if (!modelTaskCache.has(modelPath)) {
-    modelTaskCache.set(modelPath, []);
+  const cachedTask: CachedModelTask = { task, options, task_engine };
+  if (!modelTaskCache.has(model_path)) {
+    modelTaskCache.set(model_path, []);
   }
-  modelTaskCache.get(modelPath)!.push(cachedTask);
+  modelTaskCache.get(model_path)!.push(cachedTask);
 
   // Increment WASM reference count for this cached task
-  wasm_reference_counts.set(taskEngine, (wasm_reference_counts.get(taskEngine) || 0) + 1);
+  wasm_reference_counts.set(task_engine, (wasm_reference_counts.get(task_engine) || 0) + 1);
 
   return task as any;
 };
@@ -314,8 +314,8 @@ export const TFMP_Download: AiProviderRunFn<
   onProgress(0.9, "Pipeline loaded");
   task.close(); // Close the task to release the resources, but it is still in the browser cache
   // Decrease reference count for WASM fileset for this cached task since this is a fake model cache entry
-  const taskEngine = model?.provider_config.taskEngine;
-  wasm_reference_counts.set(taskEngine, wasm_reference_counts.get(taskEngine)! - 1);
+  const task_engine = model?.provider_config.task_engine;
+  wasm_reference_counts.set(task_engine, wasm_reference_counts.get(task_engine)! - 1);
 
   return {
     model: input.model,
@@ -435,31 +435,31 @@ export const TFMP_Unload: AiProviderRunFn<
   UnloadModelTaskExecuteOutput,
   TFMPModelConfig
 > = async (input, model, onProgress, signal) => {
-  const modelPath = model!.provider_config.modelPath;
+  const model_path = model!.provider_config.model_path;
   onProgress(10, "Unloading model");
   // Dispose of all cached model tasks if they exist
-  if (modelTaskCache.has(modelPath)) {
-    const cachedTasks = modelTaskCache.get(modelPath)!;
+  if (modelTaskCache.has(model_path)) {
+    const cachedTasks = modelTaskCache.get(model_path)!;
 
     for (const cachedTask of cachedTasks) {
       const task = cachedTask.task;
       if ("close" in task && typeof task.close === "function") task.close();
 
       // Decrease reference count for WASM fileset for this cached task
-      const taskEngine = cachedTask.taskEngine;
-      const currentCount = wasm_reference_counts.get(taskEngine) || 0;
+      const task_engine = cachedTask.task_engine;
+      const currentCount = wasm_reference_counts.get(task_engine) || 0;
       const newCount = currentCount - 1;
 
       if (newCount <= 0) {
         // No more models using this WASM fileset, unload it
-        wasm_tasks.delete(taskEngine);
-        wasm_reference_counts.delete(taskEngine);
+        wasm_tasks.delete(task_engine);
+        wasm_reference_counts.delete(task_engine);
       } else {
-        wasm_reference_counts.set(taskEngine, newCount);
+        wasm_reference_counts.set(task_engine, newCount);
       }
     }
 
-    modelTaskCache.delete(modelPath);
+    modelTaskCache.delete(model_path);
   }
 
   return {

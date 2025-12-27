@@ -25,11 +25,11 @@ export const HfTransformersOnnxModelSchema = {
           description: "Pipeline type for the ONNX model.",
           default: "text-generation",
         },
-        modelPath: {
+        model_path: {
           type: "string",
           description: "Filesystem path or URI for the ONNX model.",
         },
-        dType: {
+        dtype: {
           type: "string",
           enum: Object.values(QuantizationDataType),
           description: "Data type for the ONNX model.",
@@ -41,42 +41,50 @@ export const HfTransformersOnnxModelSchema = {
           description: "High-level device selection.",
           default: "webgpu",
         },
-        executionProviders: {
+        execution_providers: {
           type: "array",
           items: { type: "string" },
           description: "Raw ONNX Runtime execution provider identifiers.",
           "x-ui-hidden": true,
         },
-        intraOpNumThreads: {
+        intra_op_num_threads: {
           type: "integer",
           minimum: 1,
         },
-        interOpNumThreads: {
+        inter_op_num_threads: {
           type: "integer",
           minimum: 1,
         },
-        useExternalDataFormat: {
+        use_external_data_format: {
           type: "boolean",
           description: "Whether the model uses external data format.",
         },
-        nativeDimensions: {
+        native_dimensions: {
           type: "integer",
           description: "The native dimensions of the model.",
+        },
+        pooling: {
+          type: "string",
+          enum: ["mean", "last_token", "cls"],
+          description: "The pooling strategy to use for the model.",
+          default: "mean",
         },
         normalize: {
           type: "boolean",
           description: "Whether the model uses normalization.",
+          default: true,
         },
-        languageStyle: {
+        language_style: {
           type: "string",
           description: "The language style of the model.",
         },
         mrl: {
           type: "boolean",
           description: "Whether the model uses matryoshka.",
+          default: false,
         },
       },
-      required: ["modelPath", "pipeline"],
+      required: ["model_path", "pipeline"],
       additionalProperties: false,
       if: {
         properties: {
@@ -86,7 +94,7 @@ export const HfTransformersOnnxModelSchema = {
         },
       },
       then: {
-        required: ["nativeDimensions"],
+        required: ["native_dimensions"],
       },
     },
   },

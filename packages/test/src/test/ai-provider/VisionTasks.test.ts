@@ -52,7 +52,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         provider: HF_TRANSFORMERS_ONNX,
         provider_config: {
           pipeline: "image-segmentation",
-          modelPath: "Xenova/segformer-b0-finetuned-ade-512-512",
+          model_path: "Xenova/segformer-b0-finetuned-ade-512-512",
         },
         metadata: {},
       };
@@ -85,7 +85,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         provider: HF_TRANSFORMERS_ONNX,
         provider_config: {
           pipeline: "image-classification",
-          modelPath: "Xenova/vit-base-patch16-224",
+          model_path: "Xenova/vit-base-patch16-224",
         },
         metadata: {},
       };
@@ -116,7 +116,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         provider: HF_TRANSFORMERS_ONNX,
         provider_config: {
           pipeline: "zero-shot-image-classification",
-          modelPath: "Xenova/clip-vit-base-patch32",
+          model_path: "Xenova/clip-vit-base-patch32",
         },
         metadata: {},
       };
@@ -146,7 +146,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         provider: HF_TRANSFORMERS_ONNX,
         provider_config: {
           pipeline: "image-feature-extraction",
-          modelPath: "Xenova/clip-vit-base-patch32",
+          model_path: "Xenova/clip-vit-base-patch32",
         },
         metadata: {},
       };
@@ -175,7 +175,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         provider: HF_TRANSFORMERS_ONNX,
         provider_config: {
           pipeline: "object-detection",
-          modelPath: "Xenova/detr-resnet-50",
+          model_path: "Xenova/detr-resnet-50",
         },
         metadata: {},
       };
@@ -204,7 +204,7 @@ describe("Vision Tasks - HuggingFace Transformers", () => {
         provider: HF_TRANSFORMERS_ONNX,
         provider_config: {
           pipeline: "image-to-text",
-          modelPath: "Xenova/vit-gpt2-image-captioning",
+          model_path: "Xenova/vit-gpt2-image-captioning",
         },
         metadata: {},
       };
@@ -249,9 +249,9 @@ describe("Vision Tasks - MediaPipe", () => {
           tasks: ["ImageClassificationTask"],
           provider: TENSORFLOW_MEDIAPIPE,
           provider_config: {
-            taskEngine: "vision",
+            task_engine: "vision",
             pipeline: "vision-image-classifier",
-            modelPath:
+            model_path:
               "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite",
           },
           metadata: {},
@@ -284,9 +284,9 @@ describe("Vision Tasks - MediaPipe", () => {
           tasks: ["ImageEmbeddingTask"],
           provider: TENSORFLOW_MEDIAPIPE,
           provider_config: {
-            taskEngine: "vision",
+            task_engine: "vision",
             pipeline: "vision-image-embedder",
-            modelPath:
+            model_path:
               "https://storage.googleapis.com/mediapipe-models/image_embedder/mobilenet_v3_small/float32/1/mobilenet_v3_small.tflite",
           },
           metadata: {},
@@ -319,9 +319,9 @@ describe("Vision Tasks - MediaPipe", () => {
           tasks: ["ObjectDetectionTask"],
           provider: TENSORFLOW_MEDIAPIPE,
           provider_config: {
-            taskEngine: "vision",
+            task_engine: "vision",
             pipeline: "vision-object-detector",
-            modelPath:
+            model_path:
               "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float32/1/efficientdet_lite0.tflite",
           },
           metadata: {},

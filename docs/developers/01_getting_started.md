@@ -154,7 +154,8 @@ await modelRepo.addModel({
   provider: HF_TRANSFORMERS_ONNX,
   provider_config: {
     pipeline: "text2text-generation",
-    modelPath: "Xenova/LaMini-Flan-T5-783M"
+    pooling: "mean",
+    model_path: "Xenova/LaMini-Flan-T5-783M"
 });
 
 // Job queue for the provider

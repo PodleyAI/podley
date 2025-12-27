@@ -90,12 +90,12 @@ export function clearPipelineCache(): void {
 
 /**
  * Generate a cache key for a pipeline that includes all configuration options
- * that affect pipeline creation (modelPath, pipeline, dType, device)
+ * that affect pipeline creation (model_path, pipeline, dtype, device)
  */
 function getPipelineCacheKey(model: HfTransformersOnnxModelConfig): string {
-  const dType = model.provider_config.dType || "q8";
+  const dtype = model.provider_config.dtype || "q8";
   const device = model.provider_config.device || "";
-  return `${model.provider_config.modelPath}:${model.provider_config.pipeline}:${dType}:${device}`;
+  return `${model.provider_config.model_path}:${model.provider_config.pipeline}:${dtype}:${device}`;
 }
 
 /**
@@ -379,9 +379,9 @@ const getPipeline = async (
   };
 
   const pipelineOptions: PretrainedModelOptions = {
-    dtype: model.provider_config.dType || "q8",
-    ...(model.provider_config.useExternalDataFormat
-      ? { use_external_data_format: model.provider_config.useExternalDataFormat }
+    dtype: model.provider_config.dtype || "q8",
+    ...(model.provider_config.use_external_data_format
+      ? { useExternalDataFormat: model.provider_config.use_external_data_format }
       : {}),
     ...(model.provider_config.device ? { device: model.provider_config.device as any } : {}),
     ...options,
@@ -412,7 +412,7 @@ const getPipeline = async (
   });
 
   // Race between pipeline creation and abort
-  const pipelinePromise = pipeline(pipelineType, model.provider_config.modelPath, pipelineOptions);
+  const pipelinePromise = pipeline(pipelineType, model.provider_config.model_path, pipelineOptions);
 
   try {
     const result = await (abortSignal
@@ -471,8 +471,8 @@ export const HFT_Unload: AiProviderRunFn<
   }
 
   // Delete model cache entries
-  const modelPath = model!.provider_config.modelPath;
-  await deleteModelCache(modelPath);
+  const model_path = model!.provider_config.model_path;
+  await deleteModelCache(model_path);
   onProgress(100, "Model cache deleted");
 
   return {
@@ -482,12 +482,12 @@ export const HFT_Unload: AiProviderRunFn<
 
 /**
  * Deletes all cache entries for a given model path
- * @param modelPath - The model path to delete from cache
+ * @param model_path - The model path to delete from cache
  */
-const deleteModelCache = async (modelPath: string): Promise<void> => {
+const deleteModelCache = async (model_path: string): Promise<void> => {
   const cache = await caches.open(HTF_CACHE_NAME);
   const keys = await cache.keys();
-  const prefix = `/${modelPath}/`;
+  const prefix = `/${model_path}/`;
 
   // Collect all matching requests first
   const requestsToDelete: Request[] = [];
@@ -534,20 +534,20 @@ export const HFT_TextEmbedding: AiProviderRunFn<
 
   // Generate the embedding
   const hfVector = await generateEmbedding(input.text, {
-    pooling: "mean",
+    pooling: model?.provider_config.pooling || "mean",
     normalize: model?.provider_config.normalize,
     ...(signal ? { abort_signal: signal } : {}),
   });
 
   // Validate the embedding dimensions
-  if (hfVector.size !== model?.provider_config.nativeDimensions) {
+  if (hfVector.size !== model?.provider_config.native_dimensions) {
     console.warn(
-      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.provider_config.nativeDimensions}`,
+      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.provider_config.native_dimensions}`,
       input,
       hfVector
     );
     throw new Error(
-      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.provider_config.nativeDimensions}`
+      `HuggingFace Embedding vector length does not match model dimensions v${hfVector.size} != m${model?.provider_config.native_dimensions}`
     );
   }
 

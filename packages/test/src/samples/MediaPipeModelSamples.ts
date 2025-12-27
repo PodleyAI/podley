@@ -11,9 +11,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["TextEmbeddingTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "text",
+        task_engine: "text",
         pipeline: "text-embedder",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-tasks/text_embedder/universal_sentence_encoder.tflite",
       },
       metadata: {},
@@ -25,9 +25,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["TextClassificationTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "text",
+        task_engine: "text",
         pipeline: "text-classifier",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/text_classifier/bert_classifier/float32/1/bert_classifier.tflite",
       },
       metadata: {},
@@ -39,9 +39,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["TextLanguageDetectionTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "text",
+        task_engine: "text",
         pipeline: "text-language-detector",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/language_detector/language_detector/float32/1/language_detector.tflite",
       },
       metadata: {},
@@ -54,9 +54,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["ImageClassificationTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "vision",
+        task_engine: "vision",
         pipeline: "vision-image-classifier",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/1/efficientnet_lite0.tflite",
       },
       metadata: {},
@@ -68,9 +68,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["ImageEmbeddingTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "vision",
+        task_engine: "vision",
         pipeline: "vision-image-embedder",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/image_embedder/mobilenet_v3_small/float32/1/mobilenet_v3_small.tflite",
       },
       metadata: {},
@@ -82,9 +82,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["ObjectDetectionTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "vision",
+        task_engine: "vision",
         pipeline: "vision-object-detector",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float32/1/efficientdet_lite0.tflite",
       },
       metadata: {},
@@ -96,9 +96,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["ImageSegmentationTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "vision",
+        task_engine: "vision",
         pipeline: "vision-image-segmenter",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite",
       },
       metadata: {},
@@ -111,9 +111,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["AudioClassificationTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "audio",
+        task_engine: "audio",
         pipeline: "audio-classifier",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/audio_classifier/yamnet/float32/1/yamnet.tflite",
       },
       metadata: {},
@@ -126,9 +126,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["GestureRecognizerTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "vision",
+        task_engine: "vision",
         pipeline: "vision-gesture-recognizer",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
       },
       metadata: {},
@@ -140,9 +140,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["HandLandmarkerTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "vision",
+        task_engine: "vision",
         pipeline: "vision-hand-landmarker",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
       },
       metadata: {},
@@ -154,9 +154,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["FaceDetectorTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "vision",
+        task_engine: "vision",
         pipeline: "vision-face-detector",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
       },
       metadata: {},
@@ -168,9 +168,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["FaceLandmarkerTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "vision",
+        task_engine: "vision",
         pipeline: "vision-face-landmarker",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
       },
       metadata: {},
@@ -182,9 +182,9 @@ export async function registerMediaPipeTfJsLocalModels(): Promise<void> {
       tasks: ["PoseLandmarkerTask"],
       provider: TENSORFLOW_MEDIAPIPE,
       provider_config: {
-        taskEngine: "vision",
+        task_engine: "vision",
         pipeline: "vision-pose-landmarker",
-        modelPath:
+        model_path:
           "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
       },
       metadata: {},

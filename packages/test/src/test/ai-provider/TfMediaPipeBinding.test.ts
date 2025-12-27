@@ -81,10 +81,10 @@ describe("TfMediaPipeBinding", () => {
         tasks: ["TextEmbeddingTask"],
         provider: TENSORFLOW_MEDIAPIPE,
         provider_config: {
-          modelPath:
+          model_path:
             "https://storage.googleapis.com/mediapipe-tasks/text_embedder/universal_sentence_encoder.tflite",
           pipeline: "text-embedder",
-          taskEngine: "text",
+          task_engine: "text",
         },
         metadata: {},
       };
@@ -116,9 +116,9 @@ describe("TfMediaPipeBinding", () => {
         tasks: ["TextEmbeddingTask"],
         provider: TENSORFLOW_MEDIAPIPE,
         provider_config: {
-          modelPath:
+          model_path:
             "https://storage.googleapis.com/mediapipe-tasks/text_embedder/universal_sentence_encoder.tflite",
-          taskEngine: "text",
+          task_engine: "text",
           pipeline: "text-embedder",
         },
         metadata: {},

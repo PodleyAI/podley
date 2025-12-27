@@ -19,11 +19,11 @@ export const TFMPModelSchema = {
       type: "object",
       description: "TensorFlow MediaPipe-specific options.",
       properties: {
-        modelPath: {
+        model_path: {
           type: "string",
           description: "Filesystem path or URI for the ONNX model.",
         },
-        taskEngine: {
+        task_engine: {
           type: "string",
           enum: ["text", "audio", "vision", "genai"],
           description: "Task engine for the MediaPipe model.",
@@ -34,7 +34,7 @@ export const TFMPModelSchema = {
           description: "Pipeline task type for the MediaPipe model.",
         },
       },
-      required: ["modelPath", "taskEngine", "pipeline"],
+      required: ["model_path", "task_engine", "pipeline"],
       additionalProperties: false,
     },
   },

@@ -40,9 +40,9 @@ describe("DownloadModelTask abort behavior", () => {
       provider: HF_TRANSFORMERS_ONNX,
       provider_config: {
         pipeline: "feature-extraction",
-        modelPath: "Supabase/gte-small",
-        dType: "q8",
-        nativeDimensions: 384,
+        model_path: "Supabase/gte-small",
+        dtype: "q8",
+        native_dimensions: 384,
       },
       metadata: {},
     };

@@ -29,7 +29,7 @@ export const runGenericModelRepositoryTests = (
       provider: HF_TRANSFORMERS_ONNX,
       provider_config: {
         pipeline: "text2text-generation",
-        modelPath: "Xenova/LaMini-Flan-T5-783M",
+        model_path: "Xenova/LaMini-Flan-T5-783M",
       },
       metadata: {},
     });
@@ -51,7 +51,7 @@ export const runGenericModelRepositoryTests = (
       provider: HF_TRANSFORMERS_ONNX,
       provider_config: {
         pipeline: "text2text-generation",
-        modelPath: "Xenova/LaMini-Flan-T5-783M",
+        model_path: "Xenova/LaMini-Flan-T5-783M",
       },
       metadata: {},
     });
@@ -73,7 +73,7 @@ export const runGenericModelRepositoryTests = (
       provider: HF_TRANSFORMERS_ONNX,
       provider_config: {
         pipeline: "text2text-generation",
-        modelPath: "Xenova/LaMini-Flan-T5-783M",
+        model_path: "Xenova/LaMini-Flan-T5-783M",
         dtype: "q8",
       },
       metadata: {},
@@ -87,7 +87,7 @@ export const runGenericModelRepositoryTests = (
     expect(models?.[0].tasks).toEqual(["TextGenerationTask", "TextRewriterTask"]);
     expect(models?.[0].provider).toEqual(HF_TRANSFORMERS_ONNX);
     expect(models?.[0].provider_config?.pipeline).toEqual("text2text-generation");
-    expect(models?.[0].provider_config?.modelPath).toEqual("Xenova/LaMini-Flan-T5-783M");
+    expect(models?.[0].provider_config?.model_path).toEqual("Xenova/LaMini-Flan-T5-783M");
     expect(models?.[0].provider_config?.dtype).toEqual("q8");
   });
 };
