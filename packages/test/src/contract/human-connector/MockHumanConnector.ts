@@ -186,15 +186,18 @@ export class MockHumanConnector implements IHumanConnector {
   }
 
   /**
-   * A confirm answers with the decision and nothing else, whatever a script
-   * put beside it — the reference connector holds the same contract every
-   * adapter is measured against.
+   * Content belongs to an accepted elicit and nothing else, whatever a script
+   * put beside the action — the reference connector holds the same contract
+   * every adapter is measured against. A confirm answers with the decision
+   * alone, and a refused elicit answers with no data, since `HumanInputTask`
+   * spreads `content` onto its output ports either way.
    */
   private shape(request: IHumanRequest, response: IHumanResponse): IHumanResponse {
+    const carriesContent = request.kind === "elicit" && response.action === "accept";
     return {
       ...response,
       requestId: request.requestId,
-      content: request.kind === "confirm" ? undefined : response.content,
+      content: carriesContent ? response.content : undefined,
     };
   }
 }
