@@ -212,7 +212,13 @@ for, then their results back to it, until the model answers or `maxRounds` runs 
 is answered** — an unknown tool, arguments failing the tool's schema, a throw, a person
 declining — because dropping the call orphans it and the provider rejects the next round. A
 tool is backed by a registered task (looked up by `taskType`, else `name`) or by a
-`ToolDefinition.execute` function. A tool reaching beyond `INFERENCE_ENTITLEMENTS` is put to
+`ToolDefinition.execute` function, which is handed a `ToolExecuteContext` — the tool-use id
+its answer belongs to, and the run's signal — and may throw a `ToolCallError` to report a
+failure in its own words rather than wrapped. The turn also emits a `snapshot` of `messages`
+after every message it records, so a host can draw a tool card from the moment the model asks
+for it; a `snapshot` rather than an object-delta because an array delta is folded as an upsert
+list and successive whole-list snapshots would append into a transcript several times its
+length. A tool reaching beyond `INFERENCE_ENTITLEMENTS` is put to
 `IHumanConnector` as a `confirm` first: `requiresApproval` overrides that per tool,
 `approval: "never"` turns it off for a headless run, and with no connector registered such a
 call is refused rather than run.

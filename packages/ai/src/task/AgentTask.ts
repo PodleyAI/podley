@@ -280,8 +280,21 @@ export class AgentTask extends Task<AgentTaskInput, AgentTaskOutput, AgentTaskCo
     const byName = new Map(input.tools.map((tool) => [tool.name, tool]));
 
     const messages: ChatMessage[] = [...(input.messages ?? []), promptToUserMessage(input.prompt)];
+    /**
+     * The transcript so far, for a host drawing one while the turn is still
+     * running — a tool card wants to exist from the moment the model asks for
+     * it, not once the turn is over.
+     *
+     * A `snapshot` rather than an `object-delta` on the `messages` port: an
+     * object-delta carrying an array is folded as an upsert list, so successive
+     * whole-list snapshots would append into a transcript several times its own
+     * length. A snapshot reaches subscribers and touches no output port.
+     */
+    const transcript = (): StreamEvent<AgentTaskOutput> =>
+      ({ type: "snapshot", data: { messages: [...messages] } }) as StreamEvent<AgentTaskOutput>;
     let text = "";
     let rounds = 0;
+    yield transcript();
 
     for (let round = 0; round < maxRounds; round++) {
       context.signal.throwIfAborted();
@@ -315,7 +328,10 @@ export class AgentTask extends Task<AgentTaskInput, AgentTaskOutput, AgentTaskCo
       // assistant message is not a reply, and providers reject a replayed
       // prefix containing one.
       const reply = assistantMessage(output?.text ?? "", calls);
-      if (reply.content.length > 0) messages.push(reply);
+      if (reply.content.length > 0) {
+        messages.push(reply);
+        yield transcript();
+      }
       if (calls.length === 0) {
         yield { type: "finish", data: { text, messages, rounds, stopReason: "answered" } };
         return;
@@ -333,6 +349,7 @@ export class AgentTask extends Task<AgentTaskInput, AgentTaskOutput, AgentTaskCo
         );
       }
       messages.push({ role: "tool", content: results });
+      yield transcript();
     }
 
     yield { type: "finish", data: { text, messages, rounds, stopReason: "max-rounds" } };

@@ -18,6 +18,7 @@ import type { IHumanRequest, IHumanResponse } from "@workglow/util";
 import { getLogger, HUMAN_CONNECTOR, uuid4 } from "@workglow/util";
 import type { DataPortSchema } from "@workglow/util/schema";
 import type { ToolCall, ToolDefinition } from "./ToolCallingUtils";
+import { ToolCallError } from "./ToolCallingUtils";
 
 /**
  * When a tool call is put to a human before it runs.
@@ -234,6 +235,11 @@ export async function runAgentTool(
     };
   } catch (error) {
     if (context.signal.aborted) throw error;
+    // A tool that says its failure IS the answer keeps its own wording; the
+    // wrapper below is for a throw nobody planned.
+    if (error instanceof ToolCallError) {
+      return { text: clampToolText(error.message, options.maxResultChars), isError: true };
+    }
     return { text: `${tool.name} failed: ${errorMessage(error)}`, isError: true };
   }
 }
@@ -252,7 +258,7 @@ async function invokeTool(
     if (!tool.execute) {
       throw new Error(`Tool "${tool.name}" is declared type "function" but supplies no execute()`);
     }
-    return await tool.execute(call.input);
+    return await tool.execute(call.input, { toolUseId: call.id, signal: context.signal });
   }
   const ctor = getTaskConstructors(context.registry).get(backingTaskType(tool));
   if (!ctor) {

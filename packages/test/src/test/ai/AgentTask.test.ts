@@ -10,10 +10,12 @@ import {
   AiProviderRegistry,
   DirectExecutionStrategy,
   getAiProviderRegistry,
+  registerAiTasks,
   setAiProviderRegistry,
+  ToolCallError,
 } from "@workglow/ai";
-import type { TaskEntitlements } from "@workglow/task-graph";
-import { Entitlements, Task, TaskRegistry } from "@workglow/task-graph";
+import type { TaskEntitlements, TaskGraphJson } from "@workglow/task-graph";
+import { createGraphFromGraphJSON, Entitlements, Task, TaskRegistry } from "@workglow/task-graph";
 import { HumanInputTask } from "@workglow/tasks";
 import type { IHumanConnector, IHumanRequest, IHumanResponse } from "@workglow/util";
 import { Container, HUMAN_CONNECTOR, ServiceRegistry } from "@workglow/util";
@@ -249,6 +251,154 @@ describe("AgentTask", () => {
 
     expect(output.text).toBe("All at once.");
     expect(output.messages.at(-1)).toMatchObject({ role: "assistant" });
+  });
+
+  it("snapshots the transcript as it grows, without touching the output port", async () => {
+    scriptModel([
+      {
+        text: "Looking. ",
+        calls: [{ id: "c1", name: "AgentTest_EchoTask", input: { text: "hi" } }],
+      },
+      { text: "It said HI." },
+    ]);
+
+    const task = new AgentTask();
+    const sizes: number[] = [];
+    task.subscribe("stream_chunk", (event) => {
+      if (event.type === "snapshot") {
+        sizes.push(((event.data as { messages: unknown[] }).messages ?? []).length);
+      }
+    });
+    const output = await task.run(
+      { model: MODEL, prompt: "echo hi", tools: [ECHO_TOOL], approval: "never" },
+      { registry }
+    );
+
+    // The user message, the assistant's call, the tool's result, the answer —
+    // each visible as it lands rather than all at the end.
+    expect(sizes).toEqual([1, 2, 3, 4]);
+    // And the port is unharmed: an object-delta carrying an array would have
+    // been folded as an upsert list and appended these into one of length ten.
+    expect(output.messages).toHaveLength(4);
+  });
+
+  it("hands a host function the call it is serving", async () => {
+    scriptModel([{ calls: [{ id: "call_7", name: "ask", input: {} }] }, { text: "thanks" }]);
+    let seen: { toolUseId: string; aborted: boolean } | undefined;
+
+    await new AgentTask().run(
+      {
+        model: MODEL,
+        prompt: "ask",
+        tools: [
+          {
+            name: "ask",
+            description: "Asks something",
+            inputSchema: { type: "object", properties: {} },
+            execute: async (_input, context) => {
+              // A transcript keys its cards on this id; an answer arriving
+              // against the wrong one is worse than no answer.
+              seen = { toolUseId: context.toolUseId, aborted: context.signal.aborted };
+              return "asked";
+            },
+          },
+        ],
+      },
+      { registry }
+    );
+
+    expect(seen).toEqual({ toolUseId: "call_7", aborted: false });
+  });
+
+  it("lets a tool report a failure in its own words", async () => {
+    scriptModel([{ calls: [{ id: "c1", name: "refuse", input: {} }] }, { text: "understood" }]);
+
+    const output = await new AgentTask().run(
+      {
+        model: MODEL,
+        prompt: "go",
+        tools: [
+          {
+            name: "refuse",
+            description: "Refuses",
+            inputSchema: { type: "object", properties: {} },
+            execute: async () => {
+              throw new ToolCallError("The user declined. Ask what they would rather do.");
+            },
+          },
+        ],
+      },
+      { registry }
+    );
+
+    const result = toolResults(output.messages)[0];
+    expect(result).toMatchObject({ tool_use_id: "c1", is_error: true });
+    // Verbatim: no "refuse failed:" wrapper around wording the tool chose.
+    expect(JSON.stringify(result)).toContain("The user declined. Ask what they would rather do.");
+    expect(JSON.stringify(result)).not.toContain("refuse failed");
+  });
+
+  it("wraps a throw nobody planned, so a bug still reads as one", async () => {
+    scriptModel([{ calls: [{ id: "c1", name: "boom", input: {} }] }, { text: "ok" }]);
+
+    const output = await new AgentTask().run(
+      {
+        model: MODEL,
+        prompt: "go",
+        tools: [
+          {
+            name: "boom",
+            description: "Throws",
+            inputSchema: { type: "object", properties: {} },
+            execute: async () => {
+              throw new Error("undefined is not a function");
+            },
+          },
+        ],
+      },
+      { registry }
+    );
+
+    expect(JSON.stringify(toolResults(output.messages)[0])).toContain("boom failed");
+  });
+
+  it("runs a function tool that arrived through graph JSON", async () => {
+    scriptModel([{ calls: [{ id: "c1", name: "ping", input: {} }] }, { text: "pong" }]);
+    let ran = 0;
+    registerAiTasks();
+
+    // A host whose tools are closures builds its graph in memory and never
+    // serializes it; this is the path that carries them, and a validator that
+    // refused a function value would break it a long way from here.
+    const graph = createGraphFromGraphJSON({
+      tasks: [
+        {
+          id: "agent",
+          type: "AgentTask",
+          defaults: {
+            model: MODEL,
+            prompt: "hi",
+            approval: "never",
+            tools: [
+              {
+                name: "ping",
+                description: "p",
+                inputSchema: { type: "object", properties: {} },
+                execute: async () => {
+                  ran++;
+                  return "pong";
+                },
+              },
+            ],
+          },
+        },
+      ],
+      dataflows: [],
+    } as unknown as TaskGraphJson);
+    const output = await graph.run();
+
+    expect(ran).toBe(1);
+    expect(JSON.stringify(output)).toContain("pong");
   });
 
   it("answers an unknown tool rather than dropping the call", async () => {
