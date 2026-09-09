@@ -4,10 +4,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { AgentApprovalMode, ChatMessage, ToolDefinition } from "@workglow/ai";
+import type { AgentApprovalMode, AgentTaskOutput, ChatMessage, ToolDefinition } from "@workglow/ai";
 import { AgentTask } from "@workglow/ai";
 import type { StreamEvent } from "@workglow/task-graph";
-import { globalServiceRegistry, HUMAN_CONNECTOR, ServiceRegistry } from "@workglow/util";
+import {
+  globalServiceRegistry,
+  HUMAN_CONNECTOR,
+  resolveHumanConnector,
+  ServiceRegistry,
+  uuid4,
+} from "@workglow/util";
+import type { DataPortSchema } from "@workglow/util/schema";
+import { ensureRunReporting } from "../run-events/runReporting";
+import { withCli } from "../run-interactive";
 import { createInterface } from "node:readline/promises";
 import { formatError } from "../util";
 import { PromptHumanConnector } from "../ui/PromptHumanConnector";
@@ -53,11 +62,70 @@ async function askLine(prompt: string): Promise<string | undefined> {
   }
 }
 
-/** A child of the host's registry, so the chat prompts without the Ink run UI. */
-function chatRegistry(parent: ServiceRegistry): ServiceRegistry {
+/**
+ * The schema of the one thing this loop asks a person for.
+ *
+ * `format` is the marker a renderer keys on: the console draws a chat composer
+ * for it rather than the one-line text field every other string port gets, and
+ * folds the answer into the transcript instead of showing it as a form it once
+ * filled in.
+ */
+export const CHAT_MESSAGE_SCHEMA: DataPortSchema = {
+  type: "object",
+  properties: {
+    message: { type: "string", title: "Message", format: "chat-message" },
+  },
+  required: ["message"],
+  additionalProperties: false,
+};
+
+/**
+ * A child of the host's registry carrying the connector this session prompts
+ * through — but ONLY when the session owns a terminal.
+ *
+ * A run reporting to a parent process already has a connector wired to that
+ * channel, installed with the channel itself. Overriding it here would point a
+ * console session's approvals at an Ink prompt nobody can see, on a process
+ * whose stdout is a pipe.
+ */
+export function chatRegistry(parent: ServiceRegistry, reported: boolean): ServiceRegistry {
+  if (reported) return parent;
   const registry = new ServiceRegistry(parent.container.createChildContainer());
   registry.registerInstance(HUMAN_CONNECTOR, new PromptHumanConnector());
   return registry;
+}
+
+/**
+ * The next message, asked through whoever is listening.
+ *
+ * A reported run has no terminal to read a line from — its stdin is not a
+ * person — so the question goes up the same channel every other question does
+ * and the answer comes back down it. Declining or dismissing ends the session,
+ * which is what closing the composer means.
+ */
+export function askThroughConnector(
+  registry: ServiceRegistry,
+  signal: AbortSignal
+): () => Promise<string | undefined> {
+  return async (): Promise<string | undefined> => {
+    const response = await resolveHumanConnector({ registry }).send(
+      {
+        requestId: uuid4(),
+        targetHumanId: "default",
+        kind: "elicit",
+        message: "Your message",
+        contentSchema: CHAT_MESSAGE_SCHEMA,
+        contentData: undefined,
+        expectsResponse: true,
+        mode: "single",
+        metadata: undefined,
+      },
+      signal
+    );
+    if (response.action !== "accept") return undefined;
+    const message = response.content?.message;
+    return typeof message === "string" ? message : undefined;
+  };
 }
 
 /**
@@ -69,9 +137,11 @@ function chatRegistry(parent: ServiceRegistry): ServiceRegistry {
  * tool result or a tool-call id looks like.
  */
 export async function runAgentChat(options: AgentChatOptions, io?: AgentChatIo): Promise<void> {
-  const ask = io?.ask ?? askLine;
+  const reported = ensureRunReporting() !== undefined;
+  const registry = chatRegistry(globalServiceRegistry, reported);
+  const sessionAbort = new AbortController();
+  const ask = io?.ask ?? (reported ? askThroughConnector(registry, sessionAbort.signal) : askLine);
   const transcript = createChatTranscript(io?.write ?? ((text) => void process.stdout.write(text)));
-  const registry = chatRegistry(globalServiceRegistry);
   let messages: ChatMessage[] = [];
 
   transcript.note(
@@ -130,7 +200,12 @@ async function runTurn(
   });
 
   try {
-    const output = await task.run(
+    // Through `withCli` rather than `task.run` so a session the console
+    // started reports its rows and its text up the event channel like every
+    // other command. `interactive: false` keeps the Ink run UI out of it: on a
+    // terminal that UI clears its frame when the run completes, which is the
+    // transcript this session is writing.
+    const output = (await withCli(task, { interactive: false, suppressResultOutput: true }).run(
       {
         model: options.model,
         prompt: text,
@@ -141,7 +216,7 @@ async function runTurn(
         approval: options.approval,
       },
       { registry, signal: controller.signal }
-    );
+    )) as AgentTaskOutput;
     if (output.stopReason === "max-rounds") {
       transcript.note(`  · stopped after ${output.rounds} rounds without an answer`);
     }

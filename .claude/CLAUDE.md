@@ -425,6 +425,17 @@ screen back. It has no `followUp` — a modal prompt settles the question it ask
 decides form-vs-approval through the same `humanPromptModel` the Ink panel and the console
 read.
 
+**The same command serves the web console**, because a chat needs no channel the console did
+not already have: each turn runs through `withCli` so its rows and text report up the event
+stream, and the next message is asked for as an ordinary `elicit` whose field carries
+`format: "chat-message"` — the marker the console keys on to draw a composer instead of a
+one-line field, and to fold the answer into a transcript instead of a form somebody once
+filled in. A reported session does NOT install `PromptHumanConnector`: the channel installs
+its own connector, and overriding it would point a console session's approvals at an Ink
+prompt on a process whose stdout is a pipe. `chatTranscript` (`web/client/state.ts`) zips
+what the console sent against the `AgentTask` rows it saw, one turn per message, so the
+conversation is derived rather than a second copy of the run.
+
 `workglow mcp serve` is the second server the CLI hosts: the registered tasks offered to
 MCP clients as tools, one per task type, named for the registered type itself (`task list`
 prints the same types with the `Task` suffix trimmed) and carrying the

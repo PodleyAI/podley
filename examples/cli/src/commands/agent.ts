@@ -31,6 +31,7 @@ import { createAgentRepository } from "../storage";
 import { renderSelectPrompt, renderWorkflowRun } from "../ui/render";
 import { formatError, formatTable, outputResult } from "../util";
 import { runAgentChat } from "../agent/runAgentChat";
+import { ensureRunReporting } from "../run-events/runReporting";
 
 export function registerAgentCommand(program: Command): void {
   const agent = program.command("agent").description("Manage and run agents");
@@ -370,9 +371,12 @@ export function registerAgentCommand(program: Command): void {
       "Run every tool without asking. For a session you are not watching; the default confirms anything reaching past the model."
     )
     .action(async (opts: Record<string, unknown>) => {
-      if (!process.stdin.isTTY) {
+      // A session started from the web console has no terminal and does not
+      // need one: it asks and answers over the run's event channel. What it
+      // cannot do is read a line from a pipe nobody is typing into.
+      if (!process.stdin.isTTY && !ensureRunReporting()) {
         console.error(
-          "agent chat needs a terminal. Use `workglow task run AgentTask` for a scripted turn."
+          "agent chat needs a terminal, or the web console. Use `workglow task run AgentTask` for a scripted turn."
         );
         process.exit(1);
       }

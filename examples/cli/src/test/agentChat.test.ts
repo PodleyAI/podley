@@ -12,7 +12,15 @@ import {
   setAiProviderRegistry,
 } from "@workglow/ai";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runAgentChat, type AgentChatIo } from "../agent/runAgentChat";
+import type { IHumanRequest } from "@workglow/util";
+import { Container, HUMAN_CONNECTOR, ServiceRegistry } from "@workglow/util";
+import {
+  askThroughConnector,
+  chatRegistry,
+  CHAT_MESSAGE_SCHEMA,
+  runAgentChat,
+  type AgentChatIo,
+} from "../agent/runAgentChat";
 
 const PROVIDER = "mock-chat-provider";
 
@@ -135,6 +143,70 @@ describe("agent chat loop", () => {
     // A failed turn recorded nothing, so the next one is still the first
     // message the model ever sees.
     expect(out()).toContain("saw 1");
+  });
+
+  describe("under a run that reports to a parent process", () => {
+    it("asks for the next message through the human connector", async () => {
+      const asked: IHumanRequest[] = [];
+      const registry = new ServiceRegistry(new Container());
+      registry.registerInstance(HUMAN_CONNECTOR, {
+        send: async (request: IHumanRequest) => {
+          asked.push(request);
+          return {
+            requestId: request.requestId,
+            action: "accept" as const,
+            content: { message: "hello" },
+            done: true,
+          };
+        },
+      });
+
+      const ask = askThroughConnector(registry, new AbortController().signal);
+
+      expect(await ask()).toBe("hello");
+      expect(asked).toHaveLength(1);
+      expect(asked[0]!.kind).toBe("elicit");
+      // The marker a renderer keys on to draw a composer rather than a field.
+      expect(asked[0]!.contentSchema).toEqual(CHAT_MESSAGE_SCHEMA);
+    });
+
+    it("ends the session when the person closes the composer", async () => {
+      const registry = new ServiceRegistry(new Container());
+      registry.registerInstance(HUMAN_CONNECTOR, {
+        // Carrying content on a decline is a connector misbehaving — libs says
+        // only an accepted elicit answers with data — and the session must end
+        // on the action rather than on whether anything came back with it.
+        send: async (request: IHumanRequest) => ({
+          requestId: request.requestId,
+          action: "decline" as const,
+          content: { message: "typed, then dismissed" },
+          done: true,
+        }),
+      });
+
+      // `undefined` is how the loop reads end-of-input, the same as Ctrl-D.
+      expect(await askThroughConnector(registry, new AbortController().signal)()).toBeUndefined();
+    });
+
+    it("leaves the channel's own connector in place", () => {
+      const parent = new ServiceRegistry(new Container());
+      const installed = {
+        send: async () => ({
+          requestId: "x",
+          action: "decline" as const,
+          content: undefined,
+          done: true,
+        }),
+      };
+      parent.registerInstance(HUMAN_CONNECTOR, installed);
+
+      // A console session's approvals have to reach the channel; a child
+      // registry carrying an Ink prompt would answer nobody.
+      expect(chatRegistry(parent, true)).toBe(parent);
+      expect(chatRegistry(parent, true).get(HUMAN_CONNECTOR)).toBe(installed);
+      // On a terminal it is the other way round: the session prompts itself.
+      expect(chatRegistry(parent, false).get(HUMAN_CONNECTOR)).not.toBe(installed);
+    });
   });
 
   it("answers /help without calling the model", async () => {
