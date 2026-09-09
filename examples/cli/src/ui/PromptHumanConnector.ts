@@ -17,21 +17,52 @@ import { renderSchemaPrompt, renderSelectPrompt } from "./render";
 export interface PromptHumanRenderers {
   readonly select: (
     options: ReadonlyArray<{ label: string; value: string }>,
-    message?: string
+    message: string | undefined,
+    signal: AbortSignal
   ) => Promise<string | undefined>;
   readonly form: (
-    fields: readonly PromptFieldDescriptor[]
+    fields: readonly PromptFieldDescriptor[],
+    signal: AbortSignal
   ) => Promise<Record<string, unknown> | undefined>;
   readonly notice: (lines: readonly string[]) => void;
 }
 
 const defaultRenderers: PromptHumanRenderers = {
-  select: (options, message) => renderSelectPrompt([...options], message),
-  form: (fields) => renderSchemaPrompt(fields),
+  select: (options, message, signal) => renderSelectPrompt([...options], message, signal),
+  form: (fields, signal) => renderSchemaPrompt(fields, undefined, signal),
   notice: (lines) => {
     for (const line of lines) console.log(line);
   },
 };
+
+/**
+ * Rejects when `signal` aborts, so a pending prompt does not outlive the run
+ * that asked the question.
+ *
+ * The renderer is handed the same signal and tears its own app down, but the
+ * rejection is raised here rather than left to it: `IHumanConnector` requires
+ * an aborted `send` to reject, and a renderer that resolves `undefined` on
+ * abort would be indistinguishable from a person pressing Esc — which is a
+ * `cancel` a caller may act on.
+ */
+function whenAborted(signal: AbortSignal): Promise<never> {
+  return new Promise<never>((_resolve, reject) => {
+    const fail = (): void =>
+      reject(signal.reason ?? new DOMException("The operation was aborted", "AbortError"));
+    if (signal.aborted) {
+      fail();
+      return;
+    }
+    signal.addEventListener("abort", fail, { once: true });
+  });
+}
+
+async function untilAborted<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  const aborted = whenAborted(signal);
+  // Held so the loser of the race is not reported as an unhandled rejection.
+  aborted.catch(() => {});
+  return await Promise.race([work, aborted]);
+}
 
 /** Labels for the two decisions an approval offers, in the order it offers them. */
 const APPROVAL_OPTIONS = [
@@ -100,7 +131,10 @@ export class PromptHumanConnector implements IHumanConnector {
         model.title,
         ...model.details.map((detail) => `  ${detail.label}: ${detail.value}`),
       ]);
-      const chosen = await this.renderers.select(APPROVAL_OPTIONS, model.message);
+      const chosen = await untilAborted(
+        this.renderers.select(APPROVAL_OPTIONS, model.message, signal),
+        signal
+      );
       // Walking away is not the same answer as refusing, and the caller acts
       // differently on each.
       if (chosen === undefined) return settle("cancel");
@@ -112,7 +146,7 @@ export class PromptHumanConnector implements IHumanConnector {
       (request.contentData as Record<string, unknown> | undefined) ?? {},
       schema
     );
-    const values = await this.renderers.form(fields);
+    const values = await untilAborted(this.renderers.form(fields, signal), signal);
     if (values === undefined) return settle("cancel");
     return settle("accept", values);
   }

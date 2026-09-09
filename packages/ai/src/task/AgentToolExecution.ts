@@ -4,7 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { IExecuteContext, TaskConfig } from "@workglow/task-graph";
+import type {
+  EntitlementDeclaringTaskClass,
+  IExecuteContext,
+  TaskConfig,
+} from "@workglow/task-graph";
 import {
   describeTaskClassReach,
   getTaskConstructors,
@@ -61,7 +65,13 @@ function backingTaskType(tool: ToolDefinition): string {
 /** Bound on a value shown for approval — a person reads a line, not a payload. */
 const MAX_APPROVAL_ARGUMENT_CHARS = 400;
 
-function clamp(text: string, max: number): string {
+/**
+ * Bounds anything sent back to a model, marking the cut so it can tell it is
+ * reading a prefix. Every path into a `tool_result` goes through this: an error
+ * message naming every tool the caller registered is as capable of filling a
+ * context window as a fetched page is.
+ */
+export function clampToolText(text: string, max: number): string {
   if (text.length <= max) return text;
   return `${text.slice(0, max)}… [truncated, ${text.length} chars total]`;
 }
@@ -126,6 +136,23 @@ async function askToApprove(
 }
 
 /**
+ * What the card says this tool reaches.
+ *
+ * Three answers, and the third is why "host function" cannot be the fallback:
+ * a task-backed tool whose type is misspelled or unregistered also finds no
+ * class, and telling a person approving it that it is a host function
+ * describes something else entirely.
+ */
+function describeToolReach(
+  tool: ToolDefinition,
+  ctor: EntitlementDeclaringTaskClass | undefined
+): string {
+  if (ctor) return describeTaskClassReach(ctor);
+  if (tool.execute) return "not declared — this tool is a host function";
+  return `unknown — no task type "${backingTaskType(tool)}" is registered, so this call will fail`;
+}
+
+/**
  * Puts one tool call to a human and reports whether it may run.
  *
  * Fails **closed** when approval is called for and no connector is registered:
@@ -154,8 +181,8 @@ async function approveToolCall(
     contentSchema: APPROVAL_SCHEMA as DataPortSchema,
     contentData: {
       tool: tool.name,
-      reach: ctor ? describeTaskClassReach(ctor) : "not declared — this tool is a host function",
-      arguments: clamp(stringifyForModel(call.input), MAX_APPROVAL_ARGUMENT_CHARS),
+      reach: describeToolReach(tool, ctor),
+      arguments: clampToolText(stringifyForModel(call.input), MAX_APPROVAL_ARGUMENT_CHARS),
     },
     expectsResponse: true,
     mode: "single",
@@ -201,7 +228,10 @@ export async function runAgentTool(
 
   try {
     const output = await invokeTool(tool, call, context);
-    return { text: clamp(stringifyForModel(output), options.maxResultChars), isError: false };
+    return {
+      text: clampToolText(stringifyForModel(output), options.maxResultChars),
+      isError: false,
+    };
   } catch (error) {
     if (context.signal.aborted) throw error;
     return { text: `${tool.name} failed: ${errorMessage(error)}`, isError: true };

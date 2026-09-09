@@ -131,9 +131,35 @@ export interface SchemaPromptRenderOptions {
   readonly initialFocusedFieldKey?: string;
 }
 
+/**
+ * Gives the terminal back when the caller stops waiting.
+ *
+ * A prompt mounts an Ink app and resolves when a person answers it; nothing
+ * about that is reachable from outside, so an aborted run would otherwise leave
+ * the app on screen and the promise pending forever.
+ */
+function releaseOnAbort(
+  signal: AbortSignal | undefined,
+  instance: { clear(): void; unmount(): void },
+  resolve: (value: undefined) => void
+): void {
+  if (!signal) return;
+  const release = (): void => {
+    instance.clear();
+    instance.unmount();
+    resolve(undefined);
+  };
+  if (signal.aborted) {
+    release();
+    return;
+  }
+  signal.addEventListener("abort", release, { once: true });
+}
+
 export async function renderSchemaPrompt(
   fields: readonly PromptFieldDescriptor[],
-  options?: SchemaPromptRenderOptions
+  options?: SchemaPromptRenderOptions,
+  signal?: AbortSignal
 ): Promise<Record<string, unknown> | undefined> {
   return new Promise<Record<string, unknown> | undefined>((resolve) => {
     const onComplete = (values: Record<string, unknown>) => {
@@ -159,6 +185,7 @@ export async function renderSchemaPrompt(
         })
       )
     );
+    releaseOnAbort(signal, instance, resolve);
   });
 }
 
@@ -195,7 +222,8 @@ export async function renderSearchSelect<T extends SearchSelectItem>(
 
 export async function renderSelectPrompt(
   options: Array<{ label: string; value: string }>,
-  message?: string
+  message?: string,
+  signal?: AbortSignal
 ): Promise<string | undefined> {
   return new Promise<string | undefined>((resolve) => {
     const onSelect = (value: string) => {
@@ -224,5 +252,6 @@ export async function renderSelectPrompt(
         })
       )
     );
+    releaseOnAbort(signal, instance, resolve);
   });
 }

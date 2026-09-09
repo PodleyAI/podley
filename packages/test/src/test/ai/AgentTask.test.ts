@@ -273,6 +273,36 @@ describe("AgentTask", () => {
     expect(JSON.stringify(results[0])).toContain("Unknown tool");
   });
 
+  it("bounds the unknown-tool answer by the same budget as a tool's output", async () => {
+    scriptModel([{ calls: [{ id: "c1", name: "nope", input: {} }] }, { text: "sorry" }]);
+    // Naming every registered tool is what makes this message unbounded, and it
+    // would be re-sent on every round the model keeps guessing.
+    const many: ToolDefinition[] = Array.from({ length: 40 }, (_, index) => ({
+      ...ECHO_TOOL,
+      name: `a_tool_with_a_fairly_long_name_${index}`,
+      taskType: AgentTest_EchoTask.type,
+    }));
+
+    const output = await new AgentTask().run(
+      {
+        model: MODEL,
+        prompt: "go",
+        tools: many,
+        approval: "never",
+        maxToolResultChars: 80,
+      },
+      { registry }
+    );
+
+    const text = (
+      (toolResults(output.messages)[0] as { content: { text: string }[] }).content[0] as {
+        text: string;
+      }
+    ).text;
+    expect(text).toContain("truncated");
+    expect(text.length).toBeLessThan(200);
+  });
+
   it("answers arguments that fail the tool's own schema", async () => {
     scriptModel([
       { calls: [{ id: "c1", name: "AgentTest_EchoTask", input: { text: 42 } }] },
@@ -482,6 +512,40 @@ describe("AgentTask", () => {
 
       expect(fetchRuns).toBe(0);
       expect(JSON.stringify(toolResults(output.messages)[0])).toContain("no way to ask");
+    });
+
+    it("does not call an unregistered task type a host function on the card", async () => {
+      scriptModel([
+        { calls: [{ id: "c1", name: "AgentTest_MisspelledTask", input: {} }] },
+        { text: "ok" },
+      ]);
+      const human = connector((request) => ({
+        requestId: request.requestId,
+        action: "accept",
+        content: undefined,
+        done: true,
+      }));
+      registry.registerInstance(HUMAN_CONNECTOR, human.connector);
+
+      await new AgentTask().run(
+        {
+          model: MODEL,
+          prompt: "go",
+          tools: [
+            {
+              name: "AgentTest_MisspelledTask",
+              description: "A task type nobody registered",
+              inputSchema: { type: "object", properties: {} },
+              requiresApproval: true,
+            },
+          ],
+        },
+        { registry }
+      );
+
+      const reach = String(human.requests[0]!.contentData?.reach);
+      expect(reach).toContain("AgentTest_MisspelledTask");
+      expect(reach).not.toContain("host function");
     });
 
     it('runs an unapproved-reach tool when approval is "never"', async () => {

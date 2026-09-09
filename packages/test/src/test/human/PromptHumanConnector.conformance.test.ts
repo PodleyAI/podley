@@ -22,10 +22,14 @@ import { createCliHumanSurface } from "./cliHumanSurface";
  */
 function connectorFor(
   surface: ReturnType<typeof createCliHumanSurface>,
-  request: IHumanRequest,
-  signal: AbortSignal
+  request: IHumanRequest
 ): PromptHumanConnector {
-  const answer = (): Promise<IHumanResponse> => surface.answer(request, signal);
+  // The scripted person is deliberately NOT given the caller's signal: a real
+  // Ink prompt cannot reject, it can only be torn down, so letting the stand-in
+  // reject would make the abort assertions pass on the mock's behaviour instead
+  // of the connector's own race.
+  const patient = new AbortController().signal;
+  const answer = (): Promise<IHumanResponse> => surface.answer(request, patient);
   const renderers: PromptHumanRenderers = {
     select: async () => {
       const wanted = await answer();
@@ -52,7 +56,7 @@ runHumanConnectorConformance({
     // No `followUp`, matching the connector: the suite checks that a
     // multiTurn:false connector does not carry one.
     const connector: IHumanConnector = {
-      send: (request, signal) => connectorFor(surface, request, signal).send(request, signal),
+      send: (request, signal) => connectorFor(surface, request).send(request, signal),
     };
     return { connector, script: surface.script, dispose: async () => {} };
   },

@@ -18,7 +18,7 @@ import type { Capability } from "../capability/Capabilities";
 import { createEmitQueue } from "../capability/emitQueue";
 import type { ModelConfig } from "../model/ModelSchema";
 import type { AgentApprovalMode } from "./AgentToolExecution";
-import { runAgentTool } from "./AgentToolExecution";
+import { clampToolText, runAgentTool } from "./AgentToolExecution";
 import {
   DEFAULT_MAX_HISTORY_CHARS,
   normalizeHistoryForModel,
@@ -186,8 +186,22 @@ function assistantMessage(text: string, calls: readonly ToolCall[]): ChatMessage
   return { role: "assistant", content };
 }
 
-function toolResult(call: ToolCall, text: string, isError: boolean): ContentBlockToolResult {
-  const body: ContentBlockInToolResultBody[] = [{ type: "text", text }];
+/**
+ * Every path into a `tool_result` is bounded by the same budget, not just the
+ * one carrying a tool's output. "Unknown tool X. Available: …" names every tool
+ * the caller registered, which on a large registry is as capable of filling a
+ * context window as a fetched page — and it would then do it on every round the
+ * model keeps guessing.
+ */
+function toolResult(
+  call: ToolCall,
+  text: string,
+  isError: boolean,
+  maxChars: number
+): ContentBlockToolResult {
+  const body: ContentBlockInToolResultBody[] = [
+    { type: "text", text: clampToolText(text, maxChars) },
+  ];
   return {
     type: "tool_result",
     tool_use_id: call.id,
@@ -387,7 +401,12 @@ export class AgentTask extends Task<AgentTaskInput, AgentTaskOutput, AgentTaskCo
     const tool = byName.get(call.name);
     if (!tool) {
       const known = [...byName.keys()].join(", ");
-      return toolResult(call, `Unknown tool "${call.name}". Available: ${known}`, true);
+      return toolResult(
+        call,
+        `Unknown tool "${call.name}". Available: ${known}`,
+        true,
+        options.maxResultChars
+      );
     }
     const sanitized = sanitizeToolArgs(call.input) as Record<string, unknown>;
     const validator = validators.get(call.name);
@@ -395,11 +414,16 @@ export class AgentTask extends Task<AgentTaskInput, AgentTaskOutput, AgentTaskCo
       const check = validator.validate(sanitized);
       if (!check.valid) {
         const detail = check.errors.map((error) => error.message).join("; ") || "invalid arguments";
-        return toolResult(call, `Invalid arguments for ${call.name}: ${detail}`, true);
+        return toolResult(
+          call,
+          `Invalid arguments for ${call.name}: ${detail}`,
+          true,
+          options.maxResultChars
+        );
       }
     }
     const result = await runAgentTool(tool, { ...call, input: sanitized }, context, options);
-    return toolResult(call, result.text, result.isError);
+    return toolResult(call, result.text, result.isError, options.maxResultChars);
   }
 }
 
