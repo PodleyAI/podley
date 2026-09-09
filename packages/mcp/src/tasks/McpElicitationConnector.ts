@@ -37,12 +37,26 @@ function toMcpRequestedSchema(
   };
 }
 
+/**
+ * One card line holds one value, whatever the value contains.
+ *
+ * `contentData` arrives from a task input port, so its values are as reachable
+ * as anything else a model supplies. Left raw, a value carrying a line break
+ * writes further `Label: value` lines of its own — indistinguishable from the
+ * ones below — or pads the card with blanks until the true detail is off the
+ * screen the person is reading before they decide.
+ */
+function oneLine(text: string): string {
+  return text.replace(/\r\n|[\n\r\u2028\u2029]/g, "\\n");
+}
+
 /** The label a person should read for one confirm field: its title, else its key. */
 function confirmLabel(contentSchema: unknown, key: string): string {
   const properties = (contentSchema as { properties?: Record<string, unknown> } | undefined)
     ?.properties;
   const property = properties?.[key] as { title?: unknown } | undefined;
-  return typeof property?.title === "string" && property.title ? property.title : key;
+  const label = typeof property?.title === "string" && property.title ? property.title : key;
+  return oneLine(label);
 }
 
 /** `Action: Run workflow` — one line per value a person needs before deciding. */
@@ -57,7 +71,7 @@ function withConfirmDetails(
     // `JSON.stringify` returns the VALUE undefined for undefined and functions,
     // which templates as the string "undefined" — say so deliberately instead.
     const rendered = typeof value === "string" ? value : (JSON.stringify(value) ?? String(value));
-    return `${confirmLabel(contentSchema, key)}: ${rendered}`;
+    return `${confirmLabel(contentSchema, key)}: ${oneLine(rendered)}`;
   });
   return message ? `${message}\n\n${lines.join("\n")}` : lines.join("\n");
 }
