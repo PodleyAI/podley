@@ -78,6 +78,6 @@ describe("resolveServeToken", () => {
   });
 
   it("serves without a token only when --no-auth said so", () => {
-    expect(resolveServeToken({ auth: false }, { [MCP_TOKEN_ENV]: "from-env" })).toBeUndefined();
+    expect(resolveServeToken({ auth: false }, { [MCP_TOKEN_ENV]: "from-env" })).toBeNull();
   });
 });

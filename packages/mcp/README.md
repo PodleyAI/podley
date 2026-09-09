@@ -49,7 +49,8 @@ import { createTaskMcpServer, generateBearerToken, startMcpHttpServer } from "@w
 const handle = await startMcpHttpServer({
   port: 8788,
   host: "127.0.0.1",
-  // `undefined` serves unauthenticated, which is a decision, never a default.
+  // Required. `null` serves unauthenticated, which has to be said out loud —
+  // and is refused outright on a wildcard bind.
   token: generateBearerToken(),
   createServer: () => createTaskMcpServer({ name: "my-app", version: "1.0.0" }),
 });

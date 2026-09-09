@@ -105,7 +105,7 @@ const open = async (elicitation?: boolean): Promise<McpHttpServerHandle> =>
   startMcpHttpServer({
     port: 0,
     host: "127.0.0.1",
-    token: undefined,
+    token: null,
     createServer: () =>
       createTaskMcpServer({ name: "test", version: "1.0.0", tasks: TASKS, elicitation }),
   });
