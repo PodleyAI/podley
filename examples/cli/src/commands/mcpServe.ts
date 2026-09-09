@@ -49,11 +49,11 @@ interface McpServeOptions {
 }
 
 /**
- * The bearer token this server will require, or `undefined` for none.
+ * The bearer token this server will require, or `null` for none.
  *
  * A pinned token wins over a generated one because a client config has to hold
  * the same value across restarts, and the environment wins over nothing at all
- * — but only `--no-auth` reaches `undefined`. Falling through to an
+ * — but only `--no-auth` reaches `null`. Falling through to an
  * unauthenticated server because no token was supplied is exactly the accident
  * this generates one to prevent — so an empty `--token` or an empty variable
  * falls through to a generated token rather than to the empty string, which is
@@ -62,8 +62,8 @@ interface McpServeOptions {
 export function resolveServeToken(
   opts: { readonly auth: boolean; readonly token?: string },
   env: Readonly<Record<string, string | undefined>> = process.env
-): string | undefined {
-  if (!opts.auth) return undefined;
+): string | null {
+  if (!opts.auth) return null;
   return opts.token || env[MCP_TOKEN_ENV] || generateBearerToken();
 }
 

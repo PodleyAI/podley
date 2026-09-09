@@ -68,10 +68,7 @@ class StepTask extends Task<Record<string, never>, { done: boolean }> {
 
 const TASKS = [GreetTask, StepTask] as unknown as AnyTaskConstructor[];
 
-const open = async (
-  token: string | undefined,
-  maxBodyBytes?: number
-): Promise<McpHttpServerHandle> =>
+const open = async (token: string | null, maxBodyBytes?: number): Promise<McpHttpServerHandle> =>
   startMcpHttpServer({
     port: 0,
     host: "127.0.0.1",
@@ -333,13 +330,17 @@ describe("startMcpHttpServer, bound to a wildcard", () => {
       await startMcpHttpServer({
         port: 0,
         host: "0.0.0.0",
-        token: undefined,
+        token: TOKEN,
         createServer: () => createTaskMcpServer({ name: "test", version: "1.0.0", tasks: TASKS }),
       })
     );
     const response = await rawPost(
       `http://127.0.0.1:${new URL(handle.url).port}${new URL(handle.url).pathname}`,
-      { Host: "192.168.1.10", "content-type": "application/json" },
+      {
+        Host: "192.168.1.10",
+        Authorization: `Bearer ${TOKEN}`,
+        "content-type": "application/json",
+      },
       "{}"
     );
     expect(response.status).not.toBe(403);
@@ -350,7 +351,7 @@ describe("startMcpHttpServer, bound to a wildcard", () => {
       await startMcpHttpServer({
         port: 0,
         host: "0.0.0.0",
-        token: undefined,
+        token: TOKEN,
         allowedHosts: ["mcp.internal"],
         createServer: () => createTaskMcpServer({ name: "test", version: "1.0.0", tasks: TASKS }),
       })
@@ -366,11 +367,38 @@ describe("startMcpHttpServer, bound to a wildcard", () => {
 
 describe("startMcpHttpServer, unauthenticated", () => {
   it("serves without a token when the host turned authentication off", async () => {
-    const handle = track(await open(undefined));
+    const handle = track(await open(null));
     expect(handle.token).toBeUndefined();
     const client = track(await connect(handle, undefined));
 
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name)).toEqual(["GreetTask", "StepTask"]);
+  });
+
+  it("refuses to start when the caller never stated an auth choice", async () => {
+    // Every tool here executes a task, so an omitted `token` must not be the
+    // same thing as an explicit opt-out. The types say so; an untyped caller
+    // (this package is published, and JS consumers exist) arrives with the
+    // field missing and has to be turned away at run time too.
+    const args = {
+      port: 0,
+      host: "127.0.0.1",
+      createServer: () => createTaskMcpServer({ name: "test", version: "1.0.0", tasks: TASKS }),
+    } as unknown as Parameters<typeof startMcpHttpServer>[0];
+    await expect(startMcpHttpServer(args)).rejects.toThrow(/requires `token`/);
+  });
+
+  it("refuses an unauthenticated wildcard bind", async () => {
+    // A wildcard answers on every address the machine has, and
+    // `resolveAllowedHosts` derives no Host allow-list from it — so with no
+    // token there is nothing left deciding who may run tasks here.
+    await expect(
+      startMcpHttpServer({
+        port: 0,
+        host: "0.0.0.0",
+        token: null,
+        createServer: () => createTaskMcpServer({ name: "test", version: "1.0.0", tasks: TASKS }),
+      })
+    ).rejects.toThrow(/unauthenticated/);
   });
 });

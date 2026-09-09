@@ -35,12 +35,16 @@ export interface StartMcpHttpServerArgs {
   /** Path the MCP endpoint answers on. Defaults to {@link DEFAULT_MCP_PATH}. */
   readonly path?: string;
   /**
-   * Bearer token every request must present.
+   * Bearer token every request must present, or `null` to serve without
+   * authentication.
    *
-   * `undefined` serves without authentication — a deliberate choice for a host
-   * that has its own gate in front, never a default worth falling into.
+   * Required, and `null` rather than an omission, because every tool this
+   * server offers executes a task. A host that never states the choice would
+   * otherwise publish task execution to whatever reaches the port, and nothing
+   * in the request path can tell that apart from a host that meant to.
+   * `null` is refused for a wildcard bind — see {@link startMcpHttpServer}.
    */
-  readonly token?: string | undefined;
+  readonly token: string | null;
   /** One MCP server instance per client session. */
   readonly createServer: () => McpServerInstance;
   /**
@@ -73,6 +77,34 @@ interface RequestContext {
 /** A bind address that names no reachable host, so no allow-list follows from it. */
 function isWildcardHost(host: string): boolean {
   return host === "" || host === "0.0.0.0" || host === "::" || host === "[::]";
+}
+
+/**
+ * Refuses a server that would run tasks for whoever reaches the port.
+ *
+ * `undefined` cannot be spelled through the types and is checked anyway: an
+ * untyped caller still arrives here with the field omitted, and that used to
+ * mean "serve unauthenticated".
+ *
+ * A wildcard bind additionally refuses `null` outright. It is reachable under
+ * every name and address the machine answers to, and {@link resolveAllowedHosts}
+ * can derive no `Host` allow-list from it either, so nothing at all would be
+ * left deciding who gets in. Naming the interface to bind is how an
+ * unauthenticated server on a reachable address is asked for.
+ */
+function assertAuthChoice(token: string | null | undefined, host: string): void {
+  if (token === undefined) {
+    throw new Error(
+      "startMcpHttpServer requires `token`: a bearer token every request must present, " +
+        "or `null` to serve task execution without authentication."
+    );
+  }
+  if (token === null && isWildcardHost(host.toLowerCase())) {
+    throw new Error(
+      `startMcpHttpServer refuses to serve unauthenticated on the wildcard bind "${host}": ` +
+        "every tool it offers runs a task. Pass a token, or bind the one interface it should answer on."
+    );
+  }
 }
 
 /**
@@ -260,6 +292,8 @@ async function serve(
 export async function startMcpHttpServer(
   args: StartMcpHttpServerArgs
 ): Promise<McpHttpServerHandle> {
+  assertAuthChoice(args.token, args.host);
+  const token = args.token ?? undefined;
   const path = args.path ?? DEFAULT_MCP_PATH;
   const router = new McpSessionRouter({
     createTransport: (hooks) => new StreamableHTTPServerTransport(hooks),
@@ -267,7 +301,7 @@ export async function startMcpHttpServer(
   });
   const ctx: RequestContext = {
     path,
-    token: args.token,
+    token,
     allowedHosts: resolveAllowedHosts(args.host, args.allowedHosts),
     maxBodyBytes: args.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES,
     router,
@@ -302,7 +336,7 @@ export async function startMcpHttpServer(
   return {
     server,
     url: `http://${displayHost}:${port}${path}`,
-    token: args.token,
+    token,
     sessionCount: () => router.size,
     close: async () => {
       await router.closeAll();

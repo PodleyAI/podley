@@ -423,7 +423,10 @@ stream eagerly and so cannot tell the two apart.
 builder and embarc want the same server without the CLI around it: `createTaskMcpServer`
 (the tool surface, over any transport), `startMcpHttpServer` (`node:http`),
 `McpSessionRouter` (the Streamable HTTP session map, for a host that already has a web
-framework) and `authorizeBearer`. It is built on the SDK's low-level `Server` rather than
+framework) and `authorizeBearer`. The token property above is the CLI's own only in how it
+generates one: `startMcpHttpServer` requires `token`, and a host serving unauthenticated
+has to write `null` — refused outright on a wildcard bind, where nothing else decides who
+may run a task. It is built on the SDK's low-level `Server` rather than
 `McpServer` because tasks describe themselves in JSON Schema and `registerTool` takes only
 Zod — going through it would mean converting a schema to Zod and back to publish it.
 
