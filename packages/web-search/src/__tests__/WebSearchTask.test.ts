@@ -116,7 +116,7 @@ describe("WebSearchTask", () => {
     expect(request.excludeDomains).toBeUndefined();
   });
 
-  it("passes domain lists through untouched to a native provider", async () => {
+  it("passes domain lists to a native provider rather than into the query", async () => {
     const seen = vi.fn();
     WebSearchProviderRegistry.register(fake("tavily", { domainFilter: "native" }, seen));
     await new WebSearchTask().run({
@@ -127,6 +127,50 @@ describe("WebSearchTask", () => {
     const request = seen.mock.calls[0][0] as WebSearchRequest;
     expect(request.query).toBe("cats");
     expect(request.includeDomains).toEqual(["arxiv.org"]);
+  });
+
+  it("hands a native provider the same reduction the site: translation applies", async () => {
+    // The vendor APIs behind `domainFilter: "native"` all document bare hosts,
+    // so a scheme, a `www.` or a trailing slash is at best matched by nothing
+    // and at worst skipped as unparseable — an unrestricted search reported as
+    // successful with nothing saying the filter was dropped. Under `"auto"` the
+    // caller cannot even predict which route ran, so the reduction has to be the
+    // same on both.
+    const native = vi.fn();
+    const operator = vi.fn();
+    WebSearchProviderRegistry.register(fake("tavily", { domainFilter: "native" }, native));
+    WebSearchProviderRegistry.register(fake("brave", { domainFilter: "query-operator" }, operator));
+
+    const domains = {
+      includeDomains: ["https://ArXiv.org/"],
+      excludeDomains: ["www.spam.example"],
+    };
+    await new WebSearchTask().run({ query: "cats", provider: "tavily", ...domains });
+    await new WebSearchTask().run({ query: "cats", provider: "brave", ...domains });
+
+    const nativeRequest = native.mock.calls[0][0] as WebSearchRequest;
+    expect(nativeRequest.includeDomains).toEqual(["arxiv.org"]);
+    expect(nativeRequest.excludeDomains).toEqual(["spam.example"]);
+    const operatorRequest = operator.mock.calls[0][0] as WebSearchRequest;
+    expect(operatorRequest.query).toBe("cats site:arxiv.org -site:spam.example");
+  });
+
+  it("normalizes the direction a split provider filters natively", async () => {
+    // `excludeDomainFilter` is decided separately from `domainFilter`, so the
+    // list left for the adapter to send must be reduced whichever side it is on.
+    const seen = vi.fn();
+    WebSearchProviderRegistry.register(
+      fake("split", { domainFilter: "native", excludeDomainFilter: "query-operator" }, seen)
+    );
+    await new WebSearchTask().run({
+      query: "cats",
+      provider: "split",
+      includeDomains: ["https://arxiv.org/"],
+      excludeDomains: ["https://spam.example/"],
+    });
+    const request = seen.mock.calls[0][0] as WebSearchRequest;
+    expect(request.includeDomains).toEqual(["arxiv.org"]);
+    expect(request.query).toBe("cats -site:spam.example");
   });
 
   it("clamps maxResults to the provider cap instead of refusing", async () => {

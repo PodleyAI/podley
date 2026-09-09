@@ -9,7 +9,7 @@ import { Task, TaskConfigurationError } from "@workglow/task-graph";
 import { FetchUrlTask, fetchUrlEntitlementsFor } from "@workglow/tasks";
 import type { DataPortSchema, FromSchema } from "@workglow/util/schema";
 import { unhonorableOptions } from "./capabilityCheck";
-import { unusableDomainEntries } from "./domainInput";
+import { normalizeDomains, unusableDomainEntries } from "./domainInput";
 import type {
   IWebSearchProvider,
   SearchResult,
@@ -350,6 +350,13 @@ export class WebSearchTask extends Task<WebSearchTaskInput, WebSearchTaskOutput>
    * includes and `"query-operator"` excludes pass routing and then receive an
    * `excludeDomains` list it has no native way to send — a restriction silently
    * dropped on a request the task reported as honored.
+   *
+   * Domains are reduced to bare hosts here, before either direction is decided,
+   * so the list a native adapter forwards and the list the `site:` translation
+   * reads are the same value. Reducing them only on the way into an operator
+   * left `"https://arxiv.org/"` restricting one route and reaching a vendor API
+   * as a scheme-bearing entry on the other, where it matches nothing or is
+   * skipped — and with `"auto"` the caller cannot tell which route ran.
    */
   private adaptRequest(provider: IWebSearchProvider, request: WebSearchRequest): WebSearchRequest {
     const capabilities = provider.capabilities;
@@ -358,23 +365,25 @@ export class WebSearchTask extends Task<WebSearchTaskInput, WebSearchTaskOutput>
       cap !== undefined && request.maxResults !== undefined
         ? Math.min(request.maxResults, cap)
         : request.maxResults;
+    const includeDomains = normalizeDomains(request.includeDomains);
+    const excludeDomains = normalizeDomains(request.excludeDomains);
 
     const excludeSupport = capabilities.excludeDomainFilter ?? capabilities.domainFilter;
     const translateIncludes = capabilities.domainFilter === "query-operator";
     const translateExcludes = excludeSupport === "query-operator";
     if (!translateIncludes && !translateExcludes) {
-      return { ...request, maxResults };
+      return { ...request, maxResults, includeDomains, excludeDomains };
     }
     return {
       ...request,
       maxResults,
       query: applyDomainOperators(
         request.query,
-        translateIncludes ? request.includeDomains : undefined,
-        translateExcludes ? request.excludeDomains : undefined
+        translateIncludes ? includeDomains : undefined,
+        translateExcludes ? excludeDomains : undefined
       ),
-      includeDomains: translateIncludes ? undefined : request.includeDomains,
-      excludeDomains: translateExcludes ? undefined : request.excludeDomains,
+      includeDomains: translateIncludes ? undefined : includeDomains,
+      excludeDomains: translateExcludes ? undefined : excludeDomains,
     };
   }
 }
