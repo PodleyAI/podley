@@ -179,9 +179,22 @@ export class MockHumanConnector implements IHumanConnector {
     }
     if (entry.kind === "deferred") {
       const res = await awaitDeferred(entry, signal);
-      return { ...res, requestId: request.requestId };
+      return this.shape(request, res);
     }
     const resolved = typeof entry.entry === "function" ? await entry.entry(request) : entry.entry;
-    return { ...resolved, requestId: request.requestId };
+    return this.shape(request, resolved);
+  }
+
+  /**
+   * A confirm answers with the decision and nothing else, whatever a script
+   * put beside it — the reference connector holds the same contract every
+   * adapter is measured against.
+   */
+  private shape(request: IHumanRequest, response: IHumanResponse): IHumanResponse {
+    return {
+      ...response,
+      requestId: request.requestId,
+      content: request.kind === "confirm" ? undefined : response.content,
+    };
   }
 }

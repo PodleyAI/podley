@@ -18,6 +18,7 @@ export type HumanConnectorAssertionId =
   | "roundtrip.confirm.accept"
   | "roundtrip.confirm.decline"
   | "roundtrip.confirm.details"
+  | "roundtrip.confirm.noContent"
   | "abort.beforeSend"
   | "abort.midElicit"
   | "concurrent.isolation"

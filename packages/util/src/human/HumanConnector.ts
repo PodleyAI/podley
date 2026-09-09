@@ -85,7 +85,16 @@ export interface IHumanResponse {
    * - "cancel": user dismissed without choosing
    */
   readonly action: HumanResponseAction;
-  /** The human's response data (present when action is "accept" and kind is "elicit") */
+  /**
+   * The human's response data. Present only for an accepted "elicit"; every
+   * other kind answers `undefined`.
+   *
+   * A confirm in particular carries none: its schema describes the action
+   * awaiting approval rather than fields to fill in, so anything sent back
+   * under it answers a form that was never asked — and a caller spreading
+   * `content` onto its own output would be taking an edit to the DESCRIPTION
+   * of an action as part of the action.
+   */
   readonly content: Record<string, unknown> | undefined;
   /** Whether the conversation is complete. Always true for "single" mode. */
   readonly done: boolean;

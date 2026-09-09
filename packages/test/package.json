@@ -42,6 +42,7 @@
     "@workglow/bun-webview": "workspace:*",
     "@workglow/cactus": "workspace:*",
     "@workglow/chrome-ai": "workspace:*",
+    "@workglow/cli": "workspace:*",
     "@workglow/cloudflare": "workspace:*",
     "@workglow/deepseek": "workspace:*",
     "@workglow/duckdb": "workspace:*",

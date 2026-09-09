@@ -5,8 +5,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { HumanResponseAction } from "@workglow/util";
 import type { JSX } from "preact";
 import { useState } from "preact/hooks";
+import { humanPromptModel } from "../../../ui/model/humanPrompt";
 
 interface SchemaLike {
   readonly properties?: Record<string, { type?: string; title?: string; format?: string }>;
@@ -14,8 +16,8 @@ interface SchemaLike {
 }
 
 /**
- * A run asking its operator something. The CLI renders this as an Ink form; the
- * console renders the same schema, and the answer travels back down the same
+ * A run asking its operator something. The CLI renders this as an Ink panel; the
+ * console renders the same model, and the answer travels back down the same
  * channel the request came up.
  */
 export function HumanPrompt({
@@ -23,24 +25,39 @@ export function HumanPrompt({
   onAnswer,
   canAnswer = true,
 }: {
-  request: { requestId: string; message: string; schema: unknown };
-  onAnswer: (action: "accept" | "cancel", content: Record<string, unknown> | undefined) => void;
+  request: {
+    requestId: string;
+    kind: string;
+    message: string;
+    schema: unknown;
+    data: unknown;
+  };
+  onAnswer: (action: HumanResponseAction, content: Record<string, unknown> | undefined) => void;
   /** False while the CLI is not answering; the run cannot receive a reply. */
   canAnswer?: boolean;
 }): JSX.Element {
   const [values, setValues] = useState<Record<string, string>>({});
+  const model = humanPromptModel(request);
   const schema = (request.schema ?? {}) as SchemaLike;
-  const properties = Object.entries(schema.properties ?? {});
+  const properties = model.shape === "form" ? Object.entries(schema.properties ?? {}) : [];
+  const disabledTitle = canAnswer ? undefined : "the CLI is not responding";
 
   return (
     <div className="wrap">
       <div className="card" style="border-color:var(--accent)">
         <div className="field">
           <div className="fl">
-            <b>The run is asking</b>
-            <span>{request.message}</span>
+            <b>{model.shape === "approval" ? "The run needs approval" : "The run is asking"}</b>
+            <span>{model.message}</span>
           </div>
           <div className="fc">
+            {/* An approval's values are read, never typed into. */}
+            {model.details.map((detail) => (
+              <div key={detail.label} style="margin-bottom:8px">
+                <div className="cmd-d">{detail.label}</div>
+                <div>{detail.value}</div>
+              </div>
+            ))}
             {properties.map(([key, property]) => (
               <div key={key} style="margin-bottom:8px">
                 <div className="cmd-d">{property.title ?? key}</div>
@@ -54,21 +71,35 @@ export function HumanPrompt({
               </div>
             ))}
             <div style="display:flex;gap:8px;margin-top:8px">
-              <button
-                className="btn primary"
-                onClick={() => onAnswer("accept", values)}
-                disabled={!canAnswer}
-                title={canAnswer ? undefined : "the CLI is not responding"}
-              >
-                Send
-              </button>
-              <button
-                className="btn"
-                onClick={() => onAnswer("cancel", undefined)}
-                disabled={!canAnswer}
-              >
-                Cancel
-              </button>
+              {model.actions.includes("accept") ? (
+                <button
+                  className="btn primary"
+                  onClick={() => onAnswer("accept", model.carriesContent ? values : undefined)}
+                  disabled={!canAnswer}
+                  title={disabledTitle}
+                >
+                  {model.shape === "approval" ? "Approve" : "Send"}
+                </button>
+              ) : null}
+              {model.actions.includes("decline") ? (
+                <button
+                  className="btn"
+                  onClick={() => onAnswer("decline", undefined)}
+                  disabled={!canAnswer}
+                  title={disabledTitle}
+                >
+                  Decline
+                </button>
+              ) : null}
+              {model.actions.includes("cancel") ? (
+                <button
+                  className="btn"
+                  onClick={() => onAnswer("cancel", undefined)}
+                  disabled={!canAnswer}
+                >
+                  Cancel
+                </button>
+              ) : null}
             </div>
           </div>
         </div>

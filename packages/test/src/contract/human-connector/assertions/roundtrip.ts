@@ -54,6 +54,7 @@ export function roundtripBlock(
   const itConfirmAccept = expectFails.has("roundtrip.confirm.accept") ? itExpectFail : it;
   const itConfirmDecline = expectFails.has("roundtrip.confirm.decline") ? itExpectFail : it;
   const itConfirmDetails = expectFails.has("roundtrip.confirm.details") ? itExpectFail : it;
+  const itConfirmNoContent = expectFails.has("roundtrip.confirm.noContent") ? itExpectFail : it;
 
   describe.skipIf(!opts.capabilities.elicit)("Roundtrip elicit", () => {
     itAccept(
@@ -136,6 +137,29 @@ export function roundtripBlock(
         expect(res.requestId).toBe("rt-confirm-decline");
         expect(res.action).toBe("decline");
         expect(res.done).toBe(true);
+      },
+      opts.timeout
+    );
+
+    itConfirmNoContent(
+      "an accepted confirm answers with the decision and nothing else",
+      async () => {
+        // A confirm's schema describes the action, so anything a connector
+        // sends back under it is an answer to a form nobody asked. It reaches
+        // the task's output ports (`HumanInputTask` spreads `content` there),
+        // which is how an edit to the DESCRIPTION of an action becomes part of
+        // what the graph does with it.
+        const { connector, script } = getHandle();
+        script.push({
+          requestId: "x",
+          action: "accept",
+          content: { action: "something else" },
+          done: true,
+        });
+        const ac = new AbortController();
+        const res = await connector.send(confirmReq(fixture, "rt-confirm-content"), ac.signal);
+        expect(res.action).toBe("accept");
+        expect(res.content).toBeUndefined();
       },
       opts.timeout
     );
