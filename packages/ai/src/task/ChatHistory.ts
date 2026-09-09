@@ -81,6 +81,11 @@ function messageChars(message: ChatMessage): number {
  * The newest turn is kept even when it alone exceeds the budget: there would
  * otherwise be nothing for the model to answer, and silently returning an empty
  * list turns "this turn is too long" into "the conversation is gone".
+ *
+ * A leading run of `system` messages belongs to no turn and is never cut: it
+ * carries the instructions every later turn is answered under, and dropping it
+ * for being old changes how the model behaves with nothing to show for it. Its
+ * size still counts against the budget, so the turns cut to fit around it.
  */
 export function trimHistoryForModel(
   history: readonly ChatMessage[],
@@ -90,16 +95,19 @@ export function trimHistoryForModel(
   let total = sizes.reduce((sum, n) => sum + n, 0);
   if (total <= max) return [...history];
 
+  let prefixEnd = 0;
+  while (history[prefixEnd]?.role === "system") prefixEnd++;
+
   const turnStarts: number[] = [];
-  for (let i = 0; i < history.length; i++) {
+  for (let i = prefixEnd; i < history.length; i++) {
     if (history[i]?.role === "user") turnStarts.push(i);
   }
 
-  let cut = 0;
+  let cut = prefixEnd;
   for (const start of turnStarts.slice(1)) {
     for (let i = cut; i < start; i++) total -= sizes[i] ?? 0;
     cut = start;
     if (total <= max) break;
   }
-  return history.slice(cut);
+  return [...history.slice(0, prefixEnd), ...history.slice(cut)];
 }
