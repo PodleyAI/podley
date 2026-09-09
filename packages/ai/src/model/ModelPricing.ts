@@ -123,7 +123,9 @@ const KEY_SUFFIX_BOUNDARY = new Set(["-", "_", ":", "/", "@"]);
  * fabricated unit, and `undefined` is the honest answer. It is consulted only
  * after the exact lookups, so a table that deliberately prices an image model
  * still wins. Providers should pass the SAME matcher their effort policy uses
- * rather than a second copy of it.
+ * rather than a second copy of it — which is why it is asked about the same
+ * prefix-stripped, lower-cased id the walk matches, so a matcher anchored at
+ * `^` fires on `models/…` and `google/…` as it does on the bare id.
  */
 export function resolveModelPricingFromTable(
   table: Readonly<Record<string, ModelPricing>>,
@@ -149,7 +151,7 @@ export function resolveModelPricingFromTable(
   // id has deliberately priced it — Gemini prices several image models — and
   // that is a stronger statement than any matcher. What the guard blocks is the
   // walk BORROWING a sibling's card for an id the table never named.
-  if (notTokenBilled?.(modelId) === true) return undefined;
+  if (notTokenBilled?.(id) === true) return undefined;
 
   let best: string | undefined;
   for (const key of Object.keys(table)) {

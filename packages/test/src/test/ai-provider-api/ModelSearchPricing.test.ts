@@ -154,4 +154,16 @@ describe("a rate card must match the model's billing unit", () => {
     expect(getGeminiModelPricing("gemini-2.5-flash-image-preview")).toBeUndefined();
     expect(getGeminiModelPricing("gemini-2.5-flash")).toBeDefined();
   });
+
+  it("refuses an unnamed image id carrying one of the prefixes it strips", () => {
+    // `models/…` is the shape Gemini's ListModels returns, which is why the
+    // prefix is declared at all. Gemini's image matchers are anchored, so the
+    // guard has to be asked about the stripped id or a prefixed image model
+    // resolves the text sibling's per-1M-token card.
+    expect(getGeminiModelPricing("models/gemini-2.5-flash-image-preview")).toBeUndefined();
+    expect(getGeminiModelPricing("google/gemini-2.5-flash-image-preview")).toBeUndefined();
+    expect(getGeminiModelPricing("google-gemini/gemini-2.5-flash-image-preview")).toBeUndefined();
+    // The prefixed text sibling still resolves; only the borrowing is blocked.
+    expect(getGeminiModelPricing("models/gemini-2.5-flash")).toBeDefined();
+  });
 });
