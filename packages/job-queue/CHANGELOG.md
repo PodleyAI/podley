@@ -1,5 +1,11 @@
 # @workglow/job-queue
 
+## 0.5.1
+
+### Chores
+
+- run format-check in CI, and turn on every staged-off lint rule
+
 ## 0.5.0
 
 ### Breaking Changes

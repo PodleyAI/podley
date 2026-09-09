@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+_No changes in this package._
+
 ## 0.5.0
 
 ### Breaking Changes
