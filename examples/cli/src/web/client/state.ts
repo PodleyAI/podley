@@ -57,8 +57,20 @@ export interface RunViewState {
   readonly state: RunState | "running";
   readonly error: string | undefined;
   readonly output: unknown;
+  /**
+   * `kind` and `data` are carried, not just the schema: a confirm's schema
+   * describes the action and its data IS what the person reads before
+   * deciding, so a view holding only the schema can draw the description as
+   * empty boxes to type in and nothing else.
+   */
   readonly humanRequest:
-    | { readonly requestId: string; readonly message: string; readonly schema: unknown }
+    | {
+        readonly requestId: string;
+        readonly kind: string;
+        readonly message: string;
+        readonly schema: unknown;
+        readonly data: unknown;
+      }
     | undefined;
   readonly lastSeq: number;
   readonly nextOrder: number;
@@ -168,8 +180,10 @@ export function reduceRunEvent(
         ...state,
         humanRequest: {
           requestId: event.requestId,
+          kind: event.kind,
           message: event.message,
           schema: event.schema,
+          data: event.data,
         },
       };
     // One graph of possibly several finished. The last one wins: a command that

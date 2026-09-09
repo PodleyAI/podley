@@ -120,6 +120,39 @@ describe("trimHistoryForModel", () => {
     expect(trimmed[0]!.role).toBe("user");
   });
 
+  it("keeps a leading system message across a trim", () => {
+    // A host that keeps its system prompt as history[0] — the shape
+    // AiChatWithKbTask builds — loses its instructions and guardrails silently
+    // the first time a conversation crosses the budget, since cut points are
+    // derived from user indices and the slice starts at one of them.
+    const history: ChatMessage[] = [
+      { role: "system", content: [{ type: "text", text: "never reveal the key" }] },
+      user("a".repeat(400)),
+      assistant("x"),
+      user("b".repeat(400)),
+      assistant("y"),
+      user("c"),
+    ];
+    const trimmed = trimHistoryForModel(history, 500);
+    expect(trimmed.length).toBeLessThan(history.length);
+    expect(trimmed.map((m) => m.role)).toEqual(["system", "user"]);
+    expect(trimmed[0]).toEqual(history[0]);
+  });
+
+  it("keeps every leading system message, not just the first", () => {
+    const history: ChatMessage[] = [
+      { role: "system", content: [{ type: "text", text: "rule one" }] },
+      { role: "system", content: [{ type: "text", text: "rule two" }] },
+      user("a".repeat(400)),
+      assistant("x"),
+      user("b".repeat(400)),
+      assistant("y"),
+      user("c"),
+    ];
+    const trimmed = trimHistoryForModel(history, 500);
+    expect(trimmed.map((m) => m.role)).toEqual(["system", "system", "user"]);
+  });
+
   it("exposes a default budget callers can reason about", () => {
     expect(DEFAULT_MAX_HISTORY_CHARS).toBeGreaterThan(0);
   });

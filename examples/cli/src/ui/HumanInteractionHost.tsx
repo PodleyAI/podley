@@ -12,6 +12,7 @@ import { prepareSchemaFormFields, type PromptFieldDescriptor } from "../input/pr
 import { deepMerge } from "../input/resolve-input";
 import { SchemaPromptApp } from "./SchemaPromptApp";
 import { asDataPortSchemaObject } from "./humanSchema";
+import { humanPromptModel } from "./model/humanPrompt";
 
 function abortError(): Error {
   const e = new Error("The operation was aborted");
@@ -86,6 +87,50 @@ function HumanDisplayPanel({
       {request.message ? <Text>{request.message}</Text> : null}
       {payload ? <Text>{payload}</Text> : null}
       <HumanPressEnterRow request={request} onFinish={onFinish} />
+    </Box>
+  );
+}
+
+function HumanConfirmPanel({
+  request,
+  onFinish,
+}: {
+  readonly request: IHumanRequest;
+  readonly onFinish: (r: IHumanResponse) => void;
+}): React.ReactElement {
+  const model = humanPromptModel({
+    kind: request.kind,
+    message: request.message,
+    schema: request.contentSchema,
+    data: request.contentData,
+  });
+
+  useInput((input, key) => {
+    const answer = (action: IHumanResponse["action"]): void =>
+      onFinish({ requestId: request.requestId, action, content: undefined, done: true });
+    const typed = input.toLowerCase();
+    if (typed === "y" || key.return) {
+      answer("accept");
+    } else if (typed === "n") {
+      answer("decline");
+    } else if (key.escape) {
+      answer("cancel");
+    }
+  });
+
+  return (
+    <Box flexDirection="column" marginTop={1} borderStyle="double" borderColor="yellow" padding={1}>
+      <Text bold color="yellow">
+        {model.title}
+      </Text>
+      {model.message ? <Text>{model.message}</Text> : null}
+      {model.details.map((detail) => (
+        <Text key={detail.label}>
+          <Text dimColor>{detail.label}: </Text>
+          {detail.value}
+        </Text>
+      ))}
+      <Text dimColor>y/Enter to approve · n to decline · Esc to cancel</Text>
     </Box>
   );
 }
@@ -232,6 +277,8 @@ function HumanInteractionPanel({
       return <HumanDisplayPanel request={request} onFinish={onFinish} />;
     case "elicit":
       return <HumanElicitPanel request={request} onFinish={onFinish} />;
+    case "confirm":
+      return <HumanConfirmPanel request={request} onFinish={onFinish} />;
     default:
       return <HumanElicitPanel request={request} onFinish={onFinish} />;
   }

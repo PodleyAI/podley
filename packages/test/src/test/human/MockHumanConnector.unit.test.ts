@@ -263,6 +263,33 @@ describe("MockHumanConnector — notify/display fast-resolve", () => {
   });
 });
 
+describe("MockHumanConnector — content belongs to an accepted elicit", () => {
+  // `IHumanResponse.content` is documented as present only for an accepted
+  // elicit. The reference connector is the yardstick the conformance suite
+  // measures adapters against, so a script that puts content beside a refusal
+  // must not be able to hand it back — otherwise the suite cannot fail an
+  // adapter that leaks a declined form's data onto `HumanInputTask`'s outputs.
+  it.each(["decline", "cancel"] as const)(
+    "drops scripted content on an elicit the person answered with %s",
+    async (action) => {
+      const c = new MockHumanConnector();
+      c.script.push({ requestId: "x", action, content: { secret: "leaked" }, done: true });
+      const ac = new AbortController();
+      const res = await c.send(elicitReq("r1"), ac.signal);
+      expect(res.action).toBe(action);
+      expect(res.content).toBeUndefined();
+    }
+  );
+
+  it("keeps scripted content on an accepted elicit", async () => {
+    const c = new MockHumanConnector();
+    c.script.push({ requestId: "x", action: "accept", content: { kept: true }, done: true });
+    const ac = new AbortController();
+    const res = await c.send(elicitReq("r1"), ac.signal);
+    expect(res.content).toEqual({ kept: true });
+  });
+});
+
 describe("MockHumanConnector — clear() rejects pending deferreds", () => {
   it("clear() unblocks an in-flight send() awaiting a deferred", async () => {
     const c = new MockHumanConnector();

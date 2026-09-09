@@ -179,9 +179,25 @@ export class MockHumanConnector implements IHumanConnector {
     }
     if (entry.kind === "deferred") {
       const res = await awaitDeferred(entry, signal);
-      return { ...res, requestId: request.requestId };
+      return this.shape(request, res);
     }
     const resolved = typeof entry.entry === "function" ? await entry.entry(request) : entry.entry;
-    return { ...resolved, requestId: request.requestId };
+    return this.shape(request, resolved);
+  }
+
+  /**
+   * Content belongs to an accepted elicit and nothing else, whatever a script
+   * put beside the action — the reference connector holds the same contract
+   * every adapter is measured against. A confirm answers with the decision
+   * alone, and a refused elicit answers with no data, since `HumanInputTask`
+   * spreads `content` onto its output ports either way.
+   */
+  private shape(request: IHumanRequest, response: IHumanResponse): IHumanResponse {
+    const carriesContent = request.kind === "elicit" && response.action === "accept";
+    return {
+      ...response,
+      requestId: request.requestId,
+      content: carriesContent ? response.content : undefined,
+    };
   }
 }
