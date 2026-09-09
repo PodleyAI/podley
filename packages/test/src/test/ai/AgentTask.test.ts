@@ -438,6 +438,33 @@ describe("AgentTask", () => {
       expect(JSON.stringify(result)).toContain("did not approve");
     });
 
+    it("refuses rather than runs when asking itself fails", async () => {
+      scriptModel([
+        {
+          calls: [
+            { id: "c1", name: "AgentTest_FetchTask", input: { url: "https://example.test" } },
+          ],
+        },
+        { text: "ok" },
+      ]);
+      // The terminal connector raises exactly like this when no run UI is
+      // mounted; one badly wired host must not end the conversation.
+      registry.registerInstance(HUMAN_CONNECTOR, {
+        send: async () => {
+          throw new Error("no run UI is mounted");
+        },
+      });
+
+      const output = await new AgentTask().run(
+        { model: MODEL, prompt: "fetch", tools: [FETCH_TOOL] },
+        { registry }
+      );
+
+      expect(fetchRuns).toBe(0);
+      expect(output.stopReason).toBe("answered");
+      expect(JSON.stringify(toolResults(output.messages)[0])).toContain("asking for one failed");
+    });
+
     it("refuses rather than runs when there is nobody to ask", async () => {
       scriptModel([
         {

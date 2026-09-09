@@ -413,6 +413,18 @@ terminal runs. Three load-bearing properties:
   `timeline`, `markdown`, `empty` and `error`; a status widget contributes meters **or** text
   lines, since most of what an operator checks has no denominator to draw a bar against.
 
+`workglow agent chat` is the terminal consumer of `AgentTask`: a line-based REPL that
+streams the model's reply straight to stdout — so the transcript stays in scrollback, which
+the Ink run UI's clear-on-complete would erase — prints one row per tool call off the task's
+own progress messages, and carries `messages` from one turn's output into the next's input.
+`--tools` takes task type names and **has no default**: what an agent may call decides what it
+can reach. Approvals go through `PromptHumanConnector`, the connector for anything prompting
+BETWEEN runs rather than during one: `InkHumanConnector` needs a mounted
+`HumanInteractionHost` and throws without one, while this draws its own prompt and gives the
+screen back. It has no `followUp` — a modal prompt settles the question it asked — and
+decides form-vs-approval through the same `humanPromptModel` the Ink panel and the console
+read.
+
 `workglow mcp serve` is the second server the CLI hosts: the registered tasks offered to
 MCP clients as tools, one per task type, named for the registered type itself (`task list`
 prints the same types with the `Task` suffix trimmed) and carrying the

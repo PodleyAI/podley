@@ -10,7 +10,8 @@ import {
   getTaskConstructors,
   taskClassNeedsApproval,
 } from "@workglow/task-graph";
-import { HUMAN_CONNECTOR, uuid4 } from "@workglow/util";
+import type { IHumanRequest, IHumanResponse } from "@workglow/util";
+import { getLogger, HUMAN_CONNECTOR, uuid4 } from "@workglow/util";
 import type { DataPortSchema } from "@workglow/util/schema";
 import type { ToolCall, ToolDefinition } from "./ToolCallingUtils";
 
@@ -101,6 +102,30 @@ export function toolCallNeedsApproval(
 }
 
 /**
+ * Puts one request to the connector, reporting a failure to ask as `undefined`
+ * rather than letting it out.
+ *
+ * A connector that throws is a host wired wrong — the terminal one raises when
+ * no run UI is mounted, for instance — and letting that end the turn kills a
+ * whole conversation over one tool call. The caller refuses the call instead:
+ * the tool still does not run, and the model can say why. An abort is the one
+ * exception, since the run is over either way.
+ */
+async function askToApprove(
+  context: IExecuteContext,
+  toolName: string,
+  request: IHumanRequest
+): Promise<IHumanResponse | undefined> {
+  try {
+    return await context.registry.get(HUMAN_CONNECTOR).send(request, context.signal);
+  } catch (error) {
+    if (context.signal.aborted) throw error;
+    getLogger().warn(`Could not ask for approval of "${toolName}"`, { error });
+    return undefined;
+  }
+}
+
+/**
  * Puts one tool call to a human and reports whether it may run.
  *
  * Fails **closed** when approval is called for and no connector is registered:
@@ -121,24 +146,29 @@ async function approveToolCall(
     };
   }
   const ctor = getTaskConstructors(context.registry).get(backingTaskType(tool));
-  const response = await context.registry.get(HUMAN_CONNECTOR).send(
-    {
-      requestId: uuid4(),
-      targetHumanId: "default",
-      kind: "confirm",
-      message: `Run "${tool.name}"?`,
-      contentSchema: APPROVAL_SCHEMA as DataPortSchema,
-      contentData: {
-        tool: tool.name,
-        reach: ctor ? describeTaskClassReach(ctor) : "not declared — this tool is a host function",
-        arguments: clamp(stringifyForModel(call.input), MAX_APPROVAL_ARGUMENT_CHARS),
-      },
-      expectsResponse: true,
-      mode: "single",
-      metadata: { toolUseId: call.id, toolName: tool.name },
+  const response = await askToApprove(context, tool.name, {
+    requestId: uuid4(),
+    targetHumanId: "default",
+    kind: "confirm",
+    message: `Run "${tool.name}"?`,
+    contentSchema: APPROVAL_SCHEMA as DataPortSchema,
+    contentData: {
+      tool: tool.name,
+      reach: ctor ? describeTaskClassReach(ctor) : "not declared — this tool is a host function",
+      arguments: clamp(stringifyForModel(call.input), MAX_APPROVAL_ARGUMENT_CHARS),
     },
-    context.signal
-  );
+    expectsResponse: true,
+    mode: "single",
+    metadata: { toolUseId: call.id, toolName: tool.name },
+  });
+  if (response === undefined) {
+    return {
+      text:
+        `Running "${tool.name}" needs a person's approval and asking for one failed. ` +
+        `Tell the user, and do not try this tool again.`,
+      isError: true,
+    };
+  }
   if (response.action === "accept") return undefined;
   // Declined and cancelled read the same way to a model — it did not happen and
   // repeating the request is not what the person wants next.
