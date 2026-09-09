@@ -64,7 +64,7 @@ export class OpenRouterQueuedProvider extends createCloudProviderClass<OpenRoute
     return {
       currency: "USD",
       input,
-      output: perMillion(quoted.completion) ?? 0,
+      output: perMillion(quoted.completion),
       cached: perMillion(quoted.input_cache_read),
     };
   }

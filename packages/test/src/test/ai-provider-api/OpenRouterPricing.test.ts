@@ -48,6 +48,26 @@ describe("OpenRouter prices from the rate it quoted", () => {
     expect(priceOf({ prompt: "-1", completion: "-1" })).toBeUndefined();
   });
 
+  it("leaves an unpriced completion rate unpriced rather than free", () => {
+    // A router entry quotes a prompt rate and `-1` for completion when the
+    // output rate varies by upstream, and a partial card omits the field
+    // outright. Read as zero, the estimate renders as a confident figure that
+    // omits the side of the bill most of the spend sits on; left unset, the
+    // counter is reported unpriced and the total carries its `~`.
+    expect(priceOf({ prompt: "0.000003", completion: "-1" })).toEqual({
+      currency: "USD",
+      input: 3,
+      output: undefined,
+      cached: undefined,
+    });
+    expect(priceOf({ prompt: "0.000003" })).toEqual({
+      currency: "USD",
+      input: 3,
+      output: undefined,
+      cached: undefined,
+    });
+  });
+
   it("reports no card when the record carries no quote at all", () => {
     expect(priceOf(undefined)).toBeUndefined();
     expect(priceOf(null)).toBeUndefined();

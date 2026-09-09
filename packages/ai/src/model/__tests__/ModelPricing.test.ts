@@ -115,6 +115,23 @@ describe("resolveModelPricingFromTable", () => {
       );
     });
 
+    it("sees the same id the walk does, prefix stripped and lower-cased", () => {
+      // A provider writes the matcher for the bare id its table is keyed on, so
+      // an anchored one only fires if the guard is asked about the stripped
+      // form. Asked about the raw id, `models/gpt-4o-image` walks straight past
+      // it and takes `gpt-4o`'s per-token card for a model billed per image.
+      const anchoredImage = (id: string): boolean => /^gpt-.*-image(?:-|$)/i.test(id);
+      expect(
+        resolveModelPricingFromTable(table, "gpt-4o-image", [], anchoredImage)
+      ).toBeUndefined();
+      expect(
+        resolveModelPricingFromTable(table, "models/gpt-4o-image", ["models/"], anchoredImage)
+      ).toBeUndefined();
+      expect(
+        resolveModelPricingFromTable(table, "OpenAI/GPT-4o-Image", ["openai/"], anchoredImage)
+      ).toBeUndefined();
+    });
+
     it("leaves a text id alone, and is optional", () => {
       expect(resolveModelPricingFromTable(table, "gpt-4o", [], isImage)).toBe(table["gpt-4o"]);
       expect(resolveModelPricingFromTable(table, "gpt-4o-2024-08-06", [], isImage)).toBe(
