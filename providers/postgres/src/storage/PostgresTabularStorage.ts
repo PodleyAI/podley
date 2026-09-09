@@ -1046,6 +1046,17 @@ export class PostgresTabularStorage<
   }
 
   /**
+   * The real-pool arm sets `inTransaction` on nobody — its transaction runs on
+   * a checked-out client while these instances keep serving other callers off
+   * the pool — so the async context is the only thing that can say whether this
+   * instance is enlisted. The same question `_putBulkInternal` and
+   * `withTransaction` already ask on this path.
+   */
+  protected override isEnlistedInConnectionTransaction(): boolean {
+    return isEnlistedInConnectionTx(this);
+  }
+
+  /**
    * A real `pg.Pool` isolates per checked-out client, so serializing through
    * the base's per-instance chain would turn the pool's main benefit into a
    * per-instance bottleneck for no safety gained. Isolation there comes from
