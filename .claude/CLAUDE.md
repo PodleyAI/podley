@@ -206,6 +206,17 @@ RAG tasks: `ChunkVectorUpsertTask` (`knowledgeBase` + `chunks` + `vector`, optio
 `method: "similarity" | "hybrid"`), `HierarchyJoinTask`, `RerankerTask`,
 `QueryExpanderTask`, `TextChunkerTask`, `HierarchicalChunkerTask`.
 
+`AgentTask` is the turn loop: one `ToolCallingTask` per round, then the tools the model asked
+for, then their results back to it, until the model answers or `maxRounds` runs out.
+`messages` goes in and comes back out, so the host owns the conversation. **Every `tool_use`
+is answered** — an unknown tool, arguments failing the tool's schema, a throw, a person
+declining — because dropping the call orphans it and the provider rejects the next round. A
+tool is backed by a registered task (looked up by `taskType`, else `name`) or by a
+`ToolDefinition.execute` function. A tool reaching beyond `INFERENCE_ENTITLEMENTS` is put to
+`IHumanConnector` as a `confirm` first: `requiresApproval` overrides that per tool,
+`approval: "never"` turns it off for a headless run, and with no connector registered such a
+call is refused rather than run.
+
 Conversation helpers for a host keeping its own message list, none of which run inside a
 task: `normalizeHistoryForModel` / `trimHistoryForModel` (`ChatHistory.ts`), and
 `collectToolUseIds` / `uniquifyToolCallIds` / `repairDuplicateToolCallIds` (`ToolCallIds.ts`).

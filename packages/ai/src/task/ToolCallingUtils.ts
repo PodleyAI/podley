@@ -35,6 +35,13 @@ export interface ToolDefinition {
    * (check `execute`, then registry lookup, then stub).
    */
   type?: "function" | "task";
+  /**
+   * The task type backing this tool, when it is not the name the model sees.
+   * A host is free to present `search_the_web` for a task registered under
+   * another name, and a runner resolving on the presented name would then find
+   * nothing. `taskTypesToTools` always sets it.
+   */
+  taskType?: string;
   /** JSON Schema describing the task's configuration options. */
   configSchema?: JsonSchema;
   /** Concrete configuration values matching {@link configSchema}. */
@@ -44,6 +51,14 @@ export interface ToolDefinition {
    * by calling this function directly instead of instantiating a Task.
    */
   execute?: (input: Record<string, unknown>) => Promise<Record<string, unknown>>;
+  /**
+   * Whether a person approves each call before it runs, overriding whatever a
+   * runner would otherwise decide for this tool. Set it in both directions: a
+   * host function that spends money says `true`, and a task whose reach a host
+   * has already scoped away says `false`. Absent leaves the decision to the
+   * runner — see `AgentTask`, which reads it from the backing task class.
+   */
+  requiresApproval?: boolean;
 }
 
 /**
