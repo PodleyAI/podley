@@ -186,6 +186,30 @@ export abstract class BaseSqlTabularStorage<
   }
 
   /**
+   * Whether a connection-scoped transaction this instance is enlisted in is
+   * open in the current async context.
+   *
+   * {@link inTransaction} does not answer this on every backend. It is an
+   * instance flag, and a pooled backend deliberately sets it on nobody: its
+   * transaction runs on one checked-out client while the same instances keep
+   * serving unrelated callers off the pool, so enlistment is a property of the
+   * async context rather than of the instance. Such a backend overrides this
+   * with the context question; the default is `false`, which is right for the
+   * single-session arm, where every participant carries the flag instead.
+   *
+   * The two answers are unioned wherever the question is "is this instance
+   * inside an open transaction", so neither arm has to be special-cased twice.
+   */
+  protected isEnlistedInConnectionTransaction(): boolean {
+    return false;
+  }
+
+  /** Either way an instance can be inside an open transaction. */
+  private insideOpenTransaction(): boolean {
+    return this.inTransaction || this.isEnlistedInConnectionTransaction();
+  }
+
+  /**
    * Per-instance promise-chain mutex. On a backend that runs every statement
    * on one shared connection, all public read/write methods queue behind the
    * previous holder, and `withTransaction` holds the lock for the duration of
@@ -747,9 +771,14 @@ export abstract class BaseSqlTabularStorage<
     // the right side is enlisted on and miss its uncommitted rows entirely.
     // The hash fallback goes through `right.query()`, which does serialize on
     // the right's own lock and does resolve its enlisted client, so hand this
-    // case to it. `this.inTransaction` means the join is already inside that
-    // transaction, where reading its own uncommitted rows is correct.
-    if (right.inTransaction && !this.inTransaction) return null;
+    // case to it. The left side being inside that same transaction is the
+    // exception: reading its own uncommitted rows there is correct.
+    //
+    // Asked through {@link insideOpenTransaction} rather than the
+    // `inTransaction` flag alone, because the pooled arm — the one whose
+    // uncommitted rows sit on another client entirely — sets that flag on
+    // nobody.
+    if (right.insideOpenTransaction() && !this.insideOpenTransaction()) return null;
     return { right, dialect: mine.dialect };
   }
 
