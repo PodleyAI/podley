@@ -15,6 +15,7 @@ import { WebSearchProviderRegistry } from "./WebSearchProviderRegistry";
 import { WebSearchTask } from "./WebSearchTask";
 
 export * from "./capabilityCheck";
+export * from "./domainInput";
 export * from "./IWebSearchProvider";
 export * from "./limitResults";
 export * from "./providers/BraveWebSearchProvider";

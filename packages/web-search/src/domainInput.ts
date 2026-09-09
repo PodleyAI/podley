@@ -32,6 +32,21 @@ export function normalizeDomain(domain: string): string {
 }
 
 /**
+ * {@link normalizeDomain} over a whole list, preserving an absent one.
+ *
+ * Applied to every route rather than only the `site:` translation: the vendor
+ * APIs behind a native domain filter document bare hosts, so an entry the
+ * operator route reduces and the native route forwards raw is the same request
+ * filtered two different ways — and a vendor that skips an entry it cannot parse
+ * runs the search unrestricted and reports it as honored.
+ */
+export function normalizeDomains(
+  domains: readonly string[] | undefined
+): readonly string[] | undefined {
+  return domains?.map(normalizeDomain);
+}
+
+/**
  * Whether a domain survives normalization as something a filter can express.
  *
  * Judged on the NORMALIZED value, not the raw entry: `" https://a.com/ "` is a
