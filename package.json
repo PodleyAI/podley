@@ -79,7 +79,7 @@
     "needle-rs": "^0.2.1",
     "@huggingface/inference": "^4.13.28",
     "ollama": "^0.6.3",
-    "openai": "^7.10.0",
+    "openai": "^7.12.1",
     "tiktoken": "^1.0.22",
     "js-tiktoken": "^1.0.21",
     "@modelcontextprotocol/sdk": "^1.30.0",
